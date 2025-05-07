@@ -8,9 +8,26 @@ import SuspensionsTab from "@/components/tabs/SuspensionsTab";
 import RegulationsTab from "@/components/tabs/RegulationsTab";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/components/auth/AuthProvider";
+import LoginForm from "@/components/auth/LoginForm";
+import UserAccount from "@/components/auth/UserAccount";
+import AdminPanel from "@/components/admin/AdminPanel";
+import TeamDashboard from "@/components/team/TeamDashboard";
+
+// Mock teams data for permissions check
+const MOCK_TEAMS = [
+  { id: 1, name: "FC De Kampioenen", permissions: { scores: true, players: true } },
+  { id: 2, name: "Bavo United", permissions: { scores: true, players: true } },
+  { id: 3, name: "Zandberg Boys", permissions: { scores: true, players: false } },
+  { id: 4, name: "Sportclub Veldhoven", permissions: { scores: false, players: true } },
+];
 
 const Layout: React.FC = () => {
   const isMobile = useIsMobile();
+  const { user, login, logout, isAuthenticated } = useAuth();
+  
+  // Find team data if user is a team role
+  const teamData = user?.teamId ? MOCK_TEAMS.find(team => team.id === user.teamId) : null;
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -61,35 +78,54 @@ const Layout: React.FC = () => {
             </div>
           </div>
           
-          {!isMobile && (
-            <div className="hidden md:flex space-x-4">
-              <button className="text-white hover:text-white/80 transition-colors">
-                Login
-              </button>
-              <button className="bg-white text-soccer-green px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium">
-                Registreren
-              </button>
-            </div>
-          )}
+          <div className={cn(
+            "flex space-x-4",
+            isMobile ? "flex" : "hidden md:flex"
+          )}>
+            {isAuthenticated && user ? (
+              <UserAccount user={user} onLogout={logout} />
+            ) : (
+              <>
+                <button 
+                  className="bg-white text-soccer-green px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium"
+                  onClick={() => document.getElementById('login-modal')?.showModal()}
+                >
+                  Inloggen
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 container py-6">
-        <Tabs defaultValue="competitie" className="w-full">
-          <TabsList className="w-full flex mb-8 bg-muted/50 p-1 overflow-x-auto">
-            <TabItem value="competitie" icon={<Award />} label="Competitie" />
-            <TabItem value="beker" icon={<Trophy />} label="Beker" />
-            <TabItem value="schorsingen" icon={<Ban />} label="Schorsingen" />
-            <TabItem value="reglement" icon={<FileText />} label="Reglement" />
-          </TabsList>
-          <div className="animate-fade-in">
-            <TabsContent value="competitie"><CompetitionTab /></TabsContent>
-            <TabsContent value="beker"><CupTab /></TabsContent>
-            <TabsContent value="schorsingen"><SuspensionsTab /></TabsContent>
-            <TabsContent value="reglement"><RegulationsTab /></TabsContent>
-          </div>
-        </Tabs>
+        {isAuthenticated && user ? (
+          <>
+            {user.role === "admin" ? (
+              <AdminPanel />
+            ) : (
+              teamData && (
+                <TeamDashboard user={user} teamData={teamData} />
+              )
+            )}
+          </>
+        ) : (
+          <Tabs defaultValue="competitie" className="w-full">
+            <TabsList className="w-full flex mb-8 bg-muted/50 p-1 overflow-x-auto">
+              <TabItem value="competitie" icon={<Award />} label="Competitie" />
+              <TabItem value="beker" icon={<Trophy />} label="Beker" />
+              <TabItem value="schorsingen" icon={<Ban />} label="Schorsingen" />
+              <TabItem value="reglement" icon={<FileText />} label="Reglement" />
+            </TabsList>
+            <div className="animate-fade-in">
+              <TabsContent value="competitie"><CompetitionTab /></TabsContent>
+              <TabsContent value="beker"><CupTab /></TabsContent>
+              <TabsContent value="schorsingen"><SuspensionsTab /></TabsContent>
+              <TabsContent value="reglement"><RegulationsTab /></TabsContent>
+            </div>
+          </Tabs>
+        )}
       </main>
 
       {/* Footer */}
@@ -119,6 +155,16 @@ const Layout: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Login Dialog */}
+      <dialog id="login-modal" className="modal modal-middle sm:modal-middle rounded-lg shadow-lg p-6 backdrop:bg-black/50 backdrop:backdrop-blur-sm">
+        <div className="max-w-md mx-auto p-4">
+          <LoginForm onLoginSuccess={(user) => {
+            login(user);
+            document.getElementById('login-modal')?.close();
+          }} />
+        </div>
+      </dialog>
     </div>
   );
 };
