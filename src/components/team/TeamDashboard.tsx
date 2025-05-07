@@ -26,7 +26,7 @@ interface TeamDashboardProps {
     id: number;
     username: string;
     role: string;
-    teamId: number;
+    teamId?: number;
   };
   teamData: {
     id: number;
@@ -191,7 +191,7 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
 
         {teamData.permissions.players && (
           <TabsContent value="players" className="space-y-4 mt-4">
-            <PlayersList teamId={user.teamId} teamName={teamData.name} />
+            <PlayersList teamId={user.teamId || 0} teamName={teamData.name} />
           </TabsContent>
         )}
       </Tabs>
