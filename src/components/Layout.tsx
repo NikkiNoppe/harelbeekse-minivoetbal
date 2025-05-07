@@ -13,6 +13,7 @@ import LoginForm from "@/components/auth/LoginForm";
 import UserAccount from "@/components/auth/UserAccount";
 import AdminPanel from "@/components/admin/AdminPanel";
 import TeamDashboard from "@/components/team/TeamDashboard";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 // Mock teams data for permissions check
 const MOCK_TEAMS = [
@@ -25,6 +26,7 @@ const MOCK_TEAMS = [
 const Layout: React.FC = () => {
   const isMobile = useIsMobile();
   const { user, login, logout, isAuthenticated } = useAuth();
+  const [loginDialogOpen, setLoginDialogOpen] = React.useState(false);
   
   // Find team data if user is a team role
   const teamData = user?.teamId ? MOCK_TEAMS.find(team => team.id === user.teamId) : null;
@@ -88,7 +90,7 @@ const Layout: React.FC = () => {
               <>
                 <button 
                   className="bg-white text-soccer-green px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium"
-                  onClick={() => document.getElementById('login-modal')?.showModal()}
+                  onClick={() => setLoginDialogOpen(true)}
                 >
                   Inloggen
                 </button>
@@ -105,7 +107,7 @@ const Layout: React.FC = () => {
             {user.role === "admin" ? (
               <AdminPanel />
             ) : (
-              teamData && (
+              user.teamId && teamData && (
                 <TeamDashboard user={user} teamData={teamData} />
               )
             )}
@@ -156,15 +158,15 @@ const Layout: React.FC = () => {
         </div>
       </footer>
 
-      {/* Login Dialog */}
-      <dialog id="login-modal" className="modal modal-middle sm:modal-middle rounded-lg shadow-lg p-6 backdrop:bg-black/50 backdrop:backdrop-blur-sm">
-        <div className="max-w-md mx-auto p-4">
+      {/* Login Dialog - Using shadcn/ui Dialog instead of HTML dialog */}
+      <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
+        <DialogContent className="sm:max-w-md">
           <LoginForm onLoginSuccess={(user) => {
             login(user);
-            document.getElementById('login-modal')?.close();
+            setLoginDialogOpen(false);
           }} />
-        </div>
-      </dialog>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

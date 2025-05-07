@@ -5,7 +5,7 @@ interface User {
   id: number;
   username: string;
   role: string;
-  teamId?: number;
+  teamId?: number; // Optional since admin users don't have a teamId
 }
 
 interface AuthContextType {
