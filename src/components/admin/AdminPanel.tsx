@@ -32,21 +32,20 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, AlertTriangle } from "lucide-react";
+import { MOCK_TEAMS } from "../Layout";
 
-// Updated Team interface to use email instead of permissions object
+// Updated Team interface to include competition data
 interface Team {
   id: number;
   name: string;
   email: string;
+  played?: number;
+  won?: number;
+  draw?: number;
+  lost?: number;
+  goalDiff?: number;
+  points?: number;
 }
-
-// Initial teams data with email instead of permissions
-const initialTeams = [
-  { id: 1, name: "FC De Kampioenen", email: "kampioenen@example.com" },
-  { id: 2, name: "Bavo United", email: "bavo@example.com" },
-  { id: 3, name: "Zandberg Boys", email: "zandberg@example.com" },
-  { id: 4, name: "Sportclub Veldhoven", email: "veldhoven@example.com" },
-];
 
 // Initial users data
 const initialUsers = [
@@ -59,14 +58,14 @@ const initialUsers = [
 const isCompetitionActive = true;
 
 const AdminPanel: React.FC = () => {
-  const [teams, setTeams] = useState<Team[]>(initialTeams);
+  const [teams, setTeams] = useState<Team[]>(MOCK_TEAMS);
   const [users, setUsers] = useState(initialUsers);
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<number | null>(null);
-  const [editingTeam, setEditingTeam] = useState<{ id: number, name: string, email: string } | null>(null);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const { toast } = useToast();
 
   const handleAddUser = () => {
@@ -131,7 +130,17 @@ const AdminPanel: React.FC = () => {
       // Update existing team
       setTeams(teams.map(team => 
         team.id === editingTeam.id 
-          ? { ...team, name } 
+          ? { 
+              ...team, 
+              name,
+              // Maintain existing competition data if present
+              played: team.played || 0,
+              won: team.won || 0,
+              draw: team.draw || 0,
+              lost: team.lost || 0,
+              goalDiff: team.goalDiff || 0,
+              points: team.points || 0
+            } 
           : team
       ));
       
@@ -142,11 +151,17 @@ const AdminPanel: React.FC = () => {
       
       setEditingTeam(null);
     } else {
-      // Add new team with empty email
+      // Add new team with default competition values
       const newTeam = {
         id: teams.length + 1,
         name,
         email: "",
+        played: 0,
+        won: 0,
+        draw: 0,
+        lost: 0,
+        goalDiff: 0,
+        points: 0
       };
       
       setTeams([...teams, newTeam]);

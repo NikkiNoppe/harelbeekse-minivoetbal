@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Award, FileText, Trophy, Ban } from "lucide-react";
@@ -13,29 +14,42 @@ import UserAccount from "@/components/auth/UserAccount";
 import AdminPanel from "@/components/admin/AdminPanel";
 import TeamDashboard from "@/components/team/TeamDashboard";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Link, useNavigate } from "react-router-dom";
 
-// Updated mock teams data with email instead of permissions
-const MOCK_TEAMS = [
-  { id: 1, name: "FC De Kampioenen", email: "kampioenen@example.com" },
-  { id: 2, name: "Bavo United", email: "bavo@example.com" },
-  { id: 3, name: "Zandberg Boys", email: "zandberg@example.com" },
-  { id: 4, name: "Sportclub Veldhoven", email: "veldhoven@example.com" },
+// Updated mock teams data with email and competition data
+export const MOCK_TEAMS = [
+  { id: 1, name: "FC De Kampioenen", email: "kampioenen@example.com", played: 10, won: 8, draw: 1, lost: 1, goalDiff: 15, points: 25 },
+  { id: 2, name: "Bavo United", email: "bavo@example.com", played: 10, won: 7, draw: 2, lost: 1, goalDiff: 12, points: 23 },
+  { id: 3, name: "Zandberg Boys", email: "zandberg@example.com", played: 10, won: 6, draw: 2, lost: 2, goalDiff: 8, points: 20 },
+  { id: 4, name: "Sportclub Veldhoven", email: "veldhoven@example.com", played: 10, won: 5, draw: 3, lost: 2, goalDiff: 6, points: 18 },
 ];
 
 const Layout: React.FC = () => {
   const isMobile = useIsMobile();
   const { user, login, logout, isAuthenticated } = useAuth();
   const [loginDialogOpen, setLoginDialogOpen] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState("competitie");
+  const navigate = useNavigate();
   
   // Find team data if user is a team role
   const teamData = user?.teamId ? MOCK_TEAMS.find(team => team.id === user.teamId) : null;
   
+  const handleLogoClick = () => {
+    setActiveTab("competitie");
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="w-full bg-soccer-green py-4 px-6 shadow-md soccer-pattern">
         <div className="container flex justify-between items-center">
-          <div className="flex items-center gap-3">
+          <div 
+            className="flex items-center gap-3 cursor-pointer" 
+            onClick={handleLogoClick}
+            role="button"
+            aria-label="Go to home page"
+          >
             <div className="h-12 w-12 bg-white rounded-full flex items-center justify-center shadow-md">
               <svg
                 className="h-8 w-8 text-soccer-green"
@@ -112,7 +126,7 @@ const Layout: React.FC = () => {
             )}
           </>
         ) : (
-          <Tabs defaultValue="competitie" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="w-full flex mb-8 bg-muted/50 p-1 overflow-x-auto">
               <TabItem value="competitie" icon={<Award />} label="Competitie" />
               <TabItem value="beker" icon={<Trophy />} label="Beker" />
@@ -120,7 +134,7 @@ const Layout: React.FC = () => {
               <TabItem value="reglement" icon={<FileText />} label="Reglement" />
             </TabsList>
             <div className="animate-fade-in">
-              <TabsContent value="competitie"><CompetitionTab /></TabsContent>
+              <TabsContent value="competitie"><CompetitionTab teams={MOCK_TEAMS} /></TabsContent>
               <TabsContent value="beker"><CupTab /></TabsContent>
               <TabsContent value="schorsingen"><SuspensionsTab /></TabsContent>
               <TabsContent value="reglement"><RegulationsTab /></TabsContent>

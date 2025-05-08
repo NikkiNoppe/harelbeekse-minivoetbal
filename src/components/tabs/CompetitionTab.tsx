@@ -4,25 +4,61 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
-const CompetitionTab: React.FC = () => {
-  const teams = [
-    { position: 1, name: "FC Oranje", played: 10, won: 8, draw: 1, lost: 1, goalDiff: 15, points: 25 },
-    { position: 2, name: "Groene Sterren", played: 10, won: 7, draw: 2, lost: 1, goalDiff: 12, points: 23 },
-    { position: 3, name: "SC Blauw", played: 10, won: 6, draw: 2, lost: 2, goalDiff: 8, points: 20 },
-    { position: 4, name: "VSV Rood-Wit", played: 10, won: 5, draw: 3, lost: 2, goalDiff: 6, points: 18 },
-    { position: 5, name: "De Leeuwen", played: 10, won: 4, draw: 4, lost: 2, goalDiff: 4, points: 16 },
-    { position: 6, name: "Sporting Lokaal", played: 10, won: 4, draw: 2, lost: 4, goalDiff: 0, points: 14 },
-    { position: 7, name: "FC United", played: 10, won: 3, draw: 3, lost: 4, goalDiff: -2, points: 12 },
-    { position: 8, name: "Real Dorpstraat", played: 10, won: 3, draw: 2, lost: 5, goalDiff: -3, points: 11 },
-    { position: 9, name: "SV Victorie", played: 10, won: 3, draw: 1, lost: 6, goalDiff: -5, points: 10 },
-    { position: 10, name: "FC Delta", played: 10, won: 2, draw: 3, lost: 5, goalDiff: -4, points: 9 },
-    { position: 11, name: "Atletico Dorp", played: 10, won: 2, draw: 3, lost: 5, goalDiff: -6, points: 9 },
-    { position: 12, name: "VV Westerwijk", played: 10, won: 2, draw: 2, lost: 6, goalDiff: -7, points: 8 },
-    { position: 13, name: "Sparta Oost", played: 10, won: 2, draw: 2, lost: 6, goalDiff: -8, points: 8 },
-    { position: 14, name: "Dynamo 86", played: 10, won: 2, draw: 1, lost: 7, goalDiff: -9, points: 7 },
-    { position: 15, name: "SC Zuidhoek", played: 10, won: 1, draw: 3, lost: 6, goalDiff: -10, points: 6 },
-    { position: 16, name: "Inter Dorpsveld", played: 10, won: 1, draw: 2, lost: 7, goalDiff: -12, points: 5 },
+// Add props type to accept teams data
+interface CompetitionTabProps {
+  teams?: Array<{
+    id: number;
+    name: string;
+    email: string;
+    played: number;
+    won: number;
+    draw: number;
+    lost: number;
+    goalDiff: number;
+    points: number;
+  }>;
+}
+
+const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams = [] }) => {
+  // If no teams are provided, use fallback data
+  const competitionTeams = teams.length > 0 ? teams : [
+    { id: 1, name: "FC Oranje", played: 10, won: 8, draw: 1, lost: 1, goalDiff: 15, points: 25 },
+    { id: 2, name: "Groene Sterren", played: 10, won: 7, draw: 2, lost: 1, goalDiff: 12, points: 23 },
+    { id: 3, name: "SC Blauw", played: 10, won: 6, draw: 2, lost: 2, goalDiff: 8, points: 20 },
+    { id: 4, name: "VSV Rood-Wit", played: 10, won: 5, draw: 3, lost: 2, goalDiff: 6, points: 18 },
+    { id: 5, name: "De Leeuwen", played: 10, won: 4, draw: 4, lost: 2, goalDiff: 4, points: 16 },
+    { id: 6, name: "Sporting Lokaal", played: 10, won: 4, draw: 2, lost: 4, goalDiff: 0, points: 14 },
+    { id: 7, name: "FC United", played: 10, won: 3, draw: 3, lost: 4, goalDiff: -2, points: 12 },
+    { id: 8, name: "Real Dorpstraat", played: 10, won: 3, draw: 2, lost: 5, goalDiff: -3, points: 11 },
+    { id: 9, name: "SV Victorie", played: 10, won: 3, draw: 1, lost: 6, goalDiff: -5, points: 10 },
+    { id: 10, name: "FC Delta", played: 10, won: 2, draw: 3, lost: 5, goalDiff: -4, points: 9 },
+    { id: 11, name: "Atletico Dorp", played: 10, won: 2, draw: 3, lost: 5, goalDiff: -6, points: 9 },
+    { id: 12, name: "VV Westerwijk", played: 10, won: 2, draw: 2, lost: 6, goalDiff: -7, points: 8 },
+    { id: 13, name: "Sparta Oost", played: 10, won: 2, draw: 2, lost: 6, goalDiff: -8, points: 8 },
+    { id: 14, name: "Dynamo 86", played: 10, won: 2, draw: 1, lost: 7, goalDiff: -9, points: 7 },
+    { id: 15, name: "SC Zuidhoek", played: 10, won: 1, draw: 3, lost: 6, goalDiff: -10, points: 6 },
+    { id: 16, name: "Inter Dorpsveld", played: 10, won: 1, draw: 2, lost: 7, goalDiff: -12, points: 5 },
   ];
+
+  // Sort teams by points (highest first)
+  const sortedTeams = [...competitionTeams].sort((a, b) => {
+    // First by points
+    if (b.points !== a.points) {
+      return b.points - a.points;
+    }
+    // Then by goal difference
+    if (b.goalDiff !== a.goalDiff) {
+      return b.goalDiff - a.goalDiff;
+    }
+    // Then by goals scored (won as a proxy for goals scored)
+    return b.won - a.won;
+  });
+
+  // Add positions based on sorted order
+  const teamsWithPositions = sortedTeams.map((team, index) => ({
+    ...team,
+    position: index + 1
+  }));
 
   const upcomingMatches = [
     { matchday: "Speeldag 11", date: "24 mei", time: "19:30", home: "FC Oranje", away: "De Leeuwen", location: "Sportpark Zuid" },
@@ -56,8 +92,8 @@ const CompetitionTab: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {teams.map((team) => (
-                    <TableRow key={team.name} className="hover:bg-muted/30">
+                  {teamsWithPositions.map((team) => (
+                    <TableRow key={team.id || team.name} className="hover:bg-muted/30">
                       <TableCell className="font-medium">{team.position}</TableCell>
                       <TableCell>{team.name}</TableCell>
                       <TableCell className="text-center">{team.played}</TableCell>
