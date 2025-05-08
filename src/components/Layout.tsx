@@ -130,7 +130,7 @@ const Layout: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <h3 className="font-semibold text-white mb-3">Harelbeekse Minivoetbal Competitie</h3>
-              <p className="text-sm">De beste lokale voetbalcompetitie in de regio sinds 1985.</p>
+              <p className="text-sm">Minivoetbalcompetitie in sinds 1985.</p>
             </div>
             <div>
               <h3 className="font-semibold text-white mb-3">Contact</h3>
