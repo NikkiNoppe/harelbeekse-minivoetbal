@@ -20,25 +20,8 @@ interface CompetitionTabProps {
 }
 
 const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams = [] }) => {
-  // If no teams are provided, use fallback data
-  const competitionTeams = teams.length > 0 ? teams : [
-    { id: 1, name: "FC Oranje", played: 10, won: 8, draw: 1, lost: 1, goalDiff: 15, points: 25 },
-    { id: 2, name: "Groene Sterren", played: 10, won: 7, draw: 2, lost: 1, goalDiff: 12, points: 23 },
-    { id: 3, name: "SC Blauw", played: 10, won: 6, draw: 2, lost: 2, goalDiff: 8, points: 20 },
-    { id: 4, name: "VSV Rood-Wit", played: 10, won: 5, draw: 3, lost: 2, goalDiff: 6, points: 18 },
-    { id: 5, name: "De Leeuwen", played: 10, won: 4, draw: 4, lost: 2, goalDiff: 4, points: 16 },
-    { id: 6, name: "Sporting Lokaal", played: 10, won: 4, draw: 2, lost: 4, goalDiff: 0, points: 14 },
-    { id: 7, name: "FC United", played: 10, won: 3, draw: 3, lost: 4, goalDiff: -2, points: 12 },
-    { id: 8, name: "Real Dorpstraat", played: 10, won: 3, draw: 2, lost: 5, goalDiff: -3, points: 11 },
-    { id: 9, name: "SV Victorie", played: 10, won: 3, draw: 1, lost: 6, goalDiff: -5, points: 10 },
-    { id: 10, name: "FC Delta", played: 10, won: 2, draw: 3, lost: 5, goalDiff: -4, points: 9 },
-    { id: 11, name: "Atletico Dorp", played: 10, won: 2, draw: 3, lost: 5, goalDiff: -6, points: 9 },
-    { id: 12, name: "VV Westerwijk", played: 10, won: 2, draw: 2, lost: 6, goalDiff: -7, points: 8 },
-    { id: 13, name: "Sparta Oost", played: 10, won: 2, draw: 2, lost: 6, goalDiff: -8, points: 8 },
-    { id: 14, name: "Dynamo 86", played: 10, won: 2, draw: 1, lost: 7, goalDiff: -9, points: 7 },
-    { id: 15, name: "SC Zuidhoek", played: 10, won: 1, draw: 3, lost: 6, goalDiff: -10, points: 6 },
-    { id: 16, name: "Inter Dorpsveld", played: 10, won: 1, draw: 2, lost: 7, goalDiff: -12, points: 5 },
-  ];
+  // Use the teams provided through props (from Layout's MOCK_TEAMS)
+  const competitionTeams = teams.length > 0 ? teams : [];
 
   // Sort teams by points (highest first)
   const sortedTeams = [...competitionTeams].sort((a, b) => {
@@ -61,14 +44,12 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams = [] }) => {
   }));
 
   const upcomingMatches = [
-    { matchday: "Speeldag 11", date: "24 mei", time: "19:30", home: "FC Oranje", away: "De Leeuwen", location: "Sportpark Zuid" },
-    { matchday: "Speeldag 11", date: "24 mei", time: "20:00", home: "SC Blauw", away: "Sporting Lokaal", location: "Sportpark Oost" },
-    { matchday: "Speeldag 11", date: "25 mei", time: "14:00", home: "Groene Sterren", away: "VSV Rood-Wit", location: "Sportpark Noord" },
-    { matchday: "Speeldag 11", date: "25 mei", time: "16:30", home: "Real Dorpstraat", away: "FC United", location: "Sportpark West" },
-    { matchday: "Speeldag 12", date: "31 mei", time: "19:30", home: "SV Victorie", away: "FC Delta", location: "Sportpark Zuid" },
-    { matchday: "Speeldag 12", date: "31 mei", time: "20:00", home: "Atletico Dorp", away: "VV Westerwijk", location: "Sportpark Oost" },
-    { matchday: "Speeldag 12", date: "1 juni", time: "14:00", home: "Sparta Oost", away: "Dynamo 86", location: "Sportpark Noord" },
-    { matchday: "Speeldag 12", date: "1 juni", time: "16:30", home: "SC Zuidhoek", away: "Inter Dorpsveld", location: "Sportpark West" },
+    { matchday: "Speeldag 11", date: "24 mei", time: "19:30", home: "Garage Verbeke", away: "De Florre", location: "Sportpark Zuid" },
+    { matchday: "Speeldag 11", date: "24 mei", time: "20:00", home: "De Dageraad", away: "Bemarmi Boys", location: "Sportpark Oost" },
+    { matchday: "Speeldag 11", date: "25 mei", time: "14:00", home: "Shakthar Truu", away: "Cafe De Gilde", location: "Sportpark Noord" },
+    { matchday: "Speeldag 12", date: "31 mei", time: "19:30", home: "De Florre", away: "Bemarmi Boys", location: "Sportpark Zuid" },
+    { matchday: "Speeldag 12", date: "31 mei", time: "20:00", home: "De Dageraad", away: "Cafe De Gilde", location: "Sportpark Oost" },
+    { matchday: "Speeldag 12", date: "1 juni", time: "14:00", home: "Garage Verbeke", away: "Shakthar Truu", location: "Sportpark Noord" },
   ];
 
   return (
@@ -153,9 +134,9 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams = [] }) => {
             </CardHeader>
             <CardContent>
               <div className="flex justify-between items-center py-2">
-                <div className="font-medium text-left flex-1">FC Oranje</div>
-                <div className="px-4 py-1 bg-muted rounded-lg font-bold">2 - 0</div>
-                <div className="font-medium text-right flex-1">SC Blauw</div>
+                <div className="font-medium text-left flex-1">De Dageraad</div>
+                <div className="px-4 py-1 bg-muted rounded-lg font-bold">2 - 10</div>
+                <div className="font-medium text-right flex-1">Cafe De Gilde</div>
               </div>
             </CardContent>
           </Card>
@@ -172,9 +153,9 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams = [] }) => {
             </CardHeader>
             <CardContent>
               <div className="flex justify-between items-center py-2">
-                <div className="font-medium text-left flex-1">VSV Rood-Wit</div>
-                <div className="px-4 py-1 bg-muted rounded-lg font-bold">1 - 1</div>
-                <div className="font-medium text-right flex-1">Groene Sterren</div>
+                <div className="font-medium text-left flex-1">De Florre</div>
+                <div className="px-4 py-1 bg-muted rounded-lg font-bold">7 - 5</div>
+                <div className="font-medium text-right flex-1">Bemarmi Boys</div>
               </div>
             </CardContent>
           </Card>
@@ -191,28 +172,9 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams = [] }) => {
             </CardHeader>
             <CardContent>
               <div className="flex justify-between items-center py-2">
-                <div className="font-medium text-left flex-1">De Leeuwen</div>
+                <div className="font-medium text-left flex-1">Garage Verbeke</div>
                 <div className="px-4 py-1 bg-muted rounded-lg font-bold">3 - 1</div>
-                <div className="font-medium text-right flex-1">FC United</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="card-hover">
-            <CardHeader className="pb-2">
-              <Badge variant="outline" className="w-fit mb-1 bg-soccer-green/10 border-soccer-green/20 text-soccer-green">
-                Speeldag 10
-              </Badge>
-              <CardTitle className="flex justify-between items-center text-lg">
-                <span>18 mei</span>
-              </CardTitle>
-              <CardDescription>Sportpark West</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center py-2">
-                <div className="font-medium text-left flex-1">Sporting Lokaal</div>
-                <div className="px-4 py-1 bg-muted rounded-lg font-bold">2 - 2</div>
-                <div className="font-medium text-right flex-1">Real Dorpstraat</div>
+                <div className="font-medium text-right flex-1">Shakthar Truu</div>
               </div>
             </CardContent>
           </Card>

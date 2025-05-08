@@ -15,11 +15,11 @@ import TeamDashboard from "@/components/team/TeamDashboard";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Link, useNavigate } from "react-router-dom";
 
-// Updated mock teams data with email and competition data
+// Updated mock teams data with new team names
 export const MOCK_TEAMS = [{
   id: 1,
-  name: "FC De Kampioenen",
-  email: "kampioenen@example.com",
+  name: "Garage Verbeke",
+  email: "garage.verbeke@example.com",
   played: 10,
   won: 8,
   draw: 1,
@@ -28,8 +28,8 @@ export const MOCK_TEAMS = [{
   points: 25
 }, {
   id: 2,
-  name: "Bavo United",
-  email: "bavo@example.com",
+  name: "Shakthar Truu",
+  email: "shakthar.truu@example.com",
   played: 10,
   won: 7,
   draw: 2,
@@ -38,8 +38,8 @@ export const MOCK_TEAMS = [{
   points: 23
 }, {
   id: 3,
-  name: "Zandberg Boys",
-  email: "zandberg@example.com",
+  name: "De Dageraad",
+  email: "dageraad@example.com",
   played: 10,
   won: 6,
   draw: 2,
@@ -48,15 +48,36 @@ export const MOCK_TEAMS = [{
   points: 20
 }, {
   id: 4,
-  name: "Sportclub Veldhoven",
-  email: "veldhoven@example.com",
+  name: "Cafe De Gilde",
+  email: "cafe.degilde@example.com",
   played: 10,
   won: 5,
   draw: 3,
   lost: 2,
   goalDiff: 6,
   points: 18
+}, {
+  id: 5,
+  name: "De Florre",
+  email: "deflorre@example.com",
+  played: 10,
+  won: 4,
+  draw: 4,
+  lost: 2,
+  goalDiff: 4,
+  points: 16
+}, {
+  id: 6,
+  name: "Bemarmi Boys",
+  email: "bemarmi.boys@example.com",
+  played: 10,
+  won: 4,
+  draw: 2,
+  lost: 4,
+  goalDiff: 0,
+  points: 14
 }];
+
 const Layout: React.FC = () => {
   const isMobile = useIsMobile();
   const {
