@@ -58,7 +58,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams = [] }) => {
         <h2 className="text-2xl font-semibold mb-4">Competitiestand</h2>
         <Card>
           <CardContent className="p-0 overflow-x-auto">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-3xl mx-auto px-4">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
