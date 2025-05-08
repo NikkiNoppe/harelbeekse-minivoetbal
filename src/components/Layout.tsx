@@ -129,7 +129,7 @@ const Layout: React.FC = () => {
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <h3 className="font-semibold text-white mb-3">Voetbal Arena</h3>
+              <h3 className="font-semibold text-white mb-3">Harelbeekse Minivoetbal Competitie</h3>
               <p className="text-sm">De beste lokale voetbalcompetitie in de regio sinds 1985.</p>
             </div>
             <div>
