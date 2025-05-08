@@ -31,10 +31,7 @@ interface TeamDashboardProps {
   teamData: {
     id: number;
     name: string;
-    permissions: {
-      scores: boolean;
-      players: boolean;
-    };
+    email: string;
   };
 }
 
@@ -50,6 +47,11 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
   const [homeScore, setHomeScore] = useState("");
   const [awayScore, setAwayScore] = useState("");
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
+  
+  // Both capabilities are now always allowed since we've removed specific permissions
+  // Teams with an email have both match score and player management capabilities
+  const canManageScores = !!teamData.email;
+  const canManagePlayers = !!teamData.email;
 
   const handleScoreSubmit = () => {
     if (!selectedMatchId || !homeScore || !awayScore) {
@@ -89,15 +91,15 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
 
       <Tabs defaultValue="matches">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="matches" disabled={!teamData.permissions.scores}>
+          <TabsTrigger value="matches" disabled={!canManageScores}>
             Wedstrijden
           </TabsTrigger>
-          <TabsTrigger value="players" disabled={!teamData.permissions.players}>
+          <TabsTrigger value="players" disabled={!canManagePlayers}>
             Spelerslijst
           </TabsTrigger>
         </TabsList>
 
-        {teamData.permissions.scores && (
+        {canManageScores && (
           <TabsContent value="matches" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
@@ -189,9 +191,13 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
           </TabsContent>
         )}
 
-        {teamData.permissions.players && (
+        {canManagePlayers && (
           <TabsContent value="players" className="space-y-4 mt-4">
-            <PlayersList teamId={user.teamId || 0} teamName={teamData.name} />
+            <PlayersList 
+              teamId={user.teamId || 0} 
+              teamName={teamData.name} 
+              teamEmail={teamData.email} 
+            />
           </TabsContent>
         )}
       </Tabs>

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Award, FileText, Trophy, Ban } from "lucide-react";
@@ -15,12 +14,12 @@ import AdminPanel from "@/components/admin/AdminPanel";
 import TeamDashboard from "@/components/team/TeamDashboard";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
-// Mock teams data for permissions check
+// Updated mock teams data with email instead of permissions
 const MOCK_TEAMS = [
-  { id: 1, name: "FC De Kampioenen", permissions: { scores: true, players: true } },
-  { id: 2, name: "Bavo United", permissions: { scores: true, players: true } },
-  { id: 3, name: "Zandberg Boys", permissions: { scores: true, players: false } },
-  { id: 4, name: "Sportclub Veldhoven", permissions: { scores: false, players: true } },
+  { id: 1, name: "FC De Kampioenen", email: "kampioenen@example.com" },
+  { id: 2, name: "Bavo United", email: "bavo@example.com" },
+  { id: 3, name: "Zandberg Boys", email: "zandberg@example.com" },
+  { id: 4, name: "Sportclub Veldhoven", email: "veldhoven@example.com" },
 ];
 
 const Layout: React.FC = () => {
@@ -158,7 +157,7 @@ const Layout: React.FC = () => {
         </div>
       </footer>
 
-      {/* Login Dialog - Using shadcn/ui Dialog instead of HTML dialog */}
+      {/* Login Dialog */}
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <LoginForm onLoginSuccess={(user) => {

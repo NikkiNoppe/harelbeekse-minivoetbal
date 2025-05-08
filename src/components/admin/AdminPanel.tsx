@@ -20,7 +20,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
 import TeamForm from "./TeamForm";
 import { 
   AlertDialog,
@@ -34,12 +33,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, AlertTriangle } from "lucide-react";
 
-// Initial teams data
+// Updated Team interface to use email instead of permissions object
+interface Team {
+  id: number;
+  name: string;
+  email: string;
+}
+
+// Initial teams data with email instead of permissions
 const initialTeams = [
-  { id: 1, name: "FC De Kampioenen", permissions: { scores: true, players: true } },
-  { id: 2, name: "Bavo United", permissions: { scores: true, players: true } },
-  { id: 3, name: "Zandberg Boys", permissions: { scores: true, players: false } },
-  { id: 4, name: "Sportclub Veldhoven", permissions: { scores: false, players: true } },
+  { id: 1, name: "FC De Kampioenen", email: "kampioenen@example.com" },
+  { id: 2, name: "Bavo United", email: "bavo@example.com" },
+  { id: 3, name: "Zandberg Boys", email: "zandberg@example.com" },
+  { id: 4, name: "Sportclub Veldhoven", email: "veldhoven@example.com" },
 ];
 
 // Initial users data
@@ -53,14 +59,14 @@ const initialUsers = [
 const isCompetitionActive = true;
 
 const AdminPanel: React.FC = () => {
-  const [teams, setTeams] = useState(initialTeams);
+  const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [users, setUsers] = useState(initialUsers);
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<number | null>(null);
-  const [editingTeam, setEditingTeam] = useState<{ id: number, name: string } | null>(null);
+  const [editingTeam, setEditingTeam] = useState<{ id: number, name: string, email: string } | null>(null);
   const { toast } = useToast();
 
   const handleAddUser = () => {
@@ -92,16 +98,22 @@ const AdminPanel: React.FC = () => {
     });
   };
 
-  const togglePermission = (teamId: number, permissionType: "scores" | "players") => {
+  const handleUpdateTeamEmail = (teamId: number, email: string) => {
+    if (!email || !email.includes('@')) {
+      toast({
+        title: "Ongeldige email",
+        description: "Voer een geldig e-mailadres in",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setTeams(
       teams.map((team) => {
         if (team.id === teamId) {
           return {
             ...team,
-            permissions: {
-              ...team.permissions,
-              [permissionType]: !team.permissions[permissionType],
-            },
+            email,
           };
         }
         return team;
@@ -109,8 +121,8 @@ const AdminPanel: React.FC = () => {
     );
 
     toast({
-      title: "Rechten bijgewerkt",
-      description: `${permissionType === "scores" ? "Wedstrijdscores" : "Spelerslijst"} rechten bijgewerkt`,
+      title: "Email bijgewerkt",
+      description: `Team beheer email is bijgewerkt`,
     });
   };
 
@@ -130,11 +142,11 @@ const AdminPanel: React.FC = () => {
       
       setEditingTeam(null);
     } else {
-      // Add new team
+      // Add new team with empty email
       const newTeam = {
         id: teams.length + 1,
         name,
-        permissions: { scores: false, players: false },
+        email: "",
       };
       
       setTeams([...teams, newTeam]);
@@ -146,7 +158,7 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const handleEditTeam = (team: { id: number, name: string }) => {
+  const handleEditTeam = (team: Team) => {
     setEditingTeam(team);
   };
 
@@ -207,7 +219,7 @@ const AdminPanel: React.FC = () => {
             <CardHeader>
               <CardTitle>Teams</CardTitle>
               <CardDescription>
-                Beheer teams en hun machtigingen
+                Beheer teams en hun contact email voor spelerslijst
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -224,8 +236,7 @@ const AdminPanel: React.FC = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[200px]">Team naam</TableHead>
-                        <TableHead className="text-center">Wedstrijdscores invoeren</TableHead>
-                        <TableHead className="text-center">Spelerslijst beheren</TableHead>
+                        <TableHead>Beheer email</TableHead>
                         <TableHead className="text-center w-[150px]">Acties</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -233,24 +244,29 @@ const AdminPanel: React.FC = () => {
                       {teams.map((team) => (
                         <TableRow key={team.id}>
                           <TableCell className="font-medium">{team.name}</TableCell>
-                          <TableCell className="text-center">
-                            <Checkbox 
-                              checked={team.permissions.scores}
-                              onCheckedChange={() => togglePermission(team.id, "scores")}
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Checkbox 
-                              checked={team.permissions.players}
-                              onCheckedChange={() => togglePermission(team.id, "players")}
-                            />
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Input 
+                                value={team.email} 
+                                onChange={(e) => handleUpdateTeamEmail(team.id, e.target.value)}
+                                placeholder="team@example.com"
+                                className="max-w-xs"
+                              />
+                              <Button
+                                onClick={() => handleUpdateTeamEmail(team.id, team.email)}
+                                size="sm"
+                                variant="secondary"
+                              >
+                                Opslaan
+                              </Button>
+                            </div>
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex justify-center gap-2">
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
-                                onClick={() => handleEditTeam({ id: team.id, name: team.name })}
+                                onClick={() => handleEditTeam(team)}
                                 className="text-purple-500 hover:text-purple-700 hover:bg-purple-100"
                               >
                                 <Edit size={16} />
