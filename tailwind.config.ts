@@ -122,6 +122,10 @@ export default {
 			},
 			fontFamily: {
 				sans: ['Inter', 'system-ui', 'sans-serif'],
+			},
+			backgroundImage: {
+				'hero-pattern': "url('/lovable-uploads/66d4dd09-a686-469e-8291-023d7f58e56b.png')",
+				'grass-pattern': "linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)), url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"200\" height=\"200\" viewBox=\"0 0 200 200\"><path fill=\"%23096b30\" d=\"M0 0h200v200H0z\"/><path fill=\"%230a7b37\" d=\"M0 100h200v100H0z\"/></svg>')",
 			}
 		}
 	},
