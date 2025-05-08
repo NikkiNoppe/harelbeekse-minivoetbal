@@ -135,7 +135,7 @@ const Layout: React.FC = () => {
             <div>
               <h3 className="font-semibold text-white mb-3">Contact</h3>
               <p className="text-sm">info@minivoetbalharelbeke.be</p>
-              <p className="text-sm">+31 123 456 789</p>
+              <p className="text-sm">+34 468 15 52 16</p>
             </div>
             <div>
               <h3 className="font-semibold text-white mb-3">Volg Ons</h3>
