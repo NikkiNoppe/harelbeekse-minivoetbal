@@ -77,7 +77,6 @@ export const MOCK_TEAMS = [{
   goalDiff: 0,
   points: 14
 }];
-
 const Layout: React.FC = () => {
   const isMobile = useIsMobile();
   const {
@@ -98,7 +97,7 @@ const Layout: React.FC = () => {
   };
   return <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="w-full bg-soccer-green py-4 px-6 shadow-md soccer-pattern">
+      <header className="w-full py-4 px-6 shadow-md soccer-pattern bg-slate-950">
         <div className="container flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer" onClick={handleLogoClick} role="button" aria-label="Go to home page">
             <div className="h-12 w-12 bg-white rounded-full flex items-center justify-center shadow-md">
@@ -117,7 +116,7 @@ const Layout: React.FC = () => {
           
           <div className={cn("flex space-x-4", isMobile ? "flex" : "hidden md:flex")}>
             {isAuthenticated && user ? <UserAccount user={user} onLogout={logout} /> : <>
-                <button className="bg-white text-soccer-green px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium" onClick={() => setLoginDialogOpen(true)}>
+                <button onClick={() => setLoginDialogOpen(true)} className="px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-slate-950 bg-orange-600 hover:bg-orange-500">
                   Inloggen
                 </button>
               </>}
