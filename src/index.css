@@ -59,7 +59,6 @@
   }
 }
 
-/* Soccer website specific styles */
 .soccer-pattern {
   background-color: #0D9D57;
   background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
@@ -72,36 +71,6 @@
 .card-hover:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-}
-
-.dark-hero {
-  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)), url('/lovable-uploads/66d4dd09-a686-469e-8291-023d7f58e56b.png');
-  background-size: cover;
-  background-position: center;
-}
-
-.grass-pattern {
-  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)), url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><path fill="%23096b30" d="M0 0h200v200H0z"/><path fill="%230a7b37" d="M0 100h200v100H0z"/></svg>');
-}
-
-.soccer-footer {
-  background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95)), url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><path fill="%23096b30" d="M0 0h200v200H0z"/><path fill="%230a7b37" d="M0 100h200v100H0z"/></svg>');
-  background-size: cover;
-}
-
-.hero-text {
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.sponsor-logo {
-  filter: grayscale(100%);
-  opacity: 0.7;
-  transition: all 0.3s ease;
-}
-
-.sponsor-logo:hover {
-  filter: grayscale(0%);
-  opacity: 1;
 }
 
 /* Dialog/Modal Styles */
