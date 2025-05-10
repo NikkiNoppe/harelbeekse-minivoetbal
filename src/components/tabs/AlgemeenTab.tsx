@@ -1,35 +1,27 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
 const AlgemeenTab: React.FC = () => {
-  const newsItems = [
-    {
-      id: 1,
-      title: "Zoektocht naar hoofdsponsor 2025-2026",
-      date: "10 mei 2025",
-      content: "De Harelbeekse Minivoetbal Competitie is op zoek naar een nieuwe hoofdsponsor voor het komende seizoen. Geïnteresseerde bedrijven kunnen contact opnemen via info@minivoetbalharelbeke.be.",
-      category: "Sponsoring"
-    },
-    {
-      id: 2,
-      title: "Nieuwe scheidsrechters gezocht",
-      date: "5 mei 2025",
-      content: "Voor het komende seizoen zijn we op zoek naar nieuwe scheidsrechters. Ervaring is een plus, maar geen vereiste. Een opleiding wordt voorzien. Interesse? Neem contact op met de competitieleiding.",
-      category: "Scheidsrechters"
-    },
-    {
-      id: 3,
-      title: "Aankondiging jaarlijkse barbecue",
-      date: "1 mei 2025",
-      content: "De jaarlijkse barbecue zal plaatsvinden op 20 juli 2025. Alle spelers, sponsors en supporters zijn welkom. Meer info volgt binnenkort.",
-      category: "Evenement"
-    }
-  ];
-
-  return (
-    <div className="space-y-8 animate-slide-up">
+  const newsItems = [{
+    id: 1,
+    title: "Zoektocht naar hoofdsponsor 2025-2026",
+    date: "10 mei 2025",
+    content: "De Harelbeekse Minivoetbal Competitie is op zoek naar een nieuwe hoofdsponsor voor het komende seizoen. Geïnteresseerde bedrijven kunnen contact opnemen via info@minivoetbalharelbeke.be.",
+    category: "Sponsoring"
+  }, {
+    id: 2,
+    title: "Nieuwe scheidsrechters gezocht",
+    date: "5 mei 2025",
+    content: "Voor het komende seizoen zijn we op zoek naar nieuwe scheidsrechters. Ervaring is een plus, maar geen vereiste. Een opleiding wordt voorzien. Interesse? Neem contact op met de competitieleiding.",
+    category: "Scheidsrechters"
+  }, {
+    id: 3,
+    title: "Aankondiging jaarlijkse barbecue",
+    date: "1 mei 2025",
+    content: "De jaarlijkse barbecue zal plaatsvinden op 20 juli 2025. Alle spelers, sponsors en supporters zijn welkom. Meer info volgt binnenkort.",
+    category: "Evenement"
+  }];
+  return <div className="space-y-8 animate-slide-up">
       <section>
         <h2 className="text-2xl font-semibold mb-4">Over de Competitie</h2>
         <Card>
@@ -50,8 +42,7 @@ const AlgemeenTab: React.FC = () => {
       <section>
         <h2 className="text-2xl font-semibold mb-4">Laatste Nieuws</h2>
         <div className="space-y-4 max-w-3xl mx-auto">
-          {newsItems.map((item) => (
-            <Card key={item.id} className="card-hover">
+          {newsItems.map(item => <Card key={item.id} className="card-hover">
               <CardHeader>
                 <div className="flex justify-between items-start mb-2">
                   <Badge className="w-fit bg-soccer-green/10 border-soccer-green/20 text-soccer-green">
@@ -64,8 +55,7 @@ const AlgemeenTab: React.FC = () => {
               <CardContent>
                 <p>{item.content}</p>
               </CardContent>
-            </Card>
-          ))}
+            </Card>)}
         </div>
       </section>
 
@@ -76,7 +66,7 @@ const AlgemeenTab: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-lg font-medium mb-2">Competitieleiding</h3>
-                <p>Jan Vermeulen</p>
+                <p>Nikki Noppe</p>
                 <p>info@minivoetbalharelbeke.be</p>
                 <p>+32 468 15 52 16</p>
               </div>
@@ -90,8 +80,6 @@ const AlgemeenTab: React.FC = () => {
           </CardContent>
         </Card>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 export default AlgemeenTab;
