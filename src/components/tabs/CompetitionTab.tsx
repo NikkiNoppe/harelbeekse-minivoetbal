@@ -94,7 +94,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams = [] }) => {
 
       <section>
         <h2 className="text-2xl font-semibold mb-4">Aankomende Wedstrijden</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
           {upcomingMatches.map((match, index) => (
             <Card key={index} className="card-hover">
               <CardHeader className="pb-2">
@@ -121,7 +121,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams = [] }) => {
 
       <section>
         <h2 className="text-2xl font-semibold mb-4">Laatste Uitslagen</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
           <Card className="card-hover">
             <CardHeader className="pb-2">
               <Badge variant="outline" className="w-fit mb-1 bg-soccer-green/10 border-soccer-green/20 text-soccer-green">

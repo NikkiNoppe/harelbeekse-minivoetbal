@@ -65,10 +65,10 @@ export default {
 				},
 				// Soccer specific colors
 				soccer: {
-					green: '#0D9D57',
-					'dark-green': '#076B3B',
-					'light-green': '#44C379',
-					black: '#202020',
+					green: '#F97316', // Changed from green to orange
+					'dark-green': '#EA580C', // Dark orange
+					'light-green': '#FB923C', // Light orange
+					black: '#0F172A', // Dark slate
 					white: '#FFFFFF',
 					gray: '#E5E5E5',
 				},
