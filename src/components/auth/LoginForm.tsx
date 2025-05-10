@@ -35,6 +35,7 @@ const MOCK_USERS = [
   { id: 1, username: "admin", password: "admin123", role: "admin" },
   { id: 2, username: "team1", password: "team123", role: "team", teamId: 1 },
   { id: 3, username: "team2", password: "team123", role: "team", teamId: 2 },
+  { id: 4, username: "referee", password: "referee123", role: "referee" },
 ];
 
 interface LoginFormProps {
@@ -141,6 +142,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         <div className="flex items-center gap-1">
           <Shield size={14} />
           <span>Team: team1 / team123</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Shield size={14} />
+          <span>Scheidsrechter: referee / referee123</span>
         </div>
       </CardFooter>
     </Card>

@@ -4,8 +4,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 interface User {
   id: number;
   username: string;
-  role: string;
-  teamId?: number; // Optional since admin users don't have a teamId
+  role: string; // "admin", "team", or "referee"
+  teamId?: number; // Optional since admin and referee users don't have a teamId
 }
 
 interface AuthContextType {

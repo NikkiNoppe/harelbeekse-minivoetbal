@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Award, FileText, Trophy, Ban, Info, Layers } from "lucide-react";
@@ -13,8 +12,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/components/auth/AuthProvider";
 import LoginForm from "@/components/auth/LoginForm";
 import UserAccount from "@/components/auth/UserAccount";
-import AdminPanel from "@/components/admin/AdminPanel";
-import TeamDashboard from "@/components/team/TeamDashboard";
+import UserDashboard from "@/components/user/UserDashboard";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -129,9 +127,7 @@ const Layout: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 container py-6">
-        {isAuthenticated && user ? <>
-            {user.role === "admin" ? <AdminPanel /> : user.teamId && teamData && <TeamDashboard user={user} teamData={teamData} />}
-          </> : <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {isAuthenticated && user ? <UserDashboard /> : <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="w-full flex mb-8 bg-slate-800 p-1 overflow-x-auto">
               <TabItem value="algemeen" icon={<Info />} label="Algemeen" />
               <TabItem value="competitie" icon={<Award />} label="Competitie" />
