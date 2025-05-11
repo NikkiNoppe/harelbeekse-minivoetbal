@@ -9,33 +9,18 @@ import {
   CardContent
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, Plus, Trash2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { User } from "@/components/auth/AuthProvider"; // Import the User type
+import { Plus } from "lucide-react";
+import { User } from "@/components/auth/AuthProvider";
+import UserRow from "@/components/user/UserRow";
+import UserDialog from "@/components/user/UserDialog";
 
 const UsersTab: React.FC = () => {
   const { toast } = useToast();
@@ -43,80 +28,39 @@ const UsersTab: React.FC = () => {
   const [users, setUsers] = useState<User[]>(allUsers);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [newUser, setNewUser] = useState<{
-    username: string;
-    password: string;
-    role: "admin" | "team" | "referee";
-    teamId: number | undefined;
-  }>({
-    username: "",
-    password: "",
-    role: "team",
-    teamId: undefined
-  });
   
   // Handle opening edit dialog
   const handleEditUser = (user: User) => {
     setEditingUser(user);
-    setNewUser({
-      username: user.username,
-      password: "",  // Don't show existing password for security
-      role: user.role,
-      teamId: user.teamId
-    });
     setDialogOpen(true);
   };
   
   // Handle opening add dialog
   const handleAddNew = () => {
     setEditingUser(null);
-    setNewUser({
-      username: "",
-      password: "",
-      role: "team",
-      teamId: undefined
-    });
     setDialogOpen(true);
   };
   
   // Handle save user
-  const handleSaveUser = () => {
-    if (!newUser.username) {
-      toast({
-        title: "Gebruikersnaam ontbreekt",
-        description: "Vul een gebruikersnaam in",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!editingUser && !newUser.password) {
-      toast({
-        title: "Wachtwoord ontbreekt",
-        description: "Vul een wachtwoord in",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (editingUser) {
+  const handleSaveUser = (formData: any, currentEditingUser: User | null) => {
+    if (currentEditingUser) {
       // Update existing user
       const updatedUser: User = {
-        ...editingUser,
-        username: newUser.username,
-        ...(newUser.password ? { password: newUser.password } : {}),
-        role: newUser.role,
-        ...(newUser.role === "team" ? { teamId: newUser.teamId } : {})
+        ...currentEditingUser,
+        username: formData.username,
+        ...(formData.password ? { password: formData.password } : {}),
+        role: formData.role,
+        ...(formData.role === "team" ? { teamId: formData.teamId } : {})
       };
       
       updateUser(updatedUser);
       setUsers(allUsers.map(user => 
-        user.id === editingUser.id ? updatedUser : user
+        user.id === currentEditingUser.id ? updatedUser : user
       ));
       
       toast({
         title: "Gebruiker bijgewerkt",
-        description: `${newUser.username} is bijgewerkt`,
+        description: `${formData.username} is bijgewerkt`,
       });
     } else {
       // Add new user
@@ -124,10 +68,10 @@ const UsersTab: React.FC = () => {
       
       const userToAdd: User = {
         id: newId,
-        username: newUser.username,
-        password: newUser.password,
-        role: newUser.role,
-        ...(newUser.role === "team" && newUser.teamId ? { teamId: newUser.teamId } : {})
+        username: formData.username,
+        password: formData.password,
+        role: formData.role,
+        ...(formData.role === "team" && formData.teamId ? { teamId: formData.teamId } : {})
       };
       
       addUser(userToAdd);
@@ -135,11 +79,9 @@ const UsersTab: React.FC = () => {
       
       toast({
         title: "Gebruiker toegevoegd",
-        description: `${newUser.username} is toegevoegd`,
+        description: `${formData.username} is toegevoegd`,
       });
     }
-    
-    setDialogOpen(false);
   };
   
   // Handle delete user
@@ -183,121 +125,24 @@ const UsersTab: React.FC = () => {
             </TableHeader>
             <TableBody>
               {users.map(user => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.username}</TableCell>
-                  <TableCell>
-                    {user.role === "admin" && "Administrator"}
-                    {user.role === "team" && "Teamverantwoordelijke"}
-                    {user.role === "referee" && "Scheidsrechter"}
-                  </TableCell>
-                  <TableCell>
-                    {user.teamId ? `Team ${user.teamId}` : "-"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditUser(user)}
-                        className="text-purple-500 hover:text-purple-700 hover:bg-purple-100/10"
-                      >
-                        <Edit size={16} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteUser(user.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-100/10"
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <UserRow
+                  key={user.id}
+                  user={user}
+                  onEdit={handleEditUser}
+                  onDelete={handleDeleteUser}
+                />
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
       
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingUser ? "Gebruiker bewerken" : "Nieuwe gebruiker toevoegen"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingUser 
-                ? "Bewerk de gegevens van deze gebruiker" 
-                : "Voeg een nieuwe gebruiker toe aan het systeem"}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label>Gebruikersnaam</label>
-              <Input
-                value={newUser.username}
-                onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                placeholder="Gebruikersnaam"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label>Wachtwoord {editingUser && "(laat leeg om ongewijzigd te laten)"}</label>
-              <Input
-                type="password"
-                value={newUser.password}
-                onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                placeholder="Wachtwoord"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label>Rol</label>
-              <Select
-                value={newUser.role}
-                onValueChange={(value: "admin" | "team" | "referee") => 
-                  setNewUser({...newUser, role: value})
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecteer een rol" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Administrator</SelectItem>
-                  <SelectItem value="team">Teamverantwoordelijke</SelectItem>
-                  <SelectItem value="referee">Scheidsrechter</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {newUser.role === "team" && (
-              <div className="space-y-2">
-                <label>Team ID</label>
-                <Input
-                  type="number"
-                  value={newUser.teamId?.toString() || ""}
-                  onChange={(e) => setNewUser({
-                    ...newUser, 
-                    teamId: e.target.value ? parseInt(e.target.value) : undefined
-                  })}
-                  placeholder="Team ID"
-                />
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Annuleren
-            </Button>
-            <Button onClick={handleSaveUser}>
-              {editingUser ? "Bijwerken" : "Toevoegen"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <UserDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        editingUser={editingUser}
+        onSave={handleSaveUser}
+      />
     </div>
   );
 };
