@@ -1,30 +1,39 @@
+
 import React, { useState } from "react";
 import { 
   Card, 
   CardContent, 
-  CardDescription, 
   CardHeader, 
-  CardTitle 
+  CardTitle, 
+  CardDescription 
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Search, Calendar } from "lucide-react";
 
-// Update the match interface to include the missing properties
+interface Team {
+  id: number;
+  name: string;
+  played: number;
+  won: number;
+  draw: number;
+  lost: number;
+  goalDiff: number;
+  points: number;
+}
+
 interface Match {
   matchday: string;
   date: string;
@@ -32,280 +41,413 @@ interface Match {
   home: string;
   away: string;
   location: string;
-  isCompleted?: boolean; // Add the missing property
-  homeScore?: number; // Add the missing property
-  awayScore?: number; // Add the missing property
+  isCompleted?: boolean;
+  homeScore?: number;
+  awayScore?: number;
 }
 
-// Add props type to accept teams data
-interface CompetitionTabProps {
-  teams?: Array<{
-    id: number;
-    name: string;
-    email: string;
-    played: number;
-    won: number;
-    draw: number;
-    lost: number;
-    goalDiff: number;
-    points: number;
-  }>;
-}
+// Mock data for matches
+const upcomingMatches: Match[] = [
+  {
+    matchday: "Speeldag 11", 
+    date: "2025-05-15", 
+    time: "20:00", 
+    home: "Garage Verbeke", 
+    away: "Shakthar Truu", 
+    location: "Sporthal 1"
+  },
+  {
+    matchday: "Speeldag 11", 
+    date: "2025-05-15", 
+    time: "21:00", 
+    home: "De Dageraad", 
+    away: "Cafe De Gilde", 
+    location: "Sporthal 2"
+  },
+  {
+    matchday: "Speeldag 11", 
+    date: "2025-05-16", 
+    time: "20:00", 
+    home: "De Florre", 
+    away: "Bemarmi Boys", 
+    location: "Sporthal 1"
+  }
+];
 
-const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams = [] }) => {
-  // Use the teams provided through props (from Layout's MOCK_TEAMS)
-  const competitionTeams = teams.length > 0 ? teams : [];
-  const [selectedMatchday, setSelectedMatchday] = useState<string>("all");
-  const [selectedTeam, setSelectedTeam] = useState<string>("all");
+const pastMatches: Match[] = [
+  {
+    matchday: "Speeldag 10", 
+    date: "2025-05-08", 
+    time: "20:00", 
+    home: "Shakthar Truu", 
+    away: "De Florre", 
+    location: "Sporthal 1",
+    isCompleted: true,
+    homeScore: 3,
+    awayScore: 1
+  },
+  {
+    matchday: "Speeldag 10", 
+    date: "2025-05-08", 
+    time: "21:00", 
+    home: "Cafe De Gilde", 
+    away: "Garage Verbeke", 
+    location: "Sporthal 2",
+    isCompleted: true,
+    homeScore: 2,
+    awayScore: 2
+  },
+  {
+    matchday: "Speeldag 10", 
+    date: "2025-05-09", 
+    time: "20:00", 
+    home: "Bemarmi Boys", 
+    away: "De Dageraad", 
+    location: "Sporthal 1",
+    isCompleted: true,
+    homeScore: 1,
+    awayScore: 4
+  }
+];
 
-  // Sort teams by points (highest first)
-  const sortedTeams = [...competitionTeams].sort((a, b) => {
-    // First by points
-    if (b.points !== a.points) {
-      return b.points - a.points;
-    }
-    // Then by goal difference
-    if (b.goalDiff !== a.goalDiff) {
-      return b.goalDiff - a.goalDiff;
-    }
-    // Then by goals scored (won as a proxy for goals scored)
-    return b.won - a.won;
-  });
+// All matches - includes both past and upcoming
+const allMatches: Match[] = [
+  ...pastMatches,
+  ...upcomingMatches,
+  {
+    matchday: "Speeldag 9", 
+    date: "2025-05-01", 
+    time: "20:00", 
+    home: "De Dageraad", 
+    away: "Shakthar Truu", 
+    location: "Sporthal 1",
+    isCompleted: true,
+    homeScore: 2,
+    awayScore: 3
+  },
+  {
+    matchday: "Speeldag 9", 
+    date: "2025-05-01", 
+    time: "21:00", 
+    home: "Garage Verbeke", 
+    away: "Bemarmi Boys", 
+    location: "Sporthal 2",
+    isCompleted: true,
+    homeScore: 5,
+    awayScore: 0
+  },
+  {
+    matchday: "Speeldag 9", 
+    date: "2025-05-02", 
+    time: "20:00", 
+    home: "De Florre", 
+    away: "Cafe De Gilde", 
+    location: "Sporthal 1",
+    isCompleted: true,
+    homeScore: 3,
+    awayScore: 3
+  },
+  {
+    matchday: "Speeldag 12", 
+    date: "2025-05-22", 
+    time: "20:00", 
+    home: "Cafe De Gilde", 
+    away: "Shakthar Truu", 
+    location: "Sporthal 1"
+  },
+  {
+    matchday: "Speeldag 12", 
+    date: "2025-05-22", 
+    time: "21:00", 
+    home: "De Dageraad", 
+    away: "Garage Verbeke", 
+    location: "Sporthal 2"
+  }
+];
 
-  // Add positions based on sorted order
-  const teamsWithPositions = sortedTeams.map((team, index) => ({
-    ...team,
-    position: index + 1
-  }));
+const matchdays = [...new Set(allMatches.map(match => match.matchday))];
+const teamNames = [...new Set([
+  ...allMatches.map(match => match.home),
+  ...allMatches.map(match => match.away)
+])];
 
-  const upcomingMatches = [
-    { matchday: "Speeldag 11", date: "24 mei", time: "19:30", home: "Garage Verbeke", away: "De Florre", location: "Sportpark Zuid" },
-    { matchday: "Speeldag 11", date: "24 mei", time: "20:00", home: "De Dageraad", away: "Bemarmi Boys", location: "Sportpark Oost" },
-    { matchday: "Speeldag 11", date: "25 mei", time: "14:00", home: "Shakthar Truu", away: "Cafe De Gilde", location: "Sportpark Noord" },
-    { matchday: "Speeldag 12", date: "31 mei", time: "19:30", home: "De Florre", away: "Bemarmi Boys", location: "Sportpark Zuid" },
-    { matchday: "Speeldag 12", date: "31 mei", time: "20:00", home: "De Dageraad", away: "Cafe De Gilde", location: "Sportpark Oost" },
-    { matchday: "Speeldag 12", date: "1 juni", time: "14:00", home: "Garage Verbeke", away: "Shakthar Truu", location: "Sportpark Noord" },
-  ];
-
-  const recentMatches = [
-    { matchday: "Speeldag 10", date: "17 mei", time: "19:30", home: "De Dageraad", away: "Cafe De Gilde", homeScore: 2, awayScore: 10, location: "Sportpark Zuid" },
-    { matchday: "Speeldag 10", date: "17 mei", time: "20:00", home: "De Florre", away: "Bemarmi Boys", homeScore: 7, awayScore: 5, location: "Sportpark Oost" },
-    { matchday: "Speeldag 10", date: "18 mei", time: "14:00", home: "Garage Verbeke", away: "Shakthar Truu", homeScore: 3, awayScore: 1, location: "Sportpark Noord" }
-  ];
-
-  // Generate all matchdays for the schedule
-  const allMatchdays = Array.from({ length: 22 }, (_, i) => `Speeldag ${i + 1}`);
+const CompetitionTab: React.FC<{teams: Team[]}> = ({ teams }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedMatchday, setSelectedMatchday] = useState<string>("");
+  const [selectedTeam, setSelectedTeam] = useState<string>("");
   
-  // Combine all matches for the schedule
-  const allMatches = [
-    ...upcomingMatches,
-    // Add past matches from recentMatches but format them differently
-    ...recentMatches.map(match => ({
-      matchday: match.matchday,
-      date: match.date,
-      time: match.time,
-      home: match.home,
-      away: match.away,
-      location: match.location,
-      homeScore: match.homeScore,
-      awayScore: match.awayScore,
-      isCompleted: true
-    })),
-    // Add more sample matches for other matchdays
-    { matchday: "Speeldag 1", date: "15 sep", time: "19:30", home: "Garage Verbeke", away: "De Dageraad", homeScore: 4, awayScore: 2, location: "Sportpark Zuid", isCompleted: true },
-    { matchday: "Speeldag 1", date: "15 sep", time: "20:00", home: "Shakthar Truu", away: "De Florre", homeScore: 3, awayScore: 3, location: "Sportpark Oost", isCompleted: true },
-    { matchday: "Speeldag 1", date: "16 sep", time: "14:00", home: "Cafe De Gilde", away: "Bemarmi Boys", homeScore: 7, awayScore: 2, location: "Sportpark Noord", isCompleted: true },
-    { matchday: "Speeldag 13", date: "7 juni", time: "19:30", home: "Cafe De Gilde", away: "Garage Verbeke", location: "Sportpark Zuid" },
-    { matchday: "Speeldag 13", date: "7 juni", time: "20:00", home: "Bemarmi Boys", away: "Shakthar Truu", location: "Sportpark Oost" },
-    { matchday: "Speeldag 13", date: "8 juni", time: "14:00", home: "De Florre", away: "De Dageraad", location: "Sportpark Noord" }
-  ];
-  
-  // Filter matches based on selected filters
   const filteredMatches = allMatches.filter(match => {
-    const matchdayFilter = selectedMatchday === "all" || match.matchday === selectedMatchday;
-    const teamFilter = selectedTeam === "all" || match.home === selectedTeam || match.away === selectedTeam;
-    return matchdayFilter && teamFilter;
+    // Filter by matchday if selected
+    if (selectedMatchday && match.matchday !== selectedMatchday) {
+      return false;
+    }
+    
+    // Filter by team if selected
+    if (selectedTeam && match.home !== selectedTeam && match.away !== selectedTeam) {
+      return false;
+    }
+    
+    // Filter by search term
+    if (searchTerm) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      return (
+        match.home.toLowerCase().includes(lowerSearchTerm) ||
+        match.away.toLowerCase().includes(lowerSearchTerm) ||
+        match.location.toLowerCase().includes(lowerSearchTerm) ||
+        match.matchday.toLowerCase().includes(lowerSearchTerm)
+      );
+    }
+    
+    return true;
   });
-
+  
   return (
-    <div className="space-y-8 animate-slide-up">
-      <section>
-        <h2 className="text-2xl font-semibold mb-4">Competitiestand</h2>
-        <Card>
-          <CardContent className="p-0 overflow-x-auto">
-            <div className="max-w-3xl mx-auto px-4">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="w-12">Pos</TableHead>
-                    <TableHead>Team</TableHead>
-                    <TableHead className="text-center">GS</TableHead>
-                    <TableHead className="text-center">W</TableHead>
-                    <TableHead className="text-center">G</TableHead>
-                    <TableHead className="text-center">V</TableHead>
-                    <TableHead className="text-center">DV</TableHead>
-                    <TableHead className="text-center">Ptn</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {teamsWithPositions.map((team) => (
-                    <TableRow key={team.id || team.name} className="hover:bg-muted/30">
-                      <TableCell className="font-medium">{team.position}</TableCell>
+    <div className="space-y-6">
+      {/* Competitie Stand */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Competitiestand</CardTitle>
+          <CardDescription>Stand van de huidige competitie</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Positie</TableHead>
+                  <TableHead>Team</TableHead>
+                  <TableHead>GW</TableHead>
+                  <TableHead>W</TableHead>
+                  <TableHead>G</TableHead>
+                  <TableHead>V</TableHead>
+                  <TableHead>DV</TableHead>
+                  <TableHead>Punten</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {teams
+                  .sort((a, b) => b.points - a.points || b.goalDiff - a.goalDiff)
+                  .map((team, index) => (
+                    <TableRow key={team.id}>
+                      <TableCell className="font-medium">{index + 1}</TableCell>
                       <TableCell>{team.name}</TableCell>
-                      <TableCell className="text-center">{team.played}</TableCell>
-                      <TableCell className="text-center">{team.won}</TableCell>
-                      <TableCell className="text-center">{team.draw}</TableCell>
-                      <TableCell className="text-center">{team.lost}</TableCell>
-                      <TableCell className="text-center">{team.goalDiff > 0 ? `+${team.goalDiff}` : team.goalDiff}</TableCell>
-                      <TableCell className="text-center font-medium">{team.points}</TableCell>
+                      <TableCell>{team.played}</TableCell>
+                      <TableCell>{team.won}</TableCell>
+                      <TableCell>{team.draw}</TableCell>
+                      <TableCell>{team.lost}</TableCell>
+                      <TableCell>{team.goalDiff > 0 ? `+${team.goalDiff}` : team.goalDiff}</TableCell>
+                      <TableCell className="font-bold">{team.points}</TableCell>
                     </TableRow>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section>
-        <h2 className="text-2xl font-semibold mb-4">Aankomende Wedstrijden</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
-          {upcomingMatches.map((match, index) => (
-            <Card key={index} className="card-hover">
-              <CardHeader className="pb-2">
-                <Badge variant="outline" className="w-fit mb-1 bg-soccer-green/10 border-soccer-green/20 text-orange-400">
-                  {match.matchday}
-                </Badge>
-                <CardTitle className="flex justify-between items-center text-lg">
-                  <span>{match.date}</span>
-                  <span className="text-orange-400 font-medium">{match.time}</span>
-                </CardTitle>
-                <CardDescription>{match.location}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-center py-2">
-                  <div className="font-medium text-left flex-1">{match.home}</div>
-                  <div className="px-4 py-1 bg-muted rounded-lg font-medium">VS</div>
-                  <div className="font-medium text-right flex-1">{match.away}</div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-2xl font-semibold mb-4">Afgelopen Wedstrijden</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
-          {recentMatches.map((match, index) => (
-            <Card key={index} className="card-hover">
-              <CardHeader className="pb-2">
-                <Badge variant="outline" className="w-fit mb-1 bg-soccer-green/10 border-soccer-green/20 text-orange-400">
-                  {match.matchday}
-                </Badge>
-                <CardTitle className="flex justify-between items-center text-lg">
-                  <span>{match.date}</span>
-                </CardTitle>
-                <CardDescription>{match.location}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-center py-2">
-                  <div className="font-medium text-left flex-1">{match.home}</div>
-                  <div className="px-4 py-1 bg-muted rounded-lg font-bold">{match.homeScore} - {match.awayScore}</div>
-                  <div className="font-medium text-right flex-1">{match.away}</div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-2xl font-semibold mb-4">Speelschema</h2>
-        <Card className="max-w-3xl mx-auto px-4">
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-              <div className="w-full sm:w-1/2">
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Aankomende Wedstrijden */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Aankomende Wedstrijden</CardTitle>
+          <CardDescription>Wedstrijden van de komende speeldag</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Datum</TableHead>
+                  <TableHead>Tijd</TableHead>
+                  <TableHead>Thuisteam</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Uitteam</TableHead>
+                  <TableHead>Locatie</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {upcomingMatches.map((match, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{match.date}</TableCell>
+                    <TableCell>{match.time}</TableCell>
+                    <TableCell className="font-medium">
+                      {match.home}
+                      <Badge className="ml-2 bg-blue-500">Thuis</Badge>
+                    </TableCell>
+                    <TableCell className="text-center">VS</TableCell>
+                    <TableCell className="font-medium">
+                      {match.away}
+                      <Badge className="ml-2 bg-orange-500">Uit</Badge>
+                    </TableCell>
+                    <TableCell>{match.location}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Afgelopen Wedstrijden */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Afgelopen Wedstrijden</CardTitle>
+          <CardDescription>Resultaten van de laatst gespeelde speeldag</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Datum</TableHead>
+                  <TableHead>Tijd</TableHead>
+                  <TableHead>Thuisteam</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead>Uitteam</TableHead>
+                  <TableHead>Locatie</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pastMatches.map((match, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{match.date}</TableCell>
+                    <TableCell>{match.time}</TableCell>
+                    <TableCell className="font-medium">
+                      {match.home}
+                      <Badge className="ml-2 bg-blue-500">Thuis</Badge>
+                    </TableCell>
+                    <TableCell className="text-center font-bold">
+                      {match.homeScore} - {match.awayScore}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {match.away}
+                      <Badge className="ml-2 bg-orange-500">Uit</Badge>
+                    </TableCell>
+                    <TableCell>{match.location}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Speelschema */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Speelschema</CardTitle>
+          <CardDescription>Volledig overzicht van alle wedstrijden</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4 space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
                 <Label htmlFor="matchday-filter">Filter op speeldag</Label>
-                <Select
-                  value={selectedMatchday}
-                  onValueChange={setSelectedMatchday}
-                >
-                  <SelectTrigger id="matchday-filter" className="mt-2">
+                <Select value={selectedMatchday} onValueChange={setSelectedMatchday}>
+                  <SelectTrigger id="matchday-filter">
                     <SelectValue placeholder="Alle speeldagen" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Alle speeldagen</SelectItem>
-                    {allMatchdays.map((matchday) => (
-                      <SelectItem key={matchday} value={matchday}>
-                        {matchday}
-                      </SelectItem>
+                    <SelectItem value="">Alle speeldagen</SelectItem>
+                    {matchdays.map((day, idx) => (
+                      <SelectItem key={idx} value={day}>{day}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="w-full sm:w-1/2">
+              
+              <div>
                 <Label htmlFor="team-filter">Filter op team</Label>
-                <Select
-                  value={selectedTeam}
-                  onValueChange={setSelectedTeam}
-                >
-                  <SelectTrigger id="team-filter" className="mt-2">
+                <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                  <SelectTrigger id="team-filter">
                     <SelectValue placeholder="Alle teams" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Alle teams</SelectItem>
-                    {competitionTeams.map((team) => (
-                      <SelectItem key={team.id} value={team.name}>
-                        {team.name}
-                      </SelectItem>
+                    <SelectItem value="">Alle teams</SelectItem>
+                    {teamNames.map((team, idx) => (
+                      <SelectItem key={idx} value={team}>{team}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {filteredMatches.length > 0 ? (
-                filteredMatches.map((match, index) => (
-                  <div 
-                    key={index} 
-                    className={`p-3 border rounded-md ${match.isCompleted ? 'bg-muted/10' : 'bg-muted/5'}`}
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <Badge variant="outline" className="bg-transparent text-orange-400 border-orange-400/20">
-                        {match.matchday}
-                      </Badge>
-                      <div className="text-sm text-muted-foreground">
-                        {match.date} • {match.time}
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium flex-1">{match.home}</span>
-                      {match.isCompleted ? (
-                        <span className="px-4 py-1 bg-muted rounded-lg font-bold">
-                          {match.homeScore} - {match.awayScore}
-                        </span>
-                      ) : (
-                        <span className="px-4 py-1 bg-muted rounded-lg font-medium">VS</span>
-                      )}
-                      <span className="font-medium flex-1 text-right">{match.away}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-2">
-                      {match.location}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  Geen wedstrijden gevonden met de huidige filters
+              
+              <div>
+                <Label htmlFor="search">Zoeken</Label>
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    placeholder="Zoek op team, locatie, etc."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
-              )}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </section>
+            
+            <Button 
+              variant="outline" 
+              className="w-full md:w-auto"
+              onClick={() => {
+                setSearchTerm("");
+                setSelectedMatchday("");
+                setSelectedTeam("");
+              }}
+            >
+              Filters wissen
+            </Button>
+          </div>
+          
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Speeldag</TableHead>
+                  <TableHead>Datum</TableHead>
+                  <TableHead>Tijd</TableHead>
+                  <TableHead>Wedstrijd</TableHead>
+                  <TableHead>Locatie</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredMatches.map((match, index) => (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        {match.matchday}
+                      </div>
+                    </TableCell>
+                    <TableCell>{match.date}</TableCell>
+                    <TableCell>{match.time}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col items-center gap-1 sm:flex-row sm:gap-2">
+                        <span className="font-medium">{match.home}</span>
+                        {match.isCompleted ? (
+                          <span className="mx-2 font-bold">
+                            {match.homeScore} - {match.awayScore}
+                          </span>
+                        ) : (
+                          <span className="mx-2">vs</span>
+                        )}
+                        <span className="font-medium">{match.away}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{match.location}</TableCell>
+                  </TableRow>
+                ))}
+                {filteredMatches.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      Geen wedstrijden gevonden met de huidige filters.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

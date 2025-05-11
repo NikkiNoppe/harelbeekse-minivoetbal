@@ -2,11 +2,12 @@
 import React from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Users, Shield, ClipboardCheck, Settings } from "lucide-react";
+import { Calendar, Users, Shield, Settings, ClipboardCheck } from "lucide-react";
 import MatchTab from "./tabs/MatchTab";
 import PlayersTab from "./tabs/PlayersTab";
 import TeamsTab from "./tabs/TeamsTab";
 import UsersTab from "./tabs/UsersTab";
+import AdminSettingsPanel from "@/components/admin/AdminSettingsPanel";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -48,8 +49,15 @@ const UserDashboard: React.FC = () => {
           {isAdmin && (
             <TabItem 
               value="users" 
-              icon={<Settings />} 
+              icon={<ClipboardCheck />} 
               label="Gebruikers beheren" 
+            />
+          )}
+          {isAdmin && (
+            <TabItem 
+              value="settings" 
+              icon={<Settings />} 
+              label="Instellingen" 
             />
           )}
         </TabsList>
@@ -65,6 +73,9 @@ const UserDashboard: React.FC = () => {
           </TabsContent>
           <TabsContent value="users">
             <UsersTab />
+          </TabsContent>
+          <TabsContent value="settings">
+            <AdminSettingsPanel />
           </TabsContent>
         </div>
       </Tabs>
