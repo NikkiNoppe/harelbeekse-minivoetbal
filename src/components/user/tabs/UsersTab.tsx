@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { MOCK_TEAMS } from "@/components/Layout";
+import { MOCK_USERS } from "@/components/auth/LoginForm"; // Import the mock users
 import { 
   Card, 
   CardHeader, 
@@ -18,8 +18,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Shield, ClipboardCheck, Users } from "lucide-react";
+import { Edit, Plus, Save, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -28,175 +35,121 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { User } from "@/components/auth/AuthProvider"; // Import the User type
 
-// Mock users for demonstration
-const initialUsers = [
-  { id: 1, username: "admin", password: "admin123", role: "admin" },
-  { id: 2, username: "team1", password: "team123", role: "team", teamId: 1 },
-  { id: 3, username: "team2", password: "team123", role: "team", teamId: 2 },
-  { id: 4, username: "referee", password: "referee123", role: "referee" },
+// Define the mock users here to avoid circular imports
+export const MOCK_USERS = [
+  { id: 1, username: "admin", password: "admin123", role: "admin" as const },
+  { id: 2, username: "team1", password: "team123", role: "team" as const, teamId: 1 },
+  { id: 3, username: "team2", password: "team123", role: "team" as const, teamId: 2 },
+  { id: 4, username: "referee", password: "referee123", role: "referee" as const },
 ];
-
-interface User {
-  id: number;
-  username: string;
-  password: string;
-  role: "admin" | "team" | "referee";
-  teamId?: number;
-}
 
 const UsersTab: React.FC = () => {
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newUser, setNewUser] = useState<{
-    username: string, 
-    password: string,
-    role: "admin" | "team" | "referee",
-    teamId?: number
-  }>({
-    username: "", 
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [newUser, setNewUser] = useState({
+    username: "",
     password: "",
-    role: "team",
+    role: "team" as const,
+    teamId: undefined as number | undefined
   });
   
-  // Handle opening add dialog
-  const handleAddNew = () => {
-    setNewUser({username: "", password: "", role: "team"});
+  // Handle opening edit dialog
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setNewUser({
+      username: user.username,
+      password: "",  // Don't show existing password for security
+      role: user.role,
+      teamId: user.teamId
+    });
     setDialogOpen(true);
   };
   
-  // Handle role change
-  const handleRoleChange = (role: "admin" | "team" | "referee") => {
-    if (role !== "team") {
-      setNewUser({...newUser, role, teamId: undefined});
-    } else {
-      setNewUser({...newUser, role});
-    }
+  // Handle opening add dialog
+  const handleAddNew = () => {
+    setEditingUser(null);
+    setNewUser({
+      username: "",
+      password: "",
+      role: "team",
+      teamId: undefined
+    });
+    setDialogOpen(true);
   };
   
   // Handle save user
   const handleSaveUser = () => {
-    if (!newUser.username || !newUser.password) {
+    if (!newUser.username) {
       toast({
-        title: "Onvolledige gegevens",
-        description: "Vul gebruikersnaam en wachtwoord in",
+        title: "Gebruikersnaam ontbreekt",
+        description: "Vul een gebruikersnaam in",
         variant: "destructive",
       });
       return;
     }
     
-    if (newUser.role === "team" && !newUser.teamId) {
+    if (!editingUser && !newUser.password) {
       toast({
-        title: "Team ontbreekt",
-        description: "Selecteer een team voor de gebruiker",
+        title: "Wachtwoord ontbreekt",
+        description: "Vul een wachtwoord in",
         variant: "destructive",
       });
       return;
     }
     
-    // Check if username already exists
-    if (users.some(u => u.username === newUser.username)) {
+    if (editingUser) {
+      // Update existing user
+      setUsers(users.map(user => 
+        user.id === editingUser.id 
+          ? { 
+              ...user, 
+              username: newUser.username, 
+              ...(newUser.password ? { password: newUser.password } : {}),
+              role: newUser.role,
+              ...(newUser.role === "team" ? { teamId: newUser.teamId } : {})
+            } 
+          : user
+      ));
+      
       toast({
-        title: "Gebruikersnaam bestaat al",
-        description: "Kies een andere gebruikersnaam",
-        variant: "destructive",
+        title: "Gebruiker bijgewerkt",
+        description: `${newUser.username} is bijgewerkt`,
       });
-      return;
+    } else {
+      // Add new user
+      const newId = Math.max(...users.map(u => u.id), 0) + 1;
+      
+      const userToAdd: User = {
+        id: newId,
+        username: newUser.username,
+        password: newUser.password,
+        role: newUser.role,
+        ...(newUser.role === "team" && newUser.teamId ? { teamId: newUser.teamId } : {})
+      };
+      
+      setUsers([...users, userToAdd]);
+      
+      toast({
+        title: "Gebruiker toegevoegd",
+        description: `${newUser.username} is toegevoegd`,
+      });
     }
     
-    const newId = Math.max(...users.map(u => u.id), 0) + 1;
-    
-    const userToAdd: User = {
-      id: newId,
-      username: newUser.username,
-      password: newUser.password,
-      role: newUser.role,
-      ...(newUser.role === "team" && {teamId: newUser.teamId}),
-    };
-    
-    setUsers([...users, userToAdd]);
     setDialogOpen(false);
-    
-    toast({
-      title: "Gebruiker toegevoegd",
-      description: `${newUser.username} is toegevoegd als ${getRoleName(newUser.role)}`,
-    });
   };
   
   // Handle delete user
   const handleDeleteUser = (userId: number) => {
-    // Prevent deleting the last admin
-    const adminsCount = users.filter(u => u.role === "admin").length;
-    const userToDelete = users.find(u => u.id === userId);
-    
-    if (userToDelete?.role === "admin" && adminsCount <= 1) {
-      toast({
-        title: "Kan niet verwijderen",
-        description: "Er moet minstens één admin zijn",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setUsers(users.filter(user => user.id !== userId));
     
     toast({
       title: "Gebruiker verwijderd",
       description: "De gebruiker is verwijderd",
     });
-  };
-  
-  // Helper to get role name in Dutch
-  const getRoleName = (role: string) => {
-    switch (role) {
-      case "admin": return "Administrator";
-      case "team": return "Spelersverantwoordelijke";
-      case "referee": return "Scheidsrechter";
-      default: return role;
-    }
-  };
-  
-  // Helper to get role icon
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case "admin": return <Shield className="h-4 w-4" />;
-      case "team": return <Users className="h-4 w-4" />;
-      case "referee": return <ClipboardCheck className="h-4 w-4" />;
-      default: return null;
-    }
-  };
-  
-  // Helper to get role badge
-  const getRoleBadge = (role: string) => {
-    let color = "";
-    switch (role) {
-      case "admin": 
-        color = "bg-purple-500/20 hover:bg-purple-500/30 text-purple-500";
-        break;
-      case "team": 
-        color = "bg-blue-500/20 hover:bg-blue-500/30 text-blue-500";
-        break;
-      case "referee": 
-        color = "bg-orange-500/20 hover:bg-orange-500/30 text-orange-500";
-        break;
-      default: color = "";
-    }
-    
-    return (
-      <Badge className={`${color} flex items-center gap-1`}>
-        {getRoleIcon(role)}
-        <span>{getRoleName(role)}</span>
-      </Badge>
-    );
   };
   
   return (
@@ -207,7 +160,7 @@ const UsersTab: React.FC = () => {
             <div>
               <CardTitle>Gebruikers</CardTitle>
               <CardDescription>
-                Beheer gebruikers en hun rollen
+                Beheer de gebruikerstoegang tot het systeem
               </CardDescription>
             </div>
             
@@ -231,23 +184,33 @@ const UsersTab: React.FC = () => {
               {users.map(user => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.username}</TableCell>
-                  <TableCell>{getRoleBadge(user.role)}</TableCell>
                   <TableCell>
-                    {user.teamId ? (
-                      MOCK_TEAMS.find(t => t.id === user.teamId)?.name || "Onbekend team"
-                    ) : (
-                      <span className="text-muted-foreground">N/A</span>
-                    )}
+                    {user.role === "admin" && "Administrator"}
+                    {user.role === "team" && "Teamverantwoordelijke"}
+                    {user.role === "referee" && "Scheidsrechter"}
+                  </TableCell>
+                  <TableCell>
+                    {user.teamId ? `Team ${user.teamId}` : "-"}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteUser(user.id)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-100/10"
-                    >
-                      <Trash2 size={16} />
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditUser(user)}
+                        className="text-purple-500 hover:text-purple-700 hover:bg-purple-100/10"
+                      >
+                        <Edit size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-100/10"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -259,9 +222,13 @@ const UsersTab: React.FC = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nieuwe gebruiker toevoegen</DialogTitle>
+            <DialogTitle>
+              {editingUser ? "Gebruiker bewerken" : "Nieuwe gebruiker toevoegen"}
+            </DialogTitle>
             <DialogDescription>
-              Voeg een nieuwe gebruiker toe aan het systeem
+              {editingUser 
+                ? "Bewerk de gegevens van deze gebruiker" 
+                : "Voeg een nieuwe gebruiker toe aan het systeem"}
             </DialogDescription>
           </DialogHeader>
           
@@ -276,7 +243,7 @@ const UsersTab: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <label>Wachtwoord</label>
+              <label>Wachtwoord {editingUser && "(laat leeg om ongewijzigd te laten)"}</label>
               <Input
                 type="password"
                 value={newUser.password}
@@ -287,16 +254,18 @@ const UsersTab: React.FC = () => {
             
             <div className="space-y-2">
               <label>Rol</label>
-              <Select 
-                value={newUser.role} 
-                onValueChange={(value) => handleRoleChange(value as any)}
+              <Select
+                value={newUser.role}
+                onValueChange={(value: "admin" | "team" | "referee") => 
+                  setNewUser({...newUser, role: value})
+                }
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger>
                   <SelectValue placeholder="Selecteer een rol" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Administrator</SelectItem>
-                  <SelectItem value="team">Spelersverantwoordelijke</SelectItem>
+                  <SelectItem value="team">Teamverantwoordelijke</SelectItem>
                   <SelectItem value="referee">Scheidsrechter</SelectItem>
                 </SelectContent>
               </Select>
@@ -304,22 +273,16 @@ const UsersTab: React.FC = () => {
             
             {newUser.role === "team" && (
               <div className="space-y-2">
-                <label>Team</label>
-                <Select 
-                  value={newUser.teamId?.toString()} 
-                  onValueChange={(value) => setNewUser({...newUser, teamId: parseInt(value)})}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecteer een team" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MOCK_TEAMS.map(team => (
-                      <SelectItem key={team.id} value={team.id.toString()}>
-                        {team.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <label>Team ID</label>
+                <Input
+                  type="number"
+                  value={newUser.teamId?.toString() || ""}
+                  onChange={(e) => setNewUser({
+                    ...newUser, 
+                    teamId: e.target.value ? parseInt(e.target.value) : undefined
+                  })}
+                  placeholder="Team ID"
+                />
               </div>
             )}
           </div>
@@ -329,7 +292,7 @@ const UsersTab: React.FC = () => {
               Annuleren
             </Button>
             <Button onClick={handleSaveUser}>
-              Toevoegen
+              {editingUser ? "Bijwerken" : "Toevoegen"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -339,3 +302,4 @@ const UsersTab: React.FC = () => {
 };
 
 export default UsersTab;
+

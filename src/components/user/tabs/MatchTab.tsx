@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { MOCK_TEAMS } from "@/components/Layout";
@@ -7,7 +6,8 @@ import {
   CardHeader, 
   CardTitle, 
   CardContent, 
-  CardFooter 
+  CardFooter,
+  CardDescription
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,8 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar as CalendarIcon, Check } from "lucide-react";
+import { Calendar as CalendarIcon, Check, Clock } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
 import {
   Popover,
   PopoverContent,
@@ -56,6 +57,25 @@ const MOCK_PLAYERS = {
     { id: 18, name: "Viktor Baranov", number: 8 },
     { id: 19, name: "Nikolai Fedorov", number: 9 },
     { id: 20, name: "Boris Morozov", number: 10 },
+  ],
+  3: [
+    { id: 21, name: "Tom Daelemans", number: 1 },
+    { id: 22, name: "Bart Verstappen", number: 2 },
+    { id: 23, name: "Jeroen De Smet", number: 3 },
+    { id: 24, name: "Koen Van Hoof", number: 4 },
+    { id: 25, name: "Steven Janssens", number: 5 },
+    { id: 26, name: "Peter Coppens", number: 6 },
+    { id: 27, name: "David Van Dyck", number: 7 },
+  ],
+  4: [
+    { id: 28, name: "Marc Goossens", number: 1 },
+    { id: 29, name: "Tim Verlinden", number: 2 },
+    { id: 30, name: "Stijn Peeters", number: 3 },
+    { id: 31, name: "Nick Willems", number: 4 },
+    { id: 32, name: "Wim De Vos", number: 5 },
+    { id: 33, name: "Hans Vermeulen", number: 6 },
+    { id: 34, name: "Joris Vercammen", number: 7 },
+    { id: 35, name: "Sven Govaerts", number: 8 },
   ]
 };
 
@@ -63,21 +83,33 @@ const MOCK_PLAYERS = {
 const MOCK_MATCHES = [
   {
     id: 1,
-    date: new Date('2025-05-15'),
+    date: new Date('2025-05-24'),
     homeTeamId: 1,
     awayTeamId: 2,
     location: "Sporthal De Dageraad",
     time: "20:00",
     status: "upcoming",
+    matchday: "Speeldag 11"
   },
   {
     id: 2,
-    date: new Date('2025-05-22'),
+    date: new Date('2025-05-24'),
     homeTeamId: 3,
     awayTeamId: 4,
     location: "Sporthal De Dageraad",
     time: "21:15",
     status: "upcoming",
+    matchday: "Speeldag 11"
+  },
+  {
+    id: 3,
+    date: new Date('2025-05-31'),
+    homeTeamId: 5,
+    awayTeamId: 6,
+    location: "Sporthal De Dageraad",
+    time: "20:00",
+    status: "upcoming",
+    matchday: "Speeldag 12"
   }
 ];
 
@@ -92,11 +124,22 @@ interface SelectedPlayer extends Player {
   redCard?: boolean;
 }
 
+interface Match {
+  id: number;
+  date: Date;
+  homeTeamId: number;
+  awayTeamId: number;
+  location: string;
+  time: string;
+  status: string;
+  matchday: string;
+}
+
 const MatchTab: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedMatch, setSelectedMatch] = useState<any | null>(null);
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [homeTeamPlayers, setHomeTeamPlayers] = useState<SelectedPlayer[]>([]);
   const [awayTeamPlayers, setAwayTeamPlayers] = useState<SelectedPlayer[]>([]);
   const [homeScore, setHomeScore] = useState<string>("");
@@ -109,18 +152,36 @@ const MatchTab: React.FC = () => {
     selectedDate && match.date.toDateString() === selectedDate.toDateString()
   );
   
+  // Filter upcoming matches (next 7 days)
+  const today = new Date();
+  const nextWeek = new Date();
+  nextWeek.setDate(today.getDate() + 7);
+  
+  const upcomingMatches = MOCK_MATCHES.filter(match => {
+    return match.date >= today && match.date <= nextWeek;
+  });
+  
+  // Get matches for current user's team if they're a team admin
+  const userTeamMatches = user?.teamId 
+    ? MOCK_MATCHES.filter(match => 
+        match.homeTeamId === user.teamId || match.awayTeamId === user.teamId
+      ) 
+    : [];
+  
   // Handle selecting a match
   const handleSelectMatch = (matchId: number) => {
     const match = MOCK_MATCHES.find(m => m.id === matchId);
-    setSelectedMatch(match);
+    if (match) {
+      setSelectedMatch(match);
     
-    // Reset form
-    setHomeTeamPlayers([]);
-    setAwayTeamPlayers([]);
-    setHomeScore("");
-    setAwayScore("");
-    setRefereeComment("");
-    setIsSubmitted(false);
+      // Reset form
+      setHomeTeamPlayers([]);
+      setAwayTeamPlayers([]);
+      setHomeScore("");
+      setAwayScore("");
+      setRefereeComment("");
+      setIsSubmitted(false);
+    }
   };
   
   // Handle add/remove player from lineup
@@ -198,6 +259,8 @@ const MatchTab: React.FC = () => {
   
   // Submit match sheet
   const handleSubmitMatchSheet = () => {
+    if (!selectedMatch) return;
+    
     if (user?.role === "team") {
       toast({
         title: "Spelersopstelling bevestigd",
@@ -214,12 +277,21 @@ const MatchTab: React.FC = () => {
         return;
       }
       
+      // Update standings (in a real app this would update the database)
+      const homeScoreNum = parseInt(homeScore);
+      const awayScoreNum = parseInt(awayScore);
+      
       setIsSubmitted(true);
       toast({
         title: "Wedstrijdblad bevestigd",
         description: "Het wedstrijdblad is definitief opgeslagen",
       });
     }
+  };
+  
+  // Format date for display
+  const formatMatchDate = (date: Date) => {
+    return format(date, "EEEE d MMMM", { locale: nl });
   };
   
   return (
@@ -285,6 +357,85 @@ const MatchTab: React.FC = () => {
               )}
             </div>
           </div>
+        </CardContent>
+      </Card>
+      
+      {/* Upcoming matches section - new addition */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Aankomende Wedstrijden</CardTitle>
+          <CardDescription>
+            Wedstrijden in de komende 7 dagen
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {upcomingMatches.length > 0 ? (
+            <div className="space-y-3">
+              {upcomingMatches.map(match => {
+                const homeTeam = MOCK_TEAMS.find(t => t.id === match.homeTeamId);
+                const awayTeam = MOCK_TEAMS.find(t => t.id === match.awayTeamId);
+                const isUserTeam = user?.teamId && (match.homeTeamId === user.teamId || match.awayTeamId === user.teamId);
+                
+                return (
+                  <div 
+                    key={match.id} 
+                    className={`border rounded-md p-3 hover:bg-slate-800 transition-colors ${
+                      isUserTeam ? "border-orange-500/30 bg-slate-800/50" : ""
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-transparent text-orange-400 border-orange-400/20">
+                          {match.matchday}
+                        </Badge>
+                        {isUserTeam && (
+                          <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20">
+                            Jouw team
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock size={14} className="text-muted-foreground" />
+                        <span>{match.time}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <div className="font-medium">{homeTeam?.name}</div>
+                      <div className="px-3 py-1 bg-muted rounded-md text-sm font-medium">VS</div>
+                      <div className="font-medium">{awayTeam?.name}</div>
+                    </div>
+                    
+                    <div className="flex justify-between mt-3">
+                      <div className="text-sm text-muted-foreground">
+                        {formatMatchDate(match.date)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {match.location}
+                      </div>
+                    </div>
+                    
+                    <div className="mt-2 text-right">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedDate(match.date);
+                          handleSelectMatch(match.id);
+                        }}
+                      >
+                        Wedstrijdblad invullen
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-muted-foreground">
+              Er zijn geen wedstrijden gepland in de komende week
+            </div>
+          )}
         </CardContent>
       </Card>
       

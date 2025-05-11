@@ -49,7 +49,7 @@ const UserDashboard: React.FC = () => {
             <TabItem 
               value="users" 
               icon={<Settings />} 
-              label="Gebruikersbeheren" 
+              label="Gebruikers beheren" 
             />
           )}
         </TabsList>
