@@ -1,6 +1,6 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Award, FileText, Trophy, Ban, Info, Layers } from "lucide-react";
+import { Award, FileText, Trophy, Ban, Info, Layers, Moon, Sun } from "lucide-react";
 import CompetitionTab from "@/components/tabs/CompetitionTab";
 import CupTab from "@/components/tabs/CupTab";
 import SuspensionsTab from "@/components/tabs/SuspensionsTab";
@@ -15,6 +15,8 @@ import UserAccount from "@/components/auth/UserAccount";
 import UserDashboard from "@/components/user/UserDashboard";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Link, useNavigate } from "react-router-dom";
+import { Switch } from "@/components/ui/switch";
+import { useTheme } from "@/hooks/use-theme";
 
 // Updated mock teams data with new team names
 export const MOCK_TEAMS = [{
@@ -89,12 +91,16 @@ const Layout: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("algemeen");
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   // Find team data if user is a team role
   const teamData = user?.teamId ? MOCK_TEAMS.find(team => team.id === user.teamId) : null;
   const handleLogoClick = () => {
     setActiveTab("algemeen");
     navigate("/");
+  };
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
   };
   return <div className="min-h-screen flex flex-col bg-slate-950 text-white">
       {/* Header */}
@@ -115,7 +121,17 @@ const Layout: React.FC = () => {
             </div>
           </div>
           
-          <div className={cn("flex space-x-4", isMobile ? "flex" : "hidden md:flex")}>
+          <div className={cn("flex items-center space-x-4", isMobile ? "flex" : "hidden md:flex")}>
+            <div className="flex items-center gap-2">
+              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:rotate-90 dark:scale-0" />
+              <Switch 
+                checked={theme === "dark"} 
+                onCheckedChange={toggleTheme} 
+                aria-label="Toggle theme" 
+              />
+              <Moon className="h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            </div>
+            
             {isAuthenticated && user ? <UserAccount user={user} onLogout={logout} /> : <>
                 <button onClick={() => setLoginDialogOpen(true)} className="px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-slate-950 bg-orange-500 hover:bg-orange-400">
                   Inloggen
