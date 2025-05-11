@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { MOCK_USERS } from "@/components/auth/LoginForm"; // Import the mock users
+import { useAuth } from "@/components/auth/AuthProvider";
 import { 
   Card, 
   CardHeader, 
@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, Plus, Save, Trash2 } from "lucide-react";
+import { Edit, Plus, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -37,24 +37,22 @@ import {
 } from "@/components/ui/dialog";
 import { User } from "@/components/auth/AuthProvider"; // Import the User type
 
-// Define the mock users here to avoid circular imports
-export const MOCK_USERS = [
-  { id: 1, username: "admin", password: "admin123", role: "admin" as const },
-  { id: 2, username: "team1", password: "team123", role: "team" as const, teamId: 1 },
-  { id: 3, username: "team2", password: "team123", role: "team" as const, teamId: 2 },
-  { id: 4, username: "referee", password: "referee123", role: "referee" as const },
-];
-
 const UsersTab: React.FC = () => {
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
+  const { allUsers, updateUser, addUser, removeUser } = useAuth();
+  const [users, setUsers] = useState<User[]>(allUsers);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [newUser, setNewUser] = useState({
+  const [newUser, setNewUser] = useState<{
+    username: string;
+    password: string;
+    role: "admin" | "team" | "referee";
+    teamId: number | undefined;
+  }>({
     username: "",
     password: "",
-    role: "team" as const,
-    teamId: undefined as number | undefined
+    role: "team",
+    teamId: undefined
   });
   
   // Handle opening edit dialog
@@ -103,16 +101,17 @@ const UsersTab: React.FC = () => {
     
     if (editingUser) {
       // Update existing user
-      setUsers(users.map(user => 
-        user.id === editingUser.id 
-          ? { 
-              ...user, 
-              username: newUser.username, 
-              ...(newUser.password ? { password: newUser.password } : {}),
-              role: newUser.role,
-              ...(newUser.role === "team" ? { teamId: newUser.teamId } : {})
-            } 
-          : user
+      const updatedUser: User = {
+        ...editingUser,
+        username: newUser.username,
+        ...(newUser.password ? { password: newUser.password } : {}),
+        role: newUser.role,
+        ...(newUser.role === "team" ? { teamId: newUser.teamId } : {})
+      };
+      
+      updateUser(updatedUser);
+      setUsers(allUsers.map(user => 
+        user.id === editingUser.id ? updatedUser : user
       ));
       
       toast({
@@ -131,6 +130,7 @@ const UsersTab: React.FC = () => {
         ...(newUser.role === "team" && newUser.teamId ? { teamId: newUser.teamId } : {})
       };
       
+      addUser(userToAdd);
       setUsers([...users, userToAdd]);
       
       toast({
@@ -144,6 +144,7 @@ const UsersTab: React.FC = () => {
   
   // Handle delete user
   const handleDeleteUser = (userId: number) => {
+    removeUser(userId);
     setUsers(users.filter(user => user.id !== userId));
     
     toast({
@@ -302,4 +303,3 @@ const UsersTab: React.FC = () => {
 };
 
 export default UsersTab;
-
