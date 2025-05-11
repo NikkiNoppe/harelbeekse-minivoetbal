@@ -117,12 +117,12 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
                     <select
                       id="match-select"
                       className="w-full p-2 border rounded-md"
-                      value={selectedMatchId || ""}
-                      onChange={(e) => setSelectedMatchId(Number(e.target.value))}
+                      value={selectedMatchId?.toString() || ""}
+                      onChange={(e) => setSelectedMatchId(e.target.value ? Number(e.target.value) : null)}
                     >
                       <option value="">Kies een wedstrijd</option>
                       {matches.map((match) => (
-                        <option key={match.id} value={match.id}>
+                        <option key={match.id} value={match.id.toString()}>
                           {`${teamData.name} vs ${match.opponent} - ${match.date}`}
                         </option>
                       ))}

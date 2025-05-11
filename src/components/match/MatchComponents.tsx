@@ -160,13 +160,14 @@ export const EditMatchForm: React.FC<EditMatchFormProps> = ({
         <div className="space-y-2">
           <Label htmlFor="homeTeam">Thuisteam <span className="text-red-500">*</span></Label>
           <Select
-            value={formData.homeTeam}
-            onValueChange={(value) => handleInputChange("homeTeam", value)}
+            value={formData.homeTeam || "select-home-team"}
+            onValueChange={(value) => handleInputChange("homeTeam", value !== "select-home-team" ? value : "")}
           >
             <SelectTrigger id="homeTeam">
               <SelectValue placeholder="Selecteer thuisteam" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="select-home-team">Selecteer thuisteam</SelectItem>
               {teamOptions.map((team) => (
                 <SelectItem key={team.value} value={team.value}>
                   {team.label}
@@ -179,13 +180,14 @@ export const EditMatchForm: React.FC<EditMatchFormProps> = ({
         <div className="space-y-2">
           <Label htmlFor="awayTeam">Uitteam <span className="text-red-500">*</span></Label>
           <Select
-            value={formData.awayTeam}
-            onValueChange={(value) => handleInputChange("awayTeam", value)}
+            value={formData.awayTeam || "select-away-team"}
+            onValueChange={(value) => handleInputChange("awayTeam", value !== "select-away-team" ? value : "")}
           >
             <SelectTrigger id="awayTeam">
               <SelectValue placeholder="Selecteer uitteam" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="select-away-team">Selecteer uitteam</SelectItem>
               {teamOptions.map((team) => (
                 <SelectItem key={team.value} value={team.value}>
                   {team.label}

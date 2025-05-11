@@ -347,7 +347,7 @@ const CompetitionTab: React.FC<{teams: Team[]}> = ({ teams }) => {
                     <SelectValue placeholder="Alle speeldagen" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle speeldagen</SelectItem>
+                    <SelectItem value="all-matchdays">Alle speeldagen</SelectItem>
                     {matchdays.map((day, idx) => (
                       <SelectItem key={idx} value={day}>{day}</SelectItem>
                     ))}
@@ -362,7 +362,7 @@ const CompetitionTab: React.FC<{teams: Team[]}> = ({ teams }) => {
                     <SelectValue placeholder="Alle teams" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle teams</SelectItem>
+                    <SelectItem value="all-teams">Alle teams</SelectItem>
                     {teamNames.map((team, idx) => (
                       <SelectItem key={idx} value={team}>{team}</SelectItem>
                     ))}

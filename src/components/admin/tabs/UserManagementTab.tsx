@@ -249,11 +249,11 @@ const UserManagementTab: React.FC = () => {
                   <div className="space-y-2">
                     <Label htmlFor="team">Team</Label>
                     <Select 
-                      value={newUser.teamId?.toString() || ""} 
+                      value={newUser.teamId?.toString() || "no-team"} 
                       onValueChange={(value) => {
                         setNewUser({
                           ...newUser,
-                          teamId: value ? parseInt(value) : null
+                          teamId: value !== "no-team" ? parseInt(value) : null
                         });
                       }}
                     >
@@ -261,6 +261,7 @@ const UserManagementTab: React.FC = () => {
                         <SelectValue placeholder="Selecteer een team" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="no-team">Geen team geselecteerd</SelectItem>
                         {MOCK_TEAMS.map(team => (
                           <SelectItem key={team.id} value={team.id.toString()}>
                             {team.name}
