@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Card, 
@@ -210,16 +209,24 @@ const fetchCompetitionStandings = async () => {
   }));
 };
 
-const CompetitionTab: React.FC = () => {
+// Define the CompetitionTabProps interface
+interface CompetitionTabProps {
+  teams?: Team[];  // Make teams optional so it can be used with or without props
+}
+
+const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMatchday, setSelectedMatchday] = useState<string>("");
   const [selectedTeam, setSelectedTeam] = useState<string>("");
   
   // Use react-query to fetch and cache the standings data
-  const { data: teams, isLoading, error } = useQuery({
+  const { data: fetchedTeams, isLoading, error } = useQuery({
     queryKey: ['competitionStandings'],
     queryFn: fetchCompetitionStandings
   });
+  
+  // Use provided teams prop if available, otherwise use fetched data
+  const teamsToDisplay = teams || fetchedTeams;
   
   const filteredMatches = allMatches.filter(match => {
     // Filter by matchday if selected
@@ -255,12 +262,12 @@ const CompetitionTab: React.FC = () => {
           <CardDescription>Stand van de huidige competitie</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isLoading && !teams ? (
             <div className="flex justify-center items-center h-32">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <span className="ml-2">Competitiestand laden...</span>
             </div>
-          ) : error ? (
+          ) : error && !teams ? (
             <div className="text-center p-4 text-red-500">
               Er is een fout opgetreden bij het laden van de competitiestand.
             </div>
@@ -280,7 +287,7 @@ const CompetitionTab: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {teams?.map((team, index) => (
+                  {teamsToDisplay?.map((team, index) => (
                     <TableRow key={team.id}>
                       <TableCell className="font-medium">{index + 1}</TableCell>
                       <TableCell>{team.name}</TableCell>
