@@ -12,7 +12,7 @@ const Footer: React.FC = () => {
           </div>
           <div>
             <h3 className="font-semibold text-foreground mb-3">Contact</h3>
-            <p className="text-sm">info@minivoetbalharelbeke.be</p>
+            <p className="text-sm">noppe.nikki@icloud.com</p>
             <p className="text-sm">+34 468 15 52 16</p>
           </div>
           <div>
