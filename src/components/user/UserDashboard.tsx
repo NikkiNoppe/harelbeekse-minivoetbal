@@ -1,107 +1,59 @@
 
-import React from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
+import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Users, Shield, Settings, ClipboardCheck } from "lucide-react";
-import MatchTab from "./tabs/MatchTab";
-import PlayersTab from "./tabs/PlayersTab";
 import TeamsTab from "./tabs/TeamsTab";
 import UsersTab from "./tabs/UsersTab";
+import MatchTab from "./tabs/MatchTab";
+import PlayersTab from "./tabs/PlayersTab";
 import AdminSettingsPanel from "@/components/admin/AdminSettingsPanel";
-import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/components/auth/AuthProvider";
+import TeamDashboard from "@/components/team/TeamDashboard";
+import { MOCK_TEAMS } from "@/components/Layout";
+import CompetitionManagementTab from "@/components/admin/tabs/CompetitionManagementTab";
 
-const UserDashboard: React.FC = () => {
+const UserDashboard = () => {
   const { user } = useAuth();
-  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState("teams");
   
-  if (!user) return null;
+  // Admin ziet gebruikersbeheer, team admin ziet team dashboard
+  const isAdmin = user?.role === "admin";
+  const isTeam = user?.role === "team";
   
-  // Define which tabs are available based on user role
-  const isAdmin = user.role === "admin";
-  const isReferee = user.role === "referee";
-  const isTeam = user.role === "team";
+  // Find team data if user is a team role
+  const teamData = user?.teamId ? MOCK_TEAMS.find(team => team.id === user.teamId) : null;
   
+  if (isTeam && teamData) {
+    return <TeamDashboard user={user} teamData={teamData} />;
+  }
+
   return (
-    <div className="w-full">
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-      <Tabs defaultValue="match" className="w-full">
-        <TabsList className="w-full flex mb-8 bg-slate-800 p-1 overflow-x-auto">
-          <TabItem 
-            value="match" 
-            icon={<Calendar />} 
-            label="Wedstrijd" 
-          />
-          {(isAdmin || isTeam) && (
-            <TabItem 
-              value="players" 
-              icon={<Users />} 
-              label="Spelerslijst" 
-            />
-          )}
-          {isAdmin && (
-            <TabItem 
-              value="teams" 
-              icon={<Shield />} 
-              label="Teams beheren" 
-            />
-          )}
-          {isAdmin && (
-            <TabItem 
-              value="users" 
-              icon={<ClipboardCheck />} 
-              label="Gebruikers beheren" 
-            />
-          )}
-          {isAdmin && (
-            <TabItem 
-              value="settings" 
-              icon={<Settings />} 
-              label="Instellingen" 
-            />
-          )}
-        </TabsList>
-        <div className="animate-fade-in">
-          <TabsContent value="match">
-            <MatchTab />
-          </TabsContent>
-          <TabsContent value="players">
-            <PlayersTab />
-          </TabsContent>
-          <TabsContent value="teams">
-            <TeamsTab />
-          </TabsContent>
-          <TabsContent value="users">
-            <UsersTab />
-          </TabsContent>
-          <TabsContent value="settings">
-            <AdminSettingsPanel />
-          </TabsContent>
+    <div>
+      {isAdmin ? (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full flex mb-8 overflow-x-auto">
+            <TabsTrigger value="teams">Teams</TabsTrigger>
+            <TabsTrigger value="users">Gebruikers</TabsTrigger>
+            <TabsTrigger value="players">Spelers</TabsTrigger>
+            <TabsTrigger value="matches">Wedstrijden</TabsTrigger>
+            <TabsTrigger value="competition">Competitie</TabsTrigger>
+            <TabsTrigger value="settings">Instellingen</TabsTrigger>
+          </TabsList>
+
+          <div className="animate-fade-in">
+            <TabsContent value="teams"><TeamsTab /></TabsContent>
+            <TabsContent value="users"><UsersTab /></TabsContent>
+            <TabsContent value="players"><PlayersTab /></TabsContent>
+            <TabsContent value="matches"><MatchTab /></TabsContent>
+            <TabsContent value="competition"><CompetitionManagementTab /></TabsContent>
+            <TabsContent value="settings"><AdminSettingsPanel /></TabsContent>
+          </div>
+        </Tabs>
+      ) : (
+        <div className="text-center">
+          <p>U bent niet geautoriseerd om deze pagina te bekijken.</p>
         </div>
-      </Tabs>
-    </div>
-  );
-};
-
-interface TabItemProps {
-  value: string;
-  icon: React.ReactNode;
-  label: string;
-}
-
-const TabItem: React.FC<TabItemProps> = ({ value, icon, label }) => {
-  return (
-    <TabsTrigger 
-      value={value} 
-      className={cn(
-        "flex-1 min-w-max flex items-center justify-center gap-2 px-4 py-2 font-medium",
-        "data-[state=active]:bg-slate-700 data-[state=active]:text-orange-400 data-[state=active]:shadow-sm",
-        "text-gray-400 transition-all"
       )}
-    >
-      {icon}
-      <span>{label}</span>
-    </TabsTrigger>
+    </div>
   );
 };
 

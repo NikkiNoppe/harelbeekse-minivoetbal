@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      available_dates: {
+        Row: {
+          available_date: string
+          date_id: number
+          is_available: boolean | null
+          is_cup_date: boolean | null
+        }
+        Insert: {
+          available_date: string
+          date_id?: number
+          is_available?: boolean | null
+          is_cup_date?: boolean | null
+        }
+        Update: {
+          available_date?: string
+          date_id?: number
+          is_available?: boolean | null
+          is_cup_date?: boolean | null
+        }
+        Relationships: []
+      }
       blogs: {
         Row: {
           content: string
@@ -74,6 +95,33 @@ export type Database = {
             referencedColumns: ["player_id"]
           },
         ]
+      }
+      competition_formats: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          format_id: number
+          has_playoffs: boolean | null
+          name: string
+          regular_rounds: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          format_id?: number
+          has_playoffs?: boolean | null
+          name: string
+          regular_rounds?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          format_id?: number
+          has_playoffs?: boolean | null
+          name?: string
+          regular_rounds?: number | null
+        }
+        Relationships: []
       }
       competition_standings: {
         Row: {
@@ -182,13 +230,50 @@ export type Database = {
           },
         ]
       }
+      matchdays: {
+        Row: {
+          competition_id: number | null
+          is_playoff: boolean | null
+          matchday_date: string
+          matchday_id: number
+          name: string
+          playoff_stage: string | null
+        }
+        Insert: {
+          competition_id?: number | null
+          is_playoff?: boolean | null
+          matchday_date: string
+          matchday_id?: number
+          name: string
+          playoff_stage?: string | null
+        }
+        Update: {
+          competition_id?: number | null
+          is_playoff?: boolean | null
+          matchday_date?: string
+          matchday_id?: number
+          name?: string
+          playoff_stage?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchdays_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["competition_id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           away_team_id: number | null
           field_cost: number
           home_team_id: number | null
+          is_cup_match: boolean | null
           match_date: string
           match_id: number
+          matchday_id: number | null
           referee_cost: number
           result: string | null
         }
@@ -196,8 +281,10 @@ export type Database = {
           away_team_id?: number | null
           field_cost: number
           home_team_id?: number | null
+          is_cup_match?: boolean | null
           match_date: string
           match_id?: number
+          matchday_id?: number | null
           referee_cost: number
           result?: string | null
         }
@@ -205,8 +292,10 @@ export type Database = {
           away_team_id?: number | null
           field_cost?: number
           home_team_id?: number | null
+          is_cup_match?: boolean | null
           match_date?: string
           match_id?: number
+          matchday_id?: number | null
           referee_cost?: number
           result?: string | null
         }
@@ -224,6 +313,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "matches_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["matchday_id"]
           },
         ]
       }
