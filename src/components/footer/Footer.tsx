@@ -25,7 +25,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
         <div className="mt-8 pt-4 border-t border-foreground/10 text-center text-sm">
-          <p>© {new Date().getFullYear()} Voetbal Arena. Alle rechten voorbehouden.</p>
+          <p>© {new Date().getFullYear()} Harelbeekse Minivoetbal Competitie. Alle rechten voorbehouden.</p>
         </div>
       </div>
     </footer>

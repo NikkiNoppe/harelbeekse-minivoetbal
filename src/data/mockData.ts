@@ -14,7 +14,7 @@ export const MOCK_TEAMS = [
   },
   {
     id: 2,
-    name: "Shakthar Truu",
+    name: "Shakthar Truuk",
     email: "shakthar.truu@example.com",
     played: 10,
     won: 7,
