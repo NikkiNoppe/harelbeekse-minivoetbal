@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
-import { User } from "@/components/auth/AuthProvider";
+import { User } from "@/types/auth";
 import UserRow from "@/components/user/UserRow";
 import UserDialog from "@/components/user/UserDialog";
 

@@ -16,6 +16,7 @@ import UserDashboard from "@/components/user/UserDashboard";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Link, useNavigate } from "react-router-dom";
 import ThemeToggle from "./theme/ThemeToggle";
+import { TeamData } from "@/types/auth";
 
 // Updated mock teams data with new team names
 export const MOCK_TEAMS = [

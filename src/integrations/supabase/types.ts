@@ -9,7 +9,285 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      cards: {
+        Row: {
+          card_id: number
+          card_time: string
+          card_type: Database["public"]["Enums"]["card_type"]
+          match_id: number | null
+          penalty_cost: number
+          player_id: number | null
+        }
+        Insert: {
+          card_id?: number
+          card_time: string
+          card_type: Database["public"]["Enums"]["card_type"]
+          match_id?: number | null
+          penalty_cost: number
+          player_id?: number | null
+        }
+        Update: {
+          card_id?: number
+          card_time?: string
+          card_type?: Database["public"]["Enums"]["card_type"]
+          match_id?: number | null
+          penalty_cost?: number
+          player_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cards_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "cards_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
+      competitions: {
+        Row: {
+          competition_id: number
+          end_date: string
+          is_playoff: boolean | null
+          name: string
+          start_date: string
+        }
+        Insert: {
+          competition_id?: number
+          end_date: string
+          is_playoff?: boolean | null
+          name: string
+          start_date: string
+        }
+        Update: {
+          competition_id?: number
+          end_date?: string
+          is_playoff?: boolean | null
+          name?: string
+          start_date?: string
+        }
+        Relationships: []
+      }
+      match_players: {
+        Row: {
+          jersey_number: number
+          match_id: number | null
+          match_player_id: number
+          player_id: number | null
+        }
+        Insert: {
+          jersey_number: number
+          match_id?: number | null
+          match_player_id?: number
+          player_id?: number | null
+        }
+        Update: {
+          jersey_number?: number
+          match_id?: number | null
+          match_player_id?: number
+          player_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_players_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "match_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          away_team_id: number | null
+          field_cost: number
+          home_team_id: number | null
+          match_date: string
+          match_id: number
+          referee_cost: number
+          result: string | null
+        }
+        Insert: {
+          away_team_id?: number | null
+          field_cost: number
+          home_team_id?: number | null
+          match_date: string
+          match_id?: number
+          referee_cost: number
+          result?: string | null
+        }
+        Update: {
+          away_team_id?: number | null
+          field_cost?: number
+          home_team_id?: number | null
+          match_date?: string
+          match_id?: number
+          referee_cost?: number
+          result?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "matches_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          birth_date: string
+          is_active: boolean | null
+          player_id: number
+          player_name: string
+          team_id: number | null
+        }
+        Insert: {
+          birth_date: string
+          is_active?: boolean | null
+          player_id?: number
+          player_name: string
+          team_id?: number | null
+        }
+        Update: {
+          birth_date?: string
+          is_active?: boolean | null
+          player_id?: number
+          player_name?: string
+          team_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+        ]
+      }
+      regulations: {
+        Row: {
+          content: string
+          regulation_id: number
+          title: string
+        }
+        Insert: {
+          content: string
+          regulation_id?: number
+          title: string
+        }
+        Update: {
+          content?: string
+          regulation_id?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      suspensions: {
+        Row: {
+          end_date: string
+          player_id: number | null
+          start_date: string
+          suspension_id: number
+        }
+        Insert: {
+          end_date: string
+          player_id?: number | null
+          start_date: string
+          suspension_id?: number
+        }
+        Update: {
+          end_date?: string
+          player_id?: number | null
+          start_date?: string
+          suspension_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suspensions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          balance: number | null
+          player_manager_id: number | null
+          team_id: number
+          team_name: string
+        }
+        Insert: {
+          balance?: number | null
+          player_manager_id?: number | null
+          team_id?: number
+          team_name: string
+        }
+        Update: {
+          balance?: number | null
+          player_manager_id?: number | null
+          team_id?: number
+          team_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_player_manager_id_fkey"
+            columns: ["player_manager_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          password: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: number
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          password: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id?: number
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          password?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: number
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +296,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      card_type: "yellow" | "red"
+      user_role: "admin" | "referee" | "player_manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +412,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      card_type: ["yellow", "red"],
+      user_role: ["admin", "referee", "player_manager"],
+    },
   },
 } as const

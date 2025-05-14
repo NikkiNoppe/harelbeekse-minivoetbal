@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Card,
@@ -20,19 +19,11 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import PlayersList from "./PlayersList";
+import { User, TeamData } from "@/types/auth";
 
 interface TeamDashboardProps {
-  user: {
-    id: number;
-    username: string;
-    role: string;
-    teamId?: number;
-  };
-  teamData: {
-    id: number;
-    name: string;
-    email: string;
-  };
+  user: User;
+  teamData: TeamData;
 }
 
 const mockMatches = [

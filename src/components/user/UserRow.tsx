@@ -1,9 +1,8 @@
-
 import React from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
-import { User } from "@/components/auth/AuthProvider";
+import { User } from "@/types/auth";
 
 interface UserRowProps {
   user: User;

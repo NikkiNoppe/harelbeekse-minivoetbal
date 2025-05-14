@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Dialog, 
@@ -18,7 +17,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { User } from "@/components/auth/AuthProvider";
+import { User } from "@/types/auth";
 
 interface UserFormData {
   username: string;

@@ -1,13 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
-
-export interface User {
-  id: number;
-  username: string;
-  role: "admin" | "team" | "referee"; // Restrict to only these three values
-  teamId?: number; // Optional since admin and referee users don't have a teamId
-  password?: string; // Used for mock data, would not be included in a real app
-}
+import { User } from "@/types/auth";
 
 interface AuthContextType {
   user: User | null;

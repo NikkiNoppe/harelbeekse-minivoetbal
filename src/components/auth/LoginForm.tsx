@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +15,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { Shield, User } from "lucide-react";
+import { Shield, User as UserIcon } from "lucide-react";
+import { User } from "@/types/auth";
 
 // Define the form schema with Zod for validation
 const formSchema = z.object({
@@ -39,7 +39,7 @@ const MOCK_USERS = [
 ];
 
 interface LoginFormProps {
-  onLoginSuccess: (user: any) => void;
+  onLoginSuccess: (user: User) => void;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
@@ -136,7 +136,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       </CardContent>
       <CardFooter className="flex flex-col space-y-2 text-sm text-muted-foreground">
         <div className="flex items-center gap-1">
-          <User size={14} />
+          <UserIcon size={14} />
           <span>Admin: admin / admin123</span>
         </div>
         <div className="flex items-center gap-1">
