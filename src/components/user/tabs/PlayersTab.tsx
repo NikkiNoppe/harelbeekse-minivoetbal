@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { MOCK_TEAMS } from "@/components/Layout";
+import { MOCK_TEAMS } from "@/data/mockData";
 import { 
   Card, 
   CardHeader, 

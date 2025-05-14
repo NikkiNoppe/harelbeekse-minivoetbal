@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import { MOCK_TEAMS } from "@/components/Layout";
+import { MOCK_TEAMS } from "@/data/mockData";
 import { 
   Card, 
   CardHeader, 

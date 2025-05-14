@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Card,
@@ -32,7 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, AlertTriangle } from "lucide-react";
-import { MOCK_TEAMS } from "../Layout";
+import { MOCK_TEAMS } from "@/data/mockData";
 
 // Updated Team interface to include competition data
 interface Team {

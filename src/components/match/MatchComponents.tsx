@@ -20,7 +20,7 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { MOCK_TEAMS } from "@/components/Layout";
+import { MOCK_TEAMS } from "@/data/mockData";
 import { 
   Select, 
   SelectContent, 

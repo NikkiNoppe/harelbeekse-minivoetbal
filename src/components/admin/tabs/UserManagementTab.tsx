@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { 
   Card, 
@@ -35,7 +34,7 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import { User, Mail, UserPlus } from "lucide-react";
-import { MOCK_TEAMS } from "@/components/Layout";
+import { MOCK_TEAMS } from "@/data/mockData";
 
 interface NewUserData {
   name: string;
