@@ -1,27 +1,38 @@
-import React from "react";
+
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tag } from "lucide-react";
+import { fetchBlogPosts, BlogPost } from "@/services/blogService";
+import { useToast } from "@/hooks/use-toast";
+
 const AlgemeenTab: React.FC = () => {
-  const newsItems = [{
-    id: 1,
-    title: "Zoektocht naar hoofdsponsor 2025-2026",
-    date: "10 mei 2025",
-    content: "De Harelbeekse Minivoetbal Competitie is op zoek naar een nieuwe hoofdsponsor voor het komende seizoen. Geïnteresseerde bedrijven kunnen contact opnemen via info@minivoetbalharelbeke.be.",
-    category: "Sponsoring"
-  }, {
-    id: 2,
-    title: "Nieuwe scheidsrechters gezocht",
-    date: "5 mei 2025",
-    content: "Voor het komende seizoen zijn we op zoek naar nieuwe scheidsrechters. Ervaring is een plus, maar geen vereiste. Een opleiding wordt voorzien. Interesse? Neem contact op met de competitieleiding.",
-    category: "Scheidsrechters"
-  }, {
-    id: 3,
-    title: "Aankondiging jaarlijkse barbecue",
-    date: "1 mei 2025",
-    content: "De jaarlijkse barbecue zal plaatsvinden op 20 juli 2025. Alle spelers, sponsors en supporters zijn welkom. Meer info volgt binnenkort.",
-    category: "Evenement"
-  }];
-  return <div className="space-y-8 animate-slide-up">
+  const { toast } = useToast();
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadBlogPosts = async () => {
+      try {
+        setLoading(true);
+        const posts = await fetchBlogPosts();
+        setBlogPosts(posts);
+      } catch (error) {
+        toast({
+          title: "Fout bij het laden",
+          description: "De blogposts konden niet worden geladen.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBlogPosts();
+  }, [toast]);
+
+  return (
+    <div className="space-y-8 animate-slide-up">
       <section>
         <h2 className="text-2xl font-semibold mb-4">Over de Competitie</h2>
         <Card>
@@ -42,20 +53,42 @@ const AlgemeenTab: React.FC = () => {
       <section>
         <h2 className="text-2xl font-semibold mb-4">Laatste Nieuws</h2>
         <div className="space-y-4 max-w-3xl mx-auto">
-          {newsItems.map(item => <Card key={item.id} className="card-hover">
-              <CardHeader>
-                <div className="flex justify-between items-start mb-2">
-                  <Badge className="w-fit bg-soccer-green/10 border-soccer-green/20 text-soccer-green">
-                    {item.category}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">{item.date}</span>
-                </div>
-                <CardTitle className="text-xl">{item.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>{item.content}</p>
-              </CardContent>
-            </Card>)}
+          {loading ? (
+            <p>Berichten laden...</p>
+          ) : blogPosts.length > 0 ? (
+            blogPosts.map(post => (
+              <Card key={post.id} className="card-hover">
+                <CardHeader>
+                  <div className="flex justify-between items-start mb-2">
+                    {post.tags && post.tags.length > 0 && (
+                      <Badge className="w-fit bg-soccer-green/10 border-soccer-green/20 text-soccer-green">
+                        {post.tags[0]}
+                      </Badge>
+                    )}
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(post.date).toLocaleDateString('nl-NL')}
+                    </span>
+                  </div>
+                  <CardTitle className="text-xl">{post.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p>{post.content}</p>
+                  
+                  {post.tags && post.tags.length > 1 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {post.tags.slice(1).map((tag, index) => (
+                        <Badge key={index} variant="outline" className="flex items-center gap-1">
+                          <Tag className="h-3 w-3" /> {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <p className="text-center text-muted-foreground">Geen nieuws beschikbaar</p>
+          )}
         </div>
       </section>
 
@@ -80,6 +113,8 @@ const AlgemeenTab: React.FC = () => {
           </CardContent>
         </Card>
       </section>
-    </div>;
+    </div>
+  );
 };
+
 export default AlgemeenTab;
