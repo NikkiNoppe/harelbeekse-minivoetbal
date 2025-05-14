@@ -38,10 +38,10 @@ const AlgemeenTab: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <p className="mb-4">
-              De Harelbeekse Minivoetbal Competitie is opgericht in 1985 en is uitgegroeid tot een vaste waarde in de regio. Met momenteel 6 teams strijden we elk seizoen voor de felbegeerde titel.
+              De Harelbeekse Minivoetbal Competitie is opgericht in 2005 en is uitgegroeid tot een vaste waarde in de regio. Met momenteel 6 teams strijden we elk seizoen voor de felbegeerde titel.
             </p>
             <p className="mb-4">
-              Onze competitie staat bekend om zijn sportiviteit en gezelligheid. Na elke wedstrijd is er tijd voor een drankje en een babbel in de kantine.
+              Onze competitie staat bekend om zijn sportiviteit.
             </p>
             <p>
               Interesse om deel te nemen met een team? Neem dan contact op via info@minivoetbalharelbeke.be.

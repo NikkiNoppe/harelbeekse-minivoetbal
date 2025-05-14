@@ -117,9 +117,8 @@ const RegulationsTab: React.FC = () => {
               kunt u contact opnemen met de tuchtcommissie:
             </p>
             <div className="bg-muted/40 p-4 rounded-lg">
-              <p><strong>Email:</strong> tuchtcommissie@voetbalarena.nl</p>
-              <p><strong>Telefoon:</strong> 030-1234567 (bereikbaar op werkdagen van 10:00 tot 16:00)</p>
-              <p className="text-xs mt-2 text-muted-foreground">Beroepen moeten schriftelijk worden ingediend binnen 3 werkdagen na een beslissing.</p>
+              <p><strong>Email:</strong> info@voetbalcommisie.be</p>
+              <p className="text-xs mt-2 text-muted-foreground">Beroepen moeten per mail worden ingediend binnen 5 werkdagen na een beslissing.</p>
             </div>
           </CardContent>
         </Card>
