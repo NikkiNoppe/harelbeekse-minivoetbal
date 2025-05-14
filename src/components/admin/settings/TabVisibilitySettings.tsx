@@ -1,44 +1,17 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
-
-// Initial tabs visibility settings
-const initialTabsVisibility = {
-  algemeen: true,
-  competitie: true,
-  playoff: true,
-  beker: true,
-  schorsingen: true,
-  reglement: true
-};
+import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
 
 const TabVisibilitySettings: React.FC = () => {
-  const { toast } = useToast();
-  const [tabsVisibility, setTabsVisibility] = useState(initialTabsVisibility);
+  const { tabsVisibility, updateTabVisibility, saveTabVisibilitySettings } = useTabVisibility();
   
-  const handleTabVisibilityChange = (tab: keyof typeof tabsVisibility) => {
-    setTabsVisibility(prev => ({
-      ...prev,
-      [tab]: !prev[tab]
-    }));
-    
-    toast({
-      title: `Tab ${tab} ${!tabsVisibility[tab] ? "zichtbaar" : "verborgen"}`,
-      description: `De tab is nu ${!tabsVisibility[tab] ? "zichtbaar" : "verborgen"} voor gebruikers.`
-    });
-  };
-  
-  const handleSaveSettings = () => {
-    // In a real app, this would save the settings to a backend
-    toast({
-      title: "Instellingen opgeslagen",
-      description: "De tab zichtbaarheid is succesvol bijgewerkt."
-    });
+  const handleTabVisibilityChange = (tab: TabName) => {
+    updateTabVisibility(tab, !tabsVisibility[tab]);
   };
   
   return (
@@ -58,12 +31,12 @@ const TabVisibilitySettings: React.FC = () => {
               <Switch
                 id={`tab-${tab}`}
                 checked={isVisible}
-                onCheckedChange={() => handleTabVisibilityChange(tab as keyof typeof tabsVisibility)}
+                onCheckedChange={() => handleTabVisibilityChange(tab as TabName)}
               />
             </div>
           ))}
           
-          <Button className="mt-4" onClick={handleSaveSettings}>
+          <Button className="mt-4" onClick={saveTabVisibilitySettings}>
             Instellingen opslaan
           </Button>
         </div>

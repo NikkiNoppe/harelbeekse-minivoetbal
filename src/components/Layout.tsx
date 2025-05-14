@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Award, FileText, Trophy, Ban, Info, Layers } from "lucide-react";
@@ -16,7 +17,7 @@ import UserDashboard from "@/components/user/UserDashboard";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Link, useNavigate } from "react-router-dom";
 import ThemeToggle from "./theme/ThemeToggle";
-import { TeamData } from "@/types/auth";
+import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
 
 // Updated mock teams data with new team names
 export const MOCK_TEAMS = [
@@ -91,6 +92,7 @@ const Layout: React.FC = () => {
     logout,
     isAuthenticated
   } = useAuth();
+  const { isTabVisible } = useTabVisibility();
   const [loginDialogOpen, setLoginDialogOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("algemeen");
   const navigate = useNavigate();
@@ -147,20 +149,20 @@ const Layout: React.FC = () => {
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="w-full flex mb-8 bg-secondary p-1 overflow-x-auto">
-              <TabItem value="algemeen" icon={<Info />} label="Algemeen" />
-              <TabItem value="competitie" icon={<Award />} label="Competitie" />
-              <TabItem value="playoff" icon={<Layers />} label="Play-Off" />
-              <TabItem value="beker" icon={<Trophy />} label="Beker" />
-              <TabItem value="schorsingen" icon={<Ban />} label="Schorsingen" />
-              <TabItem value="reglement" icon={<FileText />} label="Reglement" />
+              {isTabVisible("algemeen") && <TabItem value="algemeen" icon={<Info />} label="Algemeen" />}
+              {isTabVisible("competitie") && <TabItem value="competitie" icon={<Award />} label="Competitie" />}
+              {isTabVisible("playoff") && <TabItem value="playoff" icon={<Layers />} label="Play-Off" />}
+              {isTabVisible("beker") && <TabItem value="beker" icon={<Trophy />} label="Beker" />}
+              {isTabVisible("schorsingen") && <TabItem value="schorsingen" icon={<Ban />} label="Schorsingen" />}
+              {isTabVisible("reglement") && <TabItem value="reglement" icon={<FileText />} label="Reglement" />}
             </TabsList>
             <div className="animate-fade-in">
-              <TabsContent value="algemeen"><AlgemeenTab /></TabsContent>
-              <TabsContent value="competitie"><CompetitionTab teams={MOCK_TEAMS} /></TabsContent>
-              <TabsContent value="playoff"><PlayOffTab /></TabsContent>
-              <TabsContent value="beker"><CupTab /></TabsContent>
-              <TabsContent value="schorsingen"><SuspensionsTab /></TabsContent>
-              <TabsContent value="reglement"><RegulationsTab /></TabsContent>
+              {isTabVisible("algemeen") && <TabsContent value="algemeen"><AlgemeenTab /></TabsContent>}
+              {isTabVisible("competitie") && <TabsContent value="competitie"><CompetitionTab teams={MOCK_TEAMS} /></TabsContent>}
+              {isTabVisible("playoff") && <TabsContent value="playoff"><PlayOffTab /></TabsContent>}
+              {isTabVisible("beker") && <TabsContent value="beker"><CupTab /></TabsContent>}
+              {isTabVisible("schorsingen") && <TabsContent value="schorsingen"><SuspensionsTab /></TabsContent>}
+              {isTabVisible("reglement") && <TabsContent value="reglement"><RegulationsTab /></TabsContent>}
             </div>
           </Tabs>
         )}

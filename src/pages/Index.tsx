@@ -2,11 +2,14 @@
 import React from "react";
 import Layout from "@/components/Layout";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { TabVisibilityProvider } from "@/context/TabVisibilityContext";
 
 const Index = () => {
   return (
     <AuthProvider>
-      <Layout />
+      <TabVisibilityProvider>
+        <Layout />
+      </TabVisibilityProvider>
     </AuthProvider>
   );
 };
