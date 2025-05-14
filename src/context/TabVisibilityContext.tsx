@@ -26,10 +26,22 @@ type TabVisibilityContextType = {
   updateTabVisibility: (tab: TabName, isVisible: boolean) => void;
   saveTabVisibilitySettings: () => void;
   isTabVisible: (tab: TabName) => boolean;
+  resetToDefaults: () => void;
 };
 
 // Creëer de context
 export const TabVisibilityContext = createContext<TabVisibilityContextType | undefined>(undefined);
+
+// Functie om instellingen uit localStorage te laden
+const loadTabVisibilitySettings = (): TabVisibility => {
+  try {
+    const savedSettings = localStorage.getItem("tabVisibilitySettings");
+    return savedSettings ? JSON.parse(savedSettings) : defaultTabVisibility;
+  } catch (error) {
+    console.error("Fout bij het laden van tab zichtbaarheid instellingen:", error);
+    return defaultTabVisibility;
+  }
+};
 
 // Hook om de context te gebruiken
 export const useTabVisibility = (): TabVisibilityContextType => {
@@ -44,10 +56,7 @@ export const useTabVisibility = (): TabVisibilityContextType => {
 export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { toast } = useToast();
   // Haal instellingen op uit localStorage of gebruik de standaardwaarden
-  const [tabsVisibility, setTabsVisibility] = useState<TabVisibility>(() => {
-    const savedSettings = localStorage.getItem("tabVisibilitySettings");
-    return savedSettings ? JSON.parse(savedSettings) : defaultTabVisibility;
-  });
+  const [tabsVisibility, setTabsVisibility] = useState<TabVisibility>(loadTabVisibilitySettings);
 
   // Update de zichtbaarheid van een specifieke tab
   const updateTabVisibility = (tab: TabName, isVisible: boolean) => {
@@ -59,10 +68,29 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Sla de instellingen op in localStorage
   const saveTabVisibilitySettings = () => {
-    localStorage.setItem("tabVisibilitySettings", JSON.stringify(tabsVisibility));
+    try {
+      localStorage.setItem("tabVisibilitySettings", JSON.stringify(tabsVisibility));
+      toast({
+        title: "Instellingen opgeslagen",
+        description: "De tab zichtbaarheid is succesvol bijgewerkt."
+      });
+    } catch (error) {
+      console.error("Fout bij het opslaan van tab zichtbaarheid instellingen:", error);
+      toast({
+        title: "Fout bij opslaan",
+        description: "Er is een probleem opgetreden bij het opslaan van de instellingen.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Reset naar standaard instellingen
+  const resetToDefaults = () => {
+    setTabsVisibility(defaultTabVisibility);
+    localStorage.setItem("tabVisibilitySettings", JSON.stringify(defaultTabVisibility));
     toast({
-      title: "Instellingen opgeslagen",
-      description: "De tab zichtbaarheid is succesvol bijgewerkt."
+      title: "Instellingen hersteld",
+      description: "De tab zichtbaarheid is teruggezet naar de standaardinstellingen."
     });
   };
 
@@ -76,7 +104,8 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     tabsVisibility,
     updateTabVisibility,
     saveTabVisibilitySettings,
-    isTabVisible
+    isTabVisible,
+    resetToDefaults
   };
 
   return (

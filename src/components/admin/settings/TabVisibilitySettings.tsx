@@ -1,14 +1,14 @@
 
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, RotateCcw } from "lucide-react";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
 
 const TabVisibilitySettings: React.FC = () => {
-  const { tabsVisibility, updateTabVisibility, saveTabVisibilitySettings } = useTabVisibility();
+  const { tabsVisibility, updateTabVisibility, saveTabVisibilitySettings, resetToDefaults } = useTabVisibility();
   
   const handleTabVisibilityChange = (tab: TabName) => {
     updateTabVisibility(tab, !tabsVisibility[tab]);
@@ -35,12 +35,17 @@ const TabVisibilitySettings: React.FC = () => {
               />
             </div>
           ))}
-          
-          <Button className="mt-4" onClick={saveTabVisibilitySettings}>
-            Instellingen opslaan
-          </Button>
         </div>
       </CardContent>
+      <CardFooter className="flex justify-between">
+        <Button variant="outline" onClick={resetToDefaults} className="flex items-center gap-2">
+          <RotateCcw className="h-4 w-4" />
+          Standaardinstellingen
+        </Button>
+        <Button onClick={saveTabVisibilitySettings}>
+          Instellingen opslaan
+        </Button>
+      </CardFooter>
     </Card>
   );
 };

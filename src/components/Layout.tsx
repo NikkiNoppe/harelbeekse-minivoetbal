@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Award, FileText, Trophy, Ban, Info, Layers } from "lucide-react";
 import CompetitionTab from "@/components/tabs/CompetitionTab";
@@ -94,7 +94,7 @@ const Layout: React.FC = () => {
   } = useAuth();
   const { isTabVisible } = useTabVisibility();
   const [loginDialogOpen, setLoginDialogOpen] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState("algemeen");
+  const [activeTab, setActiveTab] = React.useState<TabName>("algemeen");
   const navigate = useNavigate();
 
   // Find team data if user is a team role
@@ -104,6 +104,17 @@ const Layout: React.FC = () => {
     setActiveTab("algemeen");
     navigate("/");
   };
+
+  // Stel de eerste zichtbare tab in als actieve tab bij het laden
+  useEffect(() => {
+    const visibleTabs: TabName[] = [
+      "algemeen", "competitie", "playoff", "beker", "schorsingen", "reglement"
+    ].filter(tab => isTabVisible(tab as TabName)) as TabName[];
+    
+    if (visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
+      setActiveTab(visibleTabs[0]);
+    }
+  }, [isTabVisible]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -147,7 +158,7 @@ const Layout: React.FC = () => {
         {isAuthenticated && user ? (
           <UserDashboard />
         ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
             <TabsList className="w-full flex mb-8 bg-secondary p-1 overflow-x-auto">
               {isTabVisible("algemeen") && <TabItem value="algemeen" icon={<Info />} label="Algemeen" />}
               {isTabVisible("competitie") && <TabItem value="competitie" icon={<Award />} label="Competitie" />}
