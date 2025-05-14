@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
@@ -30,8 +31,8 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-// Mock users for demonstration
-const MOCK_USERS = [
+// Mock users for demonstration - ensure role values match the UserRole type
+const MOCK_USERS: User[] = [
   { id: 1, username: "admin", password: "admin123", role: "admin" },
   { id: 2, username: "team1", password: "team123", role: "team", teamId: 1 },
   { id: 3, username: "team2", password: "team123", role: "team", teamId: 2 },
