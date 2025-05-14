@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Card, 
   CardContent, 
@@ -21,7 +21,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Search, Calendar } from "lucide-react";
+import { Search, Calendar, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface Team {
   id: number;
@@ -171,10 +173,53 @@ const teamNames = [...new Set([
   ...allMatches.map(match => match.away)
 ])];
 
-const CompetitionTab: React.FC<{teams: Team[]}> = ({ teams }) => {
+// Function to fetch competition standings from Supabase
+const fetchCompetitionStandings = async () => {
+  const { data, error } = await supabase
+    .from('competition_standings')
+    .select(`
+      standing_id,
+      team_id,
+      matches_played,
+      wins,
+      draws,
+      losses,
+      goal_difference,
+      goals_scored,
+      goals_against,
+      points,
+      teams(team_name)
+    `)
+    .order('points', { ascending: false })
+    .order('goal_difference', { ascending: false });
+
+  if (error) {
+    throw new Error(`Error fetching standings: ${error.message}`);
+  }
+
+  // Map the data to the Team interface format
+  return data.map(standing => ({
+    id: standing.team_id,
+    name: standing.teams?.team_name || 'Unknown Team',
+    played: standing.matches_played,
+    won: standing.wins,
+    draw: standing.draws,
+    lost: standing.losses,
+    goalDiff: standing.goal_difference,
+    points: standing.points
+  }));
+};
+
+const CompetitionTab: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMatchday, setSelectedMatchday] = useState<string>("");
   const [selectedTeam, setSelectedTeam] = useState<string>("");
+  
+  // Use react-query to fetch and cache the standings data
+  const { data: teams, isLoading, error } = useQuery({
+    queryKey: ['competitionStandings'],
+    queryFn: fetchCompetitionStandings
+  });
   
   const filteredMatches = allMatches.filter(match => {
     // Filter by matchday if selected
@@ -210,24 +255,32 @@ const CompetitionTab: React.FC<{teams: Team[]}> = ({ teams }) => {
           <CardDescription>Stand van de huidige competitie</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Positie</TableHead>
-                  <TableHead>Team</TableHead>
-                  <TableHead>GW</TableHead>
-                  <TableHead>W</TableHead>
-                  <TableHead>G</TableHead>
-                  <TableHead>V</TableHead>
-                  <TableHead>DV</TableHead>
-                  <TableHead>Punten</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {teams
-                  .sort((a, b) => b.points - a.points || b.goalDiff - a.goalDiff)
-                  .map((team, index) => (
+          {isLoading ? (
+            <div className="flex justify-center items-center h-32">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2">Competitiestand laden...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center p-4 text-red-500">
+              Er is een fout opgetreden bij het laden van de competitiestand.
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Positie</TableHead>
+                    <TableHead>Team</TableHead>
+                    <TableHead>GW</TableHead>
+                    <TableHead>W</TableHead>
+                    <TableHead>G</TableHead>
+                    <TableHead>V</TableHead>
+                    <TableHead>DV</TableHead>
+                    <TableHead>Punten</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {teams?.map((team, index) => (
                     <TableRow key={team.id}>
                       <TableCell className="font-medium">{index + 1}</TableCell>
                       <TableCell>{team.name}</TableCell>
@@ -239,9 +292,10 @@ const CompetitionTab: React.FC<{teams: Team[]}> = ({ teams }) => {
                       <TableCell className="font-bold">{team.points}</TableCell>
                     </TableRow>
                   ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
       

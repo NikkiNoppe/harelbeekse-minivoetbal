@@ -75,6 +75,53 @@ export type Database = {
           },
         ]
       }
+      competition_standings: {
+        Row: {
+          draws: number | null
+          goal_difference: number | null
+          goals_against: number | null
+          goals_scored: number | null
+          losses: number | null
+          matches_played: number | null
+          points: number | null
+          standing_id: number
+          team_id: number | null
+          wins: number | null
+        }
+        Insert: {
+          draws?: number | null
+          goal_difference?: number | null
+          goals_against?: number | null
+          goals_scored?: number | null
+          losses?: number | null
+          matches_played?: number | null
+          points?: number | null
+          standing_id?: number
+          team_id?: number | null
+          wins?: number | null
+        }
+        Update: {
+          draws?: number | null
+          goal_difference?: number | null
+          goals_against?: number | null
+          goals_scored?: number | null
+          losses?: number | null
+          matches_played?: number | null
+          points?: number | null
+          standing_id?: number
+          team_id?: number | null
+          wins?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_standings_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+        ]
+      }
       competitions: {
         Row: {
           competition_id: number
