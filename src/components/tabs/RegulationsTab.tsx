@@ -7,11 +7,11 @@ const RegulationsTab: React.FC = () => {
   return (
     <div className="space-y-8 animate-slide-up">
       <section className="max-w-3xl mx-auto">
-        <h2 className="text-3xl font-semibold mb-6 text-center">Reglement Lokale Voetbal Competitie</h2>
+        <h2 className="text-3xl font-semibold mb-6 text-center">Reglement</h2>
         
         <p className="text-muted-foreground mb-8 text-center">
           Dit reglement bevat de officiële regels en richtlijnen voor alle competities
-          georganiseerd door Voetbal Arena.
+          georganiseerd door Harelbeekse minivoetbal competitie.
         </p>
         
         <Accordion type="single" collapsible className="w-full">
