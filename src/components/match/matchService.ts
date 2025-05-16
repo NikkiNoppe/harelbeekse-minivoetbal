@@ -31,14 +31,18 @@ export async function fetchMatches(): Promise<MatchesResult> {
       const dateStr = matchDate.toLocaleDateString('nl-NL');
       const timeStr = matchDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
       
+      // Make sure we safely access nested objects
+      const homeTeam = match.home_team as { team_id: number, team_name: string } | null;
+      const awayTeam = match.away_team as { team_id: number, team_name: string } | null;
+      
       if (match.result) {
         // This is a past match with a result
         const [homeScore, awayScore] = match.result.split('-').map(score => parseInt(score.trim()));
         past.push({
           id: match.match_id,
           date: dateStr,
-          homeTeam: match.home_team?.team_name || 'Onbekend',
-          awayTeam: match.away_team?.team_name || 'Onbekend',
+          homeTeam: homeTeam?.team_name || 'Onbekend',
+          awayTeam: awayTeam?.team_name || 'Onbekend',
           homeScore,
           awayScore,
           location: 'Sporthal', // This would ideally come from the database
@@ -51,8 +55,8 @@ export async function fetchMatches(): Promise<MatchesResult> {
           id: match.match_id,
           date: dateStr,
           time: timeStr,
-          homeTeam: match.home_team?.team_name || 'Onbekend',
-          awayTeam: match.away_team?.team_name || 'Onbekend',
+          homeTeam: homeTeam?.team_name || 'Onbekend',
+          awayTeam: awayTeam?.team_name || 'Onbekend',
           location: 'Sporthal', // This would ideally come from the database
           uniqueNumber: match.unique_number
         });

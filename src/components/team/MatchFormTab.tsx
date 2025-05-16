@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { 
   Card, 
@@ -95,18 +96,25 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
         
         if (error) throw error;
         
-        return data.map(match => ({
-          matchId: match.match_id,
-          uniqueNumber: match.unique_number || 'N/A',
-          date: new Date(match.match_date).toLocaleDateString('nl-NL'),
-          time: new Date(match.match_date).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }),
-          homeTeamId: match.home_team?.team_id || 0,
-          homeTeamName: match.home_team?.team_name || 'Onbekend',
-          awayTeamId: match.away_team?.team_id || 0,
-          awayTeamName: match.away_team?.team_name || 'Onbekend',
-          location: 'Sporthal',  // This would ideally come from the database
-          isHomeTeam: match.home_team_id === teamId
-        }));
+        // Type casting to ensure we correctly access the nested properties
+        return data.map(match => {
+          // Safely extract team information from the nested properties
+          const homeTeam = match.home_team as { team_id: number, team_name: string } | null;
+          const awayTeam = match.away_team as { team_id: number, team_name: string } | null;
+          
+          return {
+            matchId: match.match_id,
+            uniqueNumber: match.unique_number || 'N/A',
+            date: new Date(match.match_date).toLocaleDateString('nl-NL'),
+            time: new Date(match.match_date).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }),
+            homeTeamId: homeTeam?.team_id || 0,
+            homeTeamName: homeTeam?.team_name || 'Onbekend',
+            awayTeamId: awayTeam?.team_id || 0,
+            awayTeamName: awayTeam?.team_name || 'Onbekend',
+            location: 'Sporthal',  // This would ideally come from the database
+            isHomeTeam: match.home_team_id === teamId
+          };
+        });
       } catch (error) {
         console.error("Error fetching upcoming matches:", error);
         toast({
