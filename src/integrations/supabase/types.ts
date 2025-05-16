@@ -194,6 +194,90 @@ export type Database = {
         }
         Relationships: []
       }
+      match_form_players: {
+        Row: {
+          created_at: string | null
+          form_id: number
+          form_player_id: number
+          is_captain: boolean | null
+          jersey_number: number
+          player_id: number
+        }
+        Insert: {
+          created_at?: string | null
+          form_id: number
+          form_player_id?: number
+          is_captain?: boolean | null
+          jersey_number: number
+          player_id: number
+        }
+        Update: {
+          created_at?: string | null
+          form_id?: number
+          form_player_id?: number
+          is_captain?: boolean | null
+          jersey_number?: number
+          player_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_form_players_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "match_forms"
+            referencedColumns: ["form_id"]
+          },
+          {
+            foreignKeyName: "match_form_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
+      match_forms: {
+        Row: {
+          created_at: string | null
+          form_id: number
+          is_submitted: boolean | null
+          match_id: number
+          team_id: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          form_id?: number
+          is_submitted?: boolean | null
+          match_id: number
+          team_id: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          form_id?: number
+          is_submitted?: boolean | null
+          match_id?: number
+          team_id?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_forms_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "match_forms_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+        ]
+      }
       match_players: {
         Row: {
           jersey_number: number
@@ -276,6 +360,7 @@ export type Database = {
           matchday_id: number | null
           referee_cost: number
           result: string | null
+          unique_number: string | null
         }
         Insert: {
           away_team_id?: number | null
@@ -287,6 +372,7 @@ export type Database = {
           matchday_id?: number | null
           referee_cost: number
           result?: string | null
+          unique_number?: string | null
         }
         Update: {
           away_team_id?: number | null
@@ -298,6 +384,7 @@ export type Database = {
           matchday_id?: number | null
           referee_cost?: number
           result?: string | null
+          unique_number?: string | null
         }
         Relationships: [
           {

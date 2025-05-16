@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -20,6 +21,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import PlayersList from "./PlayersList";
 import { User, TeamData } from "@/types/auth";
+import MatchFormTab from "./MatchFormTab";
 
 interface TeamDashboardProps {
   user: User;
@@ -43,6 +45,7 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
   // Teams with an email have both match score and player management capabilities
   const canManageScores = !!teamData.email;
   const canManagePlayers = !!teamData.email;
+  const canManageMatchForms = !!teamData.email;
 
   const handleScoreSubmit = () => {
     if (!selectedMatchId || !homeScore || !awayScore) {
@@ -81,12 +84,15 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
       <h1 className="text-2xl font-bold">Team Dashboard: {teamData.name}</h1>
 
       <Tabs defaultValue="matches">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="matches" disabled={!canManageScores}>
             Wedstrijden
           </TabsTrigger>
           <TabsTrigger value="players" disabled={!canManagePlayers}>
             Spelerslijst
+          </TabsTrigger>
+          <TabsTrigger value="match-forms" disabled={!canManageMatchForms}>
+            Wedstrijdformulieren
           </TabsTrigger>
         </TabsList>
 
@@ -188,6 +194,15 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
               teamId={user.teamId || 0} 
               teamName={teamData.name} 
               teamEmail={teamData.email} 
+            />
+          </TabsContent>
+        )}
+
+        {canManageMatchForms && (
+          <TabsContent value="match-forms" className="space-y-4 mt-4">
+            <MatchFormTab
+              teamId={user.teamId || 0}
+              teamName={teamData.name}
             />
           </TabsContent>
         )}

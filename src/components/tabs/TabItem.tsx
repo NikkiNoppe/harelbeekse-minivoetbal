@@ -7,9 +7,10 @@ interface TabItemProps {
   value: string;
   icon: React.ReactNode;
   label: string;
+  badge?: string;
 }
 
-const TabItem: React.FC<TabItemProps> = ({ value, icon, label }) => {
+const TabItem: React.FC<TabItemProps> = ({ value, icon, label, badge }) => {
   return (
     <TabsTrigger 
       value={value} 
@@ -22,6 +23,11 @@ const TabItem: React.FC<TabItemProps> = ({ value, icon, label }) => {
     >
       {icon}
       <span>{label}</span>
+      {badge && (
+        <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-primary text-primary-foreground">
+          {badge}
+        </span>
+      )}
     </TabsTrigger>
   );
 };

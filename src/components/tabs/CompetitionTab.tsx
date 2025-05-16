@@ -45,6 +45,7 @@ interface Match {
   isCompleted?: boolean;
   homeScore?: number;
   awayScore?: number;
+  unique_number?: string;
 }
 
 // Mock data for matches
@@ -317,6 +318,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Code</TableHead>
                   <TableHead>Datum</TableHead>
                   <TableHead>Tijd</TableHead>
                   <TableHead>Thuisteam</TableHead>
@@ -328,6 +330,11 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
               <TableBody>
                 {upcomingMatches.map((match, index) => (
                   <TableRow key={index}>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-primary text-white">
+                        {match.unique_number || `${match.matchday.slice(-2)}0${index+1}`}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{match.date}</TableCell>
                     <TableCell>{match.time}</TableCell>
                     <TableCell className="font-medium">
@@ -359,6 +366,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Code</TableHead>
                   <TableHead>Datum</TableHead>
                   <TableHead>Tijd</TableHead>
                   <TableHead>Thuisteam</TableHead>
@@ -370,6 +378,11 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
               <TableBody>
                 {pastMatches.map((match, index) => (
                   <TableRow key={index}>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-primary text-white">
+                        {match.unique_number || `${match.matchday.slice(-2)}0${index+1}`}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{match.date}</TableCell>
                     <TableCell>{match.time}</TableCell>
                     <TableCell className="font-medium">

@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { PastMatch, MatchFormData } from "@/components/user/tabs/MatchTab";
+import { Badge } from "@/components/ui/badge";
 
 interface FormMessageProps {
   children: React.ReactNode;
@@ -50,7 +51,7 @@ export const FormMessage: React.FC<FormMessageProps> = ({ children, type = "info
 };
 
 interface FormMenuItemProps {
-  title: string;
+  title: string | React.ReactNode;
   subtitle?: string;
   onClick?: () => void;
 }
@@ -154,6 +155,19 @@ export const EditMatchForm: React.FC<EditMatchFormProps> = ({
             required
           />
         </div>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="uniqueNumber">Uniek wedstrijdnummer</Label>
+        <Input
+          id="uniqueNumber"
+          value={formData.uniqueNumber || ''}
+          onChange={(e) => handleInputChange("uniqueNumber", e.target.value)}
+          placeholder="bijv. 0901 (speeldag 09, wedstrijd 01)"
+        />
+        <p className="text-sm text-muted-foreground">
+          Format: SSNN (SS=speeldag, NN=wedstrijdnummer). Voorbeeld: 0901
+        </p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -287,52 +301,55 @@ interface PastMatchesListProps {
 
 export const PastMatchesList: React.FC<PastMatchesListProps> = ({ matches }) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Afgelopen wedstrijden</CardTitle>
-        <CardDescription>
-          Overzicht van alle gespeelde wedstrijden en resultaten
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {matches.length === 0 ? (
-          <FormMessage>Er zijn nog geen afgelopen wedstrijden.</FormMessage>
-        ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Datum</TableHead>
-                  <TableHead>Wedstrijd</TableHead>
-                  <TableHead>Score</TableHead>
-                  <TableHead>Locatie</TableHead>
-                  <TableHead>Scheidsrechter</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {matches.map((match) => (
-                  <TableRow key={match.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {match.date}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {match.homeTeam} vs {match.awayTeam}
-                    </TableCell>
-                    <TableCell className="font-bold">
-                      {match.homeScore} - {match.awayScore}
-                    </TableCell>
-                    <TableCell>{match.location}</TableCell>
-                    <TableCell>{match.referee}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Code</TableHead>
+            <TableHead>Datum</TableHead>
+            <TableHead>Wedstrijd</TableHead>
+            <TableHead>Score</TableHead>
+            <TableHead>Locatie</TableHead>
+            <TableHead>Scheidsrechter</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {matches.map((match) => (
+            <TableRow key={match.id}>
+              <TableCell>
+                {match.uniqueNumber ? (
+                  <Badge variant="outline" className="bg-primary text-white">
+                    {match.uniqueNumber}
+                  </Badge>
+                ) : (
+                  <span className="text-muted-foreground text-sm">-</span>
+                )}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  {match.date}
+                </div>
+              </TableCell>
+              <TableCell>
+                {match.homeTeam} vs {match.awayTeam}
+              </TableCell>
+              <TableCell className="font-bold">
+                {match.homeScore} - {match.awayScore}
+              </TableCell>
+              <TableCell>{match.location}</TableCell>
+              <TableCell>{match.referee}</TableCell>
+            </TableRow>
+          ))}
+          {matches.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={6} className="h-24 text-center">
+                Geen wedstrijden gevonden.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
