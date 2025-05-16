@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Card, 
@@ -58,6 +57,11 @@ interface DbUser {
     team_id: number;
     team_name: string;
   } | null;
+  // We need to handle the case when team might be an array from the API
+  teams?: {
+    team_id: number;
+    team_name: string;
+  }[];
 }
 
 const UserManagementTab: React.FC = () => {
@@ -108,12 +112,26 @@ const UserManagementTab: React.FC = () => {
         console.log("Users data:", usersData);
         
         // Transform the data to match the DbUser interface
-        const formattedUsers: DbUser[] = usersData.map(user => ({
-          user_id: user.user_id,
-          username: user.username,
-          role: user.role,
-          team: user.teams
-        }));
+        const formattedUsers: DbUser[] = usersData.map(user => {
+          // Handle potential array response from Supabase
+          let teamData = null;
+          if (user.teams) {
+            if (Array.isArray(user.teams)) {
+              // If teams is an array, get the first item
+              teamData = user.teams.length > 0 ? user.teams[0] : null;
+            } else {
+              // If teams is already an object
+              teamData = user.teams;
+            }
+          }
+          
+          return {
+            user_id: user.user_id,
+            username: user.username,
+            role: user.role,
+            team: teamData
+          };
+        });
         
         setTeams(teamsData || []);
         setUsers(formattedUsers);
@@ -203,12 +221,26 @@ const UserManagementTab: React.FC = () => {
         `);
       
       if (!refreshError && refreshedUsers) {
-        const formattedUsers: DbUser[] = refreshedUsers.map(user => ({
-          user_id: user.user_id,
-          username: user.username,
-          role: user.role,
-          team: user.teams
-        }));
+        const formattedUsers: DbUser[] = refreshedUsers.map(user => {
+          // Handle potential array response from Supabase
+          let teamData = null;
+          if (user.teams) {
+            if (Array.isArray(user.teams)) {
+              // If teams is an array, get the first item
+              teamData = user.teams.length > 0 ? user.teams[0] : null;
+            } else {
+              // If teams is already an object
+              teamData = user.teams;
+            }
+          }
+          
+          return {
+            user_id: user.user_id,
+            username: user.username,
+            role: user.role,
+            team: teamData
+          };
+        });
         
         setUsers(formattedUsers);
       }
