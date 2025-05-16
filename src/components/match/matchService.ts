@@ -15,8 +15,8 @@ export async function fetchMatches(): Promise<MatchesResult> {
         result,
         referee_cost,
         field_cost,
-        home_team:home_team_id(team_id, team_name),
-        away_team:away_team_id(team_id, team_name)
+        home_team:teams!home_team_id(team_id, team_name),
+        away_team:teams!away_team_id(team_id, team_name)
       `)
       .order('match_date', { ascending: false });
     

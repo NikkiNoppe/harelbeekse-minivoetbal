@@ -86,8 +86,8 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
             home_team_id,
             away_team_id,
             matchday_id,
-            home_team:home_team_id(team_id, team_name),
-            away_team:away_team_id(team_id, team_name)
+            home_team:teams!home_team_id(team_id, team_name),
+            away_team:teams!away_team_id(team_id, team_name)
           `)
           .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
           .gte('match_date', today)
