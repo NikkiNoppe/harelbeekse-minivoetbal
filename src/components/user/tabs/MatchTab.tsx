@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClipboardEdit, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 
 // Import the refactored components
 import { MatchFormData, PastMatch } from "@/components/match/types";

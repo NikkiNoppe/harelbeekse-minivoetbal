@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, ListFilter } from "lucide-react";
-import { FormMessage, PastMatchesList } from "@/components/match/MatchComponents";
+import { FormMessage, PastMatchesList } from "./components";
 import { PastMatch } from "./types";
 
 interface PastMatchesTabContentProps {

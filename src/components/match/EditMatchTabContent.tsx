@@ -4,9 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
-import { FormMessage, FormMenuItem, EditMatchForm } from "@/components/match/MatchComponents";
 import { Badge } from "@/components/ui/badge";
 import { MatchFormData } from "./types";
+import { FormMessage, FormMenuItem, EditMatchForm } from "./components";
 
 interface EditMatchTabContentProps {
   isLoading: boolean;
