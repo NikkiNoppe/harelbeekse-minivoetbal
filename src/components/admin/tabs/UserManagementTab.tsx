@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { 
   Card, 
   CardContent, 
@@ -33,8 +34,13 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
-import { User, Mail, UserPlus } from "lucide-react";
-import { MOCK_TEAMS } from "@/data/mockData";
+import { User, Mail, UserPlus, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Team {
+  team_id: number;
+  team_name: string;
+}
 
 interface NewUserData {
   name: string;
@@ -43,37 +49,13 @@ interface NewUserData {
   teamId: number | null;
 }
 
-interface PendingUser {
-  id: number;
-  name: string;
-  email: string;
-  role: "admin" | "team" | "referee";
-  teamId: number | null;
-  inviteSent: string;
-  status: "pending" | "activated";
+interface DbUser {
+  user_id: number;
+  username: string;
+  role: string;
+  team_id?: number | null;
+  team_name?: string | null;
 }
-
-// Initial mock pending users
-const initialPendingUsers: PendingUser[] = [
-  {
-    id: 1,
-    name: "Jan Janssens",
-    email: "jan.janssens@example.com",
-    role: "team",
-    teamId: 3,
-    inviteSent: "2025-05-01",
-    status: "activated"
-  },
-  {
-    id: 2,
-    name: "Piet Pieters",
-    email: "piet.pieters@example.com",
-    role: "referee",
-    teamId: null,
-    inviteSent: "2025-05-05",
-    status: "pending"
-  }
-];
 
 const UserManagementTab: React.FC = () => {
   const { toast } = useToast();
@@ -85,11 +67,68 @@ const UserManagementTab: React.FC = () => {
     teamId: null
   });
   
-  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>(initialPendingUsers);
+  const [users, setUsers] = useState<DbUser[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
   
-  const handleAddUser = () => {
+  // Fetch users and teams from Supabase
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        
+        // Fetch teams
+        const { data: teamsData, error: teamsError } = await supabase
+          .from('teams')
+          .select('team_id, team_name')
+          .order('team_name');
+        
+        if (teamsError) throw teamsError;
+        
+        // Fetch users with team names
+        const { data: usersData, error: usersError } = await supabase
+          .from('users')
+          .select(`
+            user_id,
+            username,
+            role,
+            teams (
+              team_id,
+              team_name
+            )
+          `);
+        
+        if (usersError) throw usersError;
+        
+        // Transform the data
+        const formattedUsers: DbUser[] = usersData.map(user => ({
+          user_id: user.user_id,
+          username: user.username,
+          role: user.role,
+          team_id: user.teams ? user.teams.team_id : null,
+          team_name: user.teams ? user.teams.team_name : null
+        }));
+        
+        setTeams(teamsData || []);
+        setUsers(formattedUsers);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({
+          title: "Fout bij laden",
+          description: "Er is een fout opgetreden bij het laden van gebruikersgegevens.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, [toast]);
+  
+  const handleAddUser = async () => {
     // Validate form
     if (!newUser.name || !newUser.email) {
       toast({
@@ -118,51 +157,75 @@ const UserManagementTab: React.FC = () => {
       return;
     }
     
-    // Create new pending user
-    const today = new Date().toISOString().split('T')[0];
-    const newId = Math.max(0, ...pendingUsers.map(u => u.id)) + 1;
-    
-    const pendingUser: PendingUser = {
-      id: newId,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      teamId: newUser.teamId,
-      inviteSent: today,
-      status: "pending"
-    };
-    
-    setPendingUsers(prev => [...prev, pendingUser]);
-    
-    // Send email (mock)
-    toast({
-      title: "Uitnodiging verzonden",
-      description: `Er is een e-mail verzonden naar ${newUser.email} met instructies om een account aan te maken.`
-    });
-    
-    // Reset form
-    setNewUser({
-      name: "",
-      email: "",
-      role: "team",
-      teamId: null
-    });
-  };
-  
-  const handleResendInvitation = (user: PendingUser) => {
-    // Update the invitation sent date
-    setPendingUsers(prev => 
-      prev.map(u => 
-        u.id === user.id 
-          ? { ...u, inviteSent: new Date().toISOString().split('T')[0] }
-          : u
-      )
-    );
-    
-    toast({
-      title: "Uitnodiging opnieuw verzonden",
-      description: `Er is opnieuw een e-mail verzonden naar ${user.email}.`
-    });
+    try {
+      // Insert new user into Supabase
+      const { data, error } = await supabase
+        .from('users')
+        .insert({
+          username: newUser.name,
+          password: 'temporary_password', // In a real app, this would be handled more securely
+          role: newUser.role,
+          // Note: team_id would be managed through a separate relationship
+        })
+        .select();
+      
+      if (error) throw error;
+      
+      if (data && data[0] && newUser.role === "team" && newUser.teamId) {
+        // Update team with manager reference if user is a team manager
+        const { error: teamError } = await supabase
+          .from('teams')
+          .update({ player_manager_id: data[0].user_id })
+          .eq('team_id', newUser.teamId);
+        
+        if (teamError) throw teamError;
+      }
+      
+      toast({
+        title: "Gebruiker toegevoegd",
+        description: `${newUser.name} is toegevoegd als gebruiker.`
+      });
+      
+      // Refresh user list
+      const { data: refreshedUsers, error: refreshError } = await supabase
+        .from('users')
+        .select(`
+          user_id,
+          username,
+          role,
+          teams (
+            team_id,
+            team_name
+          )
+        `);
+      
+      if (!refreshError && refreshedUsers) {
+        const formattedUsers: DbUser[] = refreshedUsers.map(user => ({
+          user_id: user.user_id,
+          username: user.username,
+          role: user.role,
+          team_id: user.teams ? user.teams.team_id : null,
+          team_name: user.teams ? user.teams.team_name : null
+        }));
+        
+        setUsers(formattedUsers);
+      }
+      
+      // Reset form
+      setNewUser({
+        name: "",
+        email: "",
+        role: "team",
+        teamId: null
+      });
+    } catch (error) {
+      console.error('Error adding user:', error);
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het toevoegen van de gebruiker.",
+        variant: "destructive"
+      });
+    }
   };
   
   const handleOpenDeleteConfirmation = (userId: number) => {
@@ -170,18 +233,34 @@ const UserManagementTab: React.FC = () => {
     setConfirmDialogOpen(true);
   };
   
-  const handleDeleteUser = () => {
+  const handleDeleteUser = async () => {
     if (selectedUserId === null) return;
     
-    setPendingUsers(prev => prev.filter(user => user.id !== selectedUserId));
-    
-    toast({
-      title: "Gebruiker verwijderd",
-      description: "De gebruiker is succesvol verwijderd"
-    });
-    
-    setConfirmDialogOpen(false);
-    setSelectedUserId(null);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('user_id', selectedUserId);
+      
+      if (error) throw error;
+      
+      setUsers(prev => prev.filter(user => user.user_id !== selectedUserId));
+      
+      toast({
+        title: "Gebruiker verwijderd",
+        description: "De gebruiker is succesvol verwijderd"
+      });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het verwijderen van de gebruiker.",
+        variant: "destructive"
+      });
+    } finally {
+      setConfirmDialogOpen(false);
+      setSelectedUserId(null);
+    }
   };
   
   return (
@@ -194,7 +273,7 @@ const UserManagementTab: React.FC = () => {
         <CardContent>
           <div className="space-y-6">
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Nieuwe gebruiker uitnodigen</h3>
+              <h3 className="text-lg font-medium">Nieuwe gebruiker toevoegen</h3>
               
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
@@ -261,9 +340,9 @@ const UserManagementTab: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="no-team">Geen team geselecteerd</SelectItem>
-                        {MOCK_TEAMS.map(team => (
-                          <SelectItem key={team.id} value={team.id.toString()}>
-                            {team.name}
+                        {teams.map(team => (
+                          <SelectItem key={team.team_id} value={team.team_id.toString()}>
+                            {team.team_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -277,85 +356,61 @@ const UserManagementTab: React.FC = () => {
                 className="flex items-center gap-2"
               >
                 <UserPlus className="h-4 w-4" />
-                Uitnodiging verzenden
+                Gebruiker toevoegen
               </Button>
             </div>
             
             <div className="border-t pt-4">
-              <h3 className="mb-4 text-lg font-medium">Uitgenodigde gebruikers</h3>
+              <h3 className="mb-4 text-lg font-medium">Gebruikers</h3>
               
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Naam</TableHead>
-                      <TableHead>E-mail</TableHead>
                       <TableHead>Rol</TableHead>
                       <TableHead>Team</TableHead>
-                      <TableHead>Uitgenodigd op</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Acties</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pendingUsers.length === 0 ? (
+                    {loading ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-6">
-                          Geen uitgenodigde gebruikers
+                        <TableCell colSpan={4} className="text-center py-6">
+                          Gebruikers laden...
+                        </TableCell>
+                      </TableRow>
+                    ) : users.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-6">
+                          Geen gebruikers gevonden
                         </TableCell>
                       </TableRow>
                     ) : (
-                      pendingUsers.map(user => (
-                        <TableRow key={user.id}>
+                      users.map(user => (
+                        <TableRow key={user.user_id}>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4" />
-                              {user.name}
+                              {user.username}
                             </div>
                           </TableCell>
-                          <TableCell>{user.email}</TableCell>
                           <TableCell>
                             {user.role === "admin" && "Administrator"}
                             {user.role === "team" && "Teamverantwoordelijke"}
                             {user.role === "referee" && "Scheidsrechter"}
                           </TableCell>
                           <TableCell>
-                            {user.teamId 
-                              ? MOCK_TEAMS.find(t => t.id === user.teamId)?.name || `Team ${user.teamId}` 
-                              : "-"
-                            }
+                            {user.team_name || "-"}
                           </TableCell>
-                          <TableCell>{user.inviteSent}</TableCell>
-                          <TableCell>
-                            {user.status === "pending" ? (
-                              <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                                In afwachting
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                Geactiveerd
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right space-x-1">
-                            {user.status === "pending" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleResendInvitation(user)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Mail className="h-4 w-4" />
-                                <span className="sr-only">Opnieuw versturen</span>
-                              </Button>
-                            )}
+                          <TableCell className="text-right">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleOpenDeleteConfirmation(user.id)}
+                              onClick={() => handleOpenDeleteConfirmation(user.user_id)}
                               className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
                             >
-                              <User className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                               <span className="sr-only">Verwijderen</span>
                             </Button>
                           </TableCell>

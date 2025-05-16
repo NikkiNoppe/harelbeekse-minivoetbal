@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TeamsTab from "./tabs/TeamsTab";
-import UsersTab from "./tabs/UsersTab";
 import MatchTab from "./tabs/MatchTab";
 import PlayersTab from "./tabs/PlayersTab";
 import AdminSettingsPanel from "@/components/admin/AdminSettingsPanel";
@@ -33,7 +32,6 @@ const UserDashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full flex mb-8 overflow-x-auto">
             <TabsTrigger value="teams">Teams</TabsTrigger>
-            <TabsTrigger value="users">Gebruikers</TabsTrigger>
             <TabsTrigger value="players">Spelers</TabsTrigger>
             <TabsTrigger value="matches">Wedstrijden</TabsTrigger>
             <TabsTrigger value="competition">Competitie</TabsTrigger>
@@ -43,7 +41,6 @@ const UserDashboard = () => {
 
           <div className="animate-fade-in">
             <TabsContent value="teams"><TeamsTab /></TabsContent>
-            <TabsContent value="users"><UsersTab /></TabsContent>
             <TabsContent value="players"><PlayersTab /></TabsContent>
             <TabsContent value="matches"><MatchTab /></TabsContent>
             <TabsContent value="competition"><CompetitionManagementTab /></TabsContent>
