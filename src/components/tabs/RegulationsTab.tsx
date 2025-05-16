@@ -2,22 +2,31 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const RegulationsTab: React.FC = () => {
+  const isMobile = useIsMobile();
+  
   return (
-    <div className="space-y-8 animate-slide-up">
-      <section className="max-w-3xl mx-auto">
-        <h2 className="text-3xl font-semibold mb-6 text-center">Reglement</h2>
+    <div className="space-y-6 animate-slide-up">
+      <section className="max-w-3xl mx-auto px-2 sm:px-0">
+        <h2 className="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-center">Reglement</h2>
         
-        <p className="text-muted-foreground mb-8 text-center">
+        <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8 text-center px-2">
           Dit reglement bevat de officiële regels en richtlijnen voor alle competities
           georganiseerd door Harelbeekse minivoetbal competitie.
         </p>
         
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion 
+          type="single" 
+          collapsible 
+          className="w-full transition-all duration-200"
+        >
           <AccordionItem value="item-1">
-            <AccordionTrigger className="text-lg font-medium">1. Algemene Bepalingen</AccordionTrigger>
-            <AccordionContent className="space-y-3 text-muted-foreground">
+            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+              1. Algemene Bepalingen
+            </AccordionTrigger>
+            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
               <p>1.1 De competitie wordt georganiseerd door Voetbal Arena.</p>
               <p>1.2 Alle wedstrijden worden gespeeld volgens de regels van de KNVB, tenzij anders vermeld in dit reglement.</p>
               <p>1.3 Deelnemende teams dienen zich te houden aan alle bepalingen in dit reglement.</p>
@@ -26,12 +35,14 @@ const RegulationsTab: React.FC = () => {
           </AccordionItem>
 
           <AccordionItem value="item-2">
-            <AccordionTrigger className="text-lg font-medium">2. Competitie Structuur</AccordionTrigger>
-            <AccordionContent className="space-y-3 text-muted-foreground">
+            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+              2. Competitie Structuur
+            </AccordionTrigger>
+            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
               <p>2.1 De competitie bestaat uit een volledige competitie waarin alle teams elkaar twee keer ontmoeten (thuis en uit).</p>
               <p>2.2 Voor een overwinning krijgt een team 3 punten, voor een gelijkspel 1 punt, en voor een nederlaag 0 punten.</p>
               <p>2.3 De eindrangschikking wordt bepaald door:</p>
-              <ul className="list-disc pl-5">
+              <ul className="list-disc pl-4 sm:pl-5 mt-1 space-y-1">
                 <li>Totaal aantal behaalde punten</li>
                 <li>Doelsaldo</li>
                 <li>Aantal gescoorde doelpunten</li>
@@ -42,8 +53,10 @@ const RegulationsTab: React.FC = () => {
           </AccordionItem>
 
           <AccordionItem value="item-3">
-            <AccordionTrigger className="text-lg font-medium">3. Wedstrijdregels</AccordionTrigger>
-            <AccordionContent className="space-y-3 text-muted-foreground">
+            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+              3. Wedstrijdregels
+            </AccordionTrigger>
+            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
               <p>3.1 Elke wedstrijd duurt 2 x 45 minuten met een rust van 15 minuten.</p>
               <p>3.2 Teams dienen 30 minuten voor aanvang van de wedstrijd aanwezig te zijn.</p>
               <p>3.3 Een team moet minimaal 7 spelers op het veld hebben om een wedstrijd te kunnen starten.</p>
@@ -53,8 +66,10 @@ const RegulationsTab: React.FC = () => {
           </AccordionItem>
 
           <AccordionItem value="item-4">
-            <AccordionTrigger className="text-lg font-medium">4. Spelers & Registratie</AccordionTrigger>
-            <AccordionContent className="space-y-3 text-muted-foreground">
+            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+              4. Spelers & Registratie
+            </AccordionTrigger>
+            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
               <p>4.1 Alle spelers moeten geregistreerd zijn bij hun club en bij de competitie-organisatie.</p>
               <p>4.2 Een speler mag in een seizoen slechts voor één club uitkomen.</p>
               <p>4.3 De registratietermijn sluit 2 weken voor aanvang van de competitie.</p>
@@ -64,8 +79,10 @@ const RegulationsTab: React.FC = () => {
           </AccordionItem>
 
           <AccordionItem value="item-5">
-            <AccordionTrigger className="text-lg font-medium">5. Disciplinaire Zaken</AccordionTrigger>
-            <AccordionContent className="space-y-3 text-muted-foreground">
+            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+              5. Disciplinaire Zaken
+            </AccordionTrigger>
+            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
               <p>5.1 De competitieorganisatie hanteert een systeem van gele en rode kaarten conform KNVB-regels.</p>
               <p>5.2 Een speler die een rode kaart ontvangt, is automatisch geschorst voor de eerstvolgende wedstrijd.</p>
               <p>5.3 Na 4 gele kaarten volgt een schorsing van één wedstrijd.</p>
@@ -75,8 +92,10 @@ const RegulationsTab: React.FC = () => {
           </AccordionItem>
 
           <AccordionItem value="item-6">
-            <AccordionTrigger className="text-lg font-medium">6. Bekercompetitie</AccordionTrigger>
-            <AccordionContent className="space-y-3 text-muted-foreground">
+            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+              6. Bekercompetitie
+            </AccordionTrigger>
+            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
               <p>6.1 De bekercompetitie wordt gespeeld volgens het knock-out systeem.</p>
               <p>6.2 Bij een gelijkspel worden er direct strafschoppen genomen (geen verlenging).</p>
               <p>6.3 De finale wordt gespeeld op een neutrale locatie, aangewezen door de organisatie.</p>
@@ -85,8 +104,10 @@ const RegulationsTab: React.FC = () => {
           </AccordionItem>
 
           <AccordionItem value="item-7">
-            <AccordionTrigger className="text-lg font-medium">7. Wedstrijdverplaatsingen</AccordionTrigger>
-            <AccordionContent className="space-y-3 text-muted-foreground">
+            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+              7. Wedstrijdverplaatsingen
+            </AccordionTrigger>
+            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
               <p>7.1 Een verzoek tot wedstrijdverplaatsing moet minimaal 10 dagen van tevoren worden ingediend.</p>
               <p>7.2 Het verzoek moet worden goedgekeurd door zowel de tegenstander als de competitieleiding.</p>
               <p>7.3 Verplaatsingen vanwege weersomstandigheden worden door de scheidsrechter of competitieleiding bepaald.</p>
@@ -95,8 +116,10 @@ const RegulationsTab: React.FC = () => {
           </AccordionItem>
 
           <AccordionItem value="item-8">
-            <AccordionTrigger className="text-lg font-medium">8. Slotbepalingen</AccordionTrigger>
-            <AccordionContent className="space-y-3 text-muted-foreground">
+            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+              8. Slotbepalingen
+            </AccordionTrigger>
+            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
               <p>8.1 Dit reglement is vastgesteld door het bestuur van Voetbal Arena op 1 augustus 2023.</p>
               <p>8.2 Wijzigingen in dit reglement kunnen alleen door het bestuur worden aangebracht.</p>
               <p>8.3 In alle gevallen waarin dit reglement niet voorziet, beslist het bestuur.</p>
@@ -106,19 +129,19 @@ const RegulationsTab: React.FC = () => {
         </Accordion>
       </section>
 
-      <section className="max-w-3xl mx-auto mt-12">
+      <section className="max-w-3xl mx-auto mt-8 sm:mt-12 px-2 sm:px-0">
         <Card>
-          <CardHeader>
-            <CardTitle>Contact Tuchtcommissie</CardTitle>
+          <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+            <CardTitle className="text-base sm:text-lg">Contact Tuchtcommissie</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
+          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+            <p className="text-sm sm:text-base text-muted-foreground mb-4">
               Voor vragen over het reglement of om beroep aan te tekenen tegen disciplinaire beslissingen,
               kunt u contact opnemen met de tuchtcommissie:
             </p>
-            <div className="bg-muted/40 p-4 rounded-lg">
-              <p><strong>Email:</strong> info@voetbalcommisie.be</p>
-              <p className="text-xs mt-2 text-muted-foreground">Beroepen moeten per mail worden ingediend binnen 5 werkdagen na een beslissing.</p>
+            <div className="bg-muted/40 p-3 sm:p-4 rounded-lg">
+              <p className="text-sm sm:text-base"><strong>Email:</strong> info@voetbalcommisie.be</p>
+              <p className="text-xs sm:text-sm mt-2 text-muted-foreground">Beroepen moeten per mail worden ingediend binnen 5 werkdagen na een beslissing.</p>
             </div>
           </CardContent>
         </Card>
