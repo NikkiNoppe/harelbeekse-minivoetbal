@@ -59,8 +59,8 @@ const MatchTab: React.FC = () => {
             result,
             referee_cost,
             field_cost,
-            home_team:home_team_id(team_name),
-            away_team:away_team_id(team_name)
+            home_team:home_team_id(team_id, team_name),
+            away_team:away_team_id(team_id, team_name)
           `)
           .order('match_date', { ascending: false });
         
