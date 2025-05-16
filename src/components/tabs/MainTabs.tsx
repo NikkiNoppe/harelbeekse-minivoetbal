@@ -22,7 +22,7 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
-      <TabsList className="w-full flex mb-8 bg-secondary p-1 overflow-x-auto">
+      <TabsList className="w-full flex mb-8 bg-secondary p-1 overflow-x-auto no-vertical-scroll">
         {isTabVisible("algemeen") && <TabItem value="algemeen" icon={<Info />} label="Algemeen" />}
         {isTabVisible("competitie") && <TabItem value="competitie" icon={<Award />} label="Competitie" />}
         {isTabVisible("playoff") && <TabItem value="playoff" icon={<Layers />} label="Play-Off" />}

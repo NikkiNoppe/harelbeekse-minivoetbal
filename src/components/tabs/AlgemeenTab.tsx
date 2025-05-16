@@ -60,11 +60,6 @@ const AlgemeenTab: React.FC = () => {
               <Card key={post.id} className="card-hover">
                 <CardHeader>
                   <div className="flex justify-between items-start mb-2">
-                    {post.tags && post.tags.length > 0 && (
-                      <Badge className="w-fit bg-soccer-green/10 border-soccer-green/20 text-soccer-green">
-                        {post.tags[0]}
-                      </Badge>
-                    )}
                     <span className="text-sm text-muted-foreground">
                       {new Date(post.date).toLocaleDateString('nl-NL')}
                     </span>
@@ -74,10 +69,10 @@ const AlgemeenTab: React.FC = () => {
                 <CardContent>
                   <p>{post.content}</p>
                   
-                  {post.tags && post.tags.length > 1 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {post.tags.slice(1).map((tag, index) => (
-                        <Badge key={index} variant="outline" className="flex items-center gap-1">
+                  {post.tags && post.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {post.tags.map((tag, index) => (
+                        <Badge key={index} variant="outline" className="flex items-center gap-1 bg-orange-500/10 text-orange-500 border-orange-500/20">
                           <Tag className="h-3 w-3" /> {tag}
                         </Badge>
                       ))}

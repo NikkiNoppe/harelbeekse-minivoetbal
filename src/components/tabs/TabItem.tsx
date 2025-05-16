@@ -16,6 +16,7 @@ const TabItem: React.FC<TabItemProps> = ({ value, icon, label }) => {
       className={cn(
         "flex-1 min-w-max flex items-center justify-center gap-2 px-4 py-2 font-medium",
         "data-[state=active]:bg-accent data-[state=active]:text-orange-500 data-[state=active]:shadow-sm",
+        "dark:data-[state=active]:bg-orange-500 dark:data-[state=active]:text-slate-950", // Dark text in dark mode
         "text-muted-foreground transition-all"
       )}
     >
