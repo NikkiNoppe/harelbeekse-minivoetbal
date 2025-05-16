@@ -39,4 +39,9 @@ export interface CompetitionType {
   regularRounds: number;
   playoffTeams?: number;
   isCup?: boolean;
+  
+  // Add these properties to make it compatible with CompetitionFormat
+  format_id?: number;
+  has_playoffs?: boolean;
+  regular_rounds?: number;
 }

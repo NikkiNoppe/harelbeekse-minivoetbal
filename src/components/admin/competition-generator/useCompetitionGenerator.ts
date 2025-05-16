@@ -24,6 +24,8 @@ export const useCompetitionGenerator = () => {
       description: "Elke ploeg speelt één keer tegen elke andere ploeg",
       hasPlayoffs: false,
       regularRounds: 1,
+      has_playoffs: false,
+      regular_rounds: 1,
     },
     {
       id: "regular-double",
@@ -31,6 +33,8 @@ export const useCompetitionGenerator = () => {
       description: "Elke ploeg speelt twee keer tegen elke andere ploeg (thuis en uit)",
       hasPlayoffs: false,
       regularRounds: 2,
+      has_playoffs: false,
+      regular_rounds: 2,
     },
     {
       id: "playoff-top6-bottom6",
@@ -38,7 +42,9 @@ export const useCompetitionGenerator = () => {
       description: "Reguliere competitie gevolgd door playoff tussen top 6 teams en degradatie playoff voor bottom 6 teams",
       hasPlayoffs: true,
       regularRounds: 1,
-      playoffTeams: 6
+      playoffTeams: 6,
+      has_playoffs: true,
+      regular_rounds: 1,
     },
     {
       id: "playoff-top4",
@@ -46,7 +52,9 @@ export const useCompetitionGenerator = () => {
       description: "Reguliere competitie gevolgd door playoff tussen top 4 teams",
       hasPlayoffs: true,
       regularRounds: 1,
-      playoffTeams: 4
+      playoffTeams: 4,
+      has_playoffs: true,
+      regular_rounds: 1,
     },
     {
       id: "cup",
@@ -54,7 +62,9 @@ export const useCompetitionGenerator = () => {
       description: "Knock-out toernooi waarin elke ploeg één wedstrijd speelt en de winnaar doorgaat",
       hasPlayoffs: false,
       regularRounds: 0,
-      isCup: true
+      isCup: true,
+      has_playoffs: false,
+      regular_rounds: 0,
     }
   ];
 
@@ -97,7 +107,7 @@ export const useCompetitionGenerator = () => {
       return;
     }
 
-    const format = competitionFormats?.find(f => f.id === selectedFormat);
+    const format = predefinedFormats?.find(f => f.id === selectedFormat);
     if (!format) {
       toast({
         title: "Geen competitieformat geselecteerd",
@@ -194,7 +204,7 @@ export const useCompetitionGenerator = () => {
 
     try {
       // Get the selected format
-      const format = competitionFormats?.find(f => f.id === selectedFormat);
+      const format = predefinedFormats?.find(f => f.id === selectedFormat);
       
       // 1. Create a new competition
       const selectedDatesObjects = availableDates?.filter(d => selectedDates.includes(d.date_id)) || [];

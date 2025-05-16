@@ -4,14 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2 } from "lucide-react";
-import { GeneratedMatch, CompetitionFormat } from "@/components/admin/competition-generator/types";
+import { GeneratedMatch, CompetitionType } from "@/components/admin/competition-generator/types";
 
 interface PreviewTabProps {
   generatedMatches: GeneratedMatch[];
   competitionName: string;
-  selectedTeams: number[];
-  competitionFormat: CompetitionFormat | undefined;
   selectedDates: number[];
+  competitionFormat: CompetitionType | undefined;
   isCreating: boolean;
   onSaveCompetition: () => void;
   onRegenerateSchedule: () => void;
@@ -20,9 +19,8 @@ interface PreviewTabProps {
 const PreviewTab: React.FC<PreviewTabProps> = ({
   generatedMatches,
   competitionName,
-  selectedTeams,
-  competitionFormat,
   selectedDates,
+  competitionFormat,
   isCreating,
   onSaveCompetition,
   onRegenerateSchedule
@@ -58,7 +56,7 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Teams</dt>
-                <dd>{selectedTeams.length}</dd>
+                <dd>{Math.ceil(generatedMatches.length / (competitionFormat?.regularRounds || 1))}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Format</dt>
@@ -79,7 +77,10 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Speeldag</TableHead>
+              <TableHead>Code</TableHead>
+              <TableHead>Datum</TableHead>
+              <TableHead>Tijd</TableHead>
+              <TableHead>Locatie</TableHead>
               <TableHead>Thuisploeg</TableHead>
               <TableHead className="text-center">vs</TableHead>
               <TableHead>Uitploeg</TableHead>
@@ -88,7 +89,10 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
           <TableBody>
             {generatedMatches.map((match, index) => (
               <TableRow key={index}>
-                <TableCell>Speeldag {match.matchday}</TableCell>
+                <TableCell>{match.unique_code}</TableCell>
+                <TableCell>{match.match_date}</TableCell>
+                <TableCell>{match.match_time}</TableCell>
+                <TableCell>{match.location}</TableCell>
                 <TableCell>{match.home_team_name}</TableCell>
                 <TableCell className="text-center">vs</TableCell>
                 <TableCell>{match.away_team_name}</TableCell>
