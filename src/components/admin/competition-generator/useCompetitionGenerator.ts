@@ -1,19 +1,62 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Team, AvailableDate, CompetitionFormat, GeneratedMatch } from "./types";
+import { Team, AvailableDate, CompetitionFormat, GeneratedMatch, CompetitionType } from "./types";
 import { generateRoundRobinSchedule } from "./scheduleGenerator";
+import { generateCupSchedule, generatePlayoffSchedule } from "./advancedScheduleGenerator";
 
 export const useCompetitionGenerator = () => {
   const { toast } = useToast();
   const [selectedDates, setSelectedDates] = useState<number[]>([]);
-  const [selectedFormat, setSelectedFormat] = useState<number | null>(null);
-  const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
+  const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
   const [generatedMatches, setGeneratedMatches] = useState<GeneratedMatch[]>([]);
   const [competitionName, setCompetitionName] = useState("Competitie 2025-2026");
   const [isCreating, setIsCreating] = useState(false);
+  const [activeTab, setActiveTab] = useState("format");
+  const [minimumDatesRequired, setMinimumDatesRequired] = useState(0);
+  
+  const predefinedFormats: CompetitionType[] = [
+    {
+      id: "regular-single",
+      name: "Reguliere competitie (enkele ronde)",
+      description: "Elke ploeg speelt één keer tegen elke andere ploeg",
+      hasPlayoffs: false,
+      regularRounds: 1,
+    },
+    {
+      id: "regular-double",
+      name: "Reguliere competitie (dubbele ronde)",
+      description: "Elke ploeg speelt twee keer tegen elke andere ploeg (thuis en uit)",
+      hasPlayoffs: false,
+      regularRounds: 2,
+    },
+    {
+      id: "playoff-top6-bottom6",
+      name: "Competitie met Play-offs (Top 6 / Bottom 6)",
+      description: "Reguliere competitie gevolgd door playoff tussen top 6 teams en degradatie playoff voor bottom 6 teams",
+      hasPlayoffs: true,
+      regularRounds: 1,
+      playoffTeams: 6
+    },
+    {
+      id: "playoff-top4",
+      name: "Competitie met Play-offs (Top 4)",
+      description: "Reguliere competitie gevolgd door playoff tussen top 4 teams",
+      hasPlayoffs: true,
+      regularRounds: 1,
+      playoffTeams: 4
+    },
+    {
+      id: "cup",
+      name: "Beker competitie (knockout)",
+      description: "Knock-out toernooi waarin elke ploeg één wedstrijd speelt en de winnaar doorgaat",
+      hasPlayoffs: false,
+      regularRounds: 0,
+      isCup: true
+    }
+  ];
 
   // Fetch available dates from the database
   const { data: availableDates, isLoading: loadingDates } = useQuery({
@@ -26,19 +69,6 @@ export const useCompetitionGenerator = () => {
       
       if (error) throw error;
       return data as AvailableDate[];
-    }
-  });
-
-  // Fetch competition formats from the database
-  const { data: competitionFormats, isLoading: loadingFormats } = useQuery({
-    queryKey: ['competitionFormats'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('competition_formats')
-        .select('*');
-      
-      if (error) throw error;
-      return data as CompetitionFormat[];
     }
   });
 
@@ -56,18 +86,18 @@ export const useCompetitionGenerator = () => {
     }
   });
 
-  // Generate a competition schedule
+  // Generate schedule based on the selected format
   const generateSchedule = () => {
-    if (!teams || teams.length < 2 || selectedTeams.length < 2) {
+    if (!teams || teams.length < 2) {
       toast({
-        title: "Niet genoeg teams geselecteerd",
-        description: "Selecteer ten minste 2 teams om een schema te genereren",
+        title: "Niet genoeg teams beschikbaar",
+        description: "Er zijn niet genoeg teams om een schema te genereren",
         variant: "destructive"
       });
       return;
     }
 
-    const format = competitionFormats?.find(f => f.format_id === selectedFormat);
+    const format = competitionFormats?.find(f => f.id === selectedFormat);
     if (!format) {
       toast({
         title: "Geen competitieformat geselecteerd",
@@ -77,15 +107,68 @@ export const useCompetitionGenerator = () => {
       return;
     }
 
-    const filteredTeams = teams.filter(team => selectedTeams.includes(team.team_id));
-    const matches = generateRoundRobinSchedule(filteredTeams, format);
+    let matches: GeneratedMatch[] = [];
+
+    if (format.isCup) {
+      matches = generateCupSchedule(teams);
+    } else if (format.hasPlayoffs) {
+      matches = generateRoundRobinSchedule(teams, format);
+      // We don't generate the playoff matches yet, they will be created after the regular season
+    } else {
+      matches = generateRoundRobinSchedule(teams, format);
+    }
+
+    // Assign unique codes, locations and times
+    const selectedDatesObjects = availableDates?.filter(d => selectedDates.includes(d.date_id)) || [];
+    
+    matches = matches.map((match, index) => {
+      // Create unique code: matchday number (2 digits) + match number in that day (2 digits)
+      const matchday = String(match.matchday).padStart(2, '0');
+      const matchNumber = String((index % 9) + 1).padStart(2, '0');
+      
+      const dateIndex = Math.floor(index / 9) % selectedDatesObjects.length;
+      const dateObj = selectedDatesObjects[dateIndex];
+      
+      // Alternate between venues and time slots
+      const venues = ["Harelbeke - Dageraad", "Bavikhove - Vlasschaard"];
+      const timeSlots = ["18:30", "19:30", "20:30"];
+      
+      const venueIndex = index % venues.length;
+      const timeIndex = index % timeSlots.length;
+      
+      return {
+        ...match,
+        unique_code: `${matchday}${matchNumber}`,
+        location: venues[venueIndex],
+        match_time: timeSlots[timeIndex],
+        match_date: dateObj ? dateObj.available_date : ''
+      };
+    });
+    
     setGeneratedMatches(matches);
+    
+    // Calculate required matchdays
+    const requiredMatchdays = Math.ceil(matches.length / 9); // Max 9 matches per matchday
+    setMinimumDatesRequired(requiredMatchdays);
     
     toast({
       title: "Competitieschema gegenereerd",
-      description: `${matches.length} wedstrijden zijn gegenereerd voor ${filteredTeams.length} teams`,
+      description: `${matches.length} wedstrijden zijn gegenereerd voor ${teams.length} teams`,
     });
+
+    // Auto navigate to preview if enough dates are selected
+    if (selectedDates.length >= requiredMatchdays) {
+      setActiveTab("preview");
+    }
   };
+
+  // Update minimum required dates when matches are generated
+  useEffect(() => {
+    if (generatedMatches.length > 0) {
+      const requiredMatchdays = Math.ceil(generatedMatches.length / 9);
+      setMinimumDatesRequired(requiredMatchdays);
+    }
+  }, [generatedMatches]);
 
   // Save the competition to the database
   const saveCompetition = async () => {
@@ -98,10 +181,10 @@ export const useCompetitionGenerator = () => {
       return;
     }
 
-    if (selectedDates.length < Math.ceil(generatedMatches.length / 3)) {
+    if (selectedDates.length < minimumDatesRequired) {
       toast({
         title: "Niet genoeg speeldagen geselecteerd",
-        description: "Selecteer meer speeldagen om alle wedstrijden in te plannen",
+        description: `Selecteer ten minste ${minimumDatesRequired} speeldagen om alle wedstrijden in te plannen`,
         variant: "destructive"
       });
       return;
@@ -110,7 +193,10 @@ export const useCompetitionGenerator = () => {
     setIsCreating(true);
 
     try {
-      // 1. Maak eerst een nieuwe competitie aan
+      // Get the selected format
+      const format = competitionFormats?.find(f => f.id === selectedFormat);
+      
+      // 1. Create a new competition
       const selectedDatesObjects = availableDates?.filter(d => selectedDates.includes(d.date_id)) || [];
       const startDate = selectedDatesObjects.length > 0 ? selectedDatesObjects[0].available_date : new Date().toISOString().split('T')[0];
       const endDate = selectedDatesObjects.length > 0 ? 
@@ -133,7 +219,7 @@ export const useCompetitionGenerator = () => {
       
       const competitionId = compData[0].competition_id;
 
-      // 2. Maak matchdays aan voor elke geselecteerde datum
+      // 2. Create matchdays for each selected date
       const matchdaysToCreate = selectedDatesObjects.map((date, index) => ({
         competition_id: competitionId,
         name: `Speeldag ${index + 1}`,
@@ -148,17 +234,25 @@ export const useCompetitionGenerator = () => {
         
       if (matchdayError) throw matchdayError;
       
-      // 3. Wijs wedstrijden toe aan matchdays
+      // 3. Assign matches to matchdays
       const matchDays = matchdayData || [];
       const matchesToCreate = generatedMatches.map((match, index) => {
-        const matchdayIndex = Math.floor(index / 3) % matchDays.length; // Maximaal 3 wedstrijden per speeldag
+        const matchdayIndex = Math.floor(index / 9) % matchDays.length; // Max 9 matches per matchday
+        
+        // Generate formatted match date with time
+        const matchDate = new Date(matchDays[matchdayIndex].matchday_date);
+        const [hours, minutes] = (match.match_time || "18:30").split(":");
+        matchDate.setHours(parseInt(hours), parseInt(minutes));
+        
         return {
           home_team_id: match.home_team_id,
           away_team_id: match.away_team_id,
-          match_date: matchDays[matchdayIndex].matchday_date,
+          match_date: matchDate.toISOString(),
           matchday_id: matchDays[matchdayIndex].matchday_id,
-          referee_cost: 25.00,  // Default waarden
-          field_cost: 50.00,    // Default waarden
+          unique_number: match.unique_code,
+          referee_cost: 25.00,
+          field_cost: 50.00,
+          is_cup_match: format?.isCup || false,
         };
       });
       
@@ -170,13 +264,14 @@ export const useCompetitionGenerator = () => {
 
       toast({
         title: "Competitie aangemaakt",
-        description: `De competitie '${competitionName}' is succesvol aangemaakt met ${generatedMatches.length} wedstrijden`,
+        description: `De ${format?.isCup ? 'beker' : 'competitie'} '${competitionName}' is succesvol aangemaakt met ${generatedMatches.length} wedstrijden`,
       });
       
       // Reset form
       setGeneratedMatches([]);
       setSelectedDates([]);
       setSelectedFormat(null);
+      setActiveTab("format");
       
     } catch (error: any) {
       console.error("Error creating competition:", error);
@@ -199,46 +294,24 @@ export const useCompetitionGenerator = () => {
     );
   };
 
-  // Toggle a team in the selected teams
-  const toggleTeam = (teamId: number) => {
-    setSelectedTeams(prev => 
-      prev.includes(teamId) 
-        ? prev.filter(id => id !== teamId) 
-        : [...prev, teamId]
-    );
-  };
-
-  // Select all teams
-  const selectAllTeams = () => {
-    if (teams) {
-      setSelectedTeams(teams.map(team => team.team_id));
-    }
-  };
-
-  // Deselect all teams
-  const deselectAllTeams = () => {
-    setSelectedTeams([]);
-  };
-
   return {
     availableDates,
     loadingDates,
-    competitionFormats,
-    loadingFormats,
+    competitionFormats: predefinedFormats,
+    loadingFormats: false,
     teams,
     loadingTeams,
     selectedDates,
     selectedFormat,
-    selectedTeams,
     generatedMatches,
     competitionName,
     isCreating,
+    minimumDatesRequired,
+    activeTab,
+    setActiveTab,
     setSelectedFormat,
     setCompetitionName,
     toggleDate,
-    toggleTeam,
-    selectAllTeams,
-    deselectAllTeams,
     generateSchedule,
     saveCompetition
   };

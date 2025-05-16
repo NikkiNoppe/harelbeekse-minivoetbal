@@ -25,4 +25,18 @@ export interface GeneratedMatch {
   matchday: number;
   home_team_name: string;
   away_team_name: string;
+  unique_code?: string;
+  location?: string;
+  match_time?: string;
+  match_date?: string;
+}
+
+export interface CompetitionType {
+  id: string;
+  name: string;
+  description: string;
+  hasPlayoffs: boolean;
+  regularRounds: number;
+  playoffTeams?: number;
+  isCup?: boolean;
 }

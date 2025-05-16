@@ -10,6 +10,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import TeamDashboard from "@/components/team/TeamDashboard";
 import { MOCK_TEAMS } from "@/data/mockData";
 import CompetitionManagementTab from "@/components/admin/tabs/CompetitionManagementTab";
+import DateGeneratorTab from "@/components/admin/DateGeneratorTab";
 
 const UserDashboard = () => {
   const { user } = useAuth();
@@ -36,6 +37,7 @@ const UserDashboard = () => {
             <TabsTrigger value="players">Spelers</TabsTrigger>
             <TabsTrigger value="matches">Wedstrijden</TabsTrigger>
             <TabsTrigger value="competition">Competitie</TabsTrigger>
+            <TabsTrigger value="date-generator">Speeldata Generator</TabsTrigger>
             <TabsTrigger value="settings">Instellingen</TabsTrigger>
           </TabsList>
 
@@ -45,6 +47,7 @@ const UserDashboard = () => {
             <TabsContent value="players"><PlayersTab /></TabsContent>
             <TabsContent value="matches"><MatchTab /></TabsContent>
             <TabsContent value="competition"><CompetitionManagementTab /></TabsContent>
+            <TabsContent value="date-generator"><DateGeneratorTab /></TabsContent>
             <TabsContent value="settings"><AdminSettingsPanel /></TabsContent>
           </div>
         </Tabs>

@@ -2,15 +2,16 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Check, Loader2 } from "lucide-react";
-import { CompetitionFormat } from "@/components/admin/competition-generator/types";
+import { CompetitionFormat, CompetitionType } from "@/components/admin/competition-generator/types";
 
 interface FormatSelectionTabProps {
-  competitionFormats: CompetitionFormat[] | undefined;
+  competitionFormats: CompetitionType[];
   loadingFormats: boolean;
-  selectedFormat: number | null;
-  setSelectedFormat: (formatId: number) => void;
+  selectedFormat: string | null;
+  setSelectedFormat: (formatId: string) => void;
   competitionName: string;
   setCompetitionName: (name: string) => void;
+  onGenerateSchedule: () => void;
 }
 
 const FormatSelectionTab: React.FC<FormatSelectionTabProps> = ({
@@ -19,7 +20,8 @@ const FormatSelectionTab: React.FC<FormatSelectionTabProps> = ({
   selectedFormat,
   setSelectedFormat,
   competitionName,
-  setCompetitionName
+  setCompetitionName,
+  onGenerateSchedule
 }) => {
   return (
     <div>
@@ -33,25 +35,33 @@ const FormatSelectionTab: React.FC<FormatSelectionTabProps> = ({
         <>
           <div className="grid gap-4">
             {competitionFormats?.map((format) => (
-              <div key={format.format_id} className={`border p-4 rounded-md cursor-pointer ${
-                selectedFormat === format.format_id ? 'border-primary bg-primary/5' : ''
-              }`} onClick={() => setSelectedFormat(format.format_id)}>
+              <div key={format.id} className={`border p-4 rounded-md cursor-pointer ${
+                selectedFormat === format.id ? 'border-primary bg-primary/5' : ''
+              }`} onClick={() => setSelectedFormat(format.id)}>
                 <div className="flex justify-between items-center">
                   <div>
                     <h4 className="font-medium">{format.name}</h4>
                     <p className="text-sm text-muted-foreground">{format.description}</p>
                   </div>
-                  {selectedFormat === format.format_id && (
+                  {selectedFormat === format.id && (
                     <Check className="h-5 w-5 text-primary" />
                   )}
                 </div>
                 
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-                    {format.regular_rounds === 1 ? 'Enkele competitie' : 'Dubbele competitie'}
-                  </span>
+                  {!format.isCup && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                      {format.regularRounds === 1 ? 'Enkele competitie' : 'Dubbele competitie'}
+                    </span>
+                  )}
                   
-                  {format.has_playoffs && (
+                  {format.isCup && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300">
+                      Beker competitie
+                    </span>
+                  )}
+                  
+                  {format.hasPlayoffs && (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
                       Met playoffs
                     </span>
@@ -75,7 +85,7 @@ const FormatSelectionTab: React.FC<FormatSelectionTabProps> = ({
       )}
       
       <div className="mt-4 pt-4 border-t flex justify-end">
-        <Button variant="default">
+        <Button variant="default" onClick={onGenerateSchedule}>
           Volgende
         </Button>
       </div>

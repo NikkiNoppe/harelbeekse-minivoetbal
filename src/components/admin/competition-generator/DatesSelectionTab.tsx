@@ -2,8 +2,9 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, Loader2 } from "lucide-react";
+import { Calendar, Loader2, AlertCircle } from "lucide-react";
 import { AvailableDate } from "@/components/admin/competition-generator/types";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface DatesSelectionTabProps {
   availableDates: AvailableDate[] | undefined;
@@ -11,6 +12,7 @@ interface DatesSelectionTabProps {
   selectedDates: number[];
   toggleDate: (dateId: number) => void;
   onGenerateSchedule: () => void;
+  minimumDatesRequired: number;
 }
 
 const DatesSelectionTab: React.FC<DatesSelectionTabProps> = ({
@@ -18,11 +20,21 @@ const DatesSelectionTab: React.FC<DatesSelectionTabProps> = ({
   loadingDates,
   selectedDates,
   toggleDate,
-  onGenerateSchedule
+  onGenerateSchedule,
+  minimumDatesRequired
 }) => {
   return (
     <div>
       <h3 className="text-lg font-medium mb-4">Selecteer beschikbare speeldagen</h3>
+      
+      <Alert className="mb-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Minimale speeldagen vereist</AlertTitle>
+        <AlertDescription>
+          Selecteer ten minste {minimumDatesRequired} speeldagen om alle wedstrijden in te plannen.
+          U heeft momenteel {selectedDates.length} speeldagen geselecteerd.
+        </AlertDescription>
+      </Alert>
       
       {loadingDates ? (
         <div className="flex items-center justify-center h-40">
@@ -71,7 +83,11 @@ const DatesSelectionTab: React.FC<DatesSelectionTabProps> = ({
       )}
       
       <div className="mt-4 pt-4 border-t flex justify-end">
-        <Button variant="default" onClick={onGenerateSchedule}>
+        <Button 
+          variant="default" 
+          onClick={onGenerateSchedule}
+          disabled={selectedDates.length < minimumDatesRequired}
+        >
           Schema Genereren
         </Button>
       </div>

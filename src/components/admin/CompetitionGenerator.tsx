@@ -1,8 +1,7 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import TeamSelectionTab from "./competition-generator/TeamSelectionTab";
 import FormatSelectionTab from "./competition-generator/FormatSelectionTab";
 import DatesSelectionTab from "./competition-generator/DatesSelectionTab";
 import PreviewTab from "./competition-generator/PreviewTab";
@@ -14,23 +13,30 @@ const CompetitionGenerator: React.FC = () => {
     loadingDates,
     competitionFormats,
     loadingFormats,
-    teams,
-    loadingTeams,
     selectedDates,
     selectedFormat,
-    selectedTeams,
     generatedMatches,
     competitionName,
     isCreating,
     setSelectedFormat,
     setCompetitionName,
     toggleDate,
-    toggleTeam,
-    selectAllTeams,
-    deselectAllTeams,
     generateSchedule,
-    saveCompetition
+    saveCompetition,
+    minimumDatesRequired,
+    activeTab,
+    setActiveTab
   } = useCompetitionGenerator();
+
+  // Auto select next tab when conditions are met
+  useEffect(() => {
+    if (selectedFormat && activeTab === "format") {
+      setActiveTab("dates");
+    }
+    if (generatedMatches.length > 0 && activeTab === "dates") {
+      setActiveTab("preview");
+    }
+  }, [selectedFormat, generatedMatches.length, activeTab, setActiveTab]);
 
   return (
     <div className="space-y-6">
@@ -38,31 +44,18 @@ const CompetitionGenerator: React.FC = () => {
         <CardHeader>
           <CardTitle>Competitiegenerator</CardTitle>
           <CardDescription>
-            Genereer een nieuwe competitie met playoff systeem
+            Genereer een nieuwe competitie met playoff systeem of beker
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="teams" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList>
-              <TabsTrigger value="teams">1. Teams</TabsTrigger>
-              <TabsTrigger value="format">2. Format</TabsTrigger>
-              <TabsTrigger value="dates">3. Speeldagen</TabsTrigger>
-              <TabsTrigger value="preview">4. Voorvertoning</TabsTrigger>
+              <TabsTrigger value="format">1. Format</TabsTrigger>
+              <TabsTrigger value="dates">2. Speeldagen</TabsTrigger>
+              <TabsTrigger value="preview">3. Voorvertoning</TabsTrigger>
             </TabsList>
             
-            {/* Tab 1: Teams selecteren */}
-            <TabsContent value="teams" className="space-y-4">
-              <TeamSelectionTab
-                teams={teams}
-                loadingTeams={loadingTeams}
-                selectedTeams={selectedTeams}
-                onTeamToggle={toggleTeam}
-                selectAllTeams={selectAllTeams}
-                deselectAllTeams={deselectAllTeams}
-              />
-            </TabsContent>
-            
-            {/* Tab 2: Format selecteren */}
+            {/* Tab 1: Format selecteren */}
             <TabsContent value="format" className="space-y-4">
               <FormatSelectionTab
                 competitionFormats={competitionFormats}
@@ -71,10 +64,11 @@ const CompetitionGenerator: React.FC = () => {
                 setSelectedFormat={setSelectedFormat}
                 competitionName={competitionName}
                 setCompetitionName={setCompetitionName}
+                onGenerateSchedule={() => setActiveTab("dates")}
               />
             </TabsContent>
             
-            {/* Tab 3: Speeldagen selecteren */}
+            {/* Tab 2: Speeldagen selecteren */}
             <TabsContent value="dates" className="space-y-4">
               <DatesSelectionTab
                 availableDates={availableDates}
@@ -82,17 +76,17 @@ const CompetitionGenerator: React.FC = () => {
                 selectedDates={selectedDates}
                 toggleDate={toggleDate}
                 onGenerateSchedule={generateSchedule}
+                minimumDatesRequired={minimumDatesRequired}
               />
             </TabsContent>
             
-            {/* Tab 4: Voorvertoning */}
+            {/* Tab 3: Voorvertoning */}
             <TabsContent value="preview" className="space-y-4">
               <PreviewTab
                 generatedMatches={generatedMatches}
                 competitionName={competitionName}
-                selectedTeams={selectedTeams}
-                competitionFormat={competitionFormats?.find(f => f.format_id === selectedFormat)}
                 selectedDates={selectedDates}
+                competitionFormat={competitionFormats?.find(f => f.id === selectedFormat)}
                 isCreating={isCreating}
                 onSaveCompetition={saveCompetition}
                 onRegenerateSchedule={generateSchedule}
