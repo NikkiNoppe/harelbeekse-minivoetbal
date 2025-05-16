@@ -1,27 +1,32 @@
+
 import React from "react";
-import { TableCell, TableRow } from "@/components/ui/table";
+import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
 import { User } from "@/types/auth";
 
 interface UserRowProps {
   user: User;
+  teamName: string;
   onEdit: (user: User) => void;
   onDelete: (userId: number) => void;
 }
 
-const UserRow: React.FC<UserRowProps> = ({ user, onEdit, onDelete }) => {
+const UserRow: React.FC<UserRowProps> = ({ user, teamName, onEdit, onDelete }) => {
+  const getRoleName = (role: string) => {
+    switch (role) {
+      case "admin": return "Beheerder";
+      case "team": return "Team";
+      case "referee": return "Scheidsrechter";
+      default: return role;
+    }
+  };
+
   return (
     <TableRow>
-      <TableCell className="font-medium">{user.username}</TableCell>
-      <TableCell>
-        {user.role === "admin" && "Administrator"}
-        {user.role === "team" && "Teamverantwoordelijke"}
-        {user.role === "referee" && "Scheidsrechter"}
-      </TableCell>
-      <TableCell>
-        {user.teamId ? `Team ${user.teamId}` : "-"}
-      </TableCell>
+      <TableCell>{user.username}</TableCell>
+      <TableCell>{getRoleName(user.role)}</TableCell>
+      <TableCell>{user.role === "team" ? teamName : "-"}</TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
           <Button

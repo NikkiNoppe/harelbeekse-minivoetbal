@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { 
   Card, 
@@ -21,6 +21,12 @@ import { Plus } from "lucide-react";
 import { User } from "@/types/auth";
 import UserRow from "@/components/user/UserRow";
 import UserDialog from "@/components/user/UserDialog";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Team {
+  team_id: number;
+  team_name: string;
+}
 
 const UsersTab: React.FC = () => {
   const { toast } = useToast();
@@ -28,6 +34,36 @@ const UsersTab: React.FC = () => {
   const [users, setUsers] = useState<User[]>(allUsers);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Fetch teams from Supabase
+  useEffect(() => {
+    async function fetchTeams() {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('teams')
+          .select('team_id, team_name')
+          .order('team_name');
+        
+        if (error) throw error;
+        
+        setTeams(data || []);
+      } catch (error) {
+        console.error('Error fetching teams:', error);
+        toast({
+          title: "Fout bij laden",
+          description: "Er is een fout opgetreden bij het laden van de teams.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchTeams();
+  }, [toast]);
   
   // Handle opening edit dialog
   const handleEditUser = (user: User) => {
@@ -95,6 +131,13 @@ const UsersTab: React.FC = () => {
     });
   };
   
+  // Find team name by id
+  const getTeamName = (teamId: number | undefined) => {
+    if (!teamId) return "-";
+    const team = teams.find(t => t.team_id === teamId);
+    return team ? team.team_name : `Team ${teamId}`;
+  };
+  
   return (
     <div className="space-y-6">
       <Card>
@@ -114,26 +157,31 @@ const UsersTab: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Gebruikersnaam</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Team</TableHead>
-                <TableHead className="text-right">Acties</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map(user => (
-                <UserRow
-                  key={user.id}
-                  user={user}
-                  onEdit={handleEditUser}
-                  onDelete={handleDeleteUser}
-                />
-              ))}
-            </TableBody>
-          </Table>
+          {loading ? (
+            <div className="py-8 text-center text-muted-foreground">Teams laden...</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Gebruikersnaam</TableHead>
+                  <TableHead>Rol</TableHead>
+                  <TableHead>Team</TableHead>
+                  <TableHead className="text-right">Acties</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map(user => (
+                  <UserRow
+                    key={user.id}
+                    user={user}
+                    teamName={getTeamName(user.teamId)}
+                    onEdit={handleEditUser}
+                    onDelete={handleDeleteUser}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
       
@@ -142,6 +190,7 @@ const UsersTab: React.FC = () => {
         onOpenChange={setDialogOpen}
         editingUser={editingUser}
         onSave={handleSaveUser}
+        teams={teams.map(team => ({ id: team.team_id, name: team.team_name }))}
       />
     </div>
   );

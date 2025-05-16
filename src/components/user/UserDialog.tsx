@@ -1,94 +1,70 @@
+
 import React, { useState, useEffect } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { User } from "@/types/auth";
 
-interface UserFormData {
-  username: string;
-  password: string;
-  role: "admin" | "team" | "referee";
-  teamId: number | undefined;
+interface TeamOption {
+  id: number;
+  name: string;
 }
 
 interface UserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingUser: User | null;
-  onSave: (userData: UserFormData, editingUser: User | null) => void;
+  onSave: (formData: any, editingUser: User | null) => void;
+  teams: TeamOption[];
 }
 
-const UserDialog: React.FC<UserDialogProps> = ({ 
-  open, 
-  onOpenChange, 
-  editingUser, 
-  onSave 
+const UserDialog: React.FC<UserDialogProps> = ({
+  open,
+  onOpenChange,
+  editingUser,
+  onSave,
+  teams
 }) => {
-  const { toast } = useToast();
-  const [formData, setFormData] = useState<UserFormData>({
+  const [formData, setFormData] = useState({
     username: "",
     password: "",
     role: "team",
-    teamId: undefined
+    teamId: 0
   });
-
-  // Reset form data when dialog opens with different user
+  
+  // Set form data when editingUser changes
   useEffect(() => {
     if (editingUser) {
       setFormData({
         username: editingUser.username,
-        password: "", // Don't show existing password for security
+        password: "",
         role: editingUser.role,
-        teamId: editingUser.teamId
+        teamId: editingUser.teamId || 0
       });
     } else {
+      // Default values for new user
       setFormData({
         username: "",
         password: "",
         role: "team",
-        teamId: undefined
+        teamId: teams.length > 0 ? teams[0].id : 0
       });
     }
-  }, [editingUser, open]);
-
-  const handleSave = () => {
-    if (!formData.username) {
-      toast({
-        title: "Gebruikersnaam ontbreekt",
-        description: "Vul een gebruikersnaam in",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!editingUser && !formData.password) {
-      toast({
-        title: "Wachtwoord ontbreekt",
-        description: "Vul een wachtwoord in",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  }, [editingUser, teams]);
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     onSave(formData, editingUser);
     onOpenChange(false);
   };
-
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -97,75 +73,88 @@ const UserDialog: React.FC<UserDialogProps> = ({
             {editingUser ? "Gebruiker bewerken" : "Nieuwe gebruiker toevoegen"}
           </DialogTitle>
           <DialogDescription>
-            {editingUser 
-              ? "Bewerk de gegevens van deze gebruiker" 
+            {editingUser
+              ? "Bewerk de gegevens van deze gebruiker"
               : "Voeg een nieuwe gebruiker toe aan het systeem"}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="space-y-2">
-            <label>Gebruikersnaam</label>
+            <label htmlFor="username" className="text-sm font-medium">
+              Gebruikersnaam
+            </label>
             <Input
+              id="username"
               value={formData.username}
-              onChange={(e) => setFormData({...formData, username: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               placeholder="Gebruikersnaam"
+              required
             />
           </div>
           
           <div className="space-y-2">
-            <label>Wachtwoord {editingUser && "(laat leeg om ongewijzigd te laten)"}</label>
+            <label htmlFor="password" className="text-sm font-medium">
+              Wachtwoord {editingUser && "(leeg laten om ongewijzigd te houden)"}
+            </label>
             <Input
+              id="password"
               type="password"
               value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               placeholder="Wachtwoord"
+              required={!editingUser}
             />
           </div>
           
           <div className="space-y-2">
-            <label>Rol</label>
-            <Select
+            <label htmlFor="role" className="text-sm font-medium">
+              Rol
+            </label>
+            <select
+              id="role"
+              className="w-full p-2 border rounded-md"
               value={formData.role}
-              onValueChange={(value: "admin" | "team" | "referee") => 
-                setFormData({...formData, role: value})
-              }
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecteer een rol" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Administrator</SelectItem>
-                <SelectItem value="team">Teamverantwoordelijke</SelectItem>
-                <SelectItem value="referee">Scheidsrechter</SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="admin">Beheerder</option>
+              <option value="team">Team</option>
+              <option value="referee">Scheidsrechter</option>
+            </select>
           </div>
           
           {formData.role === "team" && (
             <div className="space-y-2">
-              <label>Team ID</label>
-              <Input
-                type="number"
-                value={formData.teamId?.toString() || ""}
-                onChange={(e) => setFormData({
-                  ...formData, 
-                  teamId: e.target.value ? parseInt(e.target.value) : undefined
-                })}
-                placeholder="Team ID"
-              />
+              <label htmlFor="team" className="text-sm font-medium">
+                Team
+              </label>
+              <select
+                id="team"
+                className="w-full p-2 border rounded-md"
+                value={formData.teamId}
+                onChange={(e) => setFormData({ ...formData, teamId: parseInt(e.target.value) })}
+              >
+                <option value={0} disabled>
+                  Selecteer een team
+                </option>
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
-        </div>
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuleren
-          </Button>
-          <Button onClick={handleSave}>
-            {editingUser ? "Bijwerken" : "Toevoegen"}
-          </Button>
-        </DialogFooter>
+          
+          <DialogFooter className="pt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Annuleren
+            </Button>
+            <Button type="submit">
+              {editingUser ? "Bijwerken" : "Toevoegen"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
