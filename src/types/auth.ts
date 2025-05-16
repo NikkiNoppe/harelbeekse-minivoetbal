@@ -4,12 +4,12 @@ import type { Database } from "@/integrations/supabase/types";
 export interface User {
   id: number;
   username: string;
-  role: "admin" | "team" | "referee";
+  role: "admin" | "player_manager" | "referee";
   teamId?: number;
   password?: string; // Used for mock data, would not be included in a real app
 }
 
-export type UserRole = "admin" | "team" | "referee";
+export type UserRole = "admin" | "player_manager" | "referee";
 
 export interface TeamData {
   id: number;
@@ -28,7 +28,7 @@ export function mapDatabaseUserToAppUser(dbUser: Database["public"]["Tables"]["u
   return {
     id: dbUser.user_id,
     username: dbUser.username,
-    role: dbUser.role as "admin" | "team" | "referee",
+    role: dbUser.role as "admin" | "player_manager" | "referee",
     // Add additional mapping as needed
   };
 }

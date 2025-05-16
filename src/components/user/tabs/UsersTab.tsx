@@ -86,7 +86,7 @@ const UsersTab: React.FC = () => {
         username: formData.username,
         ...(formData.password ? { password: formData.password } : {}),
         role: formData.role,
-        ...(formData.role === "team" ? { teamId: formData.teamId } : {})
+        ...(formData.role === "player_manager" ? { teamId: formData.teamId } : {})
       };
       
       updateUser(updatedUser);
@@ -107,7 +107,7 @@ const UsersTab: React.FC = () => {
         username: formData.username,
         password: formData.password,
         role: formData.role,
-        ...(formData.role === "team" && formData.teamId ? { teamId: formData.teamId } : {})
+        ...(formData.role === "player_manager" && formData.teamId ? { teamId: formData.teamId } : {})
       };
       
       addUser(userToAdd);
