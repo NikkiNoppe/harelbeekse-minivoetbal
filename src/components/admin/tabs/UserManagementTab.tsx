@@ -45,7 +45,7 @@ interface Team {
 interface NewUserData {
   name: string;
   email: string;
-  role: "admin" | "team" | "referee";
+  role: "admin" | "referee" | "player_manager"; // Updated to match database enum
   teamId: number | null;
 }
 
@@ -63,7 +63,7 @@ const UserManagementTab: React.FC = () => {
   const [newUser, setNewUser] = useState<NewUserData>({
     name: "",
     email: "",
-    role: "team",
+    role: "player_manager", // Changed default from "team" to "player_manager"
     teamId: null
   });
   
@@ -139,7 +139,7 @@ const UserManagementTab: React.FC = () => {
       return;
     }
     
-    if (newUser.role === "team" && !newUser.teamId) {
+    if (newUser.role === "player_manager" && !newUser.teamId) {
       toast({
         title: "Fout",
         description: "Selecteer een team voor deze gebruiker",
@@ -171,7 +171,7 @@ const UserManagementTab: React.FC = () => {
       
       if (error) throw error;
       
-      if (data && data[0] && newUser.role === "team" && newUser.teamId) {
+      if (data && data[0] && newUser.role === "player_manager" && newUser.teamId) {
         // Update team with manager reference if user is a team manager
         const { error: teamError } = await supabase
           .from('teams')
@@ -215,7 +215,7 @@ const UserManagementTab: React.FC = () => {
       setNewUser({
         name: "",
         email: "",
-        role: "team",
+        role: "player_manager",
         teamId: null
       });
     } catch (error) {
@@ -303,12 +303,12 @@ const UserManagementTab: React.FC = () => {
                   <Label htmlFor="role">Rol</Label>
                   <Select 
                     value={newUser.role} 
-                    onValueChange={(value: "admin" | "team" | "referee") => {
+                    onValueChange={(value: "admin" | "referee" | "player_manager") => {
                       setNewUser({
                         ...newUser, 
                         role: value,
-                        // Reset teamId if role is not team
-                        teamId: value === "team" ? newUser.teamId : null
+                        // Reset teamId if role is not team manager
+                        teamId: value === "player_manager" ? newUser.teamId : null
                       });
                     }}
                   >
@@ -317,13 +317,13 @@ const UserManagementTab: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="admin">Administrator</SelectItem>
-                      <SelectItem value="team">Teamverantwoordelijke</SelectItem>
+                      <SelectItem value="player_manager">Teamverantwoordelijke</SelectItem>
                       <SelectItem value="referee">Scheidsrechter</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
-                {newUser.role === "team" && (
+                {newUser.role === "player_manager" && (
                   <div className="space-y-2">
                     <Label htmlFor="team">Team</Label>
                     <Select 
@@ -340,7 +340,7 @@ const UserManagementTab: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="no-team">Geen team geselecteerd</SelectItem>
-                        {teams.map(team => (
+                        {teams.map((team) => (
                           <SelectItem key={team.team_id} value={team.team_id.toString()}>
                             {team.team_name}
                           </SelectItem>
@@ -397,7 +397,7 @@ const UserManagementTab: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             {user.role === "admin" && "Administrator"}
-                            {user.role === "team" && "Teamverantwoordelijke"}
+                            {user.role === "player_manager" && "Teamverantwoordelijke"}
                             {user.role === "referee" && "Scheidsrechter"}
                           </TableCell>
                           <TableCell>
