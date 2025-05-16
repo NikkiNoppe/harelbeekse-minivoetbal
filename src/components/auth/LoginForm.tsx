@@ -1,5 +1,6 @@
+
 import React, { useState } from "react";
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -18,7 +19,7 @@ const LoginForm: React.FC = () => {
   const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +39,7 @@ const LoginForm: React.FC = () => {
         title: "Ingelogd",
         description: `Welkom, ${username}!`,
       });
-      router.push("/dashboard");
+      navigate("/dashboard");
     } catch (error: any) {
       toast({
         title: "Inlogfout",

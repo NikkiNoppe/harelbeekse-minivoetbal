@@ -11,7 +11,7 @@ import Footer from "@/components/footer/Footer";
 import MainTabs from "@/components/tabs/MainTabs";
 
 const Layout: React.FC = () => {
-  const { user, login, logout, isAuthenticated } = useAuth();
+  const { user, login, logout } = useAuth();
   const { isTabVisible } = useTabVisibility();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabName>("algemeen");
@@ -43,7 +43,7 @@ const Layout: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 container py-6">
-        {isAuthenticated && user ? (
+        {user ? (
           <UserDashboard />
         ) : (
           <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -56,10 +56,7 @@ const Layout: React.FC = () => {
       {/* Login Dialog */}
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
         <DialogContent className="sm:max-w-md bg-background text-foreground border-border">
-          <LoginForm onLoginSuccess={user => {
-            login(user);
-            setLoginDialogOpen(false);
-          }} />
+          <LoginForm />
         </DialogContent>
       </Dialog>
     </div>

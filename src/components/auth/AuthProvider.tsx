@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +7,7 @@ import { mapDatabaseUserToAppUser, User } from "@/types/auth";
 interface AuthContextProps {
   user: User | null;
   allUsers: User[];
+  isAuthenticated: boolean;
   login: (username: string, password?: string) => Promise<boolean>;
   logout: () => void;
   addUser: (user: User) => void;
@@ -121,6 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextProps = {
     user,
     allUsers,
+    isAuthenticated: !!user,
     login,
     logout,
     addUser,

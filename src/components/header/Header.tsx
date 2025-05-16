@@ -16,14 +16,14 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
   const isMobile = useIsMobile();
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   // Mobile menu content
   const MobileMenuContent = () => (
     <div className="flex flex-col space-y-4 p-4">
       <ThemeToggle />
-      {isAuthenticated && user ? (
+      {user ? (
         <UserAccount user={user} onLogout={logout} />
       ) : (
         <button 
@@ -59,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
           <div className={cn("flex items-center space-x-4")}>
             <ThemeToggle />
             
-            {isAuthenticated && user ? (
+            {user ? (
               <UserAccount user={user} onLogout={logout} />
             ) : (
               <button 
