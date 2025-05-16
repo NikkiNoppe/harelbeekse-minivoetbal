@@ -107,7 +107,7 @@ const UserManagementTab: React.FC = () => {
         
         console.log("Users data:", usersData);
         
-        // Transform the data
+        // Transform the data to match the DbUser interface
         const formattedUsers: DbUser[] = usersData.map(user => ({
           user_id: user.user_id,
           username: user.username,

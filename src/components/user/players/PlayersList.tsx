@@ -10,12 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
-
-interface Player {
-  player_id: number;
-  player_name: string;
-  birth_date: string;
-}
+import { Player } from "./usePlayers";
 
 interface PlayersListProps {
   players: Player[];
@@ -54,15 +49,15 @@ const PlayersList: React.FC<PlayersListProps> = ({
           </TableRow>
         ) : (
           players.map(player => (
-            <TableRow key={player.player_id}>
-              <TableCell>{player.player_name}</TableCell>
-              <TableCell>{formatDate(player.birth_date)}</TableCell>
+            <TableRow key={player.id}>
+              <TableCell>{player.name}</TableCell>
+              <TableCell>{player.dateOfBirth ? formatDate(player.dateOfBirth) : "-"}</TableCell>
               {editMode && (
                 <TableCell>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onRemovePlayer(player.player_id)}
+                    onClick={() => onRemovePlayer(player.id)}
                     className="text-red-500 hover:text-red-700 hover:bg-red-100/10"
                   >
                     <Trash2 size={16} />
