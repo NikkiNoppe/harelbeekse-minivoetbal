@@ -1,129 +1,144 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { User } from "@/types/auth";
+import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from "@/integrations/supabase/client";
+import { mapDatabaseUserToAppUser, User } from "@/types/auth";
 
-interface AuthContextType {
+interface AuthContextProps {
   user: User | null;
-  login: (user: User) => void;
-  logout: () => void;
-  isAuthenticated: boolean;
   allUsers: User[];
-  updateUser: (updatedUser: User) => void;
-  addUser: (newUser: User) => void;
-  removeUser: (userId: number) => void;
+  login: (username: string, password?: string) => Promise<boolean>;
+  logout: () => void;
+  addUser: (user: User) => void;
+  updateUser: (user: User) => void;
+  removeUser: (id: number) => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+interface AuthProviderProps {
+  children: ReactNode;
+}
 
-// Default mock users
-const DEFAULT_USERS: User[] = [
-  { id: 1, username: "admin", password: "admin123", role: "admin" },
-  { id: 2, username: "team1", password: "team123", role: "team", teamId: 1 },
-  { id: 3, username: "team2", password: "team123", role: "team", teamId: 2 },
-  { id: 4, username: "referee", password: "referee123", role: "referee" },
-];
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [allUsers, setAllUsers] = useState<User[]>(DEFAULT_USERS);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const navigate = useNavigate();
 
-  // Check for existing user in localStorage on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser");
+    // Load user from local storage on component mount
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error("Failed to parse stored user", error);
-        localStorage.removeItem("currentUser");
-      }
+      setUser(JSON.parse(storedUser));
     }
 
-    // Load all users from localStorage if available
-    const storedUsers = localStorage.getItem("allUsers");
-    if (storedUsers) {
-      try {
-        const parsedUsers = JSON.parse(storedUsers);
-        setAllUsers(parsedUsers);
-      } catch (error) {
-        console.error("Failed to parse stored users", error);
-        // Fallback to default users
-        localStorage.setItem("allUsers", JSON.stringify(DEFAULT_USERS));
-      }
-    } else {
-      // Store default users if none exist
-      localStorage.setItem("allUsers", JSON.stringify(DEFAULT_USERS));
-    }
-
-    setIsLoaded(true);
+    // Fetch all users for admin management
+    fetchAllUsers();
   }, []);
 
-  const login = (userData: User) => {
-    setUser(userData);
-    localStorage.setItem("currentUser", JSON.stringify(userData));
+  const fetchAllUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*');
+
+      if (error) {
+        console.error("Error fetching users:", error);
+        return;
+      }
+
+      const mappedUsers = data.map(mapDatabaseUserToAppUser);
+      setAllUsers(mappedUsers);
+    } catch (error) {
+      console.error("Unexpected error fetching users:", error);
+    }
+  };
+
+  const login = async (username: string, password?: string): Promise<boolean> => {
+    // In a real application, you would authenticate against a backend service
+    // For mock data, we'll just check against our mock users
+    const foundUser = allUsers.find(u => u.username === username && (password === undefined || u.password === password));
+
+    if (foundUser) {
+      setUser(foundUser);
+      localStorage.setItem('user', JSON.stringify(foundUser));
+      navigate('/dashboard');
+      return true;
+    }
+
+    return false;
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("currentUser");
+    localStorage.removeItem('user');
+    navigate('/');
+  };
+
+  const addUser = (user: User) => {
+    setAllUsers(prevUsers => [...prevUsers, user]);
   };
 
   const updateUser = (updatedUser: User) => {
-    const updatedUsers = allUsers.map(u => 
-      u.id === updatedUser.id ? updatedUser : u
+    setAllUsers(prevUsers =>
+      prevUsers.map(user => (user.id === updatedUser.id ? updatedUser : user))
     );
-    setAllUsers(updatedUsers);
-    localStorage.setItem("allUsers", JSON.stringify(updatedUsers));
-    
-    // Update current user if it's the same
-    if (user && user.id === updatedUser.id) {
-      setUser(updatedUser);
-      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-    }
-  };
-  
-  const addUser = (newUser: User) => {
-    const updatedUsers = [...allUsers, newUser];
-    setAllUsers(updatedUsers);
-    localStorage.setItem("allUsers", JSON.stringify(updatedUsers));
-  };
-  
-  const removeUser = (userId: number) => {
-    const updatedUsers = allUsers.filter(u => u.id !== userId);
-    setAllUsers(updatedUsers);
-    localStorage.setItem("allUsers", JSON.stringify(updatedUsers));
-    
-    // Logout if current user is removed
-    if (user && user.id === userId) {
-      logout();
-    }
   };
 
-  const value = {
+  const removeUser = (id: number) => {
+    setAllUsers(prevUsers => prevUsers.filter(user => user.id !== id));
+  };
+
+  // Mock user data for authentication testing
+  const mockUsers: User[] = [
+    { 
+      id: 1,
+      username: "admin",
+      role: "admin",
+      password: "password"
+    },
+    { 
+      id: 2,
+      username: "team1",
+      role: "player_manager",
+      teamId: 1,
+      password: "password"
+    },
+    { 
+      id: 3,
+      username: "team2",
+      role: "player_manager",
+      teamId: 2,
+      password: "password"
+    },
+    { 
+      id: 4,
+      username: "ref",
+      role: "referee",
+      password: "password"
+    },
+  ];
+
+  const value: AuthContextProps = {
     user,
+    allUsers,
     login,
     logout,
-    isAuthenticated: !!user,
-    allUsers,
-    updateUser,
     addUser,
-    removeUser
+    updateUser,
+    removeUser,
   };
 
-  if (!isLoaded) {
-    return <div>Loading...</div>;
-  }
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-export default AuthProvider;
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

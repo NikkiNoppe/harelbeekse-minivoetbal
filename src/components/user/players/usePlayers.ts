@@ -1,209 +1,192 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-import { useState, useEffect } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-
-interface Player {
-  player_id: number;
-  player_name: string;
-  birth_date: string;
-  team_id: number;
-  is_active: boolean;
-}
-
-interface Team {
-  team_id: number;
-  team_name: string;
+export interface Player {
+  id: number;
+  name: string;
+  team?: string;
+  teamId?: number;
+  dateOfBirth?: string;
+  isActive?: boolean;
 }
 
 export const usePlayers = () => {
-  const { user } = useAuth();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [players, setPlayers] = useState<Player[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [editMode, setEditMode] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newPlayer, setNewPlayer] = useState<{name: string, birthDate: string}>({
-    name: "", 
-    birthDate: ""
-  });
   const [loading, setLoading] = useState(true);
-  
-  // Fetch teams from Supabase
-  useEffect(() => {
-    async function fetchTeams() {
-      try {
-        const { data: teamsData, error: teamsError } = await supabase
-          .from('teams')
-          .select('team_id, team_name')
-          .order('team_name');
-        
-        if (teamsError) throw teamsError;
-        
-        setTeams(teamsData || []);
-        
-        // If user is team manager, auto-select their team
-        if (user?.role === "team" && user.teamId) {
-          setSelectedTeam(user.teamId);
-        } else if (teamsData && teamsData.length > 0) {
-          // For admin, select first team by default
-          setSelectedTeam(teamsData[0].team_id);
-        }
-      } catch (error) {
-        console.error('Error fetching teams:', error);
-        toast({
-          title: "Fout bij laden",
-          description: "Er is een fout opgetreden bij het laden van de teams.",
-          variant: "destructive",
-        });
-      }
-    }
-    
-    fetchTeams();
-  }, [user, toast]);
-  
-  // Fetch players when selected team changes
-  useEffect(() => {
-    async function fetchPlayers() {
-      if (!selectedTeam) return;
+
+  const fetchPlayers = async () => {
+    try {
+      setLoading(true);
       
-      try {
-        setLoading(true);
-        
-        const { data: playersData, error: playersError } = await supabase
-          .from('players')
-          .select('*')
-          .eq('team_id', selectedTeam)
-          .eq('is_active', true)
-          .order('player_name');
-        
-        if (playersError) throw playersError;
-        
-        setPlayers(playersData || []);
-      } catch (error) {
-        console.error('Error fetching players:', error);
-        toast({
-          title: "Fout bij laden",
-          description: "Er is een fout opgetreden bij het laden van de spelers.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+      // Different query based on user role
+      let query = supabase.from('players').select(`
+        player_id,
+        player_name,
+        birth_date,
+        is_active,
+        team_id,
+        teams (
+          team_name
+        )
+      `);
+      
+      // If user is a team manager, only fetch their team's players
+      if (user?.role === "player_manager" && user?.teamId) {
+        query = query.eq('team_id', user.teamId);
       }
+      
+      const { data, error } = await query.order('player_name');
+      
+      if (error) throw error;
+      
+      // Map the data to our Player interface
+      const mappedPlayers: Player[] = (data || []).map(player => ({
+        id: player.player_id,
+        name: player.player_name,
+        teamId: player.team_id,
+        team: player.teams?.team_name,
+        dateOfBirth: player.birth_date,
+        isActive: player.is_active
+      }));
+      
+      setPlayers(mappedPlayers);
+      
+    } catch (error) {
+      console.error('Error fetching players:', error);
+      toast({
+        title: 'Fout bij het laden van spelers',
+        description: 'Er is een probleem opgetreden bij het ophalen van de spelersgegevens.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
-    
-    fetchPlayers();
-  }, [selectedTeam, toast]);
-  
-  // Handle team selection (admins only)
-  const handleTeamChange = (teamId: number) => {
-    setSelectedTeam(teamId);
-    setEditMode(false);
   };
-  
-  // Handle add new player
-  const handleAddPlayer = async () => {
-    if (!selectedTeam) {
-      toast({
-        title: "Geen team geselecteerd",
-        description: "Selecteer eerst een team",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!newPlayer.name || !newPlayer.birthDate) {
-      toast({
-        title: "Onvolledige gegevens",
-        description: "Vul alle velden in",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+
+  const addPlayer = async (newPlayer: Omit<Player, 'id'>) => {
     try {
       const { data, error } = await supabase
         .from('players')
-        .insert({
-          player_name: newPlayer.name,
-          birth_date: newPlayer.birthDate,
-          team_id: selectedTeam,
-          is_active: true
-        })
+        .insert([
+          {
+            player_name: newPlayer.name,
+            team_id: newPlayer.teamId,
+            birth_date: newPlayer.dateOfBirth,
+            is_active: newPlayer.isActive,
+          },
+        ])
         .select();
-      
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        setPlayers([...players, data[0]]);
-        setNewPlayer({name: "", birthDate: ""});
-        setDialogOpen(false);
-        
-        toast({
-          title: "Speler toegevoegd",
-          description: `${newPlayer.name} is toegevoegd aan het team`,
-        });
+
+      if (error) {
+        throw error;
       }
+
+      // Optimistically update the local state
+      setPlayers(prevPlayers => [
+        ...prevPlayers,
+        {
+          id: data![0].player_id,
+          name: newPlayer.name,
+          teamId: newPlayer.teamId,
+          team: newPlayer.team,
+          dateOfBirth: newPlayer.dateOfBirth,
+          isActive: newPlayer.isActive,
+        },
+      ]);
+
+      toast({
+        title: 'Speler toegevoegd',
+        description: `${newPlayer.name} is succesvol toegevoegd.`,
+      });
     } catch (error) {
       console.error('Error adding player:', error);
       toast({
-        title: "Fout bij toevoegen",
-        description: "Er is een fout opgetreden bij het toevoegen van de speler.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // Handle remove player
-  const handleRemovePlayer = async (playerId: number) => {
-    try {
-      // Use soft delete by setting is_active to false
-      const { error } = await supabase
-        .from('players')
-        .update({ is_active: false })
-        .eq('player_id', playerId);
-      
-      if (error) throw error;
-      
-      setPlayers(players.filter(p => p.player_id !== playerId));
-      
-      toast({
-        title: "Speler verwijderd",
-        description: "De speler is verwijderd uit het team",
-      });
-    } catch (error) {
-      console.error('Error removing player:', error);
-      toast({
-        title: "Fout bij verwijderen",
-        description: "Er is een fout opgetreden bij het verwijderen van de speler.",
-        variant: "destructive",
+        title: 'Fout bij toevoegen',
+        description: 'Er is een fout opgetreden bij het toevoegen van de speler.',
+        variant: 'destructive',
       });
     }
   };
 
-  // Format date to display in DD-MM-YYYY format
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('nl-NL');
+  const updatePlayer = async (updatedPlayer: Player) => {
+    try {
+      const { error } = await supabase
+        .from('players')
+        .update({
+          player_name: updatedPlayer.name,
+          team_id: updatedPlayer.teamId,
+          birth_date: updatedPlayer.dateOfBirth,
+          is_active: updatedPlayer.isActive,
+        })
+        .eq('player_id', updatedPlayer.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Optimistically update the local state
+      setPlayers(prevPlayers =>
+        prevPlayers.map(player =>
+          player.id === updatedPlayer.id ? updatedPlayer : player
+        )
+      );
+
+      toast({
+        title: 'Speler bijgewerkt',
+        description: `${updatedPlayer.name} is succesvol bijgewerkt.`,
+      });
+    } catch (error) {
+      console.error('Error updating player:', error);
+      toast({
+        title: 'Fout bij bijwerken',
+        description: 'Er is een fout opgetreden bij het bijwerken van de speler.',
+        variant: 'destructive',
+      });
+    }
   };
-  
+
+  const removePlayer = async (playerId: number) => {
+    try {
+      const { error } = await supabase
+        .from('players')
+        .delete()
+        .eq('player_id', playerId);
+
+      if (error) {
+        throw error;
+      }
+
+      // Optimistically update the local state
+      setPlayers(prevPlayers => prevPlayers.filter(player => player.id !== playerId));
+
+      toast({
+        title: 'Speler verwijderd',
+        description: 'De speler is succesvol verwijderd.',
+      });
+    } catch (error) {
+      console.error('Error deleting player:', error);
+      toast({
+        title: 'Fout bij verwijderen',
+        description: 'Er is een fout opgetreden bij het verwijderen van de speler.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchPlayers();
+  }, []);
+
   return {
     players,
-    teams,
     loading,
-    editMode,
-    selectedTeam,
-    dialogOpen,
-    newPlayer,
-    setEditMode,
-    handleTeamChange,
-    setDialogOpen,
-    setNewPlayer,
-    handleAddPlayer,
-    handleRemovePlayer,
-    formatDate,
-    user
+    fetchPlayers,
+    addPlayer,
+    updatePlayer,
+    removePlayer,
   };
 };
