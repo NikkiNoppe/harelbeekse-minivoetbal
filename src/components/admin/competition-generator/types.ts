@@ -40,8 +40,28 @@ export interface CompetitionType {
   playoffTeams?: number;
   isCup?: boolean;
   
-  // Add these properties to make it compatible with CompetitionFormat
+  // These properties ensure compatibility with CompetitionFormat
   format_id?: number;
-  has_playoffs?: boolean;
-  regular_rounds?: number;
+  has_playoffs: boolean;
+  regular_rounds: number;
+}
+
+// New types for the hook responses
+export interface CompetitionGeneratorState {
+  selectedDates: number[];
+  selectedFormat: string | null;
+  generatedMatches: GeneratedMatch[];
+  competitionName: string;
+  isCreating: boolean;
+  activeTab: string;
+  minimumDatesRequired: number;
+}
+
+export interface CompetitionGeneratorActions {
+  setSelectedFormat: (formatId: string) => void;
+  setCompetitionName: (name: string) => void;
+  toggleDate: (dateId: number) => void;
+  generateSchedule: () => void;
+  saveCompetition: () => Promise<void>;
+  setActiveTab: (tab: string) => void;
 }

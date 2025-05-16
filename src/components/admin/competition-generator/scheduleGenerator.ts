@@ -1,12 +1,12 @@
 
-import { Team, GeneratedMatch, CompetitionFormat } from "./types";
+import { Team, GeneratedMatch, CompetitionType } from "./types";
 
 /**
  * Generates a round-robin competition schedule for the provided teams
  */
 export const generateRoundRobinSchedule = (
   teams: Team[],
-  format: CompetitionFormat | undefined
+  format: CompetitionType | undefined
 ): GeneratedMatch[] => {
   if (!teams || teams.length < 2 || !format) {
     return [];
@@ -65,7 +65,7 @@ export const generateRoundRobinSchedule = (
   }
   
   // Als het format dubbele wedstrijden heeft, voeg de omgekeerde wedstrijden toe
-  if (format.regular_rounds === 2) {
+  if (format.regularRounds === 2 || format.regular_rounds === 2) {
     const secondHalfMatches = generatedMatches.map(match => ({
       matchday: match.matchday + totalRounds,
       home_team_id: match.away_team_id,
