@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -63,7 +62,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (foundUser) {
       setUser(foundUser);
       localStorage.setItem('user', JSON.stringify(foundUser));
-      navigate('/dashboard');
+      
+      // Redirect based on user role
+      if (foundUser.role === "admin") {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+      
       return true;
     }
 
