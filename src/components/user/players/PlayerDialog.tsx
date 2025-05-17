@@ -16,9 +16,9 @@ interface PlayerDialogProps {
   onOpenChange: (open: boolean) => void;
   newPlayer: {
     name: string;
-    dateOfBirth: string;
+    birthDate: string;
   };
-  onPlayerChange: (newData: {name: string, dateOfBirth: string}) => void;
+  onPlayerChange: (newData: {name: string, birthDate: string}) => void;
   onSave: () => void;
 }
 
@@ -53,8 +53,8 @@ const PlayerDialog: React.FC<PlayerDialogProps> = ({
             <label>Geboortedatum</label>
             <Input
               type="date"
-              value={newPlayer.dateOfBirth}
-              onChange={(e) => onPlayerChange({...newPlayer, dateOfBirth: e.target.value})}
+              value={newPlayer.birthDate}
+              onChange={(e) => onPlayerChange({...newPlayer, birthDate: e.target.value})}
             />
           </div>
         </div>

@@ -16,7 +16,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, teamName, onEdit, onDelete }) =
   const getRoleName = (role: string) => {
     switch (role) {
       case "admin": return "Beheerder";
-      case "player_manager": return "Team";
+      case "team": return "Team";
       case "referee": return "Scheidsrechter";
       default: return role;
     }
@@ -26,7 +26,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, teamName, onEdit, onDelete }) =
     <TableRow>
       <TableCell>{user.username}</TableCell>
       <TableCell>{getRoleName(user.role)}</TableCell>
-      <TableCell>{user.role === "player_manager" ? teamName : "-"}</TableCell>
+      <TableCell>{user.role === "team" ? teamName : "-"}</TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
           <Button

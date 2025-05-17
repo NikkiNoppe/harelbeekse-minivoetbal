@@ -442,6 +442,24 @@ export type Database = {
           },
         ]
       }
+      regulations: {
+        Row: {
+          content: string
+          regulation_id: number
+          title: string
+        }
+        Insert: {
+          content: string
+          regulation_id?: number
+          title: string
+        }
+        Update: {
+          content?: string
+          regulation_id?: number
+          title?: string
+        }
+        Relationships: []
+      }
       suspensions: {
         Row: {
           end_date: string

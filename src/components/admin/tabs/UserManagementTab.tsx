@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { 
   Card, 
@@ -39,13 +40,12 @@ import { supabase } from "@/integrations/supabase/client";
 interface Team {
   team_id: number;
   team_name: string;
-  player_manager_id: number | null;
 }
 
 interface NewUserData {
   name: string;
   email: string;
-  role: "admin" | "referee" | "player_manager";
+  role: "admin" | "referee" | "player_manager"; // Updated to match database enum
   teamId: number | null;
 }
 
@@ -53,15 +53,8 @@ interface DbUser {
   user_id: number;
   username: string;
   role: string;
-  team?: {
-    team_id: number;
-    team_name: string;
-  } | null;
-  // We need to handle the case when team might be an array from the API
-  teams?: {
-    team_id: number;
-    team_name: string;
-  }[];
+  team_id?: number | null;
+  team_name?: string | null;
 }
 
 const UserManagementTab: React.FC = () => {
@@ -70,7 +63,7 @@ const UserManagementTab: React.FC = () => {
   const [newUser, setNewUser] = useState<NewUserData>({
     name: "",
     email: "",
-    role: "player_manager",
+    role: "player_manager", // Changed default from "team" to "player_manager"
     teamId: null
   });
   
@@ -89,7 +82,7 @@ const UserManagementTab: React.FC = () => {
         // Fetch teams
         const { data: teamsData, error: teamsError } = await supabase
           .from('teams')
-          .select('team_id, team_name, player_manager_id')
+          .select('team_id, team_name')
           .order('team_name');
         
         if (teamsError) throw teamsError;
@@ -101,7 +94,7 @@ const UserManagementTab: React.FC = () => {
             user_id,
             username,
             role,
-            teams!teams_player_manager_id_fkey (
+            teams (
               team_id,
               team_name
             )
@@ -109,29 +102,14 @@ const UserManagementTab: React.FC = () => {
         
         if (usersError) throw usersError;
         
-        console.log("Users data:", usersData);
-        
-        // Transform the data to match the DbUser interface
-        const formattedUsers: DbUser[] = usersData.map(user => {
-          // Handle potential array response from Supabase
-          let teamData = null;
-          if (user.teams) {
-            if (Array.isArray(user.teams)) {
-              // If teams is an array, get the first item
-              teamData = user.teams.length > 0 ? user.teams[0] : null;
-            } else {
-              // If teams is already an object
-              teamData = user.teams;
-            }
-          }
-          
-          return {
-            user_id: user.user_id,
-            username: user.username,
-            role: user.role,
-            team: teamData
-          };
-        });
+        // Transform the data
+        const formattedUsers: DbUser[] = usersData.map(user => ({
+          user_id: user.user_id,
+          username: user.username,
+          role: user.role,
+          team_id: user.teams ? user.teams.team_id : null,
+          team_name: user.teams ? user.teams.team_name : null
+        }));
         
         setTeams(teamsData || []);
         setUsers(formattedUsers);
@@ -187,6 +165,7 @@ const UserManagementTab: React.FC = () => {
           username: newUser.name,
           password: 'temporary_password', // In a real app, this would be handled more securely
           role: newUser.role,
+          // Note: team_id would be managed through a separate relationship
         })
         .select();
       
@@ -214,33 +193,20 @@ const UserManagementTab: React.FC = () => {
           user_id,
           username,
           role,
-          teams!teams_player_manager_id_fkey (
+          teams (
             team_id,
             team_name
           )
         `);
       
       if (!refreshError && refreshedUsers) {
-        const formattedUsers: DbUser[] = refreshedUsers.map(user => {
-          // Handle potential array response from Supabase
-          let teamData = null;
-          if (user.teams) {
-            if (Array.isArray(user.teams)) {
-              // If teams is an array, get the first item
-              teamData = user.teams.length > 0 ? user.teams[0] : null;
-            } else {
-              // If teams is already an object
-              teamData = user.teams;
-            }
-          }
-          
-          return {
-            user_id: user.user_id,
-            username: user.username,
-            role: user.role,
-            team: teamData
-          };
-        });
+        const formattedUsers: DbUser[] = refreshedUsers.map(user => ({
+          user_id: user.user_id,
+          username: user.username,
+          role: user.role,
+          team_id: user.teams ? user.teams.team_id : null,
+          team_name: user.teams ? user.teams.team_name : null
+        }));
         
         setUsers(formattedUsers);
       }
@@ -435,7 +401,7 @@ const UserManagementTab: React.FC = () => {
                             {user.role === "referee" && "Scheidsrechter"}
                           </TableCell>
                           <TableCell>
-                            {user.team ? user.team.team_name : "-"}
+                            {user.team_name || "-"}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button

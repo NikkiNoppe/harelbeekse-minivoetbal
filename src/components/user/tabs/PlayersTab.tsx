@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { 
   Card, 
   CardHeader, 
@@ -12,34 +12,26 @@ import { Button } from "@/components/ui/button";
 import { Edit, Save, Plus } from "lucide-react";
 import PlayersList from "../players/PlayersList";
 import PlayerDialog from "../players/PlayerDialog";
-import { usePlayers, formatDate } from "../players/usePlayers";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { usePlayers } from "../players/usePlayers";
 
 const PlayersTab: React.FC = () => {
-  const [editMode, setEditMode] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newPlayer, setNewPlayer] = useState({
-    name: '',
-    dateOfBirth: ''
-  });
-  
-  const { user } = useAuth();
-  const { players, loading, removePlayer, addPlayer } = usePlayers();
-  
-  const handleAddPlayer = () => {
-    addPlayer({
-      name: newPlayer.name,
-      dateOfBirth: newPlayer.dateOfBirth,
-      teamId: user?.teamId,
-      isActive: true
-    });
-    
-    setDialogOpen(false);
-    setNewPlayer({
-      name: '',
-      dateOfBirth: ''
-    });
-  };
+  const {
+    players,
+    teams,
+    loading,
+    editMode,
+    selectedTeam,
+    dialogOpen,
+    newPlayer,
+    setEditMode,
+    handleTeamChange,
+    setDialogOpen,
+    setNewPlayer,
+    handleAddPlayer,
+    handleRemovePlayer,
+    formatDate,
+    user
+  } = usePlayers();
   
   return (
     <div className="space-y-6">
@@ -52,6 +44,21 @@ const PlayersTab: React.FC = () => {
                 Beheer de spelers in de competitie
               </CardDescription>
             </div>
+            
+            {user?.role === "admin" && (
+              <select 
+                className="p-2 bg-slate-800 border border-slate-700 rounded-md"
+                value={selectedTeam || ""}
+                onChange={(e) => handleTeamChange(parseInt(e.target.value))}
+              >
+                <option value="" disabled>Selecteer team</option>
+                {teams.map(team => (
+                  <option key={team.team_id} value={team.team_id}>
+                    {team.team_name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -59,7 +66,7 @@ const PlayersTab: React.FC = () => {
             players={players}
             loading={loading}
             editMode={editMode}
-            onRemovePlayer={removePlayer}
+            onRemovePlayer={handleRemovePlayer}
             formatDate={formatDate}
           />
         </CardContent>

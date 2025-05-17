@@ -17,7 +17,7 @@ const UserDashboard = () => {
   
   // Admin ziet gebruikersbeheer, team admin ziet team dashboard
   const isAdmin = user?.role === "admin";
-  const isTeam = user?.role === "player_manager"; 
+  const isTeam = user?.role === "player_manager"; // Updated from "team" to "player_manager"
   
   // Find team data if user is a team role
   const teamData = user?.teamId ? MOCK_TEAMS.find(team => team.id === user.teamId) : null;
