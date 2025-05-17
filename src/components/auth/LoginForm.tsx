@@ -34,8 +34,8 @@ type FormValues = z.infer<typeof formSchema>;
 // Mock users for demonstration - ensure role values match the UserRole type
 const MOCK_USERS: User[] = [
   { id: 1, username: "admin", password: "admin123", role: "admin" },
-  { id: 2, username: "team1", password: "team123", role: "team", teamId: 1 },
-  { id: 3, username: "team2", password: "team123", role: "team", teamId: 2 },
+  { id: 2, username: "team1", password: "team123", role: "player_manager", teamId: 1 },
+  { id: 3, username: "team2", password: "team123", role: "player_manager", teamId: 2 },
   { id: 4, username: "referee", password: "referee123", role: "referee" },
 ];
 

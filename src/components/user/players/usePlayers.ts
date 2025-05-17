@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,8 +43,8 @@ export const usePlayers = () => {
         
         setTeams(teamsData || []);
         
-        // If user is team manager, auto-select their team
-        if (user?.role === "team" && user.teamId) {
+        // If user is player_manager, auto-select their team
+        if (user && user.role === "player_manager") {
           setSelectedTeam(user.teamId);
         } else if (teamsData && teamsData.length > 0) {
           // For admin, select first team by default
