@@ -237,6 +237,23 @@ const UserManagementTab: React.FC = () => {
     if (selectedUserId === null) return;
     
     try {
+      // First, check if this user is a player_manager for any team
+      const { data: teamData } = await supabase
+        .from('teams')
+        .select('team_id')
+        .eq('player_manager_id', selectedUserId);
+      
+      // If they are a player_manager, remove the reference from the team
+      if (teamData && teamData.length > 0) {
+        const { error: teamError } = await supabase
+          .from('teams')
+          .update({ player_manager_id: null })
+          .eq('player_manager_id', selectedUserId);
+        
+        if (teamError) throw teamError;
+      }
+      
+      // Now delete the user
       const { error } = await supabase
         .from('users')
         .delete()
@@ -307,7 +324,7 @@ const UserManagementTab: React.FC = () => {
                       setNewUser({
                         ...newUser, 
                         role: value,
-                        // Reset teamId if role is not team manager
+                        // Reset teamId if role is not player_manager
                         teamId: value === "player_manager" ? newUser.teamId : null
                       });
                     }}
@@ -327,11 +344,11 @@ const UserManagementTab: React.FC = () => {
                   <div className="space-y-2">
                     <Label htmlFor="team">Team</Label>
                     <Select 
-                      value={newUser.teamId?.toString() || "no-team"} 
+                      value={newUser.teamId?.toString() || ""} 
                       onValueChange={(value) => {
                         setNewUser({
                           ...newUser,
-                          teamId: value !== "no-team" ? parseInt(value) : null
+                          teamId: value ? parseInt(value) : null
                         });
                       }}
                     >
@@ -339,7 +356,6 @@ const UserManagementTab: React.FC = () => {
                         <SelectValue placeholder="Selecteer een team" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="no-team">Geen team geselecteerd</SelectItem>
                         {teams.map((team) => (
                           <SelectItem key={team.team_id} value={team.team_id.toString()}>
                             {team.team_name}
