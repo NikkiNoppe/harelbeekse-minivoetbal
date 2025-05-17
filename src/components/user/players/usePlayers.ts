@@ -11,7 +11,8 @@ import {
   removePlayerFromApi 
 } from './playerService';
 
-export { Player } from './playerTypes';
+// Use "export type" for re-exporting types when isolatedModules is enabled
+export type { Player } from './playerTypes';
 export { formatDate } from './playerUtils';
 
 export const usePlayers = () => {
