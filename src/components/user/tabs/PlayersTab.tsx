@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Save, Plus } from "lucide-react";
 import PlayersList from "../players/PlayersList";
 import PlayerDialog from "../players/PlayerDialog";
-import { usePlayers } from "../players/usePlayers";
+import { usePlayers, formatDate } from "../players/usePlayers";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 const PlayersTab: React.FC = () => {
@@ -24,13 +24,7 @@ const PlayersTab: React.FC = () => {
   });
   
   const { user } = useAuth();
-  const {
-    players,
-    loading,
-    removePlayer,
-    addPlayer,
-    formatDate
-  } = usePlayers();
+  const { players, loading, removePlayer, addPlayer } = usePlayers();
   
   const handleAddPlayer = () => {
     addPlayer({

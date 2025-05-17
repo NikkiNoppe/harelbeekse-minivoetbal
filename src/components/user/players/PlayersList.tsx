@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
-import { Player } from "./usePlayers";
+import { Player } from "./playerTypes";
 
 interface PlayersListProps {
   players: Player[];
