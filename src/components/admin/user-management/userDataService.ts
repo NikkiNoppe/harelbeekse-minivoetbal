@@ -29,8 +29,8 @@ export const useUserDataService = () => {
       if (usersError) throw usersError;
       
       // Fetch team managers relationships
-      const { data: teamManagersData, error: teamManagersError } = await supabase
-        .from('team_managers')
+      const { data: teamUsersData, error: teamUsersError } = await supabase
+        .from('team_users')
         .select(`
           user_id,
           team_id,
@@ -40,12 +40,12 @@ export const useUserDataService = () => {
           )
         `);
       
-      if (teamManagersError) throw teamManagersError;
+      if (teamUsersError) throw teamUsersError;
       
       // Map team manager data to organize by user_id
       const userTeamsMap: Record<number, { team_id: number; team_name: string }[]> = {};
       
-      teamManagersData.forEach((manager) => {
+      teamUsersData.forEach((manager) => {
         if (!userTeamsMap[manager.user_id]) {
           userTeamsMap[manager.user_id] = [];
         }

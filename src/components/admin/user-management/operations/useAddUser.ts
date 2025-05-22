@@ -60,17 +60,17 @@ export const useAddUser = (teams: Team[], refreshData: () => Promise<void>) => {
         const teamIds = newUser.teamIds || (newUser.teamId ? [newUser.teamId] : []);
         
         if (teamIds.length > 0) {
-          // Create entries in team_managers table for each team
-          const teamManagerEntries = teamIds.map(teamId => ({
+          // Create entries in team_users table for each team
+          const teamUserEntries = teamIds.map(teamId => ({
             user_id: data[0].user_id,
             team_id: teamId
           }));
           
-          const { error: teamManagerError } = await supabase
-            .from('team_managers')
-            .insert(teamManagerEntries);
+          const { error: teamUserError } = await supabase
+            .from('team_users')
+            .insert(teamUserEntries);
           
-          if (teamManagerError) throw teamManagerError;
+          if (teamUserError) throw teamUserError;
           
           // Get team names for toast message
           const teamNames = teams

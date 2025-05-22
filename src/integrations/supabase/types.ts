@@ -471,7 +471,7 @@ export type Database = {
           },
         ]
       }
-      team_managers: {
+      team_users: {
         Row: {
           id: number
           team_id: number | null
@@ -507,31 +507,20 @@ export type Database = {
       teams: {
         Row: {
           balance: number | null
-          player_manager_id: number | null
           team_id: number
           team_name: string
         }
         Insert: {
           balance?: number | null
-          player_manager_id?: number | null
           team_id?: number
           team_name: string
         }
         Update: {
           balance?: number | null
-          player_manager_id?: number | null
           team_id?: number
           team_name?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "teams_player_manager_id_fkey"
-            columns: ["player_manager_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       users: {
         Row: {

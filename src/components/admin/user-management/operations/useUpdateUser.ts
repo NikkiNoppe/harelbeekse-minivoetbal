@@ -24,7 +24,7 @@ export const useUpdateUser = (teams: Team[], refreshData: () => Promise<void>) =
       if (formData.role === "player_manager") {
         // First, remove any existing team associations for this user
         const { error: resetError } = await supabase
-          .from('team_managers')
+          .from('team_users')
           .delete()
           .eq('user_id', userId);
         
@@ -35,16 +35,16 @@ export const useUpdateUser = (teams: Team[], refreshData: () => Promise<void>) =
                       (formData.teamId ? [formData.teamId] : []);
         
         if (teamIds.length > 0) {
-          const teamManagerEntries = teamIds.map(teamId => ({
+          const teamUserEntries = teamIds.map(teamId => ({
             user_id: userId,
             team_id: parseInt(teamId)
           }));
           
-          const { error: teamManagerError } = await supabase
-            .from('team_managers')
-            .insert(teamManagerEntries);
+          const { error: teamUserError } = await supabase
+            .from('team_users')
+            .insert(teamUserEntries);
           
-          if (teamManagerError) throw teamManagerError;
+          if (teamUserError) throw teamUserError;
           
           // Get team names for toast message
           const teamNames = teams
@@ -65,7 +65,7 @@ export const useUpdateUser = (teams: Team[], refreshData: () => Promise<void>) =
       } else {
         // If user is no longer a player_manager, remove any team associations
         const { error: resetError } = await supabase
-          .from('team_managers')
+          .from('team_users')
           .delete()
           .eq('user_id', userId);
         
