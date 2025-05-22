@@ -1,8 +1,7 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "@/types/auth";
 
 interface DbUser {
   user_id: number;
@@ -26,6 +25,11 @@ export const useUserManagement = () => {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<DbUser | null>(null);
+
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [teamFilter, setTeamFilter] = useState("all");
 
   // Adding operation-specific loading states
   const [addingUser, setAddingUser] = useState(false);
@@ -86,6 +90,37 @@ export const useUserManagement = () => {
     
     fetchData();
   }, [toast]);
+
+  // Apply filters to users
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      // Text search filter (case insensitive)
+      const matchesSearch = searchTerm === "" || 
+        user.username.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Role filter
+      const matchesRole = roleFilter === "all" || user.role === roleFilter;
+      
+      // Team filter
+      const matchesTeam = teamFilter === "all" || 
+        (teamFilter === "none" ? user.team_id === null : 
+        user.team_id === parseInt(teamFilter));
+      
+      return matchesSearch && matchesRole && matchesTeam;
+    });
+  }, [users, searchTerm, roleFilter, teamFilter]);
+  
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  const handleRoleFilterChange = (role: string) => {
+    setRoleFilter(role);
+  };
+
+  const handleTeamFilterChange = (teamId: string) => {
+    setTeamFilter(teamId);
+  };
 
   const handleAddUser = async (newUser: {
     name: string;
@@ -336,7 +371,8 @@ export const useUserManagement = () => {
   };
 
   return {
-    users,
+    users: filteredUsers, // Return filtered users instead of all users
+    allUsers: users, // Also provide access to unfiltered users if needed
     teams,
     loading,
     addingUser,
@@ -347,6 +383,12 @@ export const useUserManagement = () => {
     editingUser,
     confirmDialogOpen,
     setConfirmDialogOpen,
+    searchTerm,
+    roleFilter,
+    teamFilter,
+    handleSearchChange,
+    handleRoleFilterChange,
+    handleTeamFilterChange,
     handleAddUser,
     handleOpenEditDialog,
     handleUpdateUser,

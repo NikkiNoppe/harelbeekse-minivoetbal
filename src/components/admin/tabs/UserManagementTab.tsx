@@ -12,6 +12,7 @@ import UserDialog from "@/components/user/UserDialog";
 import AddUserForm from "../user-management/AddUserForm";
 import UserList from "../user-management/UserList";
 import ConfirmDeleteDialog from "../user-management/ConfirmDeleteDialog";
+import UserSearchFilter from "../user-management/UserSearchFilter";
 
 const UserManagementTab: React.FC = () => {
   const {
@@ -26,6 +27,12 @@ const UserManagementTab: React.FC = () => {
     editingUser,
     confirmDialogOpen,
     setConfirmDialogOpen,
+    searchTerm,
+    roleFilter,
+    teamFilter,
+    handleSearchChange,
+    handleRoleFilterChange,
+    handleTeamFilterChange,
     handleAddUser,
     handleOpenEditDialog,
     handleUpdateUser,
@@ -50,6 +57,16 @@ const UserManagementTab: React.FC = () => {
             
             <div className="border-t pt-4">
               <h3 className="mb-4 text-lg font-medium">Gebruikers</h3>
+              
+              <UserSearchFilter 
+                searchTerm={searchTerm}
+                onSearchTermChange={handleSearchChange}
+                roleFilter={roleFilter}
+                onRoleFilterChange={handleRoleFilterChange}
+                teamFilter={teamFilter}
+                onTeamFilterChange={handleTeamFilterChange}
+                teams={teams}
+              />
               
               <UserList 
                 users={users}
