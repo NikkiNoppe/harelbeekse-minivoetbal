@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,11 +16,12 @@ interface Team {
   team_name: string;
 }
 
+// Update UserWithTeam to correctly define the teams property as an array
 interface UserWithTeam {
   user_id: number;
   username: string;
   role: string;
-  teams: Team | null;
+  teams: Team[] | null;
 }
 
 export const useUserManagement = () => {
@@ -71,14 +73,18 @@ export const useUserManagement = () => {
         
         if (usersError) throw usersError;
         
-        // Transform the data - explicitly type the userData to help TypeScript
-        const formattedUsers: DbUser[] = (usersData as UserWithTeam[]).map(user => ({
-          user_id: user.user_id,
-          username: user.username,
-          role: user.role,
-          team_id: user.teams ? user.teams.team_id : null,
-          team_name: user.teams ? user.teams.team_name : null
-        }));
+        // Transform the data - use a more specific casting approach
+        const formattedUsers: DbUser[] = (usersData as unknown as UserWithTeam[]).map(user => {
+          // Extract team info from the first team if teams is an array with data
+          const teamData = user.teams && user.teams.length > 0 ? user.teams[0] : null;
+          return {
+            user_id: user.user_id,
+            username: user.username,
+            role: user.role,
+            team_id: teamData ? teamData.team_id : null,
+            team_name: teamData ? teamData.team_name : null
+          };
+        });
         
         setTeams(teamsData || []);
         setUsers(formattedUsers);
@@ -359,14 +365,18 @@ export const useUserManagement = () => {
       if (refreshError) throw refreshError;
 
       if (refreshedUsers) {
-        // Add proper type casting to handle the nested team data
-        const formattedUsers: DbUser[] = (refreshedUsers as UserWithTeam[]).map(user => ({
-          user_id: user.user_id,
-          username: user.username,
-          role: user.role,
-          team_id: user.teams ? user.teams.team_id : null,
-          team_name: user.teams ? user.teams.team_name : null
-        }));
+        // Use the same approach for type casting and data transformation as above
+        const formattedUsers: DbUser[] = (refreshedUsers as unknown as UserWithTeam[]).map(user => {
+          // Extract team info from the first team if teams is an array with data
+          const teamData = user.teams && user.teams.length > 0 ? user.teams[0] : null;
+          return {
+            user_id: user.user_id,
+            username: user.username,
+            role: user.role,
+            team_id: teamData ? teamData.team_id : null,
+            team_name: teamData ? teamData.team_name : null
+          };
+        });
         
         setUsers(formattedUsers);
       }
