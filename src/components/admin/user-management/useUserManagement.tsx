@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,6 +109,7 @@ export const useUserManagement = () => {
     });
   }, [users, searchTerm, roleFilter, teamFilter]);
   
+  
   const handleSearchChange = (term: string) => {
     setSearchTerm(term);
   };
@@ -121,6 +121,8 @@ export const useUserManagement = () => {
   const handleTeamFilterChange = (teamId: string) => {
     setTeamFilter(teamId);
   };
+
+  
 
   const handleAddUser = async (newUser: {
     name: string;

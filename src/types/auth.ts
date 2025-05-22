@@ -9,6 +9,12 @@ export interface User {
   teamId?: number;
 }
 
+export interface TeamData {
+  id: number;
+  name: string;
+  email?: string;
+}
+
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;

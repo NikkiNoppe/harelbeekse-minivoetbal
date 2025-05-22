@@ -78,7 +78,9 @@ const UsersTab: React.FC = () => {
   };
   
   // Handle save user
-  const handleSaveUser = (formData: any, currentEditingUser: User | null) => {
+  const handleSaveUser = (formData: any) => {
+    const currentEditingUser = editingUser;
+    
     if (currentEditingUser) {
       // Update existing user
       const updatedUser: User = {
