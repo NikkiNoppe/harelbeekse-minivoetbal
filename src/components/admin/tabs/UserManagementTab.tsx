@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { 
   Card, 
   CardContent, 
@@ -7,12 +7,13 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useUserManagement } from "../user-management/useUserManagement";
 import UserDialog from "@/components/user/UserDialog";
-import AddUserForm from "../user-management/AddUserForm";
 import UserList from "../user-management/UserList";
 import ConfirmDeleteDialog from "../user-management/ConfirmDeleteDialog";
 import UserSearchFilter from "../user-management/UserSearchFilter";
+import { Plus } from "lucide-react";
 
 const UserManagementTab: React.FC = () => {
   const {
@@ -40,24 +41,44 @@ const UserManagementTab: React.FC = () => {
     handleDeleteUser,
   } = useUserManagement();
   
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  // Handle opening add dialog
+  const handleOpenAddDialog = () => {
+    setAddDialogOpen(true);
+  };
+
+  // Handle save for new user
+  const handleSaveNewUser = (formData: any) => {
+    handleAddUser({
+      name: formData.username,
+      email: formData.password, // This field is used as email in the current implementation
+      role: formData.role,
+      teamId: formData.teamId || null,
+    });
+    setAddDialogOpen(false);
+  };
+  
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Gebruikers Beheren</CardTitle>
-          <CardDescription>Voeg nieuwe gebruikers toe en beheer hun toegang</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div>
+            <CardTitle>Gebruikers Beheren</CardTitle>
+            <CardDescription>Voeg nieuwe gebruikers toe en beheer hun toegang</CardDescription>
+          </div>
+          <Button 
+            onClick={handleOpenAddDialog} 
+            disabled={addingUser}
+            className="flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Nieuwe gebruiker
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            <AddUserForm 
-              teams={teams} 
-              onAddUser={handleAddUser}
-              isAdding={addingUser}
-            />
-            
             <div className="border-t pt-4">
-              <h3 className="mb-4 text-lg font-medium">Gebruikers</h3>
-              
               <UserSearchFilter 
                 searchTerm={searchTerm}
                 onSearchTermChange={handleSearchChange}
@@ -106,6 +127,15 @@ const UserManagementTab: React.FC = () => {
           isLoading={updatingUser}
         />
       )}
+
+      {/* Add User Dialog */}
+      <UserDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onSave={handleSaveNewUser}
+        teams={teams.map(team => ({ id: team.team_id, name: team.team_name }))}
+        isLoading={addingUser}
+      />
     </div>
   );
 };

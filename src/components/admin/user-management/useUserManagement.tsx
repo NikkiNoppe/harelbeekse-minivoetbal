@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,62 +45,63 @@ export const useUserManagement = () => {
 
   // Fetch users and teams from Supabase
   useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        
-        // Fetch teams
-        const { data: teamsData, error: teamsError } = await supabase
-          .from('teams')
-          .select('team_id, team_name')
-          .order('team_name');
-        
-        if (teamsError) throw teamsError;
-        
-        // Fetch users with team names
-        const { data: usersData, error: usersError } = await supabase
-          .from('users')
-          .select(`
-            user_id,
-            username,
-            role,
-            teams (
-              team_id,
-              team_name
-            )
-          `);
-        
-        if (usersError) throw usersError;
-        
-        // Transform the data - use a more specific casting approach
-        const formattedUsers: DbUser[] = (usersData as unknown as UserWithTeam[]).map(user => {
-          // Extract team info from the first team if teams is an array with data
-          const teamData = user.teams && user.teams.length > 0 ? user.teams[0] : null;
-          return {
-            user_id: user.user_id,
-            username: user.username,
-            role: user.role,
-            team_id: teamData ? teamData.team_id : null,
-            team_name: teamData ? teamData.team_name : null
-          };
-        });
-        
-        setTeams(teamsData || []);
-        setUsers(formattedUsers);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast({
-          title: "Fout bij laden",
-          description: "Er is een fout opgetreden bij het laden van gebruikersgegevens.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
-    
     fetchData();
   }, [toast]);
+
+  // Function to fetch both users and teams data
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch teams
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('team_id, team_name')
+        .order('team_name');
+      
+      if (teamsError) throw teamsError;
+      
+      // Fetch users with team names
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select(`
+          user_id,
+          username,
+          role,
+          teams (
+            team_id,
+            team_name
+          )
+        `);
+      
+      if (usersError) throw usersError;
+      
+      // Transform the data - use a more specific casting approach
+      const formattedUsers: DbUser[] = (usersData as unknown as UserWithTeam[]).map(user => {
+        // Extract team info from the first team if teams is an array with data
+        const teamData = user.teams && user.teams.length > 0 ? user.teams[0] : null;
+        return {
+          user_id: user.user_id,
+          username: user.username,
+          role: user.role,
+          team_id: teamData ? teamData.team_id : null,
+          team_name: teamData ? teamData.team_name : null
+        };
+      });
+      
+      setTeams(teamsData || []);
+      setUsers(formattedUsers);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Fout bij laden",
+        description: "Er is een fout opgetreden bij het laden van gebruikersgegevens.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Apply filters to users
   const filteredUsers = useMemo(() => {
@@ -122,7 +122,6 @@ export const useUserManagement = () => {
     });
   }, [users, searchTerm, roleFilter, teamFilter]);
   
-  
   const handleSearchChange = (term: string) => {
     setSearchTerm(term);
   };
@@ -134,8 +133,6 @@ export const useUserManagement = () => {
   const handleTeamFilterChange = (teamId: string) => {
     setTeamFilter(teamId);
   };
-
-  
 
   const handleAddUser = async (newUser: {
     name: string;
@@ -203,7 +200,7 @@ export const useUserManagement = () => {
       });
       
       // Refresh user list
-      refreshUsers();
+      await fetchData();
     } catch (error: any) {
       console.error('Error adding user:', error);
       toast({
@@ -275,8 +272,8 @@ export const useUserManagement = () => {
         description: `${formData.username} is bijgewerkt.`
       });
       
-      // Refresh user list
-      refreshUsers();
+      // Refresh user list to show updated data
+      await fetchData();
       
       setEditDialogOpen(false);
       setEditingUser(null);
@@ -327,12 +324,16 @@ export const useUserManagement = () => {
       
       if (error) throw error;
       
+      // Update the state to reflect the deletion
       setUsers(prev => prev.filter(user => user.user_id !== selectedUserId));
       
       toast({
         title: "Gebruiker verwijderd",
         description: "De gebruiker is succesvol verwijderd"
       });
+      
+      // Refresh the user list to ensure we have the latest data
+      await fetchData();
     } catch (error: any) {
       console.error('Error deleting user:', error);
       toast({
@@ -347,52 +348,9 @@ export const useUserManagement = () => {
     }
   };
 
-  const refreshUsers = async () => {
-    try {
-      // Refresh user list
-      const { data: refreshedUsers, error: refreshError } = await supabase
-        .from('users')
-        .select(`
-          user_id,
-          username,
-          role,
-          teams (
-            team_id,
-            team_name
-          )
-        `);
-      
-      if (refreshError) throw refreshError;
-
-      if (refreshedUsers) {
-        // Use the same approach for type casting and data transformation as above
-        const formattedUsers: DbUser[] = (refreshedUsers as unknown as UserWithTeam[]).map(user => {
-          // Extract team info from the first team if teams is an array with data
-          const teamData = user.teams && user.teams.length > 0 ? user.teams[0] : null;
-          return {
-            user_id: user.user_id,
-            username: user.username,
-            role: user.role,
-            team_id: teamData ? teamData.team_id : null,
-            team_name: teamData ? teamData.team_name : null
-          };
-        });
-        
-        setUsers(formattedUsers);
-      }
-    } catch (error: any) {
-      console.error('Error refreshing users:', error);
-      toast({
-        title: "Fout bij vernieuwen",
-        description: `Er is een fout opgetreden bij het vernieuwen van gebruikersgegevens: ${error.message || 'Onbekende fout'}`,
-        variant: "destructive",
-      });
-    }
-  };
-
   return {
-    users: filteredUsers, // Return filtered users instead of all users
-    allUsers: users, // Also provide access to unfiltered users if needed
+    users: filteredUsers,
+    allUsers: users,
     teams,
     loading,
     addingUser,
