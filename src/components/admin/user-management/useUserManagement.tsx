@@ -27,6 +27,11 @@ export const useUserManagement = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<DbUser | null>(null);
 
+  // Adding operation-specific loading states
+  const [addingUser, setAddingUser] = useState(false);
+  const [updatingUser, setUpdatingUser] = useState(false);
+  const [deletingUser, setDeletingUser] = useState(false);
+
   // Fetch users and teams from Supabase
   useEffect(() => {
     async function fetchData() {
@@ -117,6 +122,8 @@ export const useUserManagement = () => {
     }
     
     try {
+      setAddingUser(true);
+      
       // Insert new user into Supabase
       const { data, error } = await supabase
         .from('users')
@@ -147,13 +154,15 @@ export const useUserManagement = () => {
       
       // Refresh user list
       refreshUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding user:', error);
       toast({
         title: "Fout",
-        description: "Er is een fout opgetreden bij het toevoegen van de gebruiker.",
+        description: `Er is een fout opgetreden bij het toevoegen van de gebruiker: ${error.message || 'Onbekende fout'}`,
         variant: "destructive"
       });
+    } finally {
+      setAddingUser(false);
     }
   };
 
@@ -166,6 +175,8 @@ export const useUserManagement = () => {
     if (!editingUser) return;
     
     try {
+      setUpdatingUser(true);
+      
       // Update user in Supabase
       const { error } = await supabase
         .from('users')
@@ -219,13 +230,15 @@ export const useUserManagement = () => {
       
       setEditDialogOpen(false);
       setEditingUser(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating user:', error);
       toast({
         title: "Fout",
-        description: "Er is een fout opgetreden bij het bijwerken van de gebruiker.",
+        description: `Er is een fout opgetreden bij het bijwerken van de gebruiker: ${error.message || 'Onbekende fout'}`,
         variant: "destructive"
       });
+    } finally {
+      setUpdatingUser(false);
     }
   };
   
@@ -238,6 +251,8 @@ export const useUserManagement = () => {
     if (selectedUserId === null) return;
     
     try {
+      setDeletingUser(true);
+      
       // First, check if this user is a player_manager for any team
       const { data: teamData } = await supabase
         .from('teams')
@@ -268,14 +283,15 @@ export const useUserManagement = () => {
         title: "Gebruiker verwijderd",
         description: "De gebruiker is succesvol verwijderd"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting user:', error);
       toast({
         title: "Fout",
-        description: "Er is een fout opgetreden bij het verwijderen van de gebruiker.",
+        description: `Er is een fout opgetreden bij het verwijderen van de gebruiker: ${error.message || 'Onbekende fout'}`,
         variant: "destructive"
       });
     } finally {
+      setDeletingUser(false);
       setConfirmDialogOpen(false);
       setSelectedUserId(null);
     }
@@ -309,11 +325,11 @@ export const useUserManagement = () => {
         
         setUsers(formattedUsers);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error refreshing users:', error);
       toast({
         title: "Fout bij vernieuwen",
-        description: "Er is een fout opgetreden bij het vernieuwen van gebruikersgegevens.",
+        description: `Er is een fout opgetreden bij het vernieuwen van gebruikersgegevens: ${error.message || 'Onbekende fout'}`,
         variant: "destructive",
       });
     }
@@ -323,6 +339,9 @@ export const useUserManagement = () => {
     users,
     teams,
     loading,
+    addingUser,
+    updatingUser,
+    deletingUser,
     editDialogOpen,
     setEditDialogOpen,
     editingUser,

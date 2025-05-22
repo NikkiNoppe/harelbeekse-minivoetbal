@@ -18,6 +18,9 @@ const UserManagementTab: React.FC = () => {
     users,
     teams,
     loading,
+    addingUser,
+    updatingUser,
+    deletingUser,
     editDialogOpen,
     setEditDialogOpen,
     editingUser,
@@ -41,7 +44,8 @@ const UserManagementTab: React.FC = () => {
           <div className="space-y-6">
             <AddUserForm 
               teams={teams} 
-              onAddUser={handleAddUser} 
+              onAddUser={handleAddUser}
+              isAdding={addingUser}
             />
             
             <div className="border-t pt-4">
@@ -50,6 +54,8 @@ const UserManagementTab: React.FC = () => {
               <UserList 
                 users={users}
                 loading={loading}
+                isUpdating={updatingUser}
+                isDeleting={deletingUser}
                 onEditUser={handleOpenEditDialog}
                 onDeleteUser={handleOpenDeleteConfirmation}
               />
@@ -63,6 +69,7 @@ const UserManagementTab: React.FC = () => {
         open={confirmDialogOpen}
         onOpenChange={setConfirmDialogOpen}
         onConfirmDelete={handleDeleteUser}
+        isDeleting={deletingUser}
       />
 
       {/* Edit User Dialog */}
@@ -79,6 +86,7 @@ const UserManagementTab: React.FC = () => {
           }}
           onSave={handleUpdateUser}
           teams={teams.map(team => ({ id: team.team_id, name: team.team_name }))}
+          isLoading={updatingUser}
         />
       )}
     </div>

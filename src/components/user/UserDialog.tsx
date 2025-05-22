@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -28,9 +27,16 @@ interface TeamOption {
 interface UserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingUser: User | null;
-  onSave: (formData: any, editingUser: User | null) => void;
+  editingUser?: {
+    id: number;
+    username: string;
+    password: string;
+    role: "admin" | "referee" | "player_manager";
+    teamId?: number;
+  };
+  onSave: (formData: any) => void;
   teams: TeamOption[];
+  isLoading?: boolean;
 }
 
 const UserDialog: React.FC<UserDialogProps> = ({
@@ -38,7 +44,8 @@ const UserDialog: React.FC<UserDialogProps> = ({
   onOpenChange,
   editingUser,
   onSave,
-  teams
+  teams,
+  isLoading
 }) => {
   const [formData, setFormData] = useState({
     username: "",
@@ -69,7 +76,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData, editingUser);
+    onSave(formData);
     onOpenChange(false);
   };
   
@@ -170,7 +177,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuleren
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={isLoading}>
               {editingUser ? "Bijwerken" : "Toevoegen"}
             </Button>
           </DialogFooter>

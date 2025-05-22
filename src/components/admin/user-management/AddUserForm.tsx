@@ -1,9 +1,8 @@
-
 import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -25,15 +24,22 @@ interface AddUserFormProps {
     role: "admin" | "referee" | "player_manager";
     teamId: number | null;
   }) => void;
+  isAdding: boolean;
 }
 
-const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser }) => {
+const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser, isAdding }) => {
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
     role: "player_manager" as "admin" | "referee" | "player_manager",
     teamId: null as number | null
   });
+
+  const handleSubmit = () => {
+    onAddUser(newUser);
+    // Only reset the form if the operation succeeds (this will be handled by the parent component)
+    // We'll keep the form values for now in case there's an error
+  };
 
   return (
     <div className="space-y-4">
@@ -47,6 +53,7 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser }) => {
             placeholder="Volledige naam"
             value={newUser.name}
             onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+            disabled={isAdding}
           />
         </div>
         
@@ -58,6 +65,7 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser }) => {
             placeholder="E-mailadres"
             value={newUser.email}
             onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+            disabled={isAdding}
           />
         </div>
       </div>
@@ -75,6 +83,7 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser }) => {
                 teamId: value === "player_manager" ? newUser.teamId : null
               });
             }}
+            disabled={isAdding}
           >
             <SelectTrigger id="role">
               <SelectValue placeholder="Selecteer een rol" />
@@ -98,6 +107,7 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser }) => {
                   teamId: value ? parseInt(value) : null
                 });
               }}
+              disabled={isAdding}
             >
               <SelectTrigger id="team">
                 <SelectValue placeholder="Selecteer een team" />
@@ -115,11 +125,21 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser }) => {
       </div>
       
       <Button 
-        onClick={() => onAddUser(newUser)}
+        onClick={handleSubmit}
         className="flex items-center gap-2"
+        disabled={isAdding}
       >
-        <UserPlus className="h-4 w-4" />
-        Gebruiker toevoegen
+        {isAdding ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Toevoegen...
+          </>
+        ) : (
+          <>
+            <UserPlus className="h-4 w-4" />
+            Gebruiker toevoegen
+          </>
+        )}
       </Button>
     </div>
   );
