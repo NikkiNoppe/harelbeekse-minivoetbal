@@ -15,6 +15,13 @@ interface Team {
   team_name: string;
 }
 
+interface UserWithTeam {
+  user_id: number;
+  username: string;
+  role: string;
+  teams: Team | null;
+}
+
 export const useUserManagement = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<DbUser[]>([]);
@@ -64,8 +71,8 @@ export const useUserManagement = () => {
         
         if (usersError) throw usersError;
         
-        // Transform the data
-        const formattedUsers: DbUser[] = usersData.map(user => ({
+        // Transform the data - explicitly type the userData to help TypeScript
+        const formattedUsers: DbUser[] = (usersData as UserWithTeam[]).map(user => ({
           user_id: user.user_id,
           username: user.username,
           role: user.role,
@@ -352,7 +359,8 @@ export const useUserManagement = () => {
       if (refreshError) throw refreshError;
 
       if (refreshedUsers) {
-        const formattedUsers: DbUser[] = refreshedUsers.map(user => ({
+        // Add proper type casting to handle the nested team data
+        const formattedUsers: DbUser[] = (refreshedUsers as UserWithTeam[]).map(user => ({
           user_id: user.user_id,
           username: user.username,
           role: user.role,
