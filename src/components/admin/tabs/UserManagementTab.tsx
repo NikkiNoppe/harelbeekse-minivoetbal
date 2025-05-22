@@ -34,8 +34,9 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
-import { User, Mail, UserPlus, Trash2 } from "lucide-react";
+import { User, Mail, UserPlus, Trash2, Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import UserDialog from "@/components/user/UserDialog";
 
 interface Team {
   team_id: number;
@@ -72,6 +73,10 @@ const UserManagementTab: React.FC = () => {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // For user edit functionality
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<DbUser | null>(null);
   
   // Fetch users and teams from Supabase
   useEffect(() => {
@@ -223,6 +228,100 @@ const UserManagementTab: React.FC = () => {
       toast({
         title: "Fout",
         description: "Er is een fout opgetreden bij het toevoegen van de gebruiker.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleOpenEditDialog = (user: DbUser) => {
+    setEditingUser(user);
+    setEditDialogOpen(true);
+  };
+  
+  const handleUpdateUser = async (formData: any) => {
+    if (!editingUser) return;
+    
+    try {
+      // Update user in Supabase
+      const { error } = await supabase
+        .from('users')
+        .update({
+          username: formData.username,
+          ...(formData.password ? { password: formData.password } : {}),
+          role: formData.role,
+        })
+        .eq('user_id', editingUser.user_id);
+      
+      if (error) throw error;
+      
+      // Handle team association if user is a player_manager
+      if (formData.role === "player_manager") {
+        // First, remove any existing team association for this user
+        if (editingUser.team_id) {
+          const { error: resetError } = await supabase
+            .from('teams')
+            .update({ player_manager_id: null })
+            .eq('player_manager_id', editingUser.user_id);
+          
+          if (resetError) throw resetError;
+        }
+        
+        // Then, set the new team association
+        if (formData.teamId) {
+          const { error: teamError } = await supabase
+            .from('teams')
+            .update({ player_manager_id: editingUser.user_id })
+            .eq('team_id', formData.teamId);
+          
+          if (teamError) throw teamError;
+        }
+      } else if (editingUser.team_id) {
+        // If user is no longer a player_manager, remove any team association
+        const { error: resetError } = await supabase
+          .from('teams')
+          .update({ player_manager_id: null })
+          .eq('player_manager_id', editingUser.user_id);
+        
+        if (resetError) throw resetError;
+      }
+      
+      toast({
+        title: "Gebruiker bijgewerkt",
+        description: `${formData.username} is bijgewerkt.`
+      });
+      
+      // Refresh user list
+      const { data: refreshedUsers, error: refreshError } = await supabase
+        .from('users')
+        .select(`
+          user_id,
+          username,
+          role,
+          teams (
+            team_id,
+            team_name
+          )
+        `);
+      
+      if (!refreshError && refreshedUsers) {
+        const formattedUsers: DbUser[] = refreshedUsers.map(user => ({
+          user_id: user.user_id,
+          username: user.username,
+          role: user.role,
+          team_id: user.teams ? user.teams.team_id : null,
+          team_name: user.teams ? user.teams.team_name : null
+        }));
+        
+        setUsers(formattedUsers);
+      }
+      
+      setEditDialogOpen(false);
+      setEditingUser(null);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het bijwerken van de gebruiker.",
         variant: "destructive"
       });
     }
@@ -420,15 +519,26 @@ const UserManagementTab: React.FC = () => {
                             {user.team_name || "-"}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenDeleteConfirmation(user.user_id)}
-                              className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Verwijderen</span>
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenEditDialog(user)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">Bewerken</span>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenDeleteConfirmation(user.user_id)}
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Verwijderen</span>
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -463,6 +573,23 @@ const UserManagementTab: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit User Dialog */}
+      {editingUser && (
+        <UserDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          editingUser={{
+            id: editingUser.user_id,
+            username: editingUser.username,
+            password: "",
+            role: editingUser.role as "admin" | "referee" | "player_manager",
+            teamId: editingUser.team_id || undefined
+          }}
+          onSave={handleUpdateUser}
+          teams={teams.map(team => ({ id: team.team_id, name: team.team_name }))}
+        />
+      )}
     </div>
   );
 };

@@ -10,6 +10,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { User } from "@/types/auth";
 
 interface TeamOption {
@@ -35,7 +43,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    role: "team",
+    role: "player_manager",
     teamId: 0
   });
   
@@ -53,7 +61,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
       setFormData({
         username: "",
         password: "",
-        role: "team",
+        role: "player_manager",
         teamId: teams.length > 0 ? teams[0].id : 0
       });
     }
@@ -81,9 +89,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
         
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="space-y-2">
-            <label htmlFor="username" className="text-sm font-medium">
-              Gebruikersnaam
-            </label>
+            <Label htmlFor="username">Gebruikersnaam</Label>
             <Input
               id="username"
               value={formData.username}
@@ -94,9 +100,9 @@ const UserDialog: React.FC<UserDialogProps> = ({
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
+            <Label htmlFor="password">
               Wachtwoord {editingUser && "(leeg laten om ongewijzigd te houden)"}
-            </label>
+            </Label>
             <Input
               id="password"
               type="password"
@@ -108,41 +114,55 @@ const UserDialog: React.FC<UserDialogProps> = ({
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="role" className="text-sm font-medium">
-              Rol
-            </label>
-            <select
-              id="role"
-              className="w-full p-2 border rounded-md"
+            <Label htmlFor="role">Rol</Label>
+            <Select
               value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              onValueChange={(value: "admin" | "referee" | "player_manager") => {
+                setFormData({ 
+                  ...formData, 
+                  role: value,
+                  // Reset teamId if role is not player_manager
+                  teamId: value === "player_manager" ? formData.teamId : 0
+                });
+              }}
             >
-              <option value="admin">Beheerder</option>
-              <option value="team">Team</option>
-              <option value="referee">Scheidsrechter</option>
-            </select>
+              <SelectTrigger id="role">
+                <SelectValue placeholder="Selecteer een rol" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Beheerder</SelectItem>
+                <SelectItem value="player_manager">Teamverantwoordelijke</SelectItem>
+                <SelectItem value="referee">Scheidsrechter</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
-          {formData.role === "team" && (
+          {formData.role === "player_manager" && teams.length > 0 && (
             <div className="space-y-2">
-              <label htmlFor="team" className="text-sm font-medium">
-                Team
-              </label>
-              <select
-                id="team"
-                className="w-full p-2 border rounded-md"
-                value={formData.teamId}
-                onChange={(e) => setFormData({ ...formData, teamId: parseInt(e.target.value) })}
+              <Label htmlFor="team">Team</Label>
+              <Select
+                value={formData.teamId > 0 ? formData.teamId.toString() : ""}
+                onValueChange={(value) => {
+                  setFormData({ 
+                    ...formData, 
+                    teamId: parseInt(value) 
+                  });
+                }}
               >
-                <option value={0} disabled>
-                  Selecteer een team
-                </option>
-                {teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="team">
+                  <SelectValue placeholder="Selecteer een team" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0" disabled>
+                    Selecteer een team
+                  </SelectItem>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id.toString()}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
           
