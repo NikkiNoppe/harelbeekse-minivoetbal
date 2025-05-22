@@ -11,6 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { User, Edit, Trash2, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DbUser {
   user_id: number;
@@ -18,6 +20,7 @@ interface DbUser {
   role: string;
   team_id?: number | null;
   team_name?: string | null;
+  teams?: { team_id: number; team_name: string }[];
 }
 
 interface UserListProps {
@@ -44,7 +47,7 @@ const UserList: React.FC<UserListProps> = ({
           <TableRow>
             <TableHead>Naam</TableHead>
             <TableHead>Rol</TableHead>
-            <TableHead>Team</TableHead>
+            <TableHead>Teams</TableHead>
             <TableHead className="text-right">Acties</TableHead>
           </TableRow>
         </TableHeader>
@@ -90,7 +93,43 @@ const UserList: React.FC<UserListProps> = ({
                   {user.role === "referee" && "Scheidsrechter"}
                 </TableCell>
                 <TableCell>
-                  {user.team_name || "-"}
+                  {user.teams && user.teams.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {user.teams.length <= 2 ? (
+                        // Show all teams if 2 or fewer
+                        user.teams.map(team => (
+                          <Badge key={team.team_id} variant="outline" className="bg-slate-50">
+                            {team.team_name}
+                          </Badge>
+                        ))
+                      ) : (
+                        // Show first team and count for more than 2
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1">
+                                <Badge variant="outline" className="bg-slate-50">
+                                  {user.teams[0].team_name}
+                                </Badge>
+                                <Badge variant="secondary">
+                                  +{user.teams.length - 1}
+                                </Badge>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <div className="space-y-1">
+                                {user.teams.map(team => (
+                                  <div key={team.team_id}>{team.team_name}</div>
+                                ))}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                  ) : (
+                    "-"
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">

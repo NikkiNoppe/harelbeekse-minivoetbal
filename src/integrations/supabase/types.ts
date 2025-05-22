@@ -471,6 +471,39 @@ export type Database = {
           },
         ]
       }
+      team_managers: {
+        Row: {
+          id: number
+          team_id: number | null
+          user_id: number | null
+        }
+        Insert: {
+          id?: number
+          team_id?: number | null
+          user_id?: number | null
+        }
+        Update: {
+          id?: number
+          team_id?: number | null
+          user_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_managers_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "team_managers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           balance: number | null

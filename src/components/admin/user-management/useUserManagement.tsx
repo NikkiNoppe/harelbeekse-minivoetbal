@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +9,7 @@ interface DbUser {
   role: string;
   team_id?: number | null;
   team_name?: string | null;
+  teams?: { team_id: number; team_name: string }[];
 }
 
 interface Team {
@@ -43,11 +45,6 @@ export const useUserManagement = () => {
   const [updatingUser, setUpdatingUser] = useState(false);
   const [deletingUser, setDeletingUser] = useState(false);
 
-  // Fetch users and teams from Supabase
-  useEffect(() => {
-    fetchData();
-  }, [toast]);
-
   // Function to fetch both users and teams data
   const fetchData = async () => {
     try {
@@ -61,31 +58,61 @@ export const useUserManagement = () => {
       
       if (teamsError) throw teamsError;
       
-      // Fetch users with team names
+      // Fetch users with their teams
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select(`
           user_id,
           username,
-          role,
+          role
+        `);
+      
+      if (usersError) throw usersError;
+      
+      // Fetch team managers relationships
+      const { data: teamManagersData, error: teamManagersError } = await supabase
+        .from('team_managers')
+        .select(`
+          user_id,
+          team_id,
           teams (
             team_id,
             team_name
           )
         `);
       
-      if (usersError) throw usersError;
+      if (teamManagersError) throw teamManagersError;
       
-      // Transform the data - use a more specific casting approach
-      const formattedUsers: DbUser[] = (usersData as unknown as UserWithTeam[]).map(user => {
-        // Extract team info from the first team if teams is an array with data
-        const teamData = user.teams && user.teams.length > 0 ? user.teams[0] : null;
+      // Map team manager data to organize by user_id
+      const userTeamsMap: Record<number, { team_id: number; team_name: string }[]> = {};
+      
+      teamManagersData.forEach((manager) => {
+        if (!userTeamsMap[manager.user_id]) {
+          userTeamsMap[manager.user_id] = [];
+        }
+        
+        if (manager.teams) {
+          userTeamsMap[manager.user_id].push({
+            team_id: manager.teams.team_id,
+            team_name: manager.teams.team_name
+          });
+        }
+      });
+      
+      // Combine user data with team data
+      const formattedUsers: DbUser[] = usersData.map(user => {
+        const userTeams = userTeamsMap[user.user_id] || [];
+        
+        // For backwards compatibility, set the first team as the main team
+        const mainTeam = userTeams.length > 0 ? userTeams[0] : null;
+        
         return {
           user_id: user.user_id,
           username: user.username,
           role: user.role,
-          team_id: teamData ? teamData.team_id : null,
-          team_name: teamData ? teamData.team_name : null
+          team_id: mainTeam ? mainTeam.team_id : null,
+          team_name: mainTeam ? mainTeam.team_name : null,
+          teams: userTeams.length > 0 ? userTeams : []
         };
       });
       
@@ -102,6 +129,11 @@ export const useUserManagement = () => {
       setLoading(false);
     }
   };
+  
+  // Fetch users and teams from Supabase
+  useEffect(() => {
+    fetchData();
+  }, [toast]);
 
   // Apply filters to users
   const filteredUsers = useMemo(() => {
@@ -115,8 +147,10 @@ export const useUserManagement = () => {
       
       // Team filter
       const matchesTeam = teamFilter === "all" || 
-        (teamFilter === "none" ? user.team_id === null : 
-        user.team_id === parseInt(teamFilter));
+        (teamFilter === "none" ? 
+          (!user.teams || user.teams.length === 0) : 
+          (user.teams && user.teams.some(team => team.team_id === parseInt(teamFilter)))
+        );
       
       return matchesSearch && matchesRole && matchesTeam;
     });
@@ -139,6 +173,7 @@ export const useUserManagement = () => {
     email: string;
     role: "admin" | "referee" | "player_manager";
     teamId: number | null;
+    teamIds?: number[];
   }) => {
     // Validate form
     if (!newUser.name || !newUser.email) {
@@ -150,10 +185,10 @@ export const useUserManagement = () => {
       return;
     }
     
-    if (newUser.role === "player_manager" && !newUser.teamId) {
+    if (newUser.role === "player_manager" && !newUser.teamIds?.length && !newUser.teamId) {
       toast({
         title: "Fout",
-        description: "Selecteer een team voor deze gebruiker",
+        description: "Selecteer ten minste één team voor deze gebruiker",
         variant: "destructive"
       });
       return;
@@ -178,26 +213,51 @@ export const useUserManagement = () => {
           username: newUser.name,
           password: 'temporary_password', // In a real app, this would be handled more securely
           role: newUser.role,
-          // Note: team_id would be managed through a separate relationship
         })
         .select();
       
       if (error) throw error;
       
-      if (data && data[0] && newUser.role === "player_manager" && newUser.teamId) {
-        // Update team with manager reference if user is a team manager
-        const { error: teamError } = await supabase
-          .from('teams')
-          .update({ player_manager_id: data[0].user_id })
-          .eq('team_id', newUser.teamId);
+      // If user is a player_manager, add team manager relationships
+      if (data && data[0] && newUser.role === "player_manager") {
+        // Get team IDs to assign
+        const teamIds = newUser.teamIds || (newUser.teamId ? [newUser.teamId] : []);
         
-        if (teamError) throw teamError;
+        if (teamIds.length > 0) {
+          // Create entries in team_managers table for each team
+          const teamManagerEntries = teamIds.map(teamId => ({
+            user_id: data[0].user_id,
+            team_id: teamId
+          }));
+          
+          const { error: teamManagerError } = await supabase
+            .from('team_managers')
+            .insert(teamManagerEntries);
+          
+          if (teamManagerError) throw teamManagerError;
+          
+          // Get team names for toast message
+          const teamNames = teams
+            .filter(team => teamIds.includes(team.team_id))
+            .map(team => team.team_name)
+            .join(", ");
+          
+          toast({
+            title: "Gebruiker toegevoegd",
+            description: `${newUser.name} is toegevoegd als teamverantwoordelijke voor ${teamNames}.`
+          });
+        } else {
+          toast({
+            title: "Gebruiker toegevoegd",
+            description: `${newUser.name} is toegevoegd zonder teamkoppeling.`
+          });
+        }
+      } else {
+        toast({
+          title: "Gebruiker toegevoegd",
+          description: `${newUser.name} is toegevoegd als ${newUser.role}.`
+        });
       }
-      
-      toast({
-        title: "Gebruiker toegevoegd",
-        description: `${newUser.name} is toegevoegd als gebruiker.`
-      });
       
       // Refresh user list
       await fetchData();
@@ -236,41 +296,67 @@ export const useUserManagement = () => {
       
       if (error) throw error;
       
-      // Handle team association if user is a player_manager
+      // Handle team associations if user is a player_manager
       if (formData.role === "player_manager") {
-        // First, remove any existing team association for this user
-        if (editingUser.team_id) {
-          const { error: resetError } = await supabase
-            .from('teams')
-            .update({ player_manager_id: null })
-            .eq('player_manager_id', editingUser.user_id);
-          
-          if (resetError) throw resetError;
-        }
-        
-        // Then, set the new team association
-        if (formData.teamId) {
-          const { error: teamError } = await supabase
-            .from('teams')
-            .update({ player_manager_id: editingUser.user_id })
-            .eq('team_id', formData.teamId);
-          
-          if (teamError) throw teamError;
-        }
-      } else if (editingUser.team_id) {
-        // If user is no longer a player_manager, remove any team association
+        // First, remove any existing team associations for this user
         const { error: resetError } = await supabase
-          .from('teams')
-          .update({ player_manager_id: null })
-          .eq('player_manager_id', editingUser.user_id);
+          .from('team_managers')
+          .delete()
+          .eq('user_id', editingUser.user_id);
         
         if (resetError) throw resetError;
+        
+        // Then, add new team associations
+        const teamIds = Array.isArray(formData.teamIds) ? formData.teamIds : 
+                      (formData.teamId ? [formData.teamId] : []);
+        
+        if (teamIds.length > 0) {
+          const teamManagerEntries = teamIds.map(teamId => ({
+            user_id: editingUser.user_id,
+            team_id: parseInt(teamId)
+          }));
+          
+          const { error: teamManagerError } = await supabase
+            .from('team_managers')
+            .insert(teamManagerEntries);
+          
+          if (teamManagerError) throw teamManagerError;
+          
+          // Get team names for toast message
+          const teamNames = teams
+            .filter(team => teamIds.includes(team.team_id.toString()))
+            .map(team => team.team_name)
+            .join(", ");
+          
+          toast({
+            title: "Gebruiker bijgewerkt",
+            description: `${formData.username} is bijgewerkt en gekoppeld aan ${teamNames}.`
+          });
+        } else {
+          toast({
+            title: "Gebruiker bijgewerkt",
+            description: `${formData.username} is bijgewerkt zonder teamkoppeling.`
+          });
+        }
+      } else if (editingUser.teams && editingUser.teams.length > 0) {
+        // If user is no longer a player_manager, remove any team associations
+        const { error: resetError } = await supabase
+          .from('team_managers')
+          .delete()
+          .eq('user_id', editingUser.user_id);
+        
+        if (resetError) throw resetError;
+        
+        toast({
+          title: "Gebruiker bijgewerkt",
+          description: `${formData.username} is bijgewerkt. Teamkoppelingen zijn verwijderd omdat de gebruiker geen teamverantwoordelijke meer is.`
+        });
+      } else {
+        toast({
+          title: "Gebruiker bijgewerkt",
+          description: `${formData.username} is bijgewerkt.`
+        });
       }
-      
-      toast({
-        title: "Gebruiker bijgewerkt",
-        description: `${formData.username} is bijgewerkt.`
-      });
       
       // Refresh user list to show updated data
       await fetchData();
@@ -300,21 +386,13 @@ export const useUserManagement = () => {
     try {
       setDeletingUser(true);
       
-      // First, check if this user is a player_manager for any team
-      const { data: teamData } = await supabase
-        .from('teams')
-        .select('team_id')
-        .eq('player_manager_id', selectedUserId);
+      // First, remove any team manager relationships
+      const { error: teamManagerError } = await supabase
+        .from('team_managers')
+        .delete()
+        .eq('user_id', selectedUserId);
       
-      // If they are a player_manager, remove the reference from the team
-      if (teamData && teamData.length > 0) {
-        const { error: teamError } = await supabase
-          .from('teams')
-          .update({ player_manager_id: null })
-          .eq('player_manager_id', selectedUserId);
-        
-        if (teamError) throw teamError;
-      }
+      if (teamManagerError) throw teamManagerError;
       
       // Now delete the user
       const { error } = await supabase

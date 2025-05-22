@@ -55,6 +55,7 @@ const UserManagementTab: React.FC = () => {
       email: formData.password, // This field is used as email in the current implementation
       role: formData.role,
       teamId: formData.teamId || null,
+      teamIds: formData.teamIds || []
     });
     setAddDialogOpen(false);
   };
@@ -120,7 +121,8 @@ const UserManagementTab: React.FC = () => {
             username: editingUser.username,
             password: "",
             role: editingUser.role as "admin" | "referee" | "player_manager",
-            teamId: editingUser.team_id || undefined
+            teamId: editingUser.team_id || undefined,
+            teams: editingUser.teams
           }}
           onSave={handleUpdateUser}
           teams={teams.map(team => ({ id: team.team_id, name: team.team_name }))}
