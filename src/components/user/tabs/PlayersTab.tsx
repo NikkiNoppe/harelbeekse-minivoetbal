@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Save, Plus } from "lucide-react";
 import PlayersList from "../players/PlayersList";
 import PlayerDialog from "../players/PlayerDialog";
+import EditPlayerDialog from "../players/EditPlayerDialog";
 import { usePlayers } from "../players/usePlayers";
 
 const PlayersTab: React.FC = () => {
@@ -22,12 +23,18 @@ const PlayersTab: React.FC = () => {
     editMode,
     selectedTeam,
     dialogOpen,
+    editDialogOpen,
     newPlayer,
+    editingPlayer,
     setEditMode,
     handleTeamChange,
     setDialogOpen,
+    setEditDialogOpen,
     setNewPlayer,
+    setEditingPlayer,
     handleAddPlayer,
+    handleEditPlayer,
+    handleSaveEditedPlayer,
     handleRemovePlayer,
     formatDate,
     user
@@ -47,7 +54,7 @@ const PlayersTab: React.FC = () => {
             
             {user?.role === "admin" && (
               <select 
-                className="p-2 bg-slate-800 border border-slate-700 rounded-md"
+                className="p-2 bg-white border border-gray-200 rounded-md text-gray-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                 value={selectedTeam || ""}
                 onChange={(e) => handleTeamChange(parseInt(e.target.value))}
               >
@@ -67,6 +74,7 @@ const PlayersTab: React.FC = () => {
             loading={loading}
             editMode={editMode}
             onRemovePlayer={handleRemovePlayer}
+            onEditPlayer={handleEditPlayer}
             formatDate={formatDate}
           />
         </CardContent>
@@ -107,6 +115,14 @@ const PlayersTab: React.FC = () => {
         newPlayer={newPlayer}
         onPlayerChange={setNewPlayer}
         onSave={handleAddPlayer}
+      />
+      
+      <EditPlayerDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        player={editingPlayer}
+        onPlayerChange={setEditingPlayer}
+        onSave={handleSaveEditedPlayer}
       />
     </div>
   );

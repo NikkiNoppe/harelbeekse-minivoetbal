@@ -7,13 +7,13 @@ export const useDeleteUser = (refreshData: () => Promise<void>) => {
 
   const deleteUser = async (userId: number) => {
     try {
-      // First, remove any team manager relationships
-      const { error: teamManagerError } = await supabase
-        .from('team_managers')
+      // First, remove any team user relationships
+      const { error: teamUserError } = await supabase
+        .from('team_users')
         .delete()
         .eq('user_id', userId);
       
-      if (teamManagerError) throw teamManagerError;
+      if (teamUserError) throw teamUserError;
       
       // Now delete the user
       const { error } = await supabase

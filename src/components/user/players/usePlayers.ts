@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,10 +25,12 @@ export const usePlayers = () => {
   const [editMode, setEditMode] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [newPlayer, setNewPlayer] = useState<{name: string, birthDate: string}>({
     name: "", 
     birthDate: ""
   });
+  const [editingPlayer, setEditingPlayer] = useState<{player_id: number, name: string, birthDate: string} | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Fetch teams from Supabase
@@ -155,6 +158,62 @@ export const usePlayers = () => {
     }
   };
   
+  // Handle edit player
+  const handleEditPlayer = (playerId: number) => {
+    const player = players.find(p => p.player_id === playerId);
+    if (player) {
+      setEditingPlayer({
+        player_id: player.player_id,
+        name: player.player_name,
+        birthDate: player.birth_date
+      });
+      setEditDialogOpen(true);
+    }
+  };
+  
+  // Handle save edited player
+  const handleSaveEditedPlayer = async () => {
+    if (!editingPlayer) return;
+    
+    try {
+      const { error } = await supabase
+        .from('players')
+        .update({
+          player_name: editingPlayer.name,
+          birth_date: editingPlayer.birthDate
+        })
+        .eq('player_id', editingPlayer.player_id);
+      
+      if (error) throw error;
+      
+      // Update the local state
+      setPlayers(players.map(player => 
+        player.player_id === editingPlayer.player_id 
+          ? { 
+              ...player, 
+              player_name: editingPlayer.name, 
+              birth_date: editingPlayer.birthDate 
+            } 
+          : player
+      ));
+      
+      setEditDialogOpen(false);
+      setEditingPlayer(null);
+      
+      toast({
+        title: "Speler bijgewerkt",
+        description: "De gegevens van de speler zijn bijgewerkt",
+      });
+    } catch (error) {
+      console.error('Error updating player:', error);
+      toast({
+        title: "Fout bij bijwerken",
+        description: "Er is een fout opgetreden bij het bijwerken van de speler.",
+        variant: "destructive",
+      });
+    }
+  };
+  
   // Handle remove player
   const handleRemovePlayer = async (playerId: number) => {
     try {
@@ -195,12 +254,18 @@ export const usePlayers = () => {
     editMode,
     selectedTeam,
     dialogOpen,
+    editDialogOpen,
     newPlayer,
+    editingPlayer,
     setEditMode,
     handleTeamChange,
     setDialogOpen,
+    setEditDialogOpen,
     setNewPlayer,
+    setEditingPlayer,
     handleAddPlayer,
+    handleEditPlayer,
+    handleSaveEditedPlayer,
     handleRemovePlayer,
     formatDate,
     user

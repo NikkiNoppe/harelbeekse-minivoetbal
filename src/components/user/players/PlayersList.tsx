@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit2 } from "lucide-react";
 
 interface Player {
   player_id: number;
@@ -22,6 +22,7 @@ interface PlayersListProps {
   loading: boolean;
   editMode: boolean;
   onRemovePlayer: (playerId: number) => void;
+  onEditPlayer: (playerId: number) => void;
   formatDate: (dateString: string) => string;
 }
 
@@ -30,43 +31,56 @@ const PlayersList: React.FC<PlayersListProps> = ({
   loading,
   editMode,
   onRemovePlayer,
+  onEditPlayer,
   formatDate
 }) => {
   if (loading) {
-    return <div className="py-8 text-center text-muted-foreground">Spelers laden...</div>;
+    return <div className="py-4 text-center text-muted-foreground">Spelers laden...</div>;
   }
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-12">#</TableHead>
           <TableHead>Naam</TableHead>
-          <TableHead>Geboortedatum</TableHead>
-          {editMode && <TableHead className="w-20">Acties</TableHead>}
+          <TableHead className="w-32">Geboortedatum</TableHead>
+          {editMode && <TableHead className="w-24">Acties</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
         {players.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={editMode ? 3 : 2} className="text-center text-muted-foreground py-6">
+            <TableCell colSpan={editMode ? 4 : 3} className="text-center text-muted-foreground py-4">
               Geen spelers gevonden
             </TableCell>
           </TableRow>
         ) : (
-          players.map(player => (
-            <TableRow key={player.player_id}>
-              <TableCell>{player.player_name}</TableCell>
-              <TableCell>{formatDate(player.birth_date)}</TableCell>
+          players.map((player, index) => (
+            <TableRow key={player.player_id} className="h-12">
+              <TableCell className="font-medium text-center">{index + 1}</TableCell>
+              <TableCell className="py-2">{player.player_name}</TableCell>
+              <TableCell className="py-2">{formatDate(player.birth_date)}</TableCell>
               {editMode && (
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRemovePlayer(player.player_id)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-100/10"
-                  >
-                    <Trash2 size={16} />
-                  </Button>
+                <TableCell className="py-2">
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEditPlayer(player.player_id)}
+                      className="h-7 w-7 p-0"
+                    >
+                      <Edit2 size={15} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onRemovePlayer(player.player_id)}
+                      className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-100/10"
+                    >
+                      <Trash2 size={15} />
+                    </Button>
+                  </div>
                 </TableCell>
               )}
             </TableRow>
