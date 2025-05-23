@@ -338,13 +338,24 @@ const PlayerSelectionForm: React.FC<PlayerSelectionFormProps> = ({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-4">
             <h3 className="text-lg font-medium">Selecteer spelers voor {teamName}</h3>
-            <div className="text-sm bg-muted p-2 rounded">
-              <span className="font-medium">
-                {form.watch('players').filter(p => p.selected).length}/8
-              </span> spelers geselecteerd
+            <div className="text-sm bg-muted p-2 rounded flex items-center gap-2">
+              <span className="font-semibold text-md">
+                {form.watch('players').filter(p => p.selected).length}
+                <span className="text-primary">/8</span>
+              </span> 
+              <span>spelers geselecteerd</span>
             </div>
+          </div>
+          
+          <div className="bg-muted/30 p-4 rounded-md mb-4">
+            <h4 className="font-medium mb-2">Instructies:</h4>
+            <ul className="list-disc pl-5 space-y-1 text-sm">
+              <li>Selecteer maximaal 8 spelers voor deze wedstrijd</li>
+              <li>Vul voor elke geselecteerde speler het rugnummer in (1-99)</li>
+              <li>Duid één speler aan als kapitein</li>
+            </ul>
           </div>
           
           <div className="rounded-md border">
@@ -353,13 +364,13 @@ const PlayerSelectionForm: React.FC<PlayerSelectionFormProps> = ({
                 <TableRow>
                   <TableHead className="w-12">Selectie</TableHead>
                   <TableHead>Speler</TableHead>
-                  <TableHead className="w-24">Rugnr.</TableHead>
-                  <TableHead className="w-24">Kapitein</TableHead>
+                  <TableHead className="w-24 text-center">Rugnr.</TableHead>
+                  <TableHead className="w-24 text-center">Kapitein</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {form.watch('players').map((player, index) => (
-                  <TableRow key={player.playerId}>
+                  <TableRow key={player.playerId} className={player.selected ? "bg-muted/40" : ""}>
                     <TableCell>
                       <Checkbox
                         checked={player.selected}
@@ -370,21 +381,26 @@ const PlayerSelectionForm: React.FC<PlayerSelectionFormProps> = ({
                     </TableCell>
                     <TableCell>{player.playerName}</TableCell>
                     <TableCell>
-                      <Input 
-                        type="number"
-                        min={1}
-                        max={99}
-                        disabled={!player.selected}
-                        {...form.register(`players.${index}.jerseyNumber`)}
-                        className="w-16"
-                      />
+                      <div className="flex justify-center">
+                        <Input 
+                          type="number"
+                          min={1}
+                          max={99}
+                          disabled={!player.selected}
+                          {...form.register(`players.${index}.jerseyNumber`)}
+                          className="w-16 text-center"
+                        />
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Checkbox
-                        checked={player.isCaptain}
-                        disabled={!player.selected}
-                        onCheckedChange={() => toggleCaptain(index)}
-                      />
+                      <div className="flex justify-center">
+                        <Checkbox
+                          checked={player.isCaptain}
+                          disabled={!player.selected}
+                          onCheckedChange={() => toggleCaptain(index)}
+                          className={player.isCaptain ? "border-primary" : ""}
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -400,9 +416,11 @@ const PlayerSelectionForm: React.FC<PlayerSelectionFormProps> = ({
           </div>
           
           {form.formState.errors.players && (
-            <p className="text-sm text-destructive">
-              {form.formState.errors.players.message}
-            </p>
+            <div className="bg-destructive/10 p-3 rounded border border-destructive/20">
+              <p className="text-sm text-destructive font-medium">
+                {form.formState.errors.players.message}
+              </p>
+            </div>
           )}
           
           <div className="flex justify-between mt-6">

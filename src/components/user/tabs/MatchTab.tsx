@@ -99,7 +99,7 @@ const MatchTab: React.FC = () => {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="new-match" className="flex items-center gap-2">
             <ClipboardEdit className="h-4 w-4" />
-            Nieuw wedstrijdformulier
+            Wedstrijdformulieren
           </TabsTrigger>
           <TabsTrigger value="past-matches" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />

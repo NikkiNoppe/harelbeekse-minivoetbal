@@ -57,12 +57,12 @@ const PlayersList: React.FC<PlayersListProps> = ({
           </TableRow>
         ) : (
           players.map((player, index) => (
-            <TableRow key={player.player_id} className="h-12">
+            <TableRow key={player.player_id} className="h-10">
               <TableCell className="font-medium text-center">{index + 1}</TableCell>
-              <TableCell className="py-2">{player.player_name}</TableCell>
-              <TableCell className="py-2">{formatDate(player.birth_date)}</TableCell>
+              <TableCell className="py-1">{player.player_name}</TableCell>
+              <TableCell className="py-1">{formatDate(player.birth_date)}</TableCell>
               {editMode && (
-                <TableCell className="py-2">
+                <TableCell className="py-1">
                   <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
