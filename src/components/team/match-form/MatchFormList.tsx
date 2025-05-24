@@ -1,9 +1,9 @@
 
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, MapPin, Users } from "lucide-react";
+import { Clock, MapPin, Users, User } from "lucide-react";
 import { MatchFormData } from "./types";
 
 interface MatchFormListProps {
@@ -13,58 +13,8 @@ interface MatchFormListProps {
   searchTerm: string;
   dateFilter: string;
   locationFilter: string;
+  hasElevatedPermissions?: boolean;
 }
-
-// Mock data for demonstration
-const MOCK_MATCHES: MatchFormData[] = [
-  {
-    matchId: 1,
-    uniqueNumber: "0901",
-    date: "2024-01-15",
-    time: "20:00",
-    homeTeamId: 1,
-    homeTeamName: "FC Tigers",
-    awayTeamId: 2,
-    awayTeamName: "Sporting Lions",
-    location: "Sporthal Centrum",
-    isHomeTeam: true,
-    matchday: "Speeldag 9",
-    referee: "Jan Janssen",
-    homeScore: 3,
-    awayScore: 1,
-    isCompleted: true
-  },
-  {
-    matchId: 2,
-    uniqueNumber: "1002",
-    date: "2024-01-22",
-    time: "18:30",
-    homeTeamId: 3,
-    homeTeamName: "Eagles United",
-    awayTeamId: 1,
-    awayTeamName: "FC Tigers",
-    location: "Sporthal Noord",
-    isHomeTeam: false,
-    matchday: "Speeldag 10",
-    referee: "Piet Peters",
-    isCompleted: false
-  },
-  {
-    matchId: 3,
-    uniqueNumber: "1003",
-    date: "2024-01-29",
-    time: "19:15",
-    homeTeamId: 1,
-    homeTeamName: "FC Tigers",
-    awayTeamId: 4,
-    awayTeamName: "Thunder Wolves",
-    location: "Sporthal Oost",
-    isHomeTeam: true,
-    matchday: "Speeldag 10",
-    referee: "Maria de Vries",
-    isCompleted: false
-  }
-];
 
 const MatchFormList: React.FC<MatchFormListProps> = ({
   matches,
@@ -72,20 +22,19 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   onSelectMatch,
   searchTerm,
   dateFilter,
-  locationFilter
+  locationFilter,
+  hasElevatedPermissions = false
 }) => {
-  // Use mock data for now, filter based on search criteria
-  const allMatches = MOCK_MATCHES;
-  
-  const filteredMatches = allMatches.filter(match => {
-    const matchesSearch = !searchTerm || 
+  // Filter matches based on search criteria
+  const filteredMatches = matches.filter(match => {
+    const matchesSearch = searchTerm === "" || 
       match.uniqueNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       match.homeTeamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       match.awayTeamName.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesDate = !dateFilter || match.date.includes(dateFilter);
+    const matchesDate = dateFilter === "" || match.date === dateFilter;
     
-    const matchesLocation = !locationFilter || 
+    const matchesLocation = locationFilter === "" || 
       match.location.toLowerCase().includes(locationFilter.toLowerCase());
     
     return matchesSearch && matchesDate && matchesLocation;
@@ -94,9 +43,21 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="py-8">
-          <div className="text-center text-muted-foreground">
-            Wedstrijden laden...
+        <CardContent className="pt-6">
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Wedstrijden laden...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (filteredMatches.length === 0) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Geen wedstrijden gevonden</p>
           </div>
         </CardContent>
       </Card>
@@ -104,72 +65,64 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {filteredMatches.map((match) => (
-        <Card 
-          key={match.matchId} 
-          className="hover:shadow-md transition-shadow cursor-pointer"
-          onClick={() => onSelectMatch(match)}
-        >
-          <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="outline" className="bg-primary text-white">
-                    {match.uniqueNumber}
-                  </Badge>
-                  {match.isCompleted ? (
-                    <Badge variant="secondary">Afgerond</Badge>
-                  ) : (
-                    <Badge variant="outline">Te spelen</Badge>
-                  )}
-                </div>
-                
-                <div className="font-medium text-lg mb-1">
-                  <span className={match.isHomeTeam ? "font-bold" : ""}>
-                    {match.homeTeamName}
-                  </span>
-                  {match.isCompleted && match.homeScore !== undefined && match.awayScore !== undefined ? (
-                    <span className="mx-2 font-bold text-primary">
-                      {match.homeScore} - {match.awayScore}
-                    </span>
-                  ) : (
-                    <span className="mx-2">vs</span>
-                  )}
-                  <span className={!match.isHomeTeam ? "font-bold" : ""}>
-                    {match.awayTeamName}
-                  </span>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    {match.date} om {match.time}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
-                    {match.location}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    {match.matchday}
-                  </div>
-                </div>
-                
-                {match.referee && (
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Scheidsrechter: {match.referee}
-                  </div>
-                )}
+        <Card key={match.matchId} className="hover:shadow-md transition-shadow">
+          <CardHeader className="pb-3">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <Badge variant="outline" className="bg-primary text-white">
+                {match.uniqueNumber}
+              </Badge>
+              {match.isCompleted ? (
+                <Badge variant="secondary">Afgerond</Badge>
+              ) : (
+                <Badge variant="outline">Te spelen</Badge>
+              )}
+              {hasElevatedPermissions && (
+                <Badge variant="outline" className="bg-orange-100 text-orange-800">
+                  Admin/Scheidsrechter
+                </Badge>
+              )}
+            </div>
+            
+            <CardTitle className="text-lg flex items-center justify-between">
+              <span>{match.homeTeamName} vs {match.awayTeamName}</span>
+              {(match.homeScore !== undefined && match.awayScore !== undefined) && (
+                <span className="text-xl font-bold text-primary">
+                  {match.homeScore} - {match.awayScore}
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span>{match.date} om {match.time}</span>
               </div>
-              
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <span>{match.location}</span>
+              </div>
+              {match.matchday && (
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span>{match.matchday}</span>
+                </div>
+              )}
+              {match.referee && (
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span>{match.referee}</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end">
               <Button 
-                size="sm"
+                onClick={() => onSelectMatch(match)}
                 variant={match.isCompleted ? "outline" : "default"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelectMatch(match);
-                }}
               >
                 {match.isCompleted ? "Bekijken" : "Invullen"}
               </Button>
@@ -177,16 +130,6 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
           </CardContent>
         </Card>
       ))}
-      
-      {filteredMatches.length === 0 && (
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center text-muted-foreground">
-              Geen wedstrijden gevonden die aan uw zoekcriteria voldoen.
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

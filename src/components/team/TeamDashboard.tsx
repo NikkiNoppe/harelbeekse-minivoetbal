@@ -1,25 +1,8 @@
 
-import React, { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import PlayersList from "./PlayersList";
+import PlayersTab from "@/components/user/tabs/PlayersTab";
 import { User, TeamData } from "@/types/auth";
 import MatchFormTab from "./MatchFormTab";
 
@@ -28,175 +11,27 @@ interface TeamDashboardProps {
   teamData: TeamData;
 }
 
-const mockMatches = [
-  { id: 1, opponent: "FC De Kampioenen", date: "2025-05-10", location: "Thuis", result: null },
-  { id: 2, opponent: "Bavo United", date: "2025-05-17", location: "Uit", result: null },
-  { id: 3, opponent: "Zandberg Boys", date: "2025-05-24", location: "Thuis", result: null },
-];
-
 const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
   const { toast } = useToast();
-  const [matches, setMatches] = useState(mockMatches);
-  const [homeScore, setHomeScore] = useState("");
-  const [awayScore, setAwayScore] = useState("");
-  const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState("match-forms");
   
-  // Both capabilities are now always allowed since we've removed specific permissions
-  // Teams with an email have both match score and player management capabilities
-  const canManageScores = !!teamData.email;
+  // All team managers have access to both capabilities
   const canManagePlayers = !!teamData.email;
   const canManageMatchForms = !!teamData.email;
-
-  const handleScoreSubmit = () => {
-    if (!selectedMatchId || !homeScore || !awayScore) {
-      toast({
-        title: "Fout",
-        description: "Selecteer een wedstrijd en vul beide scores in",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setMatches(
-      matches.map((match) => {
-        if (match.id === selectedMatchId) {
-          return {
-            ...match,
-            result: `${homeScore}-${awayScore}`,
-          };
-        }
-        return match;
-      })
-    );
-
-    setHomeScore("");
-    setAwayScore("");
-    setSelectedMatchId(null);
-
-    toast({
-      title: "Score opgeslagen",
-      description: "De wedstrijdscore is succesvol opgeslagen",
-    });
-  };
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Team Dashboard: {teamData.name}</h1>
 
-      <Tabs defaultValue="matches">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="matches" disabled={!canManageScores}>
-            Wedstrijden
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="match-forms" disabled={!canManageMatchForms}>
+            Wedstrijdformulieren
           </TabsTrigger>
           <TabsTrigger value="players" disabled={!canManagePlayers}>
             Spelerslijst
           </TabsTrigger>
-          <TabsTrigger value="match-forms" disabled={!canManageMatchForms}>
-            Wedstrijdformulieren
-          </TabsTrigger>
         </TabsList>
-
-        {canManageScores && (
-          <TabsContent value="matches" className="space-y-4 mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Wedstrijdscores invoeren</CardTitle>
-                <CardDescription>
-                  Voer de scores van uw wedstrijden in
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label htmlFor="match-select" className="block text-sm font-medium">
-                      Selecteer wedstrijd
-                    </label>
-                    <select
-                      id="match-select"
-                      className="w-full p-2 border rounded-md"
-                      value={selectedMatchId?.toString() || ""}
-                      onChange={(e) => setSelectedMatchId(e.target.value ? Number(e.target.value) : null)}
-                    >
-                      <option value="">Kies een wedstrijd</option>
-                      {matches.map((match) => (
-                        <option key={match.id} value={match.id.toString()}>
-                          {`${teamData.name} vs ${match.opponent} - ${match.date}`}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4 items-end">
-                    <div className="space-y-2">
-                      <label htmlFor="home-score" className="text-sm font-medium">
-                        Thuis score
-                      </label>
-                      <Input
-                        id="home-score"
-                        type="number"
-                        min="0"
-                        value={homeScore}
-                        onChange={(e) => setHomeScore(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex justify-center items-center">
-                      <span className="text-xl font-bold">-</span>
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="away-score" className="text-sm font-medium">
-                        Uit score
-                      </label>
-                      <Input
-                        id="away-score"
-                        type="number"
-                        min="0"
-                        value={awayScore}
-                        onChange={(e) => setAwayScore(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <Button onClick={handleScoreSubmit}>Score opslaan</Button>
-
-                  <div className="rounded-md border mt-6">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tegenstander</TableHead>
-                          <TableHead>Datum</TableHead>
-                          <TableHead>Locatie</TableHead>
-                          <TableHead>Score</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {matches.map((match) => (
-                          <TableRow key={match.id}>
-                            <TableCell>{match.opponent}</TableCell>
-                            <TableCell>{match.date}</TableCell>
-                            <TableCell>{match.location}</TableCell>
-                            <TableCell>
-                              {match.result ? match.result : "Niet ingevuld"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-
-        {canManagePlayers && (
-          <TabsContent value="players" className="space-y-4 mt-4">
-            <PlayersList 
-              teamId={user.teamId || 0} 
-              teamName={teamData.name} 
-              teamEmail={teamData.email} 
-            />
-          </TabsContent>
-        )}
 
         {canManageMatchForms && (
           <TabsContent value="match-forms" className="space-y-4 mt-4">
@@ -204,6 +39,12 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
               teamId={user.teamId || 0}
               teamName={teamData.name}
             />
+          </TabsContent>
+        )}
+
+        {canManagePlayers && (
+          <TabsContent value="players" className="space-y-4 mt-4">
+            <PlayersTab />
           </TabsContent>
         )}
       </Tabs>

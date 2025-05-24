@@ -1,24 +1,54 @@
 
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Clock, MapPin, Users, User } from "lucide-react";
+import { Clock, MapPin, Users, User, Save } from "lucide-react";
 import { MatchFormData } from "./types";
+import { useToast } from "@/hooks/use-toast";
 
 interface MatchFormHeaderProps {
   selectedMatch: MatchFormData;
   onBackToOverview: () => void;
+  hasElevatedPermissions?: boolean;
 }
 
 const MatchFormHeader: React.FC<MatchFormHeaderProps> = ({
   selectedMatch,
-  onBackToOverview
+  onBackToOverview,
+  hasElevatedPermissions = false
 }) => {
+  const { toast } = useToast();
   const [homeScore, setHomeScore] = useState(selectedMatch.homeScore?.toString() || "");
   const [awayScore, setAwayScore] = useState(selectedMatch.awayScore?.toString() || "");
+
+  const handleSaveScore = () => {
+    if (!hasElevatedPermissions) {
+      toast({
+        title: "Geen toegang",
+        description: "U heeft geen rechten om scores in te vullen",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!homeScore || !awayScore) {
+      toast({
+        title: "Incomplete gegevens",
+        description: "Vul beide scores in",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Here you would save the score to the backend
+    toast({
+      title: "Score opgeslagen",
+      description: `${selectedMatch.homeTeamName} ${homeScore} - ${awayScore} ${selectedMatch.awayTeamName}`,
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -39,6 +69,11 @@ const MatchFormHeader: React.FC<MatchFormHeaderProps> = ({
               <Badge variant="secondary">Afgerond</Badge>
             ) : (
               <Badge variant="outline">Te spelen</Badge>
+            )}
+            {hasElevatedPermissions && (
+              <Badge variant="outline" className="bg-orange-100 text-orange-800">
+                Verhoogde rechten
+              </Badge>
             )}
           </div>
           
@@ -72,7 +107,20 @@ const MatchFormHeader: React.FC<MatchFormHeaderProps> = ({
         
         <CardContent className="pt-0">
           <div className="border-t pt-4">
-            <Label className="text-base font-medium mb-3 block">Score invoeren</Label>
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-base font-medium">Score invoeren</Label>
+              {hasElevatedPermissions && (
+                <Button 
+                  onClick={handleSaveScore}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  Score opslaan
+                </Button>
+              )}
+            </div>
+            
             <div className="flex items-center gap-4 max-w-md">
               <div className="flex-1">
                 <Label htmlFor="homeScore" className="text-sm text-muted-foreground">
@@ -86,6 +134,7 @@ const MatchFormHeader: React.FC<MatchFormHeaderProps> = ({
                   onChange={(e) => setHomeScore(e.target.value)}
                   className="text-center text-lg font-bold"
                   placeholder="0"
+                  disabled={!hasElevatedPermissions}
                 />
               </div>
               
@@ -105,9 +154,16 @@ const MatchFormHeader: React.FC<MatchFormHeaderProps> = ({
                   onChange={(e) => setAwayScore(e.target.value)}
                   className="text-center text-lg font-bold"
                   placeholder="0"
+                  disabled={!hasElevatedPermissions}
                 />
               </div>
             </div>
+            
+            {!hasElevatedPermissions && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Alleen admin en scheidsrechters kunnen scores invoeren
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
