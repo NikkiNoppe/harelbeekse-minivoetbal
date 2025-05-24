@@ -10,6 +10,11 @@ export interface MatchFormData {
   awayTeamName: string;
   location: string;
   isHomeTeam: boolean;
+  matchday?: string;
+  referee?: string;
+  homeScore?: number;
+  awayScore?: number;
+  isCompleted?: boolean;
 }
 
 export interface PlayerData {
