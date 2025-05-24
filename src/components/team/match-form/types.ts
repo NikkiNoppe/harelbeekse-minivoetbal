@@ -15,6 +15,9 @@ export interface MatchFormData {
   homeScore?: number;
   awayScore?: number;
   isCompleted?: boolean;
+  isLocked?: boolean;
+  playersSubmitted?: boolean;
+  refereeNotes?: string;
 }
 
 export interface PlayerData {
