@@ -26,7 +26,7 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<void> =
   
   const index = mockData.findIndex(match => match.matchId === matchData.matchId);
   if (index !== -1) {
-    mockData[index] = { ...matchData };
+    mockData[index] = { ...mockData[index], ...matchData };
   }
 };
 
