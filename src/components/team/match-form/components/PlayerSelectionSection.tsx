@@ -56,14 +56,14 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
           
           {canEditThisTeam && canEdit ? (
             <Select
-              value={selection.playerId?.toString() || ""}
-              onValueChange={(value) => onPlayerSelection(index, 'playerId', value ? parseInt(value) : null, isHomeTeam)}
+              value={selection.playerId?.toString() || "no-player"}
+              onValueChange={(value) => onPlayerSelection(index, 'playerId', value === "no-player" ? null : parseInt(value), isHomeTeam)}
             >
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="Selecteer speler" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Geen speler</SelectItem>
+                <SelectItem value="no-player">Geen speler</SelectItem>
                 {players.map((player) => (
                   <SelectItem key={player.player_id} value={player.player_id.toString()}>
                     {player.player_name}
