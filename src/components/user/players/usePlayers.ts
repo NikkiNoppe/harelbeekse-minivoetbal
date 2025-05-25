@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { MOCK_TEAM_PLAYERS } from "@/data/mockData";
 
 interface Player {
   player_id: number;
@@ -33,25 +34,28 @@ export const usePlayers = () => {
   const [editingPlayer, setEditingPlayer] = useState<{player_id: number, name: string, birthDate: string} | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Fetch teams from Supabase
+  // Fetch teams - using mock data for now
   useEffect(() => {
     async function fetchTeams() {
       try {
-        const { data: teamsData, error: teamsError } = await supabase
-          .from('teams')
-          .select('team_id, team_name')
-          .order('team_name');
+        // Use mock data instead of Supabase for now
+        const mockTeams = [
+          { team_id: 1, team_name: "Garage Verbeke" },
+          { team_id: 2, team_name: "Shakthar Truuk" },
+          { team_id: 3, team_name: "De Dageraad" },
+          { team_id: 4, team_name: "Cafe De Gilde" },
+          { team_id: 5, team_name: "De Florre" },
+          { team_id: 6, team_name: "Bemarmi Boys" }
+        ];
         
-        if (teamsError) throw teamsError;
-        
-        setTeams(teamsData || []);
+        setTeams(mockTeams);
         
         // If user is player_manager, auto-select their team
         if (user && user.role === "player_manager") {
           setSelectedTeam(user.teamId);
-        } else if (teamsData && teamsData.length > 0) {
+        } else if (mockTeams && mockTeams.length > 0) {
           // For admin, select first team by default
-          setSelectedTeam(teamsData[0].team_id);
+          setSelectedTeam(mockTeams[0].team_id);
         }
       } catch (error) {
         console.error('Error fetching teams:', error);
@@ -74,16 +78,9 @@ export const usePlayers = () => {
       try {
         setLoading(true);
         
-        const { data: playersData, error: playersError } = await supabase
-          .from('players')
-          .select('*')
-          .eq('team_id', selectedTeam)
-          .eq('is_active', true)
-          .order('player_name');
-        
-        if (playersError) throw playersError;
-        
-        setPlayers(playersData || []);
+        // Use mock data instead of Supabase for now
+        const teamPlayers = MOCK_TEAM_PLAYERS[selectedTeam as keyof typeof MOCK_TEAM_PLAYERS] || [];
+        setPlayers(teamPlayers);
       } catch (error) {
         console.error('Error fetching players:', error);
         toast({
@@ -126,28 +123,24 @@ export const usePlayers = () => {
     }
     
     try {
-      const { data, error } = await supabase
-        .from('players')
-        .insert({
-          player_name: newPlayer.name,
-          birth_date: newPlayer.birthDate,
-          team_id: selectedTeam,
-          is_active: true
-        })
-        .select();
+      // For now, just add to local state (mock functionality)
+      const newPlayerId = Math.max(...players.map(p => p.player_id), 0) + 1;
+      const playerToAdd: Player = {
+        player_id: newPlayerId,
+        player_name: newPlayer.name,
+        birth_date: newPlayer.birthDate,
+        team_id: selectedTeam,
+        is_active: true
+      };
       
-      if (error) throw error;
+      setPlayers([...players, playerToAdd]);
+      setNewPlayer({name: "", birthDate: ""});
+      setDialogOpen(false);
       
-      if (data && data.length > 0) {
-        setPlayers([...players, data[0]]);
-        setNewPlayer({name: "", birthDate: ""});
-        setDialogOpen(false);
-        
-        toast({
-          title: "Speler toegevoegd",
-          description: `${newPlayer.name} is toegevoegd aan het team`,
-        });
-      }
+      toast({
+        title: "Speler toegevoegd",
+        description: `${newPlayer.name} is toegevoegd aan het team`,
+      });
     } catch (error) {
       console.error('Error adding player:', error);
       toast({
@@ -176,17 +169,7 @@ export const usePlayers = () => {
     if (!editingPlayer) return;
     
     try {
-      const { error } = await supabase
-        .from('players')
-        .update({
-          player_name: editingPlayer.name,
-          birth_date: editingPlayer.birthDate
-        })
-        .eq('player_id', editingPlayer.player_id);
-      
-      if (error) throw error;
-      
-      // Update the local state
+      // For now, just update local state (mock functionality)
       setPlayers(players.map(player => 
         player.player_id === editingPlayer.player_id 
           ? { 
@@ -217,14 +200,7 @@ export const usePlayers = () => {
   // Handle remove player
   const handleRemovePlayer = async (playerId: number) => {
     try {
-      // Use soft delete by setting is_active to false
-      const { error } = await supabase
-        .from('players')
-        .update({ is_active: false })
-        .eq('player_id', playerId);
-      
-      if (error) throw error;
-      
+      // For now, just remove from local state (mock functionality)
       setPlayers(players.filter(p => p.player_id !== playerId));
       
       toast({

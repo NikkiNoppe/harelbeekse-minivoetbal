@@ -22,6 +22,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
+  const [matchdayFilter, setMatchdayFilter] = useState("");
   
   // Check if user has elevated permissions (admin or referee)
   const hasElevatedPermissions = user?.role === "admin" || user?.role === "referee";
@@ -63,6 +64,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
               }}
               isAdmin={isAdmin}
               isReferee={isReferee}
+              teamId={teamId}
             />
           </CardContent>
         </Card>
@@ -89,6 +91,8 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
           onDateChange={setDateFilter}
           locationFilter={locationFilter}
           onLocationChange={setLocationFilter}
+          matchdayFilter={matchdayFilter}
+          onMatchdayChange={setMatchdayFilter}
         />
         
         <MatchFormList 
@@ -98,6 +102,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
           searchTerm={searchTerm}
           dateFilter={dateFilter}
           locationFilter={locationFilter}
+          matchdayFilter={matchdayFilter}
           hasElevatedPermissions={hasElevatedPermissions}
           userRole={user?.role}
           teamId={teamId}

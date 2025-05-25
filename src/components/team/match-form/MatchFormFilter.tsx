@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Calendar, MapPin } from "lucide-react";
+import { Search, Calendar, MapPin, Trophy } from "lucide-react";
 
 interface MatchFormFilterProps {
   searchTerm: string;
@@ -11,6 +11,8 @@ interface MatchFormFilterProps {
   onDateChange: (value: string) => void;
   locationFilter: string;
   onLocationChange: (value: string) => void;
+  matchdayFilter: string;
+  onMatchdayChange: (value: string) => void;
 }
 
 const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
@@ -19,12 +21,14 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
   dateFilter,
   onDateChange,
   locationFilter,
-  onLocationChange
+  onLocationChange,
+  matchdayFilter,
+  onMatchdayChange
 }) => {
   return (
     <Card className="mb-4">
       <CardContent className="pt-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -33,6 +37,17 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
               className="pl-8"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
+            />
+          </div>
+          
+          <div className="relative">
+            <Trophy className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Filter op speeldag..."
+              className="pl-8"
+              value={matchdayFilter}
+              onChange={(e) => onMatchdayChange(e.target.value)}
             />
           </div>
           

@@ -13,6 +13,7 @@ interface MatchFormListProps {
   searchTerm: string;
   dateFilter: string;
   locationFilter: string;
+  matchdayFilter: string;
   hasElevatedPermissions?: boolean;
   userRole?: string;
   teamId?: number;
@@ -25,6 +26,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   searchTerm,
   dateFilter,
   locationFilter,
+  matchdayFilter,
   hasElevatedPermissions = false,
   userRole,
   teamId
@@ -41,10 +43,13 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     const matchesLocation = locationFilter === "" || 
       match.location.toLowerCase().includes(locationFilter.toLowerCase());
     
-    return matchesSearch && matchesDate && matchesLocation;
+    const matchesMatchday = matchdayFilter === "" || 
+      (match.matchday && match.matchday.toLowerCase().includes(matchdayFilter.toLowerCase()));
+    
+    return matchesSearch && matchesDate && matchesLocation && matchesMatchday;
   });
 
-  // Group matches by matchday
+  // Group matches by matchday and sort by matchday priority
   const groupedMatches = filteredMatches.reduce((groups, match) => {
     const matchday = match.matchday || "Geen speeldag";
     if (!groups[matchday]) {
@@ -53,6 +58,34 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     groups[matchday].push(match);
     return groups;
   }, {} as Record<string, MatchFormData[]>);
+
+  // Sort matchdays - next upcoming matchday first, then chronologically
+  const sortedMatchdays = Object.entries(groupedMatches).sort(([a], [b]) => {
+    // Extract speeldag numbers for sorting
+    const getMatchdayNumber = (matchday: string) => {
+      const match = matchday.match(/\d+/);
+      return match ? parseInt(match[0]) : 0;
+    };
+    
+    const numA = getMatchdayNumber(a);
+    const numB = getMatchdayNumber(b);
+    
+    // Get current date for comparison
+    const now = new Date();
+    const matchesA = groupedMatches[a];
+    const matchesB = groupedMatches[b];
+    
+    // Check if matchday has future matches
+    const hasFutureA = matchesA.some(m => new Date(m.date) > now);
+    const hasFutureB = matchesB.some(m => new Date(m.date) > now);
+    
+    // Future matchdays come first
+    if (hasFutureA && !hasFutureB) return -1;
+    if (!hasFutureA && hasFutureB) return 1;
+    
+    // Among future or past matchdays, sort by number
+    return numA - numB;
+  });
 
   const getMatchStatus = (match: MatchFormData) => {
     if (match.isLocked) {
@@ -116,9 +149,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
 
   return (
     <div className="space-y-6">
-      {Object.entries(groupedMatches)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([matchday, dayMatches]) => (
+      {sortedMatchdays.map(([matchday, dayMatches]) => (
         <Card key={matchday}>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">{matchday}</CardTitle>

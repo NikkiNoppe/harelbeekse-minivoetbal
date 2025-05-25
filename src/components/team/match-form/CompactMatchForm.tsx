@@ -11,12 +11,14 @@ import { updateMatchForm, lockMatchForm } from "./matchFormService";
 import { Lock, Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { MOCK_TEAM_PLAYERS } from "@/data/mockData";
 
 interface CompactMatchFormProps {
   match: MatchFormData;
   onComplete: () => void;
   isAdmin: boolean;
   isReferee: boolean;
+  teamId: number;
 }
 
 // Mock referees data - replace with actual Supabase query later
@@ -27,35 +29,12 @@ const MOCK_REFEREES = [
   { id: 4, name: "Lisa Vermeulen" }
 ];
 
-// Mock players data
-const MOCK_PLAYERS = {
-  home: [
-    { id: 1, name: "Speler 1", jerseyNumber: 1 },
-    { id: 2, name: "Speler 2", jerseyNumber: 2 },
-    { id: 3, name: "Speler 3", jerseyNumber: 3 },
-    { id: 4, name: "Speler 4", jerseyNumber: 4 },
-    { id: 5, name: "Speler 5", jerseyNumber: 5 },
-    { id: 6, name: "Speler 6", jerseyNumber: 6 },
-    { id: 7, name: "Speler 7", jerseyNumber: 7 },
-    { id: 8, name: "Speler 8", jerseyNumber: 8 }
-  ],
-  away: [
-    { id: 9, name: "Speler A", jerseyNumber: 1 },
-    { id: 10, name: "Speler B", jerseyNumber: 2 },
-    { id: 11, name: "Speler C", jerseyNumber: 3 },
-    { id: 12, name: "Speler D", jerseyNumber: 4 },
-    { id: 13, name: "Speler E", jerseyNumber: 5 },
-    { id: 14, name: "Speler F", jerseyNumber: 6 },
-    { id: 15, name: "Speler G", jerseyNumber: 7 },
-    { id: 16, name: "Speler H", jerseyNumber: 8 }
-  ]
-};
-
 const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   match,
   onComplete,
   isAdmin,
-  isReferee
+  isReferee,
+  teamId
 }) => {
   const { toast } = useToast();
   const [homeScore, setHomeScore] = useState(match.homeScore?.toString() || "");
@@ -63,10 +42,16 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   const [selectedReferee, setSelectedReferee] = useState(match.referee || "");
   const [refereeNotes, setRefereeNotes] = useState(match.refereeNotes || "");
   const [playerCards, setPlayerCards] = useState<Record<number, string>>({});
+  const [selectedPlayers, setSelectedPlayers] = useState<Record<number, { selected: boolean, jerseyNumber: string }>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canEdit = !match.isLocked || isAdmin;
   const showRefereeFields = isReferee || isAdmin;
+  const isTeamManager = !isAdmin && !isReferee;
+  const canEditMatchData = !isTeamManager; // Team managers cannot edit match data
+  
+  // Get players for the current team
+  const teamPlayers = MOCK_TEAM_PLAYERS[teamId as keyof typeof MOCK_TEAM_PLAYERS] || [];
 
   const handleCardChange = (playerId: number, cardType: string) => {
     setPlayerCards(prev => ({
@@ -75,8 +60,55 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     }));
   };
 
+  const handlePlayerSelection = (playerId: number, field: 'selected' | 'jerseyNumber', value: boolean | string) => {
+    setSelectedPlayers(prev => ({
+      ...prev,
+      [playerId]: {
+        ...prev[playerId],
+        [field]: value
+      }
+    }));
+  };
+
   const handleSubmit = async () => {
-    if (!homeScore || !awayScore) {
+    // For team managers, validate player selection
+    if (isTeamManager) {
+      const selectedCount = Object.values(selectedPlayers).filter(p => p.selected).length;
+      if (selectedCount === 0) {
+        toast({
+          title: "Geen spelers geselecteerd",
+          description: "Selecteer ten minste één speler voor het formulier.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (selectedCount > 8) {
+        toast({
+          title: "Te veel spelers",
+          description: "Er kunnen maximaal 8 spelers geselecteerd worden.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check if all selected players have jersey numbers
+      const invalidPlayers = Object.entries(selectedPlayers).filter(([_, player]) => 
+        player.selected && (!player.jerseyNumber || player.jerseyNumber.trim() === "")
+      );
+      
+      if (invalidPlayers.length > 0) {
+        toast({
+          title: "Rugnummers ontbreken",
+          description: "Alle geselecteerde spelers moeten een rugnummer hebben.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    // For referees, validate score input
+    if (showRefereeFields && (!homeScore || !awayScore)) {
       toast({
         title: "Fout",
         description: "Vul beide scores in",
@@ -89,11 +121,12 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     try {
       const updatedMatch: MatchFormData = {
         ...match,
-        homeScore: parseInt(homeScore),
-        awayScore: parseInt(awayScore),
+        homeScore: showRefereeFields ? parseInt(homeScore) : match.homeScore,
+        awayScore: showRefereeFields ? parseInt(awayScore) : match.awayScore,
         referee: selectedReferee,
         refereeNotes,
-        isCompleted: true
+        isCompleted: showRefereeFields ? true : match.isCompleted,
+        playersSubmitted: isTeamManager ? true : match.playersSubmitted
       };
 
       await updateMatchForm(updatedMatch);
@@ -108,7 +141,9 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         title: isReferee ? "Formulier vergrendeld" : "Opgeslagen",
         description: isReferee 
           ? "Het wedstrijdformulier is definitief afgesloten."
-          : "De wijzigingen zijn opgeslagen."
+          : isTeamManager 
+            ? "De spelersselectie is opgeslagen."
+            : "De wijzigingen zijn opgeslagen."
       });
       
       onComplete();
@@ -146,140 +181,136 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         </CardHeader>
       </Card>
 
-      {/* Score and Referee Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Wedstrijdgegevens</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Score Input */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div className="space-y-2">
-              <Label htmlFor="homeScore">{match.homeTeamName}</Label>
-              <Input
-                id="homeScore"
-                type="number"
-                min="0"
-                value={homeScore}
-                onChange={(e) => setHomeScore(e.target.value)}
-                disabled={!canEdit}
-                className="text-center text-lg font-bold"
-              />
-            </div>
-            
-            <div className="flex justify-center items-center">
-              <span className="text-2xl font-bold">-</span>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="awayScore">{match.awayTeamName}</Label>
-              <Input
-                id="awayScore"
-                type="number"
-                min="0"
-                value={awayScore}
-                onChange={(e) => setAwayScore(e.target.value)}
-                disabled={!canEdit}
-                className="text-center text-lg font-bold"
-              />
-            </div>
-          </div>
-
-          {/* Referee Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="referee">Scheidsrechter</Label>
-            <Select
-              value={selectedReferee}
-              onValueChange={setSelectedReferee}
-              disabled={!canEdit}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecteer scheidsrechter" />
-              </SelectTrigger>
-              <SelectContent>
-                {MOCK_REFEREES.map((referee) => (
-                  <SelectItem key={referee.id} value={referee.name}>
-                    {referee.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Players Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Home Team Players */}
+      {/* Score and Referee Section - Only for referees and admins */}
+      {canEditMatchData && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{match.homeTeamName}</CardTitle>
+            <CardTitle className="text-base">Wedstrijdgegevens</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Score Input */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div className="space-y-2">
+                <Label htmlFor="homeScore">{match.homeTeamName}</Label>
+                <Input
+                  id="homeScore"
+                  type="number"
+                  min="0"
+                  value={homeScore}
+                  onChange={(e) => setHomeScore(e.target.value)}
+                  disabled={!canEdit}
+                  className="text-center text-lg font-bold"
+                />
+              </div>
+              
+              <div className="flex justify-center items-center">
+                <span className="text-2xl font-bold">-</span>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="awayScore">{match.awayTeamName}</Label>
+                <Input
+                  id="awayScore"
+                  type="number"
+                  min="0"
+                  value={awayScore}
+                  onChange={(e) => setAwayScore(e.target.value)}
+                  disabled={!canEdit}
+                  className="text-center text-lg font-bold"
+                />
+              </div>
+            </div>
+
+            {/* Referee Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="referee">Scheidsrechter</Label>
+              <Select
+                value={selectedReferee}
+                onValueChange={setSelectedReferee}
+                disabled={!canEdit}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecteer scheidsrechter" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MOCK_REFEREES.map((referee) => (
+                    <SelectItem key={referee.id} value={referee.name}>
+                      {referee.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Players Section - Team selection for team managers, viewing for others */}
+      {(isTeamManager || showRefereeFields) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {isTeamManager ? "Spelersselectie" : "Spelers"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {MOCK_PLAYERS.home.map((player) => (
-                <div key={player.id} className="flex items-center justify-between p-2 border rounded">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-primary w-6">{player.jerseyNumber}</span>
-                    <span className="text-sm">{player.name}</span>
+              {teamPlayers.map((player) => (
+                <div key={player.player_id} className="flex items-center justify-between p-3 border rounded">
+                  <div className="flex items-center gap-3">
+                    {isTeamManager && canEdit && (
+                      <input
+                        type="checkbox"
+                        checked={selectedPlayers[player.player_id]?.selected || false}
+                        onChange={(e) => handlePlayerSelection(player.player_id, 'selected', e.target.checked)}
+                        className="w-4 h-4"
+                      />
+                    )}
+                    <span className="text-sm font-medium">{player.player_name}</span>
                   </div>
-                  {showRefereeFields && canEdit && (
-                    <Select
-                      value={playerCards[player.id] || "none"}
-                      onValueChange={(value) => handleCardChange(player.id, value)}
-                    >
-                      <SelectTrigger className="w-24">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">-</SelectItem>
-                        <SelectItem value="yellow">Geel</SelectItem>
-                        <SelectItem value="double_yellow">2x Geel</SelectItem>
-                        <SelectItem value="red">Rood</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
+                  
+                  <div className="flex items-center gap-2">
+                    {isTeamManager && canEdit && (
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`jersey-${player.player_id}`} className="text-xs">
+                          Rugnr:
+                        </Label>
+                        <Input
+                          id={`jersey-${player.player_id}`}
+                          type="number"
+                          min="1"
+                          max="99"
+                          value={selectedPlayers[player.player_id]?.jerseyNumber || ""}
+                          onChange={(e) => handlePlayerSelection(player.player_id, 'jerseyNumber', e.target.value)}
+                          disabled={!selectedPlayers[player.player_id]?.selected}
+                          className="w-16 text-center text-xs"
+                        />
+                      </div>
+                    )}
+                    
+                    {showRefereeFields && canEdit && (
+                      <Select
+                        value={playerCards[player.player_id] || "none"}
+                        onValueChange={(value) => handleCardChange(player.player_id, value)}
+                      >
+                        <SelectTrigger className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">-</SelectItem>
+                          <SelectItem value="yellow">Geel</SelectItem>
+                          <SelectItem value="double_yellow">2x Geel</SelectItem>
+                          <SelectItem value="red">Rood</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
-
-        {/* Away Team Players */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{match.awayTeamName}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {MOCK_PLAYERS.away.map((player) => (
-                <div key={player.id} className="flex items-center justify-between p-2 border rounded">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-primary w-6">{player.jerseyNumber}</span>
-                    <span className="text-sm">{player.name}</span>
-                  </div>
-                  {showRefereeFields && canEdit && (
-                    <Select
-                      value={playerCards[player.id] || "none"}
-                      onValueChange={(value) => handleCardChange(player.id, value)}
-                    >
-                      <SelectTrigger className="w-24">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">-</SelectItem>
-                        <SelectItem value="yellow">Geel</SelectItem>
-                        <SelectItem value="double_yellow">2x Geel</SelectItem>
-                        <SelectItem value="red">Rood</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      )}
 
       {/* Referee Notes */}
       {showRefereeFields && (
@@ -307,7 +338,8 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
           className="flex items-center gap-2 px-8"
         >
           <Save className="h-4 w-4" />
-          {isReferee ? "Bevestigen & Vergrendelen" : "Opslaan"}
+          {isReferee ? "Bevestigen & Vergrendelen" : 
+           isTeamManager ? "Spelers opslaan" : "Opslaan"}
         </Button>
       </div>
     </div>
