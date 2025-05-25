@@ -20,7 +20,7 @@ export const fetchUpcomingMatches = async (teamId: number = 0, hasElevatedPermis
   }
 };
 
-export const updateMatchForm = async (matchData: MatchFormData): Promise<void> => {
+export const updateMatchForm = async (matchData: Partial<MatchFormData> & { matchId: number }): Promise<void> => {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 200));
   
