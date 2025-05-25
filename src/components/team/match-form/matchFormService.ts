@@ -26,7 +26,12 @@ export const updateMatchForm = async (matchData: Partial<MatchFormData> & { matc
   
   const index = mockData.findIndex(match => match.matchId === matchData.matchId);
   if (index !== -1) {
-    mockData[index] = { ...mockData[index], ...matchData } as MatchFormData;
+    const existingMatch = mockData[index];
+    const updatedMatch: MatchFormData = {
+      ...existingMatch,
+      ...matchData
+    };
+    mockData[index] = updatedMatch;
   }
 };
 
