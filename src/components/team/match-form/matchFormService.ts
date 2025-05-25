@@ -1,9 +1,8 @@
-
 import { MatchFormData } from "./types";
 import { MOCK_MATCH_FORMS } from "./mockMatchData";
 
 // For now, we'll use mock data. Later this will be replaced with Supabase calls
-let mockData = [...MOCK_MATCH_FORMS];
+let mockData: MatchFormData[] = [...MOCK_MATCH_FORMS];
 
 export const fetchUpcomingMatches = async (teamId: number = 0, hasElevatedPermissions: boolean = false): Promise<MatchFormData[]> => {
   // Simulate API delay
