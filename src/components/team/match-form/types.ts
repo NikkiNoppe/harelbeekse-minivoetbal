@@ -10,19 +10,12 @@ export interface MatchFormData {
   awayTeamName: string;
   location: string;
   isHomeTeam: boolean;
-  matchday?: string;
-  referee?: string;
+  matchday: string;
+  isCompleted: boolean;
+  isLocked: boolean;
+  playersSubmitted: boolean;
   homeScore?: number;
   awayScore?: number;
-  isCompleted?: boolean;
-  isLocked?: boolean;
-  playersSubmitted?: boolean;
+  referee?: string;
   refereeNotes?: string;
-}
-
-export interface PlayerData {
-  playerId: number;
-  playerName: string;
-  jerseyNumber: number | null;
-  isCaptain: boolean;
 }
