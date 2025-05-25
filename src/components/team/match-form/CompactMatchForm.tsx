@@ -1,10 +1,10 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { MatchFormData } from "./types";
 import { updateMatchForm, lockMatchForm } from "./matchFormService";
 import { Save } from "lucide-react";
+import { MOCK_TEAM_PLAYERS } from "@/data/mockData";
 import { 
   MatchHeader, 
   MatchDataSection, 
@@ -87,10 +87,8 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       // If selecting a player, auto-fill the name
       if (field === 'playerId' && value) {
         const allPlayers = isHomeTeam ? 
-          (match.homeTeamId in require('@/data/mockData').MOCK_TEAM_PLAYERS ? 
-           require('@/data/mockData').MOCK_TEAM_PLAYERS[match.homeTeamId] : []) :
-          (match.awayTeamId in require('@/data/mockData').MOCK_TEAM_PLAYERS ? 
-           require('@/data/mockData').MOCK_TEAM_PLAYERS[match.awayTeamId] : []);
+          (MOCK_TEAM_PLAYERS[match.homeTeamId as keyof typeof MOCK_TEAM_PLAYERS] || []) :
+          (MOCK_TEAM_PLAYERS[match.awayTeamId as keyof typeof MOCK_TEAM_PLAYERS] || []);
         const selectedPlayer = allPlayers.find((p: any) => p.player_id === value);
         if (selectedPlayer) {
           updated[index].playerName = selectedPlayer.player_name;
