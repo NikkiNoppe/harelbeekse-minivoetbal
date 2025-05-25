@@ -1,121 +1,244 @@
 
-import { MatchFormData } from "./types";
-
-export const MOCK_MATCH_FORMS: MatchFormData[] = [
-  // Upcoming matches that team managers can fill
+export const MOCK_MATCH_FORMS = [
+  // Speeldag 1
   {
     matchId: 1,
-    uniqueNumber: "0901",
-    date: "2025-01-15",
-    time: "20:00",
+    uniqueNumber: "0101",
+    date: "2024-12-28",
+    time: "14:00",
     homeTeamId: 1,
     homeTeamName: "Garage Verbeke",
     awayTeamId: 2,
     awayTeamName: "Shakthar Truuk",
-    location: "Sporthal De Bres",
+    location: "Sportpark Noord",
     isHomeTeam: true,
-    matchday: "Speeldag 9",
+    matchday: "Speeldag 1",
     isCompleted: false,
-    isLocked: false
+    isLocked: false,
+    playersSubmitted: false
   },
   {
     matchId: 2,
-    uniqueNumber: "0902",
-    date: "2025-01-18",
-    time: "19:30",
+    uniqueNumber: "0102",
+    date: "2024-12-28",
+    time: "16:00",
     homeTeamId: 3,
     homeTeamName: "De Dageraad",
-    awayTeamId: 1,
-    awayTeamName: "Garage Verbeke",
-    location: "Sporthal Centrum",
+    awayTeamId: 4,
+    awayTeamName: "Cafe De Gilde",
+    location: "Centraal Veld",
     isHomeTeam: false,
-    matchday: "Speeldag 9",
-    isCompleted: false,
-    isLocked: false
-  },
-  // Match ready for referee to add score
-  {
-    matchId: 3,
-    uniqueNumber: "0801",
-    date: "2025-01-10",
-    time: "20:30",
-    homeTeamId: 4,
-    homeTeamName: "Cafe De Gilde",
-    awayTeamId: 5,
-    awayTeamName: "De Florre",
-    location: "Sporthal West",
-    isHomeTeam: false,
-    matchday: "Speeldag 8",
+    matchday: "Speeldag 1",
     isCompleted: false,
     isLocked: false,
-    playersSubmitted: true
+    playersSubmitted: false
   },
-  // Completed match (locked by referee)
+  {
+    matchId: 3,
+    uniqueNumber: "0103",
+    date: "2024-12-28",
+    time: "18:00",
+    homeTeamId: 5,
+    homeTeamName: "De Florre",
+    awayTeamId: 6,
+    awayTeamName: "Bemarmi Boys",
+    location: "Gemeentelijk Sportpark",
+    isHomeTeam: false,
+    matchday: "Speeldag 1",
+    isCompleted: false,
+    isLocked: false,
+    playersSubmitted: false
+  },
+  
+  // Speeldag 2
   {
     matchId: 4,
-    uniqueNumber: "0701",
-    date: "2025-01-05",
-    time: "19:00",
+    uniqueNumber: "0201",
+    date: "2025-01-04",
+    time: "14:00",
+    homeTeamId: 2,
+    homeTeamName: "Shakthar Truuk",
+    awayTeamId: 3,
+    awayTeamName: "De Dageraad",
+    location: "Sportcomplex Oost",
+    isHomeTeam: false,
+    matchday: "Speeldag 2",
+    isCompleted: false,
+    isLocked: false,
+    playersSubmitted: false
+  },
+  {
+    matchId: 5,
+    uniqueNumber: "0202",
+    date: "2025-01-04",
+    time: "16:00",
+    homeTeamId: 4,
+    homeTeamName: "Cafe De Gilde",
+    awayTeamId: 1,
+    awayTeamName: "Garage Verbeke",
+    location: "Voetbalpark Zuid",
+    isHomeTeam: false,
+    matchday: "Speeldag 2",
+    isCompleted: false,
+    isLocked: false,
+    playersSubmitted: false
+  },
+  {
+    matchId: 6,
+    uniqueNumber: "0203",
+    date: "2025-01-04",
+    time: "18:00",
+    homeTeamId: 6,
+    homeTeamName: "Bemarmi Boys",
+    awayTeamId: 5,
+    awayTeamName: "De Florre",
+    location: "Sportpark West",
+    isHomeTeam: false,
+    matchday: "Speeldag 2",
+    isCompleted: false,
+    isLocked: false,
+    playersSubmitted: false
+  },
+
+  // Speeldag 3
+  {
+    matchId: 7,
+    uniqueNumber: "0301",
+    date: "2025-01-11",
+    time: "14:00",
+    homeTeamId: 1,
+    homeTeamName: "Garage Verbeke",
+    awayTeamId: 3,
+    awayTeamName: "De Dageraad",
+    location: "Sportpark Noord",
+    isHomeTeam: true,
+    matchday: "Speeldag 3",
+    isCompleted: false,
+    isLocked: false,
+    playersSubmitted: false
+  },
+  {
+    matchId: 8,
+    uniqueNumber: "0302",
+    date: "2025-01-11",
+    time: "16:00",
+    homeTeamId: 2,
+    homeTeamName: "Shakthar Truuk",
+    awayTeamId: 5,
+    awayTeamName: "De Florre",
+    location: "Sportcomplex Oost",
+    isHomeTeam: false,
+    matchday: "Speeldag 3",
+    isCompleted: false,
+    isLocked: false,
+    playersSubmitted: false
+  },
+  {
+    matchId: 9,
+    uniqueNumber: "0303",
+    date: "2025-01-11",
+    time: "18:00",
+    homeTeamId: 4,
+    homeTeamName: "Cafe De Gilde",
+    awayTeamId: 6,
+    awayTeamName: "Bemarmi Boys",
+    location: "Voetbalpark Zuid",
+    isHomeTeam: false,
+    matchday: "Speeldag 3",
+    isCompleted: false,
+    isLocked: false,
+    playersSubmitted: false
+  },
+
+  // Speeldag 4
+  {
+    matchId: 10,
+    uniqueNumber: "0401",
+    date: "2025-01-18",
+    time: "14:00",
+    homeTeamId: 3,
+    homeTeamName: "De Dageraad",
+    awayTeamId: 6,
+    awayTeamName: "Bemarmi Boys",
+    location: "Centraal Veld",
+    isHomeTeam: false,
+    matchday: "Speeldag 4",
+    isCompleted: false,
+    isLocked: false,
+    playersSubmitted: false
+  },
+  {
+    matchId: 11,
+    uniqueNumber: "0402",
+    date: "2025-01-18",
+    time: "16:00",
+    homeTeamId: 5,
+    homeTeamName: "De Florre",
+    awayTeamId: 1,
+    awayTeamName: "Garage Verbeke",
+    location: "Gemeentelijk Sportpark",
+    isHomeTeam: false,
+    matchday: "Speeldag 4",
+    isCompleted: false,
+    isLocked: false,
+    playersSubmitted: false
+  },
+  {
+    matchId: 12,
+    uniqueNumber: "0403",
+    date: "2025-01-18",
+    time: "18:00",
+    homeTeamId: 2,
+    homeTeamName: "Shakthar Truuk",
+    awayTeamId: 4,
+    awayTeamName: "Cafe De Gilde",
+    location: "Sportcomplex Oost",
+    isHomeTeam: false,
+    matchday: "Speeldag 4",
+    isCompleted: false,
+    isLocked: false,
+    playersSubmitted: false
+  },
+
+  // Speeldag 5 - some completed matches
+  {
+    matchId: 13,
+    uniqueNumber: "0501",
+    date: "2024-12-21",
+    time: "14:00",
     homeTeamId: 1,
     homeTeamName: "Garage Verbeke",
     awayTeamId: 6,
     awayTeamName: "Bemarmi Boys",
-    location: "Sporthal Noord",
+    location: "Sportpark Noord",
     isHomeTeam: true,
-    matchday: "Speeldag 7",
+    matchday: "Speeldag 5",
     homeScore: 3,
     awayScore: 1,
     referee: "Jan Janssen",
     isCompleted: true,
     isLocked: true,
-    refereeNotes: "Goede wedstrijd, geen incidenten"
+    playersSubmitted: true,
+    refereeNotes: "Goede wedstrijd, geen bijzonderheden"
   },
-  // Another completed match
   {
-    matchId: 5,
-    uniqueNumber: "0702",
-    date: "2025-01-05",
-    time: "21:00",
-    homeTeamId: 2,
-    homeTeamName: "Shakthar Truuk",
-    awayTeamId: 3,
-    awayTeamName: "De Dageraad",
-    location: "Sporthal Zuid",
+    matchId: 14,
+    uniqueNumber: "0502",
+    date: "2024-12-21",
+    time: "16:00",
+    homeTeamId: 4,
+    homeTeamName: "Cafe De Gilde",
+    awayTeamId: 5,
+    awayTeamName: "De Florre",
+    location: "Voetbalpark Zuid",
     isHomeTeam: false,
-    matchday: "Speeldag 7",
+    matchday: "Speeldag 5",
     homeScore: 2,
     awayScore: 2,
     referee: "Marie Pieters",
     isCompleted: true,
     isLocked: true,
-    refereeNotes: "Spannende wedstrijd, 1 gele kaart uitgedeeld"
-  },
-  // Future match for testing
-  {
-    matchId: 6,
-    uniqueNumber: "1001",
-    date: "2025-01-25",
-    time: "20:00",
-    homeTeamId: 5,
-    homeTeamName: "De Florre",
-    awayTeamId: 1,
-    awayTeamName: "Garage Verbeke",
-    location: "Sporthal Oost",
-    isHomeTeam: false,
-    matchday: "Speeldag 10",
-    isCompleted: false,
-    isLocked: false
+    playersSubmitted: true,
+    refereeNotes: "Spannende wedstrijd met veel kansen aan beide kanten"
   }
 ];
-
-export const getMockMatches = (teamId: number, hasElevatedPermissions: boolean): MatchFormData[] => {
-  if (hasElevatedPermissions) {
-    // Admin/referee sees all matches
-    return MOCK_MATCH_FORMS;
-  } else {
-    // Team manager only sees matches for their team
-    return MOCK_MATCH_FORMS.filter(match => 
-      match.homeTeamId === teamId || match.awayTeamId === teamId
-    );
-  }
-};
