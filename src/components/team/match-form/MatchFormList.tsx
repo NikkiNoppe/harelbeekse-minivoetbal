@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, MapPin, Users, User, Lock, CheckCircle, AlertCircle } from "lucide-react";
+import { Clock, MapPin, Lock, CheckCircle, AlertCircle } from "lucide-react";
 import { MatchFormData } from "./types";
 
 interface MatchFormListProps {
@@ -44,6 +44,16 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     return matchesSearch && matchesDate && matchesLocation;
   });
 
+  // Group matches by matchday
+  const groupedMatches = filteredMatches.reduce((groups, match) => {
+    const matchday = match.matchday || "Geen speeldag";
+    if (!groups[matchday]) {
+      groups[matchday] = [];
+    }
+    groups[matchday].push(match);
+    return groups;
+  }, {} as Record<string, MatchFormData[]>);
+
   const getMatchStatus = (match: MatchFormData) => {
     if (match.isLocked) {
       return { label: "Vergrendeld", color: "bg-gray-500", icon: Lock };
@@ -65,10 +75,10 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
       return match.playersSubmitted || match.isCompleted;
     }
     
-    // Team manager
+    // Team manager - fix the permission check
     const isTeamMatch = match.homeTeamId === teamId || match.awayTeamId === teamId;
     const isFutureMatch = new Date(match.date) > new Date();
-    return isTeamMatch && isFutureMatch && !match.isCompleted;
+    return isTeamMatch && isFutureMatch && !match.isCompleted && !match.isLocked;
   };
 
   const getButtonText = (match: MatchFormData): string => {
@@ -77,7 +87,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     if (userRole === "admin") return "Bewerken";
     if (userRole === "referee") return "Score invoeren";
     
-    return match.isCompleted ? "Bekijken" : "Spelers selecteren";
+    return "Spelers selecteren";
   };
 
   if (isLoading) {
@@ -105,89 +115,70 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   }
 
   return (
-    <div className="space-y-4">
-      {filteredMatches.map((match) => {
-        const status = getMatchStatus(match);
-        const StatusIcon = status.icon;
-        const canEdit = canUserEdit(match);
-        
-        return (
-          <Card key={match.matchId} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <Badge variant="outline" className="bg-primary text-white">
-                  {match.uniqueNumber}
-                </Badge>
-                <Badge variant="outline" className={`${status.color} text-white`}>
-                  <StatusIcon className="h-3 w-3 mr-1" />
-                  {status.label}
-                </Badge>
-                {hasElevatedPermissions && (
-                  <Badge variant="outline" className="bg-purple-100 text-purple-800">
-                    {userRole === "admin" ? "Admin" : "Scheidsrechter"}
-                  </Badge>
-                )}
-                {match.playersSubmitted && !match.isCompleted && (
-                  <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                    Spelers ingediend
-                  </Badge>
-                )}
-              </div>
+    <div className="space-y-6">
+      {Object.entries(groupedMatches)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([matchday, dayMatches]) => (
+        <Card key={matchday}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">{matchday}</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-3">
+            {dayMatches.map((match) => {
+              const status = getMatchStatus(match);
+              const StatusIcon = status.icon;
+              const canEdit = canUserEdit(match);
               
-              <CardTitle className="text-lg flex items-center justify-between">
-                <span>{match.homeTeamName} vs {match.awayTeamName}</span>
-                {(match.homeScore !== undefined && match.awayScore !== undefined) && (
-                  <span className="text-xl font-bold text-primary">
-                    {match.homeScore} - {match.awayScore}
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            
-            <CardContent className="pt-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span>{match.date} om {match.time}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{match.location}</span>
-                </div>
-                {match.matchday && (
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span>{match.matchday}</span>
+              return (
+                <div key={match.matchId} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="outline" className="bg-primary text-white text-xs">
+                        {match.uniqueNumber}
+                      </Badge>
+                      <Badge variant="outline" className={`${status.color} text-white text-xs`}>
+                        <StatusIcon className="h-3 w-3 mr-1" />
+                        {status.label}
+                      </Badge>
+                      {match.isLocked && (
+                        <Lock className="h-4 w-4 text-gray-500" />
+                      )}
+                    </div>
+                    
+                    <div className="font-medium text-sm mb-1">
+                      {match.homeTeamName} vs {match.awayTeamName}
+                      {(match.homeScore !== undefined && match.awayScore !== undefined) && (
+                        <span className="ml-2 font-bold text-primary">
+                          {match.homeScore} - {match.awayScore}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{match.date} {match.time}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        <span>{match.location}</span>
+                      </div>
+                    </div>
                   </div>
-                )}
-                {match.referee && (
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span>{match.referee}</span>
-                  </div>
-                )}
-              </div>
-              
-              {match.refereeNotes && (userRole === "admin" || userRole === "referee") && (
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                  <p className="text-sm font-medium text-yellow-800">Notities scheidsrechter:</p>
-                  <p className="text-sm text-yellow-700">{match.refereeNotes}</p>
+                  
+                  <Button 
+                    onClick={() => onSelectMatch(match)}
+                    variant={canEdit ? "default" : "outline"}
+                    size="sm"
+                  >
+                    {getButtonText(match)}
+                  </Button>
                 </div>
-              )}
-              
-              <div className="flex justify-end">
-                <Button 
-                  onClick={() => onSelectMatch(match)}
-                  variant={canEdit ? "default" : "outline"}
-                  disabled={!canEdit && userRole !== "admin"}
-                >
-                  {getButtonText(match)}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+              );
+            })}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };

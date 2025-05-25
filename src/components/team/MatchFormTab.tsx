@@ -1,15 +1,14 @@
+
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthProvider";
-import PlayerSelectionForm from "./PlayerSelectionForm";
-import MatchFormHeader from "./match-form/MatchFormHeader";
 import { fetchUpcomingMatches } from "./match-form/matchFormService";
 import { MatchFormData } from "./match-form/types";
 import MatchFormFilter from "./match-form/MatchFormFilter";
 import MatchFormList from "./match-form/MatchFormList";
-import ScoreEntryForm from "./match-form/ScoreEntryForm";
+import CompactMatchForm from "./match-form/CompactMatchForm";
 
 interface MatchFormTabProps {
   teamId: number;
@@ -37,86 +36,33 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
 
   // Handle the selection of a match for the form
   const handleSelectMatch = (match: MatchFormData) => {
-    // Check permissions for editing
-    const canEdit = canEditMatch(match);
-    if (!canEdit) {
-      toast({
-        title: "Geen toegang",
-        description: "Je hebt geen rechten om deze wedstrijd te bewerken.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     setSelectedMatchForm(match);
   };
 
-  // Check if user can edit a specific match
-  const canEditMatch = (match: MatchFormData): boolean => {
-    // Admin can always edit
-    if (isAdmin) return true;
-    
-    // Locked matches can't be edited by anyone except admin
-    if (match.isLocked && !isAdmin) return false;
-    
-    // Referee can edit scores and notes for completed/ready matches
-    if (isReferee) {
-      return match.playersSubmitted || match.isCompleted;
-    }
-    
-    // Team manager can only edit future matches for their team and only if not completed
-    const isTeamMatch = match.homeTeamId === teamId || match.awayTeamId === teamId;
-    const isFutureMatch = new Date(match.date) > new Date();
-    
-    return isTeamMatch && isFutureMatch && !match.isCompleted;
-  };
-
-  // If a match form is selected, render the appropriate form
+  // If a match form is selected, render the form
   if (selectedMatchForm) {
-    // If it's a referee/admin editing scores
-    if ((isReferee || isAdmin) && (selectedMatchForm.playersSubmitted || selectedMatchForm.isCompleted)) {
-      return (
-        <div className="space-y-4">
-          <MatchFormHeader 
-            selectedMatch={selectedMatchForm}
-            onBackToOverview={() => setSelectedMatchForm(null)}
-            hasElevatedPermissions={hasElevatedPermissions}
-          />
-          
-          <Card>
-            <CardContent className="pt-6">
-              <ScoreEntryForm
-                match={selectedMatchForm}
-                onComplete={() => {
-                  setSelectedMatchForm(null);
-                  refetch();
-                }}
-                isAdmin={isAdmin}
-                isReferee={isReferee}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-    
-    // Regular player selection form for team managers
     return (
       <div className="space-y-4">
-        <MatchFormHeader 
-          selectedMatch={selectedMatchForm}
-          onBackToOverview={() => setSelectedMatchForm(null)}
-          hasElevatedPermissions={hasElevatedPermissions}
-        />
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-medium">Wedstrijdformulier</h2>
+          <button 
+            onClick={() => setSelectedMatchForm(null)}
+            className="text-blue-600 hover:text-blue-800"
+          >
+            ← Terug naar overzicht
+          </button>
+        </div>
         
         <Card>
           <CardContent className="pt-6">
-            <PlayerSelectionForm
-              matchId={selectedMatchForm.matchId}
-              teamId={teamId}
-              teamName={teamName}
-              isHomeTeam={selectedMatchForm.isHomeTeam}
-              onComplete={() => setSelectedMatchForm(null)}
+            <CompactMatchForm
+              match={selectedMatchForm}
+              onComplete={() => {
+                setSelectedMatchForm(null);
+                refetch();
+              }}
+              isAdmin={isAdmin}
+              isReferee={isReferee}
             />
           </CardContent>
         </Card>
