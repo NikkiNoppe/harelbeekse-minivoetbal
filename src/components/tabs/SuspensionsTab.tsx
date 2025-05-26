@@ -141,24 +141,28 @@ const SuspensionsTab: React.FC = () => {
               <div className="space-y-1">
                 <h4 className="font-medium">Gele Kaarten</h4>
                 <p className="text-muted-foreground">
-                  Een speler wordt voor 1 wedstrijd geschorst na 4 gele kaarten.
-                  Na 8 gele kaarten volgt een schorsing van 2 wedstrijden.
+                  Gele kaart (boete: €): Speler mag verder spelen.
+                  Schorsingen na gele kaarten:
+                  2 gele kaarten: 1 wedstrijd schorsing
+                  4 gele kaarten: 2 opeenvolgende wedstrijden
+                  6 gele kaarten: 3 opeenvolgende wedstrijden
                 </p>
               </div>
               
               <div className="space-y-1">
                 <h4 className="font-medium">Rode Kaarten</h4>
                 <ul className="list-disc pl-5 text-muted-foreground">
-                  <li>Directe rode kaart: minimaal 1 wedstrijd schorsing</li>
+                  <li>Rode kaart (boete: €): onmiddellijke uitsluiting ZONDER vervanging.</li>
+                  <li>Minimum schorsing: 1 wedstrijden schorsing</li>
+                  <li>Minnelijke schikking mogelijk, als de sportcomité dit beslist.</li>
                   <li>Tweede gele kaart in één wedstrijd: 1 wedstrijd schorsing</li>
-                  <li>Gewelddadig gedrag: minimaal 3 wedstrijden schorsing</li>
                 </ul>
               </div>
               
               <div className="space-y-1">
                 <h4 className="font-medium">Beroepsprocedure</h4>
                 <p className="text-muted-foreground">
-                  Clubs kunnen binnen 3 werkdagen na de wedstrijd beroep aantekenen tegen een rode kaart.
+                  Clubs kunnen binnen 7 werkdagen na de wedstrijd beroep aantekenen tegen een rode kaart.
                   Het tuchtcomité zal binnen 7 dagen uitspraak doen.
                 </p>
               </div>
