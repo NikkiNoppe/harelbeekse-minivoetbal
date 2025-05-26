@@ -44,10 +44,15 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   const renderPlayerSelectionRows = (isHomeTeam: boolean) => {
     const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
     const players = isHomeTeam ? homeTeamPlayers : awayTeamPlayers;
-    const canEditThisTeam = isTeamManager && (
+    
+    // Team managers can only edit their own team
+    const canEditThisTeamAsManager = isTeamManager && (
       (isHomeTeam && teamId === match.homeTeamId) || 
       (!isHomeTeam && teamId === match.awayTeamId)
     );
+    
+    // Referees can edit both teams
+    const canEditThisTeam = showRefereeFields || canEditThisTeamAsManager;
 
     return selections.map((selection, index) => (
       <div key={index} className="flex items-center justify-between p-3 border rounded">
@@ -105,6 +110,13 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
                 <Label className="text-xs">K</Label>
               </div>
             </>
+          )}
+          
+          {!canEditThisTeam && (selection.jerseyNumber || selection.isCaptain) && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {selection.jerseyNumber && <span>#{selection.jerseyNumber}</span>}
+              {selection.isCaptain && <span>(K)</span>}
+            </div>
           )}
           
           {showRefereeFields && canEdit && selection.playerId && (
