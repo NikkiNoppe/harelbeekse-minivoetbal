@@ -1,31 +1,613 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import CompetitionGenerator from "../CompetitionGenerator";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CalendarIcon, CalendarCheck, Trash, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { format, addDays, isBefore, isMonday, isTuesday } from "date-fns";
+import { nl } from "date-fns/locale";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import FormatSelectionTab from "../competition-generator/FormatSelectionTab";
+import PreviewTab from "../competition-generator/PreviewTab";
+import { useCompetitionGenerator } from "../competition-generator/useCompetitionGenerator";
+
+interface Venue {
+  id: string;
+  name: string;
+  address: string;
+  timeslots: Timeslot[];
+}
+
+interface Timeslot {
+  day: 'monday' | 'tuesday';
+  startTime: string;
+  endTime: string;
+}
+
+interface HolidayPeriod {
+  startDate: string;
+  endDate: string;
+  description: string;
+}
 
 const CompetitionManagementTab: React.FC = () => {
+  const { toast } = useToast();
+  const [startDate, setStartDate] = useState("2025-08-18");
+  const [endDate, setEndDate] = useState("2026-07-14");
+  const [isGeneratingDates, setIsGeneratingDates] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  
+  const [venues, setVenues] = useState<Venue[]>([
+    {
+      id: "harelbeke",
+      name: "Harelbeke - Dageraad",
+      address: "Dageraadstraat 1, 8530 Harelbeke",
+      timeslots: [
+        { day: 'monday', startTime: '18:30', endTime: '19:30' },
+        { day: 'monday', startTime: '19:30', endTime: '20:30' },
+        { day: 'monday', startTime: '20:30', endTime: '21:30' },
+        { day: 'tuesday', startTime: '18:30', endTime: '19:30' },
+        { day: 'tuesday', startTime: '19:30', endTime: '20:30' }
+      ]
+    },
+    {
+      id: "bavikhove",
+      name: "Bavikhove - Vlasschaard",
+      address: "Vlietestraat 25, 8531 Bavikhove",
+      timeslots: [
+        { day: 'monday', startTime: '18:30', endTime: '19:30' },
+        { day: 'monday', startTime: '19:30', endTime: '20:30' },
+        { day: 'monday', startTime: '20:30', endTime: '21:30' },
+        { day: 'tuesday', startTime: '18:30', endTime: '19:30' }
+      ]
+    }
+  ]);
+  
+  const [holidayPeriods, setHolidayPeriods] = useState<HolidayPeriod[]>([
+    { startDate: "2025-12-23", endDate: "2026-01-06", description: "Kerstvakantie" },
+    { startDate: "2026-04-06", endDate: "2026-04-19", description: "Paasvakantie" }
+  ]);
+
+  const [newHoliday, setNewHoliday] = useState<HolidayPeriod>({
+    startDate: "",
+    endDate: "",
+    description: ""
+  });
+
+  const {
+    availableDates,
+    loadingDates,
+    competitionFormats,
+    loadingFormats,
+    selectedDates,
+    selectedFormat,
+    generatedMatches,
+    competitionName,
+    isCreating,
+    setSelectedFormat,
+    setCompetitionName,
+    toggleDate,
+    generateSchedule,
+    saveCompetition,
+    minimumDatesRequired,
+    activeTab,
+    setActiveTab
+  } = useCompetitionGenerator();
+
+  // Add a new holiday period
+  const addHolidayPeriod = () => {
+    if (!newHoliday.startDate || !newHoliday.endDate || !newHoliday.description) {
+      toast({
+        title: "Onvolledige gegevens",
+        description: "Vul alle velden in voor de vakantieperiode",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setHolidayPeriods([...holidayPeriods, { ...newHoliday }]);
+    setNewHoliday({ startDate: "", endDate: "", description: "" });
+  };
+
+  // Remove a holiday period
+  const removeHolidayPeriod = (index: number) => {
+    const updatedPeriods = [...holidayPeriods];
+    updatedPeriods.splice(index, 1);
+    setHolidayPeriods(updatedPeriods);
+  };
+
+  // Check if a date falls within any holiday period
+  const isHoliday = (date: Date): boolean => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    return holidayPeriods.some(period => 
+      isBefore(new Date(period.startDate), new Date(dateStr)) && 
+      isBefore(new Date(dateStr), new Date(period.endDate))
+    );
+  };
+
+  // Generate available dates
+  const generateDates = async () => {
+    setIsGeneratingDates(true);
+    
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      let availableDates = [];
+      let currentDate = start;
+      let weeklyCount = 0;
+      let weekStart = new Date(currentDate);
+      
+      // Find the beginning of the week for the first date
+      while (weekStart.getDay() !== 1) { // Move to Monday (1)
+        weekStart = addDays(weekStart, -1);
+      }
+      
+      while (isBefore(currentDate, end) || currentDate.getTime() === end.getTime()) {
+        // Check if it's Monday or Tuesday
+        if ((isMonday(currentDate) || isTuesday(currentDate)) && !isHoliday(currentDate)) {
+          // Reset weekly counter on Monday
+          if (isMonday(currentDate)) {
+            weeklyCount = 0;
+            weekStart = new Date(currentDate);
+          }
+          
+          // For each venue and its timeslots on this day of the week
+          for (const venue of venues) {
+            const day = isMonday(currentDate) ? 'monday' : 'tuesday';
+            const timeslotsForDay = venue.timeslots.filter(ts => ts.day === day);
+            
+            for (const slot of timeslotsForDay) {
+              if (weeklyCount < 9) { // Maximum 9 slots per week
+                const dateStr = format(currentDate, "yyyy-MM-dd");
+                
+                availableDates.push({
+                  available_date: `${dateStr}`,
+                  is_available: true,
+                  is_cup_date: false
+                });
+                
+                weeklyCount++;
+              }
+            }
+          }
+        }
+        
+        // Move to the next day
+        currentDate = addDays(currentDate, 1);
+      }
+      
+      // Confirm before clearing existing dates
+      setShowConfirmDialog(true);
+    } catch (error) {
+      console.error("Error generating dates:", error);
+      toast({
+        title: "Fout bij genereren",
+        description: "Er is een fout opgetreden bij het genereren van de speeldata.",
+        variant: "destructive"
+      });
+      setIsGeneratingDates(false);
+    }
+  };
+  
+  // Save generated dates to the database
+  const saveDates = async () => {
+    setIsGeneratingDates(true);
+    setShowConfirmDialog(false);
+    
+    try {
+      // First, delete all existing available dates
+      const { error: deleteError } = await supabase
+        .from('available_dates')
+        .delete()
+        .gte('date_id', 0);
+      
+      if (deleteError) throw deleteError;
+      
+      // Then generate and insert new dates
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      let availableDates = [];
+      let currentDate = start;
+      let weeklyCount = 0;
+      let weekStart = new Date(currentDate);
+      
+      // Find the beginning of the week for the first date
+      while (weekStart.getDay() !== 1) { // Move to Monday (1)
+        weekStart = addDays(weekStart, -1);
+      }
+      
+      while (isBefore(currentDate, end) || currentDate.getTime() === end.getTime()) {
+        // Check if it's Monday or Tuesday
+        if ((isMonday(currentDate) || isTuesday(currentDate)) && !isHoliday(currentDate)) {
+          // Reset weekly counter on Monday
+          if (isMonday(currentDate)) {
+            weeklyCount = 0;
+            weekStart = new Date(currentDate);
+          }
+          
+          // For each venue and its timeslots on this day of the week
+          for (const venue of venues) {
+            const day = isMonday(currentDate) ? 'monday' : 'tuesday';
+            const timeslotsForDay = venue.timeslots.filter(ts => ts.day === day);
+            
+            for (const slot of timeslotsForDay) {
+              if (weeklyCount < 9) { // Maximum 9 slots per week
+                const dateStr = format(currentDate, "yyyy-MM-dd");
+                
+                // Create the date entry for the database
+                availableDates.push({
+                  available_date: `${dateStr}`,
+                  is_available: true,
+                  is_cup_date: false
+                });
+                
+                weeklyCount++;
+              }
+            }
+          }
+        }
+        
+        // Move to the next day
+        currentDate = addDays(currentDate, 1);
+      }
+      
+      // Filter out any duplicate dates (same day but different venues or times)
+      const uniqueDates = Array.from(
+        new Map(availableDates.map(date => [date.available_date, date])).values()
+      );
+      
+      // Batch insert the dates
+      const { error: insertError } = await supabase
+        .from('available_dates')
+        .insert(uniqueDates);
+        
+      if (insertError) throw insertError;
+      
+      toast({
+        title: "Speeldata gegenereerd",
+        description: `${uniqueDates.length} speeldata zijn succesvol gegenereerd.`
+      });
+    } catch (error: any) {
+      console.error("Error saving dates:", error);
+      toast({
+        title: "Fout bij opslaan",
+        description: error.message || "Er is een fout opgetreden bij het opslaan van de speeldata.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingDates(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Competitiebeheer</h1>
       
-      <Tabs defaultValue="generator">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="generator">Competitie Generator</TabsTrigger>
-          <TabsTrigger value="management">Beheer Competities</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="format">1. Format</TabsTrigger>
+          <TabsTrigger value="dates">2. Speeldagen</TabsTrigger>
+          <TabsTrigger value="preview">3. Voorvertoning</TabsTrigger>
+          <TabsTrigger value="management">Beheer</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="generator" className="space-y-4 mt-4">
-          <CompetitionGenerator />
+        {/* Tab 1: Format selecteren */}
+        <TabsContent value="format" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Competitieformat</CardTitle>
+              <CardDescription>
+                Selecteer het format voor uw competitie
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormatSelectionTab
+                competitionFormats={competitionFormats}
+                loadingFormats={loadingFormats}
+                selectedFormat={selectedFormat}
+                setSelectedFormat={setSelectedFormat}
+                competitionName={competitionName}
+                setCompetitionName={setCompetitionName}
+                onGenerateSchedule={() => setActiveTab("dates")}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
         
-        <TabsContent value="management" className="space-y-4 mt-4">
-          <div className="p-4 border rounded-md">
-            <p className="text-muted-foreground">
-              Functionaliteit voor het beheren van bestaande competities komt hier.
-            </p>
-          </div>
+        {/* Tab 2: Speeldagen configureren */}
+        <TabsContent value="dates" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-primary" />
+                Speeldagen Configuratie
+              </CardTitle>
+              <CardDescription>
+                Configureer het seizoen en genereer beschikbare speeldagen
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Seizoen periode */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <Label htmlFor="start-date">Startdatum seizoen</Label>
+                  <Input
+                    id="start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="end-date">Einddatum seizoen</Label>
+                  <Input
+                    id="end-date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Uitzonderingen (vakantieperiodes) */}
+              <div className="border rounded-md p-4 space-y-4">
+                <div>
+                  <h3 className="font-medium">Uitzonderingen - Periodes zonder wedstrijden</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Voeg vakantieperiodes toe waarin geen wedstrijden kunnen plaatsvinden
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {holidayPeriods.map((period, index) => (
+                    <div key={index} className="flex items-center justify-between rounded-md border p-2">
+                      <div>
+                        <p className="font-medium">{period.description}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(new Date(period.startDate), "d MMMM yyyy", { locale: nl })} - {format(new Date(period.endDate), "d MMMM yyyy", { locale: nl })}
+                        </p>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => removeHolidayPeriod(index)}
+                      >
+                        <Trash className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label htmlFor="holiday-start">Startdatum</Label>
+                    <Input
+                      id="holiday-start"
+                      type="date"
+                      value={newHoliday.startDate}
+                      onChange={(e) => setNewHoliday({...newHoliday, startDate: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="holiday-end">Einddatum</Label>
+                    <Input
+                      id="holiday-end"
+                      type="date"
+                      value={newHoliday.endDate}
+                      onChange={(e) => setNewHoliday({...newHoliday, endDate: e.target.value})}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="holiday-desc">Omschrijving</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="holiday-desc"
+                        value={newHoliday.description}
+                        onChange={(e) => setNewHoliday({...newHoliday, description: e.target.value})}
+                      />
+                      <Button onClick={addHolidayPeriod}>Toevoegen</Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Locaties en tijdsloten */}
+              <div className="border rounded-md p-4 space-y-4">
+                <h3 className="font-medium">Locaties en speeluren</h3>
+                <p className="text-sm text-muted-foreground">
+                  Configureer de beschikbare locaties en tijdsloten voor wedstrijden
+                </p>
+
+                {venues.map((venue) => (
+                  <div key={venue.id} className="rounded-md border p-4">
+                    <h4 className="font-medium">{venue.name}</h4>
+                    <p className="text-sm text-muted-foreground">{venue.address}</p>
+                    
+                    <div className="mt-3 grid grid-cols-2 gap-4">
+                      <div>
+                        <h5 className="text-sm font-medium">Maandag</h5>
+                        <ul className="list-disc list-inside text-sm pl-2">
+                          {venue.timeslots
+                            .filter(slot => slot.day === 'monday')
+                            .map((slot, i) => (
+                              <li key={`${venue.id}-mon-${i}`}>
+                                {slot.startTime} - {slot.endTime}
+                              </li>
+                            ))
+                          }
+                        </ul>
+                      </div>
+                      <div>
+                        <h5 className="text-sm font-medium">Dinsdag</h5>
+                        <ul className="list-disc list-inside text-sm pl-2">
+                          {venue.timeslots
+                            .filter(slot => slot.day === 'tuesday')
+                            .map((slot, i) => (
+                              <li key={`${venue.id}-tue-${i}`}>
+                                {slot.startTime} - {slot.endTime}
+                              </li>
+                            ))
+                          }
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Genereer speeldagen button */}
+              <Button onClick={generateDates} className="w-full" disabled={isGeneratingDates}>
+                {isGeneratingDates ? (
+                  <>Genereren...</>
+                ) : (
+                  <>
+                    <CalendarCheck className="mr-2 h-4 w-4" />
+                    Genereer beschikbare speeldagen
+                  </>
+                )}
+              </Button>
+
+              {/* Bestaande speeldagen selectie */}
+              {availableDates && availableDates.length > 0 && (
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-medium mb-4">Selecteer beschikbare speeldagen</h3>
+                  
+                  <Alert className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Minimale speeldagen vereist</AlertTitle>
+                    <AlertDescription>
+                      Selecteer ten minste {minimumDatesRequired} speeldagen om alle wedstrijden in te plannen.
+                      U heeft momenteel {selectedDates.length} speeldagen geselecteerd.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {availableDates?.map((date) => {
+                      const isSelected = selectedDates.includes(date.date_id);
+                      const formattedDate = new Date(date.available_date).toLocaleDateString('nl-NL', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      });
+                      
+                      return (
+                        <div 
+                          key={date.date_id} 
+                          className={`border p-3 rounded-md flex items-center space-x-3 cursor-pointer ${
+                            isSelected ? 'border-primary bg-primary/5' : ''
+                          } ${date.is_cup_date ? 'bg-orange-50 dark:bg-orange-900/10' : ''}`}
+                          onClick={() => !date.is_cup_date && toggleDate(date.date_id)}
+                        >
+                          <input 
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleDate(date.date_id)}
+                            disabled={date.is_cup_date}
+                            className="w-4 h-4"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <CalendarIcon className="h-4 w-4" />
+                              <span>{formattedDate}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="mt-4 pt-4 border-t flex justify-end">
+                    <Button 
+                      variant="default" 
+                      onClick={generateSchedule}
+                      disabled={selectedDates.length < minimumDatesRequired}
+                    >
+                      Schema Genereren
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Tab 3: Voorvertoning */}
+        <TabsContent value="preview" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Competitie Voorvertoning</CardTitle>
+              <CardDescription>
+                Controleer en bewaar uw competitieschema
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PreviewTab
+                generatedMatches={generatedMatches}
+                competitionName={competitionName}
+                selectedDates={selectedDates}
+                competitionFormat={competitionFormats?.find(f => f.id === selectedFormat)}
+                isCreating={isCreating}
+                onSaveCompetition={saveCompetition}
+                onRegenerateSchedule={generateSchedule}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Tab 4: Beheer bestaande competities */}
+        <TabsContent value="management" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Beheer Competities</CardTitle>
+              <CardDescription>
+                Overzicht en beheer van bestaande competities
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="p-4 border rounded-md">
+                <p className="text-muted-foreground">
+                  Functionaliteit voor het beheren van bestaande competities komt hier.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Bevestigingsdialoog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bevestig genereren speeldata</DialogTitle>
+            <DialogDescription>
+              U staat op het punt om alle bestaande speeldata te verwijderen en nieuwe te genereren. Deze actie kan niet ongedaan worden gemaakt.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2 rounded-md border p-4">
+            <AlertCircle className="h-5 w-5 text-amber-500" />
+            <p className="text-sm">Alle bestaande speeldata zullen worden verwijderd.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>Annuleren</Button>
+            <Button variant="destructive" onClick={saveDates}>Doorgaan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

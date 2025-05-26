@@ -7,7 +7,6 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import TeamDashboard from "@/components/team/TeamDashboard";
 import { MOCK_TEAMS } from "@/data/mockData";
 import CompetitionManagementTab from "@/components/admin/tabs/CompetitionManagementTab";
-import DateGeneratorTab from "@/components/admin/DateGeneratorTab";
 import MatchFormTab from "@/components/team/MatchFormTab";
 
 const UserDashboard = () => {
@@ -37,8 +36,7 @@ const UserDashboard = () => {
           {/* Admin-only tabs */}
           {isAdmin && (
             <>
-              <TabsTrigger value="competition">Competitie</TabsTrigger>
-              <TabsTrigger value="date-generator">Speeldata Generator</TabsTrigger>
+              <TabsTrigger value="competition">Competitiebeheer</TabsTrigger>
               <TabsTrigger value="settings">Instellingen</TabsTrigger>
             </>
           )}
@@ -62,9 +60,6 @@ const UserDashboard = () => {
             <>
               <TabsContent value="competition">
                 <CompetitionManagementTab />
-              </TabsContent>
-              <TabsContent value="date-generator">
-                <DateGeneratorTab />
               </TabsContent>
               <TabsContent value="settings">
                 <AdminSettingsPanel />
