@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -70,9 +71,43 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
 
   const handlePlayerSelection = (index: number, field: keyof PlayerSelection, value: any, isHomeTeam: boolean) => {
     const setSelections = isHomeTeam ? setHomeTeamSelections : setAwayTeamSelections;
+    const currentSelections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
     
     setSelections(prev => {
       const updated = [...prev];
+      
+      // Check for duplicate player selection
+      if (field === 'playerId' && value !== null) {
+        const isPlayerAlreadySelected = currentSelections.some((selection, i) => 
+          i !== index && selection.playerId === value
+        );
+        
+        if (isPlayerAlreadySelected) {
+          toast({
+            title: "Speler al geselecteerd",
+            description: "Deze speler is al geselecteerd voor dit team.",
+            variant: "destructive"
+          });
+          return prev;
+        }
+      }
+      
+      // Check for duplicate jersey number
+      if (field === 'jerseyNumber' && value.trim() !== "") {
+        const isJerseyAlreadyUsed = currentSelections.some((selection, i) => 
+          i !== index && selection.jerseyNumber === value && selection.playerId !== null
+        );
+        
+        if (isJerseyAlreadyUsed) {
+          toast({
+            title: "Rugnummer al in gebruik",
+            description: "Dit rugnummer wordt al gebruikt door een andere speler in dit team.",
+            variant: "destructive"
+          });
+          return prev;
+        }
+      }
+      
       updated[index] = { ...updated[index], [field]: value };
       
       // If setting captain to true, unset all other captains in this team
@@ -93,6 +128,13 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         if (selectedPlayer) {
           updated[index].playerName = selectedPlayer.player_name;
         }
+      }
+      
+      // If deselecting a player, clear related fields
+      if (field === 'playerId' && value === null) {
+        updated[index].playerName = "";
+        updated[index].jerseyNumber = "";
+        updated[index].isCaptain = false;
       }
       
       return updated;
@@ -141,6 +183,21 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         toast({
           title: "Kapitein ontbreekt",
           description: "Selecteer een kapitein voor je team.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Additional validation for duplicate jersey numbers
+      const jerseyNumbers = userSelections
+        .filter(p => p.playerId !== null && p.jerseyNumber.trim() !== "")
+        .map(p => p.jerseyNumber);
+      const uniqueJerseyNumbers = new Set(jerseyNumbers);
+      
+      if (jerseyNumbers.length !== uniqueJerseyNumbers.size) {
+        toast({
+          title: "Dubbele rugnummers",
+          description: "Elk rugnummer kan maar één keer gebruikt worden.",
           variant: "destructive"
         });
         return;
