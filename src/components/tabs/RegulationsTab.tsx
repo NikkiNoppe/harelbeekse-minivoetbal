@@ -23,111 +23,124 @@ const RegulationsTab: React.FC = () => {
           className="w-full transition-all duration-200"
         >
           <AccordionItem value="item-1">
-            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
-              1. Algemene Bepalingen
-            </AccordionTrigger>
-            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
-              <p>1.1 De competitie wordt georganiseerd door Voetbal Arena.</p>
-              <p>1.2 Alle wedstrijden worden gespeeld volgens de regels van de KNVB, tenzij anders vermeld in dit reglement.</p>
-              <p>1.3 Deelnemende teams dienen zich te houden aan alle bepalingen in dit reglement.</p>
-              <p>1.4 Het bestuur heeft het recht om beslissingen te nemen in gevallen waarin dit reglement niet voorziet.</p>
-            </AccordionContent>
-          </AccordionItem>
+  <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+    1. Algemene Bepalingen
+  </AccordionTrigger>
+  <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
+    <p>1.1 De Harelbeekse Minivoetbal vereniging is opgericht met als doel de sportbeleving te bevorderen onder vorm van minivoetbal in een competitiecontext. Fairplay moet altijd op de eerste plaats staan.</p>
+    <p>1.2 Het bestuur bestaat uit de voorzitter, de ondervoorzitter, de secretaris en de scheidsrechtersverantwoordelijke. Het organiseert de competitie volgens dit reglement.</p>
+    <p>1.3 Het bestuur houdt algemene vergaderingen met verplichte aanwezigheid van elke ploeg. Het sportcomité behandelt disciplinaire zaken en geschillen.</p>
+    <p>1.4 Het bestuur heeft het recht om beslissingen te nemen in gevallen waarin dit reglement niet voorziet.</p>
+    <p>1.5 Door deelname aan de competitie gaan alle ploegen akkoord met het bijhouden en verwerken van gegevens door het bestuur.</p>
+  </AccordionContent>
+</AccordionItem>
 
-          <AccordionItem value="item-2">
-            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
-              2. Competitie Structuur
-            </AccordionTrigger>
-            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
-              <p>2.1 De competitie bestaat uit een volledige competitie waarin alle teams elkaar twee keer ontmoeten (thuis en uit).</p>
-              <p>2.2 Voor een overwinning krijgt een team 3 punten, voor een gelijkspel 1 punt, en voor een nederlaag 0 punten.</p>
-              <p>2.3 De eindrangschikking wordt bepaald door:</p>
-              <ul className="list-disc pl-4 sm:pl-5 mt-1 space-y-1">
-                <li>Totaal aantal behaalde punten</li>
-                <li>Doelsaldo</li>
-                <li>Aantal gescoorde doelpunten</li>
-                <li>Onderling resultaat</li>
-                <li>Loting (indien nodig)</li>
-              </ul>
-            </AccordionContent>
-          </AccordionItem>
+<AccordionItem value="item-2">
+  <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+    2. Competitie Structuur
+  </AccordionTrigger>
+  <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
+    <p>2.1 De klassering wordt bepaald door: wedstrijd gewonnen = 3 punten, gelijkspel = 1 punt per ploeg, verloren wedstrijd = 0 punten.</p>
+    <p>2.2 Bij gelijke punten tellen achtereenvolgens:</p>
+    <ul className="list-disc pl-4 sm:pl-5 mt-1 space-y-1">
+      <li>Het aantal gewonnen wedstrijden</li>
+      <li>Het doelpuntensaldo</li>
+      <li>Het totaal aantal gemaakte doelpunten</li>
+      <li>Testmatch (indien nodig)</li>
+    </ul>
+    <p>2.3 De laatste plaats eerste reeks daalt naar tweede reeks. De eerste plaats tweede reeks stijgt naar eerste reeks.</p>
+    <p>2.4 Stoppende ploegen: Alle wedstrijden van stoppende ploegen worden op forfaitscores gezet.</p>
+    <p>2.5 De fairplayranking wordt per reeks bijgehouden op basis van minst behaalde kaarten.</p>
+  </AccordionContent>
+</AccordionItem>
 
-          <AccordionItem value="item-3">
-            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
-              3. Wedstrijdregels
-            </AccordionTrigger>
-            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
-              <p>3.1 Elke wedstrijd duurt 2 x 45 minuten met een rust van 15 minuten.</p>
-              <p>3.2 Teams dienen 30 minuten voor aanvang van de wedstrijd aanwezig te zijn.</p>
-              <p>3.3 Een team moet minimaal 7 spelers op het veld hebben om een wedstrijd te kunnen starten.</p>
-              <p>3.4 Er mogen maximaal 5 wisselspelers worden gebruikt per wedstrijd.</p>
-              <p>3.5 De thuisspelende vereniging zorgt voor een wedstrijdbal die voldoet aan de eisen.</p>
-            </AccordionContent>
-          </AccordionItem>
+<AccordionItem value="item-3">
+  <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+    3. Wedstrijdregels
+  </AccordionTrigger>
+  <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
+    <p>3.1 Competitiewedstrijden: 4 periodes van 12 minuten.</p>
+    <p>3.2 Rust: 1 minuut na periode 1 en 3, 2 minuten + kampwissel na periode 2.</p>
+    <p>3.3 Een ploeg moet minimaal 4 spelers hebben om te kunnen starten. Bij minder dan 4 spelers wordt forfait uitgesproken.</p>
+    <p>3.4 Belangrijke spelregels: sliding verboden, geen vaste doelman, niemand mag bal met hand spelen, geen buitenspel, lichamelijk contact verboden.</p>
+    <p>3.5 De thuisploeg zorgt voor een geschikte bal. Bij aftrap en doeltrap kan niet rechtstreeks gescoord worden.</p>
+    <p>3.6 Na 4 hoekschoppen wordt een strafcorner toegekend. Speler A trapt, speler B kopt naar onverdedigd doel.</p>
+    <p>3.7 Bij gelijkstand in knockoutfase: strafschoppen met 5 spelers per ploeg.</p>
+  </AccordionContent>
+</AccordionItem>
 
-          <AccordionItem value="item-4">
-            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
-              4. Spelers & Registratie
-            </AccordionTrigger>
-            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
-              <p>4.1 Alle spelers moeten geregistreerd zijn bij hun club en bij de competitie-organisatie.</p>
-              <p>4.2 Een speler mag in een seizoen slechts voor één club uitkomen.</p>
-              <p>4.3 De registratietermijn sluit 2 weken voor aanvang van de competitie.</p>
-              <p>4.4 In de winterstop mogen nieuwe spelers worden geregistreerd binnen de aangegeven transferperiode.</p>
-              <p>4.5 Spelers moeten minimaal 16 jaar zijn om deel te nemen aan de competitie.</p>
-            </AccordionContent>
-          </AccordionItem>
+<AccordionItem value="item-4">
+  <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+    4. Spelers & Registratie
+  </AccordionTrigger>
+  <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
+    <p>4.1 Minivoetbal wordt gespeeld met 5 spelers per ploeg. Maximum 3 reserves + 1 coach op de bank.</p>
+    <p>4.2 Vervangingen zijn voortdurend mogelijk na melding aan scheidsrechter, als de bal buiten het speelveld is.</p>
+    <p>4.3 Spelers moeten minimaal 16 jaar zijn. Maximum 20 spelers per ploeg, minimum 8 spelers.</p>
+    <p>4.4 Geen spelers uit hogere afdelingen dan 1ste Provinciale zijn toegestaan.</p>
+    <p>4.5 Overgangen tussen ploegen tijdens lopende competitie zijn verboden. Nieuwe spelers aansluiten kan tot net start van de competitie.</p>
+    <p>4.6 Identieke uitrusting per ploeg verplicht. Sportschoenen met effen zool. Kapitein draagt armband.</p>
+    <p>4.7 Verplichte sportongevallenverzekering voor elke speler (eigen verzekering of collectief via vereniging).</p>
+  </AccordionContent>
+</AccordionItem>
 
-          <AccordionItem value="item-5">
-            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
-              5. Disciplinaire Zaken
-            </AccordionTrigger>
-            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
-              <p>5.1 De competitieorganisatie hanteert een systeem van gele en rode kaarten conform KNVB-regels.</p>
-              <p>5.2 Een speler die een rode kaart ontvangt, is automatisch geschorst voor de eerstvolgende wedstrijd.</p>
-              <p>5.3 Na 4 gele kaarten volgt een schorsing van één wedstrijd.</p>
-              <p>5.4 Het tuchtcomité kan aanvullende straffen opleggen bij ernstige overtredingen.</p>
-              <p>5.5 Beroep tegen een beslissing van het tuchtcomité moet binnen 3 dagen na bekendmaking schriftelijk worden ingediend.</p>
-            </AccordionContent>
-          </AccordionItem>
+<AccordionItem value="item-5">
+  <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+    5. Disciplinaire Zaken
+  </AccordionTrigger>
+  <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
+    <p>5.1 Gele kaart: Speler mag verder spelen.</p>
+    <p>5.2 Schorsingen na gele kaarten (boete: €):</p>
+    <ul className="list-disc pl-4 sm:pl-5 mt-1 space-y-1">
+      <li>2 gele kaarten: 1 wedstrijd schorsing</li>
+      <li>4 gele kaarten: 2 opeenvolgende wedstrijden</li>
+      <li>6 gele kaarten: 3 opeenvolgende wedstrijden</li>
+    </ul>
+    <p>5.3 Rode kaart (boete: €): onmiddellijke uitsluiting ZONDER vervanging. Minimum schorsing tot sportcomité beslist.</p>
+    <p>5.4 Het sportcomité kan spelers oproepen. Minnelijke schikking mogelijk. Bij negeren oproeping: minimum 10 wedstrijden schorsing.</p>
+    <p>5.5 Forfait heeft een uitslag van 10-0 (boete: €): bij afwezigheid, minder dan 4 spelers, of weigering zaal verlaten. Verwittigd forfait (1 dag vooraf) heeft lagere boete.</p>
+    <p>5.6 Beroep moet per mail worden ingediend binnen 7 werkdagen na een beslissing.</p>
+  </AccordionContent>
+</AccordionItem>
 
-          <AccordionItem value="item-6">
-            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
-              6. Bekercompetitie
-            </AccordionTrigger>
-            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
-              <p>6.1 De bekercompetitie wordt gespeeld volgens het knock-out systeem.</p>
-              <p>6.2 Bij een gelijkspel worden er direct strafschoppen genomen (geen verlenging).</p>
-              <p>6.3 De finale wordt gespeeld op een neutrale locatie, aangewezen door de organisatie.</p>
-              <p>6.4 Schorsingen in de competitie gelden ook voor bekerwedstrijden en vice versa.</p>
-            </AccordionContent>
-          </AccordionItem>
+<AccordionItem value="item-6">
+  <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+    6. Bekercompetitie
+  </AccordionTrigger>
+  <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
+    <p>6.1 Alle ploegen worden via loting verdeeld en wordt gespeeld volgens knock-out systeem, bij ongelijke verdeling schuiven de finalisten van vorig jaar een ronde verder.</p>
+    <p>6.2 Bij gelijkstand in knockoutfase worden direct strafschoppen genomen (geen verlenging). 5 spelers per ploeg.</p>
+    <p>6.3 Schorsingen in competitie gelden ook voor bekerwedstrijden en vice versa.</p>
+  </AccordionContent>
+</AccordionItem>
 
-          <AccordionItem value="item-7">
-            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
-              7. Wedstrijdverplaatsingen
-            </AccordionTrigger>
-            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
-              <p>7.1 Een verzoek tot wedstrijdverplaatsing moet minimaal 10 dagen van tevoren worden ingediend.</p>
-              <p>7.2 Het verzoek moet worden goedgekeurd door zowel de tegenstander als de competitieleiding.</p>
-              <p>7.3 Verplaatsingen vanwege weersomstandigheden worden door de scheidsrechter of competitieleiding bepaald.</p>
-              <p>7.4 Uitgestelde wedstrijden moeten binnen 3 weken worden ingehaald, tenzij anders bepaald door de competitieleiding.</p>
-            </AccordionContent>
-          </AccordionItem>
+<AccordionItem value="item-7">
+  <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+    7. Wedstrijdverplaatsingen
+  </AccordionTrigger>
+  <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
+    <p>7.1 Wedstrijdformulier beschikbaar via website. ploegen vullen aan ten laatste 5 min voor tijd in.</p>
+    <p>7.2 Identiteitsbewijzen verplicht bij wedstrijdblad. Spelers zonder geldig ID kunnen enkel deelnemen mits toelating scheidsrechter.</p>
+    <p>7.3 Scheidsrechters aangesteld door bestuur. Bij afwezigheid: bezoekende ploeg duidt eerst vervanger aan, anders thuisploeg.</p>
+    <p>7.4 Forfait bij 8 minuten na officieel aanvangsuur met minder dan 4 spelers. Te late spelers kunnen nog deelnemen mits ID aan scheidsrechter.</p>
+    <p>7.5 Bal van thuisploeg wordt gebruikt. Schade aan terrein/scorebord melden aan scheidsrechter.</p>
+  </AccordionContent>
+</AccordionItem>
 
-          <AccordionItem value="item-8">
-            <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
-              8. Slotbepalingen
-            </AccordionTrigger>
-            <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
-              <p>8.1 Dit reglement is vastgesteld door het bestuur van Voetbal Arena op 1 augustus 2023.</p>
-              <p>8.2 Wijzigingen in dit reglement kunnen alleen door het bestuur worden aangebracht.</p>
-              <p>8.3 In alle gevallen waarin dit reglement niet voorziet, beslist het bestuur.</p>
-              <p>8.4 Door deelname aan de competitie accepteren alle clubs en spelers dit reglement.</p>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </section>
+<AccordionItem value="item-8">
+  <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
+    8. Slotbepalingen
+  </AccordionTrigger>
+  <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
+    <p>8.1 Deelnamesom bestaat uit inschrijvingsgeld en eventuele waarborgsom voor nieuwe ploegen. Bedragen jaarlijks door bestuur bepaald.</p>
+    <p>8.2 Niet betaalde bedragen ingehouden van waarborgsom. Laattijdige betaling wordt beboet. Aanvang competitie geldt als betalingsdatum.</p>
+    <p>8.3 Inschrijving tegen door bestuur bepaalde datum. Spelerslijst voor competitiestart indienen met alle vereiste gegevens.</p>
+    <p>8.4 Klachten binnen 7 dagen bij bestuur. Wijzigingen ploegverantwoordelijken direct melden. Naamsveranderingen enkel in tussenseizoen.</p>
+    <p>8.5 Sporthalreglement wordt overgenomen. Laatste wedstrijdploegen plaatsen doelen terug in berging.</p>
+    <p>8.6 Dit reglement treedt in werking bij goedkeuring bestuur en vervangt alle vorige versies. Bestuur niet verantwoordelijk voor schade door onsportief gedrag.</p>
+  </AccordionContent>
+</AccordionItem>
+          
 
       <section className="max-w-3xl mx-auto mt-8 sm:mt-12 px-2 sm:px-0">
         <Card>
@@ -140,8 +153,8 @@ const RegulationsTab: React.FC = () => {
               kunt u contact opnemen met de tuchtcommissie:
             </p>
             <div className="bg-muted/40 p-3 sm:p-4 rounded-lg">
-              <p className="text-sm sm:text-base"><strong>Email:</strong> info@voetbalcommisie.be</p>
-              <p className="text-xs sm:text-sm mt-2 text-muted-foreground">Beroepen moeten per mail worden ingediend binnen 5 werkdagen na een beslissing.</p>
+              <p className="text-sm sm:text-base"><strong>Email:</strong> noppe.nikki@icloud.com</p>
+              <p className="text-xs sm:text-sm mt-2 text-muted-foreground">Beroepen moeten per mail worden ingediend binnen 7 werkdagen na een beslissing.</p>
             </div>
           </CardContent>
         </Card>
