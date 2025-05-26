@@ -1,18 +1,16 @@
 
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { MatchFormData } from "./types";
-import { updateMatchForm, lockMatchForm } from "./matchFormService";
-import { Save } from "lucide-react";
-import { MOCK_TEAM_PLAYERS } from "@/data/mockData";
+import React from "react";
 import { 
   MatchHeader, 
   MatchDataSection, 
   PlayerSelectionSection, 
   RefereeNotesSection,
-  PlayerSelection 
+  MatchFormActions
 } from "./components";
+import { MatchFormData } from "./types";
+import { useMatchFormState } from "./hooks/useMatchFormState";
+import { usePlayerSelectionHandler } from "./hooks/usePlayerSelectionHandler";
+import { useMatchFormSubmission } from "./hooks/useMatchFormSubmission";
 
 interface CompactMatchFormProps {
   match: MatchFormData;
@@ -29,33 +27,34 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   isReferee,
   teamId
 }) => {
-  const { toast } = useToast();
-  const [homeScore, setHomeScore] = useState(match.homeScore?.toString() || "");
-  const [awayScore, setAwayScore] = useState(match.awayScore?.toString() || "");
-  const [selectedReferee, setSelectedReferee] = useState(match.referee || "");
-  const [refereeNotes, setRefereeNotes] = useState(match.refereeNotes || "");
-  const [playerCards, setPlayerCards] = useState<Record<number, string>>({});
-  
-  // Initialize 8 empty player selection slots
-  const [homeTeamSelections, setHomeTeamSelections] = useState<PlayerSelection[]>(
-    Array.from({ length: 8 }, () => ({
-      playerId: null,
-      playerName: "",
-      jerseyNumber: "",
-      isCaptain: false
-    }))
+  const {
+    homeScore,
+    setHomeScore,
+    awayScore,
+    setAwayScore,
+    selectedReferee,
+    setSelectedReferee,
+    refereeNotes,
+    setRefereeNotes,
+    playerCards,
+    setPlayerCards,
+    isSubmitting,
+    setIsSubmitting,
+    homeTeamSelections,
+    setHomeTeamSelections,
+    awayTeamSelections,
+    setAwayTeamSelections
+  } = useMatchFormState(match);
+
+  const { handlePlayerSelection } = usePlayerSelectionHandler(
+    match,
+    homeTeamSelections,
+    setHomeTeamSelections,
+    awayTeamSelections,
+    setAwayTeamSelections
   );
-  
-  const [awayTeamSelections, setAwayTeamSelections] = useState<PlayerSelection[]>(
-    Array.from({ length: 8 }, () => ({
-      playerId: null,
-      playerName: "",
-      jerseyNumber: "",
-      isCaptain: false
-    }))
-  );
-  
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { handleSubmit: submitForm } = useMatchFormSubmission(match, teamId, onComplete);
 
   const canEdit = !match.isLocked || isAdmin;
   const showRefereeFields = isReferee || isAdmin;
@@ -69,188 +68,19 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     }));
   };
 
-  const handlePlayerSelection = (index: number, field: keyof PlayerSelection, value: any, isHomeTeam: boolean) => {
-    const setSelections = isHomeTeam ? setHomeTeamSelections : setAwayTeamSelections;
-    const currentSelections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
-    
-    setSelections(prev => {
-      const updated = [...prev];
-      
-      // Check for duplicate player selection
-      if (field === 'playerId' && value !== null) {
-        const isPlayerAlreadySelected = currentSelections.some((selection, i) => 
-          i !== index && selection.playerId === value
-        );
-        
-        if (isPlayerAlreadySelected) {
-          toast({
-            title: "Speler al geselecteerd",
-            description: "Deze speler is al geselecteerd voor dit team.",
-            variant: "destructive"
-          });
-          return prev;
-        }
-      }
-      
-      // Check for duplicate jersey number
-      if (field === 'jerseyNumber' && value.trim() !== "") {
-        const isJerseyAlreadyUsed = currentSelections.some((selection, i) => 
-          i !== index && selection.jerseyNumber === value && selection.playerId !== null
-        );
-        
-        if (isJerseyAlreadyUsed) {
-          toast({
-            title: "Rugnummer al in gebruik",
-            description: "Dit rugnummer wordt al gebruikt door een andere speler in dit team.",
-            variant: "destructive"
-          });
-          return prev;
-        }
-      }
-      
-      updated[index] = { ...updated[index], [field]: value };
-      
-      // If setting captain to true, unset all other captains in this team
-      if (field === 'isCaptain' && value === true) {
-        updated.forEach((selection, i) => {
-          if (i !== index) {
-            updated[i].isCaptain = false;
-          }
-        });
-      }
-      
-      // If selecting a player, auto-fill the name
-      if (field === 'playerId' && value) {
-        const allPlayers = isHomeTeam ? 
-          (MOCK_TEAM_PLAYERS[match.homeTeamId as keyof typeof MOCK_TEAM_PLAYERS] || []) :
-          (MOCK_TEAM_PLAYERS[match.awayTeamId as keyof typeof MOCK_TEAM_PLAYERS] || []);
-        const selectedPlayer = allPlayers.find((p: any) => p.player_id === value);
-        if (selectedPlayer) {
-          updated[index].playerName = selectedPlayer.player_name;
-        }
-      }
-      
-      // If deselecting a player, clear related fields
-      if (field === 'playerId' && value === null) {
-        updated[index].playerName = "";
-        updated[index].jerseyNumber = "";
-        updated[index].isCaptain = false;
-      }
-      
-      return updated;
-    });
-  };
-
   const handleSubmit = async () => {
-    // Validation logic based on user role
-    if (isTeamManager) {
-      const userSelections = teamId === match.homeTeamId ? homeTeamSelections : awayTeamSelections;
-      const selectedCount = userSelections.filter(p => p.playerId !== null).length;
-      
-      if (selectedCount === 0) {
-        toast({
-          title: "Geen spelers geselecteerd",
-          description: "Selecteer ten minste één speler voor het formulier.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      if (selectedCount > 8) {
-        toast({
-          title: "Te veel spelers",
-          description: "Er kunnen maximaal 8 spelers geselecteerd worden.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const invalidPlayers = userSelections.filter(p => 
-        p.playerId !== null && (!p.jerseyNumber || p.jerseyNumber.trim() === "")
-      );
-      
-      if (invalidPlayers.length > 0) {
-        toast({
-          title: "Rugnummers ontbreken",
-          description: "Alle geselecteerde spelers moeten een rugnummer hebben.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const hasCaptain = userSelections.some(p => p.playerId !== null && p.isCaptain);
-      if (selectedCount > 0 && !hasCaptain) {
-        toast({
-          title: "Kapitein ontbreekt",
-          description: "Selecteer een kapitein voor je team.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // Additional validation for duplicate jersey numbers
-      const jerseyNumbers = userSelections
-        .filter(p => p.playerId !== null && p.jerseyNumber.trim() !== "")
-        .map(p => p.jerseyNumber);
-      const uniqueJerseyNumbers = new Set(jerseyNumbers);
-      
-      if (jerseyNumbers.length !== uniqueJerseyNumbers.size) {
-        toast({
-          title: "Dubbele rugnummers",
-          description: "Elk rugnummer kan maar één keer gebruikt worden.",
-          variant: "destructive"
-        });
-        return;
-      }
-    }
-
-    if (canEditMatchData && (!homeScore || !awayScore)) {
-      toast({
-        title: "Fout",
-        description: "Vul beide scores in",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const updatedMatch: MatchFormData = {
-        ...match,
-        homeScore: canEditMatchData ? parseInt(homeScore) : match.homeScore,
-        awayScore: canEditMatchData ? parseInt(awayScore) : match.awayScore,
-        referee: selectedReferee,
-        refereeNotes,
-        isCompleted: canEditMatchData ? true : match.isCompleted,
-        playersSubmitted: isTeamManager ? true : match.playersSubmitted
-      };
-
-      await updateMatchForm(updatedMatch);
-      
-      if (isReferee && !match.isLocked) {
-        await lockMatchForm(match.matchId);
-        updatedMatch.isLocked = true;
-      }
-      
-      toast({
-        title: isReferee ? "Formulier vergrendeld" : "Opgeslagen",
-        description: isReferee 
-          ? "Het wedstrijdformulier is definitief afgesloten."
-          : isTeamManager 
-            ? "De spelersselectie is opgeslagen."
-            : "De wijzigingen zijn opgeslagen."
-      });
-      
-      onComplete();
-    } catch (error) {
-      toast({
-        title: "Fout",
-        description: "Er is een fout opgetreden bij het opslaan.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    await submitForm(
+      homeScore,
+      awayScore,
+      selectedReferee,
+      refereeNotes,
+      homeTeamSelections,
+      awayTeamSelections,
+      setIsSubmitting,
+      isTeamManager,
+      canEditMatchData,
+      isReferee
+    );
   };
 
   return (
@@ -290,17 +120,13 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         />
       )}
 
-      <div className="flex justify-center">
-        <Button
-          onClick={handleSubmit}
-          disabled={isSubmitting || !canEdit}
-          className="flex items-center gap-2 px-8"
-        >
-          <Save className="h-4 w-4" />
-          {isReferee ? "Bevestigen & Vergrendelen" : 
-           isTeamManager ? "Spelers opslaan" : "Opslaan"}
-        </Button>
-      </div>
+      <MatchFormActions
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+        canEdit={canEdit}
+        isReferee={isReferee}
+        isTeamManager={isTeamManager}
+      />
     </div>
   );
 };
