@@ -89,7 +89,7 @@ const RegulationsTab: React.FC = () => {
             </AccordionTrigger>
             <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
               <p>5.1 Gele kaart (boete: €): Speler mag verder spelen.</p>
-              <p>5.2 Rode kaart (boete: €): onmiddellijke uitsluiting ZONDER vervanging. </p>
+              <p>5.2 Rode kaart (boete: €): onmiddellijke uitsluiting ZONDER vervanging.</p>
               <p>5.3 Schorsingen na gele kaarten:</p>
               <ul className="list-disc pl-4 sm:pl-5 mt-1 space-y-1">
                 <li>2 gele kaarten: 1 wedstrijd schorsing</li>
@@ -98,8 +98,9 @@ const RegulationsTab: React.FC = () => {
               </ul>
               <p>5.4 Schorsingen na rode kaart:</p>
               <ul className="list-disc pl-4 sm:pl-5 mt-1 space-y-1">
-                  <li>Minimum schorsing: 1 wedstrijden schorsing</li>
-                  <li>Minnelijke schikking mogelijk,als de sportcomité dit beslist.</li>
+                <li>Minimum schorsing: 1 wedstrijden schorsing</li>
+                <li>Minnelijke schikking mogelijk, als de sportcomité dit beslist.</li>
+              </ul>
               <p>5.5 Het sportcomité kan spelers oproepen. Bij negeren oproeping: minimum 10 wedstrijden schorsing.</p>
               <p>5.6 Forfait heeft een uitslag van 10-0 (boete: €): bij afwezigheid, minder dan 4 spelers, of weigering zaal verlaten. Verwittigd forfait (1 dag vooraf) heeft lagere boete.</p>
               <p>5.7 Beroep moet per mail worden ingediend binnen 7 werkdagen na een beslissing.</p>
