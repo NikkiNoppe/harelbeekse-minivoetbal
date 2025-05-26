@@ -48,9 +48,8 @@ const RegulationsTab: React.FC = () => {
                 <li>Het totaal aantal gemaakte doelpunten</li>
                 <li>Testmatch (indien nodig)</li>
               </ul>
-              <p>2.3 De laatste plaats eerste reeks daalt naar tweede reeks. De eerste plaats tweede reeks stijgt naar eerste reeks.</p>
-              <p>2.4 Stoppende ploegen: Alle wedstrijden van stoppende ploegen worden op forfaitscores gezet.</p>
-              <p>2.5 De fairplayranking wordt per reeks bijgehouden op basis van minst behaalde kaarten.</p>
+              <p>2.3 Stoppende ploegen: Alle resterende wedstrijden van stoppende ploegen worden op forfaitscores gezet.</p>
+              <p>2.4 De fairplayranking wordt per reeks bijgehouden op basis van minst behaalde kaarten.</p>
             </AccordionContent>
           </AccordionItem>
 
@@ -89,17 +88,21 @@ const RegulationsTab: React.FC = () => {
               5. Disciplinaire Zaken
             </AccordionTrigger>
             <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
-              <p>5.1 Gele kaart: Speler mag verder spelen.</p>
-              <p>5.2 Schorsingen na gele kaarten (boete: €):</p>
+              <p>5.1 Gele kaart (boete: €): Speler mag verder spelen.</p>
+              <p>5.2 Rode kaart (boete: €): onmiddellijke uitsluiting ZONDER vervanging. </p>
+              <p>5.3 Schorsingen na gele kaarten:</p>
               <ul className="list-disc pl-4 sm:pl-5 mt-1 space-y-1">
                 <li>2 gele kaarten: 1 wedstrijd schorsing</li>
                 <li>4 gele kaarten: 2 opeenvolgende wedstrijden</li>
                 <li>6 gele kaarten: 3 opeenvolgende wedstrijden</li>
               </ul>
-              <p>5.3 Rode kaart (boete: €): onmiddellijke uitsluiting ZONDER vervanging. Minimum schorsing tot sportcomité beslist.</p>
-              <p>5.4 Het sportcomité kan spelers oproepen. Minnelijke schikking mogelijk. Bij negeren oproeping: minimum 10 wedstrijden schorsing.</p>
-              <p>5.5 Forfait heeft een uitslag van 10-0 (boete: €): bij afwezigheid, minder dan 4 spelers, of weigering zaal verlaten. Verwittigd forfait (1 dag vooraf) heeft lagere boete.</p>
-              <p>5.6 Beroep moet per mail worden ingediend binnen 7 werkdagen na een beslissing.</p>
+              <p>5.4 Schorsingen na rode kaart:</p>
+              <ul className="list-disc pl-4 sm:pl-5 mt-1 space-y-1">
+                  <li>Minimum schorsing: 1 wedstrijden schorsing</li>
+                  <li>Minnelijke schikking mogelijk,als de sportcomité dit beslist.</li>
+              <p>5.5 Het sportcomité kan spelers oproepen. Bij negeren oproeping: minimum 10 wedstrijden schorsing.</p>
+              <p>5.6 Forfait heeft een uitslag van 10-0 (boete: €): bij afwezigheid, minder dan 4 spelers, of weigering zaal verlaten. Verwittigd forfait (1 dag vooraf) heeft lagere boete.</p>
+              <p>5.7 Beroep moet per mail worden ingediend binnen 7 werkdagen na een beslissing.</p>
             </AccordionContent>
           </AccordionItem>
 
@@ -116,7 +119,7 @@ const RegulationsTab: React.FC = () => {
 
           <AccordionItem value="item-7">
             <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
-              7. Wedstrijdverplaatsingen
+              7. Wedstrijdformulieren
             </AccordionTrigger>
             <AccordionContent className="space-y-2 sm:space-y-3 text-sm sm:text-base text-muted-foreground px-3 sm:px-4">
               <p>7.1 Wedstrijdformulier beschikbaar via website. ploegen vullen aan ten laatste 5 min voor tijd in.</p>
