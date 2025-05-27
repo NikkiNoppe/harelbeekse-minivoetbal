@@ -114,7 +114,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     <>
       <Card className="w-full max-w-md mx-auto shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Voetbal Arena Login</CardTitle>
+          <CardTitle className="text-2xl text-center">Login</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
