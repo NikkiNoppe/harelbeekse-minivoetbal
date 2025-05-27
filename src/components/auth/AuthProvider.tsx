@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User } from "@/types/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthContextType {
   user: User | null;
@@ -23,49 +24,58 @@ export const useAuth = () => {
   return context;
 };
 
-// Default mock users
-const DEFAULT_USERS: User[] = [
-  { id: 1, username: "admin", password: "admin123", role: "admin" },
-  { id: 2, username: "team1", password: "team123", role: "player_manager", teamId: 1 },
-  { id: 3, username: "team2", password: "team123", role: "player_manager", teamId: 2 },
-  { id: 4, username: "referee", password: "referee123", role: "referee" },
-];
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [allUsers, setAllUsers] = useState<User[]>(DEFAULT_USERS);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load users from database
+  const loadUsers = async () => {
+    try {
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('user_id, username, email, role')
+        .order('username');
+
+      if (error) {
+        console.error('Error loading users:', error);
+        return;
+      }
+
+      // Map database users to our User type
+      const mappedUsers: User[] = users.map(dbUser => ({
+        id: dbUser.user_id,
+        username: dbUser.username,
+        password: '', // Don't expose password
+        role: dbUser.role,
+        email: dbUser.email
+      }));
+
+      setAllUsers(mappedUsers);
+    } catch (error) {
+      console.error('Failed to load users from database:', error);
+    }
+  };
 
   // Check for existing user in localStorage on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser");
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error("Failed to parse stored user", error);
-        localStorage.removeItem("currentUser");
+    const initializeAuth = async () => {
+      const storedUser = localStorage.getItem("currentUser");
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+        } catch (error) {
+          console.error("Failed to parse stored user", error);
+          localStorage.removeItem("currentUser");
+        }
       }
-    }
 
-    // Load all users from localStorage if available
-    const storedUsers = localStorage.getItem("allUsers");
-    if (storedUsers) {
-      try {
-        const parsedUsers = JSON.parse(storedUsers);
-        setAllUsers(parsedUsers);
-      } catch (error) {
-        console.error("Failed to parse stored users", error);
-        // Fallback to default users
-        localStorage.setItem("allUsers", JSON.stringify(DEFAULT_USERS));
-      }
-    } else {
-      // Store default users if none exist
-      localStorage.setItem("allUsers", JSON.stringify(DEFAULT_USERS));
-    }
+      await loadUsers();
+      setIsLoaded(true);
+    };
 
-    setIsLoaded(true);
+    initializeAuth();
   }, []);
 
   const login = (userData: User) => {
@@ -78,34 +88,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem("currentUser");
   };
 
-  const updateUser = (updatedUser: User) => {
-    const updatedUsers = allUsers.map(u => 
-      u.id === updatedUser.id ? updatedUser : u
-    );
-    setAllUsers(updatedUsers);
-    localStorage.setItem("allUsers", JSON.stringify(updatedUsers));
-    
-    // Update current user if it's the same
-    if (user && user.id === updatedUser.id) {
-      setUser(updatedUser);
-      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+  const updateUser = async (updatedUser: User) => {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          username: updatedUser.username,
+          email: updatedUser.email,
+          role: updatedUser.role
+        })
+        .eq('user_id', updatedUser.id);
+
+      if (error) {
+        console.error('Error updating user:', error);
+        return;
+      }
+
+      // Reload users from database
+      await loadUsers();
+      
+      // Update current user if it's the same
+      if (user && user.id === updatedUser.id) {
+        setUser(updatedUser);
+        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+      }
+    } catch (error) {
+      console.error('Failed to update user:', error);
     }
   };
   
-  const addUser = (newUser: User) => {
-    const updatedUsers = [...allUsers, newUser];
-    setAllUsers(updatedUsers);
-    localStorage.setItem("allUsers", JSON.stringify(updatedUsers));
+  const addUser = async (newUser: User) => {
+    try {
+      const { error } = await supabase
+        .rpc('create_user_with_hashed_password', {
+          username_param: newUser.username,
+          email_param: newUser.email || null,
+          password_param: newUser.password,
+          role_param: newUser.role
+        });
+
+      if (error) {
+        console.error('Error adding user:', error);
+        return;
+      }
+
+      // Reload users from database
+      await loadUsers();
+    } catch (error) {
+      console.error('Failed to add user:', error);
+    }
   };
   
-  const removeUser = (userId: number) => {
-    const updatedUsers = allUsers.filter(u => u.id !== userId);
-    setAllUsers(updatedUsers);
-    localStorage.setItem("allUsers", JSON.stringify(updatedUsers));
-    
-    // Logout if current user is removed
-    if (user && user.id === userId) {
-      logout();
+  const removeUser = async (userId: number) => {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error removing user:', error);
+        return;
+      }
+
+      // Reload users from database
+      await loadUsers();
+      
+      // Logout if current user is removed
+      if (user && user.id === userId) {
+        logout();
+      }
+    } catch (error) {
+      console.error('Failed to remove user:', error);
     }
   };
 

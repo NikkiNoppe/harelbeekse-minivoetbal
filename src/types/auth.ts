@@ -7,6 +7,7 @@ export interface User {
   password: string;
   role: UserRole;
   teamId?: number;
+  email?: string;
 }
 
 export interface TeamData {

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -15,14 +15,14 @@ import {
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
 import { Shield, User as UserIcon } from "lucide-react";
 import { User } from "@/types/auth";
+import { supabase } from "@/integrations/supabase/client";
+import ForgotPasswordDialog from "./ForgotPasswordDialog";
 
-// Define the form schema with Zod for validation
 const formSchema = z.object({
-  username: z.string().min(3, {
-    message: "Gebruikersnaam moet minimaal 3 karakters bevatten",
+  usernameOrEmail: z.string().min(3, {
+    message: "Gebruikersnaam of email moet minimaal 3 karakters bevatten",
   }),
   password: z.string().min(6, {
     message: "Wachtwoord moet minimaal 6 karakters bevatten",
@@ -31,14 +31,6 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-// Mock users for demonstration - ensure role values match the UserRole type
-const MOCK_USERS: User[] = [
-  { id: 1, username: "admin", password: "admin123", role: "admin" },
-  { id: 2, username: "team1", password: "team123", role: "player_manager", teamId: 1 },
-  { id: 3, username: "team2", password: "team123", role: "player_manager", teamId: 2 },
-  { id: 4, username: "referee", password: "referee123", role: "referee" },
-];
-
 interface LoginFormProps {
   onLoginSuccess: (user: User) => void;
 }
@@ -46,11 +38,12 @@ interface LoginFormProps {
 const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
+      usernameOrEmail: "",
       password: "",
     },
   });
@@ -58,15 +51,27 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
     
-    // Simulate API call with timeout
-    setTimeout(() => {
-      const user = MOCK_USERS.find(
-        (u) => u.username === data.username && u.password === data.password
-      );
+    try {
+      // Use the database function to verify user with hashed password
+      const { data: result, error } = await supabase
+        .rpc('verify_user_password', {
+          input_username_or_email: data.usernameOrEmail,
+          input_password: data.password
+        });
 
-      setIsLoading(false);
+      if (error) {
+        console.error('Login error:', error);
+        toast({
+          title: "Login mislukt",
+          description: "Er is een fout opgetreden bij het inloggen",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      if (user) {
+      if (result && result.length > 0) {
+        const user = result[0];
+        
         toast({
           title: "Ingelogd!",
           description: `Welkom ${user.username}`,
@@ -80,76 +85,101 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       } else {
         toast({
           title: "Login mislukt",
-          description: "Ongeldige gebruikersnaam of wachtwoord",
+          description: "Ongeldige gebruikersnaam/email of wachtwoord",
           variant: "destructive",
         });
       }
-    }, 1000);
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: "Login mislukt",
+        description: "Er is een fout opgetreden bij het inloggen",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-2xl text-center">Voetbal Arena Login</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Gebruikersnaam</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Voer gebruikersnaam in" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Wachtwoord</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="Voer wachtwoord in"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading}
-            >
-              {isLoading ? "Inloggen..." : "Inloggen"}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-      <CardFooter className="flex flex-col space-y-2 text-sm text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <UserIcon size={14} />
-          <span>Admin: admin / admin123</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Shield size={14} />
-          <span>Team: team1 / team123</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Shield size={14} />
-          <span>Scheidsrechter: referee / referee123</span>
-        </div>
-      </CardFooter>
-    </Card>
+    <>
+      <Card className="w-full max-w-md mx-auto shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">Voetbal Arena Login</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="usernameOrEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gebruikersnaam of Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Voer gebruikersnaam of email in" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Wachtwoord</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Voer wachtwoord in"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading}
+              >
+                {isLoading ? "Inloggen..." : "Inloggen"}
+              </Button>
+              
+              <Button
+                type="button"
+                variant="link"
+                className="w-full text-sm text-muted-foreground"
+                onClick={() => setForgotPasswordOpen(true)}
+              >
+                Wachtwoord vergeten?
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <UserIcon size={14} />
+            <span>Admin: admin / admin123</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Shield size={14} />
+            <span>Team: team1 / team123</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Shield size={14} />
+            <span>Scheidsrechter: referee / referee123</span>
+          </div>
+        </CardFooter>
+      </Card>
+
+      <ForgotPasswordDialog 
+        open={forgotPasswordOpen} 
+        onOpenChange={setForgotPasswordOpen} 
+      />
+    </>
   );
 };
 

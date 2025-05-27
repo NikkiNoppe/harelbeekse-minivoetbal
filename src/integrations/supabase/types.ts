@@ -525,6 +525,7 @@ export type Database = {
       users: {
         Row: {
           created_at: string | null
+          email: string | null
           password: string
           role: Database["public"]["Enums"]["user_role"]
           user_id: number
@@ -532,6 +533,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          email?: string | null
           password: string
           role: Database["public"]["Enums"]["user_role"]
           user_id?: number
@@ -539,6 +541,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          email?: string | null
           password?: string
           role?: Database["public"]["Enums"]["user_role"]
           user_id?: number
@@ -551,7 +554,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_user_with_hashed_password: {
+        Args: {
+          username_param: string
+          email_param: string
+          password_param: string
+          role_param?: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: {
+          created_at: string | null
+          email: string | null
+          password: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: number
+          username: string
+        }
+      }
+      update_user_password: {
+        Args: { user_id_param: number; new_password: string }
+        Returns: boolean
+      }
+      verify_user_password: {
+        Args: { input_username_or_email: string; input_password: string }
+        Returns: {
+          user_record: Database["public"]["Tables"]["users"]["Row"]
+        }[]
+      }
     }
     Enums: {
       card_type: "yellow" | "red"
