@@ -17,12 +17,13 @@ export const useUserDataService = () => {
       
       if (teamsError) throw teamsError;
       
-      // Fetch users with their teams
+      // Fetch users with their teams (including email)
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select(`
           user_id,
           username,
+          email,
           role
         `);
       
@@ -68,6 +69,7 @@ export const useUserDataService = () => {
         return {
           user_id: user.user_id,
           username: user.username,
+          email: user.email,
           role: user.role,
           team_id: mainTeam ? mainTeam.team_id : null,
           team_name: mainTeam ? mainTeam.team_name : null,

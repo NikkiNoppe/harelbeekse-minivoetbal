@@ -2,6 +2,7 @@
 export interface DbUser {
   user_id: number;
   username: string;
+  email?: string;
   role: string;
   team_id?: number | null;
   team_name?: string | null;
@@ -16,6 +17,7 @@ export interface Team {
 export interface UserWithTeam {
   user_id: number;
   username: string;
+  email?: string;
   role: string;
   teams: Team[] | null;
 }
