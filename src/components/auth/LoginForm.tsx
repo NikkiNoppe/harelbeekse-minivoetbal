@@ -70,7 +70,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       }
 
       if (result && result.length > 0) {
-        const user = result[0];
+        const dbUser = result[0].user_record;
+        
+        // Map database user to User type
+        const user: User = {
+          id: dbUser.user_id,
+          username: dbUser.username,
+          password: dbUser.password,
+          role: dbUser.role,
+          email: dbUser.email
+        };
         
         toast({
           title: "Ingelogd!",
