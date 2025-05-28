@@ -7,6 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CalendarIcon, Save, RefreshCw, Clock, MapPin } from "lucide-react";
 import { GeneratedMatch } from "./types";
 import { predefinedFormats } from "./competitionFormats";
+import { format } from "date-fns";
+import { nl } from "date-fns/locale";
 
 interface PreviewTabProps {
   generatedMatches: GeneratedMatch[];
@@ -82,6 +84,88 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
         </CardContent>
       </Card>
 
+      {/* Complete Match Overview Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Compleet Wedstrijdoverzicht</CardTitle>
+          <CardDescription>
+            Alle wedstrijden met volledige details in chronologische volgorde
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-16">Speeldag</TableHead>
+                  <TableHead className="w-20">Code</TableHead>
+                  <TableHead className="w-32">Datum</TableHead>
+                  <TableHead className="w-20">Tijd</TableHead>
+                  <TableHead>Thuisteam</TableHead>
+                  <TableHead className="text-center w-16">VS</TableHead>
+                  <TableHead>Uitteam</TableHead>
+                  <TableHead className="w-48">Locatie</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {generatedMatches.map((match, index) => (
+                  <TableRow key={index} className="hover:bg-muted/50">
+                    <TableCell>
+                      <Badge variant="secondary" className="text-xs">
+                        {match.matchday}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono text-xs">
+                        {match.unique_code || `${String(match.matchday).padStart(2, '0')}${String((index % 9) + 1).padStart(2, '0')}`}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {match.match_date && (
+                        <div className="text-sm">
+                          {format(new Date(match.match_date), "dd/MM/yyyy", { locale: nl })}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {match.match_time && (
+                        <div className="flex items-center gap-1 text-sm">
+                          <Clock className="h-3 w-3" />
+                          {match.match_time}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{match.home_team_name}</span>
+                        <Badge variant="secondary" className="text-xs">Thuis</Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center font-bold">
+                      <span className="text-muted-foreground">-</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{match.away_team_name}</span>
+                        <Badge variant="outline" className="text-xs">Uit</Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {match.location && (
+                        <div className="flex items-center gap-1 text-sm">
+                          <MapPin className="h-3 w-3" />
+                          {match.location}
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Matches by Matchday */}
       {Object.entries(matchesByMatchday).map(([matchday, matches]) => (
         <Card key={matchday}>
@@ -95,12 +179,7 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
             {matches[0]?.match_date && (
               <CardDescription className="flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4" />
-                {new Date(matches[0].match_date).toLocaleDateString('nl-NL', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
-                })}
+                {format(new Date(matches[0].match_date), "EEEE d MMMM yyyy", { locale: nl })}
               </CardDescription>
             )}
           </CardHeader>

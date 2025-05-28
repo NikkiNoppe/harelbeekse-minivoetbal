@@ -24,11 +24,24 @@ export const saveCompetitionToDatabase = async (
   const format = findFormatById(selectedFormat);
   
   try {
-    // Get the selected dates objects
-    const selectedDatesObjects = availableDates?.filter(d => selectedDates.includes(d.date_id)) || [];
-    const startDate = selectedDatesObjects.length > 0 ? selectedDatesObjects[0].available_date : new Date().toISOString().split('T')[0];
-    const endDate = selectedDatesObjects.length > 0 ? 
-      selectedDatesObjects[selectedDatesObjects.length - 1].available_date : 
+    // Get the selected dates objects with venue information
+    const { data: selectedDatesWithVenues } = await supabase
+      .from('available_dates')
+      .select(`
+        *,
+        venues (
+          venue_id,
+          name
+        )
+      `)
+      .in('date_id', selectedDates)
+      .order('available_date');
+    
+    const startDate = selectedDatesWithVenues?.length > 0 ? 
+      selectedDatesWithVenues[0].available_date : 
+      new Date().toISOString().split('T')[0];
+    const endDate = selectedDatesWithVenues?.length > 0 ? 
+      selectedDatesWithVenues[selectedDatesWithVenues.length - 1].available_date : 
       new Date().toISOString().split('T')[0];
     
     // 1. Create a new competition
@@ -49,10 +62,11 @@ export const saveCompetitionToDatabase = async (
     const competitionId = compData[0].competition_id;
 
     // 2. Create matchdays for each selected date
-    const matchdaysToCreate = selectedDatesObjects.map((date, index) => ({
+    const uniqueDates = [...new Set(selectedDatesWithVenues?.map(d => d.available_date))];
+    const matchdaysToCreate = uniqueDates.map((date, index) => ({
       competition_id: competitionId,
       name: `Speeldag ${index + 1}`,
-      matchday_date: date.available_date,
+      matchday_date: date,
       is_playoff: false
     }));
 

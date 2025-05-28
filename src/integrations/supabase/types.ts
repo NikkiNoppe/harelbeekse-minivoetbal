@@ -13,22 +13,39 @@ export type Database = {
         Row: {
           available_date: string
           date_id: number
+          end_time: string | null
           is_available: boolean | null
           is_cup_date: boolean | null
+          start_time: string | null
+          venue_id: number | null
         }
         Insert: {
           available_date: string
           date_id?: number
+          end_time?: string | null
           is_available?: boolean | null
           is_cup_date?: boolean | null
+          start_time?: string | null
+          venue_id?: number | null
         }
         Update: {
           available_date?: string
           date_id?: number
+          end_time?: string | null
           is_available?: boolean | null
           is_cup_date?: boolean | null
+          start_time?: string | null
+          venue_id?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "available_dates_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["venue_id"]
+          },
+        ]
       }
       blogs: {
         Row: {
@@ -189,6 +206,30 @@ export type Database = {
           competition_id?: number
           end_date?: string
           is_playoff?: boolean | null
+          name?: string
+          start_date?: string
+        }
+        Relationships: []
+      }
+      holiday_periods: {
+        Row: {
+          created_at: string | null
+          end_date: string
+          holiday_id: number
+          name: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          end_date: string
+          holiday_id?: number
+          name: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string
+          holiday_id?: number
           name?: string
           start_date?: string
         }
@@ -546,6 +587,62 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           user_id?: number
           username?: string
+        }
+        Relationships: []
+      }
+      venue_timeslots: {
+        Row: {
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          start_time: string
+          timeslot_id: number
+          venue_id: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          start_time: string
+          timeslot_id?: number
+          venue_id?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          start_time?: string
+          timeslot_id?: number
+          venue_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_timeslots_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["venue_id"]
+          },
+        ]
+      }
+      venues: {
+        Row: {
+          address: string
+          created_at: string | null
+          name: string
+          venue_id: number
+        }
+        Insert: {
+          address: string
+          created_at?: string | null
+          name: string
+          venue_id?: number
+        }
+        Update: {
+          address?: string
+          created_at?: string | null
+          name?: string
+          venue_id?: number
         }
         Relationships: []
       }

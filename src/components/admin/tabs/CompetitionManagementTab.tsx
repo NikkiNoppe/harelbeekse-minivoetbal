@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,22 +24,29 @@ import PreviewTab from "../competition-generator/PreviewTab";
 import { useCompetitionGenerator } from "../competition-generator/useCompetitionGenerator";
 
 interface Venue {
-  id: string;
+  venue_id?: number;
   name: string;
   address: string;
   timeslots: Timeslot[];
 }
 
 interface Timeslot {
-  day: 'monday' | 'tuesday';
-  startTime: string;
-  endTime: string;
+  timeslot_id?: number;
+  day_of_week: number; // 1=Monday, 2=Tuesday
+  start_time: string;
+  end_time: string;
 }
 
 interface HolidayPeriod {
-  startDate: string;
-  endDate: string;
-  description: string;
+  holiday_id?: number;
+  name: string;
+  start_date: string;
+  end_date: string;
+}
+
+interface Team {
+  team_id: number;
+  team_name: string;
 }
 
 const CompetitionManagementTab: React.FC = () => {
@@ -51,47 +58,19 @@ const CompetitionManagementTab: React.FC = () => {
   const [showVenueDialog, setShowVenueDialog] = useState(false);
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
   const [newVenue, setNewVenue] = useState<Venue>({
-    id: "",
     name: "",
     address: "",
     timeslots: []
   });
   
-  const [venues, setVenues] = useState<Venue[]>([
-    {
-      id: "harelbeke",
-      name: "Harelbeke - Dageraad",
-      address: "Dageraadstraat 1, 8530 Harelbeke",
-      timeslots: [
-        { day: 'monday', startTime: '18:30', endTime: '19:30' },
-        { day: 'monday', startTime: '19:30', endTime: '20:30' },
-        { day: 'monday', startTime: '20:30', endTime: '21:30' },
-        { day: 'tuesday', startTime: '18:30', endTime: '19:30' },
-        { day: 'tuesday', startTime: '19:30', endTime: '20:30' }
-      ]
-    },
-    {
-      id: "bavikhove",
-      name: "Bavikhove - Vlasschaard",
-      address: "Vlietestraat 25, 8531 Bavikhove",
-      timeslots: [
-        { day: 'monday', startTime: '18:30', endTime: '19:30' },
-        { day: 'monday', startTime: '19:30', endTime: '20:30' },
-        { day: 'monday', startTime: '20:30', endTime: '21:30' },
-        { day: 'tuesday', startTime: '18:30', endTime: '19:30' }
-      ]
-    }
-  ]);
-  
-  const [holidayPeriods, setHolidayPeriods] = useState<HolidayPeriod[]>([
-    { startDate: "2025-12-23", endDate: "2026-01-06", description: "Kerstvakantie" },
-    { startDate: "2026-04-06", endDate: "2026-04-19", description: "Paasvakantie" }
-  ]);
-
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [holidayPeriods, setHolidayPeriods] = useState<HolidayPeriod[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [newHoliday, setNewHoliday] = useState<HolidayPeriod>({
-    startDate: "",
-    endDate: "",
-    description: ""
+    name: "",
+    start_date: "",
+    end_date: ""
   });
 
   const {
@@ -109,9 +88,84 @@ const CompetitionManagementTab: React.FC = () => {
     setActiveTab
   } = useCompetitionGenerator();
 
+  // Load data from Supabase
+  useEffect(() => {
+    loadVenues();
+    loadHolidayPeriods();
+    loadTeams();
+  }, []);
+
+  const loadVenues = async () => {
+    try {
+      const { data: venuesData, error: venuesError } = await supabase
+        .from('venues')
+        .select('*');
+      
+      if (venuesError) throw venuesError;
+
+      const { data: timeslotsData, error: timeslotsError } = await supabase
+        .from('venue_timeslots')
+        .select('*');
+      
+      if (timeslotsError) throw timeslotsError;
+
+      const venuesWithTimeslots = venuesData?.map(venue => ({
+        ...venue,
+        timeslots: timeslotsData?.filter(ts => ts.venue_id === venue.venue_id) || []
+      })) || [];
+
+      setVenues(venuesWithTimeslots);
+    } catch (error: any) {
+      console.error("Error loading venues:", error);
+      toast({
+        title: "Fout bij laden",
+        description: "Kon locaties niet laden",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const loadHolidayPeriods = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('holiday_periods')
+        .select('*')
+        .order('start_date');
+      
+      if (error) throw error;
+      setHolidayPeriods(data || []);
+    } catch (error: any) {
+      console.error("Error loading holiday periods:", error);
+      toast({
+        title: "Fout bij laden",
+        description: "Kon vakantieperiodes niet laden",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const loadTeams = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('team_id, team_name')
+        .order('team_name');
+      
+      if (error) throw error;
+      setTeams(data || []);
+    } catch (error: any) {
+      console.error("Error loading teams:", error);
+      toast({
+        title: "Fout bij laden",
+        description: "Kon teams niet laden",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Add a new holiday period
-  const addHolidayPeriod = () => {
-    if (!newHoliday.startDate || !newHoliday.endDate || !newHoliday.description) {
+  const addHolidayPeriod = async () => {
+    if (!newHoliday.start_date || !newHoliday.end_date || !newHoliday.name) {
       toast({
         title: "Onvolledige gegevens",
         description: "Vul alle velden in voor de vakantieperiode",
@@ -120,15 +174,57 @@ const CompetitionManagementTab: React.FC = () => {
       return;
     }
 
-    setHolidayPeriods([...holidayPeriods, { ...newHoliday }]);
-    setNewHoliday({ startDate: "", endDate: "", description: "" });
+    try {
+      const { error } = await supabase
+        .from('holiday_periods')
+        .insert([{
+          name: newHoliday.name,
+          start_date: newHoliday.start_date,
+          end_date: newHoliday.end_date
+        }]);
+
+      if (error) throw error;
+
+      setNewHoliday({ name: "", start_date: "", end_date: "" });
+      loadHolidayPeriods();
+      
+      toast({
+        title: "Vakantieperiode toegevoegd",
+        description: `${newHoliday.name} is succesvol toegevoegd`
+      });
+    } catch (error: any) {
+      console.error("Error adding holiday period:", error);
+      toast({
+        title: "Fout bij toevoegen",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   // Remove a holiday period
-  const removeHolidayPeriod = (index: number) => {
-    const updatedPeriods = [...holidayPeriods];
-    updatedPeriods.splice(index, 1);
-    setHolidayPeriods(updatedPeriods);
+  const removeHolidayPeriod = async (holidayId: number) => {
+    try {
+      const { error } = await supabase
+        .from('holiday_periods')
+        .delete()
+        .eq('holiday_id', holidayId);
+
+      if (error) throw error;
+
+      loadHolidayPeriods();
+      toast({
+        title: "Vakantieperiode verwijderd",
+        description: "De vakantieperiode is succesvol verwijderd"
+      });
+    } catch (error: any) {
+      console.error("Error removing holiday period:", error);
+      toast({
+        title: "Fout bij verwijderen",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   // Edit venue
@@ -142,7 +238,6 @@ const CompetitionManagementTab: React.FC = () => {
   const addNewVenue = () => {
     setEditingVenue(null);
     setNewVenue({
-      id: "",
       name: "",
       address: "",
       timeslots: []
@@ -151,7 +246,7 @@ const CompetitionManagementTab: React.FC = () => {
   };
 
   // Save venue changes
-  const saveVenue = () => {
+  const saveVenue = async () => {
     if (!newVenue.name || !newVenue.address) {
       toast({
         title: "Onvolledige gegevens",
@@ -161,29 +256,111 @@ const CompetitionManagementTab: React.FC = () => {
       return;
     }
 
-    if (editingVenue) {
-      // Update existing venue
-      setVenues(venues.map(v => v.id === editingVenue.id ? newVenue : v));
-    } else {
-      // Add new venue
-      const id = newVenue.name.toLowerCase().replace(/\s+/g, '-');
-      setVenues([...venues, { ...newVenue, id }]);
-    }
+    try {
+      let venueId = newVenue.venue_id;
 
-    setShowVenueDialog(false);
-    setEditingVenue(null);
+      if (editingVenue && venueId) {
+        // Update existing venue
+        const { error: venueError } = await supabase
+          .from('venues')
+          .update({
+            name: newVenue.name,
+            address: newVenue.address
+          })
+          .eq('venue_id', venueId);
+
+        if (venueError) throw venueError;
+
+        // Delete existing timeslots
+        const { error: deleteError } = await supabase
+          .from('venue_timeslots')
+          .delete()
+          .eq('venue_id', venueId);
+
+        if (deleteError) throw deleteError;
+      } else {
+        // Create new venue
+        const { data: venueData, error: venueError } = await supabase
+          .from('venues')
+          .insert([{
+            name: newVenue.name,
+            address: newVenue.address
+          }])
+          .select()
+          .single();
+
+        if (venueError) throw venueError;
+        venueId = venueData.venue_id;
+      }
+
+      // Insert timeslots
+      if (newVenue.timeslots.length > 0) {
+        const timeslotsToInsert = newVenue.timeslots.map(slot => ({
+          venue_id: venueId,
+          day_of_week: slot.day_of_week,
+          start_time: slot.start_time,
+          end_time: slot.end_time
+        }));
+
+        const { error: timeslotError } = await supabase
+          .from('venue_timeslots')
+          .insert(timeslotsToInsert);
+
+        if (timeslotError) throw timeslotError;
+      }
+
+      setShowVenueDialog(false);
+      setEditingVenue(null);
+      loadVenues();
+
+      toast({
+        title: editingVenue ? "Locatie bijgewerkt" : "Locatie toegevoegd",
+        description: `${newVenue.name} is succesvol ${editingVenue ? 'bijgewerkt' : 'toegevoegd'}`
+      });
+    } catch (error: any) {
+      console.error("Error saving venue:", error);
+      toast({
+        title: "Fout bij opslaan",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   // Remove venue
-  const removeVenue = (venueId: string) => {
-    setVenues(venues.filter(v => v.id !== venueId));
+  const removeVenue = async (venueId: number) => {
+    try {
+      const { error } = await supabase
+        .from('venues')
+        .delete()
+        .eq('venue_id', venueId);
+
+      if (error) throw error;
+
+      loadVenues();
+      toast({
+        title: "Locatie verwijderd",
+        description: "De locatie is succesvol verwijderd"
+      });
+    } catch (error: any) {
+      console.error("Error removing venue:", error);
+      toast({
+        title: "Fout bij verwijderen",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   // Add timeslot to venue
-  const addTimeslot = (day: 'monday' | 'tuesday') => {
+  const addTimeslot = (dayOfWeek: number) => {
     setNewVenue({
       ...newVenue,
-      timeslots: [...newVenue.timeslots, { day, startTime: '18:30', endTime: '19:30' }]
+      timeslots: [...newVenue.timeslots, { 
+        day_of_week: dayOfWeek, 
+        start_time: '18:30', 
+        end_time: '19:30' 
+      }]
     });
   };
 
@@ -195,18 +372,26 @@ const CompetitionManagementTab: React.FC = () => {
   };
 
   // Update timeslot
-  const updateTimeslot = (index: number, field: keyof Timeslot, value: string) => {
+  const updateTimeslot = (index: number, field: keyof Timeslot, value: string | number) => {
     const updatedTimeslots = [...newVenue.timeslots];
     updatedTimeslots[index] = { ...updatedTimeslots[index], [field]: value };
     setNewVenue({ ...newVenue, timeslots: updatedTimeslots });
+  };
+
+  // Toggle team selection
+  const toggleTeamSelection = (teamId: number) => {
+    setSelectedTeams(prev => 
+      prev.includes(teamId) 
+        ? prev.filter(id => id !== teamId)
+        : [...prev, teamId]
+    );
   };
 
   // Check if a date falls within any holiday period
   const isHoliday = (date: Date): boolean => {
     const dateStr = format(date, "yyyy-MM-dd");
     return holidayPeriods.some(period => 
-      isBefore(new Date(period.startDate), new Date(dateStr)) && 
-      isBefore(new Date(dateStr), new Date(period.endDate))
+      dateStr >= period.start_date && dateStr <= period.end_date
     );
   };
 
@@ -236,34 +421,28 @@ const CompetitionManagementTab: React.FC = () => {
       
       let availableDates = [];
       let currentDate = start;
-      let weeklyCount = 0;
       
       while (isBefore(currentDate, end) || currentDate.getTime() === end.getTime()) {
-        // Check if it's Monday or Tuesday
+        // Check if it's Monday or Tuesday and not a holiday
         if ((isMonday(currentDate) || isTuesday(currentDate)) && !isHoliday(currentDate)) {
-          // Reset weekly counter on Monday
-          if (isMonday(currentDate)) {
-            weeklyCount = 0;
-          }
+          const dayOfWeek = isMonday(currentDate) ? 1 : 2;
           
           // For each venue and its timeslots on this day of the week
           for (const venue of venues) {
-            const day = isMonday(currentDate) ? 'monday' : 'tuesday';
-            const timeslotsForDay = venue.timeslots.filter(ts => ts.day === day);
+            const timeslotsForDay = venue.timeslots.filter(ts => ts.day_of_week === dayOfWeek);
             
             for (const slot of timeslotsForDay) {
-              if (weeklyCount < 9) { // Maximum 9 slots per week
-                const dateStr = format(currentDate, "yyyy-MM-dd");
-                
-                // Create the date entry for the database
-                availableDates.push({
-                  available_date: dateStr,
-                  is_available: true,
-                  is_cup_date: false
-                });
-                
-                weeklyCount++;
-              }
+              const dateStr = format(currentDate, "yyyy-MM-dd");
+              
+              // Create the date entry for the database
+              availableDates.push({
+                available_date: dateStr,
+                is_available: true,
+                is_cup_date: false,
+                venue_id: venue.venue_id,
+                start_time: slot.start_time,
+                end_time: slot.end_time
+              });
             }
           }
         }
@@ -272,21 +451,18 @@ const CompetitionManagementTab: React.FC = () => {
         currentDate = addDays(currentDate, 1);
       }
       
-      // Filter out any duplicate dates (same day but different venues or times)
-      const uniqueDates = Array.from(
-        new Map(availableDates.map(date => [date.available_date, date])).values()
-      );
-      
       // Batch insert the dates
-      const { error: insertError } = await supabase
-        .from('available_dates')
-        .insert(uniqueDates);
-        
-      if (insertError) throw insertError;
+      if (availableDates.length > 0) {
+        const { error: insertError } = await supabase
+          .from('available_dates')
+          .insert(availableDates);
+          
+        if (insertError) throw insertError;
+      }
       
       toast({
         title: "Speeldata gegenereerd",
-        description: `${uniqueDates.length} speeldata zijn succesvol gegenereerd.`
+        description: `${availableDates.length} speeldata zijn succesvol gegenereerd.`
       });
     } catch (error: any) {
       console.error("Error saving dates:", error);
@@ -298,6 +474,11 @@ const CompetitionManagementTab: React.FC = () => {
     } finally {
       setIsGeneratingDates(false);
     }
+  };
+
+  const getDayName = (dayOfWeek: number) => {
+    const days = ['', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag'];
+    return days[dayOfWeek] || '';
   };
 
   return (
@@ -356,7 +537,7 @@ const CompetitionManagementTab: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {venues.map((venue) => (
-                <div key={venue.id} className="rounded-md border p-4 bg-muted/30">
+                <div key={venue.venue_id} className="rounded-md border p-4 bg-muted/30">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h4 className="font-medium">{venue.name}</h4>
@@ -366,7 +547,7 @@ const CompetitionManagementTab: React.FC = () => {
                       <Button variant="outline" size="sm" onClick={() => editVenue(venue)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => removeVenue(venue.id)}>
+                      <Button variant="outline" size="sm" onClick={() => removeVenue(venue.venue_id!)}>
                         <Trash className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -377,10 +558,10 @@ const CompetitionManagementTab: React.FC = () => {
                       <h5 className="text-sm font-medium mb-2">Maandag</h5>
                       <ul className="space-y-1">
                         {venue.timeslots
-                          .filter(slot => slot.day === 'monday')
+                          .filter(slot => slot.day_of_week === 1)
                           .map((slot, i) => (
-                            <li key={`${venue.id}-mon-${i}`} className="text-sm bg-background rounded px-2 py-1">
-                              {slot.startTime} - {slot.endTime}
+                            <li key={`${venue.venue_id}-mon-${i}`} className="text-sm bg-background rounded px-2 py-1">
+                              {slot.start_time} - {slot.end_time}
                             </li>
                           ))
                         }
@@ -390,10 +571,10 @@ const CompetitionManagementTab: React.FC = () => {
                       <h5 className="text-sm font-medium mb-2">Dinsdag</h5>
                       <ul className="space-y-1">
                         {venue.timeslots
-                          .filter(slot => slot.day === 'tuesday')
+                          .filter(slot => slot.day_of_week === 2)
                           .map((slot, i) => (
-                            <li key={`${venue.id}-tue-${i}`} className="text-sm bg-background rounded px-2 py-1">
-                              {slot.startTime} - {slot.endTime}
+                            <li key={`${venue.venue_id}-tue-${i}`} className="text-sm bg-background rounded px-2 py-1">
+                              {slot.start_time} - {slot.end_time}
                             </li>
                           ))
                         }
@@ -440,18 +621,18 @@ const CompetitionManagementTab: React.FC = () => {
               </div>
 
               <div className="space-y-3">
-                {holidayPeriods.map((period, index) => (
-                  <div key={index} className="flex items-center justify-between rounded-md border p-3 bg-muted/30">
+                {holidayPeriods.map((period) => (
+                  <div key={period.holiday_id} className="flex items-center justify-between rounded-md border p-3 bg-muted/30">
                     <div>
-                      <p className="font-medium">{period.description}</p>
+                      <p className="font-medium">{period.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {format(new Date(period.startDate), "d MMMM yyyy", { locale: nl })} - {format(new Date(period.endDate), "d MMMM yyyy", { locale: nl })}
+                        {format(new Date(period.start_date), "d MMMM yyyy", { locale: nl })} - {format(new Date(period.end_date), "d MMMM yyyy", { locale: nl })}
                       </p>
                     </div>
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      onClick={() => removeHolidayPeriod(index)}
+                      onClick={() => removeHolidayPeriod(period.holiday_id!)}
                     >
                       <Trash className="h-4 w-4 text-destructive" />
                     </Button>
@@ -465,8 +646,8 @@ const CompetitionManagementTab: React.FC = () => {
                   <Input
                     id="holiday-start"
                     type="date"
-                    value={newHoliday.startDate}
-                    onChange={(e) => setNewHoliday({...newHoliday, startDate: e.target.value})}
+                    value={newHoliday.start_date}
+                    onChange={(e) => setNewHoliday({...newHoliday, start_date: e.target.value})}
                   />
                 </div>
                 <div>
@@ -474,8 +655,8 @@ const CompetitionManagementTab: React.FC = () => {
                   <Input
                     id="holiday-end"
                     type="date"
-                    value={newHoliday.endDate}
-                    onChange={(e) => setNewHoliday({...newHoliday, endDate: e.target.value})}
+                    value={newHoliday.end_date}
+                    onChange={(e) => setNewHoliday({...newHoliday, end_date: e.target.value})}
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -483,8 +664,8 @@ const CompetitionManagementTab: React.FC = () => {
                   <div className="flex gap-2">
                     <Input
                       id="holiday-desc"
-                      value={newHoliday.description}
-                      onChange={(e) => setNewHoliday({...newHoliday, description: e.target.value})}
+                      value={newHoliday.name}
+                      onChange={(e) => setNewHoliday({...newHoliday, name: e.target.value})}
                     />
                     <Button onClick={addHolidayPeriod}>Toevoegen</Button>
                   </div>
@@ -493,11 +674,54 @@ const CompetitionManagementTab: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* 3. Genereer speeldagen */}
+          {/* 3. Selecteer teams */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</span>
+                Selecteer teams
+              </CardTitle>
+              <CardDescription>
+                Kies welke teams deelnemen aan deze competitie
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {teams.map((team) => (
+                  <div 
+                    key={team.team_id}
+                    className={`p-3 border rounded-md cursor-pointer transition-colors ${
+                      selectedTeams.includes(team.team_id) 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'bg-background hover:bg-muted'
+                    }`}
+                    onClick={() => toggleTeamSelection(team.team_id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{team.team_name}</span>
+                      <input
+                        type="checkbox"
+                        checked={selectedTeams.includes(team.team_id)}
+                        onChange={() => toggleTeamSelection(team.team_id)}
+                        className="h-4 w-4"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {selectedTeams.length > 0 && (
+                <div className="mt-4 p-3 bg-muted/50 rounded-md">
+                  <p className="text-sm font-medium">{selectedTeams.length} teams geselecteerd</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* 4. Genereer speeldagen */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">4</span>
                 Speeldagen genereren
               </CardTitle>
               <CardDescription>
@@ -603,31 +827,31 @@ const CompetitionManagementTab: React.FC = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label>Maandag</Label>
-                    <Button size="sm" variant="outline" onClick={() => addTimeslot('monday')}>
+                    <Button size="sm" variant="outline" onClick={() => addTimeslot(1)}>
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
                   <div className="space-y-2">
                     {newVenue.timeslots
-                      .filter(slot => slot.day === 'monday')
+                      .filter(slot => slot.day_of_week === 1)
                       .map((slot, index) => {
-                        const mondayIndex = newVenue.timeslots.findIndex(s => s === slot);
+                        const slotIndex = newVenue.timeslots.findIndex(s => s === slot);
                         return (
-                          <div key={mondayIndex} className="flex items-center gap-2">
+                          <div key={slotIndex} className="flex items-center gap-2">
                             <Input
                               type="time"
-                              value={slot.startTime}
-                              onChange={(e) => updateTimeslot(mondayIndex, 'startTime', e.target.value)}
+                              value={slot.start_time}
+                              onChange={(e) => updateTimeslot(slotIndex, 'start_time', e.target.value)}
                               className="w-20"
                             />
                             <span>-</span>
                             <Input
                               type="time"
-                              value={slot.endTime}
-                              onChange={(e) => updateTimeslot(mondayIndex, 'endTime', e.target.value)}
+                              value={slot.end_time}
+                              onChange={(e) => updateTimeslot(slotIndex, 'end_time', e.target.value)}
                               className="w-20"
                             />
-                            <Button size="sm" variant="outline" onClick={() => removeTimeslot(mondayIndex)}>
+                            <Button size="sm" variant="outline" onClick={() => removeTimeslot(slotIndex)}>
                               <Trash className="h-3 w-3" />
                             </Button>
                           </div>
@@ -640,31 +864,31 @@ const CompetitionManagementTab: React.FC = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label>Dinsdag</Label>
-                    <Button size="sm" variant="outline" onClick={() => addTimeslot('tuesday')}>
+                    <Button size="sm" variant="outline" onClick={() => addTimeslot(2)}>
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
                   <div className="space-y-2">
                     {newVenue.timeslots
-                      .filter(slot => slot.day === 'tuesday')
+                      .filter(slot => slot.day_of_week === 2)
                       .map((slot, index) => {
-                        const tuesdayIndex = newVenue.timeslots.findIndex(s => s === slot);
+                        const slotIndex = newVenue.timeslots.findIndex(s => s === slot);
                         return (
-                          <div key={tuesdayIndex} className="flex items-center gap-2">
+                          <div key={slotIndex} className="flex items-center gap-2">
                             <Input
                               type="time"
-                              value={slot.startTime}
-                              onChange={(e) => updateTimeslot(tuesdayIndex, 'startTime', e.target.value)}
+                              value={slot.start_time}
+                              onChange={(e) => updateTimeslot(slotIndex, 'start_time', e.target.value)}
                               className="w-20"
                             />
                             <span>-</span>
                             <Input
                               type="time"
-                              value={slot.endTime}
-                              onChange={(e) => updateTimeslot(tuesdayIndex, 'endTime', e.target.value)}
+                              value={slot.end_time}
+                              onChange={(e) => updateTimeslot(slotIndex, 'end_time', e.target.value)}
                               className="w-20"
                             />
-                            <Button size="sm" variant="outline" onClick={() => removeTimeslot(tuesdayIndex)}>
+                            <Button size="sm" variant="outline" onClick={() => removeTimeslot(slotIndex)}>
                               <Trash className="h-3 w-3" />
                             </Button>
                           </div>
