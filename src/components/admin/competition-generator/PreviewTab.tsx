@@ -135,8 +135,8 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{match.home_team}</span>
-                          <Badge variant="secondary" size="sm">Thuis</Badge>
+                          <span className="font-medium">{match.home_team_name}</span>
+                          <Badge variant="secondary">Thuis</Badge>
                         </div>
                       </TableCell>
                       <TableCell className="text-center font-bold">
@@ -144,8 +144,8 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{match.away_team}</span>
-                          <Badge variant="outline" size="sm">Uit</Badge>
+                          <span className="font-medium">{match.away_team_name}</span>
+                          <Badge variant="outline">Uit</Badge>
                         </div>
                       </TableCell>
                       <TableCell>
