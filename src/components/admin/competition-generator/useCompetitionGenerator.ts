@@ -57,7 +57,7 @@ export const useCompetitionGenerator = (): CompetitionGeneratorState &
   });
 
   // Generate schedule based on the selected format
-  const generateSchedule = () => {
+  const generateSchedule = async () => {
     if (!teams || teams.length < 2) {
       toast({
         title: "Niet genoeg teams beschikbaar",
@@ -89,7 +89,7 @@ export const useCompetitionGenerator = (): CompetitionGeneratorState &
 
     // Assign unique codes, locations and times
     const selectedDatesObjects = availableDates?.filter(d => selectedDates.includes(d.date_id)) || [];
-    matches = assignMatchDetails(matches, selectedDatesObjects);
+    matches = await assignMatchDetails(matches, selectedDatesObjects);
     
     setGeneratedMatches(matches);
     
