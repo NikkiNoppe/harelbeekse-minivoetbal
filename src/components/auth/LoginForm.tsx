@@ -75,8 +75,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       }
 
       if (result && result.length > 0) {
-        // The result is directly an array of user objects
-        const dbUser = result[0];
+        // Access the user_record from the nested structure
+        const dbResult = result[0];
+        const dbUser = dbResult.user_record;
         console.log('Database user:', dbUser);
         
         const user: User = {
