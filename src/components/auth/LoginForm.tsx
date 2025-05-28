@@ -75,15 +75,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       }
 
       if (result && result.length > 0) {
-        // Access the user_record from the nested structure
-        const dbResult = result[0];
-        const dbUser = dbResult.user_record;
+        // The result is directly an array of user objects
+        const dbUser = result[0];
         console.log('Database user:', dbUser);
         
         const user: User = {
           id: dbUser.user_id,
           username: dbUser.username,
-          password: dbUser.password,
+          password: '', // Don't expose password in the frontend
           role: dbUser.role,
           email: dbUser.email
         };
@@ -92,9 +91,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           title: "Ingelogd!",
           description: `Welkom ${user.username}`,
         });
-        
-        // Store user in localStorage
-        localStorage.setItem("currentUser", JSON.stringify(user));
         
         // Call the success callback
         onLoginSuccess(user);
