@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CalendarIcon, CalendarCheck, Trash, AlertCircle } from "lucide-react";
+import { CalendarIcon, CalendarCheck, Trash, AlertCircle, Plus, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays, isBefore, isMonday, isTuesday } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -48,6 +48,14 @@ const CompetitionManagementTab: React.FC = () => {
   const [endDate, setEndDate] = useState("2026-07-14");
   const [isGeneratingDates, setIsGeneratingDates] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showVenueDialog, setShowVenueDialog] = useState(false);
+  const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
+  const [newVenue, setNewVenue] = useState<Venue>({
+    id: "",
+    name: "",
+    address: "",
+    timeslots: []
+  });
   
   const [venues, setVenues] = useState<Venue[]>([
     {
@@ -87,21 +95,16 @@ const CompetitionManagementTab: React.FC = () => {
   });
 
   const {
-    availableDates,
-    loadingDates,
     competitionFormats,
     loadingFormats,
-    selectedDates,
     selectedFormat,
     generatedMatches,
     competitionName,
     isCreating,
     setSelectedFormat,
     setCompetitionName,
-    toggleDate,
     generateSchedule,
     saveCompetition,
-    minimumDatesRequired,
     activeTab,
     setActiveTab
   } = useCompetitionGenerator();
@@ -128,6 +131,76 @@ const CompetitionManagementTab: React.FC = () => {
     setHolidayPeriods(updatedPeriods);
   };
 
+  // Edit venue
+  const editVenue = (venue: Venue) => {
+    setEditingVenue(venue);
+    setNewVenue({ ...venue });
+    setShowVenueDialog(true);
+  };
+
+  // Add new venue
+  const addNewVenue = () => {
+    setEditingVenue(null);
+    setNewVenue({
+      id: "",
+      name: "",
+      address: "",
+      timeslots: []
+    });
+    setShowVenueDialog(true);
+  };
+
+  // Save venue changes
+  const saveVenue = () => {
+    if (!newVenue.name || !newVenue.address) {
+      toast({
+        title: "Onvolledige gegevens",
+        description: "Vul naam en adres in voor de locatie",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (editingVenue) {
+      // Update existing venue
+      setVenues(venues.map(v => v.id === editingVenue.id ? newVenue : v));
+    } else {
+      // Add new venue
+      const id = newVenue.name.toLowerCase().replace(/\s+/g, '-');
+      setVenues([...venues, { ...newVenue, id }]);
+    }
+
+    setShowVenueDialog(false);
+    setEditingVenue(null);
+  };
+
+  // Remove venue
+  const removeVenue = (venueId: string) => {
+    setVenues(venues.filter(v => v.id !== venueId));
+  };
+
+  // Add timeslot to venue
+  const addTimeslot = (day: 'monday' | 'tuesday') => {
+    setNewVenue({
+      ...newVenue,
+      timeslots: [...newVenue.timeslots, { day, startTime: '18:30', endTime: '19:30' }]
+    });
+  };
+
+  // Remove timeslot
+  const removeTimeslot = (index: number) => {
+    const updatedTimeslots = [...newVenue.timeslots];
+    updatedTimeslots.splice(index, 1);
+    setNewVenue({ ...newVenue, timeslots: updatedTimeslots });
+  };
+
+  // Update timeslot
+  const updateTimeslot = (index: number, field: keyof Timeslot, value: string) => {
+    const updatedTimeslots = [...newVenue.timeslots];
+    updatedTimeslots[index] = { ...updatedTimeslots[index], [field]: value };
+    setNewVenue({ ...newVenue, timeslots: updatedTimeslots });
+  };
+
   // Check if a date falls within any holiday period
   const isHoliday = (date: Date): boolean => {
     const dateStr = format(date, "yyyy-MM-dd");
@@ -140,66 +213,7 @@ const CompetitionManagementTab: React.FC = () => {
   // Generate available dates
   const generateDates = async () => {
     setIsGeneratingDates(true);
-    
-    try {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      
-      let availableDates = [];
-      let currentDate = start;
-      let weeklyCount = 0;
-      let weekStart = new Date(currentDate);
-      
-      // Find the beginning of the week for the first date
-      while (weekStart.getDay() !== 1) { // Move to Monday (1)
-        weekStart = addDays(weekStart, -1);
-      }
-      
-      while (isBefore(currentDate, end) || currentDate.getTime() === end.getTime()) {
-        // Check if it's Monday or Tuesday
-        if ((isMonday(currentDate) || isTuesday(currentDate)) && !isHoliday(currentDate)) {
-          // Reset weekly counter on Monday
-          if (isMonday(currentDate)) {
-            weeklyCount = 0;
-            weekStart = new Date(currentDate);
-          }
-          
-          // For each venue and its timeslots on this day of the week
-          for (const venue of venues) {
-            const day = isMonday(currentDate) ? 'monday' : 'tuesday';
-            const timeslotsForDay = venue.timeslots.filter(ts => ts.day === day);
-            
-            for (const slot of timeslotsForDay) {
-              if (weeklyCount < 9) { // Maximum 9 slots per week
-                const dateStr = format(currentDate, "yyyy-MM-dd");
-                
-                availableDates.push({
-                  available_date: `${dateStr}`,
-                  is_available: true,
-                  is_cup_date: false
-                });
-                
-                weeklyCount++;
-              }
-            }
-          }
-        }
-        
-        // Move to the next day
-        currentDate = addDays(currentDate, 1);
-      }
-      
-      // Confirm before clearing existing dates
-      setShowConfirmDialog(true);
-    } catch (error) {
-      console.error("Error generating dates:", error);
-      toast({
-        title: "Fout bij genereren",
-        description: "Er is een fout opgetreden bij het genereren van de speeldata.",
-        variant: "destructive"
-      });
-      setIsGeneratingDates(false);
-    }
+    setShowConfirmDialog(true);
   };
   
   // Save generated dates to the database
@@ -223,12 +237,6 @@ const CompetitionManagementTab: React.FC = () => {
       let availableDates = [];
       let currentDate = start;
       let weeklyCount = 0;
-      let weekStart = new Date(currentDate);
-      
-      // Find the beginning of the week for the first date
-      while (weekStart.getDay() !== 1) { // Move to Monday (1)
-        weekStart = addDays(weekStart, -1);
-      }
       
       while (isBefore(currentDate, end) || currentDate.getTime() === end.getTime()) {
         // Check if it's Monday or Tuesday
@@ -236,7 +244,6 @@ const CompetitionManagementTab: React.FC = () => {
           // Reset weekly counter on Monday
           if (isMonday(currentDate)) {
             weeklyCount = 0;
-            weekStart = new Date(currentDate);
           }
           
           // For each venue and its timeslots on this day of the week
@@ -250,7 +257,7 @@ const CompetitionManagementTab: React.FC = () => {
                 
                 // Create the date entry for the database
                 availableDates.push({
-                  available_date: `${dateStr}`,
+                  available_date: dateStr,
                   is_available: true,
                   is_cup_date: false
                 });
@@ -329,20 +336,89 @@ const CompetitionManagementTab: React.FC = () => {
         </TabsContent>
         
         {/* Tab 2: Speeldagen configureren */}
-        <TabsContent value="dates" className="space-y-4">
+        <TabsContent value="dates" className="space-y-6">
+          {/* 1. Locaties en speeluren */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</span>
+                  Locaties en speeluren
+                </span>
+                <Button onClick={addNewVenue} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Locatie toevoegen
+                </Button>
+              </CardTitle>
+              <CardDescription>
+                Configureer de beschikbare locaties en tijdsloten voor wedstrijden
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {venues.map((venue) => (
+                <div key={venue.id} className="rounded-md border p-4 bg-muted/30">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h4 className="font-medium">{venue.name}</h4>
+                      <p className="text-sm text-muted-foreground">{venue.address}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => editVenue(venue)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => removeVenue(venue.id)}>
+                        <Trash className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h5 className="text-sm font-medium mb-2">Maandag</h5>
+                      <ul className="space-y-1">
+                        {venue.timeslots
+                          .filter(slot => slot.day === 'monday')
+                          .map((slot, i) => (
+                            <li key={`${venue.id}-mon-${i}`} className="text-sm bg-background rounded px-2 py-1">
+                              {slot.startTime} - {slot.endTime}
+                            </li>
+                          ))
+                        }
+                      </ul>
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-medium mb-2">Dinsdag</h5>
+                      <ul className="space-y-1">
+                        {venue.timeslots
+                          .filter(slot => slot.day === 'tuesday')
+                          .map((slot, i) => (
+                            <li key={`${venue.id}-tue-${i}`} className="text-sm bg-background rounded px-2 py-1">
+                              {slot.startTime} - {slot.endTime}
+                            </li>
+                          ))
+                        }
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* 2. Uitzonderingen */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5 text-primary" />
-                Speeldagen Configuratie
+                <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</span>
+                Uitzonderingen - Vakantieperiodes
               </CardTitle>
               <CardDescription>
-                Configureer het seizoen en genereer beschikbare speeldagen
+                Voeg periodes toe waarin geen wedstrijden kunnen plaatsvinden
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               {/* Seizoen periode */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-md">
                 <div className="space-y-3">
                   <Label htmlFor="start-date">Startdatum seizoen</Label>
                   <Input
@@ -363,113 +439,72 @@ const CompetitionManagementTab: React.FC = () => {
                 </div>
               </div>
 
-              {/* Uitzonderingen (vakantieperiodes) */}
-              <div className="border rounded-md p-4 space-y-4">
-                <div>
-                  <h3 className="font-medium">Uitzonderingen - Periodes zonder wedstrijden</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Voeg vakantieperiodes toe waarin geen wedstrijden kunnen plaatsvinden
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  {holidayPeriods.map((period, index) => (
-                    <div key={index} className="flex items-center justify-between rounded-md border p-2">
-                      <div>
-                        <p className="font-medium">{period.description}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(period.startDate), "d MMMM yyyy", { locale: nl })} - {format(new Date(period.endDate), "d MMMM yyyy", { locale: nl })}
-                        </p>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => removeHolidayPeriod(index)}
-                      >
-                        <Trash className="h-4 w-4 text-destructive" />
-                      </Button>
+              <div className="space-y-3">
+                {holidayPeriods.map((period, index) => (
+                  <div key={index} className="flex items-center justify-between rounded-md border p-3 bg-muted/30">
+                    <div>
+                      <p className="font-medium">{period.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(period.startDate), "d MMMM yyyy", { locale: nl })} - {format(new Date(period.endDate), "d MMMM yyyy", { locale: nl })}
+                      </p>
                     </div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label htmlFor="holiday-start">Startdatum</Label>
-                    <Input
-                      id="holiday-start"
-                      type="date"
-                      value={newHoliday.startDate}
-                      onChange={(e) => setNewHoliday({...newHoliday, startDate: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="holiday-end">Einddatum</Label>
-                    <Input
-                      id="holiday-end"
-                      type="date"
-                      value={newHoliday.endDate}
-                      onChange={(e) => setNewHoliday({...newHoliday, endDate: e.target.value})}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="holiday-desc">Omschrijving</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="holiday-desc"
-                        value={newHoliday.description}
-                        onChange={(e) => setNewHoliday({...newHoliday, description: e.target.value})}
-                      />
-                      <Button onClick={addHolidayPeriod}>Toevoegen</Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Locaties en tijdsloten */}
-              <div className="border rounded-md p-4 space-y-4">
-                <h3 className="font-medium">Locaties en speeluren</h3>
-                <p className="text-sm text-muted-foreground">
-                  Configureer de beschikbare locaties en tijdsloten voor wedstrijden
-                </p>
-
-                {venues.map((venue) => (
-                  <div key={venue.id} className="rounded-md border p-4">
-                    <h4 className="font-medium">{venue.name}</h4>
-                    <p className="text-sm text-muted-foreground">{venue.address}</p>
-                    
-                    <div className="mt-3 grid grid-cols-2 gap-4">
-                      <div>
-                        <h5 className="text-sm font-medium">Maandag</h5>
-                        <ul className="list-disc list-inside text-sm pl-2">
-                          {venue.timeslots
-                            .filter(slot => slot.day === 'monday')
-                            .map((slot, i) => (
-                              <li key={`${venue.id}-mon-${i}`}>
-                                {slot.startTime} - {slot.endTime}
-                              </li>
-                            ))
-                          }
-                        </ul>
-                      </div>
-                      <div>
-                        <h5 className="text-sm font-medium">Dinsdag</h5>
-                        <ul className="list-disc list-inside text-sm pl-2">
-                          {venue.timeslots
-                            .filter(slot => slot.day === 'tuesday')
-                            .map((slot, i) => (
-                              <li key={`${venue.id}-tue-${i}`}>
-                                {slot.startTime} - {slot.endTime}
-                              </li>
-                            ))
-                          }
-                        </ul>
-                      </div>
-                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => removeHolidayPeriod(index)}
+                    >
+                      <Trash className="h-4 w-4 text-destructive" />
+                    </Button>
                   </div>
                 ))}
               </div>
 
-              {/* Genereer speeldagen button */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-md">
+                <div>
+                  <Label htmlFor="holiday-start">Startdatum</Label>
+                  <Input
+                    id="holiday-start"
+                    type="date"
+                    value={newHoliday.startDate}
+                    onChange={(e) => setNewHoliday({...newHoliday, startDate: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="holiday-end">Einddatum</Label>
+                  <Input
+                    id="holiday-end"
+                    type="date"
+                    value={newHoliday.endDate}
+                    onChange={(e) => setNewHoliday({...newHoliday, endDate: e.target.value})}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="holiday-desc">Omschrijving</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="holiday-desc"
+                      value={newHoliday.description}
+                      onChange={(e) => setNewHoliday({...newHoliday, description: e.target.value})}
+                    />
+                    <Button onClick={addHolidayPeriod}>Toevoegen</Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 3. Genereer speeldagen */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</span>
+                Speeldagen genereren
+              </CardTitle>
+              <CardDescription>
+                Genereer beschikbare speeldagen op basis van bovenstaande instellingen
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               <Button onClick={generateDates} className="w-full" disabled={isGeneratingDates}>
                 {isGeneratingDates ? (
                   <>Genereren...</>
@@ -480,68 +515,6 @@ const CompetitionManagementTab: React.FC = () => {
                   </>
                 )}
               </Button>
-
-              {/* Bestaande speeldagen selectie */}
-              {availableDates && availableDates.length > 0 && (
-                <div className="border-t pt-4">
-                  <h3 className="text-lg font-medium mb-4">Selecteer beschikbare speeldagen</h3>
-                  
-                  <Alert className="mb-4">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Minimale speeldagen vereist</AlertTitle>
-                    <AlertDescription>
-                      Selecteer ten minste {minimumDatesRequired} speeldagen om alle wedstrijden in te plannen.
-                      U heeft momenteel {selectedDates.length} speeldagen geselecteerd.
-                    </AlertDescription>
-                  </Alert>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {availableDates?.map((date) => {
-                      const isSelected = selectedDates.includes(date.date_id);
-                      const formattedDate = new Date(date.available_date).toLocaleDateString('nl-NL', {
-                        weekday: 'short',
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      });
-                      
-                      return (
-                        <div 
-                          key={date.date_id} 
-                          className={`border p-3 rounded-md flex items-center space-x-3 cursor-pointer ${
-                            isSelected ? 'border-primary bg-primary/5' : ''
-                          } ${date.is_cup_date ? 'bg-orange-50 dark:bg-orange-900/10' : ''}`}
-                          onClick={() => !date.is_cup_date && toggleDate(date.date_id)}
-                        >
-                          <input 
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleDate(date.date_id)}
-                            disabled={date.is_cup_date}
-                            className="w-4 h-4"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <CalendarIcon className="h-4 w-4" />
-                              <span>{formattedDate}</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  
-                  <div className="mt-4 pt-4 border-t flex justify-end">
-                    <Button 
-                      variant="default" 
-                      onClick={generateSchedule}
-                      disabled={selectedDates.length < minimumDatesRequired}
-                    >
-                      Schema Genereren
-                    </Button>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -559,7 +532,7 @@ const CompetitionManagementTab: React.FC = () => {
               <PreviewTab
                 generatedMatches={generatedMatches}
                 competitionName={competitionName}
-                selectedDates={selectedDates}
+                selectedDates={[]}
                 competitionFormat={competitionFormats?.find(f => f.id === selectedFormat)}
                 isCreating={isCreating}
                 onSaveCompetition={saveCompetition}
@@ -588,6 +561,132 @@ const CompetitionManagementTab: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Venue Dialog */}
+      <Dialog open={showVenueDialog} onOpenChange={setShowVenueDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingVenue ? 'Locatie bewerken' : 'Nieuwe locatie toevoegen'}
+            </DialogTitle>
+            <DialogDescription>
+              Configureer de locatiegegevens en tijdsloten
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <Label htmlFor="venue-name">Naam</Label>
+                <Input
+                  id="venue-name"
+                  value={newVenue.name}
+                  onChange={(e) => setNewVenue({...newVenue, name: e.target.value})}
+                  placeholder="Bijv. Harelbeke - Dageraad"
+                />
+              </div>
+              <div>
+                <Label htmlFor="venue-address">Adres</Label>
+                <Input
+                  id="venue-address"
+                  value={newVenue.address}
+                  onChange={(e) => setNewVenue({...newVenue, address: e.target.value})}
+                  placeholder="Bijv. Dageraadstraat 1, 8530 Harelbeke"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="font-medium">Tijdsloten</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Maandag</Label>
+                    <Button size="sm" variant="outline" onClick={() => addTimeslot('monday')}>
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {newVenue.timeslots
+                      .filter(slot => slot.day === 'monday')
+                      .map((slot, index) => {
+                        const mondayIndex = newVenue.timeslots.findIndex(s => s === slot);
+                        return (
+                          <div key={mondayIndex} className="flex items-center gap-2">
+                            <Input
+                              type="time"
+                              value={slot.startTime}
+                              onChange={(e) => updateTimeslot(mondayIndex, 'startTime', e.target.value)}
+                              className="w-20"
+                            />
+                            <span>-</span>
+                            <Input
+                              type="time"
+                              value={slot.endTime}
+                              onChange={(e) => updateTimeslot(mondayIndex, 'endTime', e.target.value)}
+                              className="w-20"
+                            />
+                            <Button size="sm" variant="outline" onClick={() => removeTimeslot(mondayIndex)}>
+                              <Trash className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Dinsdag</Label>
+                    <Button size="sm" variant="outline" onClick={() => addTimeslot('tuesday')}>
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {newVenue.timeslots
+                      .filter(slot => slot.day === 'tuesday')
+                      .map((slot, index) => {
+                        const tuesdayIndex = newVenue.timeslots.findIndex(s => s === slot);
+                        return (
+                          <div key={tuesdayIndex} className="flex items-center gap-2">
+                            <Input
+                              type="time"
+                              value={slot.startTime}
+                              onChange={(e) => updateTimeslot(tuesdayIndex, 'startTime', e.target.value)}
+                              className="w-20"
+                            />
+                            <span>-</span>
+                            <Input
+                              type="time"
+                              value={slot.endTime}
+                              onChange={(e) => updateTimeslot(tuesdayIndex, 'endTime', e.target.value)}
+                              className="w-20"
+                            />
+                            <Button size="sm" variant="outline" onClick={() => removeTimeslot(tuesdayIndex)}>
+                              <Trash className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowVenueDialog(false)}>
+              Annuleren
+            </Button>
+            <Button onClick={saveVenue}>
+              {editingVenue ? 'Bijwerken' : 'Toevoegen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Bevestigingsdialoog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
