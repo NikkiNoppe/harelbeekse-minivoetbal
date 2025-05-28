@@ -52,12 +52,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     setIsLoading(true);
     
     try {
+      console.log('Attempting login with:', data.usernameOrEmail);
+      
       // Use the database function to verify user with hashed password
       const { data: result, error } = await supabase
         .rpc('verify_user_password', {
           input_username_or_email: data.usernameOrEmail,
           input_password: data.password
         });
+
+      console.log('Login result:', result);
+      console.log('Login error:', error);
 
       if (error) {
         console.error('Login error:', error);
@@ -70,15 +75,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       }
 
       if (result && result.length > 0) {
-        // Map database user to User type
-        const userData = result[0];
+        // The result is an array of user records directly, not nested in user_record
+        const dbUser = result[0];
+        console.log('Database user:', dbUser);
         
         const user: User = {
-          id: userData.user_record.user_id,
-          username: userData.user_record.username,
-          password: userData.user_record.password,
-          role: userData.user_record.role,
-          email: userData.user_record.email
+          id: dbUser.user_id,
+          username: dbUser.username,
+          password: dbUser.password,
+          role: dbUser.role,
+          email: dbUser.email
         };
         
         toast({
