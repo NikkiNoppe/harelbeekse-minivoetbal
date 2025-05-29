@@ -80,13 +80,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         const userResult = result[0];
         console.log('User result:', userResult);
         
-        // Create user object from the result
+        // Access the user_record from the nested structure
+        const dbUser = userResult.user_record;
+        console.log('Database user:', dbUser);
+        
+        // Create user object from the user_record
         const user: User = {
-          id: userResult.user_id,
-          username: userResult.username,
+          id: dbUser.user_id,
+          username: dbUser.username,
           password: '', // Don't expose password in the frontend
-          role: userResult.role,
-          email: userResult.email || ''
+          role: dbUser.role,
+          email: dbUser.email || ''
         };
         
         console.log('Mapped user:', user);
