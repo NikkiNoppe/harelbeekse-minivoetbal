@@ -19,16 +19,16 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       try {
         const { data, error } = await supabase
           .from('players')
-          .select('player_id, player_name')
+          .select('player_id, first_name, last_name')
           .eq('team_id', teamId)
           .eq('is_active', true)
-          .order('player_name');
+          .order('first_name');
         
         if (error) throw error;
         
         return data.map(player => ({
           playerId: player.player_id,
-          playerName: player.player_name,
+          playerName: `${player.first_name} ${player.last_name}`,
           selected: false,
           jerseyNumber: "",
           isCaptain: false
