@@ -10,11 +10,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-
-interface FormValues {
-  usernameOrEmail: string;
-  password: string;
-}
+import { FormValues } from "../validation/loginFormSchema";
 
 interface LoginFormFieldsProps {
   form: UseFormReturn<FormValues>;
