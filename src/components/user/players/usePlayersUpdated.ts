@@ -86,7 +86,7 @@ export const usePlayersUpdated = () => {
         
         if (error) throw error;
         
-        setPlayers(data as Player[] || []);
+        setPlayers((data as unknown) as Player[] || []);
       } catch (error) {
         console.error('Error fetching players:', error);
         toast({
@@ -151,7 +151,7 @@ export const usePlayersUpdated = () => {
       
       if (fetchError) throw fetchError;
       
-      setPlayers(data as Player[] || []);
+      setPlayers((data as unknown) as Player[] || []);
       setNewPlayer({firstName: "", lastName: "", birthDate: ""});
       setDialogOpen(false);
       
@@ -209,7 +209,7 @@ export const usePlayersUpdated = () => {
       
       if (fetchError) throw fetchError;
       
-      setPlayers(data as Player[] || []);
+      setPlayers((data as unknown) as Player[] || []);
       setEditDialogOpen(false);
       setEditingPlayer(null);
       

@@ -24,7 +24,7 @@ export const useTabVisibilitySettings = () => {
         .order('setting_name');
 
       if (error) throw error;
-      setSettings(data as TabVisibilitySetting[] || []);
+      setSettings((data as unknown) as TabVisibilitySetting[] || []);
     } catch (error) {
       console.error('Error fetching tab settings:', error);
       // Fallback to default settings if table doesn't exist yet
