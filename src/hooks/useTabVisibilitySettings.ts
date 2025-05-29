@@ -17,13 +17,14 @@ export const useTabVisibilitySettings = () => {
 
   const fetchSettings = async () => {
     try {
-      // Use raw SQL query since the table isn't in the generated types yet
-      const { data, error } = await supabase.rpc('exec_sql', {
-        sql: 'SELECT * FROM tab_visibility_settings ORDER BY setting_name'
-      });
+      // Use a direct query with type assertion since the types aren't generated yet
+      const { data, error } = await supabase
+        .from('tab_visibility_settings' as any)
+        .select('*')
+        .order('setting_name');
 
       if (error) throw error;
-      setSettings(data || []);
+      setSettings(data as TabVisibilitySetting[] || []);
     } catch (error) {
       console.error('Error fetching tab settings:', error);
       // Fallback to default settings if table doesn't exist yet
@@ -44,14 +45,10 @@ export const useTabVisibilitySettings = () => {
 
   const updateSetting = async (settingName: string, updates: Partial<TabVisibilitySetting>) => {
     try {
-      // Use raw SQL query for updates
-      const updateFields = Object.entries(updates)
-        .map(([key, value]) => `${key} = ${typeof value === 'boolean' ? value : `'${value}'`}`)
-        .join(', ');
-      
-      const { error } = await supabase.rpc('exec_sql', {
-        sql: `UPDATE tab_visibility_settings SET ${updateFields} WHERE setting_name = '${settingName}'`
-      });
+      const { error } = await supabase
+        .from('tab_visibility_settings' as any)
+        .update(updates)
+        .eq('setting_name', settingName);
 
       if (error) throw error;
 
