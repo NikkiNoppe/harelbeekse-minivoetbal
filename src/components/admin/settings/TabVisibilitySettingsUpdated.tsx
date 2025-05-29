@@ -22,16 +22,32 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
   const resetToDefaults = async () => {
     setSaving(true);
     try {
-      // Reset all settings to default values
-      for (const setting of settings) {
-        await updateSetting(setting.setting_name, { 
-          is_visible: true, 
-          requires_login: setting.setting_name === 'settings' 
-        });
+      // Reset all main tabs to default values
+      const mainTabs = ['algemeen', 'competitie', 'playoff', 'beker', 'schorsingen', 'reglement'];
+      for (const tabName of mainTabs) {
+        const existingSetting = settings.find(s => s.setting_name === tabName);
+        if (existingSetting) {
+          await updateSetting(tabName, { 
+            is_visible: true, 
+            requires_login: false 
+          });
+        }
       }
     } finally {
       setSaving(false);
     }
+  };
+
+  const getTabDisplayName = (settingName: string) => {
+    const displayNames: { [key: string]: string } = {
+      'algemeen': 'Algemeen',
+      'competitie': 'Competitie',
+      'playoff': 'Play-Off',
+      'beker': 'Beker',
+      'schorsingen': 'Schorsingen',
+      'reglement': 'Reglement'
+    };
+    return displayNames[settingName] || settingName.charAt(0).toUpperCase() + settingName.slice(1);
   };
   
   if (loading) {
@@ -41,9 +57,9 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Tab Zichtbaarheid</CardTitle>
+        <CardTitle>Hoofdtab Zichtbaarheid</CardTitle>
         <CardDescription>
-          Configureer welke tabbladen zichtbaar zijn en of inloggen vereist is
+          Configureer welke hoofdtabbladen zichtbaar zijn en of inloggen vereist is
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -57,8 +73,8 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
                   ) : (
                     <EyeOff className="h-4 w-4 text-red-500" />
                   )}
-                  <Label className="capitalize font-medium">
-                    {setting.setting_name.replace('-', ' ')}
+                  <Label className="font-medium">
+                    {getTabDisplayName(setting.setting_name)}
                   </Label>
                 </div>
                 <Switch

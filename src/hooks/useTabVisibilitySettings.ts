@@ -17,7 +17,6 @@ export const useTabVisibilitySettings = () => {
 
   const fetchSettings = async () => {
     try {
-      // Use a direct query with type assertion since the types aren't generated yet
       const { data, error } = await supabase
         .from('tab_visibility_settings' as any)
         .select('*')
@@ -27,16 +26,18 @@ export const useTabVisibilitySettings = () => {
       setSettings((data as unknown) as TabVisibilitySetting[] || []);
     } catch (error) {
       console.error('Error fetching tab settings:', error);
-      // Fallback to default settings if table doesn't exist yet
+      // Fallback to main tabs only
       setSettings([
-        { id: 1, setting_name: 'match-forms', is_visible: true, requires_login: false },
-        { id: 2, setting_name: 'players', is_visible: true, requires_login: false },
-        { id: 3, setting_name: 'competition', is_visible: true, requires_login: false },
-        { id: 4, setting_name: 'settings', is_visible: true, requires_login: true },
+        { id: 1, setting_name: 'algemeen', is_visible: true, requires_login: false },
+        { id: 2, setting_name: 'competitie', is_visible: true, requires_login: false },
+        { id: 3, setting_name: 'playoff', is_visible: true, requires_login: false },
+        { id: 4, setting_name: 'beker', is_visible: true, requires_login: false },
+        { id: 5, setting_name: 'schorsingen', is_visible: true, requires_login: false },
+        { id: 6, setting_name: 'reglement', is_visible: true, requires_login: false },
       ]);
       toast({
         title: "Info",
-        description: "Gebruikt standaard tab instellingen",
+        description: "Gebruikt standaard tab instellingen voor hoofdtabs",
       });
     } finally {
       setLoading(false);

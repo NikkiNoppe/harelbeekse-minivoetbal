@@ -34,8 +34,7 @@ const PlayersListUpdated: React.FC<PlayersListUpdatedProps> = ({
   editMode,
   onRemovePlayer,
   onEditPlayer,
-  formatDate,
-  getFullName
+  formatDate
 }) => {
   if (loading) {
     return <div className="py-4 text-center text-muted-foreground">Spelers laden...</div>;
@@ -46,7 +45,8 @@ const PlayersListUpdated: React.FC<PlayersListUpdatedProps> = ({
       <TableHeader>
         <TableRow>
           <TableHead className="w-12">#</TableHead>
-          <TableHead>Naam</TableHead>
+          <TableHead>Voornaam</TableHead>
+          <TableHead>Achternaam</TableHead>
           <TableHead className="w-32">Geboortedatum</TableHead>
           {editMode && <TableHead className="w-24">Acties</TableHead>}
         </TableRow>
@@ -54,7 +54,7 @@ const PlayersListUpdated: React.FC<PlayersListUpdatedProps> = ({
       <TableBody>
         {players.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={editMode ? 4 : 3} className="text-center text-muted-foreground py-4">
+            <TableCell colSpan={editMode ? 5 : 4} className="text-center text-muted-foreground py-4">
               Geen spelers gevonden
             </TableCell>
           </TableRow>
@@ -62,7 +62,8 @@ const PlayersListUpdated: React.FC<PlayersListUpdatedProps> = ({
           players.map((player, index) => (
             <TableRow key={player.player_id} className="h-10">
               <TableCell className="font-medium text-center">{index + 1}</TableCell>
-              <TableCell className="py-1">{getFullName(player)}</TableCell>
+              <TableCell className="py-1">{player.first_name}</TableCell>
+              <TableCell className="py-1">{player.last_name}</TableCell>
               <TableCell className="py-1">{formatDate(player.birth_date)}</TableCell>
               {editMode && (
                 <TableCell className="py-1">
