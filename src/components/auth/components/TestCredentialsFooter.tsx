@@ -16,7 +16,7 @@ const TestCredentialsFooter: React.FC = () => {
       </div>
       <div className="flex items-center gap-1">
         <Shield size={14} />
-        <span>Scheidsrechter: referee / referee123</span>
+        <span>Scheidsrechter: referee1 / referee123</span>
       </div>
     </CardFooter>
   );

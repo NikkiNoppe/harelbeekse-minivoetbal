@@ -25,7 +25,7 @@ export const useLogin = (onLoginSuccess: (user: User) => void) => {
       console.log('Login error:', error);
 
       if (error) {
-        console.error('Login error:', error);
+        console.error('Database error:', error);
         toast({
           title: "Login mislukt",
           description: "Er is een fout opgetreden bij het inloggen",
@@ -37,14 +37,10 @@ export const useLogin = (onLoginSuccess: (user: User) => void) => {
       // Check if we have a result and it's an array with data
       if (result && Array.isArray(result) && result.length > 0) {
         // Get the first result from the array
-        const userResult = result[0];
-        console.log('User result:', userResult);
-        
-        // Access the user_record from the nested structure
-        const dbUser = userResult.user_record;
+        const dbUser = result[0];
         console.log('Database user:', dbUser);
         
-        // Create user object from the user_record
+        // Create user object from the database result
         const user: User = {
           id: dbUser.user_id,
           username: dbUser.username,
@@ -74,7 +70,7 @@ export const useLogin = (onLoginSuccess: (user: User) => void) => {
       console.error('Login error:', error);
       toast({
         title: "Login mislukt",
-        description: "Er is een fout opgetreden bij het inloggen",
+        description: "Er is een onverwachte fout opgetreden",
         variant: "destructive",
       });
     } finally {

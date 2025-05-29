@@ -674,7 +674,10 @@ export type Database = {
       verify_user_password: {
         Args: { input_username_or_email: string; input_password: string }
         Returns: {
-          user_record: Database["public"]["Tables"]["users"]["Row"]
+          user_id: number
+          username: string
+          email: string
+          role: Database["public"]["Enums"]["user_role"]
         }[]
       }
     }
