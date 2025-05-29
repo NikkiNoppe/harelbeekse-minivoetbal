@@ -17,8 +17,15 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
   const checkPlayerExists = async (firstName: string, lastName: string, birthDate: string, excludePlayerId?: number) => {
     try {
       let query = supabase
-        .from('players' as any)
-        .select('player_id, first_name, last_name, birth_date, team_id, teams(team_name)')
+        .from('players')
+        .select(`
+          player_id, 
+          first_name, 
+          last_name, 
+          birth_date, 
+          team_id,
+          teams!inner(team_name)
+        `)
         .eq('first_name', firstName.trim())
         .eq('last_name', lastName.trim())
         .eq('birth_date', birthDate)
@@ -30,7 +37,10 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
 
       const { data, error } = await query;
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error checking player existence:', error);
+        return null;
+      }
       
       return data && data.length > 0 ? data[0] : null;
     } catch (error) {
@@ -63,7 +73,7 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
     const existingPlayer = await checkPlayerExists(newPlayer.firstName, newPlayer.lastName, newPlayer.birthDate);
     
     if (existingPlayer) {
-      const teamName = (existingPlayer.teams as any)?.team_name || 'onbekend team';
+      const teamName = existingPlayer.teams?.team_name || 'onbekend team';
       toast({
         title: "Speler bestaat al",
         description: `${newPlayer.firstName} ${newPlayer.lastName} is al ingeschreven bij ${teamName}`,
@@ -74,7 +84,7 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
     
     try {
       const { error } = await supabase
-        .from('players' as any)
+        .from('players')
         .insert({
           first_name: newPlayer.firstName.trim(),
           last_name: newPlayer.lastName.trim(),
@@ -124,7 +134,7 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
     );
     
     if (existingPlayer) {
-      const teamName = (existingPlayer.teams as any)?.team_name || 'onbekend team';
+      const teamName = existingPlayer.teams?.team_name || 'onbekend team';
       toast({
         title: "Speler bestaat al",
         description: `${editingPlayer.firstName} ${editingPlayer.lastName} is al ingeschreven bij ${teamName}`,
@@ -135,7 +145,7 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
     
     try {
       const { error } = await supabase
-        .from('players' as any)
+        .from('players')
         .update({
           first_name: editingPlayer.firstName.trim(),
           last_name: editingPlayer.lastName.trim(),
@@ -166,7 +176,7 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
   const handleRemovePlayer = async (playerId: number) => {
     try {
       const { error } = await supabase
-        .from('players' as any)
+        .from('players')
         .update({ is_active: false })
         .eq('player_id', playerId);
       
