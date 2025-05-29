@@ -1,44 +1,45 @@
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Users, Calendar, Shield } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Users, Calendar, Shield, Info } from "lucide-react";
 
 const PlayerRegulations: React.FC = () => {
   return (
-    <Card className="mt-6 border-orange-200 bg-orange-50/50">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-orange-800">
+        <CardTitle className="flex items-center gap-2">
           <Shield className="h-5 w-5" />
           Spelersreglement
         </CardTitle>
+        <CardDescription>
+          Belangrijke regels en richtlijnen voor spelersbeheer
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3 text-sm text-orange-700">
-        <div className="flex items-start gap-2">
-          <Users className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <div>
-            <strong>Maximum aantal spelers:</strong> Per team kunnen maximaal 20 spelers worden ingeschreven.
-          </div>
-        </div>
+      <CardContent className="space-y-4">
+        <Alert>
+          <Users className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Maximum spelers:</strong> Elk team mag maximaal 20 spelers hebben per seizoen.
+          </AlertDescription>
+        </Alert>
         
-        <div className="flex items-start gap-2">
-          <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <div>
-            <strong>Geen teamwijzigingen tijdens seizoen:</strong> Spelers kunnen tijdens het lopende seizoen niet van team veranderen.
-          </div>
-        </div>
+        <Alert>
+          <Calendar className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Teamwijzigingen:</strong> Spelers kunnen niet van team wisselen tijdens het lopende seizoen.
+          </AlertDescription>
+        </Alert>
         
-        <div className="flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <div>
-            <strong>Spelerskaarten:</strong> Alle spelers moeten beschikken over een geldige spelerskaart voordat ze mogen deelnemen aan wedstrijden.
-          </div>
-        </div>
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Spelersgegevens:</strong> Alle spelers moeten een geldige geboortedatum hebben voor leeftijdsverificatie.
+          </AlertDescription>
+        </Alert>
         
-        <div className="flex items-start gap-2">
-          <Shield className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <div>
-            <strong>Leeftijdsgrens:</strong> Spelers moeten minimaal 16 jaar oud zijn om deel te nemen aan de competitie.
-          </div>
+        <div className="text-sm text-muted-foreground mt-4">
+          <p>Voor vragen over het spelersreglement, neem contact op met de competitieleiding.</p>
         </div>
       </CardContent>
     </Card>

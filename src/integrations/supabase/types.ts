@@ -454,23 +454,26 @@ export type Database = {
       players: {
         Row: {
           birth_date: string
+          first_name: string
           is_active: boolean | null
+          last_name: string
           player_id: number
-          player_name: string
           team_id: number | null
         }
         Insert: {
           birth_date: string
+          first_name: string
           is_active?: boolean | null
+          last_name: string
           player_id?: number
-          player_name: string
           team_id?: number | null
         }
         Update: {
           birth_date?: string
+          first_name?: string
           is_active?: boolean | null
+          last_name?: string
           player_id?: number
-          player_name?: string
           team_id?: number | null
         }
         Relationships: [
@@ -511,6 +514,33 @@ export type Database = {
             referencedColumns: ["player_id"]
           },
         ]
+      }
+      tab_visibility_settings: {
+        Row: {
+          created_at: string | null
+          id: number
+          is_visible: boolean
+          requires_login: boolean
+          setting_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          is_visible?: boolean
+          requires_login?: boolean
+          setting_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          is_visible?: boolean
+          requires_login?: boolean
+          setting_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       team_users: {
         Row: {
