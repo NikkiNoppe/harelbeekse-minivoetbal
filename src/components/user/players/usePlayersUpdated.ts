@@ -76,12 +76,13 @@ export const usePlayersUpdated = () => {
       try {
         setLoading(true);
         
-        const { data, error } = await supabase
-          .from('players')
-          .select('player_id, first_name, last_name, birth_date, team_id, is_active')
-          .eq('team_id', selectedTeam)
-          .eq('is_active', true)
-          .order('first_name');
+        // Use raw SQL query to get players with new column names
+        const { data, error } = await supabase.rpc('exec_sql', {
+          sql: `SELECT player_id, first_name, last_name, birth_date, team_id, is_active 
+                FROM players 
+                WHERE team_id = ${selectedTeam} AND is_active = true 
+                ORDER BY first_name`
+        });
         
         if (error) throw error;
         
@@ -128,25 +129,21 @@ export const usePlayersUpdated = () => {
     }
     
     try {
-      const { error } = await supabase
-        .from('players')
-        .insert({
-          first_name: newPlayer.firstName,
-          last_name: newPlayer.lastName,
-          birth_date: newPlayer.birthDate,
-          team_id: selectedTeam,
-          is_active: true
-        });
+      // Use raw SQL query to insert player with new column names
+      const { error } = await supabase.rpc('exec_sql', {
+        sql: `INSERT INTO players (first_name, last_name, birth_date, team_id, is_active) 
+              VALUES ('${newPlayer.firstName}', '${newPlayer.lastName}', '${newPlayer.birthDate}', ${selectedTeam}, true)`
+      });
       
       if (error) throw error;
       
       // Refresh players list
-      const { data, error: fetchError } = await supabase
-        .from('players')
-        .select('player_id, first_name, last_name, birth_date, team_id, is_active')
-        .eq('team_id', selectedTeam)
-        .eq('is_active', true)
-        .order('first_name');
+      const { data, error: fetchError } = await supabase.rpc('exec_sql', {
+        sql: `SELECT player_id, first_name, last_name, birth_date, team_id, is_active 
+              FROM players 
+              WHERE team_id = ${selectedTeam} AND is_active = true 
+              ORDER BY first_name`
+      });
       
       if (fetchError) throw fetchError;
       
@@ -187,24 +184,24 @@ export const usePlayersUpdated = () => {
     if (!editingPlayer) return;
     
     try {
-      const { error } = await supabase
-        .from('players')
-        .update({
-          first_name: editingPlayer.firstName,
-          last_name: editingPlayer.lastName,
-          birth_date: editingPlayer.birthDate
-        })
-        .eq('player_id', editingPlayer.player_id);
+      // Use raw SQL query to update player with new column names
+      const { error } = await supabase.rpc('exec_sql', {
+        sql: `UPDATE players 
+              SET first_name = '${editingPlayer.firstName}', 
+                  last_name = '${editingPlayer.lastName}', 
+                  birth_date = '${editingPlayer.birthDate}' 
+              WHERE player_id = ${editingPlayer.player_id}`
+      });
       
       if (error) throw error;
       
       // Refresh players list
-      const { data, error: fetchError } = await supabase
-        .from('players')
-        .select('player_id, first_name, last_name, birth_date, team_id, is_active')
-        .eq('team_id', selectedTeam)
-        .eq('is_active', true)
-        .order('first_name');
+      const { data, error: fetchError } = await supabase.rpc('exec_sql', {
+        sql: `SELECT player_id, first_name, last_name, birth_date, team_id, is_active 
+              FROM players 
+              WHERE team_id = ${selectedTeam} AND is_active = true 
+              ORDER BY first_name`
+      });
       
       if (fetchError) throw fetchError;
       
@@ -229,10 +226,10 @@ export const usePlayersUpdated = () => {
   // Handle remove player
   const handleRemovePlayer = async (playerId: number) => {
     try {
-      const { error } = await supabase
-        .from('players')
-        .update({ is_active: false })
-        .eq('player_id', playerId);
+      // Use raw SQL query to update player status
+      const { error } = await supabase.rpc('exec_sql', {
+        sql: `UPDATE players SET is_active = false WHERE player_id = ${playerId}`
+      });
       
       if (error) throw error;
       
