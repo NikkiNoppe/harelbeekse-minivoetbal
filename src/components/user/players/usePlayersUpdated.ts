@@ -12,7 +12,8 @@ export const usePlayersUpdated = () => {
     selectedTeam,
     setSelectedTeam,
     refreshPlayers,
-    user
+    user,
+    userTeamName
   } = usePlayersData();
 
   const {
@@ -65,6 +66,7 @@ export const usePlayersUpdated = () => {
     handleRemovePlayer,
     formatDate,
     getFullName,
-    user
+    user,
+    userTeamName
   };
 };

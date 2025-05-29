@@ -12,6 +12,7 @@ export const usePlayersData = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
+  const [userTeamName, setUserTeamName] = useState<string>("");
   
   // Fetch teams from Supabase
   useEffect(() => {
@@ -26,9 +27,20 @@ export const usePlayersData = () => {
         
         setTeams(data || []);
         
-        // If user is player_manager, auto-select their team
+        // If user is player_manager, get their assigned team
         if (user && user.role === "player_manager") {
-          setSelectedTeam(user.teamId);
+          const { data: teamUserData, error: teamUserError } = await supabase
+            .from('team_users')
+            .select('team_id, teams(team_name)')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (teamUserError) {
+            console.error('Error fetching user team:', teamUserError);
+          } else if (teamUserData) {
+            setSelectedTeam(teamUserData.team_id);
+            setUserTeamName((teamUserData.teams as any)?.team_name || "");
+          }
         } else if (data && data.length > 0) {
           // For admin, select first team by default
           setSelectedTeam(data[0].team_id);
@@ -106,6 +118,7 @@ export const usePlayersData = () => {
     selectedTeam,
     setSelectedTeam,
     refreshPlayers,
-    user
+    user,
+    userTeamName
   };
 };
