@@ -74,19 +74,22 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         return;
       }
 
-      if (result && result.length > 0) {
-        // Access the user_record from the nested structure
-        const dbResult = result[0];
-        const dbUser = dbResult.user_record;
-        console.log('Database user:', dbUser);
+      // Check if we have a result and it's an array with data
+      if (result && Array.isArray(result) && result.length > 0) {
+        // Get the first result from the array
+        const userResult = result[0];
+        console.log('User result:', userResult);
         
+        // Create user object from the result
         const user: User = {
-          id: dbUser.user_id,
-          username: dbUser.username,
+          id: userResult.user_id,
+          username: userResult.username,
           password: '', // Don't expose password in the frontend
-          role: dbUser.role,
-          email: dbUser.email
+          role: userResult.role,
+          email: userResult.email || ''
         };
+        
+        console.log('Mapped user:', user);
         
         toast({
           title: "Ingelogd!",
@@ -96,6 +99,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         // Call the success callback
         onLoginSuccess(user);
       } else {
+        console.log('No valid user found in result');
         toast({
           title: "Login mislukt",
           description: "Ongeldige gebruikersnaam/email of wachtwoord",
