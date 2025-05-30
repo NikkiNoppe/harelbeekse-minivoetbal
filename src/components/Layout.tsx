@@ -1,67 +1,27 @@
 
-import React, { useEffect, useState } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useNavigate } from "react-router-dom";
-import LoginForm from "@/components/auth/LoginForm";
-import UserDashboard from "@/components/user/UserDashboard";
+import { Outlet } from "react-router-dom";
 import Header from "@/components/header/Header";
 import Footer from "@/components/footer/Footer";
-import MainTabs from "@/components/tabs/MainTabs";
+import { useTabVisibility } from "@/context/TabVisibilityContext";
 
-const Layout: React.FC = () => {
-  const { user, login, logout, isAuthenticated } = useAuth();
-  const { isTabVisible } = useTabVisibility();
-  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabName>("algemeen");
-  const navigate = useNavigate();
-  
-  const handleLogoClick = () => {
-    setActiveTab("algemeen");
-    navigate("/");
-  };
+const Layout = () => {
+  const { loading } = useTabVisibility();
 
-  // Set the first visible tab as active tab when loading
-  useEffect(() => {
-    const visibleTabs: TabName[] = [
-      "algemeen", "competitie", "playoff", "beker", "schorsingen", "reglement"
-    ].filter(tab => isTabVisible(tab as TabName)) as TabName[];
-    
-    if (visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
-      setActiveTab(visibleTabs[0]);
-    }
-  }, [isTabVisible]);
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-muted-foreground">Applicatie laden...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
-      {/* Header */}
-      <Header 
-        onLogoClick={handleLogoClick}
-        onLoginClick={() => setLoginDialogOpen(true)}
-      />
-
-      {/* Main Content */}
-      <main className="flex-1 container py-6">
-        {isAuthenticated && user ? (
-          <UserDashboard />
-        ) : (
-          <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-        )}
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-1">
+        <Outlet />
       </main>
-
-      {/* Footer */}
       <Footer />
-
-      {/* Login Dialog */}
-      <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-background text-foreground border-border">
-          <LoginForm onLoginSuccess={user => {
-            login(user);
-            setLoginDialogOpen(false);
-          }} />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
