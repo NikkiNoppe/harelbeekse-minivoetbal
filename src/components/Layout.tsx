@@ -1,37 +1,67 @@
 
-import { Outlet, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
+import LoginForm from "@/components/auth/LoginForm";
+import UserDashboard from "@/components/user/UserDashboard";
 import Header from "@/components/header/Header";
 import Footer from "@/components/footer/Footer";
-import { useTabVisibility } from "@/context/TabVisibilityContext";
+import MainTabs from "@/components/tabs/MainTabs";
 
-const Layout = () => {
-  const { loading } = useTabVisibility();
+const Layout: React.FC = () => {
+  const { user, login, logout, isAuthenticated } = useAuth();
+  const { isTabVisible } = useTabVisibility();
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabName>("algemeen");
   const navigate = useNavigate();
-
+  
   const handleLogoClick = () => {
-    navigate('/');
+    setActiveTab("algemeen");
+    navigate("/");
   };
 
-  const handleLoginClick = () => {
-    // For now, just log the action - this can be expanded later
-    console.log('Login clicked');
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Applicatie laden...</div>
-      </div>
-    );
-  }
+  // Set the first visible tab as active tab when loading
+  useEffect(() => {
+    const visibleTabs: TabName[] = [
+      "algemeen", "competitie", "playoff", "beker", "schorsingen", "reglement"
+    ].filter(tab => isTabVisible(tab as TabName)) as TabName[];
+    
+    if (visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
+      setActiveTab(visibleTabs[0]);
+    }
+  }, [isTabVisible]);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header onLogoClick={handleLogoClick} onLoginClick={handleLoginClick} />
-      <main className="flex-1">
-        <Outlet />
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      {/* Header */}
+      <Header 
+        onLogoClick={handleLogoClick}
+        onLoginClick={() => setLoginDialogOpen(true)}
+      />
+
+      {/* Main Content */}
+      <main className="flex-1 container py-6">
+        {isAuthenticated && user ? (
+          <UserDashboard />
+        ) : (
+          <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+        )}
       </main>
+
+      {/* Footer */}
       <Footer />
+
+      {/* Login Dialog */}
+      <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-background text-foreground border-border">
+          <LoginForm onLoginSuccess={user => {
+            login(user);
+            setLoginDialogOpen(false);
+          }} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
