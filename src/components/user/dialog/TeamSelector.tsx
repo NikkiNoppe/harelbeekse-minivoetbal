@@ -42,6 +42,10 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
     .map(id => teams.find(team => team.id === id)?.name || "")
     .filter(Boolean);
     
+  const handleTeamToggle = (teamId: number) => {
+    onTeamSelect(teamId);
+  };
+    
   return (
     <div className="space-y-2">
       <Label>Teams</Label>
@@ -61,7 +65,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="p-0">
+          <PopoverContent className="p-0 w-full min-w-[var(--radix-popover-trigger-width)]">
             <Command>
               <CommandInput placeholder="Zoek team..." />
               <CommandEmpty>Geen teams gevonden.</CommandEmpty>
@@ -71,18 +75,24 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
                     {teams.map((team) => (
                       <CommandItem
                         key={team.id}
-                        onSelect={() => onTeamSelect(team.id)}
-                        className="flex items-center gap-2"
+                        onSelect={() => handleTeamToggle(team.id)}
+                        className="flex items-center gap-2 cursor-pointer"
                       >
                         <Checkbox 
                           checked={selectedTeamIds.includes(team.id)} 
-                          onCheckedChange={() => onTeamSelect(team.id)}
+                          onCheckedChange={() => handleTeamToggle(team.id)}
                           id={`team-${team.id}`}
                           className="mr-2"
                         />
                         <Label htmlFor={`team-${team.id}`} className="flex-grow cursor-pointer">
                           {team.name}
                         </Label>
+                        <Check
+                          className={cn(
+                            "ml-auto h-4 w-4",
+                            selectedTeamIds.includes(team.id) ? "opacity-100" : "opacity-0"
+                          )}
+                        />
                       </CommandItem>
                     ))}
                   </ScrollArea>

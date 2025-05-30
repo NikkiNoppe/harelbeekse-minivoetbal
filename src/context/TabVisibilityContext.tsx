@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useTabVisibilitySettings } from "@/hooks/useTabVisibilitySettings";
 
 // Definieert de beschikbare tabbladen
 export type TabName = "algemeen" | "competitie" | "playoff" | "beker" | "schorsingen" | "reglement";
@@ -27,21 +28,11 @@ type TabVisibilityContextType = {
   saveTabVisibilitySettings: () => void;
   isTabVisible: (tab: TabName) => boolean;
   resetToDefaults: () => void;
+  loading: boolean;
 };
 
 // Creëer de context
 export const TabVisibilityContext = createContext<TabVisibilityContextType | undefined>(undefined);
-
-// Functie om instellingen uit localStorage te laden
-const loadTabVisibilitySettings = (): TabVisibility => {
-  try {
-    const savedSettings = localStorage.getItem("tabVisibilitySettings");
-    return savedSettings ? JSON.parse(savedSettings) : defaultTabVisibility;
-  } catch (error) {
-    console.error("Fout bij het laden van tab zichtbaarheid instellingen:", error);
-    return defaultTabVisibility;
-  }
-};
 
 // Hook om de context te gebruiken
 export const useTabVisibility = (): TabVisibilityContextType => {
@@ -55,8 +46,29 @@ export const useTabVisibility = (): TabVisibilityContextType => {
 // Context provider component
 export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { toast } = useToast();
-  // Haal instellingen op uit localStorage of gebruik de standaardwaarden
-  const [tabsVisibility, setTabsVisibility] = useState<TabVisibility>(loadTabVisibilitySettings);
+  const { settings, loading: settingsLoading } = useTabVisibilitySettings();
+  const [tabsVisibility, setTabsVisibility] = useState<TabVisibility>(defaultTabVisibility);
+  const [loading, setLoading] = useState(true);
+
+  // Update local state when settings are loaded from Supabase
+  useEffect(() => {
+    if (!settingsLoading && settings.length > 0) {
+      const newVisibility: TabVisibility = { ...defaultTabVisibility };
+      
+      settings.forEach(setting => {
+        if (setting.setting_name in newVisibility) {
+          newVisibility[setting.setting_name as TabName] = setting.is_visible;
+        }
+      });
+      
+      setTabsVisibility(newVisibility);
+      setLoading(false);
+    } else if (!settingsLoading) {
+      // No settings found, use defaults
+      setTabsVisibility(defaultTabVisibility);
+      setLoading(false);
+    }
+  }, [settings, settingsLoading]);
 
   // Update de zichtbaarheid van een specifieke tab
   const updateTabVisibility = (tab: TabName, isVisible: boolean) => {
@@ -66,28 +78,17 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     }));
   };
 
-  // Sla de instellingen op in localStorage
+  // Sla de instellingen op (deze functie wordt nu niet meer gebruikt, maar behouden voor compatibiliteit)
   const saveTabVisibilitySettings = () => {
-    try {
-      localStorage.setItem("tabVisibilitySettings", JSON.stringify(tabsVisibility));
-      toast({
-        title: "Instellingen opgeslagen",
-        description: "De tab zichtbaarheid is succesvol bijgewerkt."
-      });
-    } catch (error) {
-      console.error("Fout bij het opslaan van tab zichtbaarheid instellingen:", error);
-      toast({
-        title: "Fout bij opslaan",
-        description: "Er is een probleem opgetreden bij het opslaan van de instellingen.",
-        variant: "destructive"
-      });
-    }
+    toast({
+      title: "Info",
+      description: "Tab instellingen worden automatisch opgeslagen in de admin instellingen."
+    });
   };
 
   // Reset naar standaard instellingen
   const resetToDefaults = () => {
     setTabsVisibility(defaultTabVisibility);
-    localStorage.setItem("tabVisibilitySettings", JSON.stringify(defaultTabVisibility));
     toast({
       title: "Instellingen hersteld",
       description: "De tab zichtbaarheid is teruggezet naar de standaardinstellingen."
@@ -105,7 +106,8 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     updateTabVisibility,
     saveTabVisibilitySettings,
     isTabVisible,
-    resetToDefaults
+    resetToDefaults,
+    loading
   };
 
   return (

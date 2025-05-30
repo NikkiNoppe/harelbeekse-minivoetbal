@@ -18,7 +18,13 @@ interface MainTabsProps {
 }
 
 const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
-  const { isTabVisible } = useTabVisibility();
+  const { isTabVisible, loading } = useTabVisibility();
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-40">
+      <div className="text-muted-foreground">Tabs laden...</div>
+    </div>;
+  }
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
