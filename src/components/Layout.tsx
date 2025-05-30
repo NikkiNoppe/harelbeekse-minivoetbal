@@ -22,6 +22,10 @@ const Layout: React.FC = () => {
     navigate("/");
   };
 
+  const handleLoginClick = () => {
+    setLoginDialogOpen(true);
+  };
+
   // Set the first visible tab as active tab when loading
   useEffect(() => {
     const visibleTabs: TabName[] = [
@@ -31,14 +35,14 @@ const Layout: React.FC = () => {
     if (visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
       setActiveTab(visibleTabs[0]);
     }
-  }, [isTabVisible]);
+  }, [isTabVisible, activeTab]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       {/* Header */}
       <Header 
         onLogoClick={handleLogoClick}
-        onLoginClick={() => setLoginDialogOpen(true)}
+        onLoginClick={handleLoginClick}
       />
 
       {/* Main Content */}
