@@ -11,7 +11,7 @@ interface GeneratedDate {
   available_date: string;
   is_available: boolean;
   is_cup_date: boolean;
-  venue_id?: string;
+  venue_id?: number;
   venue_name?: string;
   start_time?: string;
   end_time?: string;
