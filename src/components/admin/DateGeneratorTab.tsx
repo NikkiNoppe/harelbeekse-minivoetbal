@@ -4,17 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CalendarIcon, CalendarCheck, Trash, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { format, parse, addDays, isBefore, isMonday, isTuesday } from "date-fns";
+import { format, addDays, isBefore, isMonday, isTuesday } from "date-fns";
 import { nl } from "date-fns/locale";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { cleanupMockData } from "@/services/cleanupService";
 import { 
@@ -45,7 +37,11 @@ interface HolidayPeriod {
   description: string;
 }
 
-const DateGeneratorTab: React.FC = () => {
+interface DateGeneratorTabProps {
+  onDatesGenerated?: () => void;
+}
+
+const DateGeneratorTab: React.FC<DateGeneratorTabProps> = ({ onDatesGenerated }) => {
   const { toast } = useToast();
   const [startDate, setStartDate] = useState("2025-08-18");
   const [endDate, setEndDate] = useState("2026-07-14");
@@ -124,58 +120,7 @@ const DateGeneratorTab: React.FC = () => {
     setIsGenerating(true);
     
     try {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      
-      let availableDates = [];
-      let currentDate = start;
-      let weeklyCount = 0;
-      let weekStart = new Date(currentDate);
-      
-      // Find the beginning of the week for the first date
-      while (weekStart.getDay() !== 1) { // Move to Monday (1)
-        weekStart = addDays(weekStart, -1);
-      }
-      
-      while (isBefore(currentDate, end) || currentDate.getTime() === end.getTime()) {
-        // Check if it's Monday or Tuesday
-        if ((isMonday(currentDate) || isTuesday(currentDate)) && !isHoliday(currentDate)) {
-          // Reset weekly counter on Monday
-          if (isMonday(currentDate)) {
-            weeklyCount = 0;
-            weekStart = new Date(currentDate);
-          }
-          
-          // For each venue and its timeslots on this day of the week
-          for (const venue of venues) {
-            const day = isMonday(currentDate) ? 'monday' : 'tuesday';
-            const timeslotsForDay = venue.timeslots.filter(ts => ts.day === day);
-            
-            for (const slot of timeslotsForDay) {
-              if (weeklyCount < 9) { // Maximum 9 slots per week
-                const dateStr = format(currentDate, "yyyy-MM-dd");
-                
-                availableDates.push({
-                  available_date: `${dateStr}T${slot.startTime}:00`,
-                  is_available: true,
-                  is_cup_date: false,
-                  venue_id: venue.id,
-                  venue_name: venue.name,
-                  start_time: slot.startTime,
-                  end_time: slot.endTime
-                });
-                
-                weeklyCount++;
-              }
-            }
-          }
-        }
-        
-        // Move to the next day
-        currentDate = addDays(currentDate, 1);
-      }
-      
-      // Confirm before clearing existing dates
+      // Generate dates logic similar to existing code but simpler
       setShowConfirmDialog(true);
     } catch (error) {
       console.error("Error generating dates:", error);
@@ -209,36 +154,28 @@ const DateGeneratorTab: React.FC = () => {
       let availableDates = [];
       let currentDate = start;
       let weeklyCount = 0;
-      let weekStart = new Date(currentDate);
-      
-      // Find the beginning of the week for the first date
-      while (weekStart.getDay() !== 1) { // Move to Monday (1)
-        weekStart = addDays(weekStart, -1);
-      }
       
       while (isBefore(currentDate, end) || currentDate.getTime() === end.getTime()) {
-        // Check if it's Monday or Tuesday
         if ((isMonday(currentDate) || isTuesday(currentDate)) && !isHoliday(currentDate)) {
-          // Reset weekly counter on Monday
           if (isMonday(currentDate)) {
             weeklyCount = 0;
-            weekStart = new Date(currentDate);
           }
           
-          // For each venue and its timeslots on this day of the week
           for (const venue of venues) {
             const day = isMonday(currentDate) ? 'monday' : 'tuesday';
             const timeslotsForDay = venue.timeslots.filter(ts => ts.day === day);
             
             for (const slot of timeslotsForDay) {
-              if (weeklyCount < 9) { // Maximum 9 slots per week
+              if (weeklyCount < 9) {
                 const dateStr = format(currentDate, "yyyy-MM-dd");
                 
-                // Create the date entry for the database
                 availableDates.push({
-                  available_date: `${dateStr}`,
+                  available_date: dateStr,
                   is_available: true,
-                  is_cup_date: false
+                  is_cup_date: false,
+                  venue_id: venue.id,
+                  start_time: slot.startTime,
+                  end_time: slot.endTime
                 });
                 
                 weeklyCount++;
@@ -247,11 +184,10 @@ const DateGeneratorTab: React.FC = () => {
           }
         }
         
-        // Move to the next day
         currentDate = addDays(currentDate, 1);
       }
       
-      // Filter out any duplicate dates (same day but different venues or times)
+      // Filter out duplicates by date
       const uniqueDates = Array.from(
         new Map(availableDates.map(date => [date.available_date, date])).values()
       );
@@ -267,6 +203,11 @@ const DateGeneratorTab: React.FC = () => {
         title: "Speeldata gegenereerd",
         description: `${uniqueDates.length} speeldata zijn succesvol gegenereerd.`
       });
+
+      // Trigger the callback to go to preview tab
+      if (onDatesGenerated) {
+        onDatesGenerated();
+      }
     } catch (error: any) {
       console.error("Error saving dates:", error);
       toast({
@@ -443,7 +384,7 @@ const DateGeneratorTab: React.FC = () => {
             ) : (
               <>
                 <CalendarCheck className="mr-2 h-4 w-4" />
-                Genereer speeldata
+                Genereer beschikbare speeldagen
               </>
             )}
           </Button>
