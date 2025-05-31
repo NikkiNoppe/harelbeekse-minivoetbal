@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +17,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import FormatSelectionTab from "../competition-generator/FormatSelectionTab";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import PreviewTab from "../competition-generator/PreviewTab";
-import { useCompetitionGenerator } from "../competition-generator/useCompetitionGenerator";
+import { useQuery } from "@tanstack/react-query";
 
 interface Venue {
   venue_id?: number;
@@ -49,6 +48,15 @@ interface Team {
   team_name: string;
 }
 
+interface GeneratedMatch {
+  match_id?: number;
+  home_team: string;
+  away_team: string;
+  match_date?: string;
+  match_time?: string;
+  venue?: string;
+}
+
 const CompetitionManagementTab: React.FC = () => {
   const { toast } = useToast();
   const [startDate, setStartDate] = useState("2025-08-18");
@@ -63,6 +71,11 @@ const CompetitionManagementTab: React.FC = () => {
     timeslots: []
   });
   
+  // Competition format selection
+  const [selectedFormat, setSelectedFormat] = useState<string>("regular");
+  const [isCupCompetition, setIsCupCompetition] = useState(false);
+  const [competitionName, setCompetitionName] = useState("Competitie 2025-2026");
+  
   const [venues, setVenues] = useState<Venue[]>([]);
   const [holidayPeriods, setHolidayPeriods] = useState<HolidayPeriod[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -73,20 +86,30 @@ const CompetitionManagementTab: React.FC = () => {
     end_date: ""
   });
 
-  const {
-    competitionFormats,
-    loadingFormats,
-    selectedFormat,
-    generatedMatches,
-    competitionName,
-    isCreating,
-    setSelectedFormat,
-    setCompetitionName,
-    generateSchedule,
-    saveCompetition,
-    activeTab,
-    setActiveTab
-  } = useCompetitionGenerator();
+  // Competition preview
+  const [showPreview, setShowPreview] = useState(false);
+  const [generatedMatches, setGeneratedMatches] = useState<GeneratedMatch[]>([]);
+
+  // Fetch generated dates for preview
+  const { data: generatedDates, isLoading: loadingDates, refetch: refetchDates } = useQuery({
+    queryKey: ['generatedDates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('available_dates')
+        .select(`
+          *,
+          venues!inner(name)
+        `)
+        .order('available_date');
+      
+      if (error) throw error;
+      return data?.map(d => ({
+        ...d,
+        venue_name: d.venues?.name
+      })) || [];
+    },
+    enabled: showPreview
+  });
 
   // Load data from Supabase
   useEffect(() => {
@@ -395,13 +418,13 @@ const CompetitionManagementTab: React.FC = () => {
     );
   };
 
-  // Generate available dates
+  // Generate available dates and show preview
   const generateDates = async () => {
     setIsGeneratingDates(true);
     setShowConfirmDialog(true);
   };
   
-  // Save generated dates to the database
+  // Save generated dates to the database and generate competition preview
   const saveDates = async () => {
     setIsGeneratingDates(true);
     setShowConfirmDialog(false);
@@ -438,7 +461,7 @@ const CompetitionManagementTab: React.FC = () => {
               availableDates.push({
                 available_date: dateStr,
                 is_available: true,
-                is_cup_date: false,
+                is_cup_date: isCupCompetition,
                 venue_id: venue.venue_id,
                 start_time: slot.start_time,
                 end_time: slot.end_time
@@ -459,6 +482,25 @@ const CompetitionManagementTab: React.FC = () => {
           
         if (insertError) throw insertError;
       }
+
+      // Generate mock competition matches for preview
+      const mockMatches: GeneratedMatch[] = [];
+      const selectedTeamNames = teams.filter(t => selectedTeams.includes(t.team_id)).map(t => t.team_name);
+      
+      if (selectedTeamNames.length >= 2) {
+        for (let i = 0; i < selectedTeamNames.length; i++) {
+          for (let j = i + 1; j < selectedTeamNames.length; j++) {
+            mockMatches.push({
+              home_team: selectedTeamNames[i],
+              away_team: selectedTeamNames[j]
+            });
+          }
+        }
+      }
+      
+      setGeneratedMatches(mockMatches);
+      setShowPreview(true);
+      refetchDates();
       
       toast({
         title: "Speeldata gegenereerd",
@@ -481,310 +523,307 @@ const CompetitionManagementTab: React.FC = () => {
     return days[dayOfWeek] || '';
   };
 
+  if (showPreview) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Competitie Voorvertoning</h1>
+          <Button variant="outline" onClick={() => setShowPreview(false)}>
+            Terug naar instellingen
+          </Button>
+        </div>
+        
+        <PreviewTab
+          generatedMatches={generatedMatches}
+          competitionName={competitionName}
+          selectedDates={[]}
+          competitionFormat={{ 
+            id: selectedFormat, 
+            name: isCupCompetition ? "Beker Competitie" : "Reguliere Competitie",
+            isCup: isCupCompetition
+          }}
+          isCreating={false}
+          onSaveCompetition={() => {}}
+          onRegenerateSchedule={() => {}}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Competitiebeheer</h1>
       
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="format">1. Format</TabsTrigger>
-          <TabsTrigger value="dates">2. Speeldagen</TabsTrigger>
-          <TabsTrigger value="preview">3. Voorvertoning</TabsTrigger>
-          <TabsTrigger value="management">Beheer</TabsTrigger>
-        </TabsList>
-        
-        {/* Tab 1: Format selecteren */}
-        <TabsContent value="format" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Competitieformat</CardTitle>
-              <CardDescription>
-                Selecteer het format voor uw competitie
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FormatSelectionTab
-                competitionFormats={competitionFormats}
-                loadingFormats={loadingFormats}
-                selectedFormat={selectedFormat}
-                setSelectedFormat={setSelectedFormat}
-                competitionName={competitionName}
-                setCompetitionName={setCompetitionName}
-                onGenerateSchedule={() => setActiveTab("dates")}
+      {/* Step 1: Format selectie */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</span>
+            Competitieformat
+          </CardTitle>
+          <CardDescription>
+            Selecteer het type competitie en geef een naam
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <Label htmlFor="competition-name">Competitie naam</Label>
+            <Input
+              id="competition-name"
+              value={competitionName}
+              onChange={(e) => setCompetitionName(e.target.value)}
+              placeholder="Bijv. Competitie 2025-2026"
+            />
+          </div>
+          
+          <div className="space-y-3">
+            <Label>Competitieformat</Label>
+            <RadioGroup value={selectedFormat} onValueChange={setSelectedFormat}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="regular" id="regular" />
+                <Label htmlFor="regular">Reguliere competitie</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="playoff" id="playoff" />
+                <Label htmlFor="playoff">Competitie met Play-offs</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="cup-competition"
+              checked={isCupCompetition}
+              onCheckedChange={setIsCupCompetition}
+            />
+            <Label htmlFor="cup-competition">Beker competitie</Label>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Step 2: Locaties en speeluren */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</span>
+              Locaties en speeluren
+            </span>
+            <Button onClick={addNewVenue} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Locatie toevoegen
+            </Button>
+          </CardTitle>
+          <CardDescription>
+            Configureer de beschikbare locaties en tijdsloten voor wedstrijden
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {venues.map((venue) => (
+            <div key={venue.venue_id} className="rounded-md border p-4 bg-muted/30">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h4 className="font-medium">{venue.name}</h4>
+                  <p className="text-sm text-muted-foreground">{venue.address}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => editVenue(venue)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => removeVenue(venue.venue_id!)}>
+                    <Trash className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h5 className="text-sm font-medium mb-2">Maandag</h5>
+                  <ul className="space-y-1">
+                    {venue.timeslots
+                      .filter(slot => slot.day_of_week === 1)
+                      .map((slot, i) => (
+                        <li key={`${venue.venue_id}-mon-${i}`} className="text-sm bg-background rounded px-2 py-1">
+                          {slot.start_time} - {slot.end_time}
+                        </li>
+                      ))
+                    }
+                  </ul>
+                </div>
+                <div>
+                  <h5 className="text-sm font-medium mb-2">Dinsdag</h5>
+                  <ul className="space-y-1">
+                    {venue.timeslots
+                      .filter(slot => slot.day_of_week === 2)
+                      .map((slot, i) => (
+                        <li key={`${venue.venue_id}-tue-${i}`} className="text-sm bg-background rounded px-2 py-1">
+                          {slot.start_time} - {slot.end_time}
+                        </li>
+                      ))
+                    }
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Step 3: Uitzonderingen */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</span>
+            Uitzonderingen - Vakantieperiodes
+          </CardTitle>
+          <CardDescription>
+            Voeg periodes toe waarin geen wedstrijden kunnen plaatsvinden
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Seizoen periode */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-md">
+            <div className="space-y-3">
+              <Label htmlFor="start-date">Startdatum seizoen</Label>
+              <Input
+                id="start-date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
               />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* Tab 2: Speeldagen configureren */}
-        <TabsContent value="dates" className="space-y-6">
-          {/* 1. Locaties en speeluren */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</span>
-                  Locaties en speeluren
-                </span>
-                <Button onClick={addNewVenue} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Locatie toevoegen
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="end-date">Einddatum seizoen</Label>
+              <Input
+                id="end-date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {holidayPeriods.map((period) => (
+              <div key={period.holiday_id} className="flex items-center justify-between rounded-md border p-3 bg-muted/30">
+                <div>
+                  <p className="font-medium">{period.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(period.start_date), "d MMMM yyyy", { locale: nl })} - {format(new Date(period.end_date), "d MMMM yyyy", { locale: nl })}
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => removeHolidayPeriod(period.holiday_id!)}
+                >
+                  <Trash className="h-4 w-4 text-destructive" />
                 </Button>
-              </CardTitle>
-              <CardDescription>
-                Configureer de beschikbare locaties en tijdsloten voor wedstrijden
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {venues.map((venue) => (
-                <div key={venue.venue_id} className="rounded-md border p-4 bg-muted/30">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h4 className="font-medium">{venue.name}</h4>
-                      <p className="text-sm text-muted-foreground">{venue.address}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => editVenue(venue)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => removeVenue(venue.venue_id!)}>
-                        <Trash className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h5 className="text-sm font-medium mb-2">Maandag</h5>
-                      <ul className="space-y-1">
-                        {venue.timeslots
-                          .filter(slot => slot.day_of_week === 1)
-                          .map((slot, i) => (
-                            <li key={`${venue.venue_id}-mon-${i}`} className="text-sm bg-background rounded px-2 py-1">
-                              {slot.start_time} - {slot.end_time}
-                            </li>
-                          ))
-                        }
-                      </ul>
-                    </div>
-                    <div>
-                      <h5 className="text-sm font-medium mb-2">Dinsdag</h5>
-                      <ul className="space-y-1">
-                        {venue.timeslots
-                          .filter(slot => slot.day_of_week === 2)
-                          .map((slot, i) => (
-                            <li key={`${venue.venue_id}-tue-${i}`} className="text-sm bg-background rounded px-2 py-1">
-                              {slot.start_time} - {slot.end_time}
-                            </li>
-                          ))
-                        }
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* 2. Uitzonderingen */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</span>
-                Uitzonderingen - Vakantieperiodes
-              </CardTitle>
-              <CardDescription>
-                Voeg periodes toe waarin geen wedstrijden kunnen plaatsvinden
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Seizoen periode */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-md">
-                <div className="space-y-3">
-                  <Label htmlFor="start-date">Startdatum seizoen</Label>
-                  <Input
-                    id="start-date"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="end-date">Einddatum seizoen</Label>
-                  <Input
-                    id="end-date"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
-                </div>
               </div>
+            ))}
+          </div>
 
-              <div className="space-y-3">
-                {holidayPeriods.map((period) => (
-                  <div key={period.holiday_id} className="flex items-center justify-between rounded-md border p-3 bg-muted/30">
-                    <div>
-                      <p className="font-medium">{period.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(period.start_date), "d MMMM yyyy", { locale: nl })} - {format(new Date(period.end_date), "d MMMM yyyy", { locale: nl })}
-                      </p>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => removeHolidayPeriod(period.holiday_id!)}
-                    >
-                      <Trash className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-md">
-                <div>
-                  <Label htmlFor="holiday-start">Startdatum</Label>
-                  <Input
-                    id="holiday-start"
-                    type="date"
-                    value={newHoliday.start_date}
-                    onChange={(e) => setNewHoliday({...newHoliday, start_date: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="holiday-end">Einddatum</Label>
-                  <Input
-                    id="holiday-end"
-                    type="date"
-                    value={newHoliday.end_date}
-                    onChange={(e) => setNewHoliday({...newHoliday, end_date: e.target.value})}
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <Label htmlFor="holiday-desc">Omschrijving</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="holiday-desc"
-                      value={newHoliday.name}
-                      onChange={(e) => setNewHoliday({...newHoliday, name: e.target.value})}
-                    />
-                    <Button onClick={addHolidayPeriod}>Toevoegen</Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 3. Selecteer teams */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</span>
-                Selecteer teams
-              </CardTitle>
-              <CardDescription>
-                Kies welke teams deelnemen aan deze competitie
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {teams.map((team) => (
-                  <div 
-                    key={team.team_id}
-                    className={`p-3 border rounded-md cursor-pointer transition-colors ${
-                      selectedTeams.includes(team.team_id) 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-background hover:bg-muted'
-                    }`}
-                    onClick={() => toggleTeamSelection(team.team_id)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{team.team_name}</span>
-                      <input
-                        type="checkbox"
-                        checked={selectedTeams.includes(team.team_id)}
-                        onChange={() => toggleTeamSelection(team.team_id)}
-                        className="h-4 w-4"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {selectedTeams.length > 0 && (
-                <div className="mt-4 p-3 bg-muted/50 rounded-md">
-                  <p className="text-sm font-medium">{selectedTeams.length} teams geselecteerd</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* 4. Genereer speeldagen */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">4</span>
-                Speeldagen genereren
-              </CardTitle>
-              <CardDescription>
-                Genereer beschikbare speeldagen op basis van bovenstaande instellingen
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={generateDates} className="w-full" disabled={isGeneratingDates}>
-                {isGeneratingDates ? (
-                  <>Genereren...</>
-                ) : (
-                  <>
-                    <CalendarCheck className="mr-2 h-4 w-4" />
-                    Genereer beschikbare speeldagen
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* Tab 3: Voorvertoning */}
-        <TabsContent value="preview" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Competitie Voorvertoning</CardTitle>
-              <CardDescription>
-                Controleer en bewaar uw competitieschema
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PreviewTab
-                generatedMatches={generatedMatches}
-                competitionName={competitionName}
-                selectedDates={[]}
-                competitionFormat={competitionFormats?.find(f => f.id === selectedFormat)}
-                isCreating={isCreating}
-                onSaveCompetition={saveCompetition}
-                onRegenerateSchedule={generateSchedule}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-md">
+            <div>
+              <Label htmlFor="holiday-start">Startdatum</Label>
+              <Input
+                id="holiday-start"
+                type="date"
+                value={newHoliday.start_date}
+                onChange={(e) => setNewHoliday({...newHoliday, start_date: e.target.value})}
               />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* Tab 4: Beheer bestaande competities */}
-        <TabsContent value="management" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Beheer Competities</CardTitle>
-              <CardDescription>
-                Overzicht en beheer van bestaande competities
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="p-4 border rounded-md">
-                <p className="text-muted-foreground">
-                  Functionaliteit voor het beheren van bestaande competities komt hier.
-                </p>
+            </div>
+            <div>
+              <Label htmlFor="holiday-end">Einddatum</Label>
+              <Input
+                id="holiday-end"
+                type="date"
+                value={newHoliday.end_date}
+                onChange={(e) => setNewHoliday({...newHoliday, end_date: e.target.value})}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="holiday-desc">Omschrijving</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="holiday-desc"
+                  value={newHoliday.name}
+                  onChange={(e) => setNewHoliday({...newHoliday, name: e.target.value})}
+                />
+                <Button onClick={addHolidayPeriod}>Toevoegen</Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Step 4: Selecteer teams */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">4</span>
+            Selecteer teams
+          </CardTitle>
+          <CardDescription>
+            Kies welke teams deelnemen aan deze competitie
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {teams.map((team) => (
+              <div 
+                key={team.team_id}
+                className={`p-3 border rounded-md cursor-pointer transition-colors ${
+                  selectedTeams.includes(team.team_id) 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-background hover:bg-muted'
+                }`}
+                onClick={() => toggleTeamSelection(team.team_id)}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{team.team_name}</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedTeams.includes(team.team_id)}
+                    onChange={() => toggleTeamSelection(team.team_id)}
+                    className="h-4 w-4"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          {selectedTeams.length > 0 && (
+            <div className="mt-4 p-3 bg-muted/50 rounded-md">
+              <p className="text-sm font-medium">{selectedTeams.length} teams geselecteerd</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Step 5: Genereer speeldagen */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">5</span>
+            Speeldagen genereren
+          </CardTitle>
+          <CardDescription>
+            Genereer beschikbare speeldagen op basis van bovenstaande instellingen
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={generateDates} className="w-full" disabled={isGeneratingDates}>
+            {isGeneratingDates ? (
+              <>Genereren...</>
+            ) : (
+              <>
+                <CalendarCheck className="mr-2 h-4 w-4" />
+                Genereer beschikbare speeldagen
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Venue Dialog */}
       <Dialog open={showVenueDialog} onOpenChange={setShowVenueDialog}>
