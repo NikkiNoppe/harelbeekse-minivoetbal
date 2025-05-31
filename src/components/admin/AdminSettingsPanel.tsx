@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import SettingsTab from "@/components/admin/tabs/SettingsTab";
+import SettingsTabUpdated from "@/components/admin/tabs/SettingsTabUpdated";
 import UserManagementTab from "@/components/admin/tabs/UserManagementTab";
 import FinancialTab from "@/components/admin/tabs/FinancialTab";
 import { Settings, Users, DollarSign } from "lucide-react";
@@ -30,7 +30,7 @@ const AdminSettingsPanel: React.FC = () => {
         </TabsList>
         
         <TabsContent value="settings" className="mt-4">
-          <SettingsTab />
+          <SettingsTabUpdated />
         </TabsContent>
         
         <TabsContent value="users" className="mt-4">
