@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,13 +25,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface Venue {
   venue_id: number;
-  venue_name: string;
+  name: string;
+  address: string;
 }
 
 interface Holiday {
   holiday_id: number;
-  holiday_name: string;
-  holiday_date: string;
+  name: string;
+  start_date: string;
+  end_date: string;
 }
 
 interface Team {
@@ -39,12 +42,11 @@ interface Team {
 }
 
 interface CompetitionFormat {
-  id: number;
+  format_id: number;
   name: string;
   description: string;
-  requires_venues: boolean;
-  requires_holidays: boolean;
-  is_cup_competition: boolean;
+  has_playoffs: boolean;
+  regular_rounds: number;
 }
 
 const CompetitionManagementTab: React.FC = () => {
@@ -63,20 +65,20 @@ const CompetitionManagementTab: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('venues')
-        .select('*')
-        .order('venue_name');
+        .select('venue_id, name, address')
+        .order('name');
       if (error) throw error;
       return data as Venue[];
     }
   });
 
   const { data: holidays, isLoading: loadingHolidays } = useQuery({
-    queryKey: ['holidays'],
+    queryKey: ['holiday_periods'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('holidays')
-        .select('*')
-        .order('holiday_date');
+        .from('holiday_periods')
+        .select('holiday_id, name, start_date, end_date')
+        .order('start_date');
       if (error) throw error;
       return data as Holiday[];
     }
@@ -113,8 +115,10 @@ const CompetitionManagementTab: React.FC = () => {
     return date.toLocaleDateString('nl-NL', { weekday: 'long' });
   };
 
-  const handleCupCompetitionChange = (isChecked: boolean) => {
-    setCupCompetition(isChecked);
+  const handleCupCompetitionChange = (checked: boolean | "indeterminate") => {
+    if (typeof checked === "boolean") {
+      setCupCompetition(checked);
+    }
   };
 
   // Add function to select all teams
@@ -130,8 +134,8 @@ const CompetitionManagementTab: React.FC = () => {
   };
 
   const showPreview = selectedFormat &&
-    (competitionFormats?.find(format => format.id === selectedFormat)?.requires_venues ? selectedVenues.length > 0 : true) &&
-    (competitionFormats?.find(format => format.id === selectedFormat)?.requires_holidays ? selectedHolidays.length > 0 : true) &&
+    selectedVenues.length > 0 &&
+    selectedHolidays.length > 0 &&
     selectedTeams.length > 1;
 
   return (
@@ -173,7 +177,7 @@ const CompetitionManagementTab: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {competitionFormats?.map((format) => (
-                        <SelectItem key={format.id} value={format.id.toString()}>
+                        <SelectItem key={format.format_id} value={format.format_id.toString()}>
                           {format.name}
                         </SelectItem>
                       ))}
@@ -183,10 +187,18 @@ const CompetitionManagementTab: React.FC = () => {
                 {selectedFormat && (
                   <div className="rounded-md border p-4">
                     <p className="text-sm font-medium">
-                      {competitionFormats?.find(format => format.id === selectedFormat)?.description}
+                      {competitionFormats?.find(format => format.format_id === selectedFormat)?.description}
                     </p>
                   </div>
                 )}
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="cup-competition" 
+                    checked={cupCompetition}
+                    onCheckedChange={handleCupCompetitionChange} 
+                  />
+                  <Label htmlFor="cup-competition">Beker competitie</Label>
+                </div>
               </div>
               <Button onClick={() => setActiveStep("venues")} disabled={!selectedFormat}>
                 Volgende
@@ -217,7 +229,7 @@ const CompetitionManagementTab: React.FC = () => {
                           }}
                         />
                         <Label htmlFor={`venue-${venue.venue_id}`} className="flex-1 cursor-pointer">
-                          {venue.venue_name}
+                          {venue.name}
                         </Label>
                       </div>
                     ))}
@@ -258,7 +270,7 @@ const CompetitionManagementTab: React.FC = () => {
                           }}
                         />
                         <Label htmlFor={`holiday-${holiday.holiday_id}`} className="flex-1 cursor-pointer">
-                          {holiday.holiday_name} ({new Date(holiday.holiday_date).toLocaleDateString('nl-NL')})
+                          {holiday.name} ({new Date(holiday.start_date).toLocaleDateString('nl-NL')} - {new Date(holiday.end_date).toLocaleDateString('nl-NL')})
                         </Label>
                       </div>
                     ))}
@@ -374,7 +386,11 @@ const CompetitionManagementTab: React.FC = () => {
                           />
                         </React.Suspense>
                         <div className="flex justify-end mt-2">
-                          <Button variant="outline" size="sm" onClick={() => generateAvailableDates(undefined)}>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => generateAvailableDates(undefined)}
+                          >
                             Reset
                           </Button>
                         </div>
@@ -391,7 +407,7 @@ const CompetitionManagementTab: React.FC = () => {
                       Mogelijke speeldagen:
                     </p>
                     <ul className="list-disc pl-5">
-                      {Array.from({ length: addDays(availableDates.to, 1).getTime() - availableDates.from.getTime() }, (_, i) => {
+                      {Array.from({ length: Math.ceil((availableDates.to.getTime() - availableDates.from.getTime()) / (1000 * 60 * 60 * 24)) + 1 }, (_, i) => {
                         const date = addDays(availableDates.from!, i);
                         return (
                           <li key={i}>
@@ -400,12 +416,6 @@ const CompetitionManagementTab: React.FC = () => {
                         );
                       })}
                     </ul>
-                  </div>
-                )}
-                {competitionFormats?.find(format => format.id === selectedFormat)?.is_cup_competition && (
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="cup-competition" onCheckedChange={handleCupCompetitionChange} />
-                    <Label htmlFor="cup-competition">Beker competitie</Label>
                   </div>
                 )}
               </div>
