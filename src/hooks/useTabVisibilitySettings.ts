@@ -23,7 +23,16 @@ export const useTabVisibilitySettings = () => {
         .order('setting_name');
 
       if (error) throw error;
-      setSettings(data || []);
+      
+      // Map the data to include requires_login field (defaulting to false if not present)
+      const mappedData = (data || []).map(item => ({
+        id: item.id,
+        setting_name: item.setting_name,
+        is_visible: item.is_visible,
+        requires_login: item.requires_login || false
+      }));
+      
+      setSettings(mappedData);
     } catch (error) {
       console.error('Error fetching tab settings:', error);
       // Fallback to main tabs only

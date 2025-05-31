@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -108,7 +107,7 @@ const CompetitionManagementTab: React.FC = () => {
     }
   });
 
-  const generateAvailableDates = (dateRange: DateRange | undefined) => {
+  const handleDateSelect = (dateRange: DateRange | undefined) => {
     setAvailableDates(dateRange);
   };
 
@@ -274,7 +273,7 @@ const CompetitionManagementTab: React.FC = () => {
                           mode="range"
                           defaultMonth={availableDates?.from}
                           selected={availableDates}
-                          onSelect={generateAvailableDates}
+                          onSelect={handleDateSelect}
                           numberOfMonths={2}
                         />
                       </PopoverContent>
