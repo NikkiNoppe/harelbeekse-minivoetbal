@@ -21,6 +21,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import PreviewTab from "../competition-generator/PreviewTab";
 import { useQuery } from "@tanstack/react-query";
+import { GeneratedMatch, CompetitionType } from "../competition-generator/types";
 
 interface Venue {
   venue_id?: number;
@@ -46,15 +47,6 @@ interface HolidayPeriod {
 interface Team {
   team_id: number;
   team_name: string;
-}
-
-interface GeneratedMatch {
-  match_id?: number;
-  home_team: string;
-  away_team: string;
-  match_date?: string;
-  match_time?: string;
-  venue?: string;
 }
 
 const CompetitionManagementTab: React.FC = () => {
@@ -483,17 +475,25 @@ const CompetitionManagementTab: React.FC = () => {
         if (insertError) throw insertError;
       }
 
-      // Generate mock competition matches for preview
+      // Generate mock competition matches for preview with correct structure
       const mockMatches: GeneratedMatch[] = [];
-      const selectedTeamNames = teams.filter(t => selectedTeams.includes(t.team_id)).map(t => t.team_name);
+      const selectedTeamNames = teams.filter(t => selectedTeams.includes(t.team_id));
       
       if (selectedTeamNames.length >= 2) {
+        let matchday = 1;
         for (let i = 0; i < selectedTeamNames.length; i++) {
           for (let j = i + 1; j < selectedTeamNames.length; j++) {
             mockMatches.push({
-              home_team: selectedTeamNames[i],
-              away_team: selectedTeamNames[j]
+              home_team_id: selectedTeamNames[i].team_id,
+              away_team_id: selectedTeamNames[j].team_id,
+              matchday: matchday,
+              home_team_name: selectedTeamNames[i].team_name,
+              away_team_name: selectedTeamNames[j].team_name,
+              unique_code: `M${matchday.toString().padStart(2, '0')}-${(mockMatches.length + 1).toString().padStart(2, '0')}`,
+              match_date: availableDates[mockMatches.length % availableDates.length]?.available_date,
+              match_time: availableDates[mockMatches.length % availableDates.length]?.start_time
             });
+            if (mockMatches.length % 4 === 0) matchday++;
           }
         }
       }
@@ -523,7 +523,26 @@ const CompetitionManagementTab: React.FC = () => {
     return days[dayOfWeek] || '';
   };
 
+  // Handle checkbox change properly
+  const handleCupCompetitionChange = (checked: boolean | "indeterminate") => {
+    if (typeof checked === "boolean") {
+      setIsCupCompetition(checked);
+    }
+  };
+
   if (showPreview) {
+    // Create proper CompetitionType object
+    const competitionFormat: CompetitionType = {
+      id: selectedFormat,
+      name: isCupCompetition ? "Beker Competitie" : "Reguliere Competitie",
+      description: isCupCompetition ? "Beker knockout competitie" : "Reguliere competitie format",
+      hasPlayoffs: selectedFormat === "playoff",
+      regularRounds: 2,
+      has_playoffs: selectedFormat === "playoff",
+      regular_rounds: 2,
+      isCup: isCupCompetition
+    };
+
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -537,11 +556,7 @@ const CompetitionManagementTab: React.FC = () => {
           generatedMatches={generatedMatches}
           competitionName={competitionName}
           selectedDates={[]}
-          competitionFormat={{ 
-            id: selectedFormat, 
-            name: isCupCompetition ? "Beker Competitie" : "Reguliere Competitie",
-            isCup: isCupCompetition
-          }}
+          competitionFormat={competitionFormat}
           isCreating={false}
           onSaveCompetition={() => {}}
           onRegenerateSchedule={() => {}}
@@ -594,7 +609,7 @@ const CompetitionManagementTab: React.FC = () => {
             <Checkbox
               id="cup-competition"
               checked={isCupCompetition}
-              onCheckedChange={setIsCupCompetition}
+              onCheckedChange={handleCupCompetitionChange}
             />
             <Label htmlFor="cup-competition">Beker competitie</Label>
           </div>
