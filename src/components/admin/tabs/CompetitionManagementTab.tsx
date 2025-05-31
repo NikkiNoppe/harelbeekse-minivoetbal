@@ -1,17 +1,40 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, Plus, Trash2 } from "lucide-react";
-import { format, addDays, startOfWeek, endOfWeek } from "date-fns";
-import { nl } from "date-fns/locale";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CalendarIcon, Loader2 } from "lucide-react";
+import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { addDays, format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+
+interface Venue {
+  venue_id: number;
+  name: string;
+  address: string;
+}
+
+interface Holiday {
+  holiday_id: number;
+  name: string;
+  start_date: string;
+  end_date: string;
+}
 
 interface Team {
   team_id: number;
@@ -22,350 +45,138 @@ interface CompetitionFormat {
   format_id: number;
   name: string;
   description: string;
-}
-
-interface Venue {
-  venue_id: number;
-  name: string;
-  address: string;
-}
-
-interface GeneratedMatch {
-  id: number;
-  home_team_id: number;
-  away_team_id: number;
-  matchday: string;
-  home_team_name: string;
-  away_team_name: string;
-  match_date: string;
-  venue_id: number;
+  has_playoffs: boolean;
+  regular_rounds: number;
 }
 
 const CompetitionManagementTab: React.FC = () => {
-  const { toast } = useToast();
-  
+  const [activeStep, setActiveStep] = useState("format");
+  const [selectedFormat, setSelectedFormat] = useState<number | null>(null);
+  const [competitionName, setCompetitionName] = useState("");
+  const [selectedVenues, setSelectedVenues] = useState<number[]>([]);
+  const [selectedHolidays, setSelectedHolidays] = useState<number[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [competitionFormats, setCompetitionFormats] = useState<CompetitionFormat[]>([]);
-  const [venues, setVenues] = useState<Venue[]>([]);
-  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
-  const [selectedFormat, setSelectedFormat] = useState<string>("");
-  const [selectedVenue, setSelectedVenue] = useState<string>("");
-  const [competitionName, setCompetitionName] = useState<string>("");
-  const [generatedMatches, setGeneratedMatches] = useState<GeneratedMatch[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [generatedSchedule, setGeneratedSchedule] = useState<any[]>([]);
+  const [availableDates, setAvailableDates] = useState<DateRange | undefined>(undefined);
+  const [cupCompetition, setCupCompetition] = useState(false);
 
-  const fetchTeams = async () => {
-    try {
+  const { data: venues, isLoading: loadingVenues } = useQuery({
+    queryKey: ['venues'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('venues')
+        .select('venue_id, name, address')
+        .order('name');
+      if (error) throw error;
+      return data as Venue[];
+    }
+  });
+
+  const { data: holidays, isLoading: loadingHolidays } = useQuery({
+    queryKey: ['holiday_periods'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('holiday_periods')
+        .select('holiday_id, name, start_date, end_date')
+        .order('start_date');
+      if (error) throw error;
+      return data as Holiday[];
+    }
+  });
+
+  const { data: teams, isLoading: loadingTeams } = useQuery({
+    queryKey: ['teams'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('teams')
         .select('*')
         .order('team_name');
-      
       if (error) throw error;
-      setTeams(data || []);
-    } catch (error) {
-      console.error('Error fetching teams:', error);
-      toast({
-        title: "Fout",
-        description: "Kon teams niet laden",
-        variant: "destructive"
-      });
+      return data as Team[];
     }
-  };
+  });
 
-  const fetchCompetitionFormats = async () => {
-    try {
+  const { data: competitionFormats, isLoading: loadingFormats } = useQuery({
+    queryKey: ['competition-formats'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('competition_formats')
-        .select('*')
-        .order('name');
-      
+        .select('*');
       if (error) throw error;
-      setCompetitionFormats(data || []);
-    } catch (error) {
-      console.error('Error fetching competition formats:', error);
-      toast({
-        title: "Fout",
-        description: "Kon competitie formaten niet laden",
-        variant: "destructive"
-      });
+      return data as CompetitionFormat[];
+    }
+  });
+
+  const generateAvailableDates = (dateRange: DateRange | undefined) => {
+    setAvailableDates(dateRange);
+  };
+
+  const formatDayOfWeek = (date: Date): string => {
+    return date.toLocaleDateString('nl-NL', { weekday: 'long' });
+  };
+
+  const handleCupCompetitionChange = (checked: boolean | "indeterminate") => {
+    if (typeof checked === "boolean") {
+      setCupCompetition(checked);
     }
   };
 
-  const fetchVenues = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('venues')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      setVenues(data || []);
-    } catch (error) {
-      console.error('Error fetching venues:', error);
-      toast({
-        title: "Fout",
-        description: "Kon locaties niet laden",
-        variant: "destructive"
-      });
-    }
-  };
-
-  useEffect(() => {
-    fetchTeams();
-    fetchCompetitionFormats();
-    fetchVenues();
-  }, []);
-
-  const handleTeamToggle = (teamId: number) => {
-    setSelectedTeams(prev => 
-      prev.includes(teamId) 
-        ? prev.filter(id => id !== teamId)
-        : [...prev, teamId]
-    );
-  };
-
-  const handleSelectAllTeams = () => {
-    if (selectedTeams.length === teams.length) {
-      setSelectedTeams([]);
-    } else {
+  // Add function to select all teams
+  const selectAllTeams = () => {
+    if (teams) {
       setSelectedTeams(teams.map(team => team.team_id));
     }
   };
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (!date) return;
-    
-    setSelectedDates(prev => 
-      prev.some(d => d.getTime() === date.getTime())
-        ? prev.filter(d => d.getTime() !== date.getTime())
-        : [...prev, date]
-    );
+  // Add function to deselect all teams
+  const deselectAllTeams = () => {
+    setSelectedTeams([]);
   };
 
-  const generateMatches = () => {
-    if (selectedTeams.length < 2) {
-      toast({
-        title: "Fout",
-        description: "Selecteer minimaal 2 teams",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (selectedDates.length === 0) {
-      toast({
-        title: "Fout", 
-        description: "Selecteer minimaal 1 datum",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Simple round-robin generation
-    const matches: GeneratedMatch[] = [];
-    let matchId = 1;
-
-    selectedDates.forEach((date, dateIndex) => {
-      for (let i = 0; i < selectedTeams.length; i++) {
-        for (let j = i + 1; j < selectedTeams.length; j++) {
-          const homeTeam = teams.find(t => t.team_id === selectedTeams[i]);
-          const awayTeam = teams.find(t => t.team_id === selectedTeams[j]);
-          
-          if (homeTeam && awayTeam) {
-            matches.push({
-              id: matchId++,
-              home_team_id: homeTeam.team_id,
-              away_team_id: awayTeam.team_id,
-              matchday: `Speeldag ${dateIndex + 1}`,
-              home_team_name: homeTeam.team_name,
-              away_team_name: awayTeam.team_name,
-              match_date: format(date, 'yyyy-MM-dd'),
-              venue_id: parseInt(selectedVenue) || 1
-            });
-          }
-        }
-      }
-    });
-
-    setGeneratedMatches(matches);
-    
-    toast({
-      title: "Succes",
-      description: `${matches.length} wedstrijden gegenereerd`,
-    });
-  };
-
-  const saveCompetition = async () => {
-    if (!competitionName.trim()) {
-      toast({
-        title: "Fout",
-        description: "Voer een competitie naam in",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (generatedMatches.length === 0) {
-      toast({
-        title: "Fout",
-        description: "Genereer eerst wedstrijden",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setLoading(true);
-    
-    try {
-      // Create competition
-      const { data: competition, error: competitionError } = await supabase
-        .from('competitions')
-        .insert({
-          name: competitionName,
-          start_date: selectedDates[0],
-          end_date: selectedDates[selectedDates.length - 1],
-          is_playoff: false
-        })
-        .select()
-        .single();
-
-      if (competitionError) throw competitionError;
-
-      // Create matchdays
-      const matchdays = selectedDates.map((date, index) => ({
-        name: `Speeldag ${index + 1}`,
-        matchday_date: date,
-        competition_id: competition.competition_id,
-        is_playoff: false
-      }));
-
-      const { data: createdMatchdays, error: matchdaysError } = await supabase
-        .from('matchdays')
-        .insert(matchdays)
-        .select();
-
-      if (matchdaysError) throw matchdaysError;
-
-      // Create matches
-      const matchesToInsert = generatedMatches.map(match => {
-        const matchday = createdMatchdays?.find(md => 
-          md.name === match.matchday
-        );
-        
-        return {
-          home_team_id: match.home_team_id,
-          away_team_id: match.away_team_id,
-          match_date: new Date(`${match.match_date}T20:00:00`),
-          matchday_id: matchday?.matchday_id,
-          field_cost: 10.00,
-          referee_cost: 12.00,
-          is_cup_match: false
-        };
-      });
-
-      const { error: matchesError } = await supabase
-        .from('matches')
-        .insert(matchesToInsert);
-
-      if (matchesError) throw matchesError;
-
-      toast({
-        title: "Succes",
-        description: "Competitie succesvol opgeslagen",
-      });
-
-      // Reset form
-      setCompetitionName("");
-      setSelectedTeams([]);
-      setSelectedDates([]);
-      setGeneratedMatches([]);
-      
-    } catch (error) {
-      console.error('Error saving competition:', error);
-      toast({
-        title: "Fout",
-        description: "Kon competitie niet opslaan",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const showPreview = selectedFormat &&
+    selectedVenues.length > 0 &&
+    selectedHolidays.length > 0 &&
+    selectedTeams.length > 1;
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Competitie Generator</CardTitle>
+          <CardTitle>Competitiebeheer</CardTitle>
           <CardDescription>
-            Genereer automatisch competities en wedstrijdschema's
+            Genereer een nieuwe competitie in 5 stappen
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="teams" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="teams">Teams</TabsTrigger>
-              <TabsTrigger value="format">Formaat</TabsTrigger>
-              <TabsTrigger value="dates">Data</TabsTrigger>
-              <TabsTrigger value="preview">Overzicht</TabsTrigger>
+          <Tabs value={activeStep} onValueChange={setActiveStep} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="format">1. Format</TabsTrigger>
+              <TabsTrigger value="venues">2. Locaties</TabsTrigger>
+              <TabsTrigger value="holidays">3. Uitzonderingen</TabsTrigger>
+              <TabsTrigger value="teams">4. Teams</TabsTrigger>
+              <TabsTrigger value="generate">5. Genereren</TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="teams" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Selecteer Teams</h3>
-                <Button 
-                  onClick={handleSelectAllTeams}
-                  variant="outline"
-                  size="sm"
-                >
-                  {selectedTeams.length === teams.length ? "Deselecteer alle" : "Selecteer alle teams"}
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {teams.map((team) => (
-                  <div key={team.team_id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`team-${team.team_id}`}
-                      checked={selectedTeams.includes(team.team_id)}
-                      onCheckedChange={() => handleTeamToggle(team.team_id)}
-                    />
-                    <label 
-                      htmlFor={`team-${team.team_id}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {team.team_name}
-                    </label>
-                  </div>
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {selectedTeams.length} teams geselecteerd
-              </p>
-            </TabsContent>
 
+            {/* Step 1: Select Competition Format */}
             <TabsContent value="format" className="space-y-4">
-              <h3 className="text-lg font-medium">Competitie Formaat</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Competitie Naam</label>
-                  <input
-                    type="text"
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Naam van de competitie</Label>
+                  <Input
+                    id="name"
+                    placeholder="Naam"
                     value={competitionName}
                     onChange={(e) => setCompetitionName(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
-                    placeholder="Voer competitie naam in..."
                   />
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Formaat</label>
-                  <Select value={selectedFormat} onValueChange={setSelectedFormat}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecteer formaat" />
+                <div className="space-y-2">
+                  <Label htmlFor="format">Selecteer een format</Label>
+                  <Select onValueChange={(value) => setSelectedFormat(parseInt(value))}>
+                    <SelectTrigger id="format">
+                      <SelectValue placeholder="Selecteer een format" />
                     </SelectTrigger>
                     <SelectContent>
-                      {competitionFormats.map((format) => (
+                      {competitionFormats?.map((format) => (
                         <SelectItem key={format.format_id} value={format.format_id.toString()}>
                           {format.name}
                         </SelectItem>
@@ -373,89 +184,249 @@ const CompetitionManagementTab: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Locatie</label>
-                  <Select value={selectedVenue} onValueChange={setSelectedVenue}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecteer locatie" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {venues.map((venue) => (
-                        <SelectItem key={venue.venue_id} value={venue.venue_id.toString()}>
-                          {venue.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {selectedFormat && (
+                  <div className="rounded-md border p-4">
+                    <p className="text-sm font-medium">
+                      {competitionFormats?.find(format => format.format_id === selectedFormat)?.description}
+                    </p>
+                  </div>
+                )}
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="cup-competition" 
+                    checked={cupCompetition}
+                    onCheckedChange={handleCupCompetitionChange} 
+                  />
+                  <Label htmlFor="cup-competition">Beker competitie</Label>
                 </div>
               </div>
+              <Button onClick={() => setActiveStep("venues")} disabled={!selectedFormat}>
+                Volgende
+              </Button>
             </TabsContent>
 
-            <TabsContent value="dates" className="space-y-4">
-              <h3 className="text-lg font-medium">Selecteer Data</h3>
-              <Calendar
-                mode="multiple"
-                selected={selectedDates}
-                onSelect={(dates) => setSelectedDates(dates || [])}
-                className="rounded-md border"
-                locale={nl}
-              />
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Geselecteerde data:</p>
-                {selectedDates.map((date, index) => (
-                  <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                    <span className="text-sm">
-                      {format(date, 'EEEE dd MMMM yyyy', { locale: nl })}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setSelectedDates(prev => prev.filter((_, i) => i !== index))}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+            {/* Step 2: Select Venues */}
+            <TabsContent value="venues" className="space-y-4">
+              <div className="grid gap-4">
+                <h3 className="text-lg font-medium">Selecteer de locaties</h3>
+                {loadingVenues ? (
+                  <div className="flex items-center justify-center h-40">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
-                ))}
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {venues?.map((venue) => (
+                      <div key={venue.venue_id} className="flex items-center space-x-2 border p-3 rounded-md">
+                        <Checkbox
+                          id={`venue-${venue.venue_id}`}
+                          checked={selectedVenues.includes(venue.venue_id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedVenues([...selectedVenues, venue.venue_id]);
+                            } else {
+                              setSelectedVenues(selectedVenues.filter(id => id !== venue.venue_id));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`venue-${venue.venue_id}`} className="flex-1 cursor-pointer">
+                          {venue.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 pt-4 border-t flex justify-between">
+                <Button variant="outline" onClick={() => setActiveStep("format")}>
+                  Vorige
+                </Button>
+                <Button onClick={() => setActiveStep("holidays")}>
+                  Volgende
+                </Button>
               </div>
             </TabsContent>
 
-            <TabsContent value="preview" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Wedstrijdschema Overzicht</h3>
+            {/* Step 3: Select Holidays */}
+            <TabsContent value="holidays" className="space-y-4">
+              <div className="grid gap-4">
+                <h3 className="text-lg font-medium">Selecteer de uitzonderingen</h3>
+                {loadingHolidays ? (
+                  <div className="flex items-center justify-center h-40">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {holidays?.map((holiday) => (
+                      <div key={holiday.holiday_id} className="flex items-center space-x-2 border p-3 rounded-md">
+                        <Checkbox
+                          id={`holiday-${holiday.holiday_id}`}
+                          checked={selectedHolidays.includes(holiday.holiday_id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedHolidays([...selectedHolidays, holiday.holiday_id]);
+                            } else {
+                              setSelectedHolidays(selectedHolidays.filter(id => id !== holiday.holiday_id));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`holiday-${holiday.holiday_id}`} className="flex-1 cursor-pointer">
+                          {holiday.name} ({new Date(holiday.start_date).toLocaleDateString('nl-NL')} - {new Date(holiday.end_date).toLocaleDateString('nl-NL')})
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 pt-4 border-t flex justify-between">
+                <Button variant="outline" onClick={() => setActiveStep("venues")}>
+                  Vorige
+                </Button>
+                <Button onClick={() => setActiveStep("teams")}>
+                  Volgende
+                </Button>
+              </div>
+            </TabsContent>
+
+            {/* Step 4: Select Teams */}
+            <TabsContent value="teams" className="space-y-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Selecteer de deelnemende teams</h3>
                 <div className="space-x-2">
-                  <Button onClick={generateMatches} disabled={loading}>
-                    Genereer Wedstrijden
+                  <Button variant="outline" onClick={selectAllTeams} size="sm">
+                    Selecteer alle teams
                   </Button>
-                  <Button 
-                    onClick={saveCompetition} 
-                    disabled={loading || generatedMatches.length === 0}
-                  >
-                    Opslaan
+                  <Button variant="outline" onClick={deselectAllTeams} size="sm">
+                    Deselecteer alle teams
                   </Button>
                 </div>
               </div>
               
-              {generatedMatches.length > 0 && (
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    {generatedMatches.length} wedstrijden gegenereerd
-                  </p>
-                  <div className="max-h-96 overflow-y-auto space-y-2">
-                    {generatedMatches.map((match) => (
-                      <div key={match.id} className="flex justify-between items-center p-3 border rounded">
-                        <div>
-                          <span className="font-medium">
-                            {match.home_team_name} vs {match.away_team_name}
-                          </span>
-                          <p className="text-sm text-muted-foreground">
-                            {match.matchday} - {format(new Date(match.match_date), 'dd/MM/yyyy')}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              {loadingTeams ? (
+                <div className="flex items-center justify-center h-40">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {teams?.map((team) => (
+                    <div key={team.team_id} className="flex items-center space-x-2 border p-3 rounded-md">
+                      <Checkbox
+                        id={`team-${team.team_id}`}
+                        checked={selectedTeams.includes(team.team_id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedTeams([...selectedTeams, team.team_id]);
+                          } else {
+                            setSelectedTeams(selectedTeams.filter(id => id !== team.team_id));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`team-${team.team_id}`} className="flex-1 cursor-pointer">
+                        {team.team_name}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
               )}
+              
+              <div className="mt-4 pt-4 border-t flex justify-between">
+                <Button variant="outline" onClick={() => setActiveStep("holidays")}>
+                  Vorige
+                </Button>
+                <Button 
+                  onClick={() => setActiveStep("generate")}
+                  disabled={selectedTeams.length < 2}
+                >
+                  Volgende
+                </Button>
+              </div>
+            </TabsContent>
+
+            {/* Step 5: Generate Schedule */}
+            <TabsContent value="generate" className="space-y-4">
+              <div className="grid gap-4">
+                <h3 className="text-lg font-medium">Genereer het schema</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="dates">Beschikbare data</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[240px] justify-start text-left font-normal",
+                          !availableDates && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {availableDates?.from ? (
+                          availableDates.to ? (
+                            `${format(availableDates.from, "dd/MM/yyyy")} - ${format(availableDates.to, "dd/MM/yyyy")}`
+                          ) : (
+                            format(availableDates.from, "dd/MM/yyyy")
+                          )
+                        ) : (
+                          <span>Kies een datum</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="center" side="bottom">
+                      <div className="border rounded-md p-2">
+                        <p className="text-xs text-muted-foreground px-2 mb-1">
+                          Selecteer de data waarop wedstrijden gespeeld kunnen worden
+                        </p>
+                        <div className="border-b mb-2" />
+                        <React.Suspense fallback={<p>Loading...</p>}>
+                          <Calendar
+                            mode="range"
+                            defaultMonth={availableDates?.from}
+                            selected={availableDates}
+                            onSelect={generateAvailableDates}
+                            numberOfMonths={2}
+                            pagedNavigation
+                            className="border-none shadow-none"
+                          />
+                        </React.Suspense>
+                        <div className="flex justify-end mt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => generateAvailableDates(undefined)}
+                          >
+                            Reset
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                {availableDates?.from && availableDates?.to && (
+                  <div className="rounded-md border p-4">
+                    <p className="text-sm font-medium">
+                      Geselecteerde data: {format(availableDates.from, "dd/MM/yyyy")} - {format(availableDates.to, "dd/MM/yyyy")}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Mogelijke speeldagen:
+                    </p>
+                    <ul className="list-disc pl-5">
+                      {Array.from({ length: Math.ceil((availableDates.to.getTime() - availableDates.from.getTime()) / (1000 * 60 * 60 * 24)) + 1 }, (_, i) => {
+                        const date = addDays(availableDates.from!, i);
+                        return (
+                          <li key={i}>
+                            {formatDayOfWeek(date)} ({date.toLocaleDateString('nl-NL')})
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 pt-4 border-t flex justify-between">
+                <Button variant="outline" onClick={() => setActiveStep("teams")}>
+                  Vorige
+                </Button>
+                <Button onClick={() => setActiveStep("generate")} disabled={!availableDates?.from || !availableDates?.to}>
+                  Genereer
+                </Button>
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>

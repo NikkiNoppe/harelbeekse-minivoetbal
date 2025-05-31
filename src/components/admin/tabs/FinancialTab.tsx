@@ -1,12 +1,11 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, Calculator } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { Loader2, Euro, TrendingDown, TrendingUp } from "lucide-react";
 
 interface Team {
   team_id: number;
@@ -16,168 +15,70 @@ interface Team {
 
 interface MatchForm {
   form_id: number;
-  match_id: number;
   team_id: number;
+  match_id: number;
   is_submitted: boolean;
   created_at: string;
-  team_name: string;
-  match_date: string;
-  home_team_name: string;
-  away_team_name: string;
-}
-
-interface PaymentCalculation {
-  team_id: number;
-  team_name: string;
-  submitted_forms: number;
-  field_cost: number;
-  referee_cost: number;
-  total_cost: number;
+  teams: {
+    team_name: string;
+  };
+  matches: {
+    match_date: string;
+    unique_number: string;
+  };
 }
 
 const FinancialTab: React.FC = () => {
-  const { toast } = useToast();
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [matchForms, setMatchForms] = useState<MatchForm[]>([]);
-  const [paymentCalculations, setPaymentCalculations] = useState<PaymentCalculation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [calculating, setCalculating] = useState(false);
-
-  const fetchTeams = async () => {
-    try {
+  // Fetch teams with their balances
+  const { data: teams, isLoading: loadingTeams } = useQuery({
+    queryKey: ['teams-financial'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('teams')
-        .select('*')
+        .select('team_id, team_name, balance')
         .order('team_name');
       
       if (error) throw error;
-      setTeams(data || []);
-    } catch (error) {
-      console.error('Error fetching teams:', error);
-      toast({
-        title: "Fout",
-        description: "Kon teams niet laden",
-        variant: "destructive"
-      });
+      return data as Team[];
     }
-  };
+  });
 
-  const fetchMatchForms = async () => {
-    try {
+  // Fetch submitted match forms for financial calculations
+  const { data: submittedForms, isLoading: loadingForms } = useQuery({
+    queryKey: ['submitted-match-forms'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('match_forms')
         .select(`
-          *,
+          form_id,
+          team_id,
+          match_id,
+          is_submitted,
+          created_at,
           teams!inner(team_name),
-          matches!inner(
-            match_date,
-            teams!matches_home_team_id_fkey(team_name),
-            away_team:teams!matches_away_team_id_fkey(team_name)
-          )
+          matches!inner(match_date, unique_number)
         `)
-        .eq('is_submitted', true);
+        .eq('is_submitted', true)
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
-      
-      const formsWithTeamInfo = (data || []).map(form => ({
-        form_id: form.form_id,
-        match_id: form.match_id,
-        team_id: form.team_id,
-        is_submitted: form.is_submitted,
-        created_at: form.created_at,
-        team_name: form.teams.team_name,
-        match_date: form.matches.match_date,
-        home_team_name: form.matches.teams.team_name,
-        away_team_name: form.matches.away_team.team_name
-      }));
-      
-      setMatchForms(formsWithTeamInfo);
-    } catch (error) {
-      console.error('Error fetching match forms:', error);
-      toast({
-        title: "Fout",
-        description: "Kon wedstrijdformulieren niet laden",
-        variant: "destructive"
-      });
+      return data as MatchForm[];
     }
-  };
+  });
 
-  const calculatePayments = () => {
-    const calculations: PaymentCalculation[] = teams.map(team => {
-      const submittedForms = matchForms.filter(form => form.team_id === team.team_id);
-      const fieldCost = submittedForms.length * 5; // 5 euro per wedstrijd voor veld
-      const refereeCost = submittedForms.length * 6; // 6 euro per wedstrijd voor scheidsrechter
-      const totalCost = fieldCost + refereeCost;
-      
-      return {
-        team_id: team.team_id,
-        team_name: team.team_name,
-        submitted_forms: submittedForms.length,
-        field_cost: fieldCost,
-        referee_cost: refereeCost,
-        total_cost: totalCost
-      };
-    });
+  // Calculate total costs per team
+  const calculateTeamCosts = (teamId: number) => {
+    if (!submittedForms) return { fieldCosts: 0, refereeCosts: 0, totalMatches: 0 };
     
-    setPaymentCalculations(calculations);
+    const teamForms = submittedForms.filter(form => form.team_id === teamId);
+    const totalMatches = teamForms.length;
+    const fieldCosts = totalMatches * 5; // 5 euro per match for field
+    const refereeCosts = totalMatches * 6; // 6 euro per match for referee
+    
+    return { fieldCosts, refereeCosts, totalMatches };
   };
 
-  const processPayments = async () => {
-    setCalculating(true);
-    try {
-      for (const calculation of paymentCalculations) {
-        if (calculation.total_cost > 0) {
-          const team = teams.find(t => t.team_id === calculation.team_id);
-          if (team) {
-            const newBalance = team.balance - calculation.total_cost;
-            
-            const { error } = await supabase
-              .from('teams')
-              .update({ balance: newBalance })
-              .eq('team_id', team.team_id);
-            
-            if (error) throw error;
-          }
-        }
-      }
-      
-      toast({
-        title: "Succes",
-        description: "Betalingen zijn verwerkt en teamsaldi bijgewerkt"
-      });
-      
-      // Refresh data
-      await fetchTeams();
-      calculatePayments();
-      
-    } catch (error) {
-      console.error('Error processing payments:', error);
-      toast({
-        title: "Fout",
-        description: "Kon betalingen niet verwerken",
-        variant: "destructive"
-      });
-    } finally {
-      setCalculating(false);
-    }
-  };
-
-  const refreshData = async () => {
-    setLoading(true);
-    await Promise.all([fetchTeams(), fetchMatchForms()]);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    refreshData();
-  }, []);
-
-  useEffect(() => {
-    if (teams.length > 0 && matchForms.length >= 0) {
-      calculatePayments();
-    }
-  }, [teams, matchForms]);
-
+  // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nl-NL', {
       style: 'currency',
@@ -185,120 +86,24 @@ const FinancialTab: React.FC = () => {
     }).format(amount);
   };
 
-  if (loading) {
+  if (loadingTeams || loadingForms) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <RefreshCw className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center h-40">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Financieel Overzicht</h2>
-          <p className="text-muted-foreground">
-            Team saldi en wedstrijdkosten berekeningen
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={refreshData} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Vernieuwen
-          </Button>
-          <Button 
-            onClick={processPayments} 
-            disabled={calculating || paymentCalculations.every(p => p.total_cost === 0)}
-            size="sm"
-          >
-            <Calculator className="h-4 w-4 mr-2" />
-            {calculating ? "Verwerken..." : "Betalingen Verwerken"}
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Team Saldi</CardTitle>
-            <CardDescription>
-              Huidige financiële positie van alle teams
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Team</TableHead>
-                  <TableHead className="text-right">Saldo</TableHead>
-                  <TableHead className="text-right">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {teams.map((team) => (
-                  <TableRow key={team.team_id}>
-                    <TableCell className="font-medium">{team.team_name}</TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(team.balance)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant={team.balance >= 0 ? "default" : "destructive"}>
-                        {team.balance >= 0 ? "Positief" : "Negatief"}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Kosten Berekening</CardTitle>
-            <CardDescription>
-              Gebaseerd op ingediende wedstrijdformulieren
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Team</TableHead>
-                  <TableHead className="text-center">Wedstrijden</TableHead>
-                  <TableHead className="text-right">Veldkosten</TableHead>
-                  <TableHead className="text-right">Scheidsrechter</TableHead>
-                  <TableHead className="text-right">Totaal</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paymentCalculations.map((calc) => (
-                  <TableRow key={calc.team_id}>
-                    <TableCell className="font-medium">{calc.team_name}</TableCell>
-                    <TableCell className="text-center">{calc.submitted_forms}</TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(calc.field_cost)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(calc.referee_cost)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono font-bold">
-                      {formatCurrency(calc.total_cost)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>Ingediende Wedstrijdformulieren</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Euro className="h-5 w-5" />
+            Teams Financieel Overzicht
+          </CardTitle>
           <CardDescription>
-            Overzicht van alle ingediende formulieren die kosten genereren
+            Overzicht van team saldi en kosten van gespeelde wedstrijden
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -306,37 +111,86 @@ const FinancialTab: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Team</TableHead>
-                <TableHead>Wedstrijd</TableHead>
-                <TableHead>Datum</TableHead>
-                <TableHead>Ingediend op</TableHead>
+                <TableHead className="text-center">Gespeelde Wedstrijden</TableHead>
+                <TableHead className="text-center">Veldkosten</TableHead>
+                <TableHead className="text-center">Scheidsrechterkosten</TableHead>
+                <TableHead className="text-center">Totale Kosten</TableHead>
+                <TableHead className="text-right">Huidig Saldo</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {teams?.map((team) => {
+                const costs = calculateTeamCosts(team.team_id);
+                const totalCosts = costs.fieldCosts + costs.refereeCosts;
+                const isNegative = team.balance < 0;
+                
+                return (
+                  <TableRow key={team.team_id}>
+                    <TableCell className="font-medium">{team.team_name}</TableCell>
+                    <TableCell className="text-center">{costs.totalMatches}</TableCell>
+                    <TableCell className="text-center">{formatCurrency(costs.fieldCosts)}</TableCell>
+                    <TableCell className="text-center">{formatCurrency(costs.refereeCosts)}</TableCell>
+                    <TableCell className="text-center font-semibold">{formatCurrency(totalCosts)}</TableCell>
+                    <TableCell className={`text-right font-semibold ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
+                      <div className="flex items-center justify-end gap-1">
+                        {isNegative ? (
+                          <TrendingDown className="h-4 w-4" />
+                        ) : (
+                          <TrendingUp className="h-4 w-4" />
+                        )}
+                        {formatCurrency(team.balance)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={isNegative ? "destructive" : "default"}>
+                        {isNegative ? "Tekort" : "Positief"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recente Wedstrijdformulieren</CardTitle>
+          <CardDescription>
+            Laatste ingediende formulieren die het saldo beïnvloeden
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Wedstrijd Nr.</TableHead>
+                <TableHead>Team</TableHead>
+                <TableHead>Wedstrijddatum</TableHead>
+                <TableHead>Ingediend Op</TableHead>
                 <TableHead className="text-right">Kosten</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {matchForms.map((form) => (
+              {submittedForms?.slice(0, 10).map((form) => (
                 <TableRow key={form.form_id}>
-                  <TableCell className="font-medium">{form.team_name}</TableCell>
+                  <TableCell className="font-mono">{form.matches.unique_number}</TableCell>
+                  <TableCell>{form.teams.team_name}</TableCell>
                   <TableCell>
-                    {form.home_team_name} vs {form.away_team_name}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(form.match_date).toLocaleDateString('nl-NL')}
+                    {new Date(form.matches.match_date).toLocaleDateString('nl-NL')}
                   </TableCell>
                   <TableCell>
                     {new Date(form.created_at).toLocaleDateString('nl-NL')}
                   </TableCell>
-                  <TableCell className="text-right font-mono">
-                    {formatCurrency(11)} {/* 5 + 6 euro */}
+                  <TableCell className="text-right font-semibold">
+                    {formatCurrency(11)} {/* 5 + 6 euro per match */}
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          {matchForms.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              Geen ingediende wedstrijdformulieren gevonden
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

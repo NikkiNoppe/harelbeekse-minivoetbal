@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, RotateCcw, Lock, Unlock } from "lucide-react";
 import { useTabVisibilitySettings } from "@/hooks/useTabVisibilitySettings";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const TabVisibilitySettingsUpdated: React.FC = () => {
@@ -15,86 +14,11 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
   const { toast } = useToast();
   
   const handleVisibilityChange = async (settingName: string, isVisible: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('tab_visibility_settings')
-        .update({ is_visible: isVisible })
-        .eq('setting_name', settingName);
-
-      if (error) throw error;
-
-      await updateSetting(settingName, { is_visible: isVisible });
-      
-      toast({
-        title: "Instelling bijgewerkt",
-        description: `Tab "${settingName}" zichtbaarheid is bijgewerkt`,
-      });
-    } catch (error) {
-      console.error('Error updating visibility:', error);
-      toast({
-        title: "Fout bij opslaan",
-        description: "Kon zichtbaarheidsinstelling niet bijwerken",
-        variant: "destructive",
-      });
-    }
+    await updateSetting(settingName, { is_visible: isVisible });
   };
   
   const handleLoginRequirementChange = async (settingName: string, requiresLogin: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('tab_visibility_settings')
-        .update({ requires_login: requiresLogin })
-        .eq('setting_name', settingName);
-
-      if (error) throw error;
-
-      await updateSetting(settingName, { requires_login: requiresLogin });
-      
-      toast({
-        title: "Instelling bijgewerkt",
-        description: `Login vereiste voor "${settingName}" is bijgewerkt`,
-      });
-    } catch (error) {
-      console.error('Error updating login requirement:', error);
-      toast({
-        title: "Fout bij opslaan",
-        description: "Kon login vereiste niet bijwerken",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const saveSettings = async () => {
-    setSaving(true);
-    try {
-      // Save all current settings to the database
-      for (const setting of settings) {
-        const { error } = await supabase
-          .from('tab_visibility_settings')
-          .upsert({
-            setting_name: setting.setting_name,
-            is_visible: setting.is_visible,
-            requires_login: setting.requires_login
-          }, {
-            onConflict: 'setting_name'
-          });
-        
-        if (error) throw error;
-      }
-      
-      toast({
-        title: "Instellingen opgeslagen",
-        description: "Alle tab zichtbaarheid instellingen zijn succesvol opgeslagen."
-      });
-    } catch (error: any) {
-      toast({
-        title: "Fout bij opslaan",
-        description: error.message || "Er is een fout opgetreden bij het opslaan van de instellingen.",
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
-    }
+    await updateSetting(settingName, { requires_login: requiresLogin });
   };
   
   const resetToDefaults = async () => {
@@ -105,10 +29,17 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
       for (const tabName of mainTabs) {
         const existingSetting = settings.find(s => s.setting_name === tabName);
         if (existingSetting) {
-          await handleVisibilityChange(tabName, true);
-          await handleLoginRequirementChange(tabName, false);
+          await updateSetting(tabName, { 
+            is_visible: true, 
+            requires_login: false 
+          });
         }
       }
+      
+      toast({
+        title: "Instellingen hersteld",
+        description: "Tab zichtbaarheid is teruggezet naar standaardinstellingen."
+      });
     } finally {
       setSaving(false);
     }
@@ -195,17 +126,8 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
           <RotateCcw className="h-4 w-4" />
           Standaardinstellingen
         </Button>
-        <div className="flex gap-2">
-          <div className="text-sm text-muted-foreground self-center">
-            Wijzigingen worden automatisch opgeslagen
-          </div>
-          <Button 
-            onClick={saveSettings} 
-            disabled={saving}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            {saving ? "Opslaan..." : "Instellingen opslaan"}
-          </Button>
+        <div className="text-sm text-muted-foreground self-center">
+          Wijzigingen worden automatisch opgeslagen
         </div>
       </CardFooter>
     </Card>
