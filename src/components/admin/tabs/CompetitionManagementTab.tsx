@@ -22,6 +22,7 @@ import { addDays, format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 interface Venue {
   venue_id: number;
@@ -269,7 +270,7 @@ const CompetitionManagementTab: React.FC = () => {
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
+                        <CalendarComponent
                           mode="range"
                           defaultMonth={availableDates?.from}
                           selected={availableDates}
