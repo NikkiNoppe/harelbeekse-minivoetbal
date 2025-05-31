@@ -1,9 +1,10 @@
 
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import SettingsTab from "@/components/admin/tabs/SettingsTab";
+import SettingsTabUpdated from "@/components/admin/tabs/SettingsTabUpdated";
 import UserManagementTab from "@/components/admin/tabs/UserManagementTab";
-import { Settings, Users } from "lucide-react";
+import FinancialTab from "@/components/admin/tabs/FinancialTab";
+import { Settings, Users, DollarSign } from "lucide-react";
 
 const AdminSettingsPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState("settings");
@@ -13,7 +14,7 @@ const AdminSettingsPanel: React.FC = () => {
       <h1 className="text-2xl font-bold">Admin Instellingen</h1>
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             <span>Instellingen</span>
@@ -22,14 +23,22 @@ const AdminSettingsPanel: React.FC = () => {
             <Users className="h-4 w-4" />
             <span>Gebruikers</span>
           </TabsTrigger>
+          <TabsTrigger value="financial" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            <span>Financieel</span>
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="settings" className="mt-4">
-          <SettingsTab />
+          <SettingsTabUpdated />
         </TabsContent>
         
         <TabsContent value="users" className="mt-4">
           <UserManagementTab />
+        </TabsContent>
+        
+        <TabsContent value="financial" className="mt-4">
+          <FinancialTab />
         </TabsContent>
       </Tabs>
     </div>
