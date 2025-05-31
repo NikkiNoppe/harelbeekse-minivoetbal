@@ -18,12 +18,12 @@ export const useTabVisibilitySettings = () => {
   const fetchSettings = async () => {
     try {
       const { data, error } = await supabase
-        .from('tab_visibility_settings' as any)
+        .from('tab_visibility_settings')
         .select('*')
         .order('setting_name');
 
       if (error) throw error;
-      setSettings((data as unknown) as TabVisibilitySetting[] || []);
+      setSettings(data || []);
     } catch (error) {
       console.error('Error fetching tab settings:', error);
       // Fallback to main tabs only
@@ -47,7 +47,7 @@ export const useTabVisibilitySettings = () => {
   const updateSetting = async (settingName: string, updates: Partial<TabVisibilitySetting>) => {
     try {
       const { error } = await supabase
-        .from('tab_visibility_settings' as any)
+        .from('tab_visibility_settings')
         .update(updates)
         .eq('setting_name', settingName);
 
