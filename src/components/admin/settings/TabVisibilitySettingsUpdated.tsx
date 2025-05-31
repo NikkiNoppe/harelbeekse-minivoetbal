@@ -1,114 +1,52 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, RotateCcw } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { Eye, EyeOff, RotateCcw, Lock, Unlock } from "lucide-react";
+import { useTabVisibilitySettings } from "@/hooks/useTabVisibilitySettings";
 import { useToast } from "@/hooks/use-toast";
-interface TabVisibilitySetting {
-  id: number;
-  setting_name: string;
-  is_visible: boolean;
-  created_at: string;
-  updated_at: string;
-}
+
 const TabVisibilitySettingsUpdated: React.FC = () => {
-  const {
-    toast
-  } = useToast();
-  const queryClient = useQueryClient();
-  const {
-    data: settings,
-    isLoading
-  } = useQuery({
-    queryKey: ['tab-visibility-settings'],
-    queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('tab_visibility_settings').select('*').order('setting_name');
-      if (error) throw error;
-      return data as TabVisibilitySetting[];
-    }
-  });
-  const updateVisibilityMutation = useMutation({
-    mutationFn: async ({
-      settingName,
-      isVisible
-    }: {
-      settingName: string;
-      isVisible: boolean;
-    }) => {
-      const {
-        error
-      } = await supabase.from('tab_visibility_settings').update({
-        is_visible: isVisible,
-        updated_at: new Date().toISOString()
-      }).eq('setting_name', settingName);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['tab-visibility-settings']
-      });
-      toast({
-        title: "Instelling bijgewerkt",
-        description: "Tab zichtbaarheid is succesvol aangepast."
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Fout bij opslaan",
-        description: "Kon instelling niet bijwerken",
-        variant: "destructive"
-      });
-    }
-  });
-  const resetToDefaultsMutation = useMutation({
-    mutationFn: async () => {
-      const defaultSettings = ['algemeen', 'competitie', 'playoff', 'beker', 'schorsingen', 'reglement'];
-      for (const settingName of defaultSettings) {
-        const {
-          error
-        } = await supabase.from('tab_visibility_settings').upsert({
-          setting_name: settingName,
-          is_visible: true,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'setting_name'
-        });
-        if (error) throw error;
+  const { settings, loading, updateSetting } = useTabVisibilitySettings();
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+  
+  const handleVisibilityChange = async (settingName: string, isVisible: boolean) => {
+    await updateSetting(settingName, { is_visible: isVisible });
+  };
+  
+  const handleLoginRequirementChange = async (settingName: string, requiresLogin: boolean) => {
+    await updateSetting(settingName, { requires_login: requiresLogin });
+  };
+  
+  const resetToDefaults = async () => {
+    setSaving(true);
+    try {
+      // Reset all main tabs to default values
+      const mainTabs = ['algemeen', 'competitie', 'playoff', 'beker', 'schorsingen', 'reglement'];
+      for (const tabName of mainTabs) {
+        const existingSetting = settings.find(s => s.setting_name === tabName);
+        if (existingSetting) {
+          await updateSetting(tabName, { 
+            is_visible: true, 
+            requires_login: false 
+          });
+        }
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['tab-visibility-settings']
-      });
+      
       toast({
         title: "Instellingen hersteld",
         description: "Tab zichtbaarheid is teruggezet naar standaardinstellingen."
       });
-    },
-    onError: () => {
-      toast({
-        title: "Fout bij herstellen",
-        description: "Kon standaardinstellingen niet herstellen",
-        variant: "destructive"
-      });
+    } finally {
+      setSaving(false);
     }
-  });
-  const handleVisibilityChange = (settingName: string, isVisible: boolean) => {
-    updateVisibilityMutation.mutate({
-      settingName,
-      isVisible
-    });
   };
+
   const getTabDisplayName = (settingName: string) => {
-    const displayNames: {
-      [key: string]: string;
-    } = {
+    const displayNames: { [key: string]: string } = {
       'algemeen': 'Algemeen',
       'competitie': 'Competitie',
       'playoff': 'Play-Off',
@@ -118,33 +56,73 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
     };
     return displayNames[settingName] || settingName.charAt(0).toUpperCase() + settingName.slice(1);
   };
-  if (isLoading) {
+  
+  if (loading) {
     return <div className="py-4 text-center text-muted-foreground">Instellingen laden...</div>;
   }
-  return <Card>
+  
+  return (
+    <Card>
       <CardHeader>
-        <CardTitle>Tabbladen</CardTitle>
+        <CardTitle>Hoofdtab Zichtbaarheid</CardTitle>
         <CardDescription>
-          Configureer welke hoofdtabbladen zichtbaar zijn
+          Configureer welke hoofdtabbladen zichtbaar zijn en of inloggen vereist is
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {settings?.map(setting => <div key={setting.setting_name} className="border rounded-lg p-4 space-y-3">
+          {settings.map((setting) => (
+            <div key={setting.setting_name} className="border rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {setting.is_visible ? <Eye className="h-4 w-4 text-green-500" /> : <EyeOff className="h-4 w-4 text-red-500" />}
+                  {setting.is_visible ? (
+                    <Eye className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <EyeOff className="h-4 w-4 text-red-500" />
+                  )}
                   <Label className="font-medium">
                     {getTabDisplayName(setting.setting_name)}
                   </Label>
                 </div>
-                <Switch checked={setting.is_visible} onCheckedChange={checked => handleVisibilityChange(setting.setting_name, checked)} disabled={updateVisibilityMutation.isPending} />
+                <Switch
+                  checked={setting.is_visible}
+                  onCheckedChange={(checked) => 
+                    handleVisibilityChange(setting.setting_name, checked)
+                  }
+                />
               </div>
-            </div>)}
+              
+              {setting.is_visible && (
+                <div className="flex items-center justify-between pl-6 border-l-2 border-gray-200">
+                  <div className="flex items-center gap-2">
+                    {setting.requires_login ? (
+                      <Lock className="h-4 w-4 text-orange-500" />
+                    ) : (
+                      <Unlock className="h-4 w-4 text-green-500" />
+                    )}
+                    <Label className="text-sm text-muted-foreground">
+                      Inloggen vereist
+                    </Label>
+                  </div>
+                  <Switch
+                    checked={setting.requires_login}
+                    onCheckedChange={(checked) => 
+                      handleLoginRequirementChange(setting.setting_name, checked)
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={() => resetToDefaultsMutation.mutate()} disabled={resetToDefaultsMutation.isPending} className="flex items-center gap-2">
+        <Button 
+          variant="outline" 
+          onClick={resetToDefaults} 
+          disabled={saving}
+          className="flex items-center gap-2"
+        >
           <RotateCcw className="h-4 w-4" />
           Standaardinstellingen
         </Button>
@@ -152,6 +130,8 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
           Wijzigingen worden automatisch opgeslagen
         </div>
       </CardFooter>
-    </Card>;
+    </Card>
+  );
 };
+
 export default TabVisibilitySettingsUpdated;
