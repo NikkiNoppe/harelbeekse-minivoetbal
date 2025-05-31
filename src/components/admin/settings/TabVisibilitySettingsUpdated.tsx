@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, RotateCcw, Lock, Unlock } from "lucide-react";
 import { useTabVisibilitySettings } from "@/hooks/useTabVisibilitySettings";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const TabVisibilitySettingsUpdated: React.FC = () => {
@@ -19,6 +20,39 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
   
   const handleLoginRequirementChange = async (settingName: string, requiresLogin: boolean) => {
     await updateSetting(settingName, { requires_login: requiresLogin });
+  };
+  
+  const saveSettings = async () => {
+    setSaving(true);
+    try {
+      // Save all current settings to the database
+      for (const setting of settings) {
+        const { error } = await supabase
+          .from('tab_visibility_settings')
+          .upsert({
+            setting_name: setting.setting_name,
+            is_visible: setting.is_visible,
+            requires_login: setting.requires_login
+          }, {
+            onConflict: 'setting_name'
+          });
+        
+        if (error) throw error;
+      }
+      
+      toast({
+        title: "Instellingen opgeslagen",
+        description: "Alle tab zichtbaarheid instellingen zijn succesvol opgeslagen."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Fout bij opslaan",
+        description: error.message || "Er is een fout opgetreden bij het opslaan van de instellingen.",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
   
   const resetToDefaults = async () => {
@@ -35,11 +69,6 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
           });
         }
       }
-      
-      toast({
-        title: "Instellingen hersteld",
-        description: "Tab zichtbaarheid is teruggezet naar standaardinstellingen."
-      });
     } finally {
       setSaving(false);
     }
@@ -126,8 +155,17 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
           <RotateCcw className="h-4 w-4" />
           Standaardinstellingen
         </Button>
-        <div className="text-sm text-muted-foreground self-center">
-          Wijzigingen worden automatisch opgeslagen
+        <div className="flex gap-2">
+          <div className="text-sm text-muted-foreground self-center">
+            Wijzigingen worden automatisch opgeslagen
+          </div>
+          <Button 
+            onClick={saveSettings} 
+            disabled={saving}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            {saving ? "Opslaan..." : "Instellingen opslaan"}
+          </Button>
         </div>
       </CardFooter>
     </Card>
