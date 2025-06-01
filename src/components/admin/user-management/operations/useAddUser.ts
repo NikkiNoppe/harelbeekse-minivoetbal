@@ -57,10 +57,10 @@ export const useAddUser = (teams: Team[], refreshData: () => Promise<void>) => {
       
       // Use the create_user_with_hashed_password function for secure password hashing
       const { data, error } = await supabase.rpc('create_user_with_hashed_password', {
-        p_username: newUser.name,
-        p_email: newUser.email,
-        p_password: randomPassword,
-        p_role: newUser.role
+        username_param: newUser.name,
+        email_param: newUser.email,
+        password_param: randomPassword,
+        role_param: newUser.role
       });
       
       if (error) throw error;
@@ -73,7 +73,7 @@ export const useAddUser = (teams: Team[], refreshData: () => Promise<void>) => {
         if (teamIds.length > 0) {
           // Create entries in team_users table for each team
           const teamUserEntries = teamIds.map(teamId => ({
-            user_id: data,
+            user_id: data.user_id,
             team_id: teamId
           }));
           
