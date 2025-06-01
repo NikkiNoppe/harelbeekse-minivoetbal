@@ -107,92 +107,104 @@ const UsersTabUpdated: React.FC = () => {
   };
   
   // Handle save user
-  const handleSaveUser = async (formData: any) => {
-    const currentEditingUser = editingUser;
-    
-    if (currentEditingUser) {
-      // Update existing user
-      const updatedUser: User = {
-        ...currentEditingUser,
-        username: formData.username,
-        ...(formData.password ? { password: formData.password } : {}),
-        role: formData.role,
-        ...(formData.role === "player_manager" ? { teamId: formData.teamId } : {})
-      };
+  const handleSaveUser = async (formData: any): Promise<boolean> => {
+    try {
+      const currentEditingUser = editingUser;
       
-      updateUser(updatedUser);
-      setUsers(allUsers.map(user => 
-        user.id === currentEditingUser.id ? updatedUser : user
-      ));
-      
-      // Update team assignment in Supabase if role is player_manager
-      if (formData.role === "player_manager" && formData.teamId) {
-        try {
-          // First, remove existing team assignment
-          await supabase
-            .from('team_users')
-            .delete()
-            .eq('user_id', currentEditingUser.id);
-          
-          // Then add new team assignment
-          await supabase
-            .from('team_users')
-            .insert({
-              user_id: currentEditingUser.id,
-              team_id: formData.teamId
+      if (currentEditingUser) {
+        // Update existing user
+        const updatedUser: User = {
+          ...currentEditingUser,
+          username: formData.username,
+          ...(formData.password ? { password: formData.password } : {}),
+          role: formData.role,
+          ...(formData.role === "player_manager" ? { teamId: formData.teamId } : {})
+        };
+        
+        updateUser(updatedUser);
+        setUsers(allUsers.map(user => 
+          user.id === currentEditingUser.id ? updatedUser : user
+        ));
+        
+        // Update team assignment in Supabase if role is player_manager
+        if (formData.role === "player_manager" && formData.teamId) {
+          try {
+            // First, remove existing team assignment
+            await supabase
+              .from('team_users')
+              .delete()
+              .eq('user_id', currentEditingUser.id);
+            
+            // Then add new team assignment
+            await supabase
+              .from('team_users')
+              .insert({
+                user_id: currentEditingUser.id,
+                team_id: formData.teamId
+              });
+          } catch (error) {
+            console.error('Error updating team assignment:', error);
+            toast({
+              title: "Waarschuwing",
+              description: "Gebruiker bijgewerkt, maar teamtoewijzing kon niet worden opgeslagen.",
+              variant: "destructive",
             });
-        } catch (error) {
-          console.error('Error updating team assignment:', error);
-          toast({
-            title: "Waarschuwing",
-            description: "Gebruiker bijgewerkt, maar teamtoewijzing kon niet worden opgeslagen.",
-            variant: "destructive",
-          });
+          }
         }
+        
+        toast({
+          title: "Gebruiker bijgewerkt",
+          description: `${formData.username} is bijgewerkt`,
+        });
+      } else {
+        // Add new user
+        const newId = Math.max(...users.map(u => u.id), 0) + 1;
+        
+        const userToAdd: User = {
+          id: newId,
+          username: formData.username,
+          password: formData.password,
+          role: formData.role,
+          ...(formData.role === "player_manager" && formData.teamId ? { teamId: formData.teamId } : {})
+        };
+        
+        addUser(userToAdd);
+        setUsers([...users, userToAdd]);
+        
+        // Add team assignment in Supabase if role is player_manager
+        if (formData.role === "player_manager" && formData.teamId) {
+          try {
+            await supabase
+              .from('team_users')
+              .insert({
+                user_id: newId,
+                team_id: formData.teamId
+              });
+          } catch (error) {
+            console.error('Error adding team assignment:', error);
+            toast({
+              title: "Waarschuwing",
+              description: "Gebruiker toegevoegd, maar teamtoewijzing kon niet worden opgeslagen.",
+              variant: "destructive",
+            });
+          }
+        }
+        
+        toast({
+          title: "Gebruiker toegevoegd",
+          description: `${formData.username} is toegevoegd`,
+        });
       }
       
+      return true;
+    } catch (error) {
+      console.error('Error saving user:', error);
       toast({
-        title: "Gebruiker bijgewerkt",
-        description: `${formData.username} is bijgewerkt`,
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het opslaan van de gebruiker",
+        variant: "destructive",
       });
-    } else {
-      // Add new user
-      const newId = Math.max(...users.map(u => u.id), 0) + 1;
-      
-      const userToAdd: User = {
-        id: newId,
-        username: formData.username,
-        password: formData.password,
-        role: formData.role,
-        ...(formData.role === "player_manager" && formData.teamId ? { teamId: formData.teamId } : {})
-      };
-      
-      addUser(userToAdd);
-      setUsers([...users, userToAdd]);
-      
-      // Add team assignment in Supabase if role is player_manager
-      if (formData.role === "player_manager" && formData.teamId) {
-        try {
-          await supabase
-            .from('team_users')
-            .insert({
-              user_id: newId,
-              team_id: formData.teamId
-            });
-        } catch (error) {
-          console.error('Error adding team assignment:', error);
-          toast({
-            title: "Waarschuwing",
-            description: "Gebruiker toegevoegd, maar teamtoewijzing kon niet worden opgeslagen.",
-            variant: "destructive",
-          });
-        }
-      }
-      
-      toast({
-        title: "Gebruiker toegevoegd",
-        description: `${formData.username} is toegevoegd`,
-      });
+      return false;
     }
   };
   

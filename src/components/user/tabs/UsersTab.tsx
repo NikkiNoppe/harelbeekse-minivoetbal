@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { 
@@ -77,47 +78,59 @@ const UsersTab: React.FC = () => {
   };
   
   // Handle save user
-  const handleSaveUser = (formData: any) => {
-    const currentEditingUser = editingUser;
-    
-    if (currentEditingUser) {
-      // Update existing user
-      const updatedUser: User = {
-        ...currentEditingUser,
-        username: formData.username,
-        ...(formData.password ? { password: formData.password } : {}),
-        role: formData.role,
-        ...(formData.role === "player_manager" ? { teamId: formData.teamId } : {})
-      };
+  const handleSaveUser = async (formData: any): Promise<boolean> => {
+    try {
+      const currentEditingUser = editingUser;
       
-      updateUser(updatedUser);
-      setUsers(allUsers.map(user => 
-        user.id === currentEditingUser.id ? updatedUser : user
-      ));
+      if (currentEditingUser) {
+        // Update existing user
+        const updatedUser: User = {
+          ...currentEditingUser,
+          username: formData.username,
+          ...(formData.password ? { password: formData.password } : {}),
+          role: formData.role,
+          ...(formData.role === "player_manager" ? { teamId: formData.teamId } : {})
+        };
+        
+        updateUser(updatedUser);
+        setUsers(allUsers.map(user => 
+          user.id === currentEditingUser.id ? updatedUser : user
+        ));
+        
+        toast({
+          title: "Gebruiker bijgewerkt",
+          description: `${formData.username} is bijgewerkt`,
+        });
+      } else {
+        // Add new user
+        const newId = Math.max(...users.map(u => u.id), 0) + 1;
+        
+        const userToAdd: User = {
+          id: newId,
+          username: formData.username,
+          password: formData.password,
+          role: formData.role,
+          ...(formData.role === "player_manager" && formData.teamId ? { teamId: formData.teamId } : {})
+        };
+        
+        addUser(userToAdd);
+        setUsers([...users, userToAdd]);
+        
+        toast({
+          title: "Gebruiker toegevoegd",
+          description: `${formData.username} is toegevoegd`,
+        });
+      }
       
+      return true;
+    } catch (error) {
+      console.error('Error saving user:', error);
       toast({
-        title: "Gebruiker bijgewerkt",
-        description: `${formData.username} is bijgewerkt`,
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het opslaan van de gebruiker",
+        variant: "destructive",
       });
-    } else {
-      // Add new user
-      const newId = Math.max(...users.map(u => u.id), 0) + 1;
-      
-      const userToAdd: User = {
-        id: newId,
-        username: formData.username,
-        password: formData.password,
-        role: formData.role,
-        ...(formData.role === "player_manager" && formData.teamId ? { teamId: formData.teamId } : {})
-      };
-      
-      addUser(userToAdd);
-      setUsers([...users, userToAdd]);
-      
-      toast({
-        title: "Gebruiker toegevoegd",
-        description: `${formData.username} is toegevoegd`,
-      });
+      return false;
     }
   };
   
