@@ -54,6 +54,7 @@ export const useAddUser = (teams: Team[], refreshData: () => Promise<void>) => {
     try {
       // Generate a secure random password
       const randomPassword = generateRandomPassword();
+      console.log('Creating user with password length:', randomPassword.length);
       
       // Use the create_user_with_hashed_password function for secure password hashing
       const { data, error } = await supabase.rpc('create_user_with_hashed_password', {
@@ -63,7 +64,17 @@ export const useAddUser = (teams: Team[], refreshData: () => Promise<void>) => {
         role_param: newUser.role
       });
       
-      if (error) throw error;
+      console.log('User creation result:', data);
+      console.log('User creation error:', error);
+      
+      if (error) {
+        console.error('Error creating user:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error('No user data returned from creation function');
+      }
       
       // If user is a player_manager, add team manager relationships
       if (data && newUser.role === "player_manager") {
@@ -71,6 +82,8 @@ export const useAddUser = (teams: Team[], refreshData: () => Promise<void>) => {
         const teamIds = newUser.teamIds || (newUser.teamId ? [newUser.teamId] : []);
         
         if (teamIds.length > 0) {
+          console.log('Adding team relationships for user_id:', data.user_id, 'teams:', teamIds);
+          
           // Create entries in team_users table for each team
           const teamUserEntries = teamIds.map(teamId => ({
             user_id: data.user_id,
@@ -81,7 +94,10 @@ export const useAddUser = (teams: Team[], refreshData: () => Promise<void>) => {
             .from('team_users')
             .insert(teamUserEntries);
           
-          if (teamUserError) throw teamUserError;
+          if (teamUserError) {
+            console.error('Error creating team relationships:', teamUserError);
+            throw teamUserError;
+          }
           
           // Get team names for toast message
           const teamNames = teams
@@ -92,22 +108,24 @@ export const useAddUser = (teams: Team[], refreshData: () => Promise<void>) => {
           toast({
             title: "Gebruiker toegevoegd",
             description: `${newUser.name} is toegevoegd als teamverantwoordelijke voor ${teamNames}. Wachtwoord: ${randomPassword}`,
-            duration: 10000 // Show longer so password can be copied
+            duration: 15000 // Show longer so password can be copied
           });
         } else {
           toast({
             title: "Gebruiker toegevoegd",
             description: `${newUser.name} is toegevoegd zonder teamkoppeling. Wachtwoord: ${randomPassword}`,
-            duration: 10000 // Show longer so password can be copied
+            duration: 15000 // Show longer so password can be copied
           });
         }
       } else {
         toast({
           title: "Gebruiker toegevoegd",
           description: `${newUser.name} is toegevoegd als ${newUser.role}. Wachtwoord: ${randomPassword}`,
-          duration: 10000 // Show longer so password can be copied
+          duration: 15000 // Show longer so password can be copied
         });
       }
+      
+      console.log('User successfully created with ID:', data.user_id);
       
       // Refresh user list
       await refreshData();

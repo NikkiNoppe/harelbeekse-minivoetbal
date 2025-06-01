@@ -13,22 +13,55 @@ export const useLogin = (onLoginSuccess: (user: User) => void) => {
     
     try {
       console.log('Attempting login with:', usernameOrEmail);
+      console.log('Password length:', password.length);
       
-      // Use the database function to verify user with hashed password
+      // First check if user exists
+      const { data: userCheck, error: userCheckError } = await supabase
+        .from('users')
+        .select('user_id, username, email')
+        .or(`username.eq.${usernameOrEmail},email.eq.${usernameOrEmail}`)
+        .maybeSingle();
+
+      console.log('User check result:', userCheck);
+      console.log('User check error:', userCheckError);
+
+      if (userCheckError) {
+        console.error('Database error during user check:', userCheckError);
+        toast({
+          title: "Login mislukt",
+          description: "Er is een fout opgetreden bij het controleren van de gebruiker",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!userCheck) {
+        console.log('User not found for:', usernameOrEmail);
+        toast({
+          title: "Login mislukt",
+          description: "Gebruiker niet gevonden. Controleer je gebruikersnaam of e-mailadres.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('User found, attempting password verification for user_id:', userCheck.user_id);
+
+      // Now verify password with the database function
       const { data: result, error } = await supabase
         .rpc('verify_user_password', {
           input_username_or_email: usernameOrEmail,
           input_password: password
         });
 
-      console.log('Login result:', result);
-      console.log('Login error:', error);
+      console.log('Password verification result:', result);
+      console.log('Password verification error:', error);
 
       if (error) {
-        console.error('Database error:', error);
+        console.error('Database error during password verification:', error);
         toast({
           title: "Login mislukt",
-          description: "Er is een fout opgetreden bij het inloggen",
+          description: "Er is een fout opgetreden bij het verifiëren van het wachtwoord",
           variant: "destructive",
         });
         return;
@@ -38,7 +71,7 @@ export const useLogin = (onLoginSuccess: (user: User) => void) => {
       if (result && Array.isArray(result) && result.length > 0) {
         // Get the first result from the array
         const dbUser = result[0];
-        console.log('Database user:', dbUser);
+        console.log('Login successful for user:', dbUser);
         
         // Create user object from the database result
         const user: User = {
@@ -49,7 +82,7 @@ export const useLogin = (onLoginSuccess: (user: User) => void) => {
           email: dbUser.email || ''
         };
         
-        console.log('Mapped user:', user);
+        console.log('Mapped user object:', user);
         
         toast({
           title: "Ingelogd!",
@@ -59,18 +92,19 @@ export const useLogin = (onLoginSuccess: (user: User) => void) => {
         // Call the success callback
         onLoginSuccess(user);
       } else {
-        console.log('No valid user found in result');
+        // User exists but password is wrong
+        console.log('Password verification failed for existing user');
         toast({
           title: "Login mislukt",
-          description: "Ongeldige gebruikersnaam/email of wachtwoord",
+          description: "Ongeldig wachtwoord. Controleer je wachtwoord en probeer opnieuw.",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Unexpected login error:', error);
       toast({
         title: "Login mislukt",
-        description: "Er is een onverwachte fout opgetreden",
+        description: "Er is een onverwachte fout opgetreden tijdens het inloggen",
         variant: "destructive",
       });
     } finally {
