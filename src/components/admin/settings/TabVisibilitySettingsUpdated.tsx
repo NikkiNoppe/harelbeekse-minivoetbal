@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, RotateCcw, Lock, Unlock, Save } from "lucide-react";
+import { Eye, EyeOff, Lock, Unlock, Save } from "lucide-react";
 import { useTabVisibilitySettings } from "@/hooks/useTabVisibilitySettings";
 import { useToast } from "@/hooks/use-toast";
 
@@ -175,16 +174,7 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
           ))}
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button 
-          variant="outline" 
-          onClick={resetToDefaults} 
-          disabled={saving}
-          className="flex items-center gap-2"
-        >
-          <RotateCcw className="h-4 w-4" />
-          Standaardinstellingen
-        </Button>
+      <CardFooter className="flex justify-end">
         
         <div className="flex gap-2">
           {hasChanges && (
