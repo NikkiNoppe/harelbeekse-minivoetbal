@@ -55,7 +55,7 @@ export const useUserManagement = () => {
     setEditDialogOpen(true);
   };
 
-  // Handle adding a new user
+  // Handle adding a new user - return success status
   const handleAddUser = async (formData: any) => {
     setAddingUser(true);
     const success = await addUser(formData);
@@ -63,7 +63,7 @@ export const useUserManagement = () => {
     return success;
   };
 
-  // Handle updating a user - now properly accepts userId parameter
+  // Handle updating a user - return success status
   const handleUpdateUser = async (userId: number, formData: any) => {
     console.log('handleUpdateUser called with userId:', userId, 'formData:', formData);
     setUpdatingUser(true);
@@ -73,6 +73,7 @@ export const useUserManagement = () => {
       setEditDialogOpen(false);
       setEditingUser(null);
     }
+    return success;
   };
 
   // Handle opening the delete confirmation dialog

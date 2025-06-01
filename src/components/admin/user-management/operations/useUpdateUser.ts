@@ -6,119 +6,123 @@ import { useToast } from "@/hooks/use-toast";
 export const useUpdateUser = (teams: Team[], refreshData: () => Promise<void>) => {
   const { toast } = useToast();
 
-  const updateUser = async (userId: number, formData: any) => {
+  const updateUser = async (userId: number, formData: {
+    username: string;
+    email: string;
+    password?: string;
+    role: "admin" | "referee" | "player_manager";
+    teamId?: number;
+    teamIds?: number[];
+  }) => {
     try {
       console.log('Updating user:', userId, 'with data:', formData);
-      
-      // Prepare user update data
-      const userUpdateData: any = {
+
+      // Prepare update data
+      const updateData: any = {
         username: formData.username,
-        role: formData.role,
+        email: formData.email,
+        role: formData.role
       };
 
-      // Include email if provided
-      if (formData.email && formData.email.trim() !== '') {
-        userUpdateData.email = formData.email;
-      }
-      
-      // Only include password if it's provided
-      if (formData.password && formData.password.trim() !== '') {
-        userUpdateData.password = formData.password;
-      }
-      
-      console.log('User update data:', userUpdateData);
-      
-      // Update user in Supabase
+      // Update user in users table
       const { error: userError } = await supabase
         .from('users')
-        .update(userUpdateData)
+        .update(updateData)
         .eq('user_id', userId);
-      
+
       if (userError) {
         console.error('Error updating user:', userError);
         throw userError;
       }
-      
-      console.log('User updated successfully');
-      
-      // Handle team associations if user is a player_manager
+
+      // Update password if provided
+      if (formData.password && formData.password.trim() !== '') {
+        console.log('Updating password for user:', userId);
+        const { data: passwordResult, error: passwordError } = await supabase
+          .rpc('update_user_password', {
+            user_id_param: userId,
+            new_password: formData.password
+          });
+
+        if (passwordError) {
+          console.error('Error updating password:', passwordError);
+          throw passwordError;
+        }
+
+        console.log('Password update result:', passwordResult);
+      }
+
+      // Handle team assignments for player_manager role
       if (formData.role === "player_manager") {
-        // First, remove any existing team associations for this user
-        const { error: resetError } = await supabase
+        // First, remove existing team assignments
+        const { error: deleteError } = await supabase
           .from('team_users')
           .delete()
           .eq('user_id', userId);
-        
-        if (resetError) {
-          console.error('Error removing existing team associations:', resetError);
-          throw resetError;
+
+        if (deleteError) {
+          console.error('Error removing existing team assignments:', deleteError);
+          throw deleteError;
         }
-        
-        console.log('Existing team associations removed');
-        
-        // Then, add new team associations
-        const teamIds = Array.isArray(formData.teamIds) ? formData.teamIds : 
-                      (formData.teamId ? [formData.teamId] : []);
-        
-        console.log('Team IDs to associate:', teamIds);
+
+        // Get team IDs to assign
+        const teamIds = formData.teamIds || (formData.teamId ? [formData.teamId] : []);
         
         if (teamIds.length > 0) {
+          console.log('Adding team relationships for user_id:', userId, 'teams:', teamIds);
+          
+          // Create entries in team_users table for each team
           const teamUserEntries = teamIds.map(teamId => ({
             user_id: userId,
-            team_id: parseInt(teamId.toString())
+            team_id: teamId
           }));
-          
-          console.log('Team user entries to insert:', teamUserEntries);
-          
+
           const { error: teamUserError } = await supabase
             .from('team_users')
             .insert(teamUserEntries);
-          
+
           if (teamUserError) {
-            console.error('Error inserting team associations:', teamUserError);
+            console.error('Error creating team relationships:', teamUserError);
             throw teamUserError;
           }
-          
-          console.log('Team associations created successfully');
-          
+
           // Get team names for toast message
           const teamNames = teams
             .filter(team => teamIds.includes(team.team_id))
             .map(team => team.team_name)
             .join(", ");
-          
+
           toast({
             title: "Gebruiker bijgewerkt",
-            description: `${formData.username} is bijgewerkt en gekoppeld aan ${teamNames}.`
+            description: `${formData.username} is bijgewerkt als teamverantwoordelijke voor ${teamNames}`,
           });
         } else {
           toast({
             title: "Gebruiker bijgewerkt",
-            description: `${formData.username} is bijgewerkt zonder teamkoppeling.`
+            description: `${formData.username} is bijgewerkt zonder teamkoppeling`,
           });
         }
       } else {
-        // If user is no longer a player_manager, remove any team associations
-        const { error: resetError } = await supabase
+        // For non-player_manager roles, remove any existing team assignments
+        const { error: deleteError } = await supabase
           .from('team_users')
           .delete()
           .eq('user_id', userId);
-        
-        if (resetError) {
-          console.error('Error removing team associations:', resetError);
-          throw resetError;
+
+        if (deleteError) {
+          console.error('Error removing team assignments:', deleteError);
+          // Don't throw here, just log the error
         }
-        
-        console.log('Team associations removed for non-player_manager role');
-        
+
         toast({
           title: "Gebruiker bijgewerkt",
-          description: `${formData.username} is bijgewerkt. Teamkoppelingen zijn verwijderd omdat de gebruiker geen teamverantwoordelijke meer is.`
+          description: `${formData.username} is bijgewerkt als ${formData.role}`,
         });
       }
-      
-      // Refresh user list to show updated data
-      console.log('Refreshing user data...');
+
+      console.log('User successfully updated:', userId);
+
+      // Refresh user list
       await refreshData();
       return true;
     } catch (error: any) {

@@ -48,25 +48,32 @@ const UserManagementTab: React.FC = () => {
     setAddDialogOpen(true);
   };
 
-  // Handle save for new user
-  const handleSaveNewUser = (formData: any) => {
+  // Handle save for new user - return success status
+  const handleSaveNewUser = async (formData: any) => {
     console.log('Saving new user with data:', formData);
-    handleAddUser({
+    const success = await handleAddUser({
       name: formData.username,
       email: formData.email,
       role: formData.role,
       teamId: formData.teamId || null,
       teamIds: formData.teamIds || []
     });
-    setAddDialogOpen(false);
+    
+    if (success) {
+      setAddDialogOpen(false);
+    }
+    
+    return success;
   };
 
-  // Handle save for editing user - now properly passing the user ID
-  const handleSaveEditUser = (formData: any) => {
+  // Handle save for editing user - return success status
+  const handleSaveEditUser = async (formData: any) => {
     if (editingUser) {
       console.log('Saving edited user with data:', formData, 'for user ID:', editingUser.user_id);
-      handleUpdateUser(editingUser.user_id, formData);
+      const success = await handleUpdateUser(editingUser.user_id, formData);
+      return success;
     }
+    return false;
   };
   
   return (
