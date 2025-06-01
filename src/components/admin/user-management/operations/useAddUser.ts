@@ -3,6 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Team } from "../types";
 import { useToast } from "@/hooks/use-toast";
 
+// Function to generate a secure random password
+const generateRandomPassword = (length: number = 12): string => {
+  const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+  let password = "";
+  for (let i = 0; i < length; i++) {
+    password += charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+  return password;
+};
+
 export const useAddUser = (teams: Team[], refreshData: () => Promise<void>) => {
   const { toast } = useToast();
 
@@ -42,28 +52,28 @@ export const useAddUser = (teams: Team[], refreshData: () => Promise<void>) => {
     }
     
     try {
-      // Insert new user into Supabase
-      const { data, error } = await supabase
-        .from('users')
-        .insert({
-          username: newUser.name,
-          email: newUser.email,
-          password: 'temporary_password', // In a real app, this would be handled more securely
-          role: newUser.role,
-        })
-        .select();
+      // Generate a secure random password
+      const randomPassword = generateRandomPassword();
+      
+      // Use the create_user_with_hashed_password function for secure password hashing
+      const { data, error } = await supabase.rpc('create_user_with_hashed_password', {
+        p_username: newUser.name,
+        p_email: newUser.email,
+        p_password: randomPassword,
+        p_role: newUser.role
+      });
       
       if (error) throw error;
       
       // If user is a player_manager, add team manager relationships
-      if (data && data[0] && newUser.role === "player_manager") {
+      if (data && newUser.role === "player_manager") {
         // Get team IDs to assign
         const teamIds = newUser.teamIds || (newUser.teamId ? [newUser.teamId] : []);
         
         if (teamIds.length > 0) {
           // Create entries in team_users table for each team
           const teamUserEntries = teamIds.map(teamId => ({
-            user_id: data[0].user_id,
+            user_id: data,
             team_id: teamId
           }));
           
@@ -81,18 +91,18 @@ export const useAddUser = (teams: Team[], refreshData: () => Promise<void>) => {
           
           toast({
             title: "Gebruiker toegevoegd",
-            description: `${newUser.name} is toegevoegd als teamverantwoordelijke voor ${teamNames}.`
+            description: `${newUser.name} is toegevoegd als teamverantwoordelijke voor ${teamNames}. Een tijdelijk wachtwoord is gegenereerd.`
           });
         } else {
           toast({
             title: "Gebruiker toegevoegd",
-            description: `${newUser.name} is toegevoegd zonder teamkoppeling.`
+            description: `${newUser.name} is toegevoegd zonder teamkoppeling. Een tijdelijk wachtwoord is gegenereerd.`
           });
         }
       } else {
         toast({
           title: "Gebruiker toegevoegd",
-          description: `${newUser.name} is toegevoegd als ${newUser.role}.`
+          description: `${newUser.name} is toegevoegd als ${newUser.role}. Een tijdelijk wachtwoord is gegenereerd.`
         });
       }
       
