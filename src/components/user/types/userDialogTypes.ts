@@ -27,7 +27,7 @@ export interface UserDialogProps {
     teamId?: number;
     teams?: {team_id: number, team_name: string}[];
   };
-  onSave: (formData: any) => void;
+  onSave: (formData: any) => Promise<boolean>;
   teams: TeamOption[];
   isLoading?: boolean;
 }

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -46,28 +47,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
         teamIds: teamIds
       });
     } else {
-      // Default values for new user - but keep existing data if dialog stays open
-      setFormData(prev => ({
-        username: prev.username || "",
-        email: prev.email || "",
-        password: prev.password || "",
-        role: prev.role || "player_manager",
-        teamId: prev.teamId || (teams.length > 0 ? teams[0].id : 0),
-        teamIds: prev.teamIds || []
-      }));
-    }
-  }, [editingUser, teams, open]);
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Submitting form data:', formData);
-    
-    const success = await onSave(formData);
-    
-    // Only close dialog and reset form if save was successful
-    if (success) {
-      onOpenChange(false);
-      // Reset form data
+      // Reset form for new user
       setFormData({
         username: "",
         email: "",
@@ -76,6 +56,31 @@ const UserDialog: React.FC<UserDialogProps> = ({
         teamId: teams.length > 0 ? teams[0].id : 0,
         teamIds: []
       });
+    }
+  }, [editingUser, teams, open]);
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Submitting form data:', formData);
+    
+    try {
+      const success = await onSave(formData);
+      
+      // Only close dialog and reset form if save was successful
+      if (success) {
+        onOpenChange(false);
+        // Reset form data
+        setFormData({
+          username: "",
+          email: "",
+          password: "",
+          role: "player_manager",
+          teamId: teams.length > 0 ? teams[0].id : 0,
+          teamIds: []
+        });
+      }
+    } catch (error) {
+      console.error('Error saving user:', error);
     }
   };
   
