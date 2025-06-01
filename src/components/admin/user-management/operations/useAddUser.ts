@@ -91,18 +91,21 @@ export const useAddUser = (teams: Team[], refreshData: () => Promise<void>) => {
           
           toast({
             title: "Gebruiker toegevoegd",
-            description: `${newUser.name} is toegevoegd als teamverantwoordelijke voor ${teamNames}. Een tijdelijk wachtwoord is gegenereerd.`
+            description: `${newUser.name} is toegevoegd als teamverantwoordelijke voor ${teamNames}. Wachtwoord: ${randomPassword}`,
+            duration: 10000 // Show longer so password can be copied
           });
         } else {
           toast({
             title: "Gebruiker toegevoegd",
-            description: `${newUser.name} is toegevoegd zonder teamkoppeling. Een tijdelijk wachtwoord is gegenereerd.`
+            description: `${newUser.name} is toegevoegd zonder teamkoppeling. Wachtwoord: ${randomPassword}`,
+            duration: 10000 // Show longer so password can be copied
           });
         }
       } else {
         toast({
           title: "Gebruiker toegevoegd",
-          description: `${newUser.name} is toegevoegd als ${newUser.role}. Een tijdelijk wachtwoord is gegenereerd.`
+          description: `${newUser.name} is toegevoegd als ${newUser.role}. Wachtwoord: ${randomPassword}`,
+          duration: 10000 // Show longer so password can be copied
         });
       }
       
