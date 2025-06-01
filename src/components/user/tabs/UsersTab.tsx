@@ -30,8 +30,7 @@ interface Team {
 
 const UsersTab: React.FC = () => {
   const { toast } = useToast();
-  const { allUsers, updateUser, addUser, removeUser } = useAuth();
-  const [users, setUsers] = useState<User[]>(allUsers);
+  const { allUsers, updateUser, addUser, removeUser, refreshUsers } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -93,9 +92,37 @@ const UsersTab: React.FC = () => {
         };
         
         updateUser(updatedUser);
-        setUsers(allUsers.map(user => 
-          user.id === currentEditingUser.id ? updatedUser : user
-        ));
+        
+        // Update team assignment in Supabase if role is player_manager
+        if (formData.role === "player_manager" && formData.teamId) {
+          try {
+            // First, remove existing team assignment
+            await supabase
+              .from('team_users')
+              .delete()
+              .eq('user_id', currentEditingUser.id);
+            
+            // Then add new team assignment
+            await supabase
+              .from('team_users')
+              .insert({
+                user_id: currentEditingUser.id,
+                team_id: formData.teamId
+              });
+          } catch (error) {
+            console.error('Error updating team assignment:', error);
+            toast({
+              title: "Waarschuwing",
+              description: "Gebruiker bijgewerkt, maar teamtoewijzing kon niet worden opgeslagen.",
+              variant: "destructive",
+            });
+          }
+        }
+        
+        // Refresh users to get latest data
+        if (refreshUsers) {
+          await refreshUsers();
+        }
         
         toast({
           title: "Gebruiker bijgewerkt",
@@ -103,7 +130,7 @@ const UsersTab: React.FC = () => {
         });
       } else {
         // Add new user
-        const newId = Math.max(...users.map(u => u.id), 0) + 1;
+        const newId = Math.max(...allUsers.map(u => u.id), 0) + 1;
         
         const userToAdd: User = {
           id: newId,
@@ -114,7 +141,30 @@ const UsersTab: React.FC = () => {
         };
         
         addUser(userToAdd);
-        setUsers([...users, userToAdd]);
+        
+        // Add team assignment in Supabase if role is player_manager
+        if (formData.role === "player_manager" && formData.teamId) {
+          try {
+            await supabase
+              .from('team_users')
+              .insert({
+                user_id: newId,
+                team_id: formData.teamId
+              });
+          } catch (error) {
+            console.error('Error adding team assignment:', error);
+            toast({
+              title: "Waarschuwing",
+              description: "Gebruiker toegevoegd, maar teamtoewijzing kon niet worden opgeslagen.",
+              variant: "destructive",
+            });
+          }
+        }
+        
+        // Refresh users to get latest data
+        if (refreshUsers) {
+          await refreshUsers();
+        }
         
         toast({
           title: "Gebruiker toegevoegd",
@@ -135,14 +185,33 @@ const UsersTab: React.FC = () => {
   };
   
   // Handle delete user
-  const handleDeleteUser = (userId: number) => {
-    removeUser(userId);
-    setUsers(users.filter(user => user.id !== userId));
-    
-    toast({
-      title: "Gebruiker verwijderd",
-      description: "De gebruiker is verwijderd",
-    });
+  const handleDeleteUser = async (userId: number) => {
+    try {
+      // Remove team assignment from Supabase first
+      await supabase
+        .from('team_users')
+        .delete()
+        .eq('user_id', userId);
+      
+      removeUser(userId);
+      
+      // Refresh users to get latest data
+      if (refreshUsers) {
+        await refreshUsers();
+      }
+      
+      toast({
+        title: "Gebruiker verwijderd",
+        description: "De gebruiker is verwijderd",
+      });
+    } catch (error) {
+      console.error('Error removing team assignment:', error);
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het verwijderen van de gebruiker",
+        variant: "destructive",
+      });
+    }
   };
   
   // Find team name by id
@@ -184,7 +253,7 @@ const UsersTab: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map(user => (
+                {allUsers.map(user => (
                   <UserRow
                     key={user.id}
                     user={user}

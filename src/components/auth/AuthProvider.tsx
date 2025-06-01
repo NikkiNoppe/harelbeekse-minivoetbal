@@ -1,184 +1,119 @@
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { User } from "@/types/auth";
-import { supabase } from "@/integrations/supabase/client";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User, AuthState } from '@/types/auth';
+import { supabase } from '@/integrations/supabase/client';
 
-interface AuthContextType {
-  user: User | null;
-  login: (user: User) => void;
+interface AuthContextType extends AuthState {
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
-  isAuthenticated: boolean;
   allUsers: User[];
-  updateUser: (updatedUser: User) => void;
-  addUser: (newUser: User) => void;
+  updateUser: (user: User) => void;
+  addUser: (user: User) => void;
   removeUser: (userId: number) => void;
+  refreshUsers: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+const mockUsers: User[] = [
+  { id: 1, username: 'admin', password: 'admin123', role: 'admin' },
+  { id: 2, username: 'referee1', password: 'ref123', role: 'referee' },
+  { id: 3, username: 'team1manager', password: 'team123', role: 'player_manager', teamId: 1 },
+  { id: 4, username: 'team2manager', password: 'team123', role: 'player_manager', teamId: 2 },
+];
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [allUsers, setAllUsers] = useState<User[]>(mockUsers);
 
-  // Load users from database
-  const loadUsers = async () => {
-    try {
-      const { data: users, error } = await supabase
-        .from('users')
-        .select('user_id, username, email, role')
-        .order('username');
-
-      if (error) {
-        console.error('Error loading users:', error);
-        return;
-      }
-
-      // Map database users to our User type
-      const mappedUsers: User[] = users.map(dbUser => ({
-        id: dbUser.user_id,
-        username: dbUser.username,
-        password: '', // Don't expose password
-        role: dbUser.role,
-        email: dbUser.email
-      }));
-
-      setAllUsers(mappedUsers);
-    } catch (error) {
-      console.error('Failed to load users from database:', error);
-    }
-  };
-
-  // Check for existing user in localStorage on mount
   useEffect(() => {
-    const initializeAuth = async () => {
-      const storedUser = localStorage.getItem("currentUser");
-      if (storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-        } catch (error) {
-          console.error("Failed to parse stored user", error);
-          localStorage.removeItem("currentUser");
-        }
-      }
+    // Simulate loading check
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
 
-      await loadUsers();
-      setIsLoaded(true);
-    };
-
-    initializeAuth();
+    return () => clearTimeout(timer);
   }, []);
 
-  const login = (userData: User) => {
-    setUser(userData);
-    localStorage.setItem("currentUser", JSON.stringify(userData));
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('verify_user_password', {
+        input_username_or_email: username,
+        input_password: password
+      });
+
+      if (error) {
+        console.error('Login error:', error);
+        return false;
+      }
+
+      if (data && data.length > 0) {
+        const userData = data[0];
+        const loggedInUser: User = {
+          id: userData.user_id,
+          username: userData.username,
+          password: '', // Don't store password
+          role: userData.role,
+          email: userData.email
+        };
+
+        setUser(loggedInUser);
+        setIsAuthenticated(true);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    }
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("currentUser");
+    setIsAuthenticated(false);
   };
 
-  const updateUser = async (updatedUser: User) => {
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          username: updatedUser.username,
-          email: updatedUser.email,
-          role: updatedUser.role
-        })
-        .eq('user_id', updatedUser.id);
-
-      if (error) {
-        console.error('Error updating user:', error);
-        return;
-      }
-
-      // Reload users from database
-      await loadUsers();
-      
-      // Update current user if it's the same
-      if (user && user.id === updatedUser.id) {
-        setUser(updatedUser);
-        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-      }
-    } catch (error) {
-      console.error('Failed to update user:', error);
-    }
-  };
-  
-  const addUser = async (newUser: User) => {
-    try {
-      const { error } = await supabase
-        .rpc('create_user_with_hashed_password', {
-          username_param: newUser.username,
-          email_param: newUser.email || null,
-          password_param: newUser.password,
-          role_param: newUser.role
-        });
-
-      if (error) {
-        console.error('Error adding user:', error);
-        return;
-      }
-
-      // Reload users from database
-      await loadUsers();
-    } catch (error) {
-      console.error('Failed to add user:', error);
-    }
-  };
-  
-  const removeUser = async (userId: number) => {
-    try {
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error('Error removing user:', error);
-        return;
-      }
-
-      // Reload users from database
-      await loadUsers();
-      
-      // Logout if current user is removed
-      if (user && user.id === userId) {
-        logout();
-      }
-    } catch (error) {
-      console.error('Failed to remove user:', error);
-    }
+  const updateUser = (updatedUser: User) => {
+    setAllUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
   };
 
-  const value = {
+  const addUser = (newUser: User) => {
+    setAllUsers(prev => [...prev, newUser]);
+  };
+
+  const removeUser = (userId: number) => {
+    setAllUsers(prev => prev.filter(u => u.id !== userId));
+  };
+
+  const refreshUsers = async () => {
+    // In a real app, this would fetch users from the database
+    // For now, we'll just trigger a re-render
+    setAllUsers(prev => [...prev]);
+  };
+
+  const value: AuthContextType = {
     user,
+    isAuthenticated,
+    loading,
     login,
     logout,
-    isAuthenticated: !!user,
     allUsers,
     updateUser,
     addUser,
-    removeUser
+    removeUser,
+    refreshUsers,
   };
-
-  if (!isLoaded) {
-    return <div>Loading...</div>;
-  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export default AuthProvider;
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
