@@ -31,6 +31,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
   // Set form data when editingUser changes
   useEffect(() => {
     if (editingUser) {
+      console.log('Setting form data for editing user:', editingUser);
       // Get team IDs from the teams array if available, otherwise use teamId
       const teamIds = editingUser.teams && editingUser.teams.length > 0 
         ? editingUser.teams.map(team => team.team_id) 
@@ -57,6 +58,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Submitting form data:', formData);
     onSave(formData);
   };
   

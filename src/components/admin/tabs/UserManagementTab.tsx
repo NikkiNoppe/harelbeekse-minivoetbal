@@ -50,6 +50,7 @@ const UserManagementTab: React.FC = () => {
 
   // Handle save for new user
   const handleSaveNewUser = (formData: any) => {
+    console.log('Saving new user with data:', formData);
     handleAddUser({
       name: formData.username,
       email: formData.password, // This field is used as email in the current implementation
@@ -58,6 +59,12 @@ const UserManagementTab: React.FC = () => {
       teamIds: formData.teamIds || []
     });
     setAddDialogOpen(false);
+  };
+
+  // Handle save for editing user
+  const handleSaveEditUser = (formData: any) => {
+    console.log('Saving edited user with data:', formData);
+    handleUpdateUser(formData);
   };
   
   return (
@@ -124,7 +131,7 @@ const UserManagementTab: React.FC = () => {
             teamId: editingUser.team_id || undefined,
             teams: editingUser.teams
           }}
-          onSave={handleUpdateUser}
+          onSave={handleSaveEditUser}
           teams={teams.map(team => ({ id: team.team_id, name: team.team_name }))}
           isLoading={updatingUser}
         />

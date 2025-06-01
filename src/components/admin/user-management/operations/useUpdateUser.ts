@@ -8,17 +8,33 @@ export const useUpdateUser = (teams: Team[], refreshData: () => Promise<void>) =
 
   const updateUser = async (userId: number, formData: any) => {
     try {
+      console.log('Updating user:', userId, 'with data:', formData);
+      
+      // Prepare user update data
+      const userUpdateData: any = {
+        username: formData.username,
+        role: formData.role,
+      };
+      
+      // Only include password if it's provided
+      if (formData.password && formData.password.trim() !== '') {
+        userUpdateData.password = formData.password;
+      }
+      
+      console.log('User update data:', userUpdateData);
+      
       // Update user in Supabase
-      const { error } = await supabase
+      const { error: userError } = await supabase
         .from('users')
-        .update({
-          username: formData.username,
-          ...(formData.password ? { password: formData.password } : {}),
-          role: formData.role,
-        })
+        .update(userUpdateData)
         .eq('user_id', userId);
       
-      if (error) throw error;
+      if (userError) {
+        console.error('Error updating user:', userError);
+        throw userError;
+      }
+      
+      console.log('User updated successfully');
       
       // Handle team associations if user is a player_manager
       if (formData.role === "player_manager") {
@@ -28,27 +44,41 @@ export const useUpdateUser = (teams: Team[], refreshData: () => Promise<void>) =
           .delete()
           .eq('user_id', userId);
         
-        if (resetError) throw resetError;
+        if (resetError) {
+          console.error('Error removing existing team associations:', resetError);
+          throw resetError;
+        }
+        
+        console.log('Existing team associations removed');
         
         // Then, add new team associations
         const teamIds = Array.isArray(formData.teamIds) ? formData.teamIds : 
                       (formData.teamId ? [formData.teamId] : []);
         
+        console.log('Team IDs to associate:', teamIds);
+        
         if (teamIds.length > 0) {
           const teamUserEntries = teamIds.map(teamId => ({
             user_id: userId,
-            team_id: parseInt(teamId)
+            team_id: parseInt(teamId.toString())
           }));
+          
+          console.log('Team user entries to insert:', teamUserEntries);
           
           const { error: teamUserError } = await supabase
             .from('team_users')
             .insert(teamUserEntries);
           
-          if (teamUserError) throw teamUserError;
+          if (teamUserError) {
+            console.error('Error inserting team associations:', teamUserError);
+            throw teamUserError;
+          }
+          
+          console.log('Team associations created successfully');
           
           // Get team names for toast message
           const teamNames = teams
-            .filter(team => teamIds.includes(team.team_id.toString()))
+            .filter(team => teamIds.includes(team.team_id))
             .map(team => team.team_name)
             .join(", ");
           
@@ -69,7 +99,12 @@ export const useUpdateUser = (teams: Team[], refreshData: () => Promise<void>) =
           .delete()
           .eq('user_id', userId);
         
-        if (resetError) throw resetError;
+        if (resetError) {
+          console.error('Error removing team associations:', resetError);
+          throw resetError;
+        }
+        
+        console.log('Team associations removed for non-player_manager role');
         
         toast({
           title: "Gebruiker bijgewerkt",
@@ -78,6 +113,7 @@ export const useUpdateUser = (teams: Team[], refreshData: () => Promise<void>) =
       }
       
       // Refresh user list to show updated data
+      console.log('Refreshing user data...');
       await refreshData();
       return true;
     } catch (error: any) {
