@@ -64,6 +64,19 @@ const UserFormFields: React.FC<UserFormFieldsProps> = ({
           disabled={isLoading}
         />
       </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="email">E-mailadres</Label>
+        <Input
+          id="email"
+          type="email"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          placeholder="E-mailadres"
+          required
+          disabled={isLoading}
+        />
+      </div>
       
       <div className="space-y-2">
         <Label htmlFor="password">

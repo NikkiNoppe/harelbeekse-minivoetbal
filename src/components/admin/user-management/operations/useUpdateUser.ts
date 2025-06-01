@@ -15,6 +15,11 @@ export const useUpdateUser = (teams: Team[], refreshData: () => Promise<void>) =
         username: formData.username,
         role: formData.role,
       };
+
+      // Include email if provided
+      if (formData.email && formData.email.trim() !== '') {
+        userUpdateData.email = formData.email;
+      }
       
       // Only include password if it's provided
       if (formData.password && formData.password.trim() !== '') {

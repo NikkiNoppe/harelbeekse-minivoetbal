@@ -22,6 +22,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
 }) => {
   const [formData, setFormData] = useState<UserFormData>({
     username: "",
+    email: "",
     password: "",
     role: "player_manager",
     teamId: 0,
@@ -39,6 +40,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
       
       setFormData({
         username: editingUser.username,
+        email: editingUser.email || "",
         password: "",
         role: editingUser.role,
         teamId: editingUser.teamId || 0,
@@ -48,6 +50,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
       // Default values for new user
       setFormData({
         username: "",
+        email: "",
         password: "",
         role: "player_manager",
         teamId: teams.length > 0 ? teams[0].id : 0,

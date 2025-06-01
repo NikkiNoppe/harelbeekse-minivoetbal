@@ -53,7 +53,7 @@ const UserManagementTab: React.FC = () => {
     console.log('Saving new user with data:', formData);
     handleAddUser({
       name: formData.username,
-      email: formData.password, // This field is used as email in the current implementation
+      email: formData.email,
       role: formData.role,
       teamId: formData.teamId || null,
       teamIds: formData.teamIds || []
@@ -61,10 +61,12 @@ const UserManagementTab: React.FC = () => {
     setAddDialogOpen(false);
   };
 
-  // Handle save for editing user
+  // Handle save for editing user - now properly passing the user ID
   const handleSaveEditUser = (formData: any) => {
-    console.log('Saving edited user with data:', formData);
-    handleUpdateUser(formData);
+    if (editingUser) {
+      console.log('Saving edited user with data:', formData, 'for user ID:', editingUser.user_id);
+      handleUpdateUser(editingUser.user_id, formData);
+    }
   };
   
   return (
@@ -126,6 +128,7 @@ const UserManagementTab: React.FC = () => {
           editingUser={{
             id: editingUser.user_id,
             username: editingUser.username,
+            email: editingUser.email,
             password: "",
             role: editingUser.role as "admin" | "referee" | "player_manager",
             teamId: editingUser.team_id || undefined,

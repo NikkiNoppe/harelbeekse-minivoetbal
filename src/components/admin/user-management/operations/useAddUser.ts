@@ -47,6 +47,7 @@ export const useAddUser = (teams: Team[], refreshData: () => Promise<void>) => {
         .from('users')
         .insert({
           username: newUser.name,
+          email: newUser.email,
           password: 'temporary_password', // In a real app, this would be handled more securely
           role: newUser.role,
         })

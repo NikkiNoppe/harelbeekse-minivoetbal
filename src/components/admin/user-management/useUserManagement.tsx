@@ -63,15 +63,15 @@ export const useUserManagement = () => {
     return success;
   };
 
-  // Handle updating a user
-  const handleUpdateUser = async (formData: any) => {
-    if (editingUser) {
-      setUpdatingUser(true);
-      const success = await updateUser(editingUser.user_id, formData);
-      setUpdatingUser(false);
-      if (success) {
-        setEditDialogOpen(false);
-      }
+  // Handle updating a user - now properly accepts userId parameter
+  const handleUpdateUser = async (userId: number, formData: any) => {
+    console.log('handleUpdateUser called with userId:', userId, 'formData:', formData);
+    setUpdatingUser(true);
+    const success = await updateUser(userId, formData);
+    setUpdatingUser(false);
+    if (success) {
+      setEditDialogOpen(false);
+      setEditingUser(null);
     }
   };
 

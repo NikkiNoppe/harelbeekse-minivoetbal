@@ -8,6 +8,7 @@ export interface TeamOption {
 
 export interface UserFormData {
   username: string;
+  email: string;
   password: string;
   role: "admin" | "referee" | "player_manager";
   teamId: number;
@@ -20,6 +21,7 @@ export interface UserDialogProps {
   editingUser?: {
     id: number;
     username: string;
+    email?: string;
     password: string;
     role: "admin" | "referee" | "player_manager";
     teamId?: number;
