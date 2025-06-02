@@ -21,6 +21,9 @@ import { Plus } from "lucide-react";
 import { User } from "@/types/auth";
 import UserRow from "@/components/user/UserRow";
 import UserDialog from "@/components/user/UserDialog";
+import { useDeleteUser } from "@/components/admin/user-management/operations/useDeleteUser";
+import { useUserDataService } from "@/components/admin/user-management/userDataService";
+import ConfirmDeleteDialog from "@/components/admin/user-management/ConfirmDeleteDialog";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Team {
