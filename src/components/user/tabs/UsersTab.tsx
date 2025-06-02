@@ -28,41 +28,92 @@ interface Team {
   team_name: string;
 }
 
+interface DbUser {
+  user_id: number;
+  username: string;
+  email: string;
+  role: string;
+  teams?: { team_id: number; team_name: string }[];
+}
+
 const UsersTab: React.FC = () => {
   const { toast } = useToast();
-  const { allUsers, updateUser, addUser, removeUser, refreshUsers } = useAuth();
+  const { user: currentUser } = useAuth();
+  const [users, setUsers] = useState<User[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Fetch teams from Supabase
-  useEffect(() => {
-    async function fetchTeams() {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('teams')
-          .select('team_id, team_name')
-          .order('team_name');
+  // Fetch users and teams from Supabase
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch users with their team relationships
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select(`
+          user_id,
+          username,
+          email,
+          role,
+          team_users!left (
+            team_id,
+            teams!inner (
+              team_id,
+              team_name
+            )
+          )
+        `)
+        .order('username');
+
+      if (usersError) throw usersError;
+
+      // Fetch teams
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('team_id, team_name')
+        .order('team_name');
+      
+      if (teamsError) throw teamsError;
+      
+      setTeams(teamsData || []);
+
+      // Transform users data
+      const transformedUsers: User[] = (usersData || []).map(user => {
+        const teamUsers = user.team_users || [];
+        const userTeams = teamUsers.map(tu => ({
+          team_id: tu.teams.team_id,
+          team_name: tu.teams.team_name
+        }));
         
-        if (error) throw error;
-        
-        setTeams(data || []);
-      } catch (error) {
-        console.error('Error fetching teams:', error);
-        toast({
-          title: "Fout bij laden",
-          description: "Er is een fout opgetreden bij het laden van de teams.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
+        return {
+          id: user.user_id,
+          username: user.username,
+          email: user.email || '',
+          password: '', // Don't expose password
+          role: user.role as any,
+          teamId: userTeams.length > 0 ? userTeams[0].team_id : undefined
+        };
+      });
+
+      setUsers(transformedUsers);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Fout bij laden",
+        description: "Er is een fout opgetreden bij het laden van de gegevens.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-    
-    fetchTeams();
-  }, [toast]);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
   
   // Handle opening edit dialog
   const handleEditUser = (user: User) => {
@@ -79,49 +130,42 @@ const UsersTab: React.FC = () => {
   // Handle save user
   const handleSaveUser = async (formData: any): Promise<boolean> => {
     try {
-      const currentEditingUser = editingUser;
-      
-      if (currentEditingUser) {
+      if (editingUser) {
         // Update existing user
-        const updatedUser: User = {
-          ...currentEditingUser,
-          username: formData.username,
-          ...(formData.password ? { password: formData.password } : {}),
-          role: formData.role,
-          ...(formData.role === "player_manager" ? { teamId: formData.teamId } : {})
-        };
-        
-        updateUser(updatedUser);
-        
-        // Update team assignment in Supabase if role is player_manager
+        const { error: updateError } = await supabase.rpc('update_user_password', {
+          user_id_param: editingUser.id,
+          new_password: formData.password
+        });
+
+        if (updateError) throw updateError;
+
+        // Update other user fields
+        const { error: userError } = await supabase
+          .from('users')
+          .update({
+            username: formData.username,
+            role: formData.role,
+            email: formData.email || null
+          })
+          .eq('user_id', editingUser.id);
+
+        if (userError) throw userError;
+
+        // Update team assignment if role is player_manager
         if (formData.role === "player_manager" && formData.teamId) {
-          try {
-            // First, remove existing team assignment
-            await supabase
-              .from('team_users')
-              .delete()
-              .eq('user_id', currentEditingUser.id);
-            
-            // Then add new team assignment
-            await supabase
-              .from('team_users')
-              .insert({
-                user_id: currentEditingUser.id,
-                team_id: formData.teamId
-              });
-          } catch (error) {
-            console.error('Error updating team assignment:', error);
-            toast({
-              title: "Waarschuwing",
-              description: "Gebruiker bijgewerkt, maar teamtoewijzing kon niet worden opgeslagen.",
-              variant: "destructive",
+          // Remove existing team assignment
+          await supabase
+            .from('team_users')
+            .delete()
+            .eq('user_id', editingUser.id);
+          
+          // Add new team assignment
+          await supabase
+            .from('team_users')
+            .insert({
+              user_id: editingUser.id,
+              team_id: formData.teamId
             });
-          }
-        }
-        
-        // Refresh users to get latest data
-        if (refreshUsers) {
-          await refreshUsers();
         }
         
         toast({
@@ -130,40 +174,23 @@ const UsersTab: React.FC = () => {
         });
       } else {
         // Add new user
-        const newId = Math.max(...allUsers.map(u => u.id), 0) + 1;
-        
-        const userToAdd: User = {
-          id: newId,
-          username: formData.username,
-          password: formData.password,
-          role: formData.role,
-          ...(formData.role === "player_manager" && formData.teamId ? { teamId: formData.teamId } : {})
-        };
-        
-        addUser(userToAdd);
-        
-        // Add team assignment in Supabase if role is player_manager
-        if (formData.role === "player_manager" && formData.teamId) {
-          try {
-            await supabase
-              .from('team_users')
-              .insert({
-                user_id: newId,
-                team_id: formData.teamId
-              });
-          } catch (error) {
-            console.error('Error adding team assignment:', error);
-            toast({
-              title: "Waarschuwing",
-              description: "Gebruiker toegevoegd, maar teamtoewijzing kon niet worden opgeslagen.",
-              variant: "destructive",
+        const { data: newUser, error: createError } = await supabase.rpc('create_user_with_hashed_password', {
+          username_param: formData.username,
+          email_param: formData.email || null,
+          password_param: formData.password,
+          role_param: formData.role
+        });
+
+        if (createError) throw createError;
+
+        // Add team assignment if role is player_manager
+        if (formData.role === "player_manager" && formData.teamId && newUser) {
+          await supabase
+            .from('team_users')
+            .insert({
+              user_id: newUser.user_id,
+              team_id: formData.teamId
             });
-          }
-        }
-        
-        // Refresh users to get latest data
-        if (refreshUsers) {
-          await refreshUsers();
         }
         
         toast({
@@ -172,6 +199,8 @@ const UsersTab: React.FC = () => {
         });
       }
       
+      // Refresh data
+      await fetchData();
       return true;
     } catch (error) {
       console.error('Error saving user:', error);
@@ -187,25 +216,29 @@ const UsersTab: React.FC = () => {
   // Handle delete user
   const handleDeleteUser = async (userId: number) => {
     try {
-      // Remove team assignment from Supabase first
+      // Remove team assignment first
       await supabase
         .from('team_users')
         .delete()
         .eq('user_id', userId);
       
-      removeUser(userId);
+      // Delete user
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('user_id', userId);
       
-      // Refresh users to get latest data
-      if (refreshUsers) {
-        await refreshUsers();
-      }
+      if (error) throw error;
       
       toast({
         title: "Gebruiker verwijderd",
         description: "De gebruiker is verwijderd",
       });
+      
+      // Refresh data
+      await fetchData();
     } catch (error) {
-      console.error('Error removing team assignment:', error);
+      console.error('Error deleting user:', error);
       toast({
         title: "Fout",
         description: "Er is een fout opgetreden bij het verwijderen van de gebruiker",
@@ -214,7 +247,7 @@ const UsersTab: React.FC = () => {
     }
   };
   
-  // Find team name by id
+  // Find team name by user id
   const getTeamName = (teamId: number | undefined) => {
     if (!teamId) return "-";
     const team = teams.find(t => t.team_id === teamId);
@@ -241,7 +274,7 @@ const UsersTab: React.FC = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="py-8 text-center text-muted-foreground">Teams laden...</div>
+            <div className="py-8 text-center text-muted-foreground">Gegevens laden...</div>
           ) : (
             <Table>
               <TableHeader>
@@ -253,7 +286,7 @@ const UsersTab: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {allUsers.map(user => (
+                {users.map(user => (
                   <UserRow
                     key={user.id}
                     user={user}

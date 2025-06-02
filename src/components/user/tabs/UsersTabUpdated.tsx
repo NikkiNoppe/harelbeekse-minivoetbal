@@ -36,8 +36,8 @@ interface TeamUser {
 
 const UsersTabUpdated: React.FC = () => {
   const { toast } = useToast();
-  const { allUsers, updateUser, addUser, removeUser } = useAuth();
-  const [users, setUsers] = useState<User[]>(allUsers);
+  const { user: currentUser } = useAuth();
+  const [users, setUsers] = useState<User[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -45,54 +45,93 @@ const UsersTabUpdated: React.FC = () => {
   const [loading, setLoading] = useState(true);
   
   // Fetch teams and team-user relationships from Supabase
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        
-        // Fetch teams
-        const { data: teamsData, error: teamsError } = await supabase
-          .from('teams')
-          .select('team_id, team_name')
-          .order('team_name');
-        
-        if (teamsError) throw teamsError;
-        setTeams(teamsData || []);
-        
-        // Fetch team-user relationships
-        const { data: teamUsersData, error: teamUsersError } = await supabase
-          .from('team_users')
-          .select(`
-            user_id,
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch users with their team relationships
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select(`
+          user_id,
+          username,
+          email,
+          role,
+          team_users!left (
             team_id,
-            teams!inner(team_name)
-          `);
-        
-        if (teamUsersError) {
-          console.error('Error fetching team users:', teamUsersError);
-          // Don't throw here, just log the error
-        } else {
-          const mappedTeamUsers: TeamUser[] = (teamUsersData || []).map(item => ({
-            user_id: item.user_id,
-            team_id: item.team_id,
-            team_name: (item.teams as any)?.team_name || 'Unknown Team'
-          }));
-          setTeamUsers(mappedTeamUsers);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast({
-          title: "Fout bij laden",
-          description: "Er is een fout opgetreden bij het laden van de gegevens.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+            teams!inner (
+              team_id,
+              team_name
+            )
+          )
+        `)
+        .order('username');
+
+      if (usersError) throw usersError;
+
+      // Fetch teams
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('team_id, team_name')
+        .order('team_name');
+      
+      if (teamsError) throw teamsError;
+      setTeams(teamsData || []);
+      
+      // Fetch team-user relationships
+      const { data: teamUsersData, error: teamUsersError } = await supabase
+        .from('team_users')
+        .select(`
+          user_id,
+          team_id,
+          teams!inner(team_name)
+        `);
+      
+      if (teamUsersError) {
+        console.error('Error fetching team users:', teamUsersError);
+      } else {
+        const mappedTeamUsers: TeamUser[] = (teamUsersData || []).map(item => ({
+          user_id: item.user_id,
+          team_id: item.team_id,
+          team_name: (item.teams as any)?.team_name || 'Unknown Team'
+        }));
+        setTeamUsers(mappedTeamUsers);
       }
+
+      // Transform users data
+      const transformedUsers: User[] = (usersData || []).map(user => {
+        const teamUsers = user.team_users || [];
+        const userTeams = teamUsers.map(tu => ({
+          team_id: tu.teams.team_id,
+          team_name: tu.teams.team_name
+        }));
+        
+        return {
+          id: user.user_id,
+          username: user.username,
+          email: user.email || '',
+          password: '', // Don't expose password
+          role: user.role as any,
+          teamId: userTeams.length > 0 ? userTeams[0].team_id : undefined
+        };
+      });
+
+      setUsers(transformedUsers);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Fout bij laden",
+        description: "Er is een fout opgetreden bij het laden van de gegevens.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-    
+  };
+
+  useEffect(() => {
     fetchData();
-  }, [toast]);
+  }, []);
   
   // Handle opening edit dialog
   const handleEditUser = (user: User) => {
@@ -109,47 +148,42 @@ const UsersTabUpdated: React.FC = () => {
   // Handle save user
   const handleSaveUser = async (formData: any): Promise<boolean> => {
     try {
-      const currentEditingUser = editingUser;
-      
-      if (currentEditingUser) {
+      if (editingUser) {
         // Update existing user
-        const updatedUser: User = {
-          ...currentEditingUser,
-          username: formData.username,
-          ...(formData.password ? { password: formData.password } : {}),
-          role: formData.role,
-          ...(formData.role === "player_manager" ? { teamId: formData.teamId } : {})
-        };
-        
-        updateUser(updatedUser);
-        setUsers(allUsers.map(user => 
-          user.id === currentEditingUser.id ? updatedUser : user
-        ));
-        
-        // Update team assignment in Supabase if role is player_manager
+        const { error: updateError } = await supabase.rpc('update_user_password', {
+          user_id_param: editingUser.id,
+          new_password: formData.password
+        });
+
+        if (updateError) throw updateError;
+
+        // Update other user fields
+        const { error: userError } = await supabase
+          .from('users')
+          .update({
+            username: formData.username,
+            role: formData.role,
+            email: formData.email || null
+          })
+          .eq('user_id', editingUser.id);
+
+        if (userError) throw userError;
+
+        // Update team assignment if role is player_manager
         if (formData.role === "player_manager" && formData.teamId) {
-          try {
-            // First, remove existing team assignment
-            await supabase
-              .from('team_users')
-              .delete()
-              .eq('user_id', currentEditingUser.id);
-            
-            // Then add new team assignment
-            await supabase
-              .from('team_users')
-              .insert({
-                user_id: currentEditingUser.id,
-                team_id: formData.teamId
-              });
-          } catch (error) {
-            console.error('Error updating team assignment:', error);
-            toast({
-              title: "Waarschuwing",
-              description: "Gebruiker bijgewerkt, maar teamtoewijzing kon niet worden opgeslagen.",
-              variant: "destructive",
+          // Remove existing team assignment
+          await supabase
+            .from('team_users')
+            .delete()
+            .eq('user_id', editingUser.id);
+          
+          // Add new team assignment
+          await supabase
+            .from('team_users')
+            .insert({
+              user_id: editingUser.id,
+              team_id: formData.teamId
             });
-          }
         }
         
         toast({
@@ -158,36 +192,23 @@ const UsersTabUpdated: React.FC = () => {
         });
       } else {
         // Add new user
-        const newId = Math.max(...users.map(u => u.id), 0) + 1;
-        
-        const userToAdd: User = {
-          id: newId,
-          username: formData.username,
-          password: formData.password,
-          role: formData.role,
-          ...(formData.role === "player_manager" && formData.teamId ? { teamId: formData.teamId } : {})
-        };
-        
-        addUser(userToAdd);
-        setUsers([...users, userToAdd]);
-        
-        // Add team assignment in Supabase if role is player_manager
-        if (formData.role === "player_manager" && formData.teamId) {
-          try {
-            await supabase
-              .from('team_users')
-              .insert({
-                user_id: newId,
-                team_id: formData.teamId
-              });
-          } catch (error) {
-            console.error('Error adding team assignment:', error);
-            toast({
-              title: "Waarschuwing",
-              description: "Gebruiker toegevoegd, maar teamtoewijzing kon niet worden opgeslagen.",
-              variant: "destructive",
+        const { data: newUser, error: createError } = await supabase.rpc('create_user_with_hashed_password', {
+          username_param: formData.username,
+          email_param: formData.email || null,
+          password_param: formData.password,
+          role_param: formData.role
+        });
+
+        if (createError) throw createError;
+
+        // Add team assignment if role is player_manager
+        if (formData.role === "player_manager" && formData.teamId && newUser) {
+          await supabase
+            .from('team_users')
+            .insert({
+              user_id: newUser.user_id,
+              team_id: formData.teamId
             });
-          }
         }
         
         toast({
@@ -196,6 +217,8 @@ const UsersTabUpdated: React.FC = () => {
         });
       }
       
+      // Refresh data
+      await fetchData();
       return true;
     } catch (error) {
       console.error('Error saving user:', error);
@@ -210,23 +233,36 @@ const UsersTabUpdated: React.FC = () => {
   
   // Handle delete user
   const handleDeleteUser = async (userId: number) => {
-    // Remove team assignment from Supabase first
     try {
+      // Remove team assignment first
       await supabase
         .from('team_users')
         .delete()
         .eq('user_id', userId);
+      
+      // Delete user
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Gebruiker verwijderd",
+        description: "De gebruiker is verwijderd",
+      });
+      
+      // Refresh data
+      await fetchData();
     } catch (error) {
-      console.error('Error removing team assignment:', error);
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het verwijderen van de gebruiker",
+        variant: "destructive",
+      });
     }
-    
-    removeUser(userId);
-    setUsers(users.filter(user => user.id !== userId));
-    
-    toast({
-      title: "Gebruiker verwijderd",
-      description: "De gebruiker is verwijderd",
-    });
   };
   
   // Find team name by user id
