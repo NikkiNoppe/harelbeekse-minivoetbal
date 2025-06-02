@@ -1,94 +1,78 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { DbUser, Team } from "./types";
-import { useToast } from "@/hooks/use-toast";
 
 export const useUserDataService = () => {
-  const { toast } = useToast();
-
-  // Function to fetch both users and teams data
   const fetchData = async () => {
     try {
-      // Fetch teams
-      const { data: teamsData, error: teamsError } = await supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .order('team_name');
+      console.log('Fetching users and teams from database');
       
-      if (teamsError) throw teamsError;
-      
-      // Fetch users with their teams (including email)
+      // Fetch users with their team relationships
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select(`
           user_id,
           username,
           email,
-          role
-        `);
-      
-      if (usersError) throw usersError;
-      
-      // Fetch team managers relationships
-      const { data: teamUsersData, error: teamUsersError } = await supabase
-        .from('team_users')
-        .select(`
-          user_id,
-          team_id,
-          teams (
+          role,
+          team_users!left (
             team_id,
-            team_name
+            teams!inner (
+              team_id,
+              team_name
+            )
           )
-        `);
-      
-      if (teamUsersError) throw teamUsersError;
-      
-      // Map team manager data to organize by user_id
-      const userTeamsMap: Record<number, { team_id: number; team_name: string }[]> = {};
-      
-      teamUsersData.forEach((manager) => {
-        if (!userTeamsMap[manager.user_id]) {
-          userTeamsMap[manager.user_id] = [];
-        }
-        
-        if (manager.teams) {
-          userTeamsMap[manager.user_id].push({
-            team_id: manager.teams.team_id,
-            team_name: manager.teams.team_name
-          });
-        }
-      });
-      
-      // Combine user data with team data
-      const formattedUsers: DbUser[] = usersData.map(user => {
-        const userTeams = userTeamsMap[user.user_id] || [];
-        
-        // For backwards compatibility, set the first team as the main team
-        const mainTeam = userTeams.length > 0 ? userTeams[0] : null;
+        `)
+        .order('username');
+
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+        throw usersError;
+      }
+
+      // Fetch teams
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('team_id, team_name')
+        .order('team_name');
+
+      if (teamsError) {
+        console.error('Error fetching teams:', teamsError);
+        throw teamsError;
+      }
+
+      // Transform users data to include team information
+      const transformedUsers: DbUser[] = (usersData || []).map(user => {
+        const teamUsers = user.team_users || [];
+        const teams = teamUsers.map(tu => ({
+          team_id: tu.teams.team_id,
+          team_name: tu.teams.team_name
+        }));
         
         return {
           user_id: user.user_id,
           username: user.username,
           email: user.email,
           role: user.role,
-          team_id: mainTeam ? mainTeam.team_id : null,
-          team_name: mainTeam ? mainTeam.team_name : null,
-          teams: userTeams.length > 0 ? userTeams : []
+          team_id: teams.length > 0 ? teams[0].team_id : null,
+          team_name: teams.length > 0 ? teams[0].team_name : null,
+          teams: teams
         };
       });
-      
+
+      console.log('Successfully fetched users:', transformedUsers.length);
+      console.log('Successfully fetched teams:', teamsData?.length || 0);
+
       return {
-        users: formattedUsers,
-        teams: teamsData || []
+        users: transformedUsers,
+        teams: teamsData as Team[] || []
       };
-    } catch (error: any) {
-      console.error('Error fetching data:', error);
-      toast({
-        title: "Fout bij laden",
-        description: "Er is een fout opgetreden bij het laden van gebruikersgegevens.",
-        variant: "destructive",
-      });
-      return { users: [], teams: [] };
+    } catch (error) {
+      console.error('Error in fetchData:', error);
+      return {
+        users: [],
+        teams: []
+      };
     }
   };
 

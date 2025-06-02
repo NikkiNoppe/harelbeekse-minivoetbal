@@ -12,7 +12,7 @@ export const useUserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [addingUser, setAddingUser] = useState(false);
   const [updatingUser, setUpdatingUser] = useState(false);
-  const [deletingUser, setDeleteingUser] = useState(false);
+  const [deletingUser, setDeletingUser] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<DbUser | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -20,6 +20,23 @@ export const useUserManagement = () => {
 
   // Fetch data service
   const { fetchData } = useUserDataService();
+
+  // Refresh data function
+  async function refreshData() {
+    console.log('Refreshing user management data');
+    setLoading(true);
+    try {
+      const data = await fetchData();
+      console.log('Setting users data:', data.users.length, 'users');
+      console.log('Setting teams data:', data.teams.length, 'teams');
+      setUsers(data.users);
+      setTeams(data.teams);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // User filtering
   const {
@@ -39,15 +56,6 @@ export const useUserManagement = () => {
   useEffect(() => {
     refreshData();
   }, []);
-
-  // Refresh data function
-  async function refreshData() {
-    setLoading(true);
-    const data = await fetchData();
-    setUsers(data.users);
-    setTeams(data.teams);
-    setLoading(false);
-  }
 
   // Handle opening the edit dialog
   const handleOpenEditDialog = (user: DbUser) => {
@@ -78,6 +86,7 @@ export const useUserManagement = () => {
 
   // Handle opening the delete confirmation dialog
   const handleOpenDeleteConfirmation = (userId: number) => {
+    console.log('Opening delete confirmation for user:', userId);
     setUserToDelete(userId);
     setConfirmDialogOpen(true);
   };
@@ -85,12 +94,16 @@ export const useUserManagement = () => {
   // Handle deleting a user
   const handleDeleteUser = async () => {
     if (userToDelete) {
-      setDeleteingUser(true);
+      console.log('Starting deletion process for user:', userToDelete);
+      setDeletingUser(true);
       const success = await deleteUser(userToDelete);
-      setDeleteingUser(false);
+      setDeletingUser(false);
       if (success) {
+        console.log('User deletion successful, closing dialogs');
         setConfirmDialogOpen(false);
         setUserToDelete(null);
+      } else {
+        console.log('User deletion failed');
       }
     }
   };
