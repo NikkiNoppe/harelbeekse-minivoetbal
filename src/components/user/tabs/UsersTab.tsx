@@ -22,7 +22,6 @@ import { User } from "@/types/auth";
 import UserRow from "@/components/user/UserRow";
 import UserDialog from "@/components/user/UserDialog";
 import { useDeleteUser } from "@/components/admin/user-management/operations/useDeleteUser";
-import { useUserDataService } from "@/components/admin/user-management/userDataService";
 import ConfirmDeleteDialog from "@/components/admin/user-management/ConfirmDeleteDialog";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -47,6 +46,9 @@ const UsersTab: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
   
   // Fetch users and teams from Supabase
   const fetchData = async () => {
@@ -113,6 +115,9 @@ const UsersTab: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Initialize delete user hook
+  const { deleteUser } = useDeleteUser(fetchData);
 
   useEffect(() => {
     fetchData();
@@ -216,37 +221,27 @@ const UsersTab: React.FC = () => {
     }
   };
   
-  // Handle delete user
-  const handleDeleteUser = async (userId: number) => {
-    try {
-      // Remove team assignment first
-      await supabase
-        .from('team_users')
-        .delete()
-        .eq('user_id', userId);
-      
-      // Delete user
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('user_id', userId);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Gebruiker verwijderd",
-        description: "De gebruiker is verwijderd",
-      });
-      
-      // Refresh data
-      await fetchData();
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      toast({
-        title: "Fout",
-        description: "Er is een fout opgetreden bij het verwijderen van de gebruiker",
-        variant: "destructive",
-      });
+  // Handle opening delete confirmation
+  const handleOpenDeleteConfirmation = (userId: number) => {
+    console.log('Opening delete confirmation for user:', userId);
+    setUserToDelete(userId);
+    setConfirmDialogOpen(true);
+  };
+
+  // Handle delete user confirmation
+  const handleConfirmDelete = async () => {
+    if (userToDelete) {
+      console.log('Starting deletion process for user:', userToDelete);
+      setDeleting(true);
+      const success = await deleteUser(userToDelete);
+      setDeleting(false);
+      if (success) {
+        console.log('User deletion successful, closing dialogs');
+        setConfirmDialogOpen(false);
+        setUserToDelete(null);
+      } else {
+        console.log('User deletion failed');
+      }
     }
   };
   
@@ -295,7 +290,7 @@ const UsersTab: React.FC = () => {
                     user={user}
                     teamName={getTeamName(user.teamId)}
                     onEdit={handleEditUser}
-                    onDelete={handleDeleteUser}
+                    onDelete={handleOpenDeleteConfirmation}
                   />
                 ))}
               </TableBody>
@@ -310,6 +305,13 @@ const UsersTab: React.FC = () => {
         editingUser={editingUser}
         onSave={handleSaveUser}
         teams={teams.map(team => ({ id: team.team_id, name: team.team_name }))}
+      />
+
+      <ConfirmDeleteDialog 
+        open={confirmDialogOpen}
+        onOpenChange={setConfirmDialogOpen}
+        onConfirmDelete={handleConfirmDelete}
+        isDeleting={deleting}
       />
     </div>
   );
