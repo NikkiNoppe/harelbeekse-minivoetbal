@@ -3,10 +3,12 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/types/auth";
+import { useAuth } from "@/components/auth/AuthProvider";
 
-export const useLogin = (onLoginSuccess: (user: User) => void) => {
+export const useLogin = (onLoginSuccess: () => void) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { login: authLogin } = useAuth();
 
   const login = async (usernameOrEmail: string, password: string) => {
     setIsLoading(true);
@@ -84,13 +86,18 @@ export const useLogin = (onLoginSuccess: (user: User) => void) => {
         
         console.log('Mapped user object:', user);
         
-        toast({
-          title: "Ingelogd!",
-          description: `Welkom ${user.username}`,
-        });
+        // Call the auth login function
+        const loginSuccess = await authLogin(usernameOrEmail, password);
         
-        // Call the success callback
-        onLoginSuccess(user);
+        if (loginSuccess) {
+          toast({
+            title: "Ingelogd!",
+            description: `Welkom ${user.username}`,
+          });
+          
+          // Call the success callback
+          onLoginSuccess();
+        }
       } else {
         // User exists but password is wrong
         console.log('Password verification failed for existing user');

@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { User } from "@/types/auth";
 import ForgotPasswordDialog from "./ForgotPasswordDialog";
 import { useLogin } from "./hooks/useLogin";
 import LoginFormFields from "./components/LoginFormFields";
@@ -15,7 +14,7 @@ import TestCredentialsFooter from "./components/TestCredentialsFooter";
 import { formSchema, FormValues } from "./validation/loginFormSchema";
 
 interface LoginFormProps {
-  onLoginSuccess: (user: User) => void;
+  onLoginSuccess: () => void;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
