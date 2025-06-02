@@ -8,7 +8,6 @@ import ThemeToggle from "@/components/theme/ThemeToggle";
 import Logo from "@/components/header/Logo";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
   onLogoClick: () => void;
@@ -19,11 +18,9 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
   const isMobile = useIsMobile();
   const { user, logout, isAuthenticated } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const navigate = useNavigate();
   
   const handleLogout = () => {
     logout();
-    navigate("/");
   };
   
   // Mobile menu content

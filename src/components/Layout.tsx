@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useNavigate, useLocation } from "react-router-dom";
 import LoginForm from "@/components/auth/LoginForm";
 import UserDashboard from "@/components/user/UserDashboard";
 import Header from "@/components/header/Header";
@@ -15,12 +14,9 @@ const Layout: React.FC = () => {
   const { isTabVisible } = useTabVisibility();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabName>("algemeen");
-  const navigate = useNavigate();
-  const location = useLocation();
   
   const handleLogoClick = () => {
     setActiveTab("algemeen");
-    navigate("/");
   };
 
   const handleLoginClick = () => {
@@ -29,12 +25,10 @@ const Layout: React.FC = () => {
 
   const handleLoginSuccess = () => {
     setLoginDialogOpen(false);
-    navigate("/dashboard");
   };
 
   const handleLogout = () => {
     logout();
-    navigate("/");
   };
 
   // Set the first visible tab as active tab when loading
@@ -48,12 +42,6 @@ const Layout: React.FC = () => {
     }
   }, [isTabVisible, activeTab]);
 
-  // Show UserDashboard when on /dashboard route and authenticated
-  const showUserDashboard = location.pathname === "/dashboard" && isAuthenticated && user;
-  
-  // Show MainTabs when on root route or when not authenticated
-  const showMainTabs = location.pathname === "/" || !isAuthenticated;
-
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       {/* Header */}
@@ -64,11 +52,11 @@ const Layout: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 container py-6">
-        {showUserDashboard ? (
+        {isAuthenticated && user ? (
           <UserDashboard />
-        ) : showMainTabs ? (
+        ) : (
           <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-        ) : null}
+        )}
       </main>
 
       {/* Footer */}
