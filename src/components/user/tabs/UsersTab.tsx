@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { 
@@ -54,6 +53,7 @@ const UsersTab: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      console.log('📋 Fetching users and teams data...');
       
       // Fetch users with their team relationships
       const { data: usersData, error: usersError } = await supabase
@@ -93,19 +93,28 @@ const UsersTab: React.FC = () => {
           team_name: tu.teams.team_name
         }));
         
-        return {
-          id: user.user_id,
+        const transformedUser = {
+          id: user.user_id, // 🔧 Critical: Map user_id to id
           username: user.username,
           email: user.email || '',
           password: '', // Don't expose password
           role: user.role as any,
           teamId: userTeams.length > 0 ? userTeams[0].team_id : undefined
         };
+        
+        console.log('👤 Transformed user:', {
+          original_user_id: user.user_id,
+          mapped_id: transformedUser.id,
+          username: transformedUser.username
+        });
+        
+        return transformedUser;
       });
 
+      console.log('✅ Successfully fetched and transformed users:', transformedUsers.length);
       setUsers(transformedUsers);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('❌ Error fetching data:', error);
       toast({
         title: "Fout bij laden",
         description: "Er is een fout opgetreden bij het laden van de gegevens.",
@@ -223,7 +232,16 @@ const UsersTab: React.FC = () => {
   
   // Handle opening delete confirmation
   const handleOpenDeleteConfirmation = (userId: number) => {
-    console.log('Opening delete confirmation for user:', userId);
+    console.log('🗑️ Opening delete confirmation for user ID:', userId);
+    
+    // Find the user to get more debug info
+    const userToDeleteInfo = users.find(user => user.id === userId);
+    console.log('👤 User details for deletion:', {
+      id: userId,
+      username: userToDeleteInfo?.username,
+      found: !!userToDeleteInfo
+    });
+    
     setUserToDelete(userId);
     setConfirmDialogOpen(true);
   };
@@ -231,17 +249,32 @@ const UsersTab: React.FC = () => {
   // Handle delete user confirmation
   const handleConfirmDelete = async () => {
     if (userToDelete) {
-      console.log('Starting deletion process for user:', userToDelete);
+      console.log('🚀 Starting deletion process for user ID:', userToDelete);
+      
+      // Find user info for logging
+      const userInfo = users.find(user => user.id === userToDelete);
+      console.log('👤 Deleting user:', {
+        id: userToDelete,
+        username: userInfo?.username
+      });
+      
       setDeleting(true);
       const success = await deleteUser(userToDelete);
       setDeleting(false);
+      
       if (success) {
-        console.log('User deletion successful, closing dialogs');
+        console.log('✅ User deletion successful, closing dialogs');
         setConfirmDialogOpen(false);
         setUserToDelete(null);
+        
+        // Verify user is removed from local state
+        const remainingUsers = users.filter(user => user.id !== userToDelete);
+        console.log('📊 Users remaining after deletion:', remainingUsers.length);
       } else {
-        console.log('User deletion failed');
+        console.log('❌ User deletion failed');
       }
+    } else {
+      console.log('⚠️ No user selected for deletion');
     }
   };
   
@@ -284,15 +317,22 @@ const UsersTab: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map(user => (
-                  <UserRow
-                    key={user.id}
-                    user={user}
-                    teamName={getTeamName(user.teamId)}
-                    onEdit={handleEditUser}
-                    onDelete={handleOpenDeleteConfirmation}
-                  />
-                ))}
+                {users.map(user => {
+                  console.log('🔍 Rendering user row:', {
+                    id: user.id,
+                    username: user.username
+                  });
+                  
+                  return (
+                    <UserRow
+                      key={user.id}
+                      user={user}
+                      teamName={getTeamName(user.teamId)}
+                      onEdit={handleEditUser}
+                      onDelete={handleOpenDeleteConfirmation}
+                    />
+                  );
+                })}
               </TableBody>
             </Table>
           )}

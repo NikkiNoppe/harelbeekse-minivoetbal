@@ -22,6 +22,14 @@ const UserRow: React.FC<UserRowProps> = ({ user, teamName, onEdit, onDelete }) =
     }
   };
 
+  const handleDelete = () => {
+    console.log('🗑️ UserRow delete button clicked for user:', {
+      id: user.id,
+      username: user.username
+    });
+    onDelete(user.id);
+  };
+
   return (
     <TableRow>
       <TableCell>{user.username}</TableCell>
@@ -40,7 +48,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, teamName, onEdit, onDelete }) =
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onDelete(user.id)}
+            onClick={handleDelete}
             className="text-red-500 hover:text-red-700 hover:bg-red-100/10"
           >
             <Trash2 size={16} />
