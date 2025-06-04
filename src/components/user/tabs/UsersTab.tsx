@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { 
@@ -94,10 +95,10 @@ const UsersTab: React.FC = () => {
         }));
         
         const transformedUser = {
-          id: user.user_id, // 🔧 Critical: Map user_id to id
+          id: user.user_id,
           username: user.username,
           email: user.email || '',
-          password: '', // Don't expose password
+          password: '',
           role: user.role as any,
           teamId: userTeams.length > 0 ? userTeams[0].team_id : undefined
         };
@@ -234,7 +235,6 @@ const UsersTab: React.FC = () => {
   const handleOpenDeleteConfirmation = (userId: number) => {
     console.log('🗑️ Opening delete confirmation for user ID:', userId);
     
-    // Find the user to get more debug info
     const userToDeleteInfo = users.find(user => user.id === userId);
     console.log('👤 User details for deletion:', {
       id: userId,
@@ -251,7 +251,6 @@ const UsersTab: React.FC = () => {
     if (userToDelete) {
       console.log('🚀 Starting deletion process for user ID:', userToDelete);
       
-      // Find user info for logging
       const userInfo = users.find(user => user.id === userToDelete);
       console.log('👤 Deleting user:', {
         id: userToDelete,
@@ -267,7 +266,6 @@ const UsersTab: React.FC = () => {
         setConfirmDialogOpen(false);
         setUserToDelete(null);
         
-        // Verify user is removed from local state
         const remainingUsers = users.filter(user => user.id !== userToDelete);
         console.log('📊 Users remaining after deletion:', remainingUsers.length);
       } else {
