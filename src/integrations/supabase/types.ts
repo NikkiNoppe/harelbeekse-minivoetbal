@@ -45,6 +45,13 @@ export type Database = {
             referencedRelation: "venues"
             referencedColumns: ["venue_id"]
           },
+          {
+            foreignKeyName: "fk_available_dates_venue"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["venue_id"]
+          },
         ]
       }
       blogs: {
@@ -234,6 +241,109 @@ export type Database = {
           start_date?: string
         }
         Relationships: []
+      }
+      manual_competition_schedules: {
+        Row: {
+          created_at: string | null
+          created_by: number | null
+          description: string | null
+          is_active: boolean | null
+          name: string
+          schedule_id: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: number | null
+          description?: string | null
+          is_active?: boolean | null
+          name: string
+          schedule_id?: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: number | null
+          description?: string | null
+          is_active?: boolean | null
+          name?: string
+          schedule_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_competition_schedules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      manual_schedule_matches: {
+        Row: {
+          away_team_id: number | null
+          created_at: string | null
+          home_team_id: number | null
+          manual_match_id: number
+          match_date: string
+          match_time: string | null
+          matchday: number
+          notes: string | null
+          schedule_id: number | null
+          venue_id: number | null
+        }
+        Insert: {
+          away_team_id?: number | null
+          created_at?: string | null
+          home_team_id?: number | null
+          manual_match_id?: number
+          match_date: string
+          match_time?: string | null
+          matchday: number
+          notes?: string | null
+          schedule_id?: number | null
+          venue_id?: number | null
+        }
+        Update: {
+          away_team_id?: number | null
+          created_at?: string | null
+          home_team_id?: number | null
+          manual_match_id?: number
+          match_date?: string
+          match_time?: string | null
+          matchday?: number
+          notes?: string | null
+          schedule_id?: number | null
+          venue_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_schedule_matches_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "manual_schedule_matches_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "manual_schedule_matches_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "manual_competition_schedules"
+            referencedColumns: ["schedule_id"]
+          },
+          {
+            foreignKeyName: "manual_schedule_matches_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["venue_id"]
+          },
+        ]
       }
       match_form_players: {
         Row: {
