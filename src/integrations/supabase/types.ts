@@ -39,14 +39,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "available_dates_venue_id_fkey"
+            foreignKeyName: "fk_available_dates_venue"
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
             referencedColumns: ["venue_id"]
           },
           {
-            foreignKeyName: "fk_available_dates_venue"
+            foreignKeyName: "fk_available_dates_venue_id"
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
@@ -244,30 +244,49 @@ export type Database = {
       }
       manual_competition_schedules: {
         Row: {
+          competition_id: number | null
           created_at: string | null
           created_by: number | null
           description: string | null
           is_active: boolean | null
           name: string
+          parsed_data: Json | null
           schedule_id: number
+          schema_text: string | null
+          status: string | null
         }
         Insert: {
+          competition_id?: number | null
           created_at?: string | null
           created_by?: number | null
           description?: string | null
           is_active?: boolean | null
           name: string
+          parsed_data?: Json | null
           schedule_id?: number
+          schema_text?: string | null
+          status?: string | null
         }
         Update: {
+          competition_id?: number | null
           created_at?: string | null
           created_by?: number | null
           description?: string | null
           is_active?: boolean | null
           name?: string
+          parsed_data?: Json | null
           schedule_id?: number
+          schema_text?: string | null
+          status?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "manual_competition_schedules_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["competition_id"]
+          },
           {
             foreignKeyName: "manual_competition_schedules_created_by_fkey"
             columns: ["created_by"]

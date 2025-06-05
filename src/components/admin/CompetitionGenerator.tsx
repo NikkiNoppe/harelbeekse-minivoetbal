@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FormatSelectionTab from "./competition-generator/FormatSelectionTab";
 import DatesSelectionTab from "./competition-generator/DatesSelectionTab";
 import PreviewTab from "./competition-generator/PreviewTab";
+import ManualSchemaTab from "./competition-generator/ManualSchemaTab";
 import { useCompetitionGenerator } from "./competition-generator/useCompetitionGenerator";
 
 const CompetitionGenerator: React.FC = () => {
@@ -38,13 +39,20 @@ const CompetitionGenerator: React.FC = () => {
     }
   }, [selectedFormat, generatedMatches.length, activeTab, setActiveTab]);
 
+  const handleManualSchemaImported = (matches: any[]) => {
+    console.log('Manual schema imported:', matches);
+    // Here you can handle the imported matches
+    // For now, just switch to a success state
+    setActiveTab("preview");
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Competitiegenerator</CardTitle>
           <CardDescription>
-            Genereer een nieuwe competitie met playoff systeem of beker
+            Genereer een nieuwe competitie met playoff systeem, beker of importeer een handmatig schema
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -53,6 +61,7 @@ const CompetitionGenerator: React.FC = () => {
               <TabsTrigger value="format">1. Format</TabsTrigger>
               <TabsTrigger value="dates">2. Speeldagen</TabsTrigger>
               <TabsTrigger value="preview">3. Voorvertoning</TabsTrigger>
+              <TabsTrigger value="manual">Handmatig Schema</TabsTrigger>
             </TabsList>
             
             {/* Tab 1: Format selecteren */}
@@ -91,6 +100,11 @@ const CompetitionGenerator: React.FC = () => {
                 onSaveCompetition={saveCompetition}
                 onRegenerateSchedule={generateSchedule}
               />
+            </TabsContent>
+            
+            {/* Tab 4: Handmatig Schema */}
+            <TabsContent value="manual" className="space-y-4">
+              <ManualSchemaTab onSchemaImported={handleManualSchemaImported} />
             </TabsContent>
           </Tabs>
         </CardContent>

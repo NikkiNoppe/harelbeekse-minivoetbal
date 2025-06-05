@@ -17,7 +17,7 @@ export const assignMatchDetails = async (
     .from('available_dates')
     .select(`
       *,
-      venues (
+      venues!fk_available_dates_venue_id (
         venue_id,
         name
       )
