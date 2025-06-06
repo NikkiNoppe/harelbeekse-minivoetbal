@@ -51,14 +51,14 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   const getCurrentCaptain = (isHomeTeam: boolean) => {
     const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
     const captain = selections.find(selection => selection.isCaptain);
-    return captain ? captain.playerId?.toString() || "" : "";
+    return captain ? captain.playerId?.toString() || "no-captain" : "no-captain";
   };
 
   // Handle captain selection
   const handleCaptainChange = (captainPlayerId: string, isHomeTeam: boolean) => {
     const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
     selections.forEach((selection, index) => {
-      const isCaptain = selection.playerId?.toString() === captainPlayerId;
+      const isCaptain = captainPlayerId !== "no-captain" && selection.playerId?.toString() === captainPlayerId;
       onPlayerSelection(index, 'isCaptain', isCaptain, isHomeTeam);
     });
   };
@@ -175,9 +175,9 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             <SelectValue placeholder="Selecteer kapitein" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Geen kapitein</SelectItem>
+            <SelectItem value="no-captain">Geen kapitein</SelectItem>
             {selectedPlayers.map((player) => (
-              <SelectItem key={player.playerId} value={player.playerId?.toString() || ""}>
+              <SelectItem key={player.playerId} value={player.playerId?.toString() || "no-captain"}>
                 {player.playerName}
               </SelectItem>
             ))}
