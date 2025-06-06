@@ -6,9 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Download, AlertCircle, CheckCircle } from "lucide-react";
+import { Upload, Download, AlertCircle, CheckCircle, Calendar, Clock, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 interface ParsedMatch {
   matchday: number;
@@ -17,7 +19,7 @@ interface ParsedMatch {
   date: string;
   time: string;
   venue: string;
-  [key: string]: string | number; // Index signature for Json compatibility
+  [key: string]: string | number;
 }
 
 interface ManualSchemaTabProps {
@@ -110,19 +112,38 @@ Speeldag 2 - 2024-02-17
         venue: match.venue
       }));
 
-      // Create manual competition schedule
-      const { data: schedule, error: scheduleError } = await supabase
-        .from('manual_competition_schedules')
+      // First, create a competition
+      const { data: competition, error: competitionError } = await supabase
+        .from('competitions')
         .insert({
           name: competitionName,
-          schema_text: schemaText,
-          parsed_data: jsonCompatibleMatches,
-          status: 'processed'
+          start_date: parsedMatches[0]?.date,
+          end_date: parsedMatches[parsedMatches.length - 1]?.date,
+          is_playoff: false
         })
         .select()
         .single();
 
-      if (scheduleError) throw scheduleError;
+      if (competitionError) throw competitionError;
+
+      // Create matchdays
+      const uniqueMatchdays = [...new Set(parsedMatches.map(m => m.matchday))];
+      const matchdayInserts = uniqueMatchdays.map(matchdayNum => {
+        const matchesForDay = parsedMatches.filter(m => m.matchday === matchdayNum);
+        return {
+          name: `Speeldag ${matchdayNum}`,
+          matchday_date: matchesForDay[0]?.date,
+          competition_id: competition.competition_id,
+          is_playoff: false
+        };
+      });
+
+      const { data: matchdays, error: matchdaysError } = await supabase
+        .from('matchdays')
+        .insert(matchdayInserts)
+        .select();
+
+      if (matchdaysError) throw matchdaysError;
 
       // Get team IDs
       const { data: teams } = await supabase
@@ -131,24 +152,41 @@ Speeldag 2 - 2024-02-17
 
       const teamMap = new Map(teams?.map(t => [t.team_name, t.team_id]) || []);
 
-      // Create matches in the database
-      const matchesToInsert = parsedMatches.map(match => ({
-        schedule_id: schedule.schedule_id,
-        home_team_id: teamMap.get(match.homeTeam) || null,
-        away_team_id: teamMap.get(match.awayTeam) || null,
-        match_date: match.date,
-        match_time: match.time,
-        matchday: match.matchday,
-        notes: `Venue: ${match.venue}`
-      }));
+      // Create matches in the matches table
+      const matchesToInsert = parsedMatches.map(match => {
+        const matchday = matchdays?.find(md => md.name === `Speeldag ${match.matchday}`);
+        return {
+          home_team_id: teamMap.get(match.homeTeam) || null,
+          away_team_id: teamMap.get(match.awayTeam) || null,
+          match_date: `${match.date} ${match.time}:00`,
+          matchday_id: matchday?.matchday_id || null,
+          is_cup_match: false,
+          field_cost: 50.00, // Default field cost
+          referee_cost: 25.00, // Default referee cost
+          result: null
+        };
+      });
 
       const { error: matchesError } = await supabase
-        .from('manual_schedule_matches')
+        .from('matches')
         .insert(matchesToInsert);
 
       if (matchesError) throw matchesError;
 
-      toast.success("Schema succesvol aangemaakt!");
+      // Create manual competition schedule record for tracking
+      const { error: scheduleError } = await supabase
+        .from('manual_competition_schedules')
+        .insert({
+          name: competitionName,
+          schema_text: schemaText,
+          parsed_data: jsonCompatibleMatches,
+          status: 'processed',
+          competition_id: competition.competition_id
+        });
+
+      if (scheduleError) throw scheduleError;
+
+      toast.success("Schema succesvol aangemaakt en wedstrijden zijn beschikbaar in wedstrijdformulieren!");
       onSchemaImported(parsedMatches);
       
       // Reset form
@@ -163,6 +201,16 @@ Speeldag 2 - 2024-02-17
     
     setIsCreating(false);
   };
+
+  // Group matches by matchday for preview
+  const matchesByMatchday = parsedMatches.reduce((acc, match) => {
+    const matchdayKey = `Speeldag ${match.matchday}`;
+    if (!acc[matchdayKey]) {
+      acc[matchdayKey] = [];
+    }
+    acc[matchdayKey].push(match);
+    return acc;
+  }, {} as Record<string, ParsedMatch[]>);
 
   return (
     <div className="space-y-6">
@@ -260,17 +308,70 @@ Speeldag 2 - 2024-02-17
       {parsedMatches.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Geparste Wedstrijden</CardTitle>
+            <CardTitle>Voorvertoning Wedstrijden</CardTitle>
+            <CardDescription>
+              {parsedMatches.length} wedstrijden over {Object.keys(matchesByMatchday).length} speeldagen
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="max-h-96 overflow-y-auto space-y-2">
-              {parsedMatches.map((match, index) => (
-                <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
-                  <span className="font-medium">Speeldag {match.matchday}</span>
-                  <span>{match.homeTeam} vs {match.awayTeam}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {match.date} {match.time} - {match.venue}
-                  </span>
+            <div className="space-y-6">
+              {Object.entries(matchesByMatchday).map(([matchday, matches]) => (
+                <div key={matchday} className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-primary text-primary-foreground">
+                      {matchday}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {matches[0]?.date} • {matches.length} wedstrijden
+                    </span>
+                  </div>
+                  
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-20">Tijd</TableHead>
+                          <TableHead>Thuisteam</TableHead>
+                          <TableHead className="text-center w-16">VS</TableHead>
+                          <TableHead>Uitteam</TableHead>
+                          <TableHead className="w-48">Locatie</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {matches.map((match, index) => (
+                          <TableRow key={index}>
+                            <TableCell>
+                              <div className="flex items-center gap-1 text-sm">
+                                <Clock className="h-3 w-3" />
+                                {match.time}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{match.homeTeam}</span>
+                                <Badge variant="secondary" className="text-xs">Thuis</Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center font-bold">
+                              <span className="text-muted-foreground">-</span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{match.awayTeam}</span>
+                                <Badge variant="outline" className="text-xs">Uit</Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1 text-sm">
+                                <MapPin className="h-3 w-3" />
+                                {match.venue}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               ))}
             </div>
