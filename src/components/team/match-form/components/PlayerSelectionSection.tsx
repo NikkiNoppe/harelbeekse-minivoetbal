@@ -41,6 +41,28 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   const homeTeamPlayers = MOCK_TEAM_PLAYERS[match.homeTeamId as keyof typeof MOCK_TEAM_PLAYERS] || [];
   const awayTeamPlayers = MOCK_TEAM_PLAYERS[match.awayTeamId as keyof typeof MOCK_TEAM_PLAYERS] || [];
 
+  // Get selected players for captain dropdown
+  const getSelectedPlayersForCaptain = (isHomeTeam: boolean) => {
+    const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
+    return selections.filter(selection => selection.playerId !== null);
+  };
+
+  // Get current captain
+  const getCurrentCaptain = (isHomeTeam: boolean) => {
+    const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
+    const captain = selections.find(selection => selection.isCaptain);
+    return captain ? captain.playerId?.toString() || "" : "";
+  };
+
+  // Handle captain selection
+  const handleCaptainChange = (captainPlayerId: string, isHomeTeam: boolean) => {
+    const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
+    selections.forEach((selection, index) => {
+      const isCaptain = selection.playerId?.toString() === captainPlayerId;
+      onPlayerSelection(index, 'isCaptain', isCaptain, isHomeTeam);
+    });
+  };
+
   const renderPlayerSelectionRows = (isHomeTeam: boolean) => {
     const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
     const players = isHomeTeam ? homeTeamPlayers : awayTeamPlayers;
@@ -85,31 +107,19 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
         
         <div className="flex items-center gap-2">
           {canEditThisTeam && canEdit && (
-            <>
-              <div className="flex items-center gap-1">
-                <Label htmlFor={`jersey-${isHomeTeam ? 'home' : 'away'}-${index}`} className="text-xs">Rugnr:</Label>
-                <Input
-                  id={`jersey-${isHomeTeam ? 'home' : 'away'}-${index}`}
-                  type="number"
-                  min="1"
-                  max="99"
-                  value={selection.jerseyNumber}
-                  onChange={(e) => onPlayerSelection(index, 'jerseyNumber', e.target.value, isHomeTeam)}
-                  disabled={!selection.playerId}
-                  className="w-16 text-center text-xs"
-                />
-              </div>
-              <div className="flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  checked={selection.isCaptain}
-                  onChange={(e) => onPlayerSelection(index, 'isCaptain', e.target.checked, isHomeTeam)}
-                  disabled={!selection.playerId}
-                  className="w-3 h-3"
-                />
-                <Label className="text-xs">K</Label>
-              </div>
-            </>
+            <div className="flex items-center gap-1">
+              <Label htmlFor={`jersey-${isHomeTeam ? 'home' : 'away'}-${index}`} className="text-xs">Rugnr:</Label>
+              <Input
+                id={`jersey-${isHomeTeam ? 'home' : 'away'}-${index}`}
+                type="number"
+                min="1"
+                max="99"
+                value={selection.jerseyNumber}
+                onChange={(e) => onPlayerSelection(index, 'jerseyNumber', e.target.value, isHomeTeam)}
+                disabled={!selection.playerId}
+                className="w-16 text-center text-xs"
+              />
+            </div>
           )}
           
           {!canEditThisTeam && (selection.jerseyNumber || selection.isCaptain) && (
@@ -140,6 +150,43 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
     ));
   };
 
+  const renderCaptainSelection = (isHomeTeam: boolean) => {
+    const canEditThisTeamAsManager = isTeamManager && (
+      (isHomeTeam && teamId === match.homeTeamId) || 
+      (!isHomeTeam && teamId === match.awayTeamId)
+    );
+    
+    const canEditThisTeam = showRefereeFields || canEditThisTeamAsManager;
+    const selectedPlayers = getSelectedPlayersForCaptain(isHomeTeam);
+    const currentCaptain = getCurrentCaptain(isHomeTeam);
+
+    if (!canEditThisTeam || !canEdit || selectedPlayers.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="mt-4 space-y-2">
+        <Label className="text-sm font-medium">Kapitein</Label>
+        <Select
+          value={currentCaptain}
+          onValueChange={(value) => handleCaptainChange(value, isHomeTeam)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Selecteer kapitein" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Geen kapitein</SelectItem>
+            {selectedPlayers.map((player) => (
+              <SelectItem key={player.playerId} value={player.playerId?.toString() || ""}>
+                {player.playerName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -155,6 +202,7 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             <div className="space-y-2">
               {renderPlayerSelectionRows(true)}
             </div>
+            {renderCaptainSelection(true)}
           </div>
 
           {/* Away Team Players */}
@@ -165,6 +213,7 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             <div className="space-y-2">
               {renderPlayerSelectionRows(false)}
             </div>
+            {renderCaptainSelection(false)}
           </div>
         </div>
       </CardContent>

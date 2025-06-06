@@ -37,15 +37,17 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
   canEditMatchData
 }) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Wedstrijdgegevens</CardTitle>
+    <Card className="border-2 border-primary shadow-lg bg-gradient-to-r from-primary/5 to-primary/10">
+      <CardHeader className="bg-primary text-primary-foreground">
+        <CardTitle className="text-lg font-bold flex items-center gap-2">
+          ⚽ Wedstrijdgegevens
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-6">
         {/* Score Input */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div className="space-y-2">
-            <Label htmlFor="homeScore">{match.homeTeamName}</Label>
+            <Label htmlFor="homeScore" className="font-semibold">{match.homeTeamName}</Label>
             <Input
               id="homeScore"
               type="number"
@@ -53,16 +55,16 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
               value={homeScore}
               onChange={(e) => onHomeScoreChange(e.target.value)}
               disabled={!canEdit || !canEditMatchData}
-              className="text-center text-lg font-bold"
+              className="text-center text-lg font-bold border-2"
             />
           </div>
           
           <div className="flex justify-center items-center">
-            <span className="text-2xl font-bold">-</span>
+            <span className="text-3xl font-bold text-primary">-</span>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="awayScore">{match.awayTeamName}</Label>
+            <Label htmlFor="awayScore" className="font-semibold">{match.awayTeamName}</Label>
             <Input
               id="awayScore"
               type="number"
@@ -70,20 +72,20 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
               value={awayScore}
               onChange={(e) => onAwayScoreChange(e.target.value)}
               disabled={!canEdit || !canEditMatchData}
-              className="text-center text-lg font-bold"
+              className="text-center text-lg font-bold border-2"
             />
           </div>
         </div>
 
         {/* Referee Selection */}
         <div className="space-y-2">
-          <Label htmlFor="referee">Scheidsrechter</Label>
+          <Label htmlFor="referee" className="font-semibold">Scheidsrechter</Label>
           <Select
             value={selectedReferee}
             onValueChange={onRefereeChange}
             disabled={!canEdit || !canEditMatchData}
           >
-            <SelectTrigger>
+            <SelectTrigger className="border-2">
               <SelectValue placeholder="Selecteer scheidsrechter" />
             </SelectTrigger>
             <SelectContent>
