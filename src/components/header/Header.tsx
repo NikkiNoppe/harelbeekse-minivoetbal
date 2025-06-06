@@ -44,23 +44,23 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
   );
   
   return (
-    <header className="w-full py-4 px-6 shadow-md soccer-pattern sticky top-0 z-30">
-      <div className="container flex justify-between items-center">
+    <header className="w-full py-3 sm:py-4 px-4 sm:px-6 shadow-md soccer-pattern sticky top-0 z-30">
+      <div className="w-full max-w-7xl mx-auto flex justify-between items-center">
         <Logo onClick={onLogoClick} />
         
         {isMobile ? (
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <SheetTrigger asChild>
-              <button className="p-2 text-white rounded-md focus:outline-none">
+              <button className="p-2 text-white rounded-md focus:outline-none hover:bg-white/10 transition-colors">
                 <Menu size={24} />
               </button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[250px]">
+            <SheetContent side="right" className="w-[280px] sm:w-[300px]">
               <MobileMenuContent />
             </SheetContent>
           </Sheet>
         ) : (
-          <div className={cn("flex items-center space-x-4")}>
+          <div className={cn("flex items-center space-x-3 lg:space-x-4")}>
             <ThemeToggle />
             
             {isAuthenticated && user ? (
@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
             ) : (
               <button 
                 onClick={onLoginClick} 
-                className="px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white dark:text-slate-950 bg-orange-500 hover:bg-orange-400"
+                className="px-3 lg:px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white dark:text-slate-950 bg-orange-500 hover:bg-orange-400 text-sm lg:text-base"
               >
                 Inloggen
               </button>

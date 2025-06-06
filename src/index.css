@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -98,7 +99,16 @@
   }
 }
 
-/* Mobile-specific improvements */
+/* Enhanced mobile-specific improvements */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 .no-vertical-scroll {
   touch-action: pan-x;
   -ms-overflow-style: none;
@@ -109,7 +119,7 @@
   display: none;
 }
 
-/* Prevent horizontal scroll on mobile */
+/* Prevent horizontal scroll on mobile and ensure proper layout */
 @media (max-width: 768px) {
   body {
     overflow-x: hidden;
@@ -120,6 +130,24 @@
   html, body {
     max-width: 100%;
     overscroll-behavior-x: none;
+  }
+  
+  /* Ensure cards don't break layout on mobile */
+  .card {
+    min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Better mobile touch targets */
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improve mobile input experience */
+  input, textarea, select {
+    font-size: 16px; /* Prevents zoom on iOS */
   }
 }
 
@@ -146,4 +174,27 @@
 .card-hover:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Enhanced responsive utilities */
+@layer utilities {
+  .text-responsive {
+    @apply text-sm sm:text-base lg:text-lg;
+  }
+  
+  .heading-responsive {
+    @apply text-lg sm:text-xl lg:text-2xl;
+  }
+  
+  .spacing-responsive {
+    @apply space-y-3 sm:space-y-4 lg:space-y-6;
+  }
+  
+  .padding-responsive {
+    @apply p-3 sm:p-4 lg:p-6;
+  }
+  
+  .margin-responsive {
+    @apply m-3 sm:m-4 lg:m-6;
+  }
 }

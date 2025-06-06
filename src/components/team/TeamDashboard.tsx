@@ -20,15 +20,27 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
   const canManageMatchForms = !!teamData.email;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Team Dashboard: {teamData.name}</h1>
+    <div className="w-full space-y-4 sm:space-y-6">
+      <div className="px-1">
+        <h1 className="text-xl sm:text-2xl font-bold break-words">
+          Team Dashboard: {teamData.name}
+        </h1>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="match-forms" disabled={!canManageMatchForms}>
+        <TabsList className="grid w-full grid-cols-2 min-h-[40px] sm:min-h-[44px]">
+          <TabsTrigger 
+            value="match-forms" 
+            disabled={!canManageMatchForms}
+            className="text-xs sm:text-sm px-2 sm:px-4"
+          >
             Wedstrijdformulieren
           </TabsTrigger>
-          <TabsTrigger value="players" disabled={!canManagePlayers}>
+          <TabsTrigger 
+            value="players" 
+            disabled={!canManagePlayers}
+            className="text-xs sm:text-sm px-2 sm:px-4"
+          >
             Spelerslijst
           </TabsTrigger>
         </TabsList>

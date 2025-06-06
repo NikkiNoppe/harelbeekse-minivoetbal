@@ -3,21 +3,27 @@ import React from "react";
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-secondary py-6 text-foreground/80">
-      <div className="container">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <footer className="bg-secondary py-4 sm:py-6 text-foreground/80 mt-auto">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
           <div>
-            <h3 className="font-semibold text-foreground mb-3">Harelbeekse Minivoetbal Competitie</h3>
-            <p className="text-sm">Minivoetbalcompetitie in sinds 2005.</p>
+            <h3 className="font-semibold text-foreground mb-2 sm:mb-3 text-sm sm:text-base">
+              Harelbeekse Minivoetbal Competitie
+            </h3>
+            <p className="text-xs sm:text-sm">Minivoetbalcompetitie in sinds 2005.</p>
           </div>
           <div>
-            <h3 className="font-semibold text-foreground mb-3">Contact</h3>
-            <p className="text-sm">noppe.nikki@icloud.com</p>
-            <p className="text-sm">+34 468 15 52 16</p>
+            <h3 className="font-semibold text-foreground mb-2 sm:mb-3 text-sm sm:text-base">Contact</h3>
+            <div className="space-y-1">
+              <p className="text-xs sm:text-sm break-all">noppe.nikki@icloud.com</p>
+              <p className="text-xs sm:text-sm">+34 468 15 52 16</p>
+            </div>
           </div>
         </div>
-        <div className="mt-8 pt-4 border-t border-foreground/10 text-center text-sm">
-          <p>© {new Date().getFullYear()} Harelbeekse Minivoetbal Competitie. Alle rechten voorbehouden.</p>
+        <div className="mt-6 sm:mt-8 pt-3 sm:pt-4 border-t border-foreground/10 text-center">
+          <p className="text-xs sm:text-sm">
+            © {new Date().getFullYear()} Harelbeekse Minivoetbal Competitie. Alle rechten voorbehouden.
+          </p>
         </div>
       </div>
     </footer>

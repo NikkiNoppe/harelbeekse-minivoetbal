@@ -50,8 +50,8 @@ const Layout: React.FC = () => {
         onLoginClick={handleLoginClick}
       />
 
-      {/* Main Content */}
-      <main className="flex-1 container py-6">
+      {/* Main Content - responsive container */}
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto">
         {isAuthenticated && user ? (
           <UserDashboard />
         ) : (
@@ -64,7 +64,7 @@ const Layout: React.FC = () => {
 
       {/* Login Dialog */}
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-background text-foreground border-border">
+        <DialogContent className="w-full max-w-md mx-4 sm:mx-auto bg-background text-foreground border-border">
           <LoginForm onLoginSuccess={handleLoginSuccess} />
         </DialogContent>
       </Dialog>

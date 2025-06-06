@@ -21,14 +21,14 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
   const { isTabVisible, loading } = useTabVisibility();
 
   if (loading) {
-    return <div className="flex items-center justify-center h-40">
-      <div className="text-muted-foreground">Tabs laden...</div>
+    return <div className="flex items-center justify-center h-32 sm:h-40">
+      <div className="text-muted-foreground text-sm sm:text-base">Tabs laden...</div>
     </div>;
   }
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
-      <TabsList className="w-full flex mb-8 bg-secondary p-1 overflow-x-auto no-vertical-scroll">
+      <TabsList className="w-full flex mb-6 sm:mb-8 bg-secondary p-1 overflow-x-auto scrollbar-hide min-h-[40px] sm:min-h-[44px]">
         {isTabVisible("algemeen") && <TabItem value="algemeen" icon={<Info />} label="Algemeen" />}
         {isTabVisible("competitie") && <TabItem value="competitie" icon={<Award />} label="Competitie" />}
         {isTabVisible("playoff") && <TabItem value="playoff" icon={<Layers />} label="Play-Off" />}
