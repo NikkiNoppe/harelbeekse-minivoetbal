@@ -17,6 +17,7 @@ interface ParsedMatch {
   date: string;
   time: string;
   venue: string;
+  [key: string]: string | number; // Index signature for Json compatibility
 }
 
 interface ManualSchemaTabProps {
@@ -99,13 +100,23 @@ Speeldag 2 - 2024-02-17
     setIsCreating(true);
     
     try {
+      // Convert ParsedMatch[] to Json-compatible format
+      const jsonCompatibleMatches = parsedMatches.map(match => ({
+        matchday: match.matchday,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        date: match.date,
+        time: match.time,
+        venue: match.venue
+      }));
+
       // Create manual competition schedule
       const { data: schedule, error: scheduleError } = await supabase
         .from('manual_competition_schedules')
         .insert({
           name: competitionName,
           schema_text: schemaText,
-          parsed_data: parsedMatches,
+          parsed_data: jsonCompatibleMatches,
           status: 'processed'
         })
         .select()
