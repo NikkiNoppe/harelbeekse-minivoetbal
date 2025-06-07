@@ -9,6 +9,50 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_generation_logs: {
+        Row: {
+          ai_provider: string
+          config_id: number | null
+          created_at: string | null
+          error_message: string | null
+          generation_time_ms: number | null
+          id: number
+          request_data: Json
+          response_data: Json | null
+          status: string | null
+        }
+        Insert: {
+          ai_provider: string
+          config_id?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          generation_time_ms?: number | null
+          id?: number
+          request_data: Json
+          response_data?: Json | null
+          status?: string | null
+        }
+        Update: {
+          ai_provider?: string
+          config_id?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          generation_time_ms?: number | null
+          id?: number
+          request_data?: Json
+          response_data?: Json | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generation_logs_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "competition_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       available_dates: {
         Row: {
           available_date: string
@@ -117,6 +161,59 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["player_id"]
+          },
+        ]
+      }
+      competition_configs: {
+        Row: {
+          config_data: Json | null
+          created_at: string | null
+          created_by: number | null
+          end_date: string
+          format_type: string
+          id: number
+          matches_per_week: number | null
+          name: string
+          playoff_teams: number | null
+          start_date: string
+          total_rounds: number | null
+          vacation_periods: number[] | null
+        }
+        Insert: {
+          config_data?: Json | null
+          created_at?: string | null
+          created_by?: number | null
+          end_date: string
+          format_type: string
+          id?: number
+          matches_per_week?: number | null
+          name: string
+          playoff_teams?: number | null
+          start_date: string
+          total_rounds?: number | null
+          vacation_periods?: number[] | null
+        }
+        Update: {
+          config_data?: Json | null
+          created_at?: string | null
+          created_by?: number | null
+          end_date?: string
+          format_type?: string
+          id?: number
+          matches_per_week?: number | null
+          name?: string
+          playoff_teams?: number | null
+          start_date?: string
+          total_rounds?: number | null
+          vacation_periods?: number[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_configs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -671,6 +768,47 @@ export type Database = {
         }
         Relationships: []
       }
+      team_preferences: {
+        Row: {
+          blackout_dates: string[] | null
+          created_at: string | null
+          id: number
+          max_travel_distance: number | null
+          notes: string | null
+          preferred_home_day: number | null
+          preferred_time_slot: string | null
+          team_id: number | null
+        }
+        Insert: {
+          blackout_dates?: string[] | null
+          created_at?: string | null
+          id?: number
+          max_travel_distance?: number | null
+          notes?: string | null
+          preferred_home_day?: number | null
+          preferred_time_slot?: string | null
+          team_id?: number | null
+        }
+        Update: {
+          blackout_dates?: string[] | null
+          created_at?: string | null
+          id?: number
+          max_travel_distance?: number | null
+          notes?: string | null
+          preferred_home_day?: number | null
+          preferred_time_slot?: string | null
+          team_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_preferences_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+        ]
+      }
       team_users: {
         Row: {
           id: number
@@ -746,6 +884,33 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           user_id?: number
           username?: string
+        }
+        Relationships: []
+      }
+      vacation_periods: {
+        Row: {
+          created_at: string | null
+          end_date: string
+          id: number
+          is_active: boolean | null
+          name: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          end_date: string
+          id?: number
+          is_active?: boolean | null
+          name: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string
+          id?: number
+          is_active?: boolean | null
+          name?: string
+          start_date?: string
         }
         Relationships: []
       }
