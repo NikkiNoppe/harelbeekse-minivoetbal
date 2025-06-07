@@ -1,4 +1,7 @@
 
+// First import the existing types we need
+import { Team, GeneratedMatch, AvailableDate } from './types';
+
 export interface VacationPeriod {
   id: number;
   name: string;
@@ -65,5 +68,5 @@ export interface AIGenerationLog {
   created_at: string;
 }
 
-// Re-export existing types
-export type { Team, GeneratedMatch, AvailableDate } from './types';
+// Re-export existing types for convenience
+export type { Team, GeneratedMatch, AvailableDate };
