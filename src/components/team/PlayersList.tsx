@@ -17,11 +17,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { usePlayerListLock } from "@/components/user/players/hooks/usePlayerListLock";
+import { Lock } from "lucide-react";
 
 interface PlayersListProps {
   teamId: number;
   teamName: string;
-  teamEmail: string; // Added teamEmail property
+  teamEmail: string;
 }
 
 interface Player {
@@ -46,12 +48,34 @@ const mockPlayers: Record<number, Player[]> = {
 
 const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }) => {
   const { toast } = useToast();
+  const { isLocked, lockDate, canEdit } = usePlayerListLock();
   const [players, setPlayers] = useState<Player[]>(mockPlayers[teamId] || []);
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newPlayerPosition, setNewPlayerPosition] = useState("");
   const [newPlayerNumber, setNewPlayerNumber] = useState("");
 
+  const showLockWarning = () => {
+    if (isLocked && lockDate) {
+      toast({
+        title: "Spelerslijst vergrendeld",
+        description: `Wijzigingen zijn niet toegestaan vanaf ${new Date(lockDate).toLocaleDateString('nl-NL')}`,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Spelerslijst vergrendeld",
+        description: "Wijzigingen zijn momenteel niet toegestaan",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleAddPlayer = () => {
+    if (!canEdit) {
+      showLockWarning();
+      return;
+    }
+
     if (!newPlayerName || !newPlayerPosition || !newPlayerNumber) {
       toast({
         title: "Fout",
@@ -109,6 +133,11 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
   };
 
   const handleRemovePlayer = (playerId: number) => {
+    if (!canEdit) {
+      showLockWarning();
+      return;
+    }
+
     setPlayers(players.filter(player => player.id !== playerId));
     
     toast({
@@ -120,9 +149,19 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Spelerslijst voor {teamName}</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          Spelerslijst voor {teamName}
+          {isLocked && (
+            <Lock className="h-4 w-4 text-red-500" />
+          )}
+        </CardTitle>
         <CardDescription>
           Beheer tot 20 spelers voor uw team • Contact: {teamEmail}
+          {isLocked && lockDate && (
+            <span className="block text-red-600 mt-1">
+              Spelerslijst vergrendeld vanaf {new Date(lockDate).toLocaleDateString('nl-NL')}
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -137,6 +176,7 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
                 value={newPlayerName}
                 onChange={(e) => setNewPlayerName(e.target.value)}
                 placeholder="Voer naam in"
+                disabled={!canEdit}
               />
             </div>
             <div className="space-y-2">
@@ -145,9 +185,10 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
               </label>
               <select
                 id="player-position"
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                 value={newPlayerPosition}
                 onChange={(e) => setNewPlayerPosition(e.target.value)}
+                disabled={!canEdit}
               >
                 <option value="">Selecteer positie</option>
                 <option value="Keeper">Keeper</option>
@@ -168,12 +209,15 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
                 value={newPlayerNumber}
                 onChange={(e) => setNewPlayerNumber(e.target.value)}
                 placeholder="1-99"
+                disabled={!canEdit}
               />
             </div>
           </div>
 
           <div className="flex justify-between items-center">
-            <Button onClick={handleAddPlayer}>Speler toevoegen</Button>
+            <Button onClick={handleAddPlayer} disabled={!canEdit}>
+              Speler toevoegen
+            </Button>
             <span className="text-sm text-gray-500">
               {players.length}/20 spelers
             </span>
@@ -207,7 +251,8 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemovePlayer(player.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                          disabled={!canEdit}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-100 disabled:opacity-50"
                         >
                           Verwijderen
                         </Button>

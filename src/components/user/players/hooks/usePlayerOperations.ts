@@ -3,9 +3,11 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NewPlayerData, EditingPlayerData } from "../types";
+import { usePlayerListLock } from "./usePlayerListLock";
 
 export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers: () => Promise<void>) => {
   const { toast } = useToast();
+  const { canEdit, isLocked, lockDate } = usePlayerListLock();
   const [newPlayer, setNewPlayer] = useState<NewPlayerData>({
     firstName: "", 
     lastName: "",
@@ -48,9 +50,31 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       return null;
     }
   };
+
+  // Show lock warning if user tries to edit while locked
+  const showLockWarning = () => {
+    if (isLocked && lockDate) {
+      toast({
+        title: "Spelerslijst vergrendeld",
+        description: `Wijzigingen zijn niet toegestaan vanaf ${new Date(lockDate).toLocaleDateString('nl-NL')}`,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Spelerslijst vergrendeld",
+        description: "Wijzigingen zijn momenteel niet toegestaan",
+        variant: "destructive",
+      });
+    }
+  };
   
   // Handle add new player
   const handleAddPlayer = async () => {
+    if (!canEdit) {
+      showLockWarning();
+      return;
+    }
+
     if (!selectedTeam) {
       toast({
         title: "Geen team geselecteerd",
@@ -114,6 +138,11 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
   
   // Handle save edited player
   const handleSaveEditedPlayer = async () => {
+    if (!canEdit) {
+      showLockWarning();
+      return;
+    }
+
     if (!editingPlayer) return;
 
     if (!editingPlayer.firstName.trim() || !editingPlayer.lastName.trim() || !editingPlayer.birthDate) {
@@ -174,6 +203,11 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
   
   // Handle remove player
   const handleRemovePlayer = async (playerId: number) => {
+    if (!canEdit) {
+      showLockWarning();
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('players')
@@ -205,6 +239,9 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
     setEditingPlayer,
     handleAddPlayer,
     handleSaveEditedPlayer,
-    handleRemovePlayer
+    handleRemovePlayer,
+    canEdit,
+    isLocked,
+    lockDate
   };
 };

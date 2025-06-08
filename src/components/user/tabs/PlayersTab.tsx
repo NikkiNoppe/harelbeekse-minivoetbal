@@ -9,12 +9,13 @@ import {
   CardFooter 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Save, Plus } from "lucide-react";
+import { Edit, Save, Plus, Lock } from "lucide-react";
 import PlayersListUpdated from "../players/PlayersListUpdated";
 import PlayerDialogUpdated from "../players/PlayerDialogUpdated";
 import EditPlayerDialogUpdated from "../players/EditPlayerDialogUpdated";
 import PlayerRegulations from "../players/PlayerRegulations";
 import { usePlayersUpdated } from "../players/usePlayersUpdated";
+import { usePlayerListLock } from "../players/hooks/usePlayerListLock";
 
 const PlayersTab: React.FC = () => {
   const {
@@ -43,6 +44,8 @@ const PlayersTab: React.FC = () => {
     userTeamName
   } = usePlayersUpdated();
 
+  const { isLocked, lockDate, canEdit } = usePlayerListLock();
+
   // Get the current team name for display
   const currentTeamName = user?.role === "player_manager" 
     ? userTeamName 
@@ -54,12 +57,22 @@ const PlayersTab: React.FC = () => {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <CardTitle>Spelerslijst</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                Spelerslijst
+                {isLocked && user?.role !== "admin" && (
+                  <Lock className="h-4 w-4 text-red-500" />
+                )}
+              </CardTitle>
               <CardDescription>
                 {user?.role === "player_manager" && currentTeamName ? (
                   <>Spelers van {currentTeamName}</>
                 ) : (
                   <>Beheer de spelers in de competitie</>
+                )}
+                {isLocked && lockDate && user?.role !== "admin" && (
+                  <span className="block text-red-600 mt-1">
+                    Spelerslijst vergrendeld vanaf {new Date(lockDate).toLocaleDateString('nl-NL')}
+                  </span>
                 )}
               </CardDescription>
             </div>
@@ -91,7 +104,7 @@ const PlayersTab: React.FC = () => {
           <PlayersListUpdated 
             players={players}
             loading={loading}
-            editMode={editMode}
+            editMode={editMode && canEdit}
             onRemovePlayer={handleRemovePlayer}
             onEditPlayer={handleEditPlayer}
             formatDate={formatDate}
@@ -103,6 +116,7 @@ const PlayersTab: React.FC = () => {
             variant="outline"
             onClick={() => setEditMode(!editMode)}
             className="flex items-center gap-2"
+            disabled={!canEdit}
           >
             {editMode ? (
               <>
@@ -117,7 +131,7 @@ const PlayersTab: React.FC = () => {
             )}
           </Button>
           
-          {editMode && (
+          {editMode && canEdit && (
             <Button
               onClick={() => setDialogOpen(true)}
               className="flex items-center gap-2"

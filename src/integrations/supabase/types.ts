@@ -677,12 +677,49 @@ export type Database = {
           },
         ]
       }
+      player_list_lock_settings: {
+        Row: {
+          created_at: string | null
+          created_by: number | null
+          id: number
+          is_active: boolean | null
+          lock_from_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: number | null
+          id?: number
+          is_active?: boolean | null
+          lock_from_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: number | null
+          id?: number
+          is_active?: boolean | null
+          lock_from_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_list_lock_settings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       players: {
         Row: {
           birth_date: string
           first_name: string
           is_active: boolean | null
+          is_locked: boolean | null
           last_name: string
+          locked_from_date: string | null
           player_id: number
           team_id: number | null
         }
@@ -690,7 +727,9 @@ export type Database = {
           birth_date: string
           first_name: string
           is_active?: boolean | null
+          is_locked?: boolean | null
           last_name: string
+          locked_from_date?: string | null
           player_id?: number
           team_id?: number | null
         }
@@ -698,7 +737,9 @@ export type Database = {
           birth_date?: string
           first_name?: string
           is_active?: boolean | null
+          is_locked?: boolean | null
           last_name?: string
+          locked_from_date?: string | null
           player_id?: number
           team_id?: number | null
         }
@@ -992,6 +1033,10 @@ export type Database = {
         }
       }
       is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_player_list_locked: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
