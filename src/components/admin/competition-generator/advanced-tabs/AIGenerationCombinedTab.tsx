@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Bot, Zap, CheckCircle, AlertCircle, Users, Settings, MapPin, Clock, Calendar, Plus, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AdvancedCompetitionConfig, TeamPreference, VacationPeriod, Team } from "../types-advanced";
+import { AdvancedCompetitionConfig, TeamPreference, VacationPeriod, Team, AIGeneratedSchedule } from "../types-advanced";
 
 interface AIGenerationCombinedTabProps {
   config: AdvancedCompetitionConfig;
@@ -26,6 +26,7 @@ interface AIGenerationCombinedTabProps {
   onGenerate: (provider: 'openai' | 'abacus') => void;
   onNext: () => void;
   onPrevious: () => void;
+  generatedSchedule?: AIGeneratedSchedule | null;
 }
 
 const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
@@ -40,7 +41,8 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
   isGenerating,
   onGenerate,
   onNext,
-  onPrevious
+  onPrevious,
+  generatedSchedule
 }) => {
   const [selectedProvider, setSelectedProvider] = useState<'openai' | 'abacus' | null>(null);
 
