@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdvancedCompetitionGenerator } from "./useAdvancedCompetitionGenerator";
 import FormatConfigTab from "./advanced-tabs/FormatConfigTab";
-import DurationTab from "./advanced-tabs/DurationTab";
 import AIGenerationCombinedTab from "./advanced-tabs/AIGenerationCombinedTab";
 import PreviewImportTab from "./advanced-tabs/PreviewImportTab";
 
@@ -39,28 +38,17 @@ const AdvancedCompetitionGenerator: React.FC = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="format">1. Format</TabsTrigger>
-              <TabsTrigger value="duration">2. Planning</TabsTrigger>
-              <TabsTrigger value="ai-generation">3. AI Generator</TabsTrigger>
-              <TabsTrigger value="preview">4. Voorvertoning</TabsTrigger>
+              <TabsTrigger value="ai-generation">2. AI Generator</TabsTrigger>
+              <TabsTrigger value="preview">3. Voorvertoning</TabsTrigger>
             </TabsList>
             
             <TabsContent value="format" className="space-y-4">
               <FormatConfigTab
                 config={config}
                 setConfig={setConfig}
-                onNext={() => setActiveTab("duration")}
-              />
-            </TabsContent>
-            
-            <TabsContent value="duration" className="space-y-4">
-              <DurationTab
-                config={config}
-                setConfig={setConfig}
-                vacationPeriods={vacationPeriods}
                 onNext={() => setActiveTab("ai-generation")}
-                onPrevious={() => setActiveTab("format")}
               />
             </TabsContent>
             
@@ -77,7 +65,7 @@ const AdvancedCompetitionGenerator: React.FC = () => {
                 isGenerating={isGenerating}
                 onGenerate={handleGenerateWithAI}
                 onNext={() => setActiveTab("preview")}
-                onPrevious={() => setActiveTab("duration")}
+                onPrevious={() => setActiveTab("format")}
               />
             </TabsContent>
             

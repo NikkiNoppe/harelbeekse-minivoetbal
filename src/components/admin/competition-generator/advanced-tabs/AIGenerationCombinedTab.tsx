@@ -61,6 +61,10 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
   // Default locations and time slots
   const defaultLocations = ['Harelbeke', 'Bavikhove'];
   const defaultTimeSlots = ['18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30'];
+  const playDays = [
+    { value: 1, label: 'Maandag' },
+    { value: 2, label: 'Dinsdag' }
+  ];
 
   const handleTeamToggle = (teamId: number, checked: boolean) => {
     if (checked) {
@@ -115,11 +119,6 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
     }
   };
 
-  const getDayName = (dayNumber: number) => {
-    const days = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
-    return days[dayNumber];
-  };
-
   const isValid = selectedTeams.length >= 2;
 
   return (
@@ -129,34 +128,51 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
         <h3 className="text-lg font-semibold">AI Competitie Generator</h3>
       </div>
 
-      {/* Speelschema Planning */}
+      {/* Competitie Planning */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Calendar className="w-4 h-4" />
-            Speelschema Planning
+            Competitie Planning
           </CardTitle>
           <CardDescription>
-            Configureer locaties en tijdstippen voor wedstrijden
+            Configureer de basis instellingen voor het schema
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Beschikbare locaties */}
           <div>
-            <Label>Beschikbare locaties</Label>
+            <Label className="text-sm font-medium">Beschikbare locaties</Label>
             <div className="grid grid-cols-2 gap-2 mt-2">
               {defaultLocations.map((location) => (
-                <div key={location} className="p-2 border rounded text-center bg-muted">
+                <div key={location} className="p-3 border rounded text-center bg-muted">
+                  <MapPin className="w-4 h-4 mx-auto mb-1" />
                   {location}
                 </div>
               ))}
             </div>
           </div>
           
+          {/* Speeldagen */}
           <div>
-            <Label>Beschikbare tijdstippen</Label>
+            <Label className="text-sm font-medium">Beschikbare speeldagen</Label>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {playDays.map((day) => (
+                <div key={day.value} className="p-3 border rounded text-center bg-muted">
+                  <Calendar className="w-4 h-4 mx-auto mb-1" />
+                  {day.label}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tijdstippen */}
+          <div>
+            <Label className="text-sm font-medium">Beschikbare tijdstippen</Label>
             <div className="grid grid-cols-4 gap-2 mt-2">
               {defaultTimeSlots.map((timeSlot) => (
-                <div key={timeSlot} className="p-2 border rounded text-center bg-muted">
+                <div key={timeSlot} className="p-2 border rounded text-center bg-muted text-sm">
+                  <Clock className="w-3 h-3 mx-auto mb-1" />
                   {timeSlot}
                 </div>
               ))}
@@ -189,11 +205,13 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
                 type="date"
                 value={period.start_date}
                 onChange={(e) => updateVacationPeriod(period.id, 'start_date', e.target.value)}
+                className="w-36"
               />
               <Input
                 type="date"
                 value={period.end_date}
                 onChange={(e) => updateVacationPeriod(period.id, 'end_date', e.target.value)}
+                className="w-36"
               />
               <Button
                 variant="ghost"
@@ -305,7 +323,7 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
 
                     <div>
                       <Label className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
+                        <Calendar className="w-3 h-3" />
                         Voorkeur dag
                       </Label>
                       <Select 
@@ -318,14 +336,20 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
                           <SelectValue placeholder="Selecteer dag" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="1">Maandag</SelectItem>
-                          <SelectItem value="2">Dinsdag</SelectItem>
+                          {playDays.map(day => (
+                            <SelectItem key={day.value} value={day.value.toString()}>
+                              {day.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div>
-                      <Label>Voorkeur tijdslot</Label>
+                      <Label className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Voorkeur tijdslot
+                      </Label>
                       <Select 
                         value={preferences.preferred_time_slot || ''} 
                         onValueChange={(value) => 
@@ -340,6 +364,9 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
                           <SelectItem value="19:00">Vroeg (19:00)</SelectItem>
                           <SelectItem value="19:30">Laat (19:30)</SelectItem>
                           <SelectItem value="20:00">Laat (20:00)</SelectItem>
+                          <SelectItem value="20:30">Laat (20:30)</SelectItem>
+                          <SelectItem value="21:00">Laat (21:00)</SelectItem>
+                          <SelectItem value="21:30">Laat (21:30)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -472,9 +499,9 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={onPrevious} disabled={isGenerating}>
-          Vorige: Configuratie
+          Vorige: Format
         </Button>
-        <Button onClick={onNext} disabled={true}>
+        <Button onClick={onNext} disabled={!generatedSchedule}>
           Volgende: Voorvertoning
         </Button>
       </div>

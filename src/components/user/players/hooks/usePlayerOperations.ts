@@ -189,13 +189,11 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
     }
     
     try {
-      console.log('Updating player:', {
+      console.log('🔄 Starting player update with data:', {
         player_id: editingPlayer.player_id,
-        updates: {
-          first_name: editingPlayer.firstName.trim(),
-          last_name: editingPlayer.lastName.trim(),
-          birth_date: editingPlayer.birthDate
-        }
+        first_name: editingPlayer.firstName.trim(),
+        last_name: editingPlayer.lastName.trim(),
+        birth_date: editingPlayer.birthDate
       });
 
       const { data, error } = await supabase
@@ -206,24 +204,41 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
           birth_date: editingPlayer.birthDate
         })
         .eq('player_id', editingPlayer.player_id)
+        .eq('is_active', true) // Only update active players
         .select();
       
       if (error) {
-        console.error('Supabase error updating player:', error);
+        console.error('❌ Supabase error updating player:', error);
         throw error;
       }
 
-      console.log('Player updated successfully:', data);
+      console.log('✅ Player update successful, returned data:', data);
       
+      if (!data || data.length === 0) {
+        console.warn('⚠️ No rows were updated - player might not exist or is not active');
+        toast({
+          title: "Geen wijzigingen",
+          description: "De speler kon niet worden bijgewerkt. Mogelijk bestaat deze niet meer.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Force refresh of players data
+      console.log('🔄 Refreshing players list...');
       await refreshPlayers();
+      
+      // Clear editing state
       setEditingPlayer(null);
       
       toast({
         title: "Speler bijgewerkt",
-        description: "De gegevens van de speler zijn bijgewerkt",
+        description: `${editingPlayer.firstName} ${editingPlayer.lastName} is succesvol bijgewerkt`,
       });
+      
+      console.log('✅ Player update process completed successfully');
     } catch (error) {
-      console.error('Error updating player:', error);
+      console.error('❌ Error updating player:', error);
       toast({
         title: "Fout bij bijwerken",
         description: "Er is een fout opgetreden bij het bijwerken van de speler.",
