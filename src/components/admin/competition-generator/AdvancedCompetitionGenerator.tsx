@@ -24,7 +24,8 @@ const AdvancedCompetitionGenerator: React.FC = () => {
     activeTab,
     setActiveTab,
     handleGenerateWithAI,
-    handleSaveCompetition
+    handleSaveCompetition,
+    teams
   } = useAdvancedCompetitionGenerator();
 
   return (
@@ -57,6 +58,7 @@ const AdvancedCompetitionGenerator: React.FC = () => {
               <DurationTab
                 config={config}
                 setConfig={setConfig}
+                vacationPeriods={vacationPeriods}
                 onNext={() => setActiveTab("ai-generation")}
                 onPrevious={() => setActiveTab("format")}
               />
@@ -81,10 +83,10 @@ const AdvancedCompetitionGenerator: React.FC = () => {
             
             <TabsContent value="preview" className="space-y-4">
               <PreviewImportTab
-                generatedSchedule={generatedSchedule}
+                aiGeneratedSchedule={generatedSchedule}
                 config={config}
                 selectedTeams={selectedTeams}
-                onSave={handleSaveCompetition}
+                onImport={handleSaveCompetition}
                 onPrevious={() => setActiveTab("ai-generation")}
               />
             </TabsContent>

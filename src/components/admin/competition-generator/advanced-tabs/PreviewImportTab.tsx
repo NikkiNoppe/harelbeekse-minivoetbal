@@ -12,6 +12,7 @@ import { nl } from "date-fns/locale";
 interface PreviewImportTabProps {
   aiGeneratedSchedule: AIGeneratedSchedule | null;
   config: AdvancedCompetitionConfig;
+  selectedTeams: number[];
   onImport: () => void;
   onPrevious: () => void;
 }
@@ -19,6 +20,7 @@ interface PreviewImportTabProps {
 const PreviewImportTab: React.FC<PreviewImportTabProps> = ({
   aiGeneratedSchedule,
   config,
+  selectedTeams,
   onImport,
   onPrevious
 }) => {

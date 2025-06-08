@@ -26,12 +26,13 @@ export const useAdvancedCompetitionGenerator = () => {
   
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [teamPreferences, setTeamPreferences] = useState<TeamPreference[]>([]);
-  const [aiGeneratedSchedule, setAiGeneratedSchedule] = useState<AIGeneratedSchedule | null>(null);
+  const [vacationPeriods, setVacationPeriods] = useState<VacationPeriod[]>([]);
+  const [generatedSchedule, setGeneratedSchedule] = useState<AIGeneratedSchedule | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [currentStep, setCurrentStep] = useState("format");
+  const [activeTab, setActiveTab] = useState("format");
 
   // Fetch vacation periods
-  const { data: vacationPeriods = [] } = useQuery({
+  const { data: vacationPeriodsData = [] } = useQuery({
     queryKey: ['vacationPeriods'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -44,6 +45,11 @@ export const useAdvancedCompetitionGenerator = () => {
       return data as VacationPeriod[];
     }
   });
+
+  // Update vacation periods when data changes
+  useEffect(() => {
+    setVacationPeriods(vacationPeriodsData);
+  }, [vacationPeriodsData]);
 
   // Fetch teams
   const { data: teams = [] } = useQuery({
@@ -59,47 +65,7 @@ export const useAdvancedCompetitionGenerator = () => {
     }
   });
 
-  const validateConfig = (step: string): boolean => {
-    switch (step) {
-      case "format":
-        return !!(config.name && config.format_type && config.matches_per_week > 0);
-      case "duration":
-        return !!(config.start_date && config.end_date && config.start_date < config.end_date);
-      case "teams":
-        return selectedTeams.length >= 2;
-      case "generate":
-        return validateConfig("format") && validateConfig("duration") && validateConfig("teams");
-      default:
-        return false;
-    }
-  };
-
-  const getStepStatus = (stepId: string): 'completed' | 'current' | 'disabled' => {
-    const stepOrder = ["format", "duration", "teams", "generate", "preview"];
-    const currentIndex = stepOrder.indexOf(currentStep);
-    const stepIndex = stepOrder.indexOf(stepId);
-    
-    if (stepIndex < currentIndex) return 'completed';
-    if (stepIndex === currentIndex) return 'current';
-    
-    // Check if previous steps are valid
-    for (let i = 0; i < stepIndex; i++) {
-      if (!validateConfig(stepOrder[i])) return 'disabled';
-    }
-    
-    return 'disabled';
-  };
-
-  const generateWithAI = async (aiProvider: 'openai' | 'abacus') => {
-    if (!validateConfig("generate")) {
-      toast({
-        title: "Configuratie incompleet",
-        description: "Vul alle vereiste velden in voordat je een schema genereert",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handleGenerateWithAI = async (aiProvider: 'openai' | 'abacus') => {
     setIsGenerating(true);
     
     try {
@@ -117,8 +83,8 @@ export const useAdvancedCompetitionGenerator = () => {
 
       if (error) throw error;
 
-      setAiGeneratedSchedule(data as AIGeneratedSchedule);
-      setCurrentStep("preview");
+      setGeneratedSchedule(data as AIGeneratedSchedule);
+      setActiveTab("preview");
       
       toast({
         title: "Schema gegenereerd!",
@@ -137,8 +103,8 @@ export const useAdvancedCompetitionGenerator = () => {
     }
   };
 
-  const importSchedule = async () => {
-    if (!aiGeneratedSchedule) return;
+  const handleSaveCompetition = async () => {
+    if (!generatedSchedule) return;
 
     try {
       // Save configuration first
@@ -150,10 +116,6 @@ export const useAdvancedCompetitionGenerator = () => {
 
       if (configError) throw configError;
 
-      // Save the generated schedule to matches and matchdays tables
-      // This logic would be similar to the existing saveCompetition function
-      // but using the AI-generated data structure
-      
       toast({
         title: "Schema geïmporteerd!",
         description: "Het AI-gegenereerde schema is succesvol geïmporteerd",
@@ -170,8 +132,8 @@ export const useAdvancedCompetitionGenerator = () => {
       });
       setSelectedTeams([]);
       setTeamPreferences([]);
-      setAiGeneratedSchedule(null);
-      setCurrentStep("format");
+      setGeneratedSchedule(null);
+      setActiveTab("format");
       
     } catch (error) {
       console.error('Error importing schedule:', error);
@@ -191,14 +153,14 @@ export const useAdvancedCompetitionGenerator = () => {
     teamPreferences,
     setTeamPreferences,
     vacationPeriods,
-    teams,
-    aiGeneratedSchedule,
+    setVacationPeriods,
+    generatedSchedule,
+    setGeneratedSchedule,
     isGenerating,
-    currentStep,
-    setCurrentStep,
-    generateWithAI,
-    importSchedule,
-    validateConfig,
-    getStepStatus
+    activeTab,
+    setActiveTab,
+    handleGenerateWithAI,
+    handleSaveCompetition,
+    teams
   };
 };

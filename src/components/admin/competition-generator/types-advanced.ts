@@ -41,4 +41,26 @@ export interface GeneratedMatch {
   time: string;
   location: string;
   matchday: string;
+  home_team_name: string;
+  away_team_name: string;
+  match_time?: string;
+}
+
+export interface AIGeneratedSchedule {
+  matches: GeneratedMatch[];
+  matchdays: {
+    name: string;
+    date: string;
+    matches: GeneratedMatch[];
+  }[];
+  validation_notes: string[];
+  confidence_score: number;
+}
+
+export interface AIGenerationRequest {
+  config: AdvancedCompetitionConfig;
+  teams: Team[];
+  team_preferences: TeamPreference[];
+  vacation_periods: VacationPeriod[];
+  ai_provider: 'openai' | 'abacus';
 }
