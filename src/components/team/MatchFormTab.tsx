@@ -20,8 +20,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
   const { user } = useAuth();
   const [selectedMatchForm, setSelectedMatchForm] = useState<MatchFormData | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
   const [matchdayFilter, setMatchdayFilter] = useState("");
   
   // Check if user has elevated permissions (admin or referee)
@@ -89,8 +88,6 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
           onSearchChange={setSearchTerm}
           dateFilter={dateFilter}
           onDateChange={setDateFilter}
-          locationFilter={locationFilter}
-          onLocationChange={setLocationFilter}
           matchdayFilter={matchdayFilter}
           onMatchdayChange={setMatchdayFilter}
         />
@@ -101,7 +98,6 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
           onSelectMatch={handleSelectMatch}
           searchTerm={searchTerm}
           dateFilter={dateFilter}
-          locationFilter={locationFilter}
           matchdayFilter={matchdayFilter}
           hasElevatedPermissions={hasElevatedPermissions}
           userRole={user?.role}
