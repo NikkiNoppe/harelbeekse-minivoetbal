@@ -107,7 +107,14 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
     }
     
     try {
-      const { error } = await supabase
+      console.log('Adding player:', {
+        first_name: newPlayer.firstName.trim(),
+        last_name: newPlayer.lastName.trim(),
+        birth_date: newPlayer.birthDate,
+        team_id: selectedTeam
+      });
+
+      const { data, error } = await supabase
         .from('players')
         .insert({
           first_name: newPlayer.firstName.trim(),
@@ -115,9 +122,15 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
           birth_date: newPlayer.birthDate,
           team_id: selectedTeam,
           is_active: true
-        });
+        })
+        .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error adding player:', error);
+        throw error;
+      }
+
+      console.log('Player added successfully:', data);
       
       await refreshPlayers();
       setNewPlayer({firstName: "", lastName: "", birthDate: ""});
@@ -143,7 +156,10 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       return;
     }
 
-    if (!editingPlayer) return;
+    if (!editingPlayer) {
+      console.error('No player selected for editing');
+      return;
+    }
 
     if (!editingPlayer.firstName.trim() || !editingPlayer.lastName.trim() || !editingPlayer.birthDate) {
       toast({
@@ -173,16 +189,31 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
     }
     
     try {
-      const { error } = await supabase
+      console.log('Updating player:', {
+        player_id: editingPlayer.player_id,
+        updates: {
+          first_name: editingPlayer.firstName.trim(),
+          last_name: editingPlayer.lastName.trim(),
+          birth_date: editingPlayer.birthDate
+        }
+      });
+
+      const { data, error } = await supabase
         .from('players')
         .update({
           first_name: editingPlayer.firstName.trim(),
           last_name: editingPlayer.lastName.trim(),
           birth_date: editingPlayer.birthDate
         })
-        .eq('player_id', editingPlayer.player_id);
+        .eq('player_id', editingPlayer.player_id)
+        .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error updating player:', error);
+        throw error;
+      }
+
+      console.log('Player updated successfully:', data);
       
       await refreshPlayers();
       setEditingPlayer(null);
@@ -209,12 +240,20 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
     }
 
     try {
-      const { error } = await supabase
+      console.log('Removing player:', playerId);
+
+      const { data, error } = await supabase
         .from('players')
         .update({ is_active: false })
-        .eq('player_id', playerId);
+        .eq('player_id', playerId)
+        .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error removing player:', error);
+        throw error;
+      }
+
+      console.log('Player removed successfully:', data);
       
       await refreshPlayers();
       
