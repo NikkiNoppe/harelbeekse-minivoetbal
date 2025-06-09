@@ -5,7 +5,7 @@ import { usePlayerValidation } from "./usePlayerValidation";
 
 export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
   const { toast } = useToast();
-  const { checkPlayerExists, validatePlayerData } = usePlayerValidation();
+  const { checkPlayerExists, checkNameExists, validatePlayerData } = usePlayerValidation();
 
   const addPlayer = async (firstName: string, lastName: string, birthDate: string, teamId: number) => {
     if (!validatePlayerData(firstName, lastName, birthDate)) {
@@ -17,14 +17,26 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
       return false;
     }
 
-    // Check if player already exists
+    // Check if exact player already exists
     const existingPlayer = await checkPlayerExists(firstName, lastName, birthDate);
     
     if (existingPlayer) {
       const teamName = existingPlayer.teams?.team_name || 'onbekend team';
       toast({
         title: "Speler bestaat al",
-        description: `${firstName} ${lastName} is al ingeschreven bij ${teamName}`,
+        description: `${firstName} ${lastName} met deze geboortedatum is al ingeschreven bij ${teamName}`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Check if name already exists with different birth date
+    const existingName = await checkNameExists(firstName, lastName);
+    if (existingName) {
+      const teamName = existingName.teams?.team_name || 'onbekend team';
+      toast({
+        title: "Naam bestaat al",
+        description: `${firstName} ${lastName} bestaat al bij ${teamName} met geboortedatum ${new Date(existingName.birth_date).toLocaleDateString('nl-NL')}`,
         variant: "destructive",
       });
       return false;
@@ -85,19 +97,6 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
       return false;
     }
 
-    // Check if player already exists (excluding current player)
-    const existingPlayer = await checkPlayerExists(firstName, lastName, birthDate, playerId);
-    
-    if (existingPlayer) {
-      const teamName = existingPlayer.teams?.team_name || 'onbekend team';
-      toast({
-        title: "Speler bestaat al",
-        description: `${firstName} ${lastName} is al ingeschreven bij ${teamName}`,
-        variant: "destructive",
-      });
-      return false;
-    }
-    
     try {
       console.log('🔄 Starting player update with data:', {
         player_id: playerId,
@@ -106,23 +105,48 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         birth_date: birthDate
       });
 
-      // First check if the player exists and is active
-      const { data: existingPlayerCheck, error: checkError } = await supabase
+      // Get current player data
+      const { data: currentPlayer, error: fetchError } = await supabase
         .from('players')
-        .select('player_id, is_active')
+        .select('player_id, first_name, last_name, birth_date, is_active')
         .eq('player_id', playerId)
         .single();
 
-      if (checkError) {
-        console.error('❌ Error checking player existence:', checkError);
-        throw new Error('Speler niet gevonden in de database');
-      }
-
-      if (!existingPlayerCheck || !existingPlayerCheck.is_active) {
-        console.warn('⚠️ Player not found or not active');
+      if (fetchError || !currentPlayer || !currentPlayer.is_active) {
+        console.error('❌ Error fetching current player:', fetchError);
         toast({
           title: "Speler niet gevonden",
           description: "De speler bestaat niet meer of is niet actief",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Check if name changed - only validate duplicates if name actually changed
+      const nameChanged = currentPlayer.first_name !== firstName.trim() || currentPlayer.last_name !== lastName.trim();
+      
+      if (nameChanged) {
+        // Check if name already exists with any birth date
+        const existingName = await checkNameExists(firstName, lastName, playerId);
+        if (existingName) {
+          const teamName = existingName.teams?.team_name || 'onbekend team';
+          toast({
+            title: "Naam bestaat al",
+            description: `${firstName} ${lastName} bestaat al bij ${teamName} met geboortedatum ${new Date(existingName.birth_date).toLocaleDateString('nl-NL')}`,
+            variant: "destructive",
+          });
+          return false;
+        }
+      }
+
+      // Check if exact combination exists (name + birth date)
+      const existingPlayer = await checkPlayerExists(firstName, lastName, birthDate, playerId);
+      
+      if (existingPlayer) {
+        const teamName = existingPlayer.teams?.team_name || 'onbekend team';
+        toast({
+          title: "Speler bestaat al",
+          description: `${firstName} ${lastName} met deze geboortedatum is al ingeschreven bij ${teamName}`,
           variant: "destructive",
         });
         return false;

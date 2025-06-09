@@ -76,18 +76,6 @@ const FormatConfigurationCard: React.FC<FormatConfigurationCardProps> = ({
             />
           </div>
 
-          <div>
-            <Label htmlFor="matches-per-week">Wedstrijden per week</Label>
-            <Input
-              id="matches-per-week"
-              type="number"
-              min="1"
-              max="14"
-              value={config.matches_per_week}
-              onChange={(e) => setConfig({ ...config, matches_per_week: parseInt(e.target.value) || 7 })}
-            />
-          </div>
-
           {config.format_type === 'playoff' && (
             <div>
               <Label htmlFor="playoff-teams">Aantal playoff teams</Label>
