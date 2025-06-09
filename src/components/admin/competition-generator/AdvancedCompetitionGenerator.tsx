@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdvancedCompetitionGenerator } from "./useAdvancedCompetitionGenerator";
-import FormatConfigTab from "./advanced-tabs/FormatConfigTab";
 import AIGenerationCombinedTab from "./advanced-tabs/AIGenerationCombinedTab";
 import PreviewImportTab from "./advanced-tabs/PreviewImportTab";
 
@@ -38,19 +37,10 @@ const AdvancedCompetitionGenerator: React.FC = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="format">1. Format</TabsTrigger>
-              <TabsTrigger value="ai-generation">2. AI Generator</TabsTrigger>
-              <TabsTrigger value="preview">3. Voorvertoning</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="ai-generation">1. AI Generator</TabsTrigger>
+              <TabsTrigger value="preview">2. Voorvertoning</TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="format" className="space-y-4">
-              <FormatConfigTab
-                config={config}
-                setConfig={setConfig}
-                onNext={() => setActiveTab("ai-generation")}
-              />
-            </TabsContent>
             
             <TabsContent value="ai-generation" className="space-y-4">
               <AIGenerationCombinedTab
@@ -65,7 +55,8 @@ const AdvancedCompetitionGenerator: React.FC = () => {
                 isGenerating={isGenerating}
                 onGenerate={handleGenerateWithAI}
                 onNext={() => setActiveTab("preview")}
-                onPrevious={() => setActiveTab("format")}
+                onPrevious={() => {}}
+                generatedSchedule={generatedSchedule}
               />
             </TabsContent>
             

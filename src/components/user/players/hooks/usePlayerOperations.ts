@@ -196,6 +196,29 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
         birth_date: editingPlayer.birthDate
       });
 
+      // First check if the player exists and is active
+      const { data: existingPlayerCheck, error: checkError } = await supabase
+        .from('players')
+        .select('player_id, is_active')
+        .eq('player_id', editingPlayer.player_id)
+        .single();
+
+      if (checkError) {
+        console.error('❌ Error checking player existence:', checkError);
+        throw new Error('Speler niet gevonden in de database');
+      }
+
+      if (!existingPlayerCheck || !existingPlayerCheck.is_active) {
+        console.warn('⚠️ Player not found or not active');
+        toast({
+          title: "Speler niet gevonden",
+          description: "De speler bestaat niet meer of is niet actief",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Now perform the update
       const { data, error } = await supabase
         .from('players')
         .update({
@@ -204,7 +227,6 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
           birth_date: editingPlayer.birthDate
         })
         .eq('player_id', editingPlayer.player_id)
-        .eq('is_active', true) // Only update active players
         .select();
       
       if (error) {
@@ -215,10 +237,10 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       console.log('✅ Player update successful, returned data:', data);
       
       if (!data || data.length === 0) {
-        console.warn('⚠️ No rows were updated - player might not exist or is not active');
+        console.warn('⚠️ No rows were updated');
         toast({
           title: "Geen wijzigingen",
-          description: "De speler kon niet worden bijgewerkt. Mogelijk bestaat deze niet meer.",
+          description: "Er zijn geen wijzigingen doorgevoerd",
           variant: "destructive",
         });
         return;
@@ -241,7 +263,7 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       console.error('❌ Error updating player:', error);
       toast({
         title: "Fout bij bijwerken",
-        description: "Er is een fout opgetreden bij het bijwerken van de speler.",
+        description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het bijwerken van de speler.",
         variant: "destructive",
       });
     }

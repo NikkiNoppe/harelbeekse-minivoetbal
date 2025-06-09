@@ -315,30 +315,6 @@ export type Database = {
         }
         Relationships: []
       }
-      holiday_periods: {
-        Row: {
-          created_at: string | null
-          end_date: string
-          holiday_id: number
-          name: string
-          start_date: string
-        }
-        Insert: {
-          created_at?: string | null
-          end_date: string
-          holiday_id?: number
-          name: string
-          start_date: string
-        }
-        Update: {
-          created_at?: string | null
-          end_date?: string
-          holiday_id?: number
-          name?: string
-          start_date?: string
-        }
-        Relationships: []
-      }
       manual_competition_schedules: {
         Row: {
           competition_id: number | null

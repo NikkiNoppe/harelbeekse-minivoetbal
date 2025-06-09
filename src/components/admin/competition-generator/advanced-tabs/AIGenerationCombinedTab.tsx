@@ -60,9 +60,55 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
     }
   });
 
-  // Default locations and time slots
-  const defaultLocations = ['Harelbeke', 'Bavikhove'];
-  const defaultTimeSlots = ['18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30'];
+  // Fetch venues (locations)
+  const { data: venues = [] } = useQuery({
+    queryKey: ['venues'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('venues')
+        .select('venue_id, name, address')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Fetch venue timeslots
+  const { data: venueTimeslots = [] } = useQuery({
+    queryKey: ['venue-timeslots'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('venue_timeslots')
+        .select(`
+          timeslot_id,
+          day_of_week,
+          start_time,
+          end_time,
+          venues!inner(name)
+        `)
+        .order('day_of_week, start_time');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Fetch vacation periods from database
+  const { data: dbVacationPeriods = [] } = useQuery({
+    queryKey: ['vacation-periods'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('vacation_periods')
+        .select('*')
+        .eq('is_active', true)
+        .order('start_date');
+      
+      if (error) throw error;
+      return data as VacationPeriod[];
+    }
+  });
+
   const playDays = [
     { value: 1, label: 'Maandag' },
     { value: 2, label: 'Dinsdag' }
@@ -121,7 +167,7 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
     }
   };
 
-  const isValid = selectedTeams.length >= 2;
+  const isValid = selectedTeams.length >= 2 && config.name.trim() !== '';
 
   return (
     <div className="space-y-6">
@@ -130,60 +176,162 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
         <h3 className="text-lg font-semibold">AI Competitie Generator</h3>
       </div>
 
-      {/* Competitie Planning */}
+      {/* Format Configuratie */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Competitie Planning
+            <Settings className="w-4 h-4" />
+            Format Configuratie
           </CardTitle>
           <CardDescription>
-            Configureer de basis instellingen voor het schema
+            Configureer de basis instellingen voor de competitie
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Beschikbare locaties */}
-          <div>
-            <Label className="text-sm font-medium">Beschikbare locaties</Label>
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {defaultLocations.map((location) => (
-                <div key={location} className="p-3 border rounded text-center bg-muted">
-                  <MapPin className="w-4 h-4 mx-auto mb-1" />
-                  {location}
-                </div>
-              ))}
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="competition-name">Competitie Naam</Label>
+              <Input
+                id="competition-name"
+                value={config.name}
+                onChange={(e) => setConfig({ ...config, name: e.target.value })}
+                placeholder="Bijv. Lente Competitie 2025"
+              />
             </div>
-          </div>
-          
-          {/* Speeldagen */}
-          <div>
-            <Label className="text-sm font-medium">Beschikbare speeldagen</Label>
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {playDays.map((day) => (
-                <div key={day.value} className="p-3 border rounded text-center bg-muted">
-                  <Calendar className="w-4 h-4 mx-auto mb-1" />
-                  {day.label}
-                </div>
-              ))}
+            
+            <div>
+              <Label htmlFor="format-type">Format Type</Label>
+              <Select 
+                value={config.format_type} 
+                onValueChange={(value) => setConfig({ ...config, format_type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecteer format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="regular">Reguliere Competitie</SelectItem>
+                  <SelectItem value="playoff">Met Playoffs</SelectItem>
+                  <SelectItem value="cup">Beker Systeem</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
 
-          {/* Tijdstippen */}
-          <div>
-            <Label className="text-sm font-medium">Beschikbare tijdstippen</Label>
-            <div className="grid grid-cols-4 gap-2 mt-2">
-              {defaultTimeSlots.map((timeSlot) => (
-                <div key={timeSlot} className="p-2 border rounded text-center bg-muted text-sm">
-                  <Clock className="w-3 h-3 mx-auto mb-1" />
-                  {timeSlot}
-                </div>
-              ))}
+            <div>
+              <Label htmlFor="start-date">Start Datum</Label>
+              <Input
+                id="start-date"
+                type="date"
+                value={config.start_date}
+                onChange={(e) => setConfig({ ...config, start_date: e.target.value })}
+              />
             </div>
+
+            <div>
+              <Label htmlFor="end-date">Eind Datum</Label>
+              <Input
+                id="end-date"
+                type="date"
+                value={config.end_date}
+                onChange={(e) => setConfig({ ...config, end_date: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="matches-per-week">Wedstrijden per week</Label>
+              <Input
+                id="matches-per-week"
+                type="number"
+                min="1"
+                max="14"
+                value={config.matches_per_week}
+                onChange={(e) => setConfig({ ...config, matches_per_week: parseInt(e.target.value) || 7 })}
+              />
+            </div>
+
+            {config.format_type === 'playoff' && (
+              <div>
+                <Label htmlFor="playoff-teams">Aantal playoff teams</Label>
+                <Input
+                  id="playoff-teams"
+                  type="number"
+                  min="2"
+                  max="8"
+                  value={config.playoff_teams || 4}
+                  onChange={(e) => setConfig({ ...config, playoff_teams: parseInt(e.target.value) || 4 })}
+                />
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Verlofperiodes */}
+      {/* Beschikbare locaties uit database */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MapPin className="w-4 h-4" />
+            Beschikbare Locaties
+          </CardTitle>
+          <CardDescription>
+            Locaties uit de database waar wedstrijden gespeeld kunnen worden
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {venues.map((venue) => (
+              <div key={venue.venue_id} className="p-3 border rounded-lg bg-muted">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  <div>
+                    <h4 className="font-medium">{venue.name}</h4>
+                    <p className="text-sm text-muted-foreground">{venue.address}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Speeldagen en tijdstippen uit database */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Beschikbare Speeltijden
+          </CardTitle>
+          <CardDescription>
+            Tijdstippen per locatie en dag uit de database
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {playDays.map((day) => {
+              const daySlots = venueTimeslots.filter(slot => slot.day_of_week === day.value);
+              return (
+                <div key={day.value}>
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    {day.label}
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {daySlots.map((slot) => (
+                      <div key={slot.timeslot_id} className="p-2 border rounded text-center bg-muted text-sm">
+                        <div className="font-medium">{slot.venues.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {slot.start_time} - {slot.end_time}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Verlofperiodes uit database */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -191,49 +339,68 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
             Verlofperiodes
           </CardTitle>
           <CardDescription>
-            Definieer periodes waarin geen wedstrijden gepland worden
+            Periodes uit de database waarin geen wedstrijden gepland worden
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {vacationPeriods.map((period) => (
-            <div key={period.id} className="flex items-center gap-2 p-3 border rounded">
-              <Input
-                placeholder="Naam periode (bijv. Kerstvakantie)"
-                value={period.name}
-                onChange={(e) => updateVacationPeriod(period.id, 'name', e.target.value)}
-                className="flex-1"
-              />
-              <Input
-                type="date"
-                value={period.start_date}
-                onChange={(e) => updateVacationPeriod(period.id, 'start_date', e.target.value)}
-                className="w-36"
-              />
-              <Input
-                type="date"
-                value={period.end_date}
-                onChange={(e) => updateVacationPeriod(period.id, 'end_date', e.target.value)}
-                className="w-36"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeVacationPeriod(period.id)}
-                className="text-red-500 hover:text-red-700"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+          {/* Database vacation periods */}
+          <div>
+            <Label className="text-sm font-medium mb-2 block">Beschikbare verlofperiodes</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {dbVacationPeriods.map((period) => (
+                <div key={period.id} className="p-3 border rounded-lg bg-muted">
+                  <div className="font-medium">{period.name}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {new Date(period.start_date).toLocaleDateString('nl-NL')} - {new Date(period.end_date).toLocaleDateString('nl-NL')}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-          
-          <Button
-            variant="outline"
-            onClick={addVacationPeriod}
-            className="w-full flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Verlofperiode toevoegen
-          </Button>
+          </div>
+
+          {/* Custom vacation periods */}
+          <div>
+            <Label className="text-sm font-medium mb-2 block">Extra verlofperiodes</Label>
+            {vacationPeriods.map((period) => (
+              <div key={period.id} className="flex items-center gap-2 p-3 border rounded mb-2">
+                <Input
+                  placeholder="Naam periode (bijv. Kerstvakantie)"
+                  value={period.name}
+                  onChange={(e) => updateVacationPeriod(period.id, 'name', e.target.value)}
+                  className="flex-1"
+                />
+                <Input
+                  type="date"
+                  value={period.start_date}
+                  onChange={(e) => updateVacationPeriod(period.id, 'start_date', e.target.value)}
+                  className="w-36"
+                />
+                <Input
+                  type="date"
+                  value={period.end_date}
+                  onChange={(e) => updateVacationPeriod(period.id, 'end_date', e.target.value)}
+                  className="w-36"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeVacationPeriod(period.id)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+            
+            <Button
+              variant="outline"
+              onClick={addVacationPeriod}
+              className="w-full flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Extra verlofperiode toevoegen
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -314,9 +481,9 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
                           <SelectValue placeholder="Selecteer locatie" />
                         </SelectTrigger>
                         <SelectContent>
-                          {defaultLocations.map(location => (
-                            <SelectItem key={location} value={location}>
-                              {location}
+                          {venues.map(venue => (
+                            <SelectItem key={venue.venue_id} value={venue.name}>
+                              {venue.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -489,6 +656,12 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
               )}
             </Button>
 
+            {!isValid && !isGenerating && (
+              <div className="text-center text-sm text-red-600">
+                <p>Vul alle verplichte velden in om te kunnen genereren</p>
+              </div>
+            )}
+
             {isGenerating && (
               <div className="text-center text-sm text-muted-foreground">
                 <p>Dit kan 30-60 seconden duren...</p>
@@ -500,9 +673,7 @@ const AIGenerationCombinedTab: React.FC<AIGenerationCombinedTabProps> = ({
       </Card>
 
       <div className="flex justify-between">
-        <Button variant="outline" onClick={onPrevious} disabled={isGenerating}>
-          Vorige: Format
-        </Button>
+        <div></div>
         <Button onClick={onNext} disabled={!generatedSchedule}>
           Volgende: Voorvertoning
         </Button>

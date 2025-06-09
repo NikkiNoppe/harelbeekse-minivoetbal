@@ -29,9 +29,9 @@ export const useAdvancedCompetitionGenerator = () => {
   const [vacationPeriods, setVacationPeriods] = useState<VacationPeriod[]>([]);
   const [generatedSchedule, setGeneratedSchedule] = useState<AIGeneratedSchedule | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState("format");
+  const [activeTab, setActiveTab] = useState("ai-generation");
 
-  // Fetch vacation periods
+  // Fetch vacation periods from the consolidated table
   const { data: vacationPeriodsData = [] } = useQuery({
     queryKey: ['vacationPeriods'],
     queryFn: async () => {
@@ -48,7 +48,7 @@ export const useAdvancedCompetitionGenerator = () => {
 
   // Update vacation periods when data changes
   useEffect(() => {
-    setVacationPeriods(vacationPeriodsData);
+    setVacationPeriods([]);
   }, [vacationPeriodsData]);
 
   // Fetch teams
@@ -133,7 +133,7 @@ export const useAdvancedCompetitionGenerator = () => {
       setSelectedTeams([]);
       setTeamPreferences([]);
       setGeneratedSchedule(null);
-      setActiveTab("format");
+      setActiveTab("ai-generation");
       
     } catch (error) {
       console.error('Error importing schedule:', error);
