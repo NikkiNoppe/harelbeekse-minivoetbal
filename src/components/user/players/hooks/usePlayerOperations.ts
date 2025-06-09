@@ -1,55 +1,21 @@
 
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NewPlayerData, EditingPlayerData } from "../types";
 import { usePlayerListLock } from "./usePlayerListLock";
+import { usePlayerCRUD } from "./usePlayerCRUD";
 
 export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers: () => Promise<void>) => {
   const { toast } = useToast();
   const { canEdit, isLocked, lockDate } = usePlayerListLock();
+  const { addPlayer, updatePlayer, removePlayer } = usePlayerCRUD(refreshPlayers);
+  
   const [newPlayer, setNewPlayer] = useState<NewPlayerData>({
     firstName: "", 
     lastName: "",
     birthDate: ""
   });
   const [editingPlayer, setEditingPlayer] = useState<EditingPlayerData | null>(null);
-  
-  // Check if player already exists in any team
-  const checkPlayerExists = async (firstName: string, lastName: string, birthDate: string, excludePlayerId?: number) => {
-    try {
-      let query = supabase
-        .from('players')
-        .select(`
-          player_id, 
-          first_name, 
-          last_name, 
-          birth_date, 
-          team_id,
-          teams!inner(team_name)
-        `)
-        .eq('first_name', firstName.trim())
-        .eq('last_name', lastName.trim())
-        .eq('birth_date', birthDate)
-        .eq('is_active', true);
-
-      if (excludePlayerId) {
-        query = query.neq('player_id', excludePlayerId);
-      }
-
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('Error checking player existence:', error);
-        return null;
-      }
-      
-      return data && data.length > 0 ? data[0] : null;
-    } catch (error) {
-      console.error('Error checking player existence:', error);
-      return null;
-    }
-  };
 
   // Show lock warning if user tries to edit while locked
   const showLockWarning = () => {
@@ -84,68 +50,9 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       return;
     }
     
-    if (!newPlayer.firstName.trim() || !newPlayer.lastName.trim() || !newPlayer.birthDate) {
-      toast({
-        title: "Onvolledige gegevens",
-        description: "Vul alle velden in",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check if player already exists
-    const existingPlayer = await checkPlayerExists(newPlayer.firstName, newPlayer.lastName, newPlayer.birthDate);
-    
-    if (existingPlayer) {
-      const teamName = existingPlayer.teams?.team_name || 'onbekend team';
-      toast({
-        title: "Speler bestaat al",
-        description: `${newPlayer.firstName} ${newPlayer.lastName} is al ingeschreven bij ${teamName}`,
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      console.log('Adding player:', {
-        first_name: newPlayer.firstName.trim(),
-        last_name: newPlayer.lastName.trim(),
-        birth_date: newPlayer.birthDate,
-        team_id: selectedTeam
-      });
-
-      const { data, error } = await supabase
-        .from('players')
-        .insert({
-          first_name: newPlayer.firstName.trim(),
-          last_name: newPlayer.lastName.trim(),
-          birth_date: newPlayer.birthDate,
-          team_id: selectedTeam,
-          is_active: true
-        })
-        .select();
-      
-      if (error) {
-        console.error('Supabase error adding player:', error);
-        throw error;
-      }
-
-      console.log('Player added successfully:', data);
-      
-      await refreshPlayers();
+    const success = await addPlayer(newPlayer.firstName, newPlayer.lastName, newPlayer.birthDate, selectedTeam);
+    if (success) {
       setNewPlayer({firstName: "", lastName: "", birthDate: ""});
-      
-      toast({
-        title: "Speler toegevoegd",
-        description: `${newPlayer.firstName} ${newPlayer.lastName} is toegevoegd aan het team`,
-      });
-    } catch (error) {
-      console.error('Error adding player:', error);
-      toast({
-        title: "Fout bij toevoegen",
-        description: "Er is een fout opgetreden bij het toevoegen van de speler.",
-        variant: "destructive",
-      });
     }
   };
   
@@ -161,111 +68,15 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       return;
     }
 
-    if (!editingPlayer.firstName.trim() || !editingPlayer.lastName.trim() || !editingPlayer.birthDate) {
-      toast({
-        title: "Onvolledige gegevens",
-        description: "Vul alle velden in",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check if player already exists (excluding current player)
-    const existingPlayer = await checkPlayerExists(
-      editingPlayer.firstName, 
-      editingPlayer.lastName, 
-      editingPlayer.birthDate, 
-      editingPlayer.player_id
+    const success = await updatePlayer(
+      editingPlayer.player_id,
+      editingPlayer.firstName,
+      editingPlayer.lastName,
+      editingPlayer.birthDate
     );
     
-    if (existingPlayer) {
-      const teamName = existingPlayer.teams?.team_name || 'onbekend team';
-      toast({
-        title: "Speler bestaat al",
-        description: `${editingPlayer.firstName} ${editingPlayer.lastName} is al ingeschreven bij ${teamName}`,
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      console.log('🔄 Starting player update with data:', {
-        player_id: editingPlayer.player_id,
-        first_name: editingPlayer.firstName.trim(),
-        last_name: editingPlayer.lastName.trim(),
-        birth_date: editingPlayer.birthDate
-      });
-
-      // First check if the player exists and is active
-      const { data: existingPlayerCheck, error: checkError } = await supabase
-        .from('players')
-        .select('player_id, is_active')
-        .eq('player_id', editingPlayer.player_id)
-        .single();
-
-      if (checkError) {
-        console.error('❌ Error checking player existence:', checkError);
-        throw new Error('Speler niet gevonden in de database');
-      }
-
-      if (!existingPlayerCheck || !existingPlayerCheck.is_active) {
-        console.warn('⚠️ Player not found or not active');
-        toast({
-          title: "Speler niet gevonden",
-          description: "De speler bestaat niet meer of is niet actief",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Now perform the update
-      const { data, error } = await supabase
-        .from('players')
-        .update({
-          first_name: editingPlayer.firstName.trim(),
-          last_name: editingPlayer.lastName.trim(),
-          birth_date: editingPlayer.birthDate
-        })
-        .eq('player_id', editingPlayer.player_id)
-        .select();
-      
-      if (error) {
-        console.error('❌ Supabase error updating player:', error);
-        throw error;
-      }
-
-      console.log('✅ Player update successful, returned data:', data);
-      
-      if (!data || data.length === 0) {
-        console.warn('⚠️ No rows were updated');
-        toast({
-          title: "Geen wijzigingen",
-          description: "Er zijn geen wijzigingen doorgevoerd",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Force refresh of players data
-      console.log('🔄 Refreshing players list...');
-      await refreshPlayers();
-      
-      // Clear editing state
+    if (success) {
       setEditingPlayer(null);
-      
-      toast({
-        title: "Speler bijgewerkt",
-        description: `${editingPlayer.firstName} ${editingPlayer.lastName} is succesvol bijgewerkt`,
-      });
-      
-      console.log('✅ Player update process completed successfully');
-    } catch (error) {
-      console.error('❌ Error updating player:', error);
-      toast({
-        title: "Fout bij bijwerken",
-        description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het bijwerken van de speler.",
-        variant: "destructive",
-      });
     }
   };
   
@@ -276,36 +87,7 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       return;
     }
 
-    try {
-      console.log('Removing player:', playerId);
-
-      const { data, error } = await supabase
-        .from('players')
-        .update({ is_active: false })
-        .eq('player_id', playerId)
-        .select();
-      
-      if (error) {
-        console.error('Supabase error removing player:', error);
-        throw error;
-      }
-
-      console.log('Player removed successfully:', data);
-      
-      await refreshPlayers();
-      
-      toast({
-        title: "Speler verwijderd",
-        description: "De speler is verwijderd uit het team",
-      });
-    } catch (error) {
-      console.error('Error removing player:', error);
-      toast({
-        title: "Fout bij verwijderen",
-        description: "Er is een fout opgetreden bij het verwijderen van de speler.",
-        variant: "destructive",
-      });
-    }
+    await removePlayer(playerId);
   };
 
   return {
