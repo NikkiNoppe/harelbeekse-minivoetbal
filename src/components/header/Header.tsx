@@ -35,7 +35,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
             onLoginClick();
             setIsMenuOpen(false);
           }} 
-          className="w-full px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white dark:text-slate-950 bg-orange-500 hover:bg-orange-400"
+          className="w-full px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white bg-purple-dark hover:bg-purple-light"
         >
           Inloggen
         </button>
@@ -44,7 +44,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
   );
   
   return (
-    <header className="w-full py-3 sm:py-4 px-4 sm:px-6 shadow-md soccer-pattern sticky top-0 z-30">
+    <header className="w-full py-3 sm:py-4 px-4 sm:px-6 shadow-md bg-purple-dark sticky top-0 z-30">
       <div className="w-full max-w-7xl mx-auto flex justify-between items-center">
         <Logo onClick={onLogoClick} />
         
@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
             ) : (
               <button 
                 onClick={onLoginClick} 
-                className="px-3 lg:px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white dark:text-slate-950 bg-orange-500 hover:bg-orange-400 text-sm lg:text-base"
+                className="px-3 lg:px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white bg-purple-light hover:bg-purple-dark text-sm lg:text-base"
               >
                 Inloggen
               </button>

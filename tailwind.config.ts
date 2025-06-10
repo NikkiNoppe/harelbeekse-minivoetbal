@@ -63,14 +63,21 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Soccer specific colors
+				// New purple theme colors
+				purple: {
+					dark: '#60368c', // donkerpaars
+					light: '#ab86dd', // lichtpaars
+					white: '#ffffff', // wit
+					'light-gray': '#faf8ff', // lichtgrijs
+				},
+				// Update soccer colors to use purple theme
 				soccer: {
-					green: '#F97316', // Changed from green to orange
-					'dark-green': '#EA580C', // Dark orange
-					'light-green': '#FB923C', // Light orange
-					black: '#0F172A', // Dark slate
-					white: '#FFFFFF',
-					gray: '#E5E5E5',
+					green: '#60368c', // Changed to dark purple
+					'dark-green': '#4a2a6b', // Darker purple
+					'light-green': '#ab86dd', // Light purple
+					black: '#0F172A', // Keep dark slate
+					white: '#ffffff',
+					gray: '#faf8ff', // Light gray
 				},
 			},
 			borderRadius: {
