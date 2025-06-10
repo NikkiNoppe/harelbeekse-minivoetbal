@@ -6,22 +6,22 @@
 @layer base {
   :root {
     --background: 250 245 255; /* Light purple background */
-    --foreground: 96 54 140; /* Dark purple text */
+    --foreground: 171 134 221; /* Light purple text - changed from dark purple */
 
     --card: 255 255 255; /* White cards */
-    --card-foreground: 96 54 140; /* Dark purple text on cards */
+    --card-foreground: 171 134 221; /* Light purple text on cards - changed */
  
     --popover: 255 255 255;
-    --popover-foreground: 96 54 140;
+    --popover-foreground: 171 134 221; /* Light purple text - changed */
 
     --primary: 96 54 140; /* Dark purple primary */
     --primary-foreground: 255 255 255; /* White text on primary */
 
     --secondary: 250 245 255; /* Light gray background */
-    --secondary-foreground: 96 54 140; /* Dark purple text */
+    --secondary-foreground: 171 134 221; /* Light purple text - changed */
  
     --muted: 250 245 255;
-    --muted-foreground: 171 134 221; /* Light purple muted text */
+    --muted-foreground: 250 248 255; /* Light gray for muted text (faf8ff) */
  
     --accent: 171 134 221; /* Light purple accent */
     --accent-foreground: 96 54 140; /* Dark purple text on light purple */
@@ -37,7 +37,7 @@
     --radius: 0.5rem;
 
     --sidebar-background: 250 245 255;
-    --sidebar-foreground: 96 54 140;
+    --sidebar-foreground: 171 134 221; /* Light purple text - changed */
     --sidebar-primary: 96 54 140;
     --sidebar-primary-foreground: 255 255 255;
     --sidebar-accent: 171 134 221;
@@ -48,22 +48,22 @@
  
   .dark {
     --background: 96 54 140; /* Dark purple background */
-    --foreground: 255 255 255; /* White text */
+    --foreground: 171 134 221; /* Light purple text - changed from white */
 
     --card: 74 42 107; /* Darker purple cards */
-    --card-foreground: 255 255 255;
+    --card-foreground: 171 134 221; /* Light purple text - changed from white */
  
     --popover: 74 42 107;
-    --popover-foreground: 255 255 255;
+    --popover-foreground: 171 134 221; /* Light purple text - changed from white */
 
     --primary: 171 134 221; /* Light purple primary in dark mode */
     --primary-foreground: 96 54 140; /* Dark purple text on primary */
 
     --secondary: 74 42 107;
-    --secondary-foreground: 255 255 255;
+    --secondary-foreground: 171 134 221; /* Light purple text - changed from white */
  
     --muted: 74 42 107;
-    --muted-foreground: 171 134 221;
+    --muted-foreground: 250 248 255; /* Light gray for muted text (faf8ff) */
  
     --accent: 171 134 221;
     --accent-foreground: 96 54 140;
@@ -77,11 +77,11 @@
     --ring: 171 134 221;
 
     --sidebar-background: 96 54 140;
-    --sidebar-foreground: 255 255 255;
+    --sidebar-foreground: 171 134 221; /* Light purple text - changed from white */
     --sidebar-primary: 171 134 221;
     --sidebar-primary-foreground: 96 54 140;
     --sidebar-accent: 74 42 107;
-    --sidebar-accent-foreground: 255 255 255;
+    --sidebar-accent-foreground: 171 134 221; /* Light purple text - changed from white */
     --sidebar-border: 74 42 107;
     --sidebar-ring: 171 134 221;
   }
@@ -210,9 +210,14 @@ h1, h2, h3, h4, h5, h6 {
   color: #ab86dd !important; /* Light purple for all headings */
 }
 
-/* Ensure all text on white backgrounds uses dark purple */
+/* Ensure all text on white backgrounds uses light purple */
 .bg-white, .bg-card, [class*="bg-white"] {
-  color: #60368c !important; /* Dark purple text on white backgrounds */
+  color: #ab86dd !important; /* Light purple text on white backgrounds */
+}
+
+/* Table headers use light gray (faf8ff) */
+th, .table-header, [role="columnheader"] {
+  color: #faf8ff !important; /* Light gray for table headers */
 }
 
 /* Remove any orange colors and replace with purple */
@@ -225,4 +230,44 @@ h1, h2, h3, h4, h5, h6 {
 .hover\:text-orange-500:hover, .hover\:bg-orange-500:hover {
   color: #60368c !important;
   background-color: #60368c !important;
+}
+
+/* Remove all white text */
+.text-white, [class*="text-white"] {
+  color: #ab86dd !important; /* Change white text to light purple */
+}
+
+/* Specific overrides for common elements */
+td, .table-cell, [role="cell"] {
+  color: #ab86dd !important; /* Light purple for table cells */
+}
+
+/* Login form and similar components */
+.login-form, .form-container, .dialog-content {
+  color: #ab86dd !important; /* Light purple text */
+}
+
+/* Button text overrides */
+button:not(.bg-purple-dark):not([class*="bg-primary"]) {
+  color: #ab86dd !important; /* Light purple for button text */
+}
+
+/* Input and form element text */
+input, textarea, select {
+  color: #ab86dd !important; /* Light purple for input text */
+}
+
+/* Labels and form descriptions */
+label, .form-label, .form-description {
+  color: #ab86dd !important; /* Light purple for labels */
+}
+
+/* Card titles and content */
+.card-title, .card-content, .card-description {
+  color: #ab86dd !important; /* Light purple for card content */
+}
+
+/* Ensure muted text uses light gray */
+.text-muted-foreground, .muted {
+  color: #faf8ff !important; /* Light gray for muted text */
 }
