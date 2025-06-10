@@ -35,7 +35,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
             onLoginClick();
             setIsMenuOpen(false);
           }} 
-          className="w-full px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white bg-purple-dark hover:bg-purple-light"
+          className="w-full px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white bg-purple-dark hover:bg-purple-light hover:text-purple-dark"
         >
           Inloggen
         </button>

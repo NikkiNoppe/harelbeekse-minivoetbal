@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 250 245 255; /* Light purple background */
+    --background: 255 255 255; /* White background only */
     --foreground: 96 54 140; /* Dark purple text */
 
     --card: 255 255 255; /* White cards */
@@ -17,10 +17,10 @@
     --primary: 96 54 140; /* Dark purple primary */
     --primary-foreground: 255 255 255; /* White text on primary */
 
-    --secondary: 250 245 255; /* Light gray background */
+    --secondary: 250 248 255; /* Light gray background */
     --secondary-foreground: 96 54 140; /* Dark purple text */
  
-    --muted: 250 245 255;
+    --muted: 250 248 255;
     --muted-foreground: 171 134 221; /* Light purple muted text */
  
     --accent: 171 134 221; /* Light purple accent */
@@ -30,13 +30,13 @@
     --destructive-foreground: 210 40% 98%;
 
     --border: 171 134 221; /* Light purple borders */
-    --input: 250 245 255; /* Light gray inputs */
+    --input: 250 248 255; /* Light gray inputs */
  
     --ring: 96 54 140; /* Dark purple focus ring */
  
     --radius: 0.5rem;
 
-    --sidebar-background: 250 245 255;
+    --sidebar-background: 250 248 255;
     --sidebar-foreground: 96 54 140;
     --sidebar-primary: 96 54 140;
     --sidebar-primary-foreground: 255 255 255;
@@ -205,18 +205,30 @@
   }
 }
 
-/* Ensure headings use light purple color */
+/* Purple theme typography and colors */
 h1, h2, h3, h4, h5, h6 {
   color: #ab86dd !important; /* Light purple for all headings */
 }
 
-/* Ensure all text on white backgrounds uses dark purple */
+/* Ensure proper text colors for readability */
 .bg-white, .bg-card, [class*="bg-white"] {
   color: #60368c !important; /* Dark purple text on white backgrounds */
 }
 
-/* Remove any orange colors and replace with purple */
-.text-orange-500, .bg-orange-500, .border-orange-500 {
+/* Table headers and frame titles */
+th, .table-header, .frame-title {
+  color: #faf8ff !important; /* Light gray for table headers */
+  background-color: #60368c !important; /* Dark purple background for contrast */
+}
+
+/* Content text in frames and columns */
+td, .table-cell, .content-text, .column-text {
+  color: #ab86dd !important; /* Light purple for content text */
+}
+
+/* Remove any remaining orange colors and replace with purple */
+.text-orange-500, .bg-orange-500, .border-orange-500,
+[class*="orange"] {
   color: #ab86dd !important;
   background-color: #ab86dd !important;
   border-color: #ab86dd !important;
@@ -225,4 +237,34 @@ h1, h2, h3, h4, h5, h6 {
 .hover\:text-orange-500:hover, .hover\:bg-orange-500:hover {
   color: #60368c !important;
   background-color: #60368c !important;
+}
+
+/* Ensure no white text remains */
+.text-white, [class*="text-white"] {
+  color: #60368c !important; /* Convert white text to dark purple for readability */
+}
+
+/* Special handling for buttons and interactive elements */
+button {
+  background-color: #60368c !important; /* Dark purple buttons */
+  color: #ffffff !important; /* White text on buttons only */
+}
+
+button:hover {
+  background-color: #ab86dd !important; /* Light purple on hover */
+  color: #60368c !important; /* Dark purple text on hover */
+}
+
+/* Tab styling improvements */
+.tabs-list {
+  background-color: #faf8ff !important; /* Light gray tab background */
+}
+
+.tabs-trigger {
+  color: #60368c !important; /* Dark purple inactive tab text */
+}
+
+.tabs-trigger[data-state="active"] {
+  background-color: #ab86dd !important; /* Light purple active tab */
+  color: #60368c !important; /* Dark purple active tab text */
 }

@@ -22,7 +22,7 @@ const TabItem: React.FC<TabItemProps> = ({ value, icon, label, badge }) => {
       )}
     >
       {icon}
-      <span>{label}</span>
+      <span className="text-purple-dark">{label}</span>
       {badge && (
         <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-purple-dark text-white">
           {badge}

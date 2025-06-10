@@ -23,7 +23,7 @@ const Logo: React.FC<LogoProps> = ({ onClick }) => {
       </div>
       <div>
         <h1 className="text-white text-lg font-bold tracking-tight md:text-lg">Harelbeekse Minivoetbal</h1>
-        <p className="text-white/80 text-xs md:text-sm">Competitie</p>
+        <p className="text-purple-light-gray text-xs md:text-sm">Competitie</p>
       </div>
     </div>
   );

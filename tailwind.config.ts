@@ -63,19 +63,19 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// New purple theme colors
+				// Updated purple theme colors with exact RGB values
 				purple: {
 					dark: '#60368c', // donkerpaars
 					light: '#ab86dd', // lichtpaars
 					white: '#ffffff', // wit
 					'light-gray': '#faf8ff', // lichtgrijs
 				},
-				// Update soccer colors to use purple theme
+				// Update all color references to use purple theme
 				soccer: {
 					green: '#60368c', // Changed to dark purple
-					'dark-green': '#4a2a6b', // Darker purple
+					'dark-green': '#4a2a6b', // Darker purple variant
 					'light-green': '#ab86dd', // Light purple
-					black: '#0F172A', // Keep dark slate
+					black: '#60368c', // Changed to dark purple
 					white: '#ffffff',
 					gray: '#faf8ff', // Light gray
 				},
