@@ -24,7 +24,7 @@
     --muted-foreground: 171 134 221; /* Light purple muted text */
  
     --accent: 171 134 221; /* Light purple accent */
-    --accent-foreground: 255 255 255;
+    --accent-foreground: 96 54 140; /* Dark purple text on light purple */
  
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -41,7 +41,7 @@
     --sidebar-primary: 96 54 140;
     --sidebar-primary-foreground: 255 255 255;
     --sidebar-accent: 171 134 221;
-    --sidebar-accent-foreground: 255 255 255;
+    --sidebar-accent-foreground: 96 54 140;
     --sidebar-border: 171 134 221;
     --sidebar-ring: 96 54 140;
   }
@@ -151,10 +151,16 @@
   }
 }
 
-/* Dark mode fixes for tabs */
+/* Dark mode fixes for tabs - Updated for purple theme */
 .dark .tabs-list [data-state="active"] {
-  background-color: #ab86dd;
+  background-color: #ab86dd !important; /* Light purple */
   color: #60368c !important; /* Dark purple text on light purple background */
+}
+
+/* Light mode fixes for tabs */
+.tabs-list [data-state="active"] {
+  background-color: #ab86dd !important; /* Light purple */
+  color: #60368c !important; /* Dark purple text */
 }
 
 /* Purple pattern and other styles */
@@ -197,4 +203,26 @@
   .margin-responsive {
     @apply m-3 sm:m-4 lg:m-6;
   }
+}
+
+/* Ensure headings use light purple color */
+h1, h2, h3, h4, h5, h6 {
+  color: #ab86dd !important; /* Light purple for all headings */
+}
+
+/* Ensure all text on white backgrounds uses dark purple */
+.bg-white, .bg-card, [class*="bg-white"] {
+  color: #60368c !important; /* Dark purple text on white backgrounds */
+}
+
+/* Remove any orange colors and replace with purple */
+.text-orange-500, .bg-orange-500, .border-orange-500 {
+  color: #ab86dd !important;
+  background-color: #ab86dd !important;
+  border-color: #ab86dd !important;
+}
+
+.hover\:text-orange-500:hover, .hover\:bg-orange-500:hover {
+  color: #60368c !important;
+  background-color: #60368c !important;
 }
