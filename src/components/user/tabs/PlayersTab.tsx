@@ -1,3 +1,4 @@
+
 import React from "react";
 import { 
   Card, 
@@ -85,7 +86,7 @@ const PlayersTab: React.FC = () => {
             {user?.role === "admin" && (
               <div className="flex flex-col gap-2">
                 <select 
-                  className="p-2 bg-white border border-gray-200 rounded-md text-gray-900"
+                  className="p-2 bg-white border border-gray-200 rounded-md text-gray-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                   value={selectedTeam || ""}
                   onChange={(e) => handleTeamChange(parseInt(e.target.value))}
                 >

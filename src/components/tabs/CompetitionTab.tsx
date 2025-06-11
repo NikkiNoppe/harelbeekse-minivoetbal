@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Calendar, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-
 interface Team {
   id: number;
   name: string;
@@ -22,20 +20,6 @@ interface Team {
   goalDiff: number;
   points: number;
 }
-
-interface SupabaseTeam {
-  standing_id: number;
-  team_id: number;
-  matches_played: number;
-  wins: number;
-  draws: number;
-  losses: number;
-  goals_scored: number;
-  goals_against: number;
-  goal_difference: number;
-  points: number;
-}
-
 interface Match {
   matchday: string;
   date: string;
@@ -72,7 +56,6 @@ const upcomingMatches: Match[] = [{
   away: "Bemarmi Boys",
   location: "Sporthal 1"
 }];
-
 const pastMatches: Match[] = [{
   matchday: "Speeldag 10",
   date: "2025-05-08",
@@ -151,82 +134,103 @@ const allMatches: Match[] = [...pastMatches, ...upcomingMatches, {
   away: "Garage Verbeke",
   location: "Sporthal 2"
 }];
-
 const matchdays = [...new Set(allMatches.map(match => match.matchday))];
 const teamNames = [...new Set([...allMatches.map(match => match.home), ...allMatches.map(match => match.away)])];
 
-const fetchCompetitionStandings = async (): Promise<Team[]> => {
-  const { data, error } = await supabase
-    .from('competition_standings')
-    .select(`
-      *,
-      teams!inner(team_name)
-    `)
-    .order('points', { ascending: false });
+// Function to fetch competition standings from Supabase
+const fetchCompetitionStandings = async () => {
+  const {
+    data,
+    error
+  } = await supabase.from('competition_standings').select(`
+      standing_id,
+      team_id,
+      matches_played,
+      wins,
+      draws,
+      losses,
+      goal_difference,
+      goals_scored,
+      goals_against,
+      points,
+      teams(team_name)
+    `).order('points', {
+    ascending: false
+  }).order('goal_difference', {
+    ascending: false
+  });
+  if (error) {
+    throw new Error(`Error fetching standings: ${error.message}`);
+  }
 
-  if (error) throw error;
-  
-  // Transform Supabase data to match Team interface
-  return (data as any[]).map((item: any): Team => ({
-    id: item.team_id,
-    name: item.teams.team_name,
-    played: item.matches_played,
-    won: item.wins,
-    draw: item.draws,
-    lost: item.losses,
-    goalDiff: item.goal_difference,
-    points: item.points
+  // Map the data to the Team interface format
+  return data.map(standing => ({
+    id: standing.team_id,
+    name: standing.teams?.team_name || 'Unknown Team',
+    played: standing.matches_played,
+    won: standing.wins,
+    draw: standing.draws,
+    lost: standing.losses,
+    goalDiff: standing.goal_difference,
+    points: standing.points
   }));
 };
 
+// Define the CompetitionTabProps interface
 interface CompetitionTabProps {
-  teams?: Team[];
+  teams?: Team[]; // Make teams optional so it can be used with or without props
 }
-
-const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
+const CompetitionTab: React.FC<CompetitionTabProps> = ({
+  teams
+}) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMatchday, setSelectedMatchday] = useState<string>("");
   const [selectedTeam, setSelectedTeam] = useState<string>("");
 
-  const { data: fetchedTeams, isLoading, error } = useQuery({
+  // Use react-query to fetch and cache the standings data
+  const {
+    data: fetchedTeams,
+    isLoading,
+    error
+  } = useQuery({
     queryKey: ['competitionStandings'],
     queryFn: fetchCompetitionStandings
   });
 
+  // Use provided teams prop if available, otherwise use fetched data
   const teamsToDisplay = teams || fetchedTeams;
-
   const filteredMatches = allMatches.filter(match => {
-    if (selectedMatchday && match.matchday !== selectedMatchday) return false;
-    if (selectedTeam && match.home !== selectedTeam && match.away !== selectedTeam) return false;
+    // Filter by matchday if selected
+    if (selectedMatchday && match.matchday !== selectedMatchday) {
+      return false;
+    }
+
+    // Filter by team if selected
+    if (selectedTeam && match.home !== selectedTeam && match.away !== selectedTeam) {
+      return false;
+    }
+
+    // Filter by search term
     if (searchTerm) {
       const lowerSearchTerm = searchTerm.toLowerCase();
-      return match.home.toLowerCase().includes(lowerSearchTerm) || 
-             match.away.toLowerCase().includes(lowerSearchTerm) || 
-             match.location.toLowerCase().includes(lowerSearchTerm) || 
-             match.matchday.toLowerCase().includes(lowerSearchTerm);
+      return match.home.toLowerCase().includes(lowerSearchTerm) || match.away.toLowerCase().includes(lowerSearchTerm) || match.location.toLowerCase().includes(lowerSearchTerm) || match.matchday.toLowerCase().includes(lowerSearchTerm);
     }
     return true;
   });
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
+      {/* Competitie Stand */}
       <Card>
         <CardHeader>
           <CardTitle>Competitiestand</CardTitle>
           <CardDescription>Stand van de huidige competitie</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading && !teams ? (
-            <div className="flex justify-center items-center h-32">
+          {isLoading && !teams ? <div className="flex justify-center items-center h-32">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <span className="ml-2">Competitiestand laden...</span>
-            </div>
-          ) : error && !teams ? (
-            <div className="text-center p-4 text-red-500">
+            </div> : error && !teams ? <div className="text-center p-4 text-red-500">
               Er is een fout opgetreden bij het laden van de competitiestand.
-            </div>
-          ) : (
-            <div className="rounded-md border">
+            </div> : <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -241,8 +245,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {teamsToDisplay?.map((team, index) => (
-                    <TableRow key={team.id}>
+                  {teamsToDisplay?.map((team, index) => <TableRow key={team.id}>
                       <TableCell className="font-medium">{index + 1}</TableCell>
                       <TableCell>{team.name}</TableCell>
                       <TableCell>{team.played}</TableCell>
@@ -251,15 +254,14 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
                       <TableCell>{team.lost}</TableCell>
                       <TableCell>{team.goalDiff > 0 ? `+${team.goalDiff}` : team.goalDiff}</TableCell>
                       <TableCell className="font-bold">{team.points}</TableCell>
-                    </TableRow>
-                  ))}
+                    </TableRow>)}
                 </TableBody>
               </Table>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
       
+      {/* Aankomende Wedstrijden */}
       <Card>
         <CardHeader>
           <CardTitle>Aankomende Wedstrijden</CardTitle>
@@ -282,7 +284,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
               <TableBody>
                 {upcomingMatches.map((match, index) => <TableRow key={index}>
                     <TableCell>
-                      <Badge variant="outline" className="bg-purple-100 text-purple-600 border-purple-200">
+                      <Badge variant="outline" className="bg-primary text-soccer-black ">
                         {match.unique_number || `${match.matchday.slice(-2)}0${index + 1}`}
                       </Badge>
                     </TableCell>
@@ -305,6 +307,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
         </CardContent>
       </Card>
       
+      {/* Afgelopen Wedstrijden */}
       <Card>
         <CardHeader>
           <CardTitle>Afgelopen Wedstrijden</CardTitle>
@@ -327,7 +330,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
               <TableBody>
                 {pastMatches.map((match, index) => <TableRow key={index}>
                     <TableCell>
-                      <Badge variant="outline" className="bg-purple-100 text-purple-600 border-purple-200">
+                      <Badge variant="outline" className="bg-primary text-soccer-black ">
                         {match.unique_number || `${match.matchday.slice(-2)}0${index + 1}`}
                       </Badge>
                     </TableCell>
@@ -352,6 +355,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
         </CardContent>
       </Card>
       
+      {/* Speelschema */}
       <Card>
         <CardHeader>
           <CardTitle>Speelschema</CardTitle>
@@ -368,9 +372,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all-matchdays">Alle speeldagen</SelectItem>
-                    {matchdays.map((day, idx) => (
-                      <SelectItem key={idx} value={day}>{day}</SelectItem>
-                    ))}
+                    {matchdays.map((day, idx) => <SelectItem key={idx} value={day}>{day}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -383,9 +385,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all-teams">Alle teams</SelectItem>
-                    {teamNames.map((team, idx) => (
-                      <SelectItem key={idx} value={team}>{team}</SelectItem>
-                    ))}
+                    {teamNames.map((team, idx) => <SelectItem key={idx} value={team}>{team}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -394,13 +394,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
                 <Label htmlFor="search">Zoeken</Label>
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="search" 
-                    placeholder="Zoek op team, locatie, etc." 
-                    className="pl-8" 
-                    value={searchTerm} 
-                    onChange={e => setSearchTerm(e.target.value)} 
-                  />
+                  <Input id="search" placeholder="Zoek op team, locatie, etc." className="pl-8" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -456,8 +450,6 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default CompetitionTab;

@@ -1,22 +1,8 @@
+
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Clock, MapPin, Users } from "lucide-react";
-
-interface Match {
-  id: number;
-  home: string;
-  away: string;
-  result: string | null;
-  status: 'completed' | 'upcoming' | 'pending';
-  date?: string;
-}
-
-interface BracketData {
-  quarterfinals: Match[];
-  semifinals: Match[];
-  final: Match;
-}
 
 const CupTab: React.FC = () => {
   const cupData = {
@@ -27,7 +13,7 @@ const CupTab: React.FC = () => {
     venue: "Gemeentelijk Stadion"
   };
 
-  const bracketData: BracketData = {
+  const bracketData = {
     quarterfinals: [
       { id: 1, home: "FC Oranje", away: "FC United", result: "2-1", status: "completed" },
       { id: 2, home: "Groene Sterren", away: "Real Dorpstraat", result: "3-0", status: "completed" },
@@ -48,17 +34,20 @@ const CupTab: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: Match['status']) => {
-    if (status === 'completed') {
-      return <Badge variant="outline" className="bg-purple-100 text-purple-600 border-purple-200">Afgerond</Badge>;
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "completed":
+        return <Badge variant="outline" className="text-green-600 border-green-600">Afgerond</Badge>;
+      case "upcoming":
+        return <Badge className="bg-soccer-green">Aankomend</Badge>;
+      case "pending":
+        return <Badge variant="outline" className="text-amber-600 border-amber-600">In afwachting</Badge>;
+      default:
+        return null;
     }
-    if (status === 'upcoming') {
-      return <Badge className="bg-purple-100 text-purple-600">Aankomend</Badge>;
-    }
-    return <Badge variant="outline" className="bg-purple-100 text-purple-600 border-purple-200">In afwachting</Badge>;
   };
 
-  const MatchCard = ({ match, stage }: { match: Match; stage: string }) => (
+  const MatchCard = ({ match, stage }: { match: any; stage: string }) => (
     <Card className="overflow-hidden card-hover transition-all duration-200">
       <div className={`px-4 py-2 text-white font-medium text-sm ${
         stage === 'final' ? 'bg-gradient-to-r from-soccer-green to-soccer-dark-green' : 'bg-soccer-green'
@@ -110,11 +99,11 @@ const CupTab: React.FC = () => {
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
           <div className="flex items-center gap-1">
-            <Users className="h-4 w-4 text-purple-600" />
+            <Users className="h-4 w-4 text-soccer-green" />
             <span>Huidige fase: <strong>{cupData.currentStage}</strong></span>
           </div>
           <div className="flex items-center gap-1">
-            <MapPin className="h-4 w-4 text-purple-600" />
+            <MapPin className="h-4 w-4 text-soccer-green" />
             <span>{cupData.venue}</span>
           </div>
         </div>
@@ -126,7 +115,7 @@ const CupTab: React.FC = () => {
         <section>
           <div className="flex items-center justify-center mb-6">
             <h3 className="text-2xl font-semibold flex items-center gap-2">
-              <Trophy className="h-6 w-6 text-purple-600" />
+              <Trophy className="h-6 w-6 text-soccer-green" />
               Finale
             </h3>
           </div>
@@ -139,7 +128,7 @@ const CupTab: React.FC = () => {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-2xl font-semibold">Halve Finales</h3>
-            <Badge className="bg-purple-100 text-purple-600">Aankomend</Badge>
+            <Badge className="bg-soccer-green">Aankomend</Badge>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {bracketData.semifinals.map((match) => (
@@ -152,7 +141,7 @@ const CupTab: React.FC = () => {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-2xl font-semibold">Kwartfinales</h3>
-            <Badge variant="outline" className="bg-purple-100 text-purple-600 border-purple-200">Afgerond</Badge>
+            <Badge variant="outline" className="text-green-600 border-green-600">Afgerond</Badge>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {bracketData.quarterfinals.map((match) => (
@@ -168,7 +157,7 @@ const CupTab: React.FC = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-purple-600" />
+                <Trophy className="h-5 w-5 text-soccer-green" />
                 Finaleinfo
               </CardTitle>
             </CardHeader>

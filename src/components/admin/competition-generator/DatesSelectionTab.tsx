@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -55,7 +56,7 @@ const DatesSelectionTab: React.FC<DatesSelectionTabProps> = ({
                 key={date.date_id} 
                 className={`border p-3 rounded-md flex items-center space-x-3 ${
                   isSelected ? 'border-primary bg-primary/5' : ''
-                } ${date.is_cup_date ? 'bg-purple-50' : ''}`}
+                } ${date.is_cup_date ? 'bg-orange-50 dark:bg-orange-900/10' : ''}`}
                 onClick={() => !date.is_cup_date && toggleDate(date.date_id)}
               >
                 {!date.is_cup_date ? (
@@ -65,7 +66,7 @@ const DatesSelectionTab: React.FC<DatesSelectionTabProps> = ({
                     onCheckedChange={() => toggleDate(date.date_id)}
                   />
                 ) : (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
                     Beker
                   </span>
                 )}

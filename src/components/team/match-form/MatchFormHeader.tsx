@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +71,7 @@ const MatchFormHeader: React.FC<MatchFormHeaderProps> = ({
               <Badge variant="outline">Te spelen</Badge>
             )}
             {hasElevatedPermissions && (
-              <Badge variant="outline" className="bg-purple-100 text-purple-800">
+              <Badge variant="outline" className="bg-orange-100 text-orange-800">
                 Verhoogde rechten
               </Badge>
             )}

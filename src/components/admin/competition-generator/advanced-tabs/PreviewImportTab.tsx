@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,7 +105,7 @@ const PreviewImportTab: React.FC<PreviewImportTabProps> = ({
             <ul className="space-y-2">
               {validation_notes.map((note, index) => (
                 <li key={index} className="flex items-start gap-2 text-sm">
-                  <AlertTriangle className="w-3 h-3 mt-1 text-purple-500 flex-shrink-0" />
+                  <AlertTriangle className="w-3 h-3 mt-1 text-orange-500 flex-shrink-0" />
                   {note}
                 </li>
               ))}

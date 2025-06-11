@@ -58,6 +58,46 @@
     --sidebar-ring: var(--purple-600);
     --border: 0 0 0 0;
   }
+ 
+  .dark {
+    --background: var(--purple-600);
+    --foreground: 255 255 255;
+
+    --card: var(--purple-700);
+    --card-foreground: 255 255 255;
+ 
+    --popover: var(--purple-700);
+    --popover-foreground: 255 255 255;
+
+    --primary: var(--purple-400);
+    --primary-foreground: var(--purple-600);
+
+    --secondary: var(--purple-700);
+    --secondary-foreground: 255 255 255;
+ 
+    --muted: var(--purple-700);
+    --muted-foreground: var(--purple-400);
+ 
+    --accent: var(--purple-400);
+    --accent-foreground: var(--purple-600);
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+ 
+    --border: 0 0 0 0;
+    --input: var(--purple-700);
+ 
+    --ring: var(--purple-400);
+
+    --sidebar-background: var(--purple-600);
+    --sidebar-foreground: 255 255 255;
+    --sidebar-primary: var(--purple-400);
+    --sidebar-primary-foreground: var(--purple-600);
+    --sidebar-accent: var(--purple-700);
+    --sidebar-accent-foreground: 255 255 255;
+    --sidebar-border: 0 0 0 0;
+    --sidebar-ring: var(--purple-400);
+  }
 }
 
 @layer base {
@@ -193,6 +233,15 @@ p, .card-description, .text-muted-foreground {
   color: var(--purple-600); /* Dark purple text on white backgrounds */
 }
 
+/* Dark mode text colors */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: #ffffff; /* White headings in dark mode */
+}
+
+.dark p, .dark .card-description, .dark .text-muted-foreground {
+  color: var(--purple-400); /* Light purple text in dark mode */
+}
+
 /* Table headers and frame titles */
 th, .table-header, .frame-title, .table-head {
   color: #ffffff; /* White text for table headers */
@@ -295,4 +344,9 @@ tbody tr:hover {
 /* Muted text should be dark purple on white backgrounds */
 .text-muted-foreground {
   color: var(--purple-600);
+}
+
+/* Dark mode muted text */
+.dark .text-muted-foreground {
+  color: var(--purple-400);
 }

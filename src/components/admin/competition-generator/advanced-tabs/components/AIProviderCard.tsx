@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -58,9 +59,9 @@ const AIProviderCard: React.FC<AIProviderCardProps> = ({
         </div>
 
         {!selectedProvider && (
-          <div className="mt-4 p-3 border border-purple-200 bg-purple-50 rounded-lg flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-purple-600" />
-            <p className="text-sm text-purple-800">
+          <div className="mt-4 p-3 border border-orange-200 bg-orange-50 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-orange-600" />
+            <p className="text-sm text-orange-800">
               Selecteer een AI service om het schema te kunnen genereren
             </p>
           </div>

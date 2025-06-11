@@ -1,8 +1,10 @@
+
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/components/auth/AuthProvider";
 import UserAccount from "@/components/auth/UserAccount";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 import Logo from "@/components/header/Logo";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -24,6 +26,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
   // Mobile menu content
   const MobileMenuContent = () => (
     <div className="flex flex-col space-y-4 p-4">
+      <ThemeToggle />
       {isAuthenticated && user ? (
         <UserAccount user={user} onLogout={handleLogout} />
       ) : (
@@ -58,6 +61,8 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
           </Sheet>
         ) : (
           <div className={cn("flex items-center space-x-3 lg:space-x-4")}>
+            <ThemeToggle />
+            
             {isAuthenticated && user ? (
               <UserAccount user={user} onLogout={handleLogout} />
             ) : (
