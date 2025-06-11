@@ -61,7 +61,7 @@ const SuspensionsTab: React.FC = () => {
     { player: "Thomas Vos", team: "FC Oranje", count: 2 },
   ];
 
-  const getStatusBadge = (status: Suspension['status']) => {
+  const getStatusBadge = (status: 'active' | 'pending' | 'completed') => {
     if (status === 'active') {
       return <Badge className="badge-purple">Actief</Badge>;
     }
