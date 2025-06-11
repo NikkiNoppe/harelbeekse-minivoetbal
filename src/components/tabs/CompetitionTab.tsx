@@ -267,7 +267,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
       
       {/* Aankomende Wedstrijden */}
       <Card>
-        <CardHeader>
+        <CardHeader className="bg-transparent ">
           <CardTitle>Aankomende Wedstrijden</CardTitle>
           <CardDescription>Wedstrijden van de komende speeldag</CardDescription>
         </CardHeader>
