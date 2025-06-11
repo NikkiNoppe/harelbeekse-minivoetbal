@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -19,6 +20,19 @@ interface Team {
   draw: number;
   lost: number;
   goalDiff: number;
+  points: number;
+}
+
+interface SupabaseTeam {
+  standing_id: number;
+  team_id: number;
+  matches_played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goals_scored: number;
+  goals_against: number;
+  goal_difference: number;
   points: number;
 }
 
@@ -144,11 +158,25 @@ const teamNames = [...new Set([...allMatches.map(match => match.home), ...allMat
 const fetchCompetitionStandings = async (): Promise<Team[]> => {
   const { data, error } = await supabase
     .from('competition_standings')
-    .select('*')
+    .select(`
+      *,
+      teams!inner(team_name)
+    `)
     .order('points', { ascending: false });
 
   if (error) throw error;
-  return data;
+  
+  // Transform Supabase data to match Team interface
+  return (data as any[]).map((item: any): Team => ({
+    id: item.team_id,
+    name: item.teams.team_name,
+    played: item.matches_played,
+    won: item.wins,
+    draw: item.draws,
+    lost: item.losses,
+    goalDiff: item.goal_difference,
+    points: item.points
+  }));
 };
 
 interface CompetitionTabProps {

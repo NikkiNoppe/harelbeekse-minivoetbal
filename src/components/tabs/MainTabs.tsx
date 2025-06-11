@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
 import { Award, FileText, Trophy, Ban, Info, Layers } from "lucide-react";
@@ -7,7 +8,7 @@ import SuspensionsTab from "@/components/tabs/SuspensionsTab";
 import RegulationsTab from "@/components/tabs/RegulationsTab";
 import AlgemeenTab from "@/components/tabs/AlgemeenTab";
 import PlayOffTab from "@/components/tabs/PlayOffTab";
-import TabItem from "@/components/tabs/TabItem";
+import { TabItem } from "@/components/tabs/TabItem";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
 import { MOCK_TEAMS } from "@/data/mockData";
 
@@ -18,7 +19,7 @@ interface MainTabsProps {
 
 const TAB_CONFIG = [
   { id: "algemeen", icon: Info, label: "Algemeen", component: AlgemeenTab },
-  { id: "competitie", icon: Award, label: "Competitie", component: CompetitionTab, props: { teams: MOCK_TEAMS } },
+  { id: "competitie", icon: Award, label: "Competitie", component: CompetitionTab, componentProps: { teams: MOCK_TEAMS } },
   { id: "playoff", icon: Layers, label: "Play-Off", component: PlayOffTab },
   { id: "beker", icon: Trophy, label: "Beker", component: CupTab },
   { id: "schorsingen", icon: Ban, label: "Schorsingen", component: SuspensionsTab },
@@ -47,10 +48,10 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
       </TabsList>
       
       <div className="animate-fade-in">
-        {TAB_CONFIG.map(({ id, component: Component, props }) => 
+        {TAB_CONFIG.map(({ id, component: Component, componentProps }) => 
           isTabVisible(id) && (
             <TabsContent key={id} value={id}>
-              <Component {...props} />
+              <Component {...(componentProps || {})} />
             </TabsContent>
           )
         )}
