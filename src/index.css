@@ -166,14 +166,14 @@
 
 /* Dark mode fixes for tabs - Updated for purple theme */
 .dark .tabs-list [data-state="active"] {
-  background-color: var(--purple-400) !important;
-  color: var(--purple-600) !important;
+  background-color: var(--purple-400);
+  color: var(--purple-600);
 }
 
 /* Light mode fixes for tabs */
 .tabs-list [data-state="active"] {
-  background-color: var(--purple-400) !important;
-  color: var(--purple-600) !important;
+  background-color: var(--purple-400);
+  color: var(--purple-600);
 }
 
 /* Purple pattern and other styles */
@@ -220,133 +220,133 @@
 
 /* Purple theme typography and colors - Updated for better contrast */
 h1, h2, h3, h4, h5, h6 {
-  color: #ab86dd !important; /* Light purple for all headings */
+  color: var(--purple-400);
 }
 
 /* Subtitles and descriptions - Dark purple on white backgrounds */
 p, .card-description, .text-muted-foreground {
-  color: #60368c !important; /* Dark purple for paragraphs and descriptions */
+  color: var(--purple-600);
 }
 
 /* Ensure proper text colors for readability on white backgrounds */
 .bg-white, .bg-card, [class*="bg-white"] {
-  color: #60368c !important; /* Dark purple text on white backgrounds */
+  color: var(--purple-600); /* Dark purple text on white backgrounds */
 }
 
 /* Dark mode text colors */
 .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
-  color: #ffffff !important; /* White headings in dark mode */
+  color: #ffffff; /* White headings in dark mode */
 }
 
 .dark p, .dark .card-description, .dark .text-muted-foreground {
-  color: #ab86dd !important; /* Light purple text in dark mode */
+  color: var(--purple-400); /* Light purple text in dark mode */
 }
 
 /* Table headers and frame titles */
 th, .table-header, .frame-title, .table-head {
-  color: #ffffff !important; /* White text for table headers */
-  background-color: #60368c !important; /* Dark purple background for contrast */
+  color: #ffffff; /* White text for table headers */
+  background-color: var(--purple-600); /* Dark purple background for contrast */
 }
 
 /* Content text in frames and columns */
 td, .table-cell, .content-text, .column-text {
-  color: #60368c !important; /* Dark purple for content text */
+  color: var(--purple-600); /* Dark purple for content text */
 }
 
 /* Special handling for buttons and interactive elements */
 button {
-  background-color: #60368c !important; /* Dark purple buttons */
-  color: #ffffff !important; /* White text on buttons only */
-  border-color: #ab86dd !important; /* Light purple borders */
+  background-color: var(--purple-400); /* Light purple buttons */
+  color: #ffffff; /* White text on buttons only */
+  border-color: var(--purple-400); /* Light purple borders */
 }
 
 button:hover {
-  background-color: #ab86dd !important; /* Light purple on hover */
-  color: #60368c !important; /* Dark purple text on hover */
+  background-color: var(--purple-500); /* Dark purple on hover */
+  color: #ffffff; /* White text on buttons only */
 }
 
 /* Tab styling improvements */
 .tabs-list {
-  background-color: #faf8ff !important; /* Light gray tab background */
-  border-color: #ab86dd !important; /* Light purple borders */
+  background-color: var(--purple-50); /* Light gray tab background */
+  border-color: var(--purple-400); /* Light purple borders */
 }
 
 .tabs-trigger {
-  color: #60368c !important; /* Dark purple inactive tab text */
-  border-color: #ab86dd !important;
+  color: var(--purple-600); /* Dark purple inactive tab text */
+  border-color: var(--purple-400);
 }
 
 .tabs-trigger[data-state="active"] {
-  background-color: #ab86dd !important; /* Light purple active tab */
-  color: #60368c !important; /* Dark purple active tab text */
+  background-color: var(--purple-400); /* Light purple active tab */
+  color: var(--purple-600); /* Dark purple active tab text */
 }
 
 /* Badge styling */
 .badge {
-  background-color: var(--purple-400) !important;
-  color: var(--purple-600) !important;
-  border-color: var(--purple-400) !important;
+  background-color: var(--purple-400);
+  color: var(--purple-600);
+  border-color: var(--purple-400);
 }
 
 /* Input and form styling */
 input, textarea, select {
-  border-color: var(--purple-400) !important;
-  background-color: #ffffff !important;
-  color: var(--purple-600) !important;
+  border-color: var(--purple-400);
+  background-color: #ffffff;
+  color: var(--purple-600);
 }
 
 input:focus, textarea:focus, select:focus {
-  border-color: var(--purple-400) !important;
-  ring-color: var(--purple-400) !important;
+  border-color: var(--purple-400);
+  ring-color: var(--purple-400);
 }
 
 /* Table styling with light purple borders */
 table {
-  border-color: var(--purple-400) !important;
+  border-color: var(--purple-400);
 }
 
 tbody tr {
-  border-color: var(--purple-400) !important;
+  border-color: var(--purple-400);
 }
 
 tbody tr:hover {
-  background-color: var(--purple-400) !important;
+  background-color: var(--purple-400);
 }
 
 /* Card and component frames with light purple borders */
 .card, .frame, .component-frame {
-  border-color: var(--purple-400) !important;
+  border-color: var(--purple-400);
 }
 
 .card-header, .frame-header {
-  background-color: var(--purple-50) !important;
-  color: var(--purple-600) !important;
-  border-color: var(--purple-400) !important;
+  background-color: var(--purple-50);
+  color: var(--purple-600);
+  border-color: var(--purple-400);
 }
 
 /* Separator and divider styling */
 .separator, .divider, hr {
-  background-color: var(--purple-400) !important;
-  border-color: var(--purple-400) !important;
+  background-color: var(--purple-400);
+  border-color: var(--purple-400);
 }
 
 /* Alert components on white backgrounds */
 .alert {
-  background-color: #ffffff !important;
-  color: var(--purple-600) !important;
-  border-color: var(--purple-400) !important;
+  background-color: #ffffff;
+  color: var(--purple-600);
+  border-color: var(--purple-400);
 }
 
 .alert-description {
-  color: var(--purple-600) !important;
+  color: var(--purple-600);
 }
 
 /* Muted text should be dark purple on white backgrounds */
 .text-muted-foreground {
-  color: var(--purple-600) !important;
+  color: var(--purple-600);
 }
 
 /* Dark mode muted text */
 .dark .text-muted-foreground {
-  color: var(--purple-400) !important;
+  color: var(--purple-400);
 }
