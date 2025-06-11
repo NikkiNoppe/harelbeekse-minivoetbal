@@ -3,6 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Clock, MapPin, Users } from "lucide-react";
 
+interface Match {
+  id: number;
+  home: string;
+  away: string;
+  result: string | null;
+  status: 'completed' | 'upcoming' | 'pending';
+  date?: string;
+}
+
 const CupTab: React.FC = () => {
   const cupData = {
     title: "Regio Beker 2024",

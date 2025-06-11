@@ -3,6 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
+interface Suspension {
+  player: string;
+  team: string;
+  reason: string;
+  start: string;
+  end: string;
+  matches: number;
+  status: 'active' | 'pending' | 'completed';
+}
+
 const SuspensionsTab: React.FC = () => {
   const suspensions = [
     { 
