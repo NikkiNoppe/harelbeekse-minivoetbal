@@ -64,7 +64,7 @@ const SuspensionsTab: React.FC = () => {
   return (
     <div className="space-y-8 animate-slide-up">
       <section>
-        <h2 className="text-2xl font-semibold mb-4">Actuele Schorsingen</h2>
+        <h2 className="text-2xl font-semibold mb-8">Actuele Schorsingen</h2>
         <Card>
           <CardContent className="p-0 overflow-x-auto">
             <Table>
@@ -100,7 +100,7 @@ const SuspensionsTab: React.FC = () => {
       </section>
 
       <section>
-        <h2 className="text-2xl font-semibold mb-4">Gele Kaarten Register</h2>
+        <h2 className="text-2xl font-semibold mb-8">Gele Kaarten Register</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
