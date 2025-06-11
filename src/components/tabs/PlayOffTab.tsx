@@ -33,7 +33,7 @@ const PlayOffTab: React.FC = () => {
   return (
     <div className="space-y-10 animate-slide-up">
       <section>
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mt-8">
           <h2 className="text-2xl font-semibold">Eindklassement</h2>
           <Badge className="badge-purple">Seizoen 2025-2026</Badge>
         </div>
@@ -74,7 +74,7 @@ const PlayOffTab: React.FC = () => {
       </section>
 
       <section>
-        <h2 className="text-2xl font-semibold mb-8">Uitslagen Play-Offs</h2>
+        <h2 className="text-2xl font-semibold mt-8">Uitslagen Play-Offs</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
           {playoffMatches.map((match, index) => (
             <Card key={index} className="card-hover">

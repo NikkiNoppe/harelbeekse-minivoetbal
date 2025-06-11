@@ -30,7 +30,7 @@ const AlgemeenTab: React.FC = () => {
   }, [toast]);
   return <div className="space-y-6 sm:space-y-8 animate-slide-up">
       <section>
-        <h2 className="text-xl sm:text-2xl font-semibold mb-8 px-1">Over de Competitie</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold mt-8 px-1">Over de Competitie</h2>
         <Card>
           <CardContent className="pt-4 sm:pt-6 text-sm sm:text-base bg-transparent ">
             <p className="mb-3 sm:mb-4">De Harelbeekse Minivoetbal Competitie is opgericht in 1979 en is uitgegroeid tot een vaste waarde in de regio. </p>
@@ -43,7 +43,7 @@ const AlgemeenTab: React.FC = () => {
       </section>
 
       <section>
-        <h2 className="text-xl sm:text-2xl font-semibold mb-8 px-1">Laatste Nieuws</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold mt-8 px-1">Laatste Nieuws</h2>
         <div className="space-y-3 sm:space-y-4 w-full">
           {loading ? <p className="text-center text-sm sm:text-base py-8">Berichten laden...</p> : blogPosts.length > 0 ? blogPosts.map(post => <Card key={post.id} className="card-hover w-full">
                 <CardHeader className="pb-3 sm:pb-4 bg-transparent ">
@@ -66,7 +66,7 @@ const AlgemeenTab: React.FC = () => {
       </section>
 
       <section>
-        <h2 className="text-xl sm:text-2xl font-semibold mb-8 px-1">Contact</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold mt-8 px-1">Contact</h2>
         <Card>
           <CardContent className="pt-4 sm:pt-6 bg-transparent ">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
