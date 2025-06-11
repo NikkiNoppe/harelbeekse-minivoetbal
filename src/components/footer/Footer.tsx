@@ -18,7 +18,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
         <div className="mt-6 sm:mt-8 pt-3 sm:pt-4 border-t border-purple-light text-center">
-          <p className="text-xs sm:text-sm text-purple-light/0">
+          <p className="text-xs text-purple-light/0 sm:text-[[soccer-light-green]]">
             © {new Date().getFullYear()} Harelbeekse Minivoetbal Competitie. Alle rechten voorbehouden.
           </p>
         </div>
