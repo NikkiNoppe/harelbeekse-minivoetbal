@@ -29,6 +29,7 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
+    --border: bg-purple-100; /* Changed to light purple */
  
     --ring: 96 54 140; /* Dark purple focus ring */
  
