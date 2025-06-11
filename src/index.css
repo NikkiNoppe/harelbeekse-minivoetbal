@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 255 255 255; /* White background only */
+    --background: 165 135 215; /* White background only */
     --foreground: 96 54 140; /* Dark purple text */
 
     --card: 255 255 255; /* White cards */
