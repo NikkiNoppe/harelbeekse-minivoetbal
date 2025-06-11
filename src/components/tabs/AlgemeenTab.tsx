@@ -66,7 +66,7 @@ const AlgemeenTab: React.FC = () => {
       </section>
 
       <section>
-        <h2 className="text-xl sm:text-2xl font-semibold mt-8 px-1">Contact</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold mt-8 px-1 my-[30px]">Contact</h2>
         <Card>
           <CardContent className="pt-4 sm:pt-6 bg-transparent ">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
