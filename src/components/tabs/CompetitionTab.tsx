@@ -271,7 +271,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
           <CardTitle>Aankomende Wedstrijden</CardTitle>
           <CardDescription>Wedstrijden van de komende speeldag</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-transparent ">
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -313,11 +313,11 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
       
       {/* Afgelopen Wedstrijden */}
       <Card>
-        <CardHeader>
+        <CardHeader className="bg-transparent ">
           <CardTitle>Afgelopen Wedstrijden</CardTitle>
           <CardDescription>Resultaten van de laatst gespeelde speeldag</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-transparent ">
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -361,11 +361,11 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
       
       {/* Speelschema */}
       <Card>
-        <CardHeader>
+        <CardHeader className="bg-transparent ">
           <CardTitle>Speelschema</CardTitle>
           <CardDescription>Volledig overzicht van alle wedstrijden</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-transparent ">
           <div className="mb-4 space-y-4">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
