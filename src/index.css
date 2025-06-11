@@ -5,7 +5,8 @@
 
 @layer base {
   :root {
-    --background: 165 135 215;
+    --background: 165 135 215; /* White background only */
+    --foreground: 96 54 140; /* Dark purple text */
 
     --card: 255 255 255; /* White cards */
     --card-foreground: 96 54 140; /* Dark purple text on cards */
@@ -29,7 +30,6 @@
     --destructive-foreground: 210 40% 98%;
 
     --border: 171 134 221; /* Changed to light purple */
-    --input: 250 248 255; /* Light gray inputs */
  
     --ring: 96 54 140; /* Dark purple focus ring */
  
@@ -244,16 +244,17 @@ td, .table-cell, .content-text, .column-text {
   border-color: #ab86dd !important; /* Light purple borders */
 }
 
+
 /* Special handling for buttons and interactive elements */
 button {
-  background-color: #ab86dd !important; /* Dark purple buttons */
+  background-color: #60368c !important; /* Dark purple buttons */
   color: #ffffff !important; /* White text on buttons only */
-  border-color: #60368c !important; /* Light purple borders */
+  border-color: #ab86dd !important; /* Light purple borders */
 }
 
 button:hover {
-  background-color: #60368c !important; /* Light purple on hover */
-  color: #ffffff !important; /* Dark purple text on hover */
+  background-color: #ab86dd !important; /* Light purple on hover */
+  color: #60368c !important; /* Dark purple text on hover */
 }
 
 /* Tab styling improvements */
@@ -301,7 +302,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background-color: #faf8ff !important;
+  background-color: #ab86dd !important;
 }
 
 /* Card and component frames with light purple borders */
