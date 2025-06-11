@@ -42,6 +42,7 @@
     --sidebar-accent: 171 134 221;
     --sidebar-accent-foreground: 96 54 140;
     --sidebar-ring: 96 54 140;
+    --border: 0 0 0 0;
   }
  
   .dark {
@@ -69,7 +70,7 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
  
-    --border: 171 134 221; /* Light purple borders in dark mode */
+    --border: 0 0 0 0;
     --input: 74 42 107;
  
     --ring: 171 134 221;
@@ -80,7 +81,7 @@
     --sidebar-primary-foreground: 96 54 140;
     --sidebar-accent: 74 42 107;
     --sidebar-accent-foreground: 255 255 255;
-    --sidebar-border: 171 134 221;
+    --sidebar-border: 0 0 0 0;
     --sidebar-ring: 171 134 221;
   }
 }
