@@ -5,7 +5,7 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
           <div>
             <h3 className="font-semibold text-white mb-2 sm:mb-3 text-sm sm:text-base">
-              Harelbeekse Minivoetbal Competitie doe normaal!
+              Harelbeekse Minivoetbal Competitie
             </h3>
             <p className="text-xs sm:text-sm text-white/0">Minivoetbalcompetitie in sinds 2005.</p>
           </div>
