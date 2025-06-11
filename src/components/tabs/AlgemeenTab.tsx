@@ -46,7 +46,7 @@ const AlgemeenTab: React.FC = () => {
         <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 px-1">Laatste Nieuws</h2>
         <div className="space-y-3 sm:space-y-4 w-full">
           {loading ? <p className="text-center text-sm sm:text-base py-8">Berichten laden...</p> : blogPosts.length > 0 ? blogPosts.map(post => <Card key={post.id} className="card-hover w-full">
-                <CardHeader className="pb-3 sm:pb-4">
+                <CardHeader className="pb-3 sm:pb-4 bg-transparent ">
                   <div className="flex justify-between items-start mb-2 gap-2">
                     <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">
                       {new Date(post.date).toLocaleDateString('nl-NL')}
