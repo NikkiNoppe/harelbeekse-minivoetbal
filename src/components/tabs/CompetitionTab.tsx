@@ -224,7 +224,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
           <h2 className="text-2xl font-semibold">Competitiestand</h2>
           <Badge className="badge-purple">Seizoen 2025-2026</Badge>
         </div>
-        <p className="text-sm text-muted-foreground mt-2 py-0 my-0">Stand van huidige competitie</p>
+        
         <Card>
           
           <CardContent>
