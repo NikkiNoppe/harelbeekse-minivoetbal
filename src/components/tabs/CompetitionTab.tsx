@@ -284,7 +284,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
               <TableBody>
                 {upcomingMatches.map((match, index) => <TableRow key={index}>
                     <TableCell>
-                      <Badge variant="outline" className="bg-primary text-white">
+                      <Badge variant="outline" className="flex items-center text-soccer-black ">
                         {match.unique_number || `${match.matchday.slice(-2)}0${index + 1}`}
                       </Badge>
                     </TableCell>
@@ -330,7 +330,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
               <TableBody>
                 {pastMatches.map((match, index) => <TableRow key={index}>
                     <TableCell>
-                      <Badge variant="outline" className="bg-primary text-purple-300 ">
+                      <Badge variant="outline" className="bg-primary text-soccer-black ">
                         {match.unique_number || `${match.matchday.slice(-2)}0${index + 1}`}
                       </Badge>
                     </TableCell>
