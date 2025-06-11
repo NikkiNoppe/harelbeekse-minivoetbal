@@ -7,13 +7,13 @@ const Footer: React.FC = () => {
             <h3 className="font-semibold text-purple-dark mb-2 sm:mb-3 text-sm sm:text-base">
               Harelbeekse Minivoetbal Competitie
             </h3>
-            <p className="text-xs sm:text-sm text-white ">Minivoetbalcompetitie in sinds 1979.</p>
+            <p className="text-xs text-white sm:text-sm">Minivoetbalcompetitie in sinds 1979.</p>
           </div>
           <div>
             <h3 className="font-semibold text-purple-dark mb-2 sm:mb-3 text-sm sm:text-base">Contact</h3>
             <div className="space-y-1">
-              <p className="text-xs sm:text-sm break-all text-white">noppe.nikki@icloud.com</p>
-              <p className="text-xs sm:text-sm text-white ">+34 468 15 52 16</p>
+              <p className="text-xs break-all text-white sm:text-sm">noppe.nikki@icloud.com</p>
+              <p className="text-xs text-white sm:text-sm">+34 468 15 52 16</p>
             </div>
           </div>
         </div>
