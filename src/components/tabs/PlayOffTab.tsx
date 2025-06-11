@@ -83,7 +83,7 @@ const PlayOffTab: React.FC = () => {
               <Card key={index} className="card-hover">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start mb-1">
-                    <Badge variant="outline" className="w-fit bg-soccer-green/10 border-soccer-green/20 text-soccer-green">
+                    <Badge className="badge-purple">
                       {match.playoff}
                     </Badge>
                     <span className="text-sm text-muted-foreground">{match.matchday}</span>
@@ -112,7 +112,7 @@ const PlayOffTab: React.FC = () => {
               <Card key={index} className="card-hover">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start mb-1">
-                    <Badge variant="outline" className="w-fit bg-soccer-green/10 border-soccer-green/20 text-soccer-green">
+                    <Badge className="badge-purple">
                       {match.playoff}
                     </Badge>
                     <span className="text-sm text-muted-foreground">{match.matchday}</span>
