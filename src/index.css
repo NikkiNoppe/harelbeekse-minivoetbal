@@ -4,85 +4,99 @@
 
 @layer base {
   :root {
+    /* Main colors */
     --main-color-dark: #60368c;
     --main-color-light: #ab86dd;
     
-    --background: 165 135 215;
-    --foreground: 96 54 140;
+    /* Color shades */
+    --purple-50: #faf8ff;
+    --purple-100: #f5f0ff;
+    --purple-200: #e9e0ff;
+    --purple-300: #d4c0ff;
+    --purple-400: #ab86dd;
+    --purple-500: #8c5dc0;
+    --purple-600: #60368c;
+    --purple-700: #4a2a6b;
+    --purple-800: #351d4a;
+    --purple-900: #201029;
+    
+    /* Theme variables */
+    --background: var(--purple-400);
+    --foreground: var(--purple-600);
 
     --card: 255 255 255;
-    --card-foreground: 96 54 140;
+    --card-foreground: var(--purple-600);
  
     --popover: 255 255 255;
-    --popover-foreground: 96 54 140;
+    --popover-foreground: var(--purple-600);
 
-    --primary: 96 54 140;
+    --primary: var(--purple-600);
     --primary-foreground: 255 255 255;
 
-    --secondary: 250 248 255;
-    --secondary-foreground: 96 54 140;
+    --secondary: var(--purple-50);
+    --secondary-foreground: var(--purple-600);
  
-    --muted: 250 248 255;
-    --muted-foreground: 96 54 140;
+    --muted: var(--purple-50);
+    --muted-foreground: var(--purple-600);
  
-    --accent: 171 134 221;
-    --accent-foreground: 96 54 140;
+    --accent: var(--purple-400);
+    --accent-foreground: var(--purple-600);
  
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --ring: 96 54 140;
+    --ring: var(--purple-600);
  
     --radius: 0.5rem;
 
-    --sidebar-background: 250 248 255;
-    --sidebar-foreground: 96 54 140;
-    --sidebar-primary: 96 54 140;
+    --sidebar-background: var(--purple-50);
+    --sidebar-foreground: var(--purple-600);
+    --sidebar-primary: var(--purple-600);
     --sidebar-primary-foreground: 255 255 255;
-    --sidebar-accent: 171 134 221;
-    --sidebar-accent-foreground: 96 54 140;
-    --sidebar-ring: 96 54 140;
+    --sidebar-accent: var(--purple-400);
+    --sidebar-accent-foreground: var(--purple-600);
+    --sidebar-ring: var(--purple-600);
     --border: 0 0 0 0;
   }
  
   .dark {
-    --background: 96 54 140; /* Dark purple background */
-    --foreground: 255 255 255; /* White text */
+    --background: var(--purple-600);
+    --foreground: 255 255 255;
 
-    --card: 74 42 107; /* Darker purple cards */
+    --card: var(--purple-700);
     --card-foreground: 255 255 255;
  
-    --popover: 74 42 107;
+    --popover: var(--purple-700);
     --popover-foreground: 255 255 255;
 
-    --primary: 171 134 221; /* Light purple primary in dark mode */
-    --primary-foreground: 96 54 140; /* Dark purple text on primary */
+    --primary: var(--purple-400);
+    --primary-foreground: var(--purple-600);
 
-    --secondary: 74 42 107;
+    --secondary: var(--purple-700);
     --secondary-foreground: 255 255 255;
  
-    --muted: 74 42 107;
-    --muted-foreground: 171 134 221;
+    --muted: var(--purple-700);
+    --muted-foreground: var(--purple-400);
  
-    --accent: 171 134 221;
-    --accent-foreground: 96 54 140;
+    --accent: var(--purple-400);
+    --accent-foreground: var(--purple-600);
  
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
  
     --border: 0 0 0 0;
-    --input: 74 42 107;
+    --input: var(--purple-700);
  
-    --ring: 171 134 221;
+    --ring: var(--purple-400);
 
-    --sidebar-background: 96 54 140;
+    --sidebar-background: var(--purple-600);
     --sidebar-foreground: 255 255 255;
-    --sidebar-primary: 171 134 221;
-    --sidebar-primary-foreground: 96 54 140;
-    --sidebar-accent: 74 42 107;
+    --sidebar-primary: var(--purple-400);
+    --sidebar-primary-foreground: var(--purple-600);
+    --sidebar-accent: var(--purple-700);
     --sidebar-accent-foreground: 255 255 255;
     --sidebar-border: 0 0 0 0;
-    --sidebar-ring: 171 134 221;
+    --sidebar-ring: var(--purple-400);
   }
 }
 
@@ -152,19 +166,19 @@
 
 /* Dark mode fixes for tabs - Updated for purple theme */
 .dark .tabs-list [data-state="active"] {
-  background-color: #ab86dd !important; /* Light purple */
-  color: #60368c !important; /* Dark purple text on light purple background */
+  background-color: var(--purple-400) !important;
+  color: var(--purple-600) !important;
 }
 
 /* Light mode fixes for tabs */
 .tabs-list [data-state="active"] {
-  background-color: #ab86dd !important; /* Light purple */
-  color: #60368c !important; /* Dark purple text */
+  background-color: var(--purple-400) !important;
+  color: var(--purple-600) !important;
 }
 
 /* Purple pattern and other styles */
 .soccer-pattern {
-  background-color: #60368c; /* Dark purple */
+  background-color: var(--purple-600);
   background-image: linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
                     linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
   background-size: 20px 20px;
@@ -239,9 +253,6 @@ td, .table-cell, .content-text, .column-text {
   color: #60368c !important; /* Dark purple for content text */
 }
 
-
-
-
 /* Special handling for buttons and interactive elements */
 button {
   background-color: #60368c !important; /* Dark purple buttons */
@@ -272,70 +283,70 @@ button:hover {
 
 /* Badge styling */
 .badge {
-  background-color: #ab86dd !important;
-  color: #60368c !important;
-  border-color: #ab86dd !important;
+  background-color: var(--purple-400) !important;
+  color: var(--purple-600) !important;
+  border-color: var(--purple-400) !important;
 }
 
 /* Input and form styling */
 input, textarea, select {
-  border-color: #ab86dd !important; /* Light purple borders */
+  border-color: var(--purple-400) !important;
   background-color: #ffffff !important;
-  color: #60368c !important;
+  color: var(--purple-600) !important;
 }
 
 input:focus, textarea:focus, select:focus {
-  border-color: #ab86dd !important;
-  ring-color: #ab86dd !important;
+  border-color: var(--purple-400) !important;
+  ring-color: var(--purple-400) !important;
 }
 
 /* Table styling with light purple borders */
 table {
-  border-color: #ab86dd !important;
+  border-color: var(--purple-400) !important;
 }
 
 tbody tr {
-  border-color: #ab86dd !important;
+  border-color: var(--purple-400) !important;
 }
 
 tbody tr:hover {
-  background-color: #ab86dd !important;
+  background-color: var(--purple-400) !important;
 }
 
 /* Card and component frames with light purple borders */
 .card, .frame, .component-frame {
-  border-color: #ab86dd !important;
+  border-color: var(--purple-400) !important;
 }
 
 .card-header, .frame-header {
-  background-color: #faf8ff !important;
-  color: #60368c !important;
-  border-color: #ab86dd !important;
+  background-color: var(--purple-50) !important;
+  color: var(--purple-600) !important;
+  border-color: var(--purple-400) !important;
 }
 
 /* Separator and divider styling */
 .separator, .divider, hr {
-  background-color: #ab86dd !important;
-  border-color: #ab86dd !important;
+  background-color: var(--purple-400) !important;
+  border-color: var(--purple-400) !important;
 }
 
 /* Alert components on white backgrounds */
 .alert {
   background-color: #ffffff !important;
-  color: #60368c !important;
-  border-color: #ab86dd !important;
+  color: var(--purple-600) !important;
+  border-color: var(--purple-400) !important;
 }
 
 .alert-description {
-  color: #60368c !important;
+  color: var(--purple-600) !important;
 }
 
 /* Muted text should be dark purple on white backgrounds */
 .text-muted-foreground {
-  color: #60368c !important;
+  color: var(--purple-600) !important;
 }
 
 /* Dark mode muted text */
 .dark .text-muted-foreground {
-  color: #ab86dd !important;
+  color: var(--purple-400) !important;
 }
