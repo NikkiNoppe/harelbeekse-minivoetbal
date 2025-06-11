@@ -33,9 +33,7 @@ const AlgemeenTab: React.FC = () => {
         <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 px-1">Over de Competitie</h2>
         <Card>
           <CardContent className="pt-4 sm:pt-6 text-sm sm:text-base">
-            <p className="mb-3 sm:mb-4">
-              De Harelbeekse Minivoetbal Competitie is opgericht in 2005 en is uitgegroeid tot een vaste waarde in de regio. Met momenteel 6 teams strijden we elk seizoen voor de felbegeerde titel.
-            </p>
+            <p className="mb-3 sm:mb-4">De Harelbeekse Minivoetbal Competitie is opgericht in 1979 en is uitgegroeid tot een vaste waarde in de regio. </p>
             <p className="mb-3 sm:mb-4">
               Onze competitie staat bekend om zijn sportiviteit.
             </p>
