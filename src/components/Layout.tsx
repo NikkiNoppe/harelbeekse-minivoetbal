@@ -43,7 +43,7 @@ const Layout: React.FC = () => {
       <Header onLogoClick={handleLogoClick} onLoginClick={handleLoginClick} />
 
       {/* Main Content - responsive container */}
-      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto bg-purple-100 ">
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10 max-w-7xl mx-auto bg-purple-100">
         {isAuthenticated && user ? <UserDashboard /> : <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />}
       </main>
 
