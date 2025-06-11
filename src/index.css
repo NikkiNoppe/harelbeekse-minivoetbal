@@ -308,7 +308,7 @@ tbody tr:hover {
 /* Card and component frames with light purple borders */
 .card, .frame, .component-frame {
   border-color: #ab86dd !important;
-  background-color: #ffffff !important;
+  background-color: #ab86dd !important;
 }
 
 .card-header, .frame-header {
