@@ -6,7 +6,7 @@ const RegulationsTab: React.FC = () => {
   const isMobile = useIsMobile();
   return <div className="space-y-6 animate-slide-up">
       <section className="max-w-3xl mx-auto px-2 sm:px-0">
-        <h2 className="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-center">Reglement</h2>
+        <h2 className="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 my-[30px] text-left">Reglement</h2>
         
         <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8 text-center px-2">
           Dit reglement bevat de officiële regels en richtlijnen voor alle competities
