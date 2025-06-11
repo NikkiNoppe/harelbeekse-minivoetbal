@@ -238,11 +238,11 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
                       <TableRow>
                         <TableHead className="text-center">Positie</TableHead>
                         <TableHead>Team</TableHead>
-                        <TableHead className="text-center">Aant Wed</TableHead>
+                        <TableHead className="text-center">GW</TableHead>
                         <TableHead className="text-center">W</TableHead>
                         <TableHead className="text-center">G</TableHead>
                         <TableHead className="text-center">V</TableHead>
-                        <TableHead className="text-center">Doelpunten</TableHead>
+                        <TableHead className="text-center">DV</TableHead>
                         <TableHead className="text-center">Punten</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -388,7 +388,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
                       </Select>
                       <Button 
                         onClick={() => setSelectedMatchday("")} 
-                        className="shrink-0 bg-purple-light text-white hover:bg-purple-dark"
+                        className="shrink-0 bg-purple-dark text-white hover:bg-purple-light"
                       >
                         Alle speeldagen
                       </Button>
@@ -408,7 +408,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
                       </Select>
                       <Button 
                         onClick={() => setSelectedTeam("")} 
-                        className="shrink-0 bg-purple-light text-white hover:bg-purple-dark"
+                        className="shrink-0 bg-purple-dark text-white hover:bg-purple-light"
                       >
                         Alle teams
                       </Button>
