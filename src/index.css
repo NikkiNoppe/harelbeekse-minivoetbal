@@ -5,8 +5,7 @@
 
 @layer base {
   :root {
-    --background: 165 135 215; /* White background only */
-    --foreground: 96 54 140; /* Dark purple text */
+    --background: 165 135 215;
 
     --card: 255 255 255; /* White cards */
     --card-foreground: 96 54 140; /* Dark purple text on cards */
@@ -245,29 +244,16 @@ td, .table-cell, .content-text, .column-text {
   border-color: #ab86dd !important; /* Light purple borders */
 }
 
-/* Remove any remaining orange colors and replace with purple */
-.text-orange-500, .bg-orange-500, .border-orange-500,
-[class*="orange"] {
-  color: #ab86dd !important;
-  background-color: #ab86dd !important;
-  border-color: #ab86dd !important;
-}
-
-.hover\:text-orange-500:hover, .hover\:bg-orange-500:hover {
-  color: #60368c !important;
-  background-color: #60368c !important;
-}
-
 /* Special handling for buttons and interactive elements */
 button {
-  background-color: #60368c !important; /* Dark purple buttons */
+  background-color: #ab86dd !important; /* Dark purple buttons */
   color: #ffffff !important; /* White text on buttons only */
-  border-color: #ab86dd !important; /* Light purple borders */
+  border-color: #60368c !important; /* Light purple borders */
 }
 
 button:hover {
-  background-color: #ab86dd !important; /* Light purple on hover */
-  color: #60368c !important; /* Dark purple text on hover */
+  background-color: #60368c !important; /* Light purple on hover */
+  color: #ffffff !important; /* Dark purple text on hover */
 }
 
 /* Tab styling improvements */
