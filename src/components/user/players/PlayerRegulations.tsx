@@ -21,13 +21,14 @@ const PlayerRegulations: React.FC = () => {
           <Users className="h-4 w-4 text-purple-dark" />
           <AlertDescription className="text-purple-dark">
             <strong className="text-purple-dark">Maximum spelers:</strong> Elk team mag maximaal 20 spelers hebben per seizoen.
+            <strong className="text-purple-dark">Teamwijzigingen:</strong> Spelers kunnen niet van team wisselen tijdens het lopende seizoen.
+
           </AlertDescription>
         </Alert>
         
         <Alert className="bg-white border-purple-light">
           <Calendar className="h-4 w-4 text-purple-dark" />
           <AlertDescription className="text-purple-dark">
-            <strong className="text-purple-dark">Teamwijzigingen:</strong> Spelers kunnen niet van team wisselen tijdens het lopende seizoen.
           </AlertDescription>
         </Alert>
         
