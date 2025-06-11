@@ -7,7 +7,7 @@ const Footer: React.FC = () => {
             <h3 className="font-semibold text-white mb-2 sm:mb-3 text-sm sm:text-base">
               Harelbeekse Minivoetbal Competitie
             </h3>
-            <p className="text-xs sm:text-sm text-white/0">Minivoetbalcompetitie in sinds 2005.</p>
+            <p className="text-xs sm:text-sm text-soccer-white ">Minivoetbalcompetitie in sinds 2005.</p>
           </div>
           <div>
             <h3 className="font-semibold text-white mb-2 sm:mb-3 text-sm sm:text-base">Contact</h3>
