@@ -29,17 +29,23 @@ export function ThemeProvider({
   storageKey = "theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  );
+  const [theme, setTheme] = useState<Theme>(() => {
+    // Safely access localStorage
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem(storageKey) as Theme) || defaultTheme;
+    }
+    return defaultTheme;
+  });
 
   useEffect(() => {
-    const root = window.document.documentElement;
-    
-    root.classList.remove("light", "dark");
-    root.classList.add(theme);
-    
-    localStorage.setItem(storageKey, theme);
+    if (typeof window !== "undefined") {
+      const root = window.document.documentElement;
+      
+      root.classList.remove("light", "dark");
+      root.classList.add(theme);
+      
+      localStorage.setItem(storageKey, theme);
+    }
   }, [theme, storageKey]);
 
   const toggleTheme = () => {
