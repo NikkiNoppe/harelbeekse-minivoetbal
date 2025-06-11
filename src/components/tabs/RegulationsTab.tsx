@@ -1,14 +1,10 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useIsMobile } from "@/hooks/use-mobile";
-
 const RegulationsTab: React.FC = () => {
   const isMobile = useIsMobile();
-  
-  return (
-    <div className="space-y-6 animate-slide-up">
+  return <div className="space-y-6 animate-slide-up">
       <section className="max-w-3xl mx-auto px-2 sm:px-0">
         <h2 className="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-center">Reglement</h2>
         
@@ -17,11 +13,7 @@ const RegulationsTab: React.FC = () => {
           georganiseerd door Harelbeekse minivoetbal competitie.
         </p>
         
-        <Accordion 
-          type="single" 
-          collapsible 
-          className="w-full transition-all duration-200"
-        >
+        <Accordion type="single" collapsible className="w-full transition-all duration-200">
           <AccordionItem value="item-1">
             <AccordionTrigger className="text-base sm:text-lg font-medium p-3 sm:p-4">
               1. Algemene Bepalingen
@@ -149,7 +141,7 @@ const RegulationsTab: React.FC = () => {
 
       <section className="max-w-3xl mx-auto mt-8 sm:mt-12 px-2 sm:px-0">
         <Card>
-          <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+          <CardHeader className="px-4 sm:px-6 py-4 sm:py-6 rounded-none">
             <CardTitle className="text-base sm:text-lg">Contact Tuchtcommissie</CardTitle>
           </CardHeader>
           <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
@@ -164,8 +156,6 @@ const RegulationsTab: React.FC = () => {
           </CardContent>
         </Card>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 export default RegulationsTab;
