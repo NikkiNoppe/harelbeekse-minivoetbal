@@ -236,26 +236,26 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Positie</TableHead>
+                        <TableHead className="text-center">Positie</TableHead>
                         <TableHead>Team</TableHead>
-                        <TableHead>GW</TableHead>
-                        <TableHead>W</TableHead>
-                        <TableHead>G</TableHead>
-                        <TableHead>V</TableHead>
-                        <TableHead>DV</TableHead>
-                        <TableHead>Punten</TableHead>
+                        <TableHead className="text-center">GW</TableHead>
+                        <TableHead className="text-center">W</TableHead>
+                        <TableHead className="text-center">G</TableHead>
+                        <TableHead className="text-center">V</TableHead>
+                        <TableHead className="text-center">DV</TableHead>
+                        <TableHead className="text-center">Punten</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {teamsToDisplay?.map((team, index) => <TableRow key={team.id}>
-                          <TableCell className="font-medium">{index + 1}</TableCell>
+                          <TableCell className="text-center">{index + 1}</TableCell>
                           <TableCell>{team.name}</TableCell>
-                          <TableCell>{team.played}</TableCell>
-                          <TableCell>{team.won}</TableCell>
-                          <TableCell>{team.draw}</TableCell>
-                          <TableCell>{team.lost}</TableCell>
-                          <TableCell>{team.goalDiff > 0 ? `+${team.goalDiff}` : team.goalDiff}</TableCell>
-                          <TableCell className="font-bold">{team.points}</TableCell>
+                          <TableCell className="text-center">{team.played}</TableCell>
+                          <TableCell className="text-center">{team.won}</TableCell>
+                          <TableCell className="text-center">{team.draw}</TableCell>
+                          <TableCell className="text-center">{team.lost}</TableCell>
+                          <TableCell className="text-center">{team.goalDiff}</TableCell>
+                          <TableCell className="text-center">{team.points}</TableCell>
                         </TableRow>)}
                     </TableBody>
                   </Table>
