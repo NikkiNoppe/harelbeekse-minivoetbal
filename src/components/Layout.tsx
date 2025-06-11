@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
@@ -7,26 +8,25 @@ import UserDashboard from "@/components/user/UserDashboard";
 import Header from "@/components/header/Header";
 import Footer from "@/components/footer/Footer";
 import MainTabs from "@/components/tabs/MainTabs";
+
 const Layout: React.FC = () => {
-  const {
-    user,
-    logout,
-    isAuthenticated
-  } = useAuth();
-  const {
-    isTabVisible
-  } = useTabVisibility();
+  const { user, logout, isAuthenticated } = useAuth();
+  const { isTabVisible } = useTabVisibility();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabName>("algemeen");
+
   const handleLogoClick = () => {
     setActiveTab("algemeen");
   };
+
   const handleLoginClick = () => {
     setLoginDialogOpen(true);
   };
+
   const handleLoginSuccess = () => {
     setLoginDialogOpen(false);
   };
+
   const handleLogout = () => {
     logout();
   };
@@ -38,12 +38,14 @@ const Layout: React.FC = () => {
       setActiveTab(visibleTabs[0]);
     }
   }, [isTabVisible, activeTab]);
-  return <div className="min-h-screen flex flex-col bg-background text-foreground">
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       {/* Header */}
       <Header onLogoClick={handleLogoClick} onLoginClick={handleLoginClick} />
 
       {/* Main Content - responsive container */}
-      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto bg-purple-100 ">
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto bg-purple-100">
         {isAuthenticated && user ? <UserDashboard /> : <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />}
       </main>
 
@@ -56,6 +58,8 @@ const Layout: React.FC = () => {
           <LoginForm onLoginSuccess={handleLoginSuccess} />
         </DialogContent>
       </Dialog>
-    </div>;
+    </div>
+  );
 };
+
 export default Layout;
