@@ -5,9 +5,6 @@
 
 @layer base {
   :root {
-    --main-color-dark: #60368c;
-    --main-color-light: #ab86dd;
-  
     --background: 165 135 215; /* White background only */
     --foreground: 96 54 140; /* Dark purple text */
 
@@ -252,7 +249,7 @@ td, .table-cell, .content-text, .column-text {
 button {
   background-color: #60368c !important; /* Dark purple buttons */
   color: #ffffff !important; /* White text on buttons only */
-  border-color: #ab86dd !important; /* Light purple borders */
+  //border-color: #ab86dd !important; /* Light purple borders */
 }
 
 button:hover {
