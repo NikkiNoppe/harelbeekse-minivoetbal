@@ -17,14 +17,22 @@ interface MainTabsProps {
   setActiveTab: (tab: TabName) => void;
 }
 
-const TAB_CONFIG = [
+interface TabConfig {
+  id: TabName;
+  icon: React.ComponentType;
+  label: string;
+  component: React.ComponentType<any>;
+  componentProps?: any;
+}
+
+const TAB_CONFIG: TabConfig[] = [
   { id: "algemeen", icon: Info, label: "Algemeen", component: AlgemeenTab },
   { id: "competitie", icon: Award, label: "Competitie", component: CompetitionTab, componentProps: { teams: MOCK_TEAMS } },
   { id: "playoff", icon: Layers, label: "Play-Off", component: PlayOffTab },
   { id: "beker", icon: Trophy, label: "Beker", component: CupTab },
   { id: "schorsingen", icon: Ban, label: "Schorsingen", component: SuspensionsTab },
   { id: "reglement", icon: FileText, label: "Reglement", component: RegulationsTab }
-] as const;
+];
 
 const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
   const { isTabVisible, loading } = useTabVisibility();
