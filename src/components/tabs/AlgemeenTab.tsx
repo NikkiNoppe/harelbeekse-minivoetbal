@@ -54,7 +54,7 @@ const AlgemeenTab: React.FC = () => {
                   </div>
                   <CardTitle className="text-lg sm:text-xl break-words">{post.title}</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="bg-transparent ">
                   <p className="text-sm sm:text-base break-words">{post.content}</p>
                   
                   {post.tags && post.tags.length > 0 && <div className="flex flex-wrap gap-2 mt-3">
