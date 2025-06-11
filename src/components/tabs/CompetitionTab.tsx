@@ -388,7 +388,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
                       </Select>
                       <Button 
                         onClick={() => setSelectedMatchday("")} 
-                        className="shrink-0 bg-purple-dark text-white hover:bg-purple-light"
+                        className="shrink-0 bg-purple-light text-white hover:bg-purple-dark"
                       >
                         Alle speeldagen
                       </Button>
@@ -408,7 +408,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
                       </Select>
                       <Button 
                         onClick={() => setSelectedTeam("")} 
-                        className="shrink-0 bg-purple-dark text-white hover:bg-purple-light"
+                        className="shrink-0 bg-purple-light text-white hover:bg-purple-dark"
                       >
                         Alle teams
                       </Button>
