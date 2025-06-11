@@ -40,7 +40,7 @@ const PlayOffTab: React.FC = () => {
         <div className="mt-6">
           <Card>
             <CardContent className="p-0 overflow-x-auto">
-              <div className="max-w-3xl mx-auto px-4">
+              <div className="w-full">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
