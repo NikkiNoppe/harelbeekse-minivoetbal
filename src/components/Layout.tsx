@@ -38,7 +38,7 @@ const Layout: React.FC = () => {
       setActiveTab(visibleTabs[0]);
     }
   }, [isTabVisible, activeTab]);
-  return <div className="min-h-screen flex flex-col bg-background text-foreground">
+  return <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
       {/* Header */}
       <Header onLogoClick={handleLogoClick} onLoginClick={handleLoginClick} />
 
