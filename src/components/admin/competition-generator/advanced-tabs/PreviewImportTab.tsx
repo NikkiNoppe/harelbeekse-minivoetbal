@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -158,7 +157,7 @@ const PreviewImportTab: React.FC<PreviewImportTabProps> = ({
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{match.home_team_name}</span>
-                              <Badge variant="secondary" className="text-xs">Thuis</Badge>
+                              <Badge className="badge-purple">Thuis</Badge>
                             </div>
                           </TableCell>
                           <TableCell className="text-center font-bold">
@@ -167,7 +166,7 @@ const PreviewImportTab: React.FC<PreviewImportTabProps> = ({
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{match.away_team_name}</span>
-                              <Badge variant="outline" className="text-xs">Uit</Badge>
+                              <Badge className="badge-purple">Uit</Badge>
                             </div>
                           </TableCell>
                           <TableCell>

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -36,7 +35,7 @@ const PlayOffTab: React.FC = () => {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold">Eindklassement</h2>
-          <Badge variant="outline" className="text-soccer-green">Seizoen 2025-2026</Badge>
+          <Badge className="badge-purple">Seizoen 2025-2026</Badge>
         </div>
         <Card>
           <CardContent className="p-0 overflow-x-auto">

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -138,7 +137,7 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{match.home_team_name}</span>
-                        <Badge variant="secondary" className="text-xs">Thuis</Badge>
+                        <Badge className="badge-purple">Thuis</Badge>
                       </div>
                     </TableCell>
                     <TableCell className="text-center font-bold">
@@ -147,7 +146,7 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{match.away_team_name}</span>
-                        <Badge variant="outline" className="text-xs">Uit</Badge>
+                        <Badge className="badge-purple">Uit</Badge>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -215,7 +214,7 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{match.home_team_name}</span>
-                          <Badge variant="secondary">Thuis</Badge>
+                          <Badge className="badge-purple">Thuis</Badge>
                         </div>
                       </TableCell>
                       <TableCell className="text-center font-bold">
@@ -224,7 +223,7 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{match.away_team_name}</span>
-                          <Badge variant="outline">Uit</Badge>
+                          <Badge className="badge-purple">Uit</Badge>
                         </div>
                       </TableCell>
                       <TableCell>

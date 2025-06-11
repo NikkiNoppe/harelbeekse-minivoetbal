@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,17 +33,14 @@ const CupTab: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <Badge variant="outline" className="text-green-600 border-green-600">Afgerond</Badge>;
-      case "upcoming":
-        return <Badge className="bg-soccer-green">Aankomend</Badge>;
-      case "pending":
-        return <Badge variant="outline" className="text-amber-600 border-amber-600">In afwachting</Badge>;
-      default:
-        return null;
+  const getStatusBadge = (status: Match['status']) => {
+    if (status === 'completed') {
+      return <Badge className="badge-purple">Afgerond</Badge>;
     }
+    if (status === 'upcoming') {
+      return <Badge className="badge-purple">Aankomend</Badge>;
+    }
+    return <Badge className="badge-purple">In afwachting</Badge>;
   };
 
   const MatchCard = ({ match, stage }: { match: any; stage: string }) => (
@@ -128,7 +124,7 @@ const CupTab: React.FC = () => {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-2xl font-semibold">Halve Finales</h3>
-            <Badge className="bg-soccer-green">Aankomend</Badge>
+            <Badge className="badge-purple">Aankomend</Badge>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {bracketData.semifinals.map((match) => (
@@ -141,7 +137,7 @@ const CupTab: React.FC = () => {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-2xl font-semibold">Kwartfinales</h3>
-            <Badge variant="outline" className="text-green-600 border-green-600">Afgerond</Badge>
+            <Badge className="badge-purple">Afgerond</Badge>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {bracketData.quarterfinals.map((match) => (

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -52,6 +51,16 @@ const SuspensionsTab: React.FC = () => {
     { player: "Thomas Vos", team: "FC Oranje", count: 2 },
   ];
 
+  const getStatusBadge = (status: Suspension['status']) => {
+    if (status === 'active') {
+      return <Badge className="badge-purple">Actief</Badge>;
+    }
+    if (status === 'pending') {
+      return <Badge className="badge-purple">In afwachting</Badge>;
+    }
+    return <Badge className="badge-purple">Afgerond</Badge>;
+  };
+
   return (
     <div className="space-y-8 animate-slide-up">
       <section>
@@ -80,15 +89,7 @@ const SuspensionsTab: React.FC = () => {
                     <TableCell>{suspension.start}</TableCell>
                     <TableCell>{suspension.end}</TableCell>
                     <TableCell>
-                      {suspension.status === "active" && (
-                        <Badge className="bg-red-500">Actief</Badge>
-                      )}
-                      {suspension.status === "pending" && (
-                        <Badge variant="outline" className="text-amber-600 border-amber-600">Aankomend</Badge>
-                      )}
-                      {suspension.status === "completed" && (
-                        <Badge variant="outline" className="text-green-600 border-green-600">Afgerond</Badge>
-                      )}
+                      {getStatusBadge(suspension.status)}
                     </TableCell>
                   </TableRow>
                 ))}

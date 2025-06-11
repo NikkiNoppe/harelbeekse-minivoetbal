@@ -350,3 +350,9 @@ tbody tr:hover {
 .dark .text-muted-foreground {
   color: var(--purple-400);
 }
+
+@layer components {
+  .badge-purple {
+    @apply bg-purple-100 text-purple-900;
+  }
+}

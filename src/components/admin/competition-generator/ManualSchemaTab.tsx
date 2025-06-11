@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -318,7 +317,7 @@ Speeldag 2 - 2024-02-17
               {Object.entries(matchesByMatchday).map(([matchday, matches]) => (
                 <div key={matchday} className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-primary text-primary-foreground">
+                    <Badge className="bg-purple-100 text-purple-900">
                       {matchday}
                     </Badge>
                     <span className="text-sm text-muted-foreground">
@@ -349,7 +348,7 @@ Speeldag 2 - 2024-02-17
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">{match.homeTeam}</span>
-                                <Badge variant="secondary" className="text-xs">Thuis</Badge>
+                                <Badge className="badge-purple">Thuis</Badge>
                               </div>
                             </TableCell>
                             <TableCell className="text-center font-bold">
@@ -358,7 +357,7 @@ Speeldag 2 - 2024-02-17
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">{match.awayTeam}</span>
-                                <Badge variant="outline" className="text-xs">Uit</Badge>
+                                <Badge className="badge-purple">Uit</Badge>
                               </div>
                             </TableCell>
                             <TableCell>
