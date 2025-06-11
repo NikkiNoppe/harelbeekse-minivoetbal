@@ -60,7 +60,7 @@ const AlgemeenTab: React.FC = () => {
                   <p className="text-sm sm:text-base break-words">{post.content}</p>
                   
                   {post.tags && post.tags.length > 0 && <div className="flex flex-wrap gap-2 mt-3">
-                      {post.tags.map((tag, index) => <Badge key={index} variant="outline" className="flex items-center gap-1 text-white text-soccer-black 500/20 bg-[soccer-light-green]">
+                      {post.tags.map((tag, index) => <Badge key={index} variant="outline" className="flex items-center gap-1 bg-[soccer-light-green] text-soccer-black 500/20 ">
                           <Tag className="h-3 w-3" /> 
                           <span className="break-all">{tag}</span>
                         </Badge>)}
