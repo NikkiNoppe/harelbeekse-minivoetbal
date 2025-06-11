@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -36,7 +35,7 @@ const PlayOffTab: React.FC = () => {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold">Eindklassement</h2>
-          <Badge variant="outline" className="text-soccer-green">Seizoen 2025-2026</Badge>
+          <Badge variant="outline" className="text-purple-600">Seizoen 2025-2026</Badge>
         </div>
         <Card>
           <CardContent className="p-0 overflow-x-auto">
@@ -81,7 +80,7 @@ const PlayOffTab: React.FC = () => {
             <Card key={index} className="card-hover">
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start mb-1">
-                  <Badge variant="outline" className="w-fit bg-soccer-green/10 border-soccer-green/20 text-soccer-green">
+                  <Badge variant="outline" className="w-fit bg-purple-100 border-purple-200 text-purple-600">
                     {match.playoff}
                   </Badge>
                   <span className="text-sm text-muted-foreground">{match.matchday}</span>
@@ -109,14 +108,14 @@ const PlayOffTab: React.FC = () => {
               <Card key={index} className="card-hover">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start mb-1">
-                    <Badge variant="outline" className="w-fit bg-soccer-green/10 border-soccer-green/20 text-soccer-green">
+                    <Badge variant="outline" className="w-fit bg-purple-100 border-purple-200 text-purple-600">
                       {match.playoff}
                     </Badge>
                     <span className="text-sm text-muted-foreground">{match.matchday}</span>
                   </div>
                   <CardTitle className="flex justify-between items-center text-lg">
                     <span>{match.date}</span>
-                    <span className="text-soccer-green font-medium">{match.time}</span>
+                    <span className="text-purple-600 font-medium">{match.time}</span>
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">{match.location}</p>
                 </CardHeader>

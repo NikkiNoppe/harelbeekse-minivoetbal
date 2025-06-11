@@ -1,8 +1,22 @@
-
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Clock, MapPin, Users } from "lucide-react";
+
+interface Match {
+  id: number;
+  home: string;
+  away: string;
+  result: string | null;
+  status: 'completed' | 'upcoming' | 'pending';
+  date?: string;
+}
+
+interface BracketData {
+  quarterfinals: Match[];
+  semifinals: Match[];
+  final: Match;
+}
 
 const CupTab: React.FC = () => {
   const cupData = {
@@ -13,7 +27,7 @@ const CupTab: React.FC = () => {
     venue: "Gemeentelijk Stadion"
   };
 
-  const bracketData = {
+  const bracketData: BracketData = {
     quarterfinals: [
       { id: 1, home: "FC Oranje", away: "FC United", result: "2-1", status: "completed" },
       { id: 2, home: "Groene Sterren", away: "Real Dorpstraat", result: "3-0", status: "completed" },
@@ -34,7 +48,7 @@ const CupTab: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: Match['status']) => {
     switch (status) {
       case "completed":
         return <Badge variant="outline" className="text-green-600 border-green-600">Afgerond</Badge>;
@@ -47,7 +61,7 @@ const CupTab: React.FC = () => {
     }
   };
 
-  const MatchCard = ({ match, stage }: { match: any; stage: string }) => (
+  const MatchCard = ({ match, stage }: { match: Match; stage: string }) => (
     <Card className="overflow-hidden card-hover transition-all duration-200">
       <div className={`px-4 py-2 text-white font-medium text-sm ${
         stage === 'final' ? 'bg-gradient-to-r from-soccer-green to-soccer-dark-green' : 'bg-soccer-green'
@@ -99,11 +113,11 @@ const CupTab: React.FC = () => {
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
           <div className="flex items-center gap-1">
-            <Users className="h-4 w-4 text-soccer-green" />
+            <Users className="h-4 w-4 text-purple-600" />
             <span>Huidige fase: <strong>{cupData.currentStage}</strong></span>
           </div>
           <div className="flex items-center gap-1">
-            <MapPin className="h-4 w-4 text-soccer-green" />
+            <MapPin className="h-4 w-4 text-purple-600" />
             <span>{cupData.venue}</span>
           </div>
         </div>
@@ -115,7 +129,7 @@ const CupTab: React.FC = () => {
         <section>
           <div className="flex items-center justify-center mb-6">
             <h3 className="text-2xl font-semibold flex items-center gap-2">
-              <Trophy className="h-6 w-6 text-soccer-green" />
+              <Trophy className="h-6 w-6 text-purple-600" />
               Finale
             </h3>
           </div>
@@ -157,7 +171,7 @@ const CupTab: React.FC = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-soccer-green" />
+                <Trophy className="h-5 w-5 text-purple-600" />
                 Finaleinfo
               </CardTitle>
             </CardHeader>

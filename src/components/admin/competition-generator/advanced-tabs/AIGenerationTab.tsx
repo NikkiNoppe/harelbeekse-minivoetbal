@@ -176,9 +176,9 @@ const AIGenerationTab: React.FC<AIGenerationTabProps> = ({
           </div>
 
           {!selectedProvider && (
-            <div className="mt-4 p-3 bg-orange-50 rounded-md flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-orange-600" />
-              <p className="text-sm text-orange-800">
+            <div className="mt-4 p-3 bg-purple-50 rounded-md flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-purple-600" />
+              <p className="text-sm text-purple-800">
                 Selecteer een AI service om het schema te kunnen genereren
               </p>
             </div>

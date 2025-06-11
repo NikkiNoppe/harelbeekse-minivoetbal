@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -99,7 +98,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     if (match.playersSubmitted) {
       return { label: "Klaar voor score", color: "bg-blue-500", icon: AlertCircle };
     }
-    return { label: "Te spelen", color: "bg-orange-500", icon: Clock };
+    return { label: "Te spelen", color: "bg-purple-500", icon: Clock };
   };
 
   const canUserEdit = (match: MatchFormData): boolean => {

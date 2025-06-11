@@ -1,11 +1,26 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
+interface Suspension {
+  player: string;
+  team: string;
+  reason: string;
+  start: string;
+  end: string;
+  matches: number;
+  status: 'active' | 'pending' | 'completed';
+}
+
+interface YellowCardCount {
+  player: string;
+  team: string;
+  count: number;
+}
+
 const SuspensionsTab: React.FC = () => {
-  const suspensions = [
+  const suspensions: Suspension[] = [
     { 
       player: "Jan Jansen", 
       team: "FC Oranje", 
@@ -44,7 +59,7 @@ const SuspensionsTab: React.FC = () => {
     },
   ];
 
-  const yellowCardCounts = [
+  const yellowCardCounts: YellowCardCount[] = [
     { player: "Dirk van Dijk", team: "FC United", count: 3 },
     { player: "Karel Klaassen", team: "De Leeuwen", count: 3 },
     { player: "Marco Mulder", team: "Sporting Lokaal", count: 3 },
@@ -52,124 +67,84 @@ const SuspensionsTab: React.FC = () => {
     { player: "Thomas Vos", team: "FC Oranje", count: 2 },
   ];
 
+  const getStatusBadge = (status: Suspension['status']) => {
+    switch (status) {
+      case "active":
+        return <Badge className="bg-red-500">Actief</Badge>;
+      case "pending":
+        return <Badge className="bg-yellow-500">In afwachting</Badge>;
+      case "completed":
+        return <Badge className="bg-green-500">Afgerond</Badge>;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="space-y-8 animate-slide-up">
-      <section>
-        <h2 className="text-2xl font-semibold mb-4">Actuele Schorsingen</h2>
-        <Card>
-          <CardContent className="p-0 overflow-x-auto">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Actieve Schorsingen</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
+                <TableRow>
                   <TableHead>Speler</TableHead>
                   <TableHead>Team</TableHead>
                   <TableHead>Reden</TableHead>
-                  <TableHead>Aantal Wedstrijden</TableHead>
-                  <TableHead>Van</TableHead>
-                  <TableHead>Tot</TableHead>
+                  <TableHead>Start</TableHead>
+                  <TableHead>Eind</TableHead>
+                  <TableHead>Wedstrijden</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {suspensions.map((suspension, index) => (
-                  <TableRow key={index} className="hover:bg-muted/30">
-                    <TableCell className="font-medium">{suspension.player}</TableCell>
+                  <TableRow key={index}>
+                    <TableCell>{suspension.player}</TableCell>
                     <TableCell>{suspension.team}</TableCell>
                     <TableCell>{suspension.reason}</TableCell>
-                    <TableCell className="text-center">{suspension.matches}</TableCell>
                     <TableCell>{suspension.start}</TableCell>
                     <TableCell>{suspension.end}</TableCell>
-                    <TableCell>
-                      {suspension.status === "active" && (
-                        <Badge className="bg-red-500">Actief</Badge>
-                      )}
-                      {suspension.status === "pending" && (
-                        <Badge variant="outline" className="text-amber-600 border-amber-600">Aankomend</Badge>
-                      )}
-                      {suspension.status === "completed" && (
-                        <Badge variant="outline" className="text-green-600 border-green-600">Afgerond</Badge>
-                      )}
-                    </TableCell>
+                    <TableCell>{suspension.matches}</TableCell>
+                    <TableCell>{getStatusBadge(suspension.status)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      </section>
+          </div>
+        </CardContent>
+      </Card>
 
-      <section>
-        <h2 className="text-2xl font-semibold mb-4">Gele Kaarten Register</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Spelers met Meeste Gele Kaarten</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/30">
-                    <TableHead>Speler</TableHead>
-                    <TableHead>Team</TableHead>
-                    <TableHead className="text-center">Aantal</TableHead>
+      <Card>
+        <CardHeader>
+          <CardTitle>Gele Kaarten</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Speler</TableHead>
+                  <TableHead>Team</TableHead>
+                  <TableHead>Aantal</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {yellowCardCounts.map((count, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{count.player}</TableCell>
+                    <TableCell>{count.team}</TableCell>
+                    <TableCell>{count.count}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {yellowCardCounts.map((record, index) => (
-                    <TableRow key={index} className="hover:bg-muted/20">
-                      <TableCell>{record.player}</TableCell>
-                      <TableCell>{record.team}</TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center space-x-1">
-                          {[...Array(record.count)].map((_, i) => (
-                            <div key={i} className="h-5 w-3 bg-yellow-400 rounded-sm"></div>
-                          ))}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Schorsingsregels</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm space-y-3">
-              <div className="space-y-1">
-                <h4 className="font-medium">Gele Kaarten</h4>
-                <p className="text-muted-foreground">
-                  Gele kaart (boete: €): Speler mag verder spelen.
-                  Schorsingen na gele kaarten:
-                  2 gele kaarten: 1 wedstrijd schorsing
-                  4 gele kaarten: 2 opeenvolgende wedstrijden
-                  6 gele kaarten: 3 opeenvolgende wedstrijden
-                </p>
-              </div>
-              
-              <div className="space-y-1">
-                <h4 className="font-medium">Rode Kaarten</h4>
-                <ul className="list-disc pl-5 text-muted-foreground">
-                  <li>Rode kaart (boete: €): onmiddellijke uitsluiting ZONDER vervanging.</li>
-                  <li>Minimum schorsing: 1 wedstrijden schorsing</li>
-                  <li>Minnelijke schikking mogelijk, als de sportcomité dit beslist.</li>
-                  <li>Tweede gele kaart in één wedstrijd: 1 wedstrijd schorsing</li>
-                </ul>
-              </div>
-              
-              <div className="space-y-1">
-                <h4 className="font-medium">Beroepsprocedure</h4>
-                <p className="text-muted-foreground">
-                  Clubs kunnen binnen 7 werkdagen na de wedstrijd beroep aantekenen tegen een rode kaart.
-                  Het tuchtcomité zal binnen 7 dagen uitspraak doen.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
