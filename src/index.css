@@ -241,7 +241,7 @@ td, .table-cell, .content-text, .column-text {
 
 /* All borders and frames to light purple */
 .border, [class*="border-"], table, tr, td, th, .card, .frame, .column {
-  border-color: #ab86dd !important; /* Light purple borders */
+  border-color: bg-purple-100 !important; /* Light purple borders */
 }
 
 
