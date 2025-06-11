@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,7 +15,7 @@ interface Suspension {
 }
 
 const SuspensionsTab: React.FC = () => {
-  const suspensions = [
+  const suspensions: Suspension[] = [
     { 
       player: "Jan Jansen", 
       team: "FC Oranje", 
@@ -22,7 +23,7 @@ const SuspensionsTab: React.FC = () => {
       start: "12-05-2024", 
       end: "26-05-2024", 
       matches: 2,
-      status: "active" 
+      status: "active" as const
     },
     { 
       player: "Tim Visser", 
@@ -31,7 +32,7 @@ const SuspensionsTab: React.FC = () => {
       start: "05-05-2024", 
       end: "19-05-2024", 
       matches: 2,
-      status: "active" 
+      status: "active" as const
     },
     { 
       player: "Peter Bakker", 
@@ -40,7 +41,7 @@ const SuspensionsTab: React.FC = () => {
       start: "19-05-2024", 
       end: "26-05-2024", 
       matches: 1,
-      status: "pending" 
+      status: "pending" as const
     },
     { 
       player: "Mark Smits", 
@@ -49,7 +50,7 @@ const SuspensionsTab: React.FC = () => {
       start: "28-04-2024", 
       end: "19-05-2024", 
       matches: 3,
-      status: "completed" 
+      status: "completed" as const
     },
   ];
 
