@@ -30,7 +30,7 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
         name="usernameOrEmail"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Gebruikersnaam of Email</FormLabel>
+            <FormLabel className="text-purple-dark">Gebruikersnaam of Email</FormLabel>
             <FormControl>
               <Input placeholder="Voer gebruikersnaam of email in" {...field} />
             </FormControl>
@@ -43,7 +43,7 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
         name="password"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Wachtwoord</FormLabel>
+            <FormLabel className="text-purple-dark">Wachtwoord</FormLabel>
             <FormControl>
               <Input
                 type="password"
@@ -66,7 +66,7 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
       <Button
         type="button"
         variant="link"
-        className="w-full text-sm text-muted-foreground"
+        className="w-full text-sm text-purple-light hover:text-purple-dark"
         onClick={onForgotPassword}
       >
         Wachtwoord vergeten?

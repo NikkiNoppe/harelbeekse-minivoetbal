@@ -35,11 +35,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
 
   return (
     <>
-      <Card className="w-full max-w-md mx-auto shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">Login</CardTitle>
+      <Card className="w-full max-w-md mx-auto shadow-lg border-purple-light">
+        <CardHeader className="bg-purple-light-gray">
+          <CardTitle className="text-2xl text-center text-purple-light">Login</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-white">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <LoginFormFields 
