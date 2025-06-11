@@ -1,37 +1,37 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 165 135 215; /* White background only */
-    --foreground: 96 54 140; /* Dark purple text */
+    --main-color-dark: #60368c;
+    --main-color-light: #ab86dd;
+    
+    --background: 165 135 215;
+    --foreground: 96 54 140;
 
-    --card: 255 255 255; /* White cards */
-    --card-foreground: 96 54 140; /* Dark purple text on cards */
+    --card: 255 255 255;
+    --card-foreground: 96 54 140;
  
     --popover: 255 255 255;
     --popover-foreground: 96 54 140;
 
-    --primary: 96 54 140; /* Dark purple primary */
-    --primary-foreground: 255 255 255; /* White text on primary */
+    --primary: 96 54 140;
+    --primary-foreground: 255 255 255;
 
-    --secondary: 250 248 255; /* Light gray background */
-    --secondary-foreground: 96 54 140; /* Dark purple text */
+    --secondary: 250 248 255;
+    --secondary-foreground: 96 54 140;
  
     --muted: 250 248 255;
-    --muted-foreground: 96 54 140; /* Changed to dark purple for better contrast */
+    --muted-foreground: 96 54 140;
  
-    --accent: 171 134 221; /* Light purple accent */
-    --accent-foreground: 96 54 140; /* Dark purple text on light purple */
+    --accent: 171 134 221;
+    --accent-foreground: 96 54 140;
  
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 171 134 221; /* Changed to light purple */
- 
-    --ring: 96 54 140; /* Dark purple focus ring */
+    --ring: 96 54 140;
  
     --radius: 0.5rem;
 
@@ -41,7 +41,6 @@
     --sidebar-primary-foreground: 255 255 255;
     --sidebar-accent: 171 134 221;
     --sidebar-accent-foreground: 96 54 140;
-    --sidebar-border: 171 134 221;
     --sidebar-ring: 96 54 140;
   }
  
