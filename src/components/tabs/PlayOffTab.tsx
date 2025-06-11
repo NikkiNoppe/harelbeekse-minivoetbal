@@ -163,7 +163,7 @@ const PlayOffTab: React.FC = () => {
                     <TableRow className="bg-muted/50">
                       <TableHead className="w-12">Positie</TableHead>
                       <TableHead>Team</TableHead>
-                      <TableHead className="text-center">Aantal Wed</TableHead>
+                      <TableHead className="text-center">Aant Wed</TableHead>
                       <TableHead className="text-center">W</TableHead>
                       <TableHead className="text-center">G</TableHead>
                       <TableHead className="text-center">V</TableHead>
