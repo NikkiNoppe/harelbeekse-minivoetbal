@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -115,8 +114,8 @@ const AIGenerationTab: React.FC<AIGenerationTabProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* OpenAI */}
             <div 
-              className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                selectedProvider === 'openai' ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
+              className={`rounded-md p-4 cursor-pointer transition-colors ${
+                selectedProvider === 'openai' ? 'bg-primary/5' : 'hover:bg-primary/5'
               }`}
               onClick={() => setSelectedProvider('openai')}
             >
@@ -146,8 +145,8 @@ const AIGenerationTab: React.FC<AIGenerationTabProps> = ({
 
             {/* Abacus.ai */}
             <div 
-              className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                selectedProvider === 'abacus' ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
+              className={`rounded-md p-4 cursor-pointer transition-colors ${
+                selectedProvider === 'abacus' ? 'bg-primary/5' : 'hover:bg-primary/5'
               }`}
               onClick={() => setSelectedProvider('abacus')}
             >
@@ -177,7 +176,7 @@ const AIGenerationTab: React.FC<AIGenerationTabProps> = ({
           </div>
 
           {!selectedProvider && (
-            <div className="mt-4 p-3 border border-orange-200 bg-orange-50 rounded-lg flex items-center gap-2">
+            <div className="mt-4 p-3 bg-orange-50 rounded-md flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-orange-600" />
               <p className="text-sm text-orange-800">
                 Selecteer een AI service om het schema te kunnen genereren
