@@ -37,66 +37,70 @@ const PlayOffTab: React.FC = () => {
           <h2 className="text-2xl font-semibold">Eindklassement</h2>
           <Badge className="badge-purple">Seizoen 2025-2026</Badge>
         </div>
-        <Card>
-          <CardContent className="p-0 overflow-x-auto">
-            <div className="max-w-3xl mx-auto px-4">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="w-12">Pos</TableHead>
-                    <TableHead>Team</TableHead>
-                    <TableHead className="text-center">Wed</TableHead>
-                    <TableHead className="text-center">W</TableHead>
-                    <TableHead className="text-center">G</TableHead>
-                    <TableHead className="text-center">V</TableHead>
-                    <TableHead className="text-center">Doelp</TableHead>
-                    <TableHead className="text-center">Pnt</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {playoffTeams.playoff1.map((team) => (
-                    <TableRow key={team.name} className="hover:bg-muted/30">
-                      <TableCell className="font-medium">{team.position}</TableCell>
-                      <TableCell>{team.name}</TableCell>
-                      <TableCell className="text-center">{team.played}</TableCell>
-                      <TableCell className="text-center">{team.won}</TableCell>
-                      <TableCell className="text-center">{team.draw}</TableCell>
-                      <TableCell className="text-center">{team.lost}</TableCell>
-                      <TableCell className="text-center">{team.goalsFor}-{team.goalsAgainst}</TableCell>
-                      <TableCell className="text-center font-medium">{team.points}</TableCell>
+        <div className="mt-6">
+          <Card>
+            <CardContent className="p-0 overflow-x-auto">
+              <div className="max-w-3xl mx-auto px-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-12">Pos</TableHead>
+                      <TableHead>Team</TableHead>
+                      <TableHead className="text-center">Wed</TableHead>
+                      <TableHead className="text-center">W</TableHead>
+                      <TableHead className="text-center">G</TableHead>
+                      <TableHead className="text-center">V</TableHead>
+                      <TableHead className="text-center">Doelp</TableHead>
+                      <TableHead className="text-center">Pnt</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {playoffTeams.playoff1.map((team) => (
+                      <TableRow key={team.name} className="hover:bg-muted/30">
+                        <TableCell className="font-medium">{team.position}</TableCell>
+                        <TableCell>{team.name}</TableCell>
+                        <TableCell className="text-center">{team.played}</TableCell>
+                        <TableCell className="text-center">{team.won}</TableCell>
+                        <TableCell className="text-center">{team.draw}</TableCell>
+                        <TableCell className="text-center">{team.lost}</TableCell>
+                        <TableCell className="text-center">{team.goalsFor}-{team.goalsAgainst}</TableCell>
+                        <TableCell className="text-center font-medium">{team.points}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </section>
 
       <section>
         <h2 className="text-2xl font-semibold mt-8">Uitslagen Play-Offs</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
-          {playoffMatches.map((match, index) => (
-            <Card key={index} className="card-hover">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start mb-1">
-                  <Badge variant="outline" className="w-fit bg-soccer-green/10 border-soccer-green/20 text-soccer-green">
-                    {match.playoff}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">{match.matchday}</span>
-                </div>
-                <CardTitle className="text-lg">{match.date}</CardTitle>
-                <p className="text-sm text-muted-foreground">{match.location}</p>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-center py-2">
-                  <div className="font-medium text-left flex-1">{match.home}</div>
-                  <div className="px-4 py-1 bg-muted rounded-lg font-bold">{match.result}</div>
-                  <div className="font-medium text-right flex-1">{match.away}</div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
+            {playoffMatches.map((match, index) => (
+              <Card key={index} className="card-hover">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start mb-1">
+                    <Badge variant="outline" className="w-fit bg-soccer-green/10 border-soccer-green/20 text-soccer-green">
+                      {match.playoff}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">{match.matchday}</span>
+                  </div>
+                  <CardTitle className="text-lg">{match.date}</CardTitle>
+                  <p className="text-sm text-muted-foreground">{match.location}</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-between items-center py-2">
+                    <div className="font-medium text-left flex-1">{match.home}</div>
+                    <div className="px-4 py-1 bg-muted rounded-lg font-bold">{match.result}</div>
+                    <div className="font-medium text-right flex-1">{match.away}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </section>
 

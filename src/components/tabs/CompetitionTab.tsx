@@ -224,45 +224,45 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
           <h2 className="text-2xl font-semibold">Competitiestand</h2>
           <Badge className="badge-purple">Seizoen 2025-2026</Badge>
         </div>
-        
-        <Card>
-          
-          <CardContent>
-            {isLoading && !teams ? <div className="flex justify-center items-center h-32">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2">Competitiestand laden...</span>
-              </div> : error && !teams ? <div className="text-center p-4 text-red-500">
-                Er is een fout opgetreden bij het laden van de competitiestand.
-              </div> : <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Positie</TableHead>
-                      <TableHead>Team</TableHead>
-                      <TableHead>GW</TableHead>
-                      <TableHead>W</TableHead>
-                      <TableHead>G</TableHead>
-                      <TableHead>V</TableHead>
-                      <TableHead>DV</TableHead>
-                      <TableHead>Punten</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {teamsToDisplay?.map((team, index) => <TableRow key={team.id}>
-                        <TableCell className="font-medium">{index + 1}</TableCell>
-                        <TableCell>{team.name}</TableCell>
-                        <TableCell>{team.played}</TableCell>
-                        <TableCell>{team.won}</TableCell>
-                        <TableCell>{team.draw}</TableCell>
-                        <TableCell>{team.lost}</TableCell>
-                        <TableCell>{team.goalDiff > 0 ? `+${team.goalDiff}` : team.goalDiff}</TableCell>
-                        <TableCell className="font-bold">{team.points}</TableCell>
-                      </TableRow>)}
-                  </TableBody>
-                </Table>
-              </div>}
-          </CardContent>
-        </Card>
+        <div className="mt-6">
+          <Card>
+            <CardContent>
+              {isLoading && !teams ? <div className="flex justify-center items-center h-32">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-2">Competitiestand laden...</span>
+                </div> : error && !teams ? <div className="text-center p-4 text-red-500">
+                  Er is een fout opgetreden bij het laden van de competitiestand.
+                </div> : <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Positie</TableHead>
+                        <TableHead>Team</TableHead>
+                        <TableHead>GW</TableHead>
+                        <TableHead>W</TableHead>
+                        <TableHead>G</TableHead>
+                        <TableHead>V</TableHead>
+                        <TableHead>DV</TableHead>
+                        <TableHead>Punten</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {teamsToDisplay?.map((team, index) => <TableRow key={team.id}>
+                          <TableCell className="font-medium">{index + 1}</TableCell>
+                          <TableCell>{team.name}</TableCell>
+                          <TableCell>{team.played}</TableCell>
+                          <TableCell>{team.won}</TableCell>
+                          <TableCell>{team.draw}</TableCell>
+                          <TableCell>{team.lost}</TableCell>
+                          <TableCell>{team.goalDiff > 0 ? `+${team.goalDiff}` : team.goalDiff}</TableCell>
+                          <TableCell className="font-bold">{team.points}</TableCell>
+                        </TableRow>)}
+                    </TableBody>
+                  </Table>
+                </div>}
+            </CardContent>
+          </Card>
+        </div>
       </section>
       
       {/* Aankomende Wedstrijden */}
