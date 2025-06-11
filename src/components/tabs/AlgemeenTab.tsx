@@ -1,16 +1,15 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tag } from "lucide-react";
 import { fetchBlogPosts, BlogPost } from "@/services/blogService";
 import { useToast } from "@/hooks/use-toast";
-
 const AlgemeenTab: React.FC = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const loadBlogPosts = async () => {
       try {
@@ -27,12 +26,9 @@ const AlgemeenTab: React.FC = () => {
         setLoading(false);
       }
     };
-
     loadBlogPosts();
   }, [toast]);
-
-  return (
-    <div className="space-y-6 sm:space-y-8 animate-slide-up">
+  return <div className="space-y-6 sm:space-y-8 animate-slide-up">
       <section>
         <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 px-1">Over de Competitie</h2>
         <Card>
@@ -43,9 +39,7 @@ const AlgemeenTab: React.FC = () => {
             <p className="mb-3 sm:mb-4">
               Onze competitie staat bekend om zijn sportiviteit.
             </p>
-            <p className="break-words">
-              Interesse om deel te nemen met een team? Neem dan contact op via info@minivoetbalharelbeke.be.
-            </p>
+            <p className="break-words">Interesse om deel te nemen met een team? Neem dan contact op via noppe.nikki@icloud.com.</p>
           </CardContent>
         </Card>
       </section>
@@ -53,11 +47,7 @@ const AlgemeenTab: React.FC = () => {
       <section>
         <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 px-1">Laatste Nieuws</h2>
         <div className="space-y-3 sm:space-y-4 w-full">
-          {loading ? (
-            <p className="text-center text-sm sm:text-base py-8">Berichten laden...</p>
-          ) : blogPosts.length > 0 ? (
-            blogPosts.map(post => (
-              <Card key={post.id} className="card-hover w-full">
+          {loading ? <p className="text-center text-sm sm:text-base py-8">Berichten laden...</p> : blogPosts.length > 0 ? blogPosts.map(post => <Card key={post.id} className="card-hover w-full">
                 <CardHeader className="pb-3 sm:pb-4">
                   <div className="flex justify-between items-start mb-2 gap-2">
                     <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">
@@ -69,22 +59,14 @@ const AlgemeenTab: React.FC = () => {
                 <CardContent>
                   <p className="text-sm sm:text-base break-words">{post.content}</p>
                   
-                  {post.tags && post.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {post.tags.map((tag, index) => (
-                        <Badge key={index} variant="outline" className="flex items-center gap-1 bg-orange-500/10 text-orange-500 border-orange-500/20 text-xs">
+                  {post.tags && post.tags.length > 0 && <div className="flex flex-wrap gap-2 mt-3">
+                      {post.tags.map((tag, index) => <Badge key={index} variant="outline" className="flex items-center gap-1 bg-orange-500/10 text-orange-500 border-orange-500/20 text-xs">
                           <Tag className="h-3 w-3" /> 
                           <span className="break-all">{tag}</span>
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                        </Badge>)}
+                    </div>}
                 </CardContent>
-              </Card>
-            ))
-          ) : (
-            <p className="text-center text-muted-foreground text-sm sm:text-base py-8">Geen nieuws beschikbaar</p>
-          )}
+              </Card>) : <p className="text-center text-muted-foreground text-sm sm:text-base py-8">Geen nieuws beschikbaar</p>}
         </div>
       </section>
 
@@ -113,8 +95,6 @@ const AlgemeenTab: React.FC = () => {
           </CardContent>
         </Card>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 export default AlgemeenTab;
