@@ -353,6 +353,9 @@ tbody tr:hover {
 
 @layer components {
   .badge-purple {
-    @apply bg-purple-100 text-purple-900;
+    @apply bg-purple-400 text-white;
+  }
+  .badge-purple-white {
+    @apply bg-purple-600 text-white;
   }
 }
