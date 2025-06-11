@@ -68,16 +68,13 @@ const SuspensionsTab: React.FC = () => {
   ];
 
   const getStatusBadge = (status: Suspension['status']) => {
-    switch (status) {
-      case "active":
-        return <Badge className="bg-red-500">Actief</Badge>;
-      case "pending":
-        return <Badge className="bg-yellow-500">In afwachting</Badge>;
-      case "completed":
-        return <Badge className="bg-green-500">Afgerond</Badge>;
-      default:
-        return null;
+    if (status === 'active') {
+      return <Badge className="bg-purple-100 text-purple-600">Actief</Badge>;
     }
+    if (status === 'pending') {
+      return <Badge className="bg-purple-100 text-purple-600">In afwachting</Badge>;
+    }
+    return <Badge className="bg-purple-100 text-purple-600">Afgerond</Badge>;
   };
 
   return (
