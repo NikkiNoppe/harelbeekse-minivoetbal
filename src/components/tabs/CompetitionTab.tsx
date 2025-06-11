@@ -238,11 +238,11 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
                       <TableRow>
                         <TableHead className="text-center">Positie</TableHead>
                         <TableHead>Team</TableHead>
-                        <TableHead className="text-center">GW</TableHead>
+                        <TableHead className="text-center">Aant Wed</TableHead>
                         <TableHead className="text-center">W</TableHead>
                         <TableHead className="text-center">G</TableHead>
                         <TableHead className="text-center">V</TableHead>
-                        <TableHead className="text-center">DV</TableHead>
+                        <TableHead className="text-center">Doelpunten</TableHead>
                         <TableHead className="text-center">Punten</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -370,51 +370,28 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
                 <Label htmlFor="matchday-filter">Filter op speeldag</Label>
-                <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                  <div className="flex-1">
-                    <Label htmlFor="matchday">Speeldag</Label>
-                    <div className="flex gap-2">
-                      <Select value={selectedMatchday} onValueChange={setSelectedMatchday}>
-                        <SelectTrigger id="matchday" className="w-full">
-                          <SelectValue placeholder="Selecteer speeldag" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {matchdays.map((matchday) => (
-                            <SelectItem key={matchday} value={matchday}>
-                              {matchday}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button 
-                        onClick={() => setSelectedMatchday("")} 
-                        className="shrink-0 bg-purple-light text-white hover:bg-purple-dark"
-                      >
-                        Alle speeldagen
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <Label htmlFor="team-filter">Filter op team</Label>
-                    <div className="flex gap-2">
-                      <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                        <SelectTrigger id="team-filter">
-                          <SelectValue placeholder="Alle teams" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all-teams">Alle teams</SelectItem>
-                          {teamNames.map((team, idx) => <SelectItem key={idx} value={team}>{team}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <Button 
-                        onClick={() => setSelectedTeam("")} 
-                        className="shrink-0 bg-purple-light text-white hover:bg-purple-dark"
-                      >
-                        Alle teams
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                <Select value={selectedMatchday} onValueChange={setSelectedMatchday}>
+                  <SelectTrigger id="matchday-filter">
+                    <SelectValue placeholder="Alle speeldagen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all-matchdays">Alle speeldagen</SelectItem>
+                    {matchdays.map((day, idx) => <SelectItem key={idx} value={day}>{day}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="team-filter">Filter op team</Label>
+                <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                  <SelectTrigger id="team-filter">
+                    <SelectValue placeholder="Alle teams" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all-teams">Alle teams</SelectItem>
+                    {teamNames.map((team, idx) => <SelectItem key={idx} value={team}>{team}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               
               <div>
