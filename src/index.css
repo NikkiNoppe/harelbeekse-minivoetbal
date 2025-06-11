@@ -29,7 +29,7 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: bg-purple-100; /* Changed to light purple */
+    --border: 171 134 221; /* Changed to light purple */
  
     --ring: 96 54 140; /* Dark purple focus ring */
  
@@ -239,10 +239,7 @@ td, .table-cell, .content-text, .column-text {
   color: #60368c !important; /* Dark purple for content text */
 }
 
-/* All borders and frames to light purple */
-.border, [class*="border-"], table, tr, td, th, .card, .frame, .column {
-  border-color: #ab86dd !important; /* Light purple borders */
-}
+
 
 
 /* Special handling for buttons and interactive elements */
