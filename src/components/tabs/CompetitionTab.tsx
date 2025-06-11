@@ -371,11 +371,11 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
               <div>
                 <Label htmlFor="matchday-filter">Filter op speeldag</Label>
                 <Select value={selectedMatchday} onValueChange={setSelectedMatchday}>
-                  <SelectTrigger id="matchday-filter" className="bg-purple-dark text-white hover:bg-purple-light">
+                  <SelectTrigger id="matchday-filter" className="bg-purple-light text-white hover:bg-purple-dark">
                     <SelectValue placeholder="Alle speeldagen" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all-matchdays" className="bg-purple-dark text-white hover:bg-purple-light">Alle speeldagen</SelectItem>
+                    <SelectItem value="all-matchdays" className="bg-purple-light text-white hover:bg-purple-dark">Alle speeldagen</SelectItem>
                     {matchdays.map((day, idx) => <SelectItem key={idx} value={day}>{day}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -384,11 +384,11 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
               <div>
                 <Label htmlFor="team-filter">Filter op team</Label>
                 <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                  <SelectTrigger id="team-filter" className="bg-purple-dark text-white hover:bg-purple-light">
+                  <SelectTrigger id="team-filter" className="bg-purple-light text-white hover:bg-purple-dark">
                     <SelectValue placeholder="Alle teams" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all-teams" className="bg-purple-dark text-white hover:bg-purple-light">Alle teams</SelectItem>
+                    <SelectItem value="all-teams" className="bg-purple-light text-white hover:bg-purple-dark">Alle teams</SelectItem>
                     {teamNames.map((team, idx) => <SelectItem key={idx} value={team}>{team}</SelectItem>)}
                   </SelectContent>
                 </Select>
