@@ -292,12 +292,12 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
                     <TableCell>{match.time}</TableCell>
                     <TableCell className="font-medium">
                       {match.home}
-                      <Badge className="ml-2 bg-blue-500">Thuis</Badge>
+                      
                     </TableCell>
                     <TableCell className="text-center">VS</TableCell>
                     <TableCell className="font-medium">
                       {match.away}
-                      <Badge className="ml-2 bg-orange-500">Uit</Badge>
+                      
                     </TableCell>
                     <TableCell>{match.location}</TableCell>
                   </TableRow>)}
@@ -338,14 +338,14 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
                     <TableCell>{match.time}</TableCell>
                     <TableCell className="font-medium">
                       {match.home}
-                      <Badge className="ml-2 bg-blue-500">Thuis</Badge>
+                      
                     </TableCell>
                     <TableCell className="text-center font-bold">
                       {match.homeScore} - {match.awayScore}
                     </TableCell>
                     <TableCell className="font-medium">
                       {match.away}
-                      <Badge className="ml-2 bg-orange-500">Uit</Badge>
+                      
                     </TableCell>
                     <TableCell>{match.location}</TableCell>
                   </TableRow>)}
