@@ -132,6 +132,7 @@ const accordionSections = [
 
 const RegulationsTab: React.FC = () => {
   const isMobile = useIsMobile();
+
   return (
     <div className="space-y-6 animate-slide-up">
       <section className="max-w-3xl mx-auto px-2 sm:px-0">
@@ -142,26 +143,33 @@ const RegulationsTab: React.FC = () => {
         </p>
         <Card className="bg-white shadow-lg rounded-xl border border-purple-light">
           <CardContent className="p-0">
+            {/* Customized Accordion with rounded triggers */}
             <Accordion type="single" collapsible className="w-full transition-all duration-200 divide-y divide-purple-100">
-              {accordionSections.map(({ value, title, content }) => (
-                <AccordionItem key={value} value={value} className="border-0">
-                  <AccordionTrigger
-                    className="w-full text-left text-base sm:text-lg font-medium px-4 sm:px-6 py-3 sm:py-4 bg-white border-0 rounded-none hover:bg-purple-50 hover:text-purple-600 transition shadow-none"
-                    style={{
-                      borderRadius: 0,
-                      marginBottom: 0,
-                      border: "none",
-                    }}
-                  >
-                    {title}
-                  </AccordionTrigger>
-                  <AccordionContent
-                    className="bg-white py-4 px-4 sm:px-6 text-sm sm:text-base text-muted-foreground"
-                  >
-                    <div className="space-y-2 sm:space-y-3">{content}</div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
+              {accordionSections.map(({ value, title, content }, idx) => {
+                // Determine which corners to apply
+                const isFirst = idx === 0;
+                const isLast = idx === accordionSections.length - 1;
+                let triggerRounded = "";
+                if (isFirst) triggerRounded = "rounded-t-xl";
+                if (isLast) triggerRounded = "rounded-b-xl";
+                return (
+                  <AccordionItem
+                    key={value}
+                    value={value}
+                    className={`border-0 bg-white ${isFirst ? "mt-0" : ""} ${isLast ? "mb-0" : ""} transition-all`}>
+                    <AccordionTrigger
+                      className={`w-full text-left text-base sm:text-lg font-medium px-4 sm:px-6 py-3 sm:py-4 bg-white border-0 hover:bg-purple-50 hover:text-purple-600 shadow-none transition ${triggerRounded}`}
+                    >
+                      {title}
+                    </AccordionTrigger>
+                    <AccordionContent
+                      className="bg-white py-4 px-4 sm:px-6 text-sm sm:text-base text-muted-foreground"
+                    >
+                      <div className="space-y-2 sm:space-y-3">{content}</div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
             </Accordion>
           </CardContent>
         </Card>
@@ -169,7 +177,7 @@ const RegulationsTab: React.FC = () => {
 
       <section className="max-w-3xl mx-auto mt-8 sm:mt-12 px-2 sm:px-0">
         <Card>
-          <CardHeader className="px-4 sm:px-6 py-4 sm:py-6 rounded-none">
+          <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
             <CardTitle className="text-base sm:text-lg">Contact Tuchtcommissie</CardTitle>
           </CardHeader>
           <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
