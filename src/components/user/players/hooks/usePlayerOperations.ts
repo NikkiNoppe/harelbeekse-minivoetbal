@@ -64,7 +64,13 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
   
   // Handle save edited player
   const handleSaveEditedPlayer = async () => {
-    console.log('🎯 handleSaveEditedPlayer called - canEdit:', canEdit, 'isLocked:', isLocked);
+    console.log('🎯 SAVE PLAYER OPERATION START');
+    console.log('📊 Current state:', {
+      canEdit,
+      isLocked,
+      editingPlayerExists: !!editingPlayer,
+      editingPlayerData: editingPlayer
+    });
     
     if (!canEdit) {
       console.warn('⚠️ Cannot edit - showing lock warning');
@@ -82,30 +88,52 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       return;
     }
 
-    console.log('📝 Updating player with data:', {
+    console.log('🔄 CALLING updatePlayer with transformed data:', {
       player_id: editingPlayer.player_id,
       firstName: editingPlayer.firstName,
       lastName: editingPlayer.lastName,
       birthDate: editingPlayer.birthDate
     });
 
-    const success = await updatePlayer(
-      editingPlayer.player_id,
-      editingPlayer.firstName,
-      editingPlayer.lastName,
-      editingPlayer.birthDate
-    );
-    
-    if (success) {
-      setEditingPlayer(null);
-      // Force a refresh to see the changes immediately
-      await refreshPlayers();
+    try {
+      const success = await updatePlayer(
+        editingPlayer.player_id,
+        editingPlayer.firstName,
+        editingPlayer.lastName,
+        editingPlayer.birthDate
+      );
+      
+      console.log('📊 Update result:', success);
+      
+      if (success) {
+        console.log('✅ Update successful, clearing editing state and refreshing');
+        setEditingPlayer(null);
+        
+        // Force refresh and log the process
+        console.log('🔄 Starting data refresh...');
+        await refreshPlayers();
+        console.log('✅ Data refresh completed');
+        
+        toast({
+          title: "Speler bijgewerkt",
+          description: `${editingPlayer.firstName} ${editingPlayer.lastName} is succesvol bijgewerkt`,
+        });
+      } else {
+        console.error('❌ Update failed');
+      }
+    } catch (error) {
+      console.error('💥 Error in handleSaveEditedPlayer:', error);
     }
   };
   
   // Handle remove player
   const handleRemovePlayer = async (playerId: number) => {
-    console.log('🎯 handleRemovePlayer called for player:', playerId, '- canEdit:', canEdit, 'isLocked:', isLocked);
+    console.log('🎯 REMOVE PLAYER OPERATION START');
+    console.log('📊 Remove player state:', {
+      canEdit,
+      isLocked,
+      playerId
+    });
     
     if (!canEdit) {
       console.warn('⚠️ Cannot edit - showing lock warning');
@@ -113,11 +141,23 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       return;
     }
 
-    console.log('🗑️ Removing player:', playerId);
-    const success = await removePlayer(playerId);
-    if (success) {
-      // Force a refresh to see the changes immediately
-      await refreshPlayers();
+    console.log('🗑️ Calling removePlayer for ID:', playerId);
+    
+    try {
+      const success = await removePlayer(playerId);
+      console.log('📊 Remove result:', success);
+      
+      if (success) {
+        console.log('✅ Remove successful, refreshing data');
+        // Force a refresh to see the changes immediately
+        console.log('🔄 Starting data refresh after removal...');
+        await refreshPlayers();
+        console.log('✅ Data refresh after removal completed');
+      } else {
+        console.error('❌ Remove failed');
+      }
+    } catch (error) {
+      console.error('💥 Error in handleRemovePlayer:', error);
     }
   };
 

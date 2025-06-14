@@ -1,118 +1,155 @@
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { Player, Team } from "../types";
+import { useToast } from "@/hooks/use-toast";
 
 export const usePlayersData = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [userTeamName, setUserTeamName] = useState<string>("");
-  
-  // Fetch teams from Supabase
+  const { toast } = useToast();
+
+  // Fetch current user and their team
   useEffect(() => {
-    async function fetchTeams() {
+    const fetchUser = async () => {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        
+        if (authUser?.email) {
+          const { data: userData, error } = await supabase
+            .from('users')
+            .select(`
+              *,
+              team_users (
+                teams (
+                  team_id,
+                  team_name
+                )
+              )
+            `)
+            .eq('email', authUser.email)
+            .single();
+
+          if (error) {
+            console.error('Error fetching user data:', error);
+            return;
+          }
+
+          setUser(userData);
+
+          if (userData?.role === "player_manager" && userData.team_users?.[0]?.teams) {
+            const teamData = userData.team_users[0].teams;
+            setSelectedTeam(teamData.team_id);
+            setUserTeamName(teamData.team_name);
+          }
+        }
+      } catch (error) {
+        console.error('Error in fetchUser:', error);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  // Fetch teams
+  useEffect(() => {
+    const fetchTeams = async () => {
       try {
         const { data, error } = await supabase
           .from('teams')
-          .select('team_id, team_name')
+          .select('*')
           .order('team_name');
-        
+
         if (error) throw error;
-        
         setTeams(data || []);
-        
-        // If user is player_manager, get their assigned team
-        if (user && user.role === "player_manager") {
-          const { data: teamUserData, error: teamUserError } = await supabase
-            .from('team_users')
-            .select('team_id, teams(team_name)')
-            .eq('user_id', user.id)
-            .single();
-          
-          if (teamUserError) {
-            console.error('Error fetching user team:', teamUserError);
-          } else if (teamUserData) {
-            setSelectedTeam(teamUserData.team_id);
-            setUserTeamName((teamUserData.teams as any)?.team_name || "");
-          }
-        } else if (data && data.length > 0) {
-          // For admin, select first team by default
-          setSelectedTeam(data[0].team_id);
-        }
       } catch (error) {
         console.error('Error fetching teams:', error);
         toast({
-          title: "Fout bij laden",
-          description: "Er is een fout opgetreden bij het laden van de teams.",
+          title: "Fout bij laden teams",
+          description: "Kon teams niet laden",
           variant: "destructive",
         });
       }
-    }
-    
-    fetchTeams();
-  }, [user, toast]);
-  
-  // Fetch players when selected team changes
-  useEffect(() => {
-    async function fetchPlayers() {
-      if (!selectedTeam) return;
-      
-      try {
-        setLoading(true);
-        
-        const { data, error } = await supabase
-          .from('players' as any)
-          .select('player_id, first_name, last_name, birth_date, team_id, is_active')
-          .eq('team_id', selectedTeam)
-          .eq('is_active', true)
-          .order('first_name');
-        
-        if (error) throw error;
-        
-        setPlayers((data as unknown) as Player[] || []);
-      } catch (error) {
-        console.error('Error fetching players:', error);
-        toast({
-          title: "Fout bij laden",
-          description: "Er is een fout opgetreden bij het laden van de spelers.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
-    
-    fetchPlayers();
-  }, [selectedTeam, toast]);
+    };
 
-  const refreshPlayers = async () => {
-    if (!selectedTeam) return;
+    fetchTeams();
+  }, [toast]);
+
+  // Fetch players based on selected team
+  const fetchPlayers = async () => {
+    if (!selectedTeam) {
+      console.log('⚠️ No team selected, clearing players list');
+      setPlayers([]);
+      setLoading(false);
+      return;
+    }
+
+    console.log('🔄 FETCHING PLAYERS for team:', selectedTeam);
+    setLoading(true);
     
     try {
       const { data, error } = await supabase
-        .from('players' as any)
-        .select('player_id, first_name, last_name, birth_date, team_id, is_active')
+        .from('players')
+        .select(`
+          player_id,
+          first_name,
+          last_name,
+          birth_date,
+          team_id,
+          is_active,
+          teams (
+            team_name
+          )
+        `)
         .eq('team_id', selectedTeam)
         .eq('is_active', true)
+        .order('last_name')
         .order('first_name');
+
+      if (error) {
+        console.error('❌ Error fetching players:', error);
+        throw error;
+      }
+
+      console.log('📊 RAW PLAYERS DATA from database:', data);
+      console.log('📊 Number of players fetched:', data?.length || 0);
       
-      if (error) throw error;
+      setPlayers(data || []);
+      console.log('✅ Players state updated with:', data?.length || 0, 'players');
       
-      setPlayers((data as unknown) as Player[] || []);
     } catch (error) {
-      console.error('Error refreshing players:', error);
+      console.error('💥 Error in fetchPlayers:', error);
+      toast({
+        title: "Fout bij laden spelers",
+        description: "Kon spelers niet laden",
+        variant: "destructive",
+      });
+      setPlayers([]);
+    } finally {
+      setLoading(false);
+      console.log('🏁 fetchPlayers completed, loading set to false');
     }
   };
-  
+
+  // Refresh players function for external use
+  const refreshPlayers = async () => {
+    console.log('🔄 REFRESH PLAYERS called');
+    await fetchPlayers();
+    console.log('✅ REFRESH PLAYERS completed');
+  };
+
+  // Fetch players when selectedTeam changes
+  useEffect(() => {
+    console.log('🎯 useEffect triggered - selectedTeam changed to:', selectedTeam);
+    fetchPlayers();
+  }, [selectedTeam]);
+
   return {
     players,
-    setPlayers,
     teams,
     loading,
     selectedTeam,
