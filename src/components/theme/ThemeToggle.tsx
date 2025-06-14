@@ -9,13 +9,13 @@ const ThemeToggle: React.FC = () => {
 
   return (
     <div className="flex items-center space-x-2">
-      <Sun className="h-4 w-4 text-foreground" />
+      <Sun className="h-4 w-4 text-white" />
       <Switch
         checked={theme === "dark"}
         onCheckedChange={toggleTheme}
         aria-label="Toggle theme"
       />
-      <Moon className="h-4 w-4 text-foreground" />
+      <Moon className="h-4 w-4 text-white" />
     </div>
   );
 };
