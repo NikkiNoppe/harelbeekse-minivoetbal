@@ -86,19 +86,19 @@ const UserDialog: React.FC<UserDialogProps> = ({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="sm:max-w-md bg-purple-100 border-purple-light shadow-lg">
+        <DialogHeader className="bg-purple-100">
+          <DialogTitle className="text-2xl text-purple-light">
             {editingUser ? "Gebruiker bewerken" : "Nieuwe gebruiker toevoegen"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-purple-dark">
             {editingUser
               ? "Bewerk de gegevens van deze gebruiker"
               : "Voeg een nieuwe gebruiker toe aan het systeem"}
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+        <form onSubmit={handleSubmit} className="space-y-4 py-2 bg-purple-100">
           <UserFormFields
             formData={formData}
             setFormData={setFormData}
@@ -107,11 +107,11 @@ const UserDialog: React.FC<UserDialogProps> = ({
             isLoading={isLoading}
           />
           
-          <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="pt-4 bg-purple-100">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-purple-light text-purple-dark hover:bg-purple-light hover:text-white">
               Annuleren
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading} className="bg-purple-light hover:bg-purple-dark">
               {editingUser ? "Bijwerken" : "Toevoegen"}
             </Button>
           </DialogFooter>

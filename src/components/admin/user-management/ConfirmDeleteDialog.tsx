@@ -26,18 +26,19 @@ const ConfirmDeleteDialog: React.FC<ConfirmDeleteDialogProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Gebruiker verwijderen</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="bg-purple-100 border-purple-light shadow-lg">
+        <DialogHeader className="bg-purple-100">
+          <DialogTitle className="text-2xl text-purple-light">Gebruiker verwijderen</DialogTitle>
+          <DialogDescription className="text-purple-dark">
             Weet je zeker dat je deze gebruiker wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
+        <DialogFooter className="bg-purple-100">
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)}
             disabled={isDeleting}
+            className="border-purple-light text-purple-dark hover:bg-purple-light hover:text-white"
           >
             Annuleren
           </Button>
@@ -45,6 +46,7 @@ const ConfirmDeleteDialog: React.FC<ConfirmDeleteDialogProps> = ({
             variant="destructive" 
             onClick={onConfirmDelete}
             disabled={isDeleting}
+            className="bg-red-600 hover:bg-red-700"
           >
             {isDeleting ? (
               <>
