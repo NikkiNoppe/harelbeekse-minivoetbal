@@ -7,6 +7,72 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
   const { toast } = useToast();
   const { checkPlayerExists, checkNameExists, validatePlayerData } = usePlayerValidation();
 
+  // Helper function to wait with delay
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Helper function to verify player update by fetching fresh data
+  const verifyPlayerUpdate = async (playerId: number, expectedFirstName: string, expectedLastName: string, expectedBirthDate: string) => {
+    console.log('🔍 Verifying player update for ID:', playerId);
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select('player_id, first_name, last_name, birth_date')
+        .eq('player_id', playerId)
+        .single();
+
+      if (error || !data) {
+        console.error('❌ Error verifying player update:', error);
+        return false;
+      }
+
+      const isUpdated = 
+        data.first_name === expectedFirstName.trim() &&
+        data.last_name === expectedLastName.trim() &&
+        data.birth_date === expectedBirthDate;
+
+      console.log('📊 Verification result:', {
+        expected: { firstName: expectedFirstName, lastName: expectedLastName, birthDate: expectedBirthDate },
+        actual: { firstName: data.first_name, lastName: data.last_name, birthDate: data.birth_date },
+        isUpdated
+      });
+
+      return isUpdated;
+    } catch (error) {
+      console.error('💥 Error in verifyPlayerUpdate:', error);
+      return false;
+    }
+  };
+
+  // Enhanced refresh with retry logic
+  const refreshWithRetry = async (maxRetries = 3, delayMs = 500) => {
+    console.log('🔄 Starting enhanced refresh with retry logic');
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      console.log(`🔄 Refresh attempt ${attempt}/${maxRetries}`);
+      
+      // Add delay before refresh to allow database transaction to commit
+      if (attempt > 1) {
+        console.log(`⏱️ Waiting ${delayMs}ms before retry...`);
+        await delay(delayMs);
+      }
+
+      try {
+        await refreshPlayers();
+        console.log(`✅ Refresh attempt ${attempt} completed`);
+        
+        // If this isn't the last attempt, add a small delay to let the UI update
+        if (attempt < maxRetries) {
+          await delay(200);
+        }
+      } catch (error) {
+        console.error(`❌ Refresh attempt ${attempt} failed:`, error);
+        if (attempt === maxRetries) {
+          throw error;
+        }
+      }
+    }
+  };
+
   const addPlayer = async (firstName: string, lastName: string, birthDate: string, teamId: number) => {
     if (!validatePlayerData(firstName, lastName, birthDate)) {
       toast({
@@ -43,7 +109,7 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
     }
     
     try {
-      console.log('Adding player:', {
+      console.log('📝 Adding player with timestamp:', new Date().toISOString(), {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         birth_date: birthDate,
@@ -62,13 +128,14 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         .select();
       
       if (error) {
-        console.error('Supabase error adding player:', error);
+        console.error('❌ Supabase error adding player:', error);
         throw error;
       }
 
-      console.log('Player added successfully:', data);
+      console.log('✅ Player added successfully at:', new Date().toISOString(), data);
       
-      await refreshPlayers();
+      // Enhanced refresh with retry logic
+      await refreshWithRetry();
       
       toast({
         title: "Speler toegevoegd",
@@ -77,7 +144,7 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
       
       return true;
     } catch (error) {
-      console.error('Error adding player:', error);
+      console.error('💥 Error adding player:', error);
       toast({
         title: "Fout bij toevoegen",
         description: "Er is een fout opgetreden bij het toevoegen van de speler.",
@@ -98,7 +165,7 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
     }
 
     try {
-      console.log('🔄 Starting player update with data:', {
+      console.log('🔄 Starting player update with timestamp:', new Date().toISOString(), {
         player_id: playerId,
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -153,10 +220,11 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
       const lastNameChanged = currentPlayer.last_name !== trimmedLastName;
       const birthDateChanged = currentPlayer.birth_date !== normalizedBirthDate;
       
-      console.log('Changes detected:', {
+      console.log('📊 Changes detected:', {
         firstName: firstNameChanged,
         lastName: lastNameChanged,
-        birthDate: birthDateChanged
+        birthDate: birthDateChanged,
+        timestamp: new Date().toISOString()
       });
 
       const hasChanges = firstNameChanged || lastNameChanged || birthDateChanged;
@@ -203,7 +271,7 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
       }
 
       // Perform the update
-      console.log('📝 Executing update query...');
+      console.log('📝 Executing update query at:', new Date().toISOString());
       const { error: updateError } = await supabase
         .from('players')
         .update({
@@ -223,10 +291,37 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      console.log('✅ Player update successful');
+      console.log('✅ Player update query successful at:', new Date().toISOString());
       
-      // Force refresh of players data
-      await refreshPlayers();
+      // Add delay before refresh to allow database transaction to commit
+      console.log('⏱️ Waiting 500ms for database transaction to commit...');
+      await delay(500);
+      
+      // Enhanced refresh with retry logic
+      await refreshWithRetry();
+      
+      // Verify the update was persisted
+      console.log('🔍 Verifying update persistence...');
+      const isVerified = await verifyPlayerUpdate(playerId, trimmedFirstName, trimmedLastName, normalizedBirthDate);
+      
+      if (!isVerified) {
+        console.warn('⚠️ Update verification failed, attempting additional refresh...');
+        await delay(1000);
+        await refreshWithRetry();
+        
+        // Check again
+        const secondVerification = await verifyPlayerUpdate(playerId, trimmedFirstName, trimmedLastName, normalizedBirthDate);
+        if (!secondVerification) {
+          console.error('❌ Update verification failed after retry');
+          toast({
+            title: "Verificatie mislukt",
+            description: "De wijzigingen zijn mogelijk niet correct opgeslagen. Ververs de pagina om de actuele gegevens te zien.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        console.log('✅ Update verification successful');
+      }
       
       toast({
         title: "Speler bijgewerkt",
@@ -235,7 +330,7 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
       
       return true;
     } catch (error) {
-      console.error('❌ Error updating player:', error);
+      console.error('💥 Error updating player:', error);
       toast({
         title: "Fout bij bijwerken",
         description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het bijwerken van de speler.",
@@ -247,7 +342,7 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
 
   const removePlayer = async (playerId: number) => {
     try {
-      console.log('🗑️ Starting player removal for ID:', playerId);
+      console.log('🗑️ Starting player removal for ID:', playerId, 'at:', new Date().toISOString());
 
       // First check if player exists and is active
       const { data: currentPlayer, error: fetchError } = await supabase
@@ -302,9 +397,14 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      console.log('✅ Player removed successfully:', data);
+      console.log('✅ Player removed successfully at:', new Date().toISOString(), data);
       
-      await refreshPlayers();
+      // Add delay before refresh
+      console.log('⏱️ Waiting 500ms for database transaction to commit...');
+      await delay(500);
+      
+      // Enhanced refresh with retry logic
+      await refreshWithRetry();
       
       toast({
         title: "Speler verwijderd",
@@ -313,7 +413,7 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
       
       return true;
     } catch (error) {
-      console.error('❌ Error removing player:', error);
+      console.error('💥 Error removing player:', error);
       toast({
         title: "Fout bij verwijderen",
         description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het verwijderen van de speler.",
