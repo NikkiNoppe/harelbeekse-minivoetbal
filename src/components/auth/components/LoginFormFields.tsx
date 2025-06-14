@@ -66,7 +66,7 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
       <Button
         type="button"
         variant="link"
-        className="w-full text-sm text-purple-light hover:text-purple-dark"
+        className="w-full text-sm text-white hover:text-purple-light"
         onClick={onForgotPassword}
       >
         Wachtwoord vergeten?
