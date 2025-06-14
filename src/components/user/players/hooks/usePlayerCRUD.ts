@@ -143,14 +143,31 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      // Check if any changes were actually made
+      // Prepare comparison values
       const trimmedFirstName = firstName.trim();
       const trimmedLastName = lastName.trim();
+      const normalizedBirthDate = birthDate;
+
+      // Debug logging for comparison
+      console.log('🔍 Comparing values:');
+      console.log('Current first_name:', `"${currentPlayer.first_name}"`);
+      console.log('New first_name:', `"${trimmedFirstName}"`);
+      console.log('Current last_name:', `"${currentPlayer.last_name}"`);
+      console.log('New last_name:', `"${trimmedLastName}"`);
+      console.log('Current birth_date:', `"${currentPlayer.birth_date}"`);
+      console.log('New birth_date:', `"${normalizedBirthDate}"`);
+
+      // Check if any changes were actually made
+      const firstNameChanged = currentPlayer.first_name !== trimmedFirstName;
+      const lastNameChanged = currentPlayer.last_name !== trimmedLastName;
+      const birthDateChanged = currentPlayer.birth_date !== normalizedBirthDate;
       
-      const hasChanges = 
-        currentPlayer.first_name !== trimmedFirstName ||
-        currentPlayer.last_name !== trimmedLastName ||
-        currentPlayer.birth_date !== birthDate;
+      console.log('🔍 Change detection:');
+      console.log('First name changed:', firstNameChanged);
+      console.log('Last name changed:', lastNameChanged);
+      console.log('Birth date changed:', birthDateChanged);
+
+      const hasChanges = firstNameChanged || lastNameChanged || birthDateChanged;
 
       if (!hasChanges) {
         console.log('ℹ️ No changes detected, skipping update');
@@ -161,8 +178,10 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         return true; // Return true since this is not an error
       }
 
+      console.log('✅ Changes detected, proceeding with update');
+
       // Check if name changed - only validate duplicates if name actually changed
-      const nameChanged = currentPlayer.first_name !== trimmedFirstName || currentPlayer.last_name !== trimmedLastName;
+      const nameChanged = firstNameChanged || lastNameChanged;
       
       if (nameChanged) {
         // Check if name already exists with any birth date
@@ -192,12 +211,13 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
       }
 
       // Perform the update
+      console.log('📝 Executing update query...');
       const { error: updateError } = await supabase
         .from('players')
         .update({
           first_name: trimmedFirstName,
           last_name: trimmedLastName,
-          birth_date: birthDate
+          birth_date: normalizedBirthDate
         })
         .eq('player_id', playerId);
       
