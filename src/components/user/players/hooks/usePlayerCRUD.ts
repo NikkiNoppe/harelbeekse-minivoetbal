@@ -105,7 +105,7 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         birth_date: birthDate
       });
 
-      // Get current player data - REMOVED is_active filter from WHERE clause
+      // Get current player data to check for actual changes
       const { data: currentPlayer, error: fetchError } = await supabase
         .from('players')
         .select('player_id, first_name, last_name, birth_date, is_active')
@@ -143,8 +143,26 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
+      // Check if any changes were actually made
+      const trimmedFirstName = firstName.trim();
+      const trimmedLastName = lastName.trim();
+      
+      const hasChanges = 
+        currentPlayer.first_name !== trimmedFirstName ||
+        currentPlayer.last_name !== trimmedLastName ||
+        currentPlayer.birth_date !== birthDate;
+
+      if (!hasChanges) {
+        console.log('ℹ️ No changes detected, skipping update');
+        toast({
+          title: "Geen wijzigingen",
+          description: "Er zijn geen wijzigingen om op te slaan",
+        });
+        return true; // Return true since this is not an error
+      }
+
       // Check if name changed - only validate duplicates if name actually changed
-      const nameChanged = currentPlayer.first_name !== firstName.trim() || currentPlayer.last_name !== lastName.trim();
+      const nameChanged = currentPlayer.first_name !== trimmedFirstName || currentPlayer.last_name !== trimmedLastName;
       
       if (nameChanged) {
         // Check if name already exists with any birth date
@@ -173,38 +191,27 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      // Now perform the update - REMOVED is_active filter from WHERE clause
-      const { data, error } = await supabase
+      // Perform the update
+      const { error: updateError } = await supabase
         .from('players')
         .update({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
+          first_name: trimmedFirstName,
+          last_name: trimmedLastName,
           birth_date: birthDate
         })
-        .eq('player_id', playerId)
-        .select();
+        .eq('player_id', playerId);
       
-      if (error) {
-        console.error('❌ Supabase error updating player:', error);
+      if (updateError) {
+        console.error('❌ Supabase error updating player:', updateError);
         toast({
           title: "Database fout",
-          description: `Kon speler niet bijwerken: ${error.message}`,
+          description: `Kon speler niet bijwerken: ${updateError.message}`,
           variant: "destructive",
         });
         return false;
       }
 
-      console.log('✅ Player update successful, returned data:', data);
-      
-      if (!data || data.length === 0) {
-        console.warn('⚠️ No rows were updated - this should not happen');
-        toast({
-          title: "Geen wijzigingen",
-          description: "Er zijn geen wijzigingen doorgevoerd",
-          variant: "destructive",
-        });
-        return false;
-      }
+      console.log('✅ Player update successful');
       
       // Force refresh of players data
       console.log('🔄 Refreshing players list...');
