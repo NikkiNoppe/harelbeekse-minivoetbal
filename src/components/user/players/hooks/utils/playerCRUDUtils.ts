@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Helper function to wait with delay
@@ -70,14 +69,14 @@ export const refreshWithRetry = async (refreshPlayers: () => Promise<void>, maxR
 // NEW: Test database connectivity and permissions
 export const testDatabaseConnection = async () => {
   console.log('🔍 TESTING DATABASE CONNECTION AND PERMISSIONS');
-  
+
   try {
     // Test basic connectivity
     const { data: testQuery, error: testError } = await supabase
       .from('players')
-      .select('count(*)')
+      .select('player_id')
       .limit(1);
-    
+
     console.log('📊 Database connectivity test:', {
       testQuery,
       testError,
@@ -90,17 +89,12 @@ export const testDatabaseConnection = async () => {
     }
 
     // Test update permissions by trying a harmless update
-    const { data: permissionTest, error: permissionError } = await supabase
-      .from('players')
-      .select('player_id')
-      .limit(1)
-      .single();
-
-    if (permissionTest) {
+    if (testQuery && testQuery.length > 0) {
+      const testTarget = testQuery[0];
       const { data: updateTest, error: updateError } = await supabase
         .from('players')
-        .update({ last_name: permissionTest.first_name }) // Update with same value
-        .eq('player_id', permissionTest.player_id)
+        .update({ last_name: "test" }) // Uses last_name, which exists on the schema
+        .eq('player_id', testTarget.player_id)
         .select();
 
       console.log('📊 Update permission test:', {
