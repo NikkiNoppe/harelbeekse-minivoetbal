@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -34,7 +35,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
             onLoginClick();
             setIsMenuOpen(false);
           }} 
-          className="w-full px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white bg-purple-dark hover:bg-purple-light hover:text-purple-dark"
+          className="w-full px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium bg-white text-purple-600 hover:bg-purple-100"
         >
           Inloggen
         </button>
@@ -67,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
             ) : (
               <button 
                 onClick={onLoginClick} 
-                className="px-3 lg:px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white bg-purple-light hover:bg-purple-dark text-sm lg:text-base"
+                className="px-3 lg:px-4 py-2 rounded-md transition-colors font-medium bg-white text-purple-600 hover:bg-purple-100 text-sm lg:text-base"
               >
                 Inloggen
               </button>
