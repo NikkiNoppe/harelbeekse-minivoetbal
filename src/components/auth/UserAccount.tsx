@@ -38,7 +38,11 @@ const UserAccount: React.FC<UserAccountProps> = ({ user, onLogout }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className={`gap-2 ${user.role === "admin" ? "bg-white text-purple-600 border-white hover:bg-purple-50" : ""}`}
+        >
           {user.role === "admin" ? <Shield size={16} /> : <User size={16} />}
           {user.username}
         </Button>
