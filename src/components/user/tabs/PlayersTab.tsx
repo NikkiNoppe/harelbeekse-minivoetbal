@@ -17,8 +17,12 @@ import PlayerRegulations from "../players/PlayerRegulations";
 import PlayerListLockSettings from "@/components/admin/settings/PlayerListLockSettings";
 import { usePlayersUpdated } from "../players/usePlayersUpdated";
 import { usePlayerListLock } from "../players/hooks/usePlayerListLock";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const PlayersTab: React.FC = () => {
+  // Use main AuthProvider instead of separate auth system
+  const { user: authUser } = useAuth();
+  
   const {
     players,
     teams,
@@ -41,14 +45,21 @@ const PlayersTab: React.FC = () => {
     handleRemovePlayer,
     formatDate,
     getFullName,
-    user,
     userTeamName
   } = usePlayersUpdated();
 
   const { isLocked, lockDate, canEdit } = usePlayerListLock();
 
+  console.log('🔍 PlayersTab Auth Debug:', {
+    authUser: authUser,
+    authUserRole: authUser?.role,
+    isAdmin: authUser?.role === "admin",
+    teamsLength: teams.length,
+    selectedTeam: selectedTeam
+  });
+
   // Get the current team name for display
-  const currentTeamName = user?.role === "player_manager" 
+  const currentTeamName = authUser?.role === "player_manager" 
     ? userTeamName 
     : teams.find(team => team.team_id === selectedTeam)?.team_name || "";
   
@@ -60,17 +71,17 @@ const PlayersTab: React.FC = () => {
             <div>
               <CardTitle className="flex items-center gap-2">
                 Spelerslijst
-                {isLocked && user?.role !== "admin" && (
+                {isLocked && authUser?.role !== "admin" && (
                   <Lock className="h-4 w-4 text-red-500" />
                 )}
               </CardTitle>
               <CardDescription>
-                {user?.role === "player_manager" && currentTeamName ? (
+                {authUser?.role === "player_manager" && currentTeamName ? (
                   <>Spelers van {currentTeamName}</>
                 ) : (
                   <>Beheer de spelers in de competitie</>
                 )}
-                {isLocked && lockDate && user?.role !== "admin" && (
+                {isLocked && lockDate && authUser?.role !== "admin" && (
                   <span className="block text-red-600 mt-1">
                     Spelerslijst vergrendeld vanaf {new Date(lockDate).toLocaleDateString('nl-NL')}
                   </span>
@@ -78,10 +89,11 @@ const PlayersTab: React.FC = () => {
               </CardDescription>
             </div>
             
-            {user?.role === "admin" && (
+            {/* Team selection dropdown - only for admin users */}
+            {authUser?.role === "admin" && (
               <div className="flex flex-col gap-2">
                 <select 
-                  className="p-2 bg-white border border-gray-200 rounded-md text-gray-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white min-w-[200px]"
+                  className="p-2 bg-white border border-gray-200 rounded-md text-gray-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white min-w-[200px] z-50"
                   value={selectedTeam || ""}
                   onChange={(e) => handleTeamChange(parseInt(e.target.value))}
                 >
@@ -95,6 +107,11 @@ const PlayersTab: React.FC = () => {
                 {currentTeamName && (
                   <span className="text-sm text-muted-foreground text-center">
                     Geselecteerd: {currentTeamName}
+                  </span>
+                )}
+                {teams.length === 0 && (
+                  <span className="text-sm text-red-500 text-center">
+                    Geen teams gevonden
                   </span>
                 )}
               </div>
@@ -145,7 +162,7 @@ const PlayersTab: React.FC = () => {
       </Card>
 
       {/* Admin Lock Settings - Only show for admins */}
-      {user?.role === "admin" && (
+      {authUser?.role === "admin" && (
         <PlayerListLockSettings />
       )}
       

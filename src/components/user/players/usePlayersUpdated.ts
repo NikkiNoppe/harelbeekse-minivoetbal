@@ -3,8 +3,12 @@ import { usePlayersData } from "./hooks/usePlayersData";
 import { usePlayerOperations } from "./hooks/usePlayerOperations";
 import { usePlayerDialogs } from "./hooks/usePlayerDialogs";
 import { formatDate, getFullName, handleTeamChange } from "./utils/playerUtils";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export const usePlayersUpdated = () => {
+  // Use main AuthProvider instead of separate auth
+  const { user: authUser } = useAuth();
+  
   const {
     players,
     teams,
@@ -12,9 +16,8 @@ export const usePlayersUpdated = () => {
     selectedTeam,
     setSelectedTeam,
     refreshPlayers,
-    user,
     userTeamName
-  } = usePlayersData();
+  } = usePlayersData(authUser); // Pass authUser to usePlayersData
 
   const {
     newPlayer,
@@ -37,6 +40,7 @@ export const usePlayersUpdated = () => {
   } = usePlayerDialogs();
 
   const handleTeamChangeWrapper = (teamId: number) => {
+    console.log('🔄 Team change requested:', teamId);
     handleTeamChange(teamId, setSelectedTeam, setEditMode);
   };
 
@@ -66,7 +70,6 @@ export const usePlayersUpdated = () => {
     handleRemovePlayer,
     formatDate,
     getFullName,
-    user,
     userTeamName
   };
 };
