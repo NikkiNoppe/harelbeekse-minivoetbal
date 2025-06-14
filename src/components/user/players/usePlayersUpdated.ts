@@ -1,4 +1,4 @@
-
+import React from "react";
 import { usePlayersData } from "./hooks/usePlayersData";
 import { usePlayerOperations } from "./hooks/usePlayerOperations";
 import { usePlayerDialogs } from "./hooks/usePlayerDialogs";
@@ -47,7 +47,17 @@ export const usePlayersUpdated = () => {
   const handleEditPlayer = (playerId: number) => {
     handleEditPlayerDialog(playerId, players, setEditingPlayer);
   };
-  
+
+  // Modified to ensure dialog closes after success
+  const handleAddPlayerAndMaybeCloseDialog = async () => {
+    const success = await handleAddPlayer();
+    if (success) {
+      setDialogOpen(false);
+      setNewPlayer({ firstName: "", lastName: "", birthDate: "" });
+    }
+    // If failure, keep dialog open and do not clear input
+  };
+
   return {
     players,
     teams,
@@ -64,7 +74,7 @@ export const usePlayersUpdated = () => {
     setEditDialogOpen,
     setNewPlayer,
     setEditingPlayer,
-    handleAddPlayer,
+    handleAddPlayer: handleAddPlayerAndMaybeCloseDialog,
     handleEditPlayer,
     handleSaveEditedPlayer,
     handleRemovePlayer,
