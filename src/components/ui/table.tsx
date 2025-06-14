@@ -1,15 +1,17 @@
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+// Enhanced table wrapper for visible border & rounded corners
 const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+  <div className="relative w-full overflow-auto border border-purple-light rounded-lg">
     <table
       ref={ref}
-      className={cn("w-full caption-bottom text-sm border border-purple-light rounded-lg overflow-hidden", className)}
+      className={cn("w-full caption-bottom text-sm rounded-lg overflow-hidden", className)}
       {...props}
     />
   </div>
@@ -115,3 +117,4 @@ export {
   TableCell,
   TableCaption,
 }
+
