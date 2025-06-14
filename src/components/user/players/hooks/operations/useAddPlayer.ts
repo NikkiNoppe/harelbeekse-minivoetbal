@@ -9,7 +9,16 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
   const { checkPlayerExists, checkNameExists, validatePlayerData } = usePlayerValidation();
 
   const addPlayer = async (firstName: string, lastName: string, birthDate: string, teamId: number) => {
+    console.log('🎯 addPlayer function called with:', {
+      firstName,
+      lastName,
+      birthDate,
+      teamId,
+      timestamp: new Date().toISOString()
+    });
+
     if (!validatePlayerData(firstName, lastName, birthDate)) {
+      console.warn('⚠️ Validation failed');
       toast({
         title: "Onvolledige gegevens",
         description: "Vul alle velden in",
@@ -19,9 +28,11 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
     }
 
     // Check if exact player already exists
+    console.log('🔍 Checking if player exists...');
     const existingPlayer = await checkPlayerExists(firstName, lastName, birthDate);
     
     if (existingPlayer) {
+      console.warn('⚠️ Player already exists:', existingPlayer);
       const teamName = existingPlayer.teams?.team_name || 'onbekend team';
       toast({
         title: "Speler bestaat al",
@@ -32,8 +43,10 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
     }
 
     // Check if name already exists with different birth date
+    console.log('🔍 Checking if name exists...');
     const existingName = await checkNameExists(firstName, lastName);
     if (existingName) {
+      console.warn('⚠️ Name already exists:', existingName);
       const teamName = existingName.teams?.team_name || 'onbekend team';
       toast({
         title: "Naam bestaat al",
@@ -44,33 +57,32 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
     }
     
     try {
-      console.log('📝 Adding player with timestamp:', new Date().toISOString(), {
+      console.log('📝 Executing database INSERT...');
+      const insertData = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         birth_date: birthDate,
-        team_id: teamId
-      });
+        team_id: teamId,
+        is_active: true
+      };
+      console.log('📊 Insert data:', insertData);
 
       const { data, error } = await supabase
         .from('players')
-        .insert({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          birth_date: birthDate,
-          team_id: teamId,
-          is_active: true
-        })
+        .insert(insertData)
         .select();
       
       if (error) {
-        console.error('❌ Supabase error adding player:', error);
+        console.error('❌ Database INSERT error:', error);
         throw error;
       }
 
-      console.log('✅ Player added successfully at:', new Date().toISOString(), data);
+      console.log('✅ Database INSERT successful:', data);
       
       // Enhanced refresh with retry logic
+      console.log('🔄 Starting refresh process...');
       await refreshWithRetry(refreshPlayers);
+      console.log('✅ Refresh process completed');
       
       toast({
         title: "Speler toegevoegd",

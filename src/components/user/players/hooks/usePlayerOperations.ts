@@ -10,6 +10,16 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
   const { canEdit, isLocked, lockDate } = usePlayerListLock();
   const { addPlayer, updatePlayer, removePlayer } = usePlayerCRUD(refreshPlayers);
   
+  console.log('🎯 usePlayerOperations initialized with:', {
+    selectedTeam,
+    canEdit,
+    isLocked,
+    lockDate,
+    hasAddPlayer: !!addPlayer,
+    hasUpdatePlayer: !!updatePlayer,
+    hasRemovePlayer: !!removePlayer
+  });
+  
   const [newPlayer, setNewPlayer] = useState<NewPlayerData>({
     firstName: "", 
     lastName: "",
@@ -36,7 +46,14 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
   
   // Handle add new player
   const handleAddPlayer = async () => {
-    console.log('🎯 handleAddPlayer called - canEdit:', canEdit, 'isLocked:', isLocked);
+    console.log('🎯 handleAddPlayer called - START');
+    console.log('📊 Current state:', {
+      canEdit,
+      isLocked,
+      selectedTeam,
+      newPlayer,
+      timestamp: new Date().toISOString()
+    });
     
     if (!canEdit) {
       console.warn('⚠️ Cannot edit - showing lock warning');
@@ -54,12 +71,28 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       return;
     }
 
-    console.log('📝 Adding player:', newPlayer, 'to team:', selectedTeam);
+    console.log('📝 Calling addPlayer function with data:', {
+      firstName: newPlayer.firstName,
+      lastName: newPlayer.lastName,
+      birthDate: newPlayer.birthDate,
+      teamId: selectedTeam
+    });
     
-    const success = await addPlayer(newPlayer.firstName, newPlayer.lastName, newPlayer.birthDate, selectedTeam);
-    if (success) {
-      setNewPlayer({firstName: "", lastName: "", birthDate: ""});
+    try {
+      const success = await addPlayer(newPlayer.firstName, newPlayer.lastName, newPlayer.birthDate, selectedTeam);
+      console.log('📊 Add player result:', success);
+      
+      if (success) {
+        console.log('✅ Add successful, clearing form');
+        setNewPlayer({firstName: "", lastName: "", birthDate: ""});
+      } else {
+        console.error('❌ Add failed');
+      }
+    } catch (error) {
+      console.error('💥 Error in handleAddPlayer:', error);
     }
+    
+    console.log('🎯 handleAddPlayer called - END');
   };
   
   // Handle save edited player

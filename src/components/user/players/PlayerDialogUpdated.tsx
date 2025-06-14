@@ -32,48 +32,51 @@ const PlayerDialogUpdated: React.FC<PlayerDialogUpdatedProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nieuwe speler toevoegen</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="bg-purple-100 border-purple-light shadow-lg">
+        <DialogHeader className="bg-purple-100">
+          <DialogTitle className="text-2xl text-purple-light">Nieuwe speler toevoegen</DialogTitle>
+          <DialogDescription className="text-purple-dark">
             Voeg een nieuwe speler toe aan het team
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 bg-purple-100">
           <div className="space-y-2">
-            <label>Voornaam</label>
+            <label className="text-purple-dark font-medium">Voornaam</label>
             <Input
               value={newPlayer.firstName}
               onChange={(e) => onPlayerChange({...newPlayer, firstName: e.target.value})}
               placeholder="Voornaam van de speler"
+              className="bg-white border-gray-300 text-purple-dark"
             />
           </div>
           
           <div className="space-y-2">
-            <label>Achternaam</label>
+            <label className="text-purple-dark font-medium">Achternaam</label>
             <Input
               value={newPlayer.lastName}
               onChange={(e) => onPlayerChange({...newPlayer, lastName: e.target.value})}
               placeholder="Achternaam van de speler"
+              className="bg-white border-gray-300 text-purple-dark"
             />
           </div>
           
           <div className="space-y-2">
-            <label>Geboortedatum</label>
+            <label className="text-purple-dark font-medium">Geboortedatum</label>
             <Input
               type="date"
               value={newPlayer.birthDate}
               onChange={(e) => onPlayerChange({...newPlayer, birthDate: e.target.value})}
+              className="bg-white border-gray-300 text-purple-dark"
             />
           </div>
         </div>
         
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="bg-purple-100">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="border-purple-light text-purple-dark hover:bg-purple-light hover:text-white">
             Annuleren
           </Button>
-          <Button onClick={onSave}>
+          <Button onClick={onSave} className="bg-purple-light hover:bg-purple-dark">
             Speler toevoegen
           </Button>
         </DialogFooter>
