@@ -54,11 +54,6 @@ const PlayersTab: React.FC = () => {
   
   return (
     <div className="space-y-6">
-      {/* Admin Lock Settings - Only show for admins */}
-      {user?.role === "admin" && (
-        <PlayerListLockSettings />
-      )}
-
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -148,6 +143,11 @@ const PlayersTab: React.FC = () => {
           )}
         </CardFooter>
       </Card>
+
+      {/* Admin Lock Settings - Only show for admins */}
+      {user?.role === "admin" && (
+        <PlayerListLockSettings />
+      )}
       
       <PlayerRegulations />
       
