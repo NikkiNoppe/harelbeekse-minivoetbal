@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -45,6 +46,8 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
+    --border: 0 0 0 0;
+    --input: var(--purple-200);
     --ring: var(--purple-600);
  
     --radius: 0.5rem;
@@ -56,7 +59,6 @@
     --sidebar-accent: var(--purple-400);
     --sidebar-accent-foreground: var(--purple-600);
     --sidebar-ring: var(--purple-600);
-    --border: 0 0 0 0;
   }
  
   .dark {
