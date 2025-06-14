@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -107,7 +106,7 @@ const PlayerListLockSettings: React.FC = () => {
           Spelerslijst Vergrendeling
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         <div className="flex items-center space-x-2">
           <Switch
             id="lock-active"
@@ -119,7 +118,7 @@ const PlayerListLockSettings: React.FC = () => {
           </Label>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label htmlFor="lock-date">
             Vergrendel vanaf datum
           </Label>
@@ -133,7 +132,7 @@ const PlayerListLockSettings: React.FC = () => {
         </div>
 
         {isActive && lockDate && (
-          <div className="p-3 bg-gray-50 rounded-md">
+          <div className="p-2 bg-gray-50 rounded-md">
             <p className="text-sm text-gray-600">
               Status: {isCurrentlyLocked() ? (
                 <span className="text-red-600 font-medium">
@@ -154,6 +153,7 @@ const PlayerListLockSettings: React.FC = () => {
         <Button 
           onClick={saveSettings} 
           disabled={saving}
+          size="sm"
           className="w-full"
         >
           {saving ? "Opslaan..." : "Instellingen opslaan"}
