@@ -82,7 +82,12 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       return;
     }
 
-    console.log('📝 Updating player:', editingPlayer);
+    console.log('📝 Updating player with data:', {
+      player_id: editingPlayer.player_id,
+      firstName: editingPlayer.firstName,
+      lastName: editingPlayer.lastName,
+      birthDate: editingPlayer.birthDate
+    });
 
     const success = await updatePlayer(
       editingPlayer.player_id,
@@ -93,6 +98,8 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
     
     if (success) {
       setEditingPlayer(null);
+      // Force a refresh to see the changes immediately
+      await refreshPlayers();
     }
   };
   
@@ -107,7 +114,11 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
     }
 
     console.log('🗑️ Removing player:', playerId);
-    await removePlayer(playerId);
+    const success = await removePlayer(playerId);
+    if (success) {
+      // Force a refresh to see the changes immediately
+      await refreshPlayers();
+    }
   };
 
   return {

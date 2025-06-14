@@ -143,29 +143,21 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      // Prepare comparison values
+      // Prepare comparison values - trim and normalize
       const trimmedFirstName = firstName.trim();
       const trimmedLastName = lastName.trim();
       const normalizedBirthDate = birthDate;
-
-      // Debug logging for comparison
-      console.log('🔍 Comparing values:');
-      console.log('Current first_name:', `"${currentPlayer.first_name}"`);
-      console.log('New first_name:', `"${trimmedFirstName}"`);
-      console.log('Current last_name:', `"${currentPlayer.last_name}"`);
-      console.log('New last_name:', `"${trimmedLastName}"`);
-      console.log('Current birth_date:', `"${currentPlayer.birth_date}"`);
-      console.log('New birth_date:', `"${normalizedBirthDate}"`);
 
       // Check if any changes were actually made
       const firstNameChanged = currentPlayer.first_name !== trimmedFirstName;
       const lastNameChanged = currentPlayer.last_name !== trimmedLastName;
       const birthDateChanged = currentPlayer.birth_date !== normalizedBirthDate;
       
-      console.log('🔍 Change detection:');
-      console.log('First name changed:', firstNameChanged);
-      console.log('Last name changed:', lastNameChanged);
-      console.log('Birth date changed:', birthDateChanged);
+      console.log('Changes detected:', {
+        firstName: firstNameChanged,
+        lastName: lastNameChanged,
+        birthDate: birthDateChanged
+      });
 
       const hasChanges = firstNameChanged || lastNameChanged || birthDateChanged;
 
@@ -234,7 +226,6 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
       console.log('✅ Player update successful');
       
       // Force refresh of players data
-      console.log('🔄 Refreshing players list...');
       await refreshPlayers();
       
       toast({
@@ -242,7 +233,6 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         description: `${firstName} ${lastName} is succesvol bijgewerkt`,
       });
       
-      console.log('✅ Player update process completed successfully');
       return true;
     } catch (error) {
       console.error('❌ Error updating player:', error);
