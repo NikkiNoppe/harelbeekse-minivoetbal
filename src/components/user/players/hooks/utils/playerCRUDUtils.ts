@@ -66,3 +66,53 @@ export const refreshWithRetry = async (refreshPlayers: () => Promise<void>, maxR
     }
   }
 };
+
+// NEW: Test database connectivity and permissions
+export const testDatabaseConnection = async () => {
+  console.log('🔍 TESTING DATABASE CONNECTION AND PERMISSIONS');
+  
+  try {
+    // Test basic connectivity
+    const { data: testQuery, error: testError } = await supabase
+      .from('players')
+      .select('count(*)')
+      .limit(1);
+    
+    console.log('📊 Database connectivity test:', {
+      testQuery,
+      testError,
+      timestamp: new Date().toISOString()
+    });
+
+    if (testError) {
+      console.error('❌ Database connectivity failed:', testError);
+      return false;
+    }
+
+    // Test update permissions by trying a harmless update
+    const { data: permissionTest, error: permissionError } = await supabase
+      .from('players')
+      .select('player_id')
+      .limit(1)
+      .single();
+
+    if (permissionTest) {
+      const { data: updateTest, error: updateError } = await supabase
+        .from('players')
+        .update({ last_name: permissionTest.first_name }) // Update with same value
+        .eq('player_id', permissionTest.player_id)
+        .select();
+
+      console.log('📊 Update permission test:', {
+        updateTest,
+        updateError,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    return true;
+  } catch (error) {
+    console.error('💥 Database connection test failed:', error);
+    return false;
+  }
+};

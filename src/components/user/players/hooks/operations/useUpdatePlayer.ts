@@ -9,7 +9,17 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
   const { checkPlayerExists, checkNameExists, validatePlayerData } = usePlayerValidation();
 
   const updatePlayer = async (playerId: number, firstName: string, lastName: string, birthDate: string) => {
+    console.log('🔄 UPDATE PLAYER OPERATION START - DETAILED DEBUG');
+    console.log('📊 Update parameters:', {
+      playerId,
+      firstName,
+      lastName,
+      birthDate,
+      timestamp: new Date().toISOString()
+    });
+
     if (!validatePlayerData(firstName, lastName, birthDate)) {
+      console.log('❌ Validation failed for update');
       toast({
         title: "Onvolledige gegevens",
         description: "Vul alle velden in",
@@ -19,22 +29,22 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
     }
 
     try {
-      console.log('🔄 Starting player update with timestamp:', new Date().toISOString(), {
-        player_id: playerId,
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        birth_date: birthDate
-      });
-
-      // Get current player data to check for actual changes
+      // Get current player data first for debugging
+      console.log('🔍 Fetching current player data for comparison...');
       const { data: currentPlayer, error: fetchError } = await supabase
         .from('players')
-        .select('player_id, first_name, last_name, birth_date, is_active')
+        .select('player_id, first_name, last_name, birth_date, is_active, team_id')
         .eq('player_id', playerId)
         .single();
 
+      console.log('📊 Current player fetch result:', {
+        currentPlayer,
+        fetchError,
+        timestamp: new Date().toISOString()
+      });
+
       if (fetchError) {
-        console.error('❌ Error fetching current player:', fetchError);
+        console.error('❌ Error fetching current player for update:', fetchError);
         toast({
           title: "Fout bij ophalen speler",
           description: `Kon spelergegevens niet ophalen: ${fetchError.message}`,
@@ -53,7 +63,6 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      // Check if player is inactive and warn user
       if (!currentPlayer.is_active) {
         console.warn('⚠️ Attempting to update inactive player:', playerId);
         toast({
@@ -64,7 +73,7 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      // Prepare comparison values - trim and normalize
+      // Prepare comparison values
       const trimmedFirstName = firstName.trim();
       const trimmedLastName = lastName.trim();
       const normalizedBirthDate = birthDate;
@@ -74,11 +83,22 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
       const lastNameChanged = currentPlayer.last_name !== trimmedLastName;
       const birthDateChanged = currentPlayer.birth_date !== normalizedBirthDate;
       
-      console.log('📊 Changes detected:', {
-        firstName: firstNameChanged,
-        lastName: lastNameChanged,
-        birthDate: birthDateChanged,
-        timestamp: new Date().toISOString()
+      console.log('📊 Changes analysis:', {
+        original: {
+          firstName: currentPlayer.first_name,
+          lastName: currentPlayer.last_name,
+          birthDate: currentPlayer.birth_date
+        },
+        new: {
+          firstName: trimmedFirstName,
+          lastName: trimmedLastName,
+          birthDate: normalizedBirthDate
+        },
+        changes: {
+          firstName: firstNameChanged,
+          lastName: lastNameChanged,
+          birthDate: birthDateChanged
+        }
       });
 
       const hasChanges = firstNameChanged || lastNameChanged || birthDateChanged;
@@ -89,18 +109,17 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
           title: "Geen wijzigingen",
           description: "Er zijn geen wijzigingen om op te slaan",
         });
-        return true; // Return true since this is not an error
+        return true;
       }
 
-      console.log('✅ Changes detected, proceeding with update');
-
-      // Check if name changed - only validate duplicates if name actually changed
+      // Check for duplicates if name changed
       const nameChanged = firstNameChanged || lastNameChanged;
       
       if (nameChanged) {
-        // Check if name already exists with any birth date
+        console.log('🔍 Checking for name duplicates...');
         const existingName = await checkNameExists(firstName, lastName, playerId);
         if (existingName) {
+          console.warn('⚠️ Name already exists:', existingName);
           const teamName = existingName.teams?.team_name || 'onbekend team';
           toast({
             title: "Naam bestaat al",
@@ -111,10 +130,12 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
         }
       }
 
-      // Check if exact combination exists (name + birth date)
+      // Check if exact combination exists
+      console.log('🔍 Checking for exact player match...');
       const existingPlayer = await checkPlayerExists(firstName, lastName, birthDate, playerId);
       
       if (existingPlayer) {
+        console.warn('⚠️ Exact player already exists:', existingPlayer);
         const teamName = existingPlayer.teams?.team_name || 'onbekend team';
         toast({
           title: "Speler bestaat al",
@@ -124,19 +145,33 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      // Perform the update
-      console.log('📝 Executing update query at:', new Date().toISOString());
-      const { error: updateError } = await supabase
+      // Perform the update with detailed logging
+      console.log('📝 EXECUTING UPDATE QUERY - START');
+      console.log('📊 Update data being sent:', {
+        first_name: trimmedFirstName,
+        last_name: trimmedLastName,
+        birth_date: normalizedBirthDate,
+        where_condition: `player_id = ${playerId}`
+      });
+
+      const { data: updateResult, error: updateError } = await supabase
         .from('players')
         .update({
           first_name: trimmedFirstName,
           last_name: trimmedLastName,
           birth_date: normalizedBirthDate
         })
-        .eq('player_id', playerId);
+        .eq('player_id', playerId)
+        .select('*');
       
+      console.log('📊 UPDATE QUERY RESPONSE:', {
+        updateResult,
+        updateError,
+        timestamp: new Date().toISOString()
+      });
+
       if (updateError) {
-        console.error('❌ Supabase error updating player:', updateError);
+        console.error('❌ Supabase update error:', updateError);
         toast({
           title: "Database fout",
           description: `Kon speler niet bijwerken: ${updateError.message}`,
@@ -145,26 +180,44 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      console.log('✅ Player update query successful at:', new Date().toISOString());
-      
-      // Add delay before refresh to allow database transaction to commit
+      console.log('✅ Update query completed successfully');
+      console.log('📊 Updated player data:', updateResult);
+
+      // Test immediate verification without delay
+      console.log('🔍 IMMEDIATE VERIFICATION TEST');
+      const { data: immediateCheck, error: immediateError } = await supabase
+        .from('players')
+        .select('player_id, first_name, last_name, birth_date')
+        .eq('player_id', playerId)
+        .single();
+
+      console.log('📊 Immediate verification result:', {
+        immediateCheck,
+        immediateError,
+        expected: { firstName: trimmedFirstName, lastName: trimmedLastName, birthDate: normalizedBirthDate }
+      });
+
+      // Add delay and verify again
       console.log('⏱️ Waiting 500ms for database transaction to commit...');
       await delay(500);
       
       // Enhanced refresh with retry logic
+      console.log('🔄 Starting refresh process...');
       await refreshWithRetry(refreshPlayers);
       
-      // Verify the update was persisted
-      console.log('🔍 Verifying update persistence...');
+      // Final verification
+      console.log('🔍 FINAL VERIFICATION');
       const isVerified = await verifyPlayerUpdate(playerId, trimmedFirstName, trimmedLastName, normalizedBirthDate);
+      console.log('📊 Final verification result:', isVerified);
       
       if (!isVerified) {
         console.warn('⚠️ Update verification failed, attempting additional refresh...');
         await delay(1000);
         await refreshWithRetry(refreshPlayers);
         
-        // Check again
         const secondVerification = await verifyPlayerUpdate(playerId, trimmedFirstName, trimmedLastName, normalizedBirthDate);
+        console.log('📊 Second verification result:', secondVerification);
+        
         if (!secondVerification) {
           console.error('❌ Update verification failed after retry');
           toast({
@@ -173,8 +226,6 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
             variant: "destructive",
           });
         }
-      } else {
-        console.log('✅ Update verification successful');
       }
       
       toast({
@@ -182,9 +233,16 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
         description: `${firstName} ${lastName} is succesvol bijgewerkt`,
       });
       
+      console.log('🔄 UPDATE PLAYER OPERATION END');
       return true;
     } catch (error) {
-      console.error('💥 Error updating player:', error);
+      console.error('💥 CRITICAL ERROR in updatePlayer:', error);
+      console.error('💥 Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        timestamp: new Date().toISOString()
+      });
+      
       toast({
         title: "Fout bij bijwerken",
         description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het bijwerken van de speler.",
