@@ -15,8 +15,12 @@ import PlayerDialogUpdated from "../players/PlayerDialogUpdated";
 import EditPlayerDialogUpdated from "../players/EditPlayerDialogUpdated";
 import PlayerRegulations from "../players/PlayerRegulations";
 import { usePlayersUpdated } from "../players/usePlayersUpdated";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const PlayersTabUpdated: React.FC = () => {
+  // Use main AuthProvider to get user data
+  const { user: authUser } = useAuth();
+  
   const {
     players,
     teams,
@@ -39,12 +43,11 @@ const PlayersTabUpdated: React.FC = () => {
     handleRemovePlayer,
     formatDate,
     getFullName,
-    user,
     userTeamName
   } = usePlayersUpdated();
 
   // Get the current team name for display
-  const currentTeamName = user?.role === "player_manager" 
+  const currentTeamName = authUser?.role === "player_manager" 
     ? userTeamName 
     : teams.find(team => team.team_id === selectedTeam)?.team_name || "";
   
@@ -56,7 +59,7 @@ const PlayersTabUpdated: React.FC = () => {
             <div>
               <CardTitle>Spelerslijst</CardTitle>
               <CardDescription>
-                {user?.role === "player_manager" && currentTeamName ? (
+                {authUser?.role === "player_manager" && currentTeamName ? (
                   <>Spelers van {currentTeamName}</>
                 ) : (
                   <>Beheer de spelers in de competitie</>
@@ -64,7 +67,7 @@ const PlayersTabUpdated: React.FC = () => {
               </CardDescription>
             </div>
             
-            {user?.role === "admin" && (
+            {authUser?.role === "admin" && (
               <div className="flex flex-col gap-2">
                 <select 
                   className="p-2 bg-white border border-gray-200 rounded-md text-gray-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
