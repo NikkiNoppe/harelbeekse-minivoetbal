@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,18 +16,18 @@ const PlayerRegulations: React.FC = () => {
           Belangrijke regels en richtlijnen voor spelersbeheer
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4 bg-white">
-        <Alert className="bg-white">
+      <CardContent className="space-y-6 bg-white p-6">
+        <Alert className="bg-white p-6">
           <Users className="h-4 w-4 text-purple-dark" />
-          <AlertDescription className="text-purple-dark">
-            <strong className="text-purple-dark">Maximum spelers:</strong> Elk team mag maximaal 20 spelers hebben per seizoen.
-            <p><strong className="text-purple-dark">Teamwijzigingen:</strong> Spelers kunnen niet van team wisselen tijdens het lopende seizoen.</p>
-            <p><strong className="text-purple-dark">Spelersgegevens:</strong> Alle spelers moeten een geldige geboortedatum hebben voor leeftijdsverificatie.</p>
+          <AlertDescription className="text-purple-dark space-y-3 ml-6">
+            <p className="leading-relaxed"><strong className="text-purple-dark">Maximum spelers:</strong> Elk team mag maximaal 20 spelers hebben per seizoen.</p>
+            <p className="leading-relaxed"><strong className="text-purple-dark">Teamwijzigingen:</strong> Spelers kunnen niet van team wisselen tijdens het lopende seizoen.</p>
+            <p className="leading-relaxed"><strong className="text-purple-dark">Spelersgegevens:</strong> Alle spelers moeten een geldige geboortedatum hebben voor leeftijdsverificatie.</p>
           </AlertDescription>
         </Alert>
         
-        <div className="text-sm text-purple-dark mt-4">
-          <p className="text-purple-dark">Voor vragen over het spelersreglement, neem contact op met de competitieleiding.</p>
+        <div className="text-sm text-purple-dark mt-6 p-4 bg-purple-50 rounded-md">
+          <p className="text-purple-dark leading-relaxed">Voor vragen over het spelersreglement, neem contact op met de competitieleiding.</p>
         </div>
       </CardContent>
     </Card>
