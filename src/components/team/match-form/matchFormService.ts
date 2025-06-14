@@ -1,4 +1,3 @@
-
 import { MatchFormData } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -19,8 +18,8 @@ export const fetchUpcomingMatches = async (
       away_team_id,
       is_cup_match,
       matchday_id,
-      teams_home:home_team_id ( team_name ),
-      teams_away:away_team_id ( team_name )
+      teams_home:teams!home_team_id ( team_name ),
+      teams_away:teams!away_team_id ( team_name )
       `
     );
 
@@ -93,8 +92,8 @@ export const getMatchForm = async (
       away_team_id,
       is_cup_match,
       matchday_id,
-      teams_home:home_team_id ( team_name ),
-      teams_away:away_team_id ( team_name )
+      teams_home:teams!home_team_id ( team_name ),
+      teams_away:teams!away_team_id ( team_name )
       `
     )
     .eq("match_id", matchId)
