@@ -36,12 +36,16 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
   
   // Handle add new player
   const handleAddPlayer = async () => {
+    console.log('🎯 handleAddPlayer called - canEdit:', canEdit, 'isLocked:', isLocked);
+    
     if (!canEdit) {
+      console.warn('⚠️ Cannot edit - showing lock warning');
       showLockWarning();
       return;
     }
 
     if (!selectedTeam) {
+      console.error('❌ No team selected');
       toast({
         title: "Geen team geselecteerd",
         description: "Selecteer eerst een team",
@@ -49,6 +53,8 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       });
       return;
     }
+
+    console.log('📝 Adding player:', newPlayer, 'to team:', selectedTeam);
     
     const success = await addPlayer(newPlayer.firstName, newPlayer.lastName, newPlayer.birthDate, selectedTeam);
     if (success) {
@@ -58,15 +64,25 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
   
   // Handle save edited player
   const handleSaveEditedPlayer = async () => {
+    console.log('🎯 handleSaveEditedPlayer called - canEdit:', canEdit, 'isLocked:', isLocked);
+    
     if (!canEdit) {
+      console.warn('⚠️ Cannot edit - showing lock warning');
       showLockWarning();
       return;
     }
 
     if (!editingPlayer) {
-      console.error('No player selected for editing');
+      console.error('❌ No player selected for editing');
+      toast({
+        title: "Geen speler geselecteerd",
+        description: "Er is geen speler geselecteerd om te bewerken",
+        variant: "destructive",
+      });
       return;
     }
+
+    console.log('📝 Updating player:', editingPlayer);
 
     const success = await updatePlayer(
       editingPlayer.player_id,
@@ -82,11 +98,15 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
   
   // Handle remove player
   const handleRemovePlayer = async (playerId: number) => {
+    console.log('🎯 handleRemovePlayer called for player:', playerId, '- canEdit:', canEdit, 'isLocked:', isLocked);
+    
     if (!canEdit) {
+      console.warn('⚠️ Cannot edit - showing lock warning');
       showLockWarning();
       return;
     }
 
+    console.log('🗑️ Removing player:', playerId);
     await removePlayer(playerId);
   };
 

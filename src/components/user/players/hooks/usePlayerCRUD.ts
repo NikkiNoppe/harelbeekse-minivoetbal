@@ -105,18 +105,39 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         birth_date: birthDate
       });
 
-      // Get current player data
+      // Get current player data - REMOVED is_active filter from WHERE clause
       const { data: currentPlayer, error: fetchError } = await supabase
         .from('players')
         .select('player_id, first_name, last_name, birth_date, is_active')
         .eq('player_id', playerId)
         .single();
 
-      if (fetchError || !currentPlayer || !currentPlayer.is_active) {
+      if (fetchError) {
         console.error('❌ Error fetching current player:', fetchError);
         toast({
+          title: "Fout bij ophalen speler",
+          description: `Kon spelergegevens niet ophalen: ${fetchError.message}`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (!currentPlayer) {
+        console.error('❌ Player not found with ID:', playerId);
+        toast({
           title: "Speler niet gevonden",
-          description: "De speler bestaat niet meer of is niet actief",
+          description: "De speler bestaat niet meer",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Check if player is inactive and warn user
+      if (!currentPlayer.is_active) {
+        console.warn('⚠️ Attempting to update inactive player:', playerId);
+        toast({
+          title: "Inactieve speler",
+          description: "Deze speler is gedeactiveerd en kan niet worden bijgewerkt",
           variant: "destructive",
         });
         return false;
@@ -152,7 +173,7 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      // Now perform the update
+      // Now perform the update - REMOVED is_active filter from WHERE clause
       const { data, error } = await supabase
         .from('players')
         .update({
@@ -161,18 +182,22 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
           birth_date: birthDate
         })
         .eq('player_id', playerId)
-        .eq('is_active', true)
         .select();
       
       if (error) {
         console.error('❌ Supabase error updating player:', error);
-        throw error;
+        toast({
+          title: "Database fout",
+          description: `Kon speler niet bijwerken: ${error.message}`,
+          variant: "destructive",
+        });
+        return false;
       }
 
       console.log('✅ Player update successful, returned data:', data);
       
       if (!data || data.length === 0) {
-        console.warn('⚠️ No rows were updated');
+        console.warn('⚠️ No rows were updated - this should not happen');
         toast({
           title: "Geen wijzigingen",
           description: "Er zijn geen wijzigingen doorgevoerd",
@@ -205,7 +230,44 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
 
   const removePlayer = async (playerId: number) => {
     try {
-      console.log('Removing player:', playerId);
+      console.log('🗑️ Starting player removal for ID:', playerId);
+
+      // First check if player exists and is active
+      const { data: currentPlayer, error: fetchError } = await supabase
+        .from('players')
+        .select('player_id, first_name, last_name, is_active')
+        .eq('player_id', playerId)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Error fetching player for removal:', fetchError);
+        toast({
+          title: "Fout bij ophalen speler",
+          description: `Kon spelergegevens niet ophalen: ${fetchError.message}`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (!currentPlayer) {
+        console.error('❌ Player not found for removal:', playerId);
+        toast({
+          title: "Speler niet gevonden",
+          description: "De speler bestaat niet meer",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (!currentPlayer.is_active) {
+        console.warn('⚠️ Player already inactive:', playerId);
+        toast({
+          title: "Speler al verwijderd",
+          description: "Deze speler is al gedeactiveerd",
+          variant: "destructive",
+        });
+        return false;
+      }
 
       const { data, error } = await supabase
         .from('players')
@@ -214,25 +276,30 @@ export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
         .select();
       
       if (error) {
-        console.error('Supabase error removing player:', error);
-        throw error;
+        console.error('❌ Supabase error removing player:', error);
+        toast({
+          title: "Database fout",
+          description: `Kon speler niet verwijderen: ${error.message}`,
+          variant: "destructive",
+        });
+        return false;
       }
 
-      console.log('Player removed successfully:', data);
+      console.log('✅ Player removed successfully:', data);
       
       await refreshPlayers();
       
       toast({
         title: "Speler verwijderd",
-        description: "De speler is verwijderd uit het team",
+        description: `${currentPlayer.first_name} ${currentPlayer.last_name} is verwijderd uit het team`,
       });
       
       return true;
     } catch (error) {
-      console.error('Error removing player:', error);
+      console.error('❌ Error removing player:', error);
       toast({
         title: "Fout bij verwijderen",
-        description: "Er is een fout opgetreden bij het verwijderen van de speler.",
+        description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het verwijderen van de speler.",
         variant: "destructive",
       });
       return false;
