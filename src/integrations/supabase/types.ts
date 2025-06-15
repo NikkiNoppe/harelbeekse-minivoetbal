@@ -481,26 +481,41 @@ export type Database = {
       }
       match_forms: {
         Row: {
+          away_score: number | null
           created_at: string | null
           form_id: number
+          home_score: number | null
+          is_locked: boolean | null
           is_submitted: boolean | null
           match_id: number
+          referee: string | null
+          referee_notes: string | null
           team_id: number
           updated_at: string | null
         }
         Insert: {
+          away_score?: number | null
           created_at?: string | null
           form_id?: number
+          home_score?: number | null
+          is_locked?: boolean | null
           is_submitted?: boolean | null
           match_id: number
+          referee?: string | null
+          referee_notes?: string | null
           team_id: number
           updated_at?: string | null
         }
         Update: {
+          away_score?: number | null
           created_at?: string | null
           form_id?: number
+          home_score?: number | null
+          is_locked?: boolean | null
           is_submitted?: boolean | null
           match_id?: number
+          referee?: string | null
+          referee_notes?: string | null
           team_id?: number
           updated_at?: string | null
         }
