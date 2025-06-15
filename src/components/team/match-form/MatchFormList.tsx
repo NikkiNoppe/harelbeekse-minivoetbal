@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, MapPin, Lock, CheckCircle, AlertCircle } from "lucide-react";
+import { Clock, MapPin, Lock, CheckCircle } from "lucide-react";
 import { MatchFormData } from "./types";
 
 interface MatchFormListProps {
@@ -47,39 +47,25 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   const unlockedMatches = filteredMatches.filter(match => !match.isLocked);
   const lockedMatches = filteredMatches.filter(match => match.isLocked);
 
-  // Group unlocked matches by matchday
-  const groupUnlockedByMatchday = (matches: MatchFormData[]) => {
+  // Group matches by matchday
+  const groupByMatchday = (matches: MatchFormData[]) => {
     return matches.reduce((groups, match) => {
       const matchday = match.matchday || "Geen speeldag";
-      if (!groups[matchday]) {
-        groups[matchday] = [];
-      }
+      if (!groups[matchday]) groups[matchday] = [];
       groups[matchday].push(match);
       return groups;
     }, {} as Record<string, MatchFormData[]>);
   };
 
-  // Group locked matches by matchday
-  const groupLockedByMatchday = (matches: MatchFormData[]) => {
-    return matches.reduce((groups, match) => {
-      const matchday = match.matchday || "Geen speeldag";
-      if (!groups[matchday]) {
-        groups[matchday] = [];
-      }
-      groups[matchday].push(match);
-      return groups;
-    }, {} as Record<string, MatchFormData[]>);
-  };
-
-  const unlockedGrouped = groupUnlockedByMatchday(unlockedMatches);
-  const lockedGrouped = groupLockedByMatchday(lockedMatches);
+  const unlockedGrouped = groupByMatchday(unlockedMatches);
+  const lockedGrouped = groupByMatchday(lockedMatches);
 
   // Sort matchdays numerically
   const sortMatchdays = (matchdays: string[]) => {
     return matchdays.sort((a, b) => {
-      const getMatchdayNumber = (matchday: string) => {
-        const match = matchday.match(/\d+/);
-        return match ? parseInt(match[0]) : 0;
+      const getMatchdayNumber = (str: string) => {
+        const num = str.match(/\d+/);
+        return num ? parseInt(num[0]) : 0;
       };
       return getMatchdayNumber(a) - getMatchdayNumber(b);
     });
@@ -90,12 +76,12 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
 
   const getMatchStatus = (match: MatchFormData) => {
     if (match.isLocked) {
-      return { label: "Vergrendeld", color: "bg-gray-500", icon: Lock };
+      return { label: "Vergrendeld", color: "bg-gray-400", icon: Lock };
     }
     if (match.isCompleted) {
       return { label: "Afgerond", color: "bg-green-500", icon: CheckCircle };
     }
-    return { label: "Te spelen", color: "bg-orange-500", icon: Clock };
+    return { label: "Te spelen", color: "bg-orange-400", icon: Clock };
   };
 
   const canUserEdit = (match: MatchFormData): boolean => {
@@ -126,19 +112,22 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     const canEdit = canUserEdit(match);
     
     return (
-      <div key={match.matchId} className="flex items-center justify-between p-2 border rounded-lg hover:bg-gray-50 text-sm">
+      <div
+        key={match.matchId}
+        className="flex items-center justify-between p-3 border border-gray-100 rounded-lg bg-white/60 mb-1 hover:bg-gray-50 transition text-sm"
+      >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <Badge variant="outline" className="bg-primary text-white text-xs px-1 py-0">
+            <Badge variant="outline" className="text-xs font-semibold border-primary text-primary bg-transparent px-1.5 py-0">
               {match.uniqueNumber}
             </Badge>
-            <Badge variant="outline" className={`${status.color} text-white text-xs px-1 py-0`}>
+            <Badge variant="outline" className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm`}>
               <StatusIcon className="h-3 w-3 mr-1" />
               {status.label}
             </Badge>
           </div>
           
-          <div className="font-medium text-xs mb-1 truncate">
+          <div className="font-medium text-xs mb-0.5 truncate text-purple-dark">
             {match.homeTeamName} vs {match.awayTeamName}
             {(match.homeScore !== undefined && match.awayScore !== undefined) && (
               <span className="ml-2 font-bold text-primary">
@@ -147,10 +136,10 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
             )}
           </div>
           
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              <span>{match.date} {match.time}</span>
+              <span>{match.date} {match.time && <span>{match.time}</span>}</span>
             </div>
             <div className="flex items-center gap-1 truncate">
               <MapPin className="h-3 w-3 flex-shrink-0" />
@@ -161,9 +150,9 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
         
         <Button 
           onClick={() => onSelectMatch(match)}
-          variant={canEdit ? "default" : "outline"}
+          variant={canEdit ? "secondary" : "ghost"}
           size="sm"
-          className="ml-2 text-xs px-2 py-1"
+          className="ml-3 text-xs px-3 py-1 rounded font-medium"
         >
           {getButtonText(match)}
         </Button>
@@ -173,56 +162,50 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Wedstrijden laden...</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-white rounded-xl px-6 py-12 shadow text-center">
+        <p className="text-muted-foreground">Wedstrijden laden...</p>
+      </div>
     );
   }
 
   if (filteredMatches.length === 0) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Geen wedstrijden gevonden</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-white rounded-xl px-6 py-12 shadow text-center">
+        <p className="text-muted-foreground">Geen wedstrijden gevonden</p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Unlocked matches first */}
       {sortedUnlockedMatchdays.map((matchday) => (
-        <Card key={`unlocked-${matchday}`}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">{matchday}</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 space-y-2">
+        <div key={`unlocked-${matchday}`} className="pt-0">
+          <div className="flex items-center gap-2 mb-1 text-base text-purple-dark font-semibold pl-2">
+            {matchday}
+          </div>
+          <div className="space-y-1">
             {unlockedGrouped[matchday].map(renderMatchCard)}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
 
       {/* Locked matches at the bottom */}
-      {sortedLockedMatchdays.map((matchday) => (
-        <Card key={`locked-${matchday}`} className="opacity-75">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Lock className="h-4 w-4 text-gray-500" />
-              {matchday} (Vergrendeld)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 space-y-2">
-            {lockedGrouped[matchday].map(renderMatchCard)}
-          </CardContent>
-        </Card>
-      ))}
+      {sortedLockedMatchdays.length > 0 && (
+        <div className="pt-1 opacity-80">
+          {sortedLockedMatchdays.map(matchday => (
+            <div key={`locked-${matchday}`}>
+              <div className="flex items-center gap-2 mb-1 text-base text-gray-400 font-semibold pl-2">
+                <Lock className="h-4 w-4" />
+                {matchday} (Vergrendeld)
+              </div>
+              <div className="space-y-1">
+                {lockedGrouped[matchday].map(renderMatchCard)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

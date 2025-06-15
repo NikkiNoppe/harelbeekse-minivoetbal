@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -20,16 +18,13 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
   const { user } = useAuth();
   const [selectedMatchForm, setSelectedMatchForm] = useState<MatchFormData | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  // Remove default date filter, so all matches show
-  const [dateFilter, setDateFilter] = useState(""); // was defaulting to today
+  const [dateFilter, setDateFilter] = useState("");
   const [matchdayFilter, setMatchdayFilter] = useState("");
 
-  // Check if user has elevated permissions (admin or referee)
   const hasElevatedPermissions = user?.role === "admin" || user?.role === "referee";
   const isAdmin = user?.role === "admin";
   const isReferee = user?.role === "referee";
 
-  // Fetch matches based on user permissions
   const { data: matches, isLoading: loadingMatches, refetch } = useQuery({
     queryKey: ['teamMatches', teamId, hasElevatedPermissions],
     queryFn: () => fetchUpcomingMatches(hasElevatedPermissions ? 0 : teamId, hasElevatedPermissions),
@@ -42,85 +37,75 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
       console.debug("[MatchFormTab] Matches received:", matches.length);
   }, [user, teamId, hasElevatedPermissions, matches]);
 
-  // Handle the selection of a match for the form
   const handleSelectMatch = (match: MatchFormData) => {
     setSelectedMatchForm(match);
   };
 
-  // If a match form is selected, render the form
   if (selectedMatchForm) {
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-medium">Wedstrijdformulier</h2>
+          <h2 className="text-xl font-semibold text-purple-dark tracking-tight">
+            Wedstrijdformulier
+          </h2>
           <button 
             onClick={() => setSelectedMatchForm(null)}
-            className="text-blue-600 hover:text-blue-800"
+            className="text-primary underline underline-offset-4 hover:text-primary-dark text-sm transition"
           >
             ← Terug naar overzicht
           </button>
         </div>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <CompactMatchForm
-              match={selectedMatchForm}
-              onComplete={() => {
-                setSelectedMatchForm(null);
-                refetch();
-              }}
-              isAdmin={isAdmin}
-              isReferee={isReferee}
-              teamId={teamId}
-            />
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl p-4 shadow mb-4">
+          <CompactMatchForm
+            match={selectedMatchForm}
+            onComplete={() => {
+              setSelectedMatchForm(null);
+              refetch();
+            }}
+            isAdmin={isAdmin}
+            isReferee={isReferee}
+            teamId={teamId}
+          />
+        </div>
       </div>
     );
   }
 
-  // Handle case when user has no teamId or matches are truly empty
   if (!user?.teamId && !hasElevatedPermissions) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              Je account is momenteel niet gekoppeld aan een team, waardoor je geen wedstrijdformulieren kunt bekijken.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-white rounded-xl px-6 py-12 shadow text-center">
+        <p className="text-muted-foreground">
+          Je account is momenteel niet gekoppeld aan een team, waardoor je geen wedstrijdformulieren kunt bekijken.
+        </p>
+      </div>
     );
   }
 
-  // Show fallback if no matches found for role
   if (!loadingMatches && matches && matches.length === 0) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              Geen (toekomstige) wedstrijden gevonden.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-white rounded-xl px-6 py-12 shadow text-center">
+        <p className="text-muted-foreground">
+          Geen (toekomstige) wedstrijden gevonden.
+        </p>
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      <div className="mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-0.5">
+          <h2 className="text-xl font-semibold text-purple-dark tracking-tight">
+            Wedstrijdformulieren
+            {hasElevatedPermissions && (
+              <span className="text-xs text-muted-foreground ml-2 font-normal">
+                {isAdmin ? "(Admin - Alle wedstrijden)" : "(Scheidsrechter - Alle wedstrijden)"}
+              </span>
+            )}
+          </h2>
+        </div>
+      </div>
       <div>
-        <h2 className="text-xl font-medium mb-4">
-          Wedstrijdformulieren
-          {hasElevatedPermissions && (
-            <span className="text-sm text-muted-foreground ml-2">
-              {isAdmin ? "(Admin - Alle wedstrijden)" : "(Scheidsrechter - Alle wedstrijden)"}
-            </span>
-          )}
-        </h2>
-        
         <MatchFormFilter 
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
@@ -129,7 +114,6 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
           matchdayFilter={matchdayFilter}
           onMatchdayChange={setMatchdayFilter}
         />
-        
         <MatchFormList 
           matches={matches || []}
           isLoading={loadingMatches}
