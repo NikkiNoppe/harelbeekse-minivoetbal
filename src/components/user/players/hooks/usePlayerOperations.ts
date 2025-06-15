@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { NewPlayerData, EditingPlayerData } from "../types";
@@ -45,7 +44,7 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
   };
   
   // Handle add new player
-  const handleAddPlayer = async () => {
+  const handleAddPlayer = async (): Promise<boolean> => {
     console.log('🎯 handleAddPlayer called - START');
     console.log('📊 Current state:', {
       canEdit,
@@ -54,11 +53,11 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       newPlayer,
       timestamp: new Date().toISOString()
     });
-    
+
     if (!canEdit) {
       console.warn('⚠️ Cannot edit - showing lock warning');
       showLockWarning();
-      return;
+      return false;
     }
 
     if (!selectedTeam) {
@@ -68,7 +67,7 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
         description: "Selecteer eerst een team",
         variant: "destructive",
       });
-      return;
+      return false;
     }
 
     console.log('📝 Calling addPlayer function with data:', {
@@ -77,22 +76,25 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
       birthDate: newPlayer.birthDate,
       teamId: selectedTeam
     });
-    
+
     try {
       const success = await addPlayer(newPlayer.firstName, newPlayer.lastName, newPlayer.birthDate, selectedTeam);
       console.log('📊 Add player result:', success);
-      
+
       if (success) {
         console.log('✅ Add successful, clearing form');
         setNewPlayer({firstName: "", lastName: "", birthDate: ""});
+        return true;
       } else {
         console.error('❌ Add failed');
+        return false;
       }
     } catch (error) {
       console.error('💥 Error in handleAddPlayer:', error);
+      return false;
     }
-    
-    console.log('🎯 handleAddPlayer called - END');
+    // (no code should reach here, but for TS strictness)
+    // return false;
   };
   
   // Handle save edited player
