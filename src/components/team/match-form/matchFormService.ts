@@ -85,10 +85,10 @@ export const fetchUpcomingMatches = async (
   return list;
 };
 
-// New: Fetch a single match form with unified player arrays
+// New: Fetch a single match form with unified player arrays (and correct source tables)
 export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | null> => {
   const { data, error } = await supabase
-    .from("match_forms")
+    .from("matches")
     .select(`
       match_id,
       unique_number,
@@ -99,14 +99,16 @@ export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | n
       matchday_id,
       teams_home:teams!home_team_id ( team_name ),
       teams_away:teams!away_team_id ( team_name ),
-      is_submitted,
-      is_locked,
-      home_score,
-      away_score,
-      referee,
-      referee_notes,
-      home_players,
-      away_players
+      match_forms:match_forms (
+        is_submitted,
+        is_locked,
+        home_score,
+        away_score,
+        referee,
+        referee_notes,
+        home_players,
+        away_players
+      )
     `)
     .eq("match_id", matchId)
     .maybeSingle();
@@ -119,6 +121,8 @@ export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | n
     date = d.toISOString().slice(0, 10);
     time = d.toISOString().slice(11, 16);
   }
+  const form = Array.isArray(data.match_forms) && data.match_forms.length > 0 ? data.match_forms[0] : null;
+
   return {
     matchId: data.match_id,
     uniqueNumber: data.unique_number || "",
@@ -130,14 +134,14 @@ export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | n
     awayTeamName: data.teams_away?.team_name || "Onbekend",
     location: "",
     matchday: data.matchday_id ? `Speeldag ${data.matchday_id}` : "",
-    isCompleted: !!data.is_submitted,
-    isLocked: !!data.is_locked,
-    homeScore: data.home_score ?? undefined,
-    awayScore: data.away_score ?? undefined,
-    referee: data.referee ?? "",
-    refereeNotes: data.referee_notes ?? "",
-    homePlayers: data.home_players || [],
-    awayPlayers: data.away_players || []
+    isCompleted: !!form?.is_submitted,
+    isLocked: !!form?.is_locked,
+    homeScore: form?.home_score ?? undefined,
+    awayScore: form?.away_score ?? undefined,
+    referee: form?.referee ?? "",
+    refereeNotes: form?.referee_notes ?? "",
+    homePlayers: form?.home_players || [],
+    awayPlayers: form?.away_players || []
   };
 };
 
