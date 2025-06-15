@@ -193,15 +193,15 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   };
 
   return (
-    <Card>
-      <CardHeader className="bg-purple-600 rounded-t-lg">
+    <Card className="border-2" style={{ borderColor: "var(--purple-200)", background: "var(--purple-200)" }}>
+      <CardHeader style={{ background: "var(--main-color-dark)" }} className="rounded-t-lg">
         <CardTitle className="text-base text-white">Spelers</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Home Team Players */}
           <div className="space-y-3">
-            <h4 className="font-medium text-sm text-center bg-blue-600 text-white p-2 rounded shadow">
+            <h4 className="font-medium text-sm text-center p-2 rounded shadow" style={{ background: "#ab86dd", color: "#fff" }}>
               {match.homeTeamName} (Thuis)
             </h4>
             <div className="space-y-2">
@@ -212,7 +212,7 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
 
           {/* Away Team Players */}
           <div className="space-y-3">
-            <h4 className="font-medium text-sm text-center bg-red-600 text-white p-2 rounded shadow">
+            <h4 className="font-medium text-sm text-center p-2 rounded shadow" style={{ background: "#e9e0ff", color: "var(--main-color-dark)" }}>
               {match.awayTeamName} (Uit)
             </h4>
             <div className="space-y-2">

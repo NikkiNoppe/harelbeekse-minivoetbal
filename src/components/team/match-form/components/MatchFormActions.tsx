@@ -23,7 +23,12 @@ export const MatchFormActions: React.FC<MatchFormActionsProps> = ({
       <Button
         onClick={onSubmit}
         disabled={isSubmitting || !canEdit}
-        className="flex items-center gap-2 px-8 bg-purple-700 text-white hover:bg-purple-800 transition-colors"
+        className="flex items-center gap-2 px-8"
+        style={{
+          background: "var(--main-color-dark)",
+          color: "#fff",
+          borderColor: "var(--main-color-dark)"
+        }}
       >
         <Save className="h-4 w-4" />
         {isReferee ? "Bevestigen & Vergrendelen" : 

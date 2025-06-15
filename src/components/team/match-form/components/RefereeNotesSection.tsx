@@ -15,8 +15,8 @@ export const RefereeNotesSection: React.FC<RefereeNotesSectionProps> = ({
   canEdit
 }) => {
   return (
-    <Card>
-      <CardHeader className="bg-purple-600 rounded-t-lg">
+    <Card className="border-2" style={{ borderColor: "var(--purple-200)", background: "var(--purple-200)" }}>
+      <CardHeader style={{ background: "var(--main-color-dark)" }} className="rounded-t-lg">
         <CardTitle className="text-base text-white">Notities scheidsrechter</CardTitle>
       </CardHeader>
       <CardContent>
@@ -26,7 +26,7 @@ export const RefereeNotesSection: React.FC<RefereeNotesSectionProps> = ({
           disabled={!canEdit}
           placeholder="Bijzonderheden, opmerkingen..."
           rows={4}
-          className="focus:border-purple-500 focus:ring-purple-500"
+          className="focus:border-[var(--main-color-dark)] focus:ring-[var(--main-color-dark)]"
         />
       </CardContent>
     </Card>

@@ -36,9 +36,8 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
   canEditMatchData
 }) => {
   return (
-    <Card className="border-2 border-primary shadow-lg bg-gradient-to-r from-primary/5 to-primary/10">
-      {/* Header nu in purple_dark met witte tekst */}
-      <CardHeader className="bg-purple-600 text-white rounded-t-lg">
+    <Card className="border-2 shadow-lg" style={{ borderColor: "var(--purple-200)", background: "var(--purple-200)" }}>
+      <CardHeader className="rounded-t-lg" style={{ background: "var(--main-color-dark)" }}>
         <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
           ⚽ Wedstrijdgegevens
         </CardTitle>
@@ -60,7 +59,7 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
           </div>
           
           <div className="flex justify-center items-center">
-            <span className="text-3xl font-bold text-primary">-</span>
+            <span className="text-3xl font-bold text-[var(--main-color-dark)]">-</span>
           </div>
           
           <div className="space-y-2">
@@ -85,12 +84,16 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
             onValueChange={onRefereeChange}
             disabled={!canEdit || !canEditMatchData}
           >
-            <SelectTrigger className="border-2">
+            <SelectTrigger className="border-2 bg-[var(--purple-200)] text-[var(--main-color-dark)] focus:ring-2 focus:ring-[var(--main-color-dark)]">
               <SelectValue placeholder="Selecteer scheidsrechter" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-[var(--purple-200)] text-[var(--main-color-dark)] border-2 border-[var(--main-color-dark)] shadow-lg z-50">
               {MOCK_REFEREES.map((referee) => (
-                <SelectItem key={referee.id} value={referee.name}>
+                <SelectItem
+                  key={referee.id}
+                  value={referee.name}
+                  className="data-[highlighted]:bg-[var(--main-color-dark)] data-[highlighted]:text-white transition-all"
+                >
                   {referee.name}
                 </SelectItem>
               ))}
