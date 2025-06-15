@@ -1,4 +1,11 @@
 
+export interface PlayerSelection {
+  playerId: number | null;
+  playerName: string;
+  jerseyNumber: string;
+  isCaptain: boolean;
+}
+
 export interface MatchFormData {
   matchId: number;
   uniqueNumber: string;
@@ -9,13 +16,13 @@ export interface MatchFormData {
   awayTeamId: number;
   awayTeamName: string;
   location: string;
-  isHomeTeam: boolean;
   matchday: string;
   isCompleted: boolean;
   isLocked: boolean;
-  playersSubmitted: boolean;
   homeScore?: number;
   awayScore?: number;
   referee?: string;
   refereeNotes?: string;
+  homePlayers: PlayerSelection[];
+  awayPlayers: PlayerSelection[];
 }

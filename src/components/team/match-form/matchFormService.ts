@@ -1,5 +1,4 @@
-
-import { MatchFormData } from "./types";
+import { MatchFormData, PlayerSelection } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -102,73 +101,11 @@ export const fetchUpcomingMatches = async (
   return list;
 };
 
-export const updateMatchForm = async (
-  matchData: Partial<MatchFormData> & { matchId: number }
-): Promise<void> => {
-  // Update de juiste match_form via de matchId+teamId
-  if (!matchData.matchId) return;
-  // Zoek teamId in payload
-  const teamId = matchData.isHomeTeam ? matchData.homeTeamId : matchData.awayTeamId;
-  if (!teamId) return;
-
-  const updateData: any = {
-    // We slaan alle relevante velden op
-    home_score: matchData.homeScore,
-    away_score: matchData.awayScore,
-    referee: matchData.referee,
-    referee_notes: matchData.refereeNotes,
-    is_submitted: !!matchData.isCompleted,
-    updated_at: new Date().toISOString(),
-  };
-
-  // Sla niet-gewijzigde velden over
-  Object.keys(updateData).forEach((k) => {
-    if (updateData[k] === undefined) delete updateData[k];
-  });
-
-  const { error } = await supabase
-    .from("match_forms")
-    .update(updateData)
-    .eq("match_id", matchData.matchId)
-    .eq("team_id", teamId);
-
-  if (error) {
-    console.error("[updateMatchForm] Error:", error);
-  }
-};
-
-export const lockMatchForm = async (matchId: number, teamId?: number): Promise<void> => {
-  // Nu verplichten we ook teamId voor correcte match_form
-  if (!teamId) {
-    console.warn("[lockMatchForm] Geen teamId meegegeven, kan niet vergrendelen!");
-    return;
-  }
-  const { error } = await supabase
-    .from("match_forms")
-    .update({
-      is_locked: true,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("match_id", matchId)
-    .eq("team_id", teamId);
-
-  if (error) {
-    console.error("[lockMatchForm] Error:", error);
-  }
-};
-
-/**
- * Haal een specifiek match_form op voor een team + match
- */
-export const getMatchForm = async (
-  matchId: number,
-  teamId: number
-): Promise<MatchFormData | null> => {
-  // Haal data uit match + match_form
+// New: Fetch a single match form with unified player arrays
+export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | null> => {
   const { data, error } = await supabase
-    .from("matches")
-    .select(
-      `
+    .from("match_forms")
+    .select(`
       match_id,
       unique_number,
       match_date,
@@ -178,27 +115,19 @@ export const getMatchForm = async (
       matchday_id,
       teams_home:teams!home_team_id ( team_name ),
       teams_away:teams!away_team_id ( team_name ),
-      match_forms:match_forms (
-        form_id,
-        team_id,
-        is_submitted,
-        is_locked,
-        home_score,
-        away_score,
-        referee,
-        referee_notes
-      )
-      `
-    )
+      is_submitted,
+      is_locked,
+      home_score,
+      away_score,
+      referee,
+      referee_notes,
+      home_players,
+      away_players
+    `)
     .eq("match_id", matchId)
     .maybeSingle();
 
-  if (error || !data || !data.match_forms) return null;
-
-  // Haal alleen de form van het gezochte team (of de eerste als admin)
-  const form = Array.isArray(data.match_forms)
-    ? data.match_forms.find((f) => f.team_id === teamId) || data.match_forms[0]
-    : data.match_forms;
+  if (error || !data) return null;
 
   let date = "", time = "";
   if (data.match_date) {
@@ -206,7 +135,6 @@ export const getMatchForm = async (
     date = d.toISOString().slice(0, 10);
     time = d.toISOString().slice(11, 16);
   }
-  
   return {
     matchId: data.match_id,
     uniqueNumber: data.unique_number || "",
@@ -217,14 +145,58 @@ export const getMatchForm = async (
     awayTeamId: data.away_team_id,
     awayTeamName: data.teams_away?.team_name || "Onbekend",
     location: "",
-    isHomeTeam: form.team_id === data.home_team_id,
     matchday: data.matchday_id ? `Speeldag ${data.matchday_id}` : "",
-    isCompleted: !!form.is_submitted,
-    isLocked: !!form.is_locked,
-    playersSubmitted: !!form.is_submitted,
-    homeScore: form.home_score ?? undefined,
-    awayScore: form.away_score ?? undefined,
-    referee: form.referee ?? "",
-    refereeNotes: form.referee_notes ?? ""
+    isCompleted: !!data.is_submitted,
+    isLocked: !!data.is_locked,
+    homeScore: data.home_score ?? undefined,
+    awayScore: data.away_score ?? undefined,
+    referee: data.referee ?? "",
+    refereeNotes: data.referee_notes ?? "",
+    homePlayers: data.home_players || [],
+    awayPlayers: data.away_players || []
   };
+};
+
+// New: Save (update) the single match form, with home/away players
+export const updateMatchForm = async (
+  matchData: Partial<MatchFormData> & { matchId: number }
+): Promise<void> => {
+  if (!matchData.matchId) return;
+  const updateData: any = {
+    home_score: matchData.homeScore,
+    away_score: matchData.awayScore,
+    referee: matchData.referee,
+    referee_notes: matchData.refereeNotes,
+    is_submitted: !!matchData.isCompleted,
+    is_locked: !!matchData.isLocked,
+    home_players: matchData.homePlayers,
+    away_players: matchData.awayPlayers,
+    updated_at: new Date().toISOString(),
+  };
+  Object.keys(updateData).forEach((k) => {
+    if (updateData[k] === undefined) delete updateData[k];
+  });
+
+  const { error } } from await supabase
+    .from("match_forms")
+    .update(updateData)
+    .eq("match_id", matchData.matchId);
+
+  if (error) {
+    console.error("[updateMatchForm] Error:", error);
+  }
+};
+
+export const lockMatchForm = async (matchId: number): Promise<void> => {
+  const { error } } from await supabase
+    .from("match_forms")
+    .update({
+      is_locked: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("match_id", matchId);
+
+  if (error) {
+    console.error("[lockMatchForm] Error:", error);
+  }
 };

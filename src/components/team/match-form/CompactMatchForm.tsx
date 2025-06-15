@@ -1,15 +1,17 @@
+
 import React from "react";
-import { 
-  MatchHeader, 
-  MatchDataSection, 
-  PlayerSelectionSection, 
+import {
+  MatchHeader,
+  MatchDataSection,
+  PlayerSelectionSection,
   RefereeNotesSection,
   MatchFormActions
 } from "./components";
-import { MatchFormData } from "./types";
+import { MatchFormData, PlayerSelection } from "./types";
 import { useMatchFormState } from "./hooks/useMatchFormState";
-import { usePlayerSelectionHandler } from "./hooks/usePlayerSelectionHandler";
 import { useMatchFormSubmission } from "./hooks/useMatchFormSubmission";
+
+// Remove teamId and isHomeTeam logic as forms are no longer split by team
 
 interface CompactMatchFormProps {
   match: MatchFormData;
@@ -45,20 +47,9 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     setAwayTeamSelections
   } = useMatchFormState(match);
 
-  const { handlePlayerSelection } = usePlayerSelectionHandler(
-    match,
-    homeTeamSelections,
-    setHomeTeamSelections,
-    awayTeamSelections,
-    setAwayTeamSelections
-  );
-
-  const { handleSubmit: submitForm } = useMatchFormSubmission(match, teamId, onComplete);
-
+  // New: Single match form, allow both teams to edit selections, ref w/ permissions
   const canEdit = !match.isLocked || isAdmin;
   const showRefereeFields = isReferee || isAdmin;
-  const isTeamManager = !isAdmin && !isReferee;
-  const canEditMatchData = isReferee || isAdmin;
 
   const handleCardChange = (playerId: number, cardType: string) => {
     setPlayerCards(prev => ({
@@ -67,19 +58,61 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     }));
   };
 
+  const handlePlayerSelection = (
+    index: number,
+    field: keyof PlayerSelection,
+    value: any,
+    isHomeTeam: boolean
+  ) => {
+    const setSelections = isHomeTeam ? setHomeTeamSelections : setAwayTeamSelections;
+    setSelections(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      // Captain logic: only one captain per team
+      if (field === "isCaptain" && value === true) {
+        updated.forEach((sel, idx) => {
+          if (idx !== index) updated[idx].isCaptain = false;
+        });
+      }
+      // Player logic: clear on deselection
+      if (field === "playerId" && value === null) {
+        updated[index].playerName = "";
+        updated[index].jerseyNumber = "";
+        updated[index].isCaptain = false;
+      }
+      return updated;
+    });
+  };
+
   const handleSubmit = async () => {
-    await submitForm(
-      homeScore,
-      awayScore,
-      selectedReferee,
-      refereeNotes,
-      homeTeamSelections,
-      awayTeamSelections,
-      setIsSubmitting,
-      isTeamManager,
-      canEditMatchData,
-      isReferee
-    );
+    setIsSubmitting(true);
+    try {
+      const updatedMatch: MatchFormData = {
+        ...match,
+        homeScore: homeScore ? parseInt(homeScore) : undefined,
+        awayScore: awayScore ? parseInt(awayScore) : undefined,
+        referee: selectedReferee,
+        refereeNotes: refereeNotes,
+        isCompleted: true,
+        isLocked: isReferee ? true : match.isLocked,
+        homePlayers: homeTeamSelections,
+        awayPlayers: awayTeamSelections
+      };
+
+      await updateMatchForm({
+        ...updatedMatch,
+        matchId: match.matchId,
+      });
+
+      if (isReferee && !match.isLocked) {
+        await lockMatchForm(match.matchId);
+      }
+
+      // You may want to show a toast here
+      onComplete();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -95,7 +128,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         onAwayScoreChange={setAwayScore}
         onRefereeChange={setSelectedReferee}
         canEdit={canEdit}
-        canEditMatchData={canEditMatchData}
+        canEditMatchData={showRefereeFields}
       />
 
       <PlayerSelectionSection
@@ -108,7 +141,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         canEdit={canEdit}
         showRefereeFields={showRefereeFields}
         teamId={teamId}
-        isTeamManager={isTeamManager}
+        isTeamManager={!isAdmin && !isReferee}
       />
 
       {showRefereeFields && (
@@ -124,7 +157,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         isSubmitting={isSubmitting}
         canEdit={canEdit}
         isReferee={isReferee}
-        isTeamManager={isTeamManager}
+        isTeamManager={!isAdmin && !isReferee}
       />
     </div>
   );
