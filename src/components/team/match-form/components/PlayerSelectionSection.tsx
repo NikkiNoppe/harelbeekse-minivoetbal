@@ -73,10 +73,7 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
                 <SelectValue placeholder="Selecteer speler" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem
-                  value="no-player"
-                  className="border border-[var(--purple-400)] bg-white !font-medium"
-                >
+                <SelectItem value="no-player">
                   Geen speler
                 </SelectItem>
                 {players.map((player) => (
