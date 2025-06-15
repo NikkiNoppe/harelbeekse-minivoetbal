@@ -177,7 +177,7 @@ export const updateMatchForm = async (
     if (updateData[k] === undefined) delete updateData[k];
   });
 
-  const { error } } from await supabase
+  const { error } = await supabase
     .from("match_forms")
     .update(updateData)
     .eq("match_id", matchData.matchId);
@@ -188,7 +188,7 @@ export const updateMatchForm = async (
 };
 
 export const lockMatchForm = async (matchId: number): Promise<void> => {
-  const { error } } from await supabase
+  const { error } = await supabase
     .from("match_forms")
     .update({
       is_locked: true,
