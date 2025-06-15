@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -5,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MOCK_TEAM_PLAYERS } from "@/data/mockData";
 import { PlayerSelection, MatchFormData } from "../types";
+import CardIcon from "./CardIcon";
 
 interface PlayerSelectionSectionProps {
   match: MatchFormData;
@@ -18,6 +20,13 @@ interface PlayerSelectionSectionProps {
   teamId: number;
   isTeamManager: boolean;
 }
+
+const TABLE_COLUMNS = {
+  nr: "w-[40px]",
+  speler: "min-w-[150px] w-[180px]",
+  rugnr: "w-[54px]",
+  kaarten: "w-[54px]",
+};
 
 export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   match,
@@ -34,9 +43,8 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   const homeTeamPlayers = MOCK_TEAM_PLAYERS[match.homeTeamId as keyof typeof MOCK_TEAM_PLAYERS] || [];
   const awayTeamPlayers = MOCK_TEAM_PLAYERS[match.awayTeamId as keyof typeof MOCK_TEAM_PLAYERS] || [];
 
-  const getSelectedPlayersForCaptain = (isHomeTeam: boolean) => {
-    const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
-    return selections.filter(selection => selection.playerId !== null);
+  const getSelectedPlayers = (isHomeTeam: boolean) => {
+    return (isHomeTeam ? homeTeamSelections : awayTeamSelections).filter(sel => sel.playerId !== null);
   };
 
   const getCurrentCaptain = (isHomeTeam: boolean) => {
@@ -53,93 +61,113 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
     });
   };
 
-  const renderPlayerSelectionRows = (isHomeTeam: boolean) => {
+  const renderPlayerSelectionTable = (isHomeTeam: boolean) => {
     const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
     const players = isHomeTeam ? homeTeamPlayers : awayTeamPlayers;
-
     const canEditThisTeam = canEdit;
 
-    return selections.map((selection, index) => (
-      <div key={index} className="flex items-center justify-between p-3 border rounded bg-white">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium w-8">{index + 1}.</span>
-
-          {canEditThisTeam ? (
-            <Select
-              value={selection.playerId?.toString() || "no-player"}
-              onValueChange={(value) => onPlayerSelection(index, 'playerId', value === "no-player" ? null : parseInt(value), isHomeTeam)}
-            >
-              <SelectTrigger
-                className="min-w-[180px] w-[180px]"
+    return (
+      <div className="rounded-md border bg-white pb-2">
+        <table className="min-w-full">
+          <thead>
+            <tr className="border-b border-[var(--purple-light)] bg-[var(--purple-light,#ab86dd)] text-xs font-semibold">
+              <th className={TABLE_COLUMNS.nr + " py-1 text-center"}>Nr</th>
+              <th className={TABLE_COLUMNS.speler + " py-1 text-left"}>Speler</th>
+              <th className={TABLE_COLUMNS.rugnr + " py-1 text-center"}>Rugnr</th>
+              {showRefereeFields && <th className={TABLE_COLUMNS.kaarten + " py-1 text-center"}>Kaarten</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {selections.map((selection, index) => (
+              <tr key={index}
+                className={`align-middle border-b last:border-0 ${index % 2 === 0 ? 'bg-white' : 'bg-[var(--purple-100,#f5f0ff)]'}`}
               >
-                <SelectValue placeholder="Selecteer speler" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="no-player">
-                  Geen speler
-                </SelectItem>
-                {players.map((player) => (
-                  <SelectItem key={player.player_id} value={player.player_id.toString()}>
-                    {player.player_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <span className="min-w-[180px] w-[180px] text-sm">
-              {selection.playerName || "-"}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {canEditThisTeam && (
-            <div className="flex items-center gap-1">
-              <Label htmlFor={`jersey-${isHomeTeam ? 'home' : 'away'}-${index}`} className="text-xs">Rugnr:</Label>
-              <Input
-                id={`jersey-${isHomeTeam ? 'home' : 'away'}-${index}`}
-                type="number"
-                min="1"
-                max="99"
-                value={selection.jerseyNumber}
-                onChange={(e) => onPlayerSelection(index, 'jerseyNumber', e.target.value, isHomeTeam)}
-                disabled={!selection.playerId}
-                className="w-16 text-center text-xs"
-              />
-            </div>
-          )}
-
-          {!canEditThisTeam && (selection.jerseyNumber || selection.isCaptain) && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {selection.jerseyNumber && <span>#{selection.jerseyNumber}</span>}
-              {selection.isCaptain && <span>(K)</span>}
-            </div>
-          )}
-
-          {showRefereeFields && canEdit && selection.playerId && (
-            <Select
-              value={playerCards[selection.playerId] || "none"}
-              onValueChange={(value) => onCardChange(selection.playerId!, value)}
-            >
-              <SelectTrigger className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">-</SelectItem>
-                <SelectItem value="yellow">Geel</SelectItem>
-                <SelectItem value="double_yellow">2x Geel</SelectItem>
-                <SelectItem value="red">Rood</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        </div>
+                <td className={TABLE_COLUMNS.nr + " text-center text-sm"}>{index + 1}</td>
+                <td className={TABLE_COLUMNS.speler + " text-sm"}>
+                  {canEditThisTeam ? (
+                    <Select
+                      value={selection.playerId?.toString() || "no-player"}
+                      onValueChange={(value) => onPlayerSelection(index, 'playerId', value === "no-player" ? null : parseInt(value), isHomeTeam)}
+                      disabled={!canEdit}
+                    >
+                      <SelectTrigger className="w-full min-w-[120px] text-sm" >
+                        <SelectValue placeholder="Selecteer speler" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no-player">
+                          Geen speler
+                        </SelectItem>
+                        {players.map((player) => (
+                          <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                            {player.player_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span className="block w-full">
+                      {selection.playerName || "-"}
+                      {selection.isCaptain && <span className="ml-2 text-xs bg-[var(--purple-200)] px-1 py-0.5 rounded font-semibold">(K)</span>}
+                    </span>
+                  )}
+                </td>
+                <td className={TABLE_COLUMNS.rugnr + " text-center px-0"}>
+                  {canEditThisTeam ? (
+                    <Input
+                      id={`jersey-${isHomeTeam ? 'home' : 'away'}-${index}`}
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={selection.jerseyNumber || ""}
+                      onChange={(e) => onPlayerSelection(index, 'jerseyNumber', e.target.value, isHomeTeam)}
+                      disabled={!selection.playerId}
+                      className="w-12 text-center text-xs py-1 px-1"
+                    />
+                  ) : (
+                    <span className="text-xs">{selection.jerseyNumber && <>#{selection.jerseyNumber}</>}</span>
+                  )}
+                </td>
+                {showRefereeFields && (
+                  <td className={TABLE_COLUMNS.kaarten + " text-center"}>
+                    {canEditThisTeam && selection.playerId ? (
+                      <Select
+                        value={playerCards[selection.playerId] || "none"}
+                        onValueChange={(value) => onCardChange(selection.playerId!, value)}
+                      >
+                        <SelectTrigger className="w-[40px] min-w-0 p-0 justify-center">
+                          <span className="sr-only">Kaart</span>
+                          <CardIcon type={playerCards[selection.playerId] as any || "none"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">-</SelectItem>
+                          <SelectItem value="yellow"><span className="flex items-center"><CardIcon type="yellow" /><span className="ml-1">Geel</span></span></SelectItem>
+                          <SelectItem value="double_yellow"><span className="flex items-center"><CardIcon type="double_yellow" /><span className="ml-1">2x Geel</span></span></SelectItem>
+                          <SelectItem value="red"><span className="flex items-center"><CardIcon type="red" /><span className="ml-1">Rood</span></span></SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <CardIcon type={playerCards[selection.playerId!] as any || "none"} />
+                    )}
+                  </td>
+                )}
+              </tr>
+            ))}
+            {selections.length === 0 && (
+              <tr>
+                <td colSpan={showRefereeFields ? 4 : 3} className="text-center py-3 text-muted-foreground">
+                  Geen spelers geselecteerd voor dit team.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
-    ));
+    );
   };
 
   const renderCaptainSelection = (isHomeTeam: boolean) => {
     const canEditThisTeam = canEdit;
-    const selectedPlayers = getSelectedPlayersForCaptain(isHomeTeam);
+    const selectedPlayers = getSelectedPlayers(isHomeTeam);
     const currentCaptain = getCurrentCaptain(isHomeTeam);
 
     if (!canEditThisTeam || selectedPlayers.length === 0) {
@@ -147,19 +175,13 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
     }
 
     return (
-      <div className="mt-4 space-y-2">
+      <div className="mt-2 mb-2">
         <Label className="text-sm font-medium">Kapitein</Label>
         <Select
           value={currentCaptain}
-          onValueChange={(value) => {
-            const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
-            selections.forEach((selection, index) => {
-              const isCaptain = value !== "no-captain" && selection.playerId?.toString() === value;
-              onPlayerSelection(index, 'isCaptain', isCaptain, isHomeTeam);
-            });
-          }}
+          onValueChange={(value) => handleCaptainChange(value, isHomeTeam)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-[180px] mt-1">
             <SelectValue placeholder="Selecteer kapitein" />
           </SelectTrigger>
           <SelectContent>
@@ -182,10 +204,9 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            {/* Home team header with purple_light border and text */}
-            <h4
-              className="font-medium text-sm text-center p-2 rounded shadow border"
+          <div>
+            <div
+              className="font-medium text-sm text-center p-2 rounded shadow border mb-2"
               style={{
                 borderColor: "var(--purple-light, #ab86dd)",
                 color: "var(--purple-light, #ab86dd)",
@@ -193,17 +214,13 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
               }}
             >
               {match.homeTeamName} (Thuis)
-            </h4>
-            <div className="space-y-2 rounded-md p-2" style={{ background: "var(--purple-light, #ab86dd)", transition: "background 0.3s" }}>
-              {renderPlayerSelectionRows(true)}
             </div>
+            {renderPlayerSelectionTable(true)}
             {renderCaptainSelection(true)}
           </div>
-
-          <div className="space-y-3">
-            {/* Away team header with purple_light border and text */}
-            <h4
-              className="font-medium text-sm text-center p-2 rounded shadow border"
+          <div>
+            <div
+              className="font-medium text-sm text-center p-2 rounded shadow border mb-2"
               style={{
                 borderColor: "var(--purple-light, #ab86dd)",
                 color: "var(--purple-light, #ab86dd)",
@@ -211,10 +228,8 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
               }}
             >
               {match.awayTeamName} (Uit)
-            </h4>
-            <div className="space-y-2 rounded-md p-2" style={{ background: "var(--purple-light, #ab86dd)", transition: "background 0.3s" }}>
-              {renderPlayerSelectionRows(false)}
             </div>
+            {renderPlayerSelectionTable(false)}
             {renderCaptainSelection(false)}
           </div>
         </div>
