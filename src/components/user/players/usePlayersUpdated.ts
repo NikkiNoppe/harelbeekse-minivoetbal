@@ -48,14 +48,16 @@ export const usePlayersUpdated = () => {
     handleEditPlayerDialog(playerId, players, setEditingPlayer);
   };
 
-  // Modified to ensure dialog closes after success
-  const handleAddPlayerAndMaybeCloseDialog = async () => {
+  // Corrected: will return Promise<boolean> and only close dialog on success
+  const handleAddPlayerAndMaybeCloseDialog = async (): Promise<boolean> => {
     const success = await handleAddPlayer();
     if (success) {
       setDialogOpen(false);
       setNewPlayer({ firstName: "", lastName: "", birthDate: "" });
+      return true;
     }
     // If failure, keep dialog open and do not clear input
+    return false;
   };
 
   return {
@@ -74,7 +76,7 @@ export const usePlayersUpdated = () => {
     setEditDialogOpen,
     setNewPlayer,
     setEditingPlayer,
-    handleAddPlayer: handleAddPlayerAndMaybeCloseDialog,
+    handleAddPlayer: handleAddPlayerAndMaybeCloseDialog, // returns Promise<boolean>
     handleEditPlayer,
     handleSaveEditedPlayer,
     handleRemovePlayer,
