@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -96,9 +95,6 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     if (match.isCompleted) {
       return { label: "Afgerond", color: "bg-green-500", icon: CheckCircle };
     }
-    if (match.playersSubmitted) {
-      return { label: "Klaar voor score", color: "bg-blue-500", icon: AlertCircle };
-    }
     return { label: "Te spelen", color: "bg-orange-500", icon: Clock };
   };
 
@@ -107,7 +103,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     if (match.isLocked && userRole !== "admin") return false;
     
     if (userRole === "referee") {
-      return match.playersSubmitted || match.isCompleted;
+      return match.isCompleted || !match.isLocked;
     }
     
     const isTeamMatch = match.homeTeamId === teamId || match.awayTeamId === teamId;

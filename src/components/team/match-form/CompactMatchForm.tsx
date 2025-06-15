@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   MatchHeader,
@@ -10,6 +9,7 @@ import {
 import { MatchFormData, PlayerSelection } from "./types";
 import { useMatchFormState } from "./hooks/useMatchFormState";
 import { useMatchFormSubmission } from "./hooks/useMatchFormSubmission";
+import { updateMatchForm, lockMatchForm } from "./matchFormService";
 
 // Remove teamId and isHomeTeam logic as forms are no longer split by team
 

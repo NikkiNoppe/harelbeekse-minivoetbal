@@ -1,4 +1,3 @@
-
 export interface PlayerSelection {
   playerId: number | null;
   playerName: string;
