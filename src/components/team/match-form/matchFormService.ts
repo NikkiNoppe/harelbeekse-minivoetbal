@@ -85,7 +85,7 @@ export const fetchUpcomingMatches = async (
   return list;
 };
 
-// New: Fetch a single match form with unified player arrays (and correct source tables)
+// Fetch a single match form with unified player arrays (and correct source tables)
 export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | null> => {
   const { data, error } = await supabase
     .from("matches")
@@ -113,7 +113,10 @@ export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | n
     .eq("match_id", matchId)
     .maybeSingle();
 
-  if (error || !data) return null;
+  // Defensive: return null if query errored or returned no row
+  if (error || !data || typeof data !== "object" || Array.isArray(data)) {
+    return null;
+  }
 
   let date = "", time = "";
   if (data.match_date) {
@@ -121,6 +124,8 @@ export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | n
     date = d.toISOString().slice(0, 10);
     time = d.toISOString().slice(11, 16);
   }
+
+  // Defensive: get the form if valid
   const form = Array.isArray(data.match_forms) && data.match_forms.length > 0 ? data.match_forms[0] : null;
 
   return {
