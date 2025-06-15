@@ -151,12 +151,12 @@ export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | n
     matchday: data.matchday_id ? `Speeldag ${data.matchday_id}` : "",
     isCompleted: form ? !!form.is_submitted : false,
     isLocked: form ? !!form.is_locked : false,
-    homeScore: form ? form.home_score ?? undefined : undefined,
-    awayScore: form ? form.away_score ?? undefined : undefined,
-    referee: form ? form.referee ?? "" : "",
-    refereeNotes: form ? form.referee_notes ?? "" : "",
-    homePlayers: form ? form.home_players || [] : [],
-    awayPlayers: form ? form.away_players || [] : []
+    homeScore: form?.home_score ?? undefined,
+    awayScore: form?.away_score ?? undefined,
+    referee: form?.referee ?? "",
+    refereeNotes: form?.referee_notes ?? "",
+    homePlayers: Array.isArray(form?.home_players) ? form.home_players : [],
+    awayPlayers: Array.isArray(form?.away_players) ? form.away_players : [],
   };
 };
 

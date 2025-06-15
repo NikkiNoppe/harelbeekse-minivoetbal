@@ -481,9 +481,11 @@ export type Database = {
       }
       match_forms: {
         Row: {
+          away_players: Json | null
           away_score: number | null
           created_at: string | null
           form_id: number
+          home_players: Json | null
           home_score: number | null
           is_locked: boolean | null
           is_submitted: boolean | null
@@ -494,9 +496,11 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          away_players?: Json | null
           away_score?: number | null
           created_at?: string | null
           form_id?: number
+          home_players?: Json | null
           home_score?: number | null
           is_locked?: boolean | null
           is_submitted?: boolean | null
@@ -507,9 +511,11 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          away_players?: Json | null
           away_score?: number | null
           created_at?: string | null
           form_id?: number
+          home_players?: Json | null
           home_score?: number | null
           is_locked?: boolean | null
           is_submitted?: boolean | null
