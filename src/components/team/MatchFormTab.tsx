@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -20,19 +20,27 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
   const { user } = useAuth();
   const [selectedMatchForm, setSelectedMatchForm] = useState<MatchFormData | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
+  // Remove default date filter, so all matches show
+  const [dateFilter, setDateFilter] = useState(""); // was defaulting to today
   const [matchdayFilter, setMatchdayFilter] = useState("");
-  
+
   // Check if user has elevated permissions (admin or referee)
   const hasElevatedPermissions = user?.role === "admin" || user?.role === "referee";
   const isAdmin = user?.role === "admin";
   const isReferee = user?.role === "referee";
-  
+
   // Fetch matches based on user permissions
   const { data: matches, isLoading: loadingMatches, refetch } = useQuery({
     queryKey: ['teamMatches', teamId, hasElevatedPermissions],
-    queryFn: () => fetchUpcomingMatches(hasElevatedPermissions ? 0 : teamId, hasElevatedPermissions)
+    queryFn: () => fetchUpcomingMatches(hasElevatedPermissions ? 0 : teamId, hasElevatedPermissions),
   });
+
+  useEffect(() => {
+    console.debug("[MatchFormTab] Loaded user:", user);
+    console.debug("[MatchFormTab] teamId:", teamId, "hasElevatedPermissions:", hasElevatedPermissions);
+    if (matches)
+      console.debug("[MatchFormTab] Matches received:", matches.length);
+  }, [user, teamId, hasElevatedPermissions, matches]);
 
   // Handle the selection of a match for the form
   const handleSelectMatch = (match: MatchFormData) => {
@@ -68,6 +76,36 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
           </CardContent>
         </Card>
       </div>
+    );
+  }
+
+  // Handle case when user has no teamId or matches are truly empty
+  if (!user?.teamId && !hasElevatedPermissions) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">
+              Je account is momenteel niet gekoppeld aan een team, waardoor je geen wedstrijdformulieren kunt bekijken.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show fallback if no matches found for role
+  if (!loadingMatches && matches && matches.length === 0) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">
+              Geen (toekomstige) wedstrijden gevonden.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 

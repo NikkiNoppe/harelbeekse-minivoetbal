@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +8,24 @@ interface AuthContextType extends AuthState {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Add: fetch teamId for the user
+async function fetchTeamIdForUser(userId: number): Promise<number | undefined> {
+  const { data, error } = await supabase
+    .from("team_users")
+    .select("team_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) {
+    console.error("Failed to fetch teamId for user", error);
+    return undefined;
+  }
+  // Return the team_id if found and a number
+  if (data && typeof data.team_id === "number") {
+    return data.team_id;
+  }
+  return undefined;
+}
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -24,6 +41,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => clearTimeout(timer);
   }, []);
 
+  // Enhance login: retrieve correct teamId for user after successful login
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase.rpc('verify_user_password', {
@@ -38,12 +56,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (data && data.length > 0) {
         const userData = data[0];
+        // Fetch possible teamId mapping
+        const teamId = await fetchTeamIdForUser(userData.user_id);
+
         const loggedInUser: User = {
           id: userData.user_id,
           username: userData.username,
           password: '', // Don't store password
           role: userData.role,
-          email: userData.email
+          email: userData.email,
+          ...(teamId !== undefined ? { teamId } : {})
         };
 
         setUser(loggedInUser);
@@ -57,6 +79,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return false;
     }
   };
+
+  // If not logged in via login function (e.g., page refresh), try to hydrate from storage
+  useEffect(() => {
+    // Optionally, you can enhance to hydrate session for persistent login
+    // Not implemented now for simplicity
+  }, []);
 
   const logout = () => {
     setUser(null);
