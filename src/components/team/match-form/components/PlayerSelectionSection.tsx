@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -77,7 +76,7 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
     const canEditThisTeam = showRefereeFields || canEditThisTeamAsManager;
 
     return selections.map((selection, index) => (
-      <div key={index} className="flex items-center justify-between p-3 border rounded">
+      <div key={index} className="flex items-center justify-between p-3 border rounded bg-white">
         <div className="flex items-center gap-3 flex-1">
           <span className="text-sm font-medium w-8">{index + 1}.</span>
           
@@ -169,7 +168,13 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
         <Label className="text-sm font-medium">Kapitein</Label>
         <Select
           value={currentCaptain}
-          onValueChange={(value) => handleCaptainChange(value, isHomeTeam)}
+          onValueChange={(value) => {
+            const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
+            selections.forEach((selection, index) => {
+              const isCaptain = value !== "no-captain" && selection.playerId?.toString() === value;
+              onPlayerSelection(index, 'isCaptain', isCaptain, isHomeTeam);
+            });
+          }}
         >
           <SelectTrigger>
             <SelectValue placeholder="Selecteer kapitein" />
@@ -189,14 +194,14 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Spelers</CardTitle>
+      <CardHeader className="bg-purple-600 rounded-t-lg">
+        <CardTitle className="text-base text-white">Spelers</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Home Team Players */}
           <div className="space-y-3">
-            <h4 className="font-medium text-sm text-center bg-blue-50 p-2 rounded">
+            <h4 className="font-medium text-sm text-center bg-blue-600 text-white p-2 rounded shadow">
               {match.homeTeamName} (Thuis)
             </h4>
             <div className="space-y-2">
@@ -207,7 +212,7 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
 
           {/* Away Team Players */}
           <div className="space-y-3">
-            <h4 className="font-medium text-sm text-center bg-red-50 p-2 rounded">
+            <h4 className="font-medium text-sm text-center bg-red-600 text-white p-2 rounded shadow">
               {match.awayTeamName} (Uit)
             </h4>
             <div className="space-y-2">

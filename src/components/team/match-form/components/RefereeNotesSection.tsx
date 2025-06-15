@@ -16,8 +16,8 @@ export const RefereeNotesSection: React.FC<RefereeNotesSectionProps> = ({
 }) => {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Notities scheidsrechter</CardTitle>
+      <CardHeader className="bg-purple-600 rounded-t-lg">
+        <CardTitle className="text-base text-white">Notities scheidsrechter</CardTitle>
       </CardHeader>
       <CardContent>
         <Textarea
@@ -26,6 +26,7 @@ export const RefereeNotesSection: React.FC<RefereeNotesSectionProps> = ({
           disabled={!canEdit}
           placeholder="Bijzonderheden, opmerkingen..."
           rows={4}
+          className="focus:border-purple-500 focus:ring-purple-500"
         />
       </CardContent>
     </Card>
