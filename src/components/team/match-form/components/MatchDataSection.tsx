@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,8 +37,9 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
 }) => {
   return (
     <Card className="border-2 border-primary shadow-lg bg-gradient-to-r from-primary/5 to-primary/10">
-      <CardHeader className="bg-primary text-primary-foreground">
-        <CardTitle className="text-lg font-bold flex items-center gap-2">
+      {/* Header nu in purple_dark met witte tekst */}
+      <CardHeader className="bg-purple-600 text-white rounded-t-lg">
+        <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
           ⚽ Wedstrijdgegevens
         </CardTitle>
       </CardHeader>
