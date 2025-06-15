@@ -89,7 +89,13 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
                 <SelectValue placeholder="Selecteer speler" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="no-player">Geen speler</SelectItem>
+                {/* "Geen speler" item gets purple_light border */}
+                <SelectItem
+                  value="no-player"
+                  className="border border-[var(--purple-400)] bg-white !font-medium"
+                >
+                  Geen speler
+                </SelectItem>
                 {players.map((player) => (
                   <SelectItem key={player.player_id} value={player.player_id.toString()}>
                     {player.player_name}

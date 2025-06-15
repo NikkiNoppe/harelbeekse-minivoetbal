@@ -361,6 +361,16 @@ tbody tr:hover {
   }
 }
 
+/* ---- Custom utility for purple_light border [purple-400 is used for purple_light in site vars] ---- */
+.border-\[var\(--purple-400\)\] {
+  border-color: var(--purple-400) !important;
+}
+/* Optional: style for dropdown "Geen speler" on hover/focus for clarity */
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:hover, 
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:focus {
+  background-color: var(--purple-200) !important;
+}
+
 /* ------ Custom: Lovable site-wide purple theme dropdown and card fixes ------ */
 
 /* Fix select dropdown content background and shadow to match color branding */
@@ -404,3 +414,5 @@ tbody tr:hover {
 }
 
 /* End Custom site-wide fixes */
+
+</edits_to_apply>
