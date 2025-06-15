@@ -41,8 +41,8 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   isTeamManager
 }) => {
   // Get team ids from match data
-  const homeTeamId = match.homeTeamId || match.homeTeam_id || match.home_team_id;
-  const awayTeamId = match.awayTeamId || match.awayTeam_id || match.away_team_id;
+  const homeTeamId = match.homeTeamId;
+  const awayTeamId = match.awayTeamId;
 
   // Use the hook for live players
   const { data: homePlayers, isLoading: loadingHome, error: errorHome } = useTeamPlayers(homeTeamId);
