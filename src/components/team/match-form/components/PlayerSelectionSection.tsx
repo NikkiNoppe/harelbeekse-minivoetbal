@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -185,7 +184,15 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-3">
-            <h4 className="font-medium text-sm text-center p-2 rounded shadow" style={{ background: "#ab86dd", color: "#fff" }}>
+            {/* Home team header with purple_light border and text */}
+            <h4
+              className="font-medium text-sm text-center p-2 rounded shadow border"
+              style={{
+                borderColor: "var(--purple-light, #ab86dd)",
+                color: "var(--purple-light, #ab86dd)",
+                background: "#fff"
+              }}
+            >
               {match.homeTeamName} (Thuis)
             </h4>
             <div className="space-y-2">
@@ -195,7 +202,15 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
           </div>
 
           <div className="space-y-3">
-            <h4 className="font-medium text-sm text-center p-2 rounded shadow" style={{ background: "#e9e0ff", color: "var(--main-color-dark)" }}>
+            {/* Away team header with purple_light border and text */}
+            <h4
+              className="font-medium text-sm text-center p-2 rounded shadow border"
+              style={{
+                borderColor: "var(--purple-light, #ab86dd)",
+                color: "var(--purple-light, #ab86dd)",
+                background: "#fff"
+              }}
+            >
               {match.awayTeamName} (Uit)
             </h4>
             <div className="space-y-2">
