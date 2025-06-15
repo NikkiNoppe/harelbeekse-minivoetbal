@@ -391,6 +391,29 @@ tbody tr:hover {
   color: #fff !important;
 }
 
+/* EXTRA: Ensure "Geen speler" SelectItem always has visible purple_light border */
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\],
+[data-radix-select-item][value="no-player"] {
+  border-color: var(--purple-400) !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  box-shadow: 0 0 0 1px var(--purple-400) !important;
+  background-color: #fff !important;
+  color: var(--main-color-dark) !important;
+}
+
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:hover,
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:focus,
+[data-radix-select-item][value="no-player"]:hover,
+[data-radix-select-item][value="no-player"]:focus {
+  border-color: var(--purple-400) !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  box-shadow: 0 0 0 2px var(--purple-400) !important;
+  background-color: var(--purple-200) !important;
+  color: var(--main-color-dark) !important;
+}
+
 /* Main match card headers */
 .bg-\[var\(--main-color-dark\)\] {
   background-color: var(--main-color-dark) !important;
