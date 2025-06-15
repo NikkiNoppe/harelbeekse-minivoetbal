@@ -126,7 +126,8 @@ export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | n
   }
 
   // Defensive: get the form only if it is present and not an error object
-  let form: any = null;
+  // This ensures TypeScript knows form could be an object or undefined
+  let form: any = undefined;
   if (
     Array.isArray(data.match_forms) &&
     data.match_forms.length > 0 &&
