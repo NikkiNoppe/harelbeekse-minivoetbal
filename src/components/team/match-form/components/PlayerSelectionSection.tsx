@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MOCK_TEAM_PLAYERS } from "@/data/mockData";
 import { PlayerSelection, MatchFormData } from "../types";
 import CardIcon from "./CardIcon";
+import { useTeamPlayers } from "./useTeamPlayers";
 
 interface PlayerSelectionSectionProps {
   match: MatchFormData;
@@ -40,9 +40,15 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   teamId,
   isTeamManager
 }) => {
-  const homeTeamPlayers = MOCK_TEAM_PLAYERS[match.homeTeamId as keyof typeof MOCK_TEAM_PLAYERS] || [];
-  const awayTeamPlayers = MOCK_TEAM_PLAYERS[match.awayTeamId as keyof typeof MOCK_TEAM_PLAYERS] || [];
+  // Get team ids from match data
+  const homeTeamId = match.homeTeamId || match.homeTeam_id || match.home_team_id;
+  const awayTeamId = match.awayTeamId || match.awayTeam_id || match.away_team_id;
 
+  // Use the hook for live players
+  const { data: homePlayers, isLoading: loadingHome, error: errorHome } = useTeamPlayers(homeTeamId);
+  const { data: awayPlayers, isLoading: loadingAway, error: errorAway } = useTeamPlayers(awayTeamId);
+
+  // Helper to get selected players for captains
   const getSelectedPlayers = (isHomeTeam: boolean) => {
     return (isHomeTeam ? homeTeamSelections : awayTeamSelections).filter(sel => sel.playerId !== null);
   };
@@ -61,10 +67,20 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
     });
   };
 
+  // Render table for a team
   const renderPlayerSelectionTable = (isHomeTeam: boolean) => {
     const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
-    const players = isHomeTeam ? homeTeamPlayers : awayTeamPlayers;
+    const players = isHomeTeam ? homePlayers : awayPlayers;
+    const loading = isHomeTeam ? loadingHome : loadingAway;
+    const error = isHomeTeam ? errorHome : errorAway;
     const canEditThisTeam = canEdit;
+
+    if (loading) {
+      return <div className="text-center py-3">Spelers laden...</div>;
+    }
+    if (error) {
+      return <div className="text-center py-3 text-red-600">Kan spelers niet laden</div>;
+    }
 
     return (
       <div className="rounded-md border bg-white pb-2">
@@ -97,9 +113,9 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
                         <SelectItem value="no-player">
                           Geen speler
                         </SelectItem>
-                        {players.map((player) => (
+                        {Array.isArray(players) && players.map((player) => (
                           <SelectItem key={player.player_id} value={player.player_id.toString()}>
-                            {player.player_name}
+                            {player.first_name} {player.last_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -174,6 +190,9 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
       return null;
     }
 
+    // Use live player names if available
+    const players = isHomeTeam ? homePlayers : awayPlayers;
+
     return (
       <div className="mt-2 mb-2">
         <Label className="text-sm font-medium">Kapitein</Label>
@@ -186,11 +205,21 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="no-captain">Geen kapitein</SelectItem>
-            {selectedPlayers.map((player) => (
-              <SelectItem key={player.playerId} value={player.playerId?.toString() || "no-captain"}>
-                {player.playerName}
-              </SelectItem>
-            ))}
+            {selectedPlayers.map((player) => {
+              // Prefer matching name from live db if possible
+              let name = player.playerName;
+              const dbPlayer = Array.isArray(players)
+                ? players.find(p => p.player_id === player.playerId)
+                : undefined;
+              if (dbPlayer) {
+                name = `${dbPlayer.first_name} ${dbPlayer.last_name}`;
+              }
+              return (
+                <SelectItem key={player.playerId} value={player.playerId?.toString() || "no-captain"}>
+                  {name}
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
       </div>
