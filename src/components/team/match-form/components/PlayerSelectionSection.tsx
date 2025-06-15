@@ -61,7 +61,7 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
 
     return selections.map((selection, index) => (
       <div key={index} className="flex items-center justify-between p-3 border rounded bg-white">
-        <div className="flex items-center gap-3 flex-1">
+        <div className="flex items-center gap-3">
           <span className="text-sm font-medium w-8">{index + 1}.</span>
 
           {canEditThisTeam ? (
@@ -69,7 +69,9 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
               value={selection.playerId?.toString() || "no-player"}
               onValueChange={(value) => onPlayerSelection(index, 'playerId', value === "no-player" ? null : parseInt(value), isHomeTeam)}
             >
-              <SelectTrigger className="flex-1">
+              <SelectTrigger
+                className="min-w-[180px] w-[180px]"
+              >
                 <SelectValue placeholder="Selecteer speler" />
               </SelectTrigger>
               <SelectContent>
@@ -84,7 +86,7 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
               </SelectContent>
             </Select>
           ) : (
-            <span className="flex-1 text-sm">
+            <span className="min-w-[180px] w-[180px] text-sm">
               {selection.playerName || "-"}
             </span>
           )}
