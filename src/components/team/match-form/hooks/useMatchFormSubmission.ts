@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast";
 import { updateMatchForm, lockMatchForm } from "../matchFormService";
 import { MatchFormData } from "../types";
@@ -49,10 +48,17 @@ export const useMatchFormSubmission = (
         playersSubmitted: isTeamManager ? true : match.playersSubmitted
       };
 
-      await updateMatchForm(updatedMatch);
-      
+      await updateMatchForm({
+        ...updatedMatch,
+        matchId: match.matchId,
+        homeTeamId: match.homeTeamId,
+        awayTeamId: match.awayTeamId,
+        isHomeTeam: teamId === match.homeTeamId,
+        // send more for service to determine correct form
+      });
+
       if (isReferee && !match.isLocked) {
-        await lockMatchForm(match.matchId);
+        await lockMatchForm(match.matchId, teamId);
         updatedMatch.isLocked = true;
       }
       
