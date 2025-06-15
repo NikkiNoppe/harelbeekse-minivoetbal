@@ -192,7 +192,7 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             >
               {match.homeTeamName} (Thuis)
             </h4>
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-md p-2" style={{ background: "var(--purple-light, #ab86dd)", transition: "background 0.3s" }}>
               {renderPlayerSelectionRows(true)}
             </div>
             {renderCaptainSelection(true)}
@@ -210,7 +210,7 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             >
               {match.awayTeamName} (Uit)
             </h4>
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-md p-2" style={{ background: "var(--purple-light, #ab86dd)", transition: "background 0.3s" }}>
               {renderPlayerSelectionRows(false)}
             </div>
             {renderCaptainSelection(false)}
