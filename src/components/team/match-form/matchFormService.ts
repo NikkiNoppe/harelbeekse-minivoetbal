@@ -125,8 +125,17 @@ export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | n
     time = d.toISOString().slice(11, 16);
   }
 
-  // Defensive: get the form if valid
-  const form = Array.isArray(data.match_forms) && data.match_forms.length > 0 ? data.match_forms[0] : null;
+  // Defensive: get the form only if it is present and not an error object
+  let form: any = null;
+  if (
+    Array.isArray(data.match_forms) &&
+    data.match_forms.length > 0 &&
+    typeof data.match_forms[0] === "object" &&
+    data.match_forms[0] !== null &&
+    !("code" in data.match_forms[0]) // not an error object
+  ) {
+    form = data.match_forms[0];
+  }
 
   return {
     matchId: data.match_id,
