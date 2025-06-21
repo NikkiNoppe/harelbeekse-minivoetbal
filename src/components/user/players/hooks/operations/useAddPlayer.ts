@@ -1,10 +1,12 @@
 
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePlayerValidation } from "../usePlayerValidation";
 import { refreshWithRetry } from "../utils/playerCRUDUtils";
 
 export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
+  const [isAdding, setIsAdding] = useState(false);
   const { toast } = useToast();
   const { checkPlayerExists, checkNameExists, validatePlayerData } = usePlayerValidation();
 
@@ -17,46 +19,49 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
       timestamp: new Date().toISOString()
     });
 
-    if (!validatePlayerData(firstName, lastName, birthDate)) {
-      console.warn('⚠️ Validation failed');
-      toast({
-        title: "Onvolledige gegevens",
-        description: "Vul alle velden in",
-        variant: "destructive",
-      });
-      return false;
-    }
+    if (isAdding) return false;
+    setIsAdding(true);
 
-    // Check if exact player already exists
-    console.log('🔍 Checking if player exists...');
-    const existingPlayer = await checkPlayerExists(firstName, lastName, birthDate);
-    
-    if (existingPlayer) {
-      console.warn('⚠️ Player already exists:', existingPlayer);
-      const teamName = existingPlayer.teams?.team_name || 'onbekend team';
-      toast({
-        title: "Speler bestaat al",
-        description: `${firstName} ${lastName} met deze geboortedatum is al ingeschreven bij ${teamName}`,
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    // Check if name already exists with different birth date
-    console.log('🔍 Checking if name exists...');
-    const existingName = await checkNameExists(firstName, lastName);
-    if (existingName) {
-      console.warn('⚠️ Name already exists:', existingName);
-      const teamName = existingName.teams?.team_name || 'onbekend team';
-      toast({
-        title: "Naam bestaat al",
-        description: `${firstName} ${lastName} bestaat al bij ${teamName} met geboortedatum ${new Date(existingName.birth_date).toLocaleDateString('nl-NL')}`,
-        variant: "destructive",
-      });
-      return false;
-    }
-    
     try {
+      if (!validatePlayerData(firstName, lastName, birthDate)) {
+        console.warn('⚠️ Validation failed');
+        toast({
+          title: "Onvolledige gegevens",
+          description: "Vul alle velden in",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Check if exact player already exists
+      console.log('🔍 Checking if player exists...');
+      const existingPlayer = await checkPlayerExists(firstName, lastName, birthDate);
+      
+      if (existingPlayer) {
+        console.warn('⚠️ Player already exists:', existingPlayer);
+        const teamName = existingPlayer.teams?.team_name || 'onbekend team';
+        toast({
+          title: "Speler bestaat al",
+          description: `${firstName} ${lastName} met deze geboortedatum is al ingeschreven bij ${teamName}`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Check if name already exists with different birth date
+      console.log('🔍 Checking if name exists...');
+      const existingName = await checkNameExists(firstName, lastName);
+      if (existingName) {
+        console.warn('⚠️ Name already exists:', existingName);
+        const teamName = existingName.teams?.team_name || 'onbekend team';
+        toast({
+          title: "Naam bestaat al",
+          description: `${firstName} ${lastName} bestaat al bij ${teamName} met geboortedatum ${new Date(existingName.birth_date).toLocaleDateString('nl-NL')}`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      
       console.log('📝 Executing database INSERT...');
       const insertData = {
         first_name: firstName.trim(),
@@ -98,8 +103,10 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
         variant: "destructive",
       });
       return false;
+    } finally {
+      setIsAdding(false);
     }
   };
 
-  return { addPlayer };
+  return { addPlayer, isAdding };
 };

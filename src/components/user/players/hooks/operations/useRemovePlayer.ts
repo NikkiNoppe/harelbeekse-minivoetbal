@@ -1,11 +1,17 @@
+
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { delay, refreshWithRetry } from "../utils/playerCRUDUtils";
 
 export const useRemovePlayer = (refreshPlayers: () => Promise<void>) => {
+  const [isRemoving, setIsRemoving] = useState(false);
   const { toast } = useToast();
 
   const removePlayer = async (playerId: number) => {
+    if (isRemoving) return false;
+    setIsRemoving(true);
+
     try {
       // Fetch player for context
       const { data: currentPlayer, error: fetchError } = await supabase
@@ -89,8 +95,10 @@ export const useRemovePlayer = (refreshPlayers: () => Promise<void>) => {
         variant: "destructive",
       });
       return false;
+    } finally {
+      setIsRemoving(false);
     }
   };
 
-  return { removePlayer };
+  return { removePlayer, isRemoving };
 };

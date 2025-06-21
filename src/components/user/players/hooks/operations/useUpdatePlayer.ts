@@ -1,8 +1,11 @@
+
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePlayerValidation } from "../usePlayerValidation";
 
 export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
+  const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
   const { checkPlayerExists, checkNameExists, validatePlayerData } = usePlayerValidation();
 
@@ -16,17 +19,20 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
       timestamp: new Date().toISOString()
     });
 
-    if (!validatePlayerData(firstName, lastName, birthDate)) {
-      console.log('❌ Validation failed for update');
-      toast({
-        title: "Onvolledige gegevens",
-        description: "Vul alle velden in",
-        variant: "destructive",
-      });
-      return false;
-    }
+    if (isUpdating) return false;
+    setIsUpdating(true);
 
     try {
+      if (!validatePlayerData(firstName, lastName, birthDate)) {
+        console.log('❌ Validation failed for update');
+        toast({
+          title: "Onvolledige gegevens",
+          description: "Vul alle velden in",
+          variant: "destructive",
+        });
+        return false;
+      }
+
       // Get current player data first for debugging
       const { data: currentPlayer, error: fetchError } = await supabase
         .from('players')
@@ -174,8 +180,10 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
         variant: "destructive",
       });
       return false;
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  return { updatePlayer };
+  return { updatePlayer, isUpdating };
 };
