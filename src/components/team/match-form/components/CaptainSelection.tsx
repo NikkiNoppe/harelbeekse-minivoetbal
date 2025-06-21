@@ -24,12 +24,17 @@ const CaptainSelection: React.FC<CaptainSelectionProps> = ({
   const selectedPlayers = selections.filter((sel) => sel.playerId !== null);
   const currentCaptain = selections.find((sel) => sel.isCaptain)?.playerId?.toString() || "no-captain";
 
+  const handleCaptainChange = (value: string) => {
+    console.log('Captain selection changed:', value);
+    onChange(value);
+  };
+
   return (
     <div className="mt-2 mb-2">
       <Label className="text-sm font-medium">Kapitein</Label>
       <Select
         value={currentCaptain}
-        onValueChange={onChange}
+        onValueChange={handleCaptainChange}
       >
         <SelectTrigger className="w-[180px] mt-1">
           <SelectValue placeholder="Selecteer kapitein" />

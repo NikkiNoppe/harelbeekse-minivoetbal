@@ -41,13 +41,16 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   const getSelectedPlayerIds = (selections: PlayerSelection[]) =>
     selections.map((sel) => sel.playerId).filter((id): id is number => id !== null);
 
-  // Captain logic
+  // Captain logic with better logging
   const getCurrentCaptain = (selections: PlayerSelection[]) =>
     selections.find((selection) => selection.isCaptain)?.playerId?.toString() || "no-captain";
+  
   const handleCaptainChange = (captainPlayerId: string, isHomeTeam: boolean) => {
+    console.log('Captain change triggered:', { captainPlayerId, isHomeTeam });
     const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
     selections.forEach((selection, index) => {
       const isCaptain = captainPlayerId !== "no-captain" && selection.playerId?.toString() === captainPlayerId;
+      console.log('Setting captain for player:', { playerId: selection.playerId, isCaptain });
       onPlayerSelection(index, "isCaptain", isCaptain, isHomeTeam);
     });
   };

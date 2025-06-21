@@ -4,13 +4,16 @@ import { useUpdatePlayer } from "./operations/useUpdatePlayer";
 import { useRemovePlayer } from "./operations/useRemovePlayer";
 
 export const usePlayerCRUD = (refreshPlayers: () => Promise<void>) => {
-  const { addPlayer } = useAddPlayer(refreshPlayers);
-  const { updatePlayer } = useUpdatePlayer(refreshPlayers);
-  const { removePlayer } = useRemovePlayer(refreshPlayers);
+  const { addPlayer, isAdding } = useAddPlayer(refreshPlayers);
+  const { updatePlayer, isUpdating } = useUpdatePlayer(refreshPlayers);
+  const { removePlayer, isRemoving } = useRemovePlayer(refreshPlayers);
 
   return {
     addPlayer,
     updatePlayer,
-    removePlayer
+    removePlayer,
+    isAdding,
+    isUpdating,
+    isRemoving
   };
 };
