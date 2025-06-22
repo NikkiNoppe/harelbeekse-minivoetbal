@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,23 +42,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => clearTimeout(timer);
   }, []);
 
-  // Enhance login: retrieve correct teamId for user after successful login
+  // Enhanced login: use simple verification and retrieve correct teamId for user after successful login
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.rpc('verify_user_password', {
+      console.log('🔐 AuthProvider login called with username:', username);
+      
+      const { data, error } = await supabase.rpc('verify_user_password_simple', {
         input_username_or_email: username,
         input_password: password
       });
 
+      console.log('🔍 AuthProvider verification result:', data);
+      console.log('❌ AuthProvider verification error:', error);
+
       if (error) {
-        console.error('Login error:', error);
+        console.error('💥 AuthProvider login error:', error);
         return false;
       }
 
       if (data && data.length > 0) {
         const userData = data[0];
+        console.log('👤 AuthProvider user data:', userData);
+        
         // Fetch possible teamId mapping
         const teamId = await fetchTeamIdForUser(userData.user_id);
+        console.log('🏀 Fetched teamId:', teamId);
 
         const loggedInUser: User = {
           id: userData.user_id,
@@ -68,14 +77,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           ...(teamId !== undefined ? { teamId } : {})
         };
 
+        console.log('✅ Setting authenticated user:', loggedInUser);
         setUser(loggedInUser);
         setIsAuthenticated(true);
         return true;
       }
 
+      console.log('❌ AuthProvider: No valid user data returned');
       return false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('💀 AuthProvider login error:', error);
       return false;
     }
   };
@@ -87,6 +98,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const logout = () => {
+    console.log('👋 Logging out user');
     setUser(null);
     setIsAuthenticated(false);
   };
