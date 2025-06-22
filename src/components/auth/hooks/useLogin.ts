@@ -21,27 +21,32 @@ export const useLogin = (onLoginSuccess: () => void) => {
       
       // First, let's debug what users exist in the database
       console.log('🔍 Checking what users exist in database...');
-      const { data: debugUsers, error: debugError } = await supabase
-        .rpc('debug_list_users' as any);
-      
-      console.log('👥 Users in database:', debugUsers);
-      if (debugError) {
-        console.error('❌ Error fetching debug users:', debugError);
+      try {
+        const { data: debugUsers, error: debugError } = await supabase
+          .from('users')
+          .select('user_id, username, email, role');
+        
+        console.log('👥 Users in database:', debugUsers);
+        if (debugError) {
+          console.error('❌ Error fetching users:', debugError);
+        }
+      } catch (debugErr) {
+        console.error('❌ Error in debug user fetch:', debugErr);
       }
 
-      // Now try the simple password verification
-      console.log('🔐 Attempting simple password verification...');
+      // Now try the existing password verification function
+      console.log('🔐 Attempting password verification with existing function...');
       const { data: result, error } = await supabase
-        .rpc('verify_user_password_simple' as any, {
+        .rpc('verify_user_password', {
           input_username_or_email: usernameOrEmail,
           input_password: password
         });
 
-      console.log('✅ Simple verification result:', result);
-      console.log('❌ Simple verification error:', error);
+      console.log('✅ Verification result:', result);
+      console.log('❌ Verification error:', error);
 
       if (error) {
-        console.error('💥 Database error during simple password verification:', error);
+        console.error('💥 Database error during password verification:', error);
         toast({
           title: "Login mislukt",
           description: `Database fout: ${error.message}`,

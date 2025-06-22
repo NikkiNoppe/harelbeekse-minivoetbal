@@ -42,13 +42,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => clearTimeout(timer);
   }, []);
 
-  // Enhanced login: use simple verification and retrieve correct teamId for user after successful login
+  // Enhanced login: use the existing verify_user_password function and retrieve correct teamId for user after successful login
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       console.log('🔐 AuthProvider login called with username:', username);
       
-      // Use direct RPC call without TypeScript restriction
-      const { data, error } = await supabase.rpc('verify_user_password_simple' as any, {
+      // Use the existing verify_user_password function
+      const { data, error } = await supabase.rpc('verify_user_password', {
         input_username_or_email: username,
         input_password: password
       });
