@@ -22,7 +22,7 @@ export const useLogin = (onLoginSuccess: () => void) => {
       // First, let's debug what users exist in the database
       console.log('🔍 Checking what users exist in database...');
       const { data: debugUsers, error: debugError } = await supabase
-        .rpc('debug_list_users');
+        .rpc('debug_list_users' as any);
       
       console.log('👥 Users in database:', debugUsers);
       if (debugError) {
@@ -32,7 +32,7 @@ export const useLogin = (onLoginSuccess: () => void) => {
       // Now try the simple password verification
       console.log('🔐 Attempting simple password verification...');
       const { data: result, error } = await supabase
-        .rpc('verify_user_password_simple', {
+        .rpc('verify_user_password_simple' as any, {
           input_username_or_email: usernameOrEmail,
           input_password: password
         });
@@ -91,7 +91,7 @@ export const useLogin = (onLoginSuccess: () => void) => {
         console.log('📊 Result details:', {
           result,
           isArray: Array.isArray(result),
-          length: result ? result.length : 'N/A'
+          length: Array.isArray(result) ? result.length : 'N/A'
         });
         
         toast({

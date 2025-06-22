@@ -47,7 +47,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       console.log('🔐 AuthProvider login called with username:', username);
       
-      const { data, error } = await supabase.rpc('verify_user_password_simple', {
+      // Use direct RPC call without TypeScript restriction
+      const { data, error } = await supabase.rpc('verify_user_password_simple' as any, {
         input_username_or_email: username,
         input_password: password
       });
@@ -60,7 +61,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
       }
 
-      if (data && data.length > 0) {
+      // Check if data is an array and has results
+      if (data && Array.isArray(data) && data.length > 0) {
         const userData = data[0];
         console.log('👤 AuthProvider user data:', userData);
         
