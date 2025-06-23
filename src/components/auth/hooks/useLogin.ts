@@ -17,36 +17,20 @@ export const useLogin = (onLoginSuccess: () => void) => {
       console.log('🚀 Starting login process...');
       console.log('📧 Username/Email:', usernameOrEmail);
       console.log('🔑 Password length:', password.length);
-      console.log('🔑 Password (first 3 chars):', password.substring(0, 3) + '...');
       
-      // First, let's debug what users exist in the database
-      console.log('🔍 Checking what users exist in database...');
-      try {
-        const { data: debugUsers, error: debugError } = await supabase
-          .from('users')
-          .select('user_id, username, email, role');
-        
-        console.log('👥 Users in database:', debugUsers);
-        if (debugError) {
-          console.error('❌ Error fetching users:', debugError);
-        }
-      } catch (debugErr) {
-        console.error('❌ Error in debug user fetch:', debugErr);
-      }
-
-      // Now try the new flexible password verification function
-      console.log('🔐 Attempting password verification with flexible function...');
+      // Use the original verify_user_password function
+      console.log('🔐 Attempting password verification...');
       const { data: result, error } = await supabase
-        .rpc('verify_user_password_flexible', {
+        .rpc('verify_user_password', {
           input_username_or_email: usernameOrEmail,
           input_password: password
         });
 
-      console.log('✅ Flexible verification result:', result);
-      console.log('❌ Flexible verification error:', error);
+      console.log('✅ Verification result:', result);
+      console.log('❌ Verification error:', error);
 
       if (error) {
-        console.error('💥 Database error during flexible password verification:', error);
+        console.error('💥 Database error during password verification:', error);
         toast({
           title: "Login mislukt",
           description: `Database fout: ${error.message}`,
