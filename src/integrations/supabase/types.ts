@@ -1050,6 +1050,15 @@ export type Database = {
           role: Database["public"]["Enums"]["user_role"]
         }[]
       }
+      verify_user_password_flexible: {
+        Args: { input_username_or_email: string; input_password: string }
+        Returns: {
+          user_id: number
+          username: string
+          email: string
+          role: Database["public"]["Enums"]["user_role"]
+        }[]
+      }
     }
     Enums: {
       card_type: "yellow" | "red"

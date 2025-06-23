@@ -42,13 +42,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => clearTimeout(timer);
   }, []);
 
-  // Enhanced login: use the existing verify_user_password function and retrieve correct teamId for user after successful login
+  // Enhanced login: use the new flexible verification function
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       console.log('🔐 AuthProvider login called with username:', username);
       
-      // Use the existing verify_user_password function
-      const { data, error } = await supabase.rpc('verify_user_password', {
+      // Use the new flexible verification function
+      const { data, error } = await supabase.rpc('verify_user_password_flexible', {
         input_username_or_email: username,
         input_password: password
       });

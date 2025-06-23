@@ -34,19 +34,19 @@ export const useLogin = (onLoginSuccess: () => void) => {
         console.error('❌ Error in debug user fetch:', debugErr);
       }
 
-      // Now try the existing password verification function
-      console.log('🔐 Attempting password verification with existing function...');
+      // Now try the new flexible password verification function
+      console.log('🔐 Attempting password verification with flexible function...');
       const { data: result, error } = await supabase
-        .rpc('verify_user_password', {
+        .rpc('verify_user_password_flexible', {
           input_username_or_email: usernameOrEmail,
           input_password: password
         });
 
-      console.log('✅ Verification result:', result);
-      console.log('❌ Verification error:', error);
+      console.log('✅ Flexible verification result:', result);
+      console.log('❌ Flexible verification error:', error);
 
       if (error) {
-        console.error('💥 Database error during password verification:', error);
+        console.error('💥 Database error during flexible password verification:', error);
         toast({
           title: "Login mislukt",
           description: `Database fout: ${error.message}`,
