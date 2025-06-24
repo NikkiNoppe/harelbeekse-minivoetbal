@@ -42,12 +42,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => clearTimeout(timer);
   }, []);
 
-  // Simplified login using the original verify_user_password function
+  // Use the corrected verify_user_password function
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       console.log('🔐 AuthProvider login called with username:', username);
       
-      // Use the original verify_user_password function
+      // Use the corrected verify_user_password function
       const { data, error } = await supabase.rpc('verify_user_password', {
         input_username_or_email: username,
         input_password: password

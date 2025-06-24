@@ -18,7 +18,7 @@ export const useLogin = (onLoginSuccess: () => void) => {
       console.log('📧 Username/Email:', usernameOrEmail);
       console.log('🔑 Password length:', password.length);
       
-      // Use the original verify_user_password function
+      // Use the corrected verify_user_password function
       console.log('🔐 Attempting password verification...');
       const { data: result, error } = await supabase
         .rpc('verify_user_password', {
