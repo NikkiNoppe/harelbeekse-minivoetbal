@@ -1,4 +1,3 @@
-
 import { MatchFormData, PlayerSelection } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -192,6 +191,18 @@ export const updateMatchForm = async (
   if (error) {
     console.error("[updateMatchForm] Error:", error);
     throw error;
+  }
+
+  // Trigger standings update if match is being completed
+  if (matchData.isCompleted && matchData.homeScore !== undefined && matchData.awayScore !== undefined) {
+    try {
+      const { error: functionError } = await supabase.rpc('update_competition_standings');
+      if (functionError) {
+        console.error("[updateMatchForm] Error updating standings:", functionError);
+      }
+    } catch (err) {
+      console.error("[updateMatchForm] Error calling standings function:", err);
+    }
   }
 };
 

@@ -1,49 +1,95 @@
+
 import React from "react";
-import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
-import { Award, FileText, Trophy, Ban, Info, Layers } from "lucide-react";
-import CompetitionTab from "@/components/tabs/CompetitionTab";
-import CupTab from "@/components/tabs/CupTab";
-import SuspensionsTab from "@/components/tabs/SuspensionsTab";
-import RegulationsTab from "@/components/tabs/RegulationsTab";
-import AlgemeenTab from "@/components/tabs/AlgemeenTab";
-import PlayOffTab from "@/components/tabs/PlayOffTab";
-import TabItem from "@/components/tabs/TabItem";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
-import { MOCK_TEAMS } from "@/data/mockData";
+import TabItem from "./TabItem";
+import AlgemeenTab from "./AlgemeenTab";
+import CompetitionTab from "./CompetitionTab";
+import PlayOffTab from "./PlayOffTab";
+import CupTab from "./CupTab";
+import SuspensionsTab from "./SuspensionsTab";
+import CardsTab from "./CardsTab";
+import RegulationsTab from "./RegulationsTab";
+
 interface MainTabsProps {
   activeTab: TabName;
   setActiveTab: (tab: TabName) => void;
 }
-const MainTabs: React.FC<MainTabsProps> = ({
-  activeTab,
-  setActiveTab
-}) => {
-  const {
-    isTabVisible,
-    loading
-  } = useTabVisibility();
-  if (loading) {
-    return <div className="flex items-center justify-center h-32 sm:h-40">
-      <div className="text-muted-foreground text-sm sm:text-base">Tabs laden...</div>
-    </div>;
-  }
-  return <Tabs value={activeTab} onValueChange={value => setActiveTab(value as TabName)} className="w-full">
-      <TabsList className="w-full flex scrollbar-hide min-h-[40px] ">
-        {isTabVisible("algemeen") && <TabItem value="algemeen" icon={<Info />} label="Algemeen" />}
-        {isTabVisible("competitie") && <TabItem value="competitie" icon={<Award />} label="Competitie" />}
-        {isTabVisible("playoff") && <TabItem value="playoff" icon={<Layers />} label="Play-Off" />}
-        {isTabVisible("beker") && <TabItem value="beker" icon={<Trophy />} label="Beker" />}
-        {isTabVisible("schorsingen") && <TabItem value="schorsingen" icon={<Ban />} label="Schorsingen" />}
-        {isTabVisible("reglement") && <TabItem value="reglement" icon={<FileText />} label="Reglement" />}
-      </TabsList>
-      <div className="animate-fade-in">
-        {isTabVisible("algemeen") && <TabsContent value="algemeen"><AlgemeenTab /></TabsContent>}
-        {isTabVisible("competitie") && <TabsContent value="competitie"><CompetitionTab teams={MOCK_TEAMS} /></TabsContent>}
-        {isTabVisible("playoff") && <TabsContent value="playoff"><PlayOffTab /></TabsContent>}
-        {isTabVisible("beker") && <TabsContent value="beker"><CupTab /></TabsContent>}
-        {isTabVisible("schorsingen") && <TabsContent value="schorsingen"><SuspensionsTab /></TabsContent>}
-        {isTabVisible("reglement") && <TabsContent value="reglement"><RegulationsTab /></TabsContent>}
-      </div>
-    </Tabs>;
+
+const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
+  const { isTabVisible } = useTabVisibility();
+
+  // Define all possible tabs with their configurations
+  const tabConfigs = [
+    { key: "algemeen" as TabName, label: "Algemeen", icon: "Home" },
+    { key: "competitie" as TabName, label: "Competitie", icon: "Trophy" },
+    { key: "playoff" as TabName, label: "Play-off", icon: "Target" },
+    { key: "beker" as TabName, label: "Beker", icon: "Award" },
+    { key: "schorsingen" as TabName, label: "Schorsingen", icon: "Ban" },
+    { key: "kaarten" as TabName, label: "Kaarten", icon: "AlertTriangle" },
+    { key: "reglement" as TabName, label: "Reglement", icon: "BookOpen" }
+  ];
+
+  // Filter visible tabs
+  const visibleTabs = tabConfigs.filter(tab => isTabVisible(tab.key));
+
+  return (
+    <div className="w-full">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-1 h-auto p-1">
+          {visibleTabs.map((tab) => (
+            <TabsTrigger key={tab.key} value={tab.key} className="flex-1">
+              <TabItem label={tab.label} iconName={tab.icon} />
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <div className="mt-6">
+          {isTabVisible("algemeen") && (
+            <TabsContent value="algemeen" className="mt-0">
+              <AlgemeenTab />
+            </TabsContent>
+          )}
+          
+          {isTabVisible("competitie") && (
+            <TabsContent value="competitie" className="mt-0">
+              <CompetitionTab />
+            </TabsContent>
+          )}
+          
+          {isTabVisible("playoff") && (
+            <TabsContent value="playoff" className="mt-0">
+              <PlayOffTab />
+            </TabsContent>
+          )}
+          
+          {isTabVisible("beker") && (
+            <TabsContent value="beker" className="mt-0">
+              <CupTab />
+            </TabsContent>
+          )}
+          
+          {isTabVisible("schorsingen") && (
+            <TabsContent value="schorsingen" className="mt-0">
+              <SuspensionsTab />
+            </TabsContent>
+          )}
+          
+          {isTabVisible("kaarten") && (
+            <TabsContent value="kaarten" className="mt-0">
+              <CardsTab />
+            </TabsContent>
+          )}
+          
+          {isTabVisible("reglement") && (
+            <TabsContent value="reglement" className="mt-0">
+              <RegulationsTab />
+            </TabsContent>
+          )}
+        </div>
+      </Tabs>
+    </div>
+  );
 };
+
 export default MainTabs;

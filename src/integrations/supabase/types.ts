@@ -122,48 +122,6 @@ export type Database = {
         }
         Relationships: []
       }
-      cards: {
-        Row: {
-          card_id: number
-          card_time: string
-          card_type: Database["public"]["Enums"]["card_type"]
-          match_id: number | null
-          penalty_cost: number
-          player_id: number | null
-        }
-        Insert: {
-          card_id?: number
-          card_time: string
-          card_type: Database["public"]["Enums"]["card_type"]
-          match_id?: number | null
-          penalty_cost: number
-          player_id?: number | null
-        }
-        Update: {
-          card_id?: number
-          card_time?: string
-          card_type?: Database["public"]["Enums"]["card_type"]
-          match_id?: number | null
-          penalty_cost?: number
-          player_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cards_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: false
-            referencedRelation: "matches"
-            referencedColumns: ["match_id"]
-          },
-          {
-            foreignKeyName: "cards_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["player_id"]
-          },
-        ]
-      }
       competition_configs: {
         Row: {
           config_data: Json | null
@@ -285,7 +243,7 @@ export type Database = {
           {
             foreignKeyName: "competition_standings_team_id_fkey"
             columns: ["team_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "teams"
             referencedColumns: ["team_id"]
           },
@@ -437,48 +395,6 @@ export type Database = {
           },
         ]
       }
-      match_form_players: {
-        Row: {
-          created_at: string | null
-          form_id: number
-          form_player_id: number
-          is_captain: boolean | null
-          jersey_number: number
-          player_id: number
-        }
-        Insert: {
-          created_at?: string | null
-          form_id: number
-          form_player_id?: number
-          is_captain?: boolean | null
-          jersey_number: number
-          player_id: number
-        }
-        Update: {
-          created_at?: string | null
-          form_id?: number
-          form_player_id?: number
-          is_captain?: boolean | null
-          jersey_number?: number
-          player_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "match_form_players_form_id_fkey"
-            columns: ["form_id"]
-            isOneToOne: false
-            referencedRelation: "match_forms"
-            referencedColumns: ["form_id"]
-          },
-          {
-            foreignKeyName: "match_form_players_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["player_id"]
-          },
-        ]
-      }
       match_forms: {
         Row: {
           away_players: Json | null
@@ -539,42 +455,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["team_id"]
-          },
-        ]
-      }
-      match_players: {
-        Row: {
-          jersey_number: number
-          match_id: number | null
-          match_player_id: number
-          player_id: number | null
-        }
-        Insert: {
-          jersey_number: number
-          match_id?: number | null
-          match_player_id?: number
-          player_id?: number | null
-        }
-        Update: {
-          jersey_number?: number
-          match_id?: number | null
-          match_player_id?: number
-          player_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "match_players_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: false
-            referencedRelation: "matches"
-            referencedColumns: ["match_id"]
-          },
-          {
-            foreignKeyName: "match_players_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["player_id"]
           },
         ]
       }
@@ -1036,6 +916,10 @@ export type Database = {
       is_player_list_locked: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      update_competition_standings: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       update_user_password: {
         Args: { user_id_param: number; new_password: string }
