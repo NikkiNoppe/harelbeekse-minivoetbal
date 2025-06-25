@@ -10,7 +10,6 @@ import { Player, FormData, formSchema } from "./types";
 export const usePlayerSelection = (matchId: number, teamId: number, onComplete: () => void) => {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const [existingForm, setExistingForm] = useState<any | null>(null);
 
   // Fetch team players
   const { data: teamPlayers, isLoading } = useQuery({
@@ -45,40 +44,22 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     }
   });
   
-  // Fetch existing form data if it exists
-  const { data: formData, isLoading: loadingForm } = useQuery({
+  // Check if there's already a match form for this team
+  const { data: existingForm, isLoading: loadingForm } = useQuery({
     queryKey: ['matchForm', matchId, teamId],
     queryFn: async () => {
       try {
-        const { data: formData, error: formError } = await supabase
+        const { data, error } = await supabase
           .from('match_forms')
-          .select('form_id, is_submitted')
+          .select('form_id, is_submitted, home_players, away_players')
           .eq('match_id', matchId)
-          .eq('team_id', teamId)
           .single();
         
-        if (formError && formError.code !== 'PGRST116') {
-          throw formError;
+        if (error && error.code !== 'PGRST116') {
+          throw error;
         }
         
-        if (!formData) return null;
-        
-        const { data: playerData, error: playerError } = await supabase
-          .from('match_form_players')
-          .select('player_id, jersey_number, is_captain')
-          .eq('form_id', formData.form_id);
-        
-        if (playerError) throw playerError;
-        
-        return {
-          formId: formData.form_id,
-          isSubmitted: formData.is_submitted,
-          players: playerData.map(p => ({
-            playerId: p.player_id,
-            jerseyNumber: p.jersey_number,
-            isCaptain: p.is_captain
-          }))
-        };
+        return data;
       } catch (error) {
         console.error("Error fetching match form:", error);
         return null;
@@ -94,24 +75,32 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   // Initialize form with team players and any existing selections
   useEffect(() => {
     if (teamPlayers && !isLoading) {
-      if (formData && formData.players) {
-        const initialPlayers = teamPlayers.map(player => {
-          const existingPlayer = formData.players.find(p => p.playerId === player.playerId);
-          return existingPlayer ? {
-            ...player,
-            selected: true,
-            jerseyNumber: existingPlayer.jerseyNumber.toString(),
-            isCaptain: existingPlayer.isCaptain
-          } : player;
-        });
+      let initialPlayers = teamPlayers;
+      
+      // If there's an existing form, try to populate from the JSONB data
+      if (existingForm) {
+        const isHomeTeam = true; // You might need to determine this based on your logic
+        const existingPlayerData = isHomeTeam ? existingForm.home_players : existingForm.away_players;
         
-        form.reset({ players: initialPlayers });
-        setExistingForm(formData);
-      } else {
-        form.reset({ players: teamPlayers });
+        if (Array.isArray(existingPlayerData)) {
+          initialPlayers = teamPlayers.map(player => {
+            const existingPlayer = existingPlayerData.find((p: any) => p.playerId === player.playerId);
+            if (existingPlayer) {
+              return {
+                ...player,
+                selected: true,
+                jerseyNumber: existingPlayer.jerseyNumber || "",
+                isCaptain: existingPlayer.isCaptain || false
+              };
+            }
+            return player;
+          });
+        }
       }
+      
+      form.reset({ players: initialPlayers });
     }
-  }, [teamPlayers, formData, isLoading, loadingForm]);
+  }, [teamPlayers, existingForm, isLoading, loadingForm]);
 
   const onSubmit = async (data: FormData) => {
     setSubmitting(true);
@@ -129,56 +118,45 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         return;
       }
       
-      let formId;
+      // Convert selected players to the format expected by match_forms
+      const playerData = selectedPlayers.map(player => ({
+        playerId: player.playerId,
+        playerName: player.playerName,
+        jerseyNumber: player.jerseyNumber,
+        isCaptain: player.isCaptain
+      }));
       
+      // Determine if this is home or away team (you might need to adjust this logic)
+      const isHomeTeam = true; // This should be determined based on your application logic
+      
+      const updateData = isHomeTeam 
+        ? { home_players: playerData, is_submitted: true }
+        : { away_players: playerData, is_submitted: true };
+      
+      // Update or insert the match form
       if (existingForm) {
-        formId = existingForm.formId;
+        const { error } = await supabase
+          .from('match_forms')
+          .update({
+            ...updateData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('form_id', existingForm.form_id);
         
-        if (!existingForm.isSubmitted) {
-          const { error: updateError } = await supabase
-            .from('match_forms')
-            .update({ 
-              is_submitted: true,
-              updated_at: new Date().toISOString()
-            })
-            .eq('form_id', formId);
-          
-          if (updateError) throw updateError;
-        }
-        
-        const { error: deleteError } = await supabase
-          .from('match_form_players')
-          .delete()
-          .eq('form_id', formId);
-        
-        if (deleteError) throw deleteError;
+        if (error) throw error;
       } else {
-        const { data: newForm, error: createError } = await supabase
+        const { error } = await supabase
           .from('match_forms')
           .insert({
             match_id: matchId,
             team_id: teamId,
-            is_submitted: true
-          })
-          .select('form_id')
-          .single();
+            ...updateData,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
         
-        if (createError) throw createError;
-        formId = newForm.form_id;
+        if (error) throw error;
       }
-      
-      const { error: insertError } = await supabase
-        .from('match_form_players')
-        .insert(
-          selectedPlayers.map(player => ({
-            form_id: formId,
-            player_id: player.playerId,
-            jersey_number: parseInt(player.jerseyNumber),
-            is_captain: player.isCaptain
-          }))
-        );
-      
-      if (insertError) throw insertError;
       
       toast({
         title: "Formulier opgeslagen",

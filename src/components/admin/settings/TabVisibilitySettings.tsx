@@ -5,14 +5,18 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, RotateCcw } from "lucide-react";
-import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
+import { useTabVisibilitySettings } from "@/hooks/useTabVisibilitySettings";
 
 const TabVisibilitySettings: React.FC = () => {
-  const { tabsVisibility, updateTabVisibility, saveTabVisibilitySettings, resetToDefaults } = useTabVisibility();
+  const { settings, loading, updateSetting } = useTabVisibilitySettings();
   
-  const handleTabVisibilityChange = (tab: TabName) => {
-    updateTabVisibility(tab, !tabsVisibility[tab]);
+  const handleTabVisibilityChange = (settingName: string, isVisible: boolean) => {
+    updateSetting(settingName, { is_visible: isVisible });
   };
+  
+  if (loading) {
+    return <div>Loading...</div>;
+  }
   
   return (
     <Card>
@@ -22,27 +26,27 @@ const TabVisibilitySettings: React.FC = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {Object.entries(tabsVisibility).map(([tab, isVisible]) => (
-            <div key={tab} className="flex items-center justify-between">
+          {settings.map((setting) => (
+            <div key={setting.id} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {isVisible ? <Eye className="h-4 w-4 text-green-500" /> : <EyeOff className="h-4 w-4 text-red-500" />}
-                <Label htmlFor={`tab-${tab}`} className="capitalize">{tab}</Label>
+                {setting.is_visible ? <Eye className="h-4 w-4 text-green-500" /> : <EyeOff className="h-4 w-4 text-red-500" />}
+                <Label htmlFor={`tab-${setting.setting_name}`} className="capitalize">{setting.setting_name}</Label>
               </div>
               <Switch
-                id={`tab-${tab}`}
-                checked={isVisible}
-                onCheckedChange={() => handleTabVisibilityChange(tab as TabName)}
+                id={`tab-${setting.setting_name}`}
+                checked={setting.is_visible}
+                onCheckedChange={(checked) => handleTabVisibilityChange(setting.setting_name, checked)}
               />
             </div>
           ))}
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={resetToDefaults} className="flex items-center gap-2">
+        <Button variant="outline" className="flex items-center gap-2">
           <RotateCcw className="h-4 w-4" />
           Standaardinstellingen
         </Button>
-        <Button onClick={saveTabVisibilitySettings}>
+        <Button>
           Instellingen opslaan
         </Button>
       </CardFooter>
