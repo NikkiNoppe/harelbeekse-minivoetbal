@@ -18,7 +18,7 @@ interface MainTabsProps {
 }
 
 const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
-  const { isTabVisible } = useTabVisibility();
+  const { isTabVisible, loading } = useTabVisibility();
 
   // Define all possible tabs with their configurations in the original order
   const tabConfigs = [
@@ -33,6 +33,15 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
 
   // Filter visible tabs
   const visibleTabs = tabConfigs.filter(tab => isTabVisible(tab.key));
+
+  // Show loading state while fetching settings
+  if (loading) {
+    return (
+      <div className="w-full flex justify-center items-center py-8">
+        <div className="text-purple-600">Tabs laden...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">

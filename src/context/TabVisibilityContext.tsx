@@ -1,43 +1,53 @@
 
 import React, { createContext, useContext } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useTabVisibilitySettings } from '@/hooks/useTabVisibilitySettings';
 
 interface TabVisibilityContextProps {
   isTabVisible: (tab: TabName) => boolean;
+  loading: boolean;
 }
 
 const TabVisibilityContext = createContext<TabVisibilityContextProps | undefined>(undefined);
 
 export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  const { settings, loading } = useTabVisibilitySettings();
 
   const isTabVisible = (tab: TabName): boolean => {
-    if (!user) {
-      // Define visibility for non-authenticated users
-      return tab === "algemeen" || tab === "reglement";
+    // Find the setting for this tab
+    const setting = settings.find(s => s.setting_name === tab);
+    
+    // If no setting found or not visible, hide the tab
+    if (!setting || !setting.is_visible) {
+      return false;
     }
-
-    // Define visibility based on user role and other criteria
-    switch (tab) {
-      case "algemeen":
-      case "competitie":
-      case "reglement":
-        return true; // Visible for all authenticated users
-      case "playoff":
-        return user.role === "admin"; // Visible only for admins
-      case "beker":
-        return user.role === "admin"; // Visible only for admins
-      case "schorsingen":
-        return user.role === "admin" || user.role === "referee"; // Visible for admins and referees
-      case "kaarten":
-        return user.role === "admin" || user.role === "referee"; // Visible for admins and referees
-      default:
-        return false;
+    
+    // If login is required but user is not authenticated, hide the tab
+    if (setting.requires_login && !user) {
+      return false;
     }
+    
+    // For authenticated users, check role-based visibility
+    if (user) {
+      switch (tab) {
+        case "playoff":
+        case "beker":
+          return user.role === "admin";
+        case "schorsingen":
+        case "kaarten":
+          return user.role === "admin" || user.role === "referee";
+        default:
+          return true; // All other tabs are visible for authenticated users if enabled in settings
+      }
+    }
+    
+    // For non-authenticated users, show the tab if it doesn't require login
+    return !setting.requires_login;
   };
 
   return (
-    <TabVisibilityContext.Provider value={{ isTabVisible }}>
+    <TabVisibilityContext.Provider value={{ isTabVisible, loading }}>
       {children}
     </TabVisibilityContext.Provider>
   );
