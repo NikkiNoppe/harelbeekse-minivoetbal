@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 
@@ -12,7 +13,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-10 items-center justify-center rounded-xl bg-purple-light-gray border-purple-light p-1 text-purple-dark overflow-hidden",
+      "inline-flex h-10 items-center justify-center rounded-xl bg-purple-50 border border-purple-400 p-1 text-purple-600 overflow-hidden",
       className
     )}
     {...props}
@@ -28,9 +29,10 @@ const TabsTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       "inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium transition-all",
-      "bg-purple-light text-white",
-      "hover:bg-purple-dark hover:text-white",
-      "data-[state=active]:bg-purple-dark data-[state=active]:text-white",
+      "bg-purple-400 text-white rounded-lg",
+      "hover:bg-purple-500 hover:text-white",
+      "data-[state=active]:bg-purple-600 data-[state=active]:text-white",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400",
       className
     )}
     {...props}

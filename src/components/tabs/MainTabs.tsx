@@ -2,6 +2,7 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
+import { Home, Award, Trophy, Target, BookOpen, Ban, AlertTriangle } from "lucide-react";
 import TabItem from "./TabItem";
 import AlgemeenTab from "./AlgemeenTab";
 import CompetitionTab from "./CompetitionTab";
@@ -21,13 +22,13 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
 
   // Define all possible tabs with their configurations in the original order
   const tabConfigs = [
-    { key: "algemeen" as TabName, label: "Algemeen", icon: "Home" },
-    { key: "beker" as TabName, label: "Beker", icon: "Award" },
-    { key: "competitie" as TabName, label: "Competitie", icon: "Trophy" },
-    { key: "playoff" as TabName, label: "Play-off", icon: "Target" },
-    { key: "reglement" as TabName, label: "Reglement", icon: "BookOpen" },
-    { key: "schorsingen" as TabName, label: "Schorsingen", icon: "Ban" },
-    { key: "kaarten" as TabName, label: "Kaarten", icon: "AlertTriangle" }
+    { key: "algemeen" as TabName, label: "Algemeen", icon: <Home size={16} /> },
+    { key: "beker" as TabName, label: "Beker", icon: <Award size={16} /> },
+    { key: "competitie" as TabName, label: "Competitie", icon: <Trophy size={16} /> },
+    { key: "playoff" as TabName, label: "Play-off", icon: <Target size={16} /> },
+    { key: "reglement" as TabName, label: "Reglement", icon: <BookOpen size={16} /> },
+    { key: "schorsingen" as TabName, label: "Schorsingen", icon: <Ban size={16} /> },
+    { key: "kaarten" as TabName, label: "Kaarten", icon: <AlertTriangle size={16} /> }
   ];
 
   // Filter visible tabs
