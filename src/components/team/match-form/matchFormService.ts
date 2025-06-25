@@ -1,18 +1,15 @@
+
 import { MatchFormData, PlayerSelection } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Ophalen van alle aankomende of relevante wedstrijdformulieren 
  * gebaseerd op het team en de rechten van de gebruiker.
- * 
- * @param teamId Het id van het team (voor teammanager, verplicht)
- * @param hasElevatedPermissions True als admin/referee (ziet alles), anders alleen eigen team
  */
 export const fetchUpcomingMatches = async (
   teamId: number = 0,
   hasElevatedPermissions: boolean = false
 ): Promise<MatchFormData[]> => {
-  // Base query: join with matches and grab the forms for each match
   let query = supabase
     .from("matches")
     .select(`
@@ -52,9 +49,7 @@ export const fetchUpcomingMatches = async (
 
   const list: MatchFormData[] = [];
   for (const row of data as any[]) {
-    // Per match, match_forms (should always be 1!)
     const form = Array.isArray(row.match_forms) && row.match_forms.length > 0 ? row.match_forms[0] : null;
-    // Parse date/time
     let date = "", time = "";
     if (row.match_date) {
       const d = new Date(row.match_date);
@@ -85,7 +80,6 @@ export const fetchUpcomingMatches = async (
   return list;
 };
 
-// Fetch a single match form with unified player arrays (and correct source tables)
 export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | null> => {
   const { data, error } = await supabase
     .from("matches")
@@ -113,7 +107,6 @@ export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | n
     .eq("match_id", matchId)
     .maybeSingle();
 
-  // Defensive: return null if query errored or returned no row
   if (error || !data || typeof data !== "object" || Array.isArray(data)) {
     return null;
   }
@@ -125,15 +118,13 @@ export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | n
     time = d.toISOString().slice(11, 16);
   }
 
-  // Defensive: get the form only if it is present and not an error object
-  // This ensures TypeScript knows form could be an object or undefined
   let form: any = undefined;
   if (
     Array.isArray(data.match_forms) &&
     data.match_forms.length > 0 &&
     typeof data.match_forms[0] === "object" &&
     data.match_forms[0] !== null &&
-    !("code" in data.match_forms[0]) // not an error object
+    !("code" in data.match_forms[0])
   ) {
     form = data.match_forms[0];
   }
@@ -160,11 +151,23 @@ export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | n
   };
 };
 
-// New: Save (update) the single match form, with home/away players
 export const updateMatchForm = async (
   matchData: Partial<MatchFormData> & { matchId: number }
 ): Promise<void> => {
   if (!matchData.matchId) return;
+  
+  // Ensure all player data including cards and jersey numbers are properly formatted
+  const formatPlayerData = (players: PlayerSelection[] | undefined) => {
+    if (!players) return [];
+    return players.map(player => ({
+      playerId: player.playerId,
+      playerName: player.playerName,
+      jerseyNumber: player.jerseyNumber,
+      isCaptain: player.isCaptain,
+      cardType: player.cardType || undefined
+    }));
+  };
+
   const updateData: any = {
     home_score: matchData.homeScore,
     away_score: matchData.awayScore,
@@ -172,10 +175,11 @@ export const updateMatchForm = async (
     referee_notes: matchData.refereeNotes,
     is_submitted: !!matchData.isCompleted,
     is_locked: !!matchData.isLocked,
-    home_players: matchData.homePlayers,
-    away_players: matchData.awayPlayers,
+    home_players: formatPlayerData(matchData.homePlayers),
+    away_players: formatPlayerData(matchData.awayPlayers),
     updated_at: new Date().toISOString(),
   };
+  
   Object.keys(updateData).forEach((k) => {
     if (updateData[k] === undefined) delete updateData[k];
   });
@@ -187,6 +191,7 @@ export const updateMatchForm = async (
 
   if (error) {
     console.error("[updateMatchForm] Error:", error);
+    throw error;
   }
 };
 
@@ -201,5 +206,6 @@ export const lockMatchForm = async (matchId: number): Promise<void> => {
 
   if (error) {
     console.error("[lockMatchForm] Error:", error);
+    throw error;
   }
 };

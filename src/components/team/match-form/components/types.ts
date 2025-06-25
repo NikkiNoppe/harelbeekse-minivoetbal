@@ -4,4 +4,5 @@ export interface PlayerSelection {
   playerName: string;
   jerseyNumber: string;
   isCaptain: boolean;
+  cardType?: string;
 }

@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   MatchHeader,
@@ -10,8 +11,6 @@ import { MatchFormData, PlayerSelection } from "./types";
 import { useMatchFormState } from "./hooks/useMatchFormState";
 import { useMatchFormSubmission } from "./hooks/useMatchFormSubmission";
 import { updateMatchForm, lockMatchForm } from "./matchFormService";
-
-// Remove teamId and isHomeTeam logic as forms are no longer split by team
 
 interface CompactMatchFormProps {
   match: MatchFormData;
@@ -44,10 +43,11 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     homeTeamSelections,
     setHomeTeamSelections,
     awayTeamSelections,
-    setAwayTeamSelections
+    setAwayTeamSelections,
+    getHomeTeamSelectionsWithCards,
+    getAwayTeamSelectionsWithCards
   } = useMatchFormState(match);
 
-  // New: Single match form, allow both teams to edit selections, ref w/ permissions
   const canEdit = !match.isLocked || isAdmin;
   const showRefereeFields = isReferee || isAdmin;
 
@@ -68,17 +68,25 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     setSelections(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
-      // Captain logic: only one captain per team
+      
       if (field === "isCaptain" && value === true) {
         updated.forEach((sel, idx) => {
           if (idx !== index) updated[idx].isCaptain = false;
         });
       }
-      // Player logic: clear on deselection
+      
       if (field === "playerId" && value === null) {
         updated[index].playerName = "";
         updated[index].jerseyNumber = "";
         updated[index].isCaptain = false;
+        // Remove card data when player is deselected
+        if (updated[index].playerId) {
+          setPlayerCards(prev => {
+            const newCards = { ...prev };
+            delete newCards[updated[index].playerId!];
+            return newCards;
+          });
+        }
       }
       return updated;
     });
@@ -95,8 +103,8 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         refereeNotes: refereeNotes,
         isCompleted: true,
         isLocked: isReferee ? true : match.isLocked,
-        homePlayers: homeTeamSelections,
-        awayPlayers: awayTeamSelections
+        homePlayers: getHomeTeamSelectionsWithCards(),
+        awayPlayers: getAwayTeamSelectionsWithCards()
       };
 
       await updateMatchForm({
@@ -108,7 +116,6 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         await lockMatchForm(match.matchId);
       }
 
-      // You may want to show a toast here
       onComplete();
     } finally {
       setIsSubmitting(false);
