@@ -39,7 +39,7 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
         <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-1 h-auto p-1">
           {visibleTabs.map((tab) => (
             <TabsTrigger key={tab.key} value={tab.key} className="flex-1">
-              <TabItem label={tab.label} icon={tab.icon} />
+              <TabItem value={tab.key} label={tab.label} icon={tab.icon} />
             </TabsTrigger>
           ))}
         </TabsList>

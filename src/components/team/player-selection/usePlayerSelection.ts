@@ -85,12 +85,12 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         if (Array.isArray(existingPlayerData)) {
           initialPlayers = teamPlayers.map(player => {
             const existingPlayer = existingPlayerData.find((p: any) => p.playerId === player.playerId);
-            if (existingPlayer) {
+            if (existingPlayer && typeof existingPlayer === 'object' && existingPlayer !== null) {
               return {
                 ...player,
                 selected: true,
-                jerseyNumber: existingPlayer.jerseyNumber || "",
-                isCaptain: existingPlayer.isCaptain || false
+                jerseyNumber: (existingPlayer as any).jerseyNumber || "",
+                isCaptain: (existingPlayer as any).isCaptain || false
               };
             }
             return player;
