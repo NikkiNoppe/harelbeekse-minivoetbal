@@ -19,15 +19,15 @@ interface MainTabsProps {
 const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
   const { isTabVisible } = useTabVisibility();
 
-  // Define all possible tabs with their configurations
+  // Define all possible tabs with their configurations in the original order
   const tabConfigs = [
     { key: "algemeen" as TabName, label: "Algemeen", icon: "Home" },
+    { key: "beker" as TabName, label: "Beker", icon: "Award" },
     { key: "competitie" as TabName, label: "Competitie", icon: "Trophy" },
     { key: "playoff" as TabName, label: "Play-off", icon: "Target" },
-    { key: "beker" as TabName, label: "Beker", icon: "Award" },
+    { key: "reglement" as TabName, label: "Reglement", icon: "BookOpen" },
     { key: "schorsingen" as TabName, label: "Schorsingen", icon: "Ban" },
-    { key: "kaarten" as TabName, label: "Kaarten", icon: "AlertTriangle" },
-    { key: "reglement" as TabName, label: "Reglement", icon: "BookOpen" }
+    { key: "kaarten" as TabName, label: "Kaarten", icon: "AlertTriangle" }
   ];
 
   // Filter visible tabs
@@ -51,6 +51,12 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
             </TabsContent>
           )}
           
+          {isTabVisible("beker") && (
+            <TabsContent value="beker" className="mt-0">
+              <CupTab />
+            </TabsContent>
+          )}
+          
           {isTabVisible("competitie") && (
             <TabsContent value="competitie" className="mt-0">
               <CompetitionTab />
@@ -63,9 +69,9 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
             </TabsContent>
           )}
           
-          {isTabVisible("beker") && (
-            <TabsContent value="beker" className="mt-0">
-              <CupTab />
+          {isTabVisible("reglement") && (
+            <TabsContent value="reglement" className="mt-0">
+              <RegulationsTab />
             </TabsContent>
           )}
           
@@ -78,12 +84,6 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
           {isTabVisible("kaarten") && (
             <TabsContent value="kaarten" className="mt-0">
               <CardsTab />
-            </TabsContent>
-          )}
-          
-          {isTabVisible("reglement") && (
-            <TabsContent value="reglement" className="mt-0">
-              <RegulationsTab />
             </TabsContent>
           )}
         </div>
