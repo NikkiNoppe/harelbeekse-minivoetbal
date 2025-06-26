@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Search, Calendar, Loader2 } from "lucide-react";
+import { Search, Calendar, Loader2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCompetitionMatches, MatchData } from "@/services/matchDataService";
@@ -40,6 +40,7 @@ const fetchCompetitionStandings = async () => {
     `).order('points', { ascending: false }).order('goal_difference', { ascending: false });
   
   if (error) {
+    console.error("Error fetching standings:", error);
     throw new Error(`Error fetching standings: ${error.message}`);
   }
 
@@ -65,9 +66,11 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
   const [selectedTeam, setSelectedTeam] = useState<string>("");
 
   // Fetch competition standings
-  const { data: fetchedTeams, isLoading: loadingStandings, error: standingsError } = useQuery({
+  const { data: fetchedTeams, isLoading: loadingStandings, error: standingsError, refetch: refetchStandings } = useQuery({
     queryKey: ['competitionStandings'],
-    queryFn: fetchCompetitionStandings
+    queryFn: fetchCompetitionStandings,
+    refetchOnWindowFocus: true,
+    staleTime: 30000 // Consider data stale after 30 seconds
   });
 
   // Fetch matches data
@@ -110,7 +113,18 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
       <section>
         <div className="flex items-center justify-between mt-8">
           <h2 className="text-2xl font-semibold">Competitiestand</h2>
-          <Badge className="badge-purple">Seizoen 2025-2026</Badge>
+          <div className="flex items-center gap-2">
+            <Badge className="badge-purple">Seizoen 2025-2026</Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchStandings()}
+              className="flex items-center gap-1"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Vernieuwen
+            </Button>
+          </div>
         </div>
         <div className="mt-6">
           <Card>
@@ -121,8 +135,18 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
                   <span className="ml-2">Competitiestand laden...</span>
                 </div>
               ) : standingsError && !teams ? (
-                <div className="text-center p-4 text-red-500">
-                  Er is een fout opgetreden bij het laden van de competitiestand.
+                <div className="text-center p-4">
+                  <div className="text-red-500 mb-2">
+                    Er is een fout opgetreden bij het laden van de competitiestand.
+                  </div>
+                  <Button variant="outline" onClick={() => refetchStandings()}>
+                    Opnieuw proberen
+                  </Button>
+                </div>
+              ) : !teamsToDisplay || teamsToDisplay.length === 0 ? (
+                <div className="text-center p-8 text-muted-foreground">
+                  <p className="mb-2">Nog geen competitiestand beschikbaar.</p>
+                  <p className="text-sm">Standings worden automatisch bijgewerkt wanneer wedstrijden worden ingediend.</p>
                 </div>
               ) : (
                 <div className="rounded-md border">
@@ -140,16 +164,20 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({ teams }) => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {teamsToDisplay?.map((team, index) => (
-                        <TableRow key={team.id}>
-                          <TableCell className="text-center">{index + 1}</TableCell>
-                          <TableCell>{team.name}</TableCell>
+                      {teamsToDisplay.map((team, index) => (
+                        <TableRow key={team.id} className={index === 0 ? "bg-green-50" : ""}>
+                          <TableCell className="text-center font-medium">{index + 1}</TableCell>
+                          <TableCell className="font-medium">{team.name}</TableCell>
                           <TableCell className="text-center">{team.played}</TableCell>
-                          <TableCell className="text-center">{team.won}</TableCell>
-                          <TableCell className="text-center">{team.draw}</TableCell>
-                          <TableCell className="text-center">{team.lost}</TableCell>
-                          <TableCell className="text-center">{team.goalDiff}</TableCell>
-                          <TableCell className="text-center">{team.points}</TableCell>
+                          <TableCell className="text-center text-green-600 font-medium">{team.won}</TableCell>
+                          <TableCell className="text-center text-yellow-600 font-medium">{team.draw}</TableCell>
+                          <TableCell className="text-center text-red-600 font-medium">{team.lost}</TableCell>
+                          <TableCell className="text-center">
+                            <span className={team.goalDiff > 0 ? "text-green-600 font-medium" : team.goalDiff < 0 ? "text-red-600 font-medium" : ""}>
+                              {team.goalDiff > 0 ? "+" : ""}{team.goalDiff}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center font-bold text-lg">{team.points}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
