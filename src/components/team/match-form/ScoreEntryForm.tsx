@@ -54,7 +54,7 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
       await updateMatchForm(updatedMatch);
       
       toast({
-        title: "Scores opgeslagen",
+        title: isAdmin ? "Admin: Scores opgeslagen" : "Scores opgeslagen",
         description: "De wedstrijdscores zijn succesvol opgeslagen."
       });
       
@@ -97,7 +97,7 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
       await lockMatchForm(match.matchId);
       
       toast({
-        title: "Formulier vergrendeld",
+        title: isAdmin ? "Admin: Formulier vergrendeld" : "Formulier vergrendeld",
         description: "Het wedstrijdformulier is definitief afgesloten en kan niet meer worden gewijzigd."
       });
       
@@ -120,13 +120,27 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
         <p className="text-sm text-muted-foreground">
           {match.homeTeamName} vs {match.awayTeamName}
         </p>
+        {isAdmin && (
+          <p className="text-sm text-blue-600 font-medium">
+            Admin modus: Je kunt altijd wijzigingen maken
+          </p>
+        )}
       </div>
 
-      {match.isLocked && (
+      {match.isLocked && !isAdmin && (
         <Alert>
           <Lock className="h-4 w-4" />
           <AlertDescription>
-            Deze wedstrijd is vergrendeld. {isAdmin ? "Als admin kun je nog wijzigingen maken." : "Alleen een admin kan nog wijzigingen maken."}
+            Deze wedstrijd is vergrendeld. Alleen een admin kan nog wijzigingen maken.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {match.isLocked && isAdmin && (
+        <Alert>
+          <Lock className="h-4 w-4" />
+          <AlertDescription>
+            Deze wedstrijd is vergrendeld, maar als admin kun je nog wijzigingen maken.
           </AlertDescription>
         </Alert>
       )}
@@ -208,11 +222,11 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
             className="flex items-center gap-2"
           >
             <Save className="h-4 w-4" />
-            Opslaan
+            {isAdmin ? "Admin: Opslaan" : "Opslaan"}
           </Button>
         )}
         
-        {isReferee && !match.isLocked && (
+        {(isReferee || isAdmin) && (!match.isLocked || isAdmin) && (
           <Button
             onClick={handleLock}
             disabled={isSubmitting}
@@ -220,16 +234,16 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
             className="flex items-center gap-2"
           >
             <Lock className="h-4 w-4" />
-            Bevestigen & Vergrendelen
+            {isAdmin ? "Admin: Bevestigen & Vergrendelen" : "Bevestigen & Vergrendelen"}
           </Button>
         )}
       </div>
 
-      {isReferee && !match.isLocked && (
+      {(isReferee || isAdmin) && !match.isLocked && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Let op: Na bevestiging kan het formulier niet meer worden gewijzigd, behalve door een admin.
+            Let op: Na bevestiging kan het formulier niet meer worden gewijzigd{isAdmin ? ", behalve door een admin" : ""}.
           </AlertDescription>
         </Alert>
       )}
