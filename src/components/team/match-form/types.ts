@@ -17,6 +17,7 @@ export interface MatchFormData {
   awayTeamName: string;
   location: string;
   matchday: string;
+  matchdayId?: number; // Add this for admin editing
   isCompleted: boolean;
   isLocked: boolean;
   homeScore?: number;

@@ -5,7 +5,8 @@ import {
   MatchDataSection,
   PlayerSelectionSection,
   RefereeNotesSection,
-  MatchFormActions
+  MatchFormActions,
+  AdminMatchDataSection
 } from "./components";
 import { MatchFormData, PlayerSelection } from "./types";
 import { useMatchFormState } from "./hooks/useMatchFormState";
@@ -48,8 +49,14 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     getAwayTeamSelectionsWithCards
   } = useMatchFormState(match);
 
-  const canEdit = !match.isLocked || isAdmin;
+  const [currentMatch, setCurrentMatch] = React.useState<MatchFormData>(match);
+
+  const canEdit = !currentMatch.isLocked || isAdmin;
   const showRefereeFields = isReferee || isAdmin;
+
+  const handleMatchUpdate = (updatedMatch: MatchFormData) => {
+    setCurrentMatch(updatedMatch);
+  };
 
   const handleCardChange = (playerId: number, cardType: string) => {
     setPlayerCards(prev => ({
@@ -96,24 +103,24 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     setIsSubmitting(true);
     try {
       const updatedMatch: MatchFormData = {
-        ...match,
+        ...currentMatch,
         homeScore: homeScore ? parseInt(homeScore) : undefined,
         awayScore: awayScore ? parseInt(awayScore) : undefined,
         referee: selectedReferee,
         refereeNotes: refereeNotes,
         isCompleted: true,
-        isLocked: isReferee ? true : match.isLocked,
+        isLocked: isReferee ? true : currentMatch.isLocked,
         homePlayers: getHomeTeamSelectionsWithCards(),
         awayPlayers: getAwayTeamSelectionsWithCards()
       };
 
       await updateMatchForm({
         ...updatedMatch,
-        matchId: match.matchId,
+        matchId: currentMatch.matchId,
       });
 
-      if (isReferee && !match.isLocked) {
-        await lockMatchForm(match.matchId);
+      if (isReferee && !currentMatch.isLocked) {
+        await lockMatchForm(currentMatch.matchId);
       }
 
       onComplete();
@@ -124,10 +131,18 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
 
   return (
     <div className="space-y-6">
-      <MatchHeader match={match} />
+      <MatchHeader match={currentMatch} />
+
+      {isAdmin && (
+        <AdminMatchDataSection
+          match={currentMatch}
+          onMatchUpdate={handleMatchUpdate}
+          canEdit={canEdit}
+        />
+      )}
 
       <MatchDataSection
-        match={match}
+        match={currentMatch}
         homeScore={homeScore}
         awayScore={awayScore}
         selectedReferee={selectedReferee}
@@ -139,7 +154,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       />
 
       <PlayerSelectionSection
-        match={match}
+        match={currentMatch}
         homeTeamSelections={homeTeamSelections}
         awayTeamSelections={awayTeamSelections}
         onPlayerSelection={handlePlayerSelection}
@@ -166,7 +181,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         isReferee={isReferee}
         isTeamManager={!isAdmin && !isReferee}
         isAdmin={isAdmin}
-        isLocked={match.isLocked}
+        isLocked={currentMatch.isLocked}
       />
     </div>
   );

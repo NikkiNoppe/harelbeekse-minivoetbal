@@ -499,6 +499,7 @@ export type Database = {
           field_cost: number
           home_team_id: number | null
           is_cup_match: boolean | null
+          location: string | null
           match_date: string
           match_id: number
           matchday_id: number | null
@@ -511,6 +512,7 @@ export type Database = {
           field_cost: number
           home_team_id?: number | null
           is_cup_match?: boolean | null
+          location?: string | null
           match_date: string
           match_id?: number
           matchday_id?: number | null
@@ -523,6 +525,7 @@ export type Database = {
           field_cost?: number
           home_team_id?: number | null
           is_cup_match?: boolean | null
+          location?: string | null
           match_date?: string
           match_id?: number
           matchday_id?: number | null
