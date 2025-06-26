@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -31,20 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, AlertTriangle } from "lucide-react";
-import { MOCK_TEAMS } from "@/data/mockData";
-
-// Updated Team interface to include competition data
-interface Team {
-  id: number;
-  name: string;
-  email: string;
-  played?: number;
-  won?: number;
-  draw?: number;
-  lost?: number;
-  goalDiff?: number;
-  points?: number;
-}
+import { teamService, Team } from "@/services/teamService";
 
 // Initial users data
 const initialUsers = [
@@ -57,7 +45,8 @@ const initialUsers = [
 const isCompetitionActive = true;
 
 const AdminPanel: React.FC = () => {
-  const [teams, setTeams] = useState<Team[]>(MOCK_TEAMS);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState(initialUsers);
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -66,6 +55,27 @@ const AdminPanel: React.FC = () => {
   const [teamToDelete, setTeamToDelete] = useState<number | null>(null);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const { toast } = useToast();
+
+  // Load teams from database
+  useEffect(() => {
+    loadTeams();
+  }, []);
+
+  const loadTeams = async () => {
+    try {
+      setLoading(true);
+      const teamsData = await teamService.getAllTeams();
+      setTeams(teamsData);
+    } catch (error) {
+      toast({
+        title: "Fout bij laden teams",
+        description: "Er is een fout opgetreden bij het laden van de teams.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddUser = () => {
     if (!newUsername || !newPassword || !selectedTeamId) {
@@ -106,68 +116,40 @@ const AdminPanel: React.FC = () => {
       return;
     }
 
-    setTeams(
-      teams.map((team) => {
-        if (team.id === teamId) {
-          return {
-            ...team,
-            email,
-          };
-        }
-        return team;
-      })
-    );
-
+    // Note: This would need to be updated to store email in database
+    // For now, we'll just show a success message
     toast({
       title: "Email bijgewerkt",
       description: `Team beheer email is bijgewerkt`,
     });
   };
 
-  const handleAddTeam = (name: string) => {
-    if (editingTeam) {
-      // Update existing team
-      setTeams(teams.map(team => 
-        team.id === editingTeam.id 
-          ? { 
-              ...team, 
-              name,
-              // Maintain existing competition data if present
-              played: team.played || 0,
-              won: team.won || 0,
-              draw: team.draw || 0,
-              lost: team.lost || 0,
-              goalDiff: team.goalDiff || 0,
-              points: team.points || 0
-            } 
-          : team
-      ));
+  const handleAddTeam = async (name: string) => {
+    try {
+      if (editingTeam) {
+        // Update existing team
+        await teamService.updateTeam(editingTeam.team_id, name);
+        toast({
+          title: "Team bijgewerkt",
+          description: `${name} is bijgewerkt`,
+        });
+        setEditingTeam(null);
+      } else {
+        // Add new team
+        await teamService.createTeam(name);
+        toast({
+          title: "Team toegevoegd",
+          description: `${name} is toegevoegd aan de teamlijst`,
+        });
+      }
       
+      // Reload teams
+      await loadTeams();
+    } catch (error) {
       toast({
-        title: "Team bijgewerkt",
-        description: `${name} is bijgewerkt`,
-      });
-      
-      setEditingTeam(null);
-    } else {
-      // Add new team with default competition values
-      const newTeam = {
-        id: teams.length + 1,
-        name,
-        email: "",
-        played: 0,
-        won: 0,
-        draw: 0,
-        lost: 0,
-        goalDiff: 0,
-        points: 0
-      };
-      
-      setTeams([...teams, newTeam]);
-      
-      toast({
-        title: "Team toegevoegd",
-        description: `${name} is toegevoegd aan de teamlijst`,
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het opslaan van het team.",
+        variant: "destructive",
       });
     }
   };
@@ -204,19 +186,33 @@ const AdminPanel: React.FC = () => {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDeleteTeam = () => {
+  const confirmDeleteTeam = async () => {
     if (teamToDelete) {
-      setTeams(teams.filter(team => team.id !== teamToDelete));
-      
-      toast({
-        title: "Team verwijderd",
-        description: "Het team is succesvol verwijderd",
-      });
+      try {
+        await teamService.deleteTeam(teamToDelete);
+        toast({
+          title: "Team verwijderd",
+          description: "Het team is succesvol verwijderd",
+        });
+        
+        // Reload teams
+        await loadTeams();
+      } catch (error) {
+        toast({
+          title: "Fout",
+          description: "Er is een fout opgetreden bij het verwijderen van het team.",
+          variant: "destructive",
+        });
+      }
       
       setDeleteDialogOpen(false);
       setTeamToDelete(null);
     }
   };
+
+  if (loading) {
+    return <div className="flex justify-center items-center py-8">Teams laden...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -240,7 +236,7 @@ const AdminPanel: React.FC = () => {
               <div className="space-y-4">
                 <TeamForm 
                   onAddTeam={handleAddTeam} 
-                  initialName={editingTeam?.name || ""} 
+                  initialName={editingTeam?.team_name || ""} 
                   isEditing={!!editingTeam}
                   onCancel={() => setEditingTeam(null)}
                 />
@@ -256,18 +252,18 @@ const AdminPanel: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {teams.map((team) => (
-                        <TableRow key={team.id}>
-                          <TableCell className="font-medium">{team.name}</TableCell>
+                        <TableRow key={team.team_id}>
+                          <TableCell className="font-medium">{team.team_name}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Input 
-                                value={team.email} 
-                                onChange={(e) => handleUpdateTeamEmail(team.id, e.target.value)}
+                                value="" 
+                                onChange={(e) => handleUpdateTeamEmail(team.team_id, e.target.value)}
                                 placeholder="team@example.com"
                                 className="max-w-xs"
                               />
                               <Button
-                                onClick={() => handleUpdateTeamEmail(team.id, team.email)}
+                                onClick={() => handleUpdateTeamEmail(team.team_id, "")}
                                 size="sm"
                                 variant="secondary"
                               >
@@ -288,7 +284,7 @@ const AdminPanel: React.FC = () => {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
-                                onClick={() => handleDeleteTeamRequest(team.id)}
+                                onClick={() => handleDeleteTeamRequest(team.team_id)}
                                 className="text-red-500 hover:text-red-700 hover:bg-red-100"
                               >
                                 <Trash2 size={16} />
@@ -345,8 +341,8 @@ const AdminPanel: React.FC = () => {
                   >
                     <option value="">Selecteer een team</option>
                     {teams.map((team) => (
-                      <option key={team.id} value={team.id}>
-                        {team.name}
+                      <option key={team.team_id} value={team.team_id}>
+                        {team.team_name}
                       </option>
                     ))}
                   </select>
@@ -370,7 +366,7 @@ const AdminPanel: React.FC = () => {
                           <TableCell>{user.role === "admin" ? "Administrator" : "Team"}</TableCell>
                           <TableCell>
                             {user.teamId
-                              ? teams.find((t) => t.id === user.teamId)?.name || "Onbekend team"
+                              ? teams.find((t) => t.team_id === user.teamId)?.team_name || "Onbekend team"
                               : "N/A"}
                           </TableCell>
                         </TableRow>

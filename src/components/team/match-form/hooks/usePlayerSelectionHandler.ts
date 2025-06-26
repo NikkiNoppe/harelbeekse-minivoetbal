@@ -1,8 +1,8 @@
 
-import { MOCK_TEAM_PLAYERS } from "@/data/mockData";
 import { PlayerSelection } from "../components/types";
 import { MatchFormData } from "../types";
 import { useMatchFormValidation } from "./useMatchFormValidation";
+import { playerService } from "@/services/playerService";
 
 export const usePlayerSelectionHandler = (
   match: MatchFormData,
@@ -13,7 +13,7 @@ export const usePlayerSelectionHandler = (
 ) => {
   const { validatePlayerSelection } = useMatchFormValidation();
 
-  const handlePlayerSelection = (
+  const handlePlayerSelection = async (
     index: number, 
     field: keyof PlayerSelection, 
     value: any, 
@@ -42,13 +42,17 @@ export const usePlayerSelectionHandler = (
       
       // If selecting a player, auto-fill the name
       if (field === 'playerId' && value) {
-        const allPlayers = isHomeTeam ? 
-          (MOCK_TEAM_PLAYERS[match.homeTeamId as keyof typeof MOCK_TEAM_PLAYERS] || []) :
-          (MOCK_TEAM_PLAYERS[match.awayTeamId as keyof typeof MOCK_TEAM_PLAYERS] || []);
-        const selectedPlayer = allPlayers.find((p: any) => p.player_id === value);
-        if (selectedPlayer) {
-          updated[index].playerName = selectedPlayer.player_name;
-        }
+        const teamId = isHomeTeam ? match.homeTeamId : match.awayTeamId;
+        playerService.getPlayersByTeam(teamId).then(players => {
+          const selectedPlayer = players.find(p => p.player_id === value);
+          if (selectedPlayer) {
+            setSelections(current => {
+              const newSelections = [...current];
+              newSelections[index].playerName = `${selectedPlayer.first_name} ${selectedPlayer.last_name}`;
+              return newSelections;
+            });
+          }
+        });
       }
       
       // If deselecting a player, clear related fields

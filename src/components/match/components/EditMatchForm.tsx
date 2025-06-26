@@ -1,12 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { MatchFormData } from "../types";
-import { MOCK_TEAMS } from "@/data/mockData";
+import { teamService, Team } from "@/services/teamService";
 import { 
   Select, 
   SelectContent, 
@@ -27,10 +27,32 @@ export const EditMatchForm: React.FC<EditMatchFormProps> = ({
   onCancel 
 }) => {
   const [formData, setFormData] = useState<MatchFormData>(initialData);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isScoreEntered, setIsScoreEntered] = useState(
     initialData.homeScore !== undefined || initialData.awayScore !== undefined
   );
   const { toast } = useToast();
+
+  // Load teams from database
+  useEffect(() => {
+    const loadTeams = async () => {
+      try {
+        const teamsData = await teamService.getAllTeams();
+        setTeams(teamsData);
+      } catch (error) {
+        toast({
+          title: "Fout bij laden teams",
+          description: "Er is een fout opgetreden bij het laden van de teams.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTeams();
+  }, []);
   
   const handleInputChange = (field: keyof MatchFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -69,11 +91,10 @@ export const EditMatchForm: React.FC<EditMatchFormProps> = ({
       description: `${formData.homeTeam} vs ${formData.awayTeam} is succesvol opgeslagen.`
     });
   };
-  
-  const teamOptions = MOCK_TEAMS.map(team => ({
-    value: team.name,
-    label: team.name
-  }));
+
+  if (loading) {
+    return <div className="flex justify-center items-center py-8">Teams laden...</div>;
+  }
   
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -126,9 +147,9 @@ export const EditMatchForm: React.FC<EditMatchFormProps> = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="select-home-team">Selecteer thuisteam</SelectItem>
-              {teamOptions.map((team) => (
-                <SelectItem key={team.value} value={team.value}>
-                  {team.label}
+              {teams.map((team) => (
+                <SelectItem key={team.team_id} value={team.team_name}>
+                  {team.team_name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -146,9 +167,9 @@ export const EditMatchForm: React.FC<EditMatchFormProps> = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="select-away-team">Selecteer uitteam</SelectItem>
-              {teamOptions.map((team) => (
-                <SelectItem key={team.value} value={team.value}>
-                  {team.label}
+              {teams.map((team) => (
+                <SelectItem key={team.team_id} value={team.team_name}>
+                  {team.team_name}
                 </SelectItem>
               ))}
             </SelectContent>

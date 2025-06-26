@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -19,6 +20,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { usePlayerListLock } from "@/components/user/players/hooks/usePlayerListLock";
 import { Lock } from "lucide-react";
+import { playerService, Player } from "@/services/playerService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlayersListProps {
   teamId: number;
@@ -26,33 +29,35 @@ interface PlayersListProps {
   teamEmail: string;
 }
 
-interface Player {
-  id: number;
-  name: string;
-  position: string;
-  number: number;
-}
-
-// Mock initial players
-const mockPlayers: Record<number, Player[]> = {
-  1: [
-    { id: 1, name: "Jan Janssens", position: "Keeper", number: 1 },
-    { id: 2, name: "Piet Peters", position: "Verdediger", number: 4 },
-    { id: 3, name: "Karel Karels", position: "Middenvelder", number: 8 },
-  ],
-  2: [
-    { id: 1, name: "Tom Tomson", position: "Aanvaller", number: 9 },
-    { id: 2, name: "Barry Bavo", position: "Middenvelder", number: 6 },
-  ],
-};
-
 const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }) => {
   const { toast } = useToast();
   const { isLocked, lockDate, canEdit } = usePlayerListLock();
-  const [players, setPlayers] = useState<Player[]>(mockPlayers[teamId] || []);
-  const [newPlayerName, setNewPlayerName] = useState("");
-  const [newPlayerPosition, setNewPlayerPosition] = useState("");
-  const [newPlayerNumber, setNewPlayerNumber] = useState("");
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newPlayerFirstName, setNewPlayerFirstName] = useState("");
+  const [newPlayerLastName, setNewPlayerLastName] = useState("");
+  const [newPlayerBirthDate, setNewPlayerBirthDate] = useState("");
+
+  // Load players from database
+  useEffect(() => {
+    loadPlayers();
+  }, [teamId]);
+
+  const loadPlayers = async () => {
+    try {
+      setLoading(true);
+      const playersData = await playerService.getPlayersByTeam(teamId);
+      setPlayers(playersData);
+    } catch (error) {
+      toast({
+        title: "Fout bij laden spelers",
+        description: "Er is een fout opgetreden bij het laden van de spelers.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const showLockWarning = () => {
     if (isLocked && lockDate) {
@@ -70,13 +75,13 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
     }
   };
 
-  const handleAddPlayer = () => {
+  const handleAddPlayer = async () => {
     if (!canEdit) {
       showLockWarning();
       return;
     }
 
-    if (!newPlayerName || !newPlayerPosition || !newPlayerNumber) {
+    if (!newPlayerFirstName || !newPlayerLastName || !newPlayerBirthDate) {
       toast({
         title: "Fout",
         description: "Vul alle velden in",
@@ -94,57 +99,72 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
       return;
     }
 
-    const number = parseInt(newPlayerNumber);
-    if (isNaN(number) || number < 1 || number > 99) {
+    try {
+      const { error } = await supabase
+        .from('players')
+        .insert({
+          first_name: newPlayerFirstName,
+          last_name: newPlayerLastName,
+          birth_date: newPlayerBirthDate,
+          team_id: teamId,
+          is_active: true
+        });
+
+      if (error) throw error;
+
+      setNewPlayerFirstName("");
+      setNewPlayerLastName("");
+      setNewPlayerBirthDate("");
+
       toast({
-        title: "Ongeldig nummer",
-        description: "Voer een nummer in tussen 1 en 99",
+        title: "Speler toegevoegd",
+        description: `${newPlayerFirstName} ${newPlayerLastName} is toegevoegd aan het team`,
+      });
+
+      // Reload players
+      await loadPlayers();
+    } catch (error) {
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het toevoegen van de speler.",
         variant: "destructive",
       });
-      return;
     }
-
-    // Check if number is already in use
-    if (players.some(player => player.number === number)) {
-      toast({
-        title: "Nummer in gebruik",
-        description: `Nummer ${number} is al toegewezen aan een andere speler`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const newPlayer: Player = {
-      id: players.length + 1,
-      name: newPlayerName,
-      position: newPlayerPosition,
-      number: number,
-    };
-
-    setPlayers([...players, newPlayer]);
-    setNewPlayerName("");
-    setNewPlayerPosition("");
-    setNewPlayerNumber("");
-
-    toast({
-      title: "Speler toegevoegd",
-      description: `${newPlayerName} is toegevoegd aan het team`,
-    });
   };
 
-  const handleRemovePlayer = (playerId: number) => {
+  const handleRemovePlayer = async (playerId: number) => {
     if (!canEdit) {
       showLockWarning();
       return;
     }
 
-    setPlayers(players.filter(player => player.id !== playerId));
-    
-    toast({
-      title: "Speler verwijderd",
-      description: "De speler is verwijderd uit het team",
-    });
+    try {
+      const { error } = await supabase
+        .from('players')
+        .update({ is_active: false })
+        .eq('player_id', playerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Speler verwijderd",
+        description: "De speler is verwijderd uit het team",
+      });
+
+      // Reload players
+      await loadPlayers();
+    } catch (error) {
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het verwijderen van de speler.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return <div className="flex justify-center items-center py-8">Spelers laden...</div>;
+  }
 
   return (
     <Card>
@@ -168,47 +188,38 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <label htmlFor="player-name" className="block text-sm font-medium">
-                Naam
+              <label htmlFor="player-first-name" className="block text-sm font-medium">
+                Voornaam
               </label>
               <Input
-                id="player-name"
-                value={newPlayerName}
-                onChange={(e) => setNewPlayerName(e.target.value)}
-                placeholder="Voer naam in"
+                id="player-first-name"
+                value={newPlayerFirstName}
+                onChange={(e) => setNewPlayerFirstName(e.target.value)}
+                placeholder="Voer voornaam in"
                 disabled={!canEdit}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="player-position" className="block text-sm font-medium">
-                Positie
-              </label>
-              <select
-                id="player-position"
-                className="w-full p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
-                value={newPlayerPosition}
-                onChange={(e) => setNewPlayerPosition(e.target.value)}
-                disabled={!canEdit}
-              >
-                <option value="">Selecteer positie</option>
-                <option value="Keeper">Keeper</option>
-                <option value="Verdediger">Verdediger</option>
-                <option value="Middenvelder">Middenvelder</option>
-                <option value="Aanvaller">Aanvaller</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="player-number" className="block text-sm font-medium">
-                Rugnummer
+              <label htmlFor="player-last-name" className="block text-sm font-medium">
+                Achternaam
               </label>
               <Input
-                id="player-number"
-                type="number"
-                min="1"
-                max="99"
-                value={newPlayerNumber}
-                onChange={(e) => setNewPlayerNumber(e.target.value)}
-                placeholder="1-99"
+                id="player-last-name"
+                value={newPlayerLastName}
+                onChange={(e) => setNewPlayerLastName(e.target.value)}
+                placeholder="Voer achternaam in"
+                disabled={!canEdit}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="player-birth-date" className="block text-sm font-medium">
+                Geboortedatum
+              </label>
+              <Input
+                id="player-birth-date"
+                type="date"
+                value={newPlayerBirthDate}
+                onChange={(e) => setNewPlayerBirthDate(e.target.value)}
                 disabled={!canEdit}
               />
             </div>
@@ -227,9 +238,9 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nr.</TableHead>
-                  <TableHead>Naam</TableHead>
-                  <TableHead>Positie</TableHead>
+                  <TableHead>Voornaam</TableHead>
+                  <TableHead>Achternaam</TableHead>
+                  <TableHead>Geboortedatum</TableHead>
                   <TableHead className="text-right">Actie</TableHead>
                 </TableRow>
               </TableHeader>
@@ -242,15 +253,15 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
                   </TableRow>
                 ) : (
                   players.map((player) => (
-                    <TableRow key={player.id}>
-                      <TableCell className="font-medium">{player.number}</TableCell>
-                      <TableCell>{player.name}</TableCell>
-                      <TableCell>{player.position}</TableCell>
+                    <TableRow key={player.player_id}>
+                      <TableCell className="font-medium">{player.first_name}</TableCell>
+                      <TableCell>{player.last_name}</TableCell>
+                      <TableCell>{new Date(player.birth_date).toLocaleDateString('nl-NL')}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemovePlayer(player.id)}
+                          onClick={() => handleRemovePlayer(player.player_id)}
                           disabled={!canEdit}
                           className="text-red-500 hover:text-red-700 hover:bg-red-100 disabled:opacity-50"
                         >
