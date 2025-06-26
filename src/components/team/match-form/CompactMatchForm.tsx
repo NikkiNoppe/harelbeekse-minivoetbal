@@ -165,6 +165,8 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         canEdit={canEdit}
         isReferee={isReferee}
         isTeamManager={!isAdmin && !isReferee}
+        isAdmin={isAdmin}
+        isLocked={match.isLocked}
       />
     </div>
   );
