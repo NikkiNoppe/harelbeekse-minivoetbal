@@ -13,19 +13,20 @@ interface Team {
   balance: number;
 }
 
-interface MatchForm {
-  form_id: number;
-  team_id: number;
+interface SubmittedMatch {
   match_id: number;
+  home_team_id: number;
+  away_team_id: number;
   is_submitted: boolean;
   created_at: string;
-  teams: {
+  teams_home: {
     team_name: string;
   };
-  matches: {
-    match_date: string;
-    unique_number: string;
+  teams_away: {
+    team_name: string;
   };
+  match_date: string;
+  unique_number: string;
 }
 
 const FinancialTab: React.FC = () => {
@@ -43,35 +44,39 @@ const FinancialTab: React.FC = () => {
     }
   });
 
-  // Fetch submitted match forms for financial calculations
-  const { data: submittedForms, isLoading: loadingForms } = useQuery({
-    queryKey: ['submitted-match-forms'],
+  // Fetch submitted matches for financial calculations
+  const { data: submittedMatches, isLoading: loadingMatches } = useQuery({
+    queryKey: ['submitted-matches'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('match_forms')
+        .from('matches')
         .select(`
-          form_id,
-          team_id,
           match_id,
+          home_team_id,
+          away_team_id,
           is_submitted,
           created_at,
-          teams!inner(team_name),
-          matches!inner(match_date, unique_number)
+          match_date,
+          unique_number,
+          teams_home:teams!home_team_id(team_name),
+          teams_away:teams!away_team_id(team_name)
         `)
         .eq('is_submitted', true)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as MatchForm[];
+      return data as SubmittedMatch[];
     }
   });
 
   // Calculate total costs per team
   const calculateTeamCosts = (teamId: number) => {
-    if (!submittedForms) return { fieldCosts: 0, refereeCosts: 0, totalMatches: 0 };
+    if (!submittedMatches) return { fieldCosts: 0, refereeCosts: 0, totalMatches: 0 };
     
-    const teamForms = submittedForms.filter(form => form.team_id === teamId);
-    const totalMatches = teamForms.length;
+    const teamMatches = submittedMatches.filter(match => 
+      match.home_team_id === teamId || match.away_team_id === teamId
+    );
+    const totalMatches = teamMatches.length;
     const fieldCosts = totalMatches * 5; // 5 euro per match for field
     const refereeCosts = totalMatches * 6; // 6 euro per match for referee
     
@@ -86,7 +91,7 @@ const FinancialTab: React.FC = () => {
     }).format(amount);
   };
 
-  if (loadingTeams || loadingForms) {
+  if (loadingTeams || loadingMatches) {
     return (
       <div className="flex items-center justify-center h-40">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -157,9 +162,9 @@ const FinancialTab: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recente Wedstrijdformulieren</CardTitle>
+          <CardTitle>Recente Wedstrijden</CardTitle>
           <CardDescription>
-            Laatste ingediende formulieren die het saldo beïnvloeden
+            Laatste ingediende wedstrijden die het saldo beïnvloeden
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -167,22 +172,24 @@ const FinancialTab: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Wedstrijd Nr.</TableHead>
-                <TableHead>Team</TableHead>
+                <TableHead>Thuis Team</TableHead>
+                <TableHead>Uit Team</TableHead>
                 <TableHead>Wedstrijddatum</TableHead>
                 <TableHead>Ingediend Op</TableHead>
                 <TableHead className="text-right">Kosten</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {submittedForms?.slice(0, 10).map((form) => (
-                <TableRow key={form.form_id}>
-                  <TableCell className="font-mono">{form.matches.unique_number}</TableCell>
-                  <TableCell>{form.teams.team_name}</TableCell>
+              {submittedMatches?.slice(0, 10).map((match) => (
+                <TableRow key={match.match_id}>
+                  <TableCell className="font-mono">{match.unique_number}</TableCell>
+                  <TableCell>{match.teams_home?.team_name}</TableCell>
+                  <TableCell>{match.teams_away?.team_name}</TableCell>
                   <TableCell>
-                    {new Date(form.matches.match_date).toLocaleDateString('nl-NL')}
+                    {new Date(match.match_date).toLocaleDateString('nl-NL')}
                   </TableCell>
                   <TableCell>
-                    {new Date(form.created_at).toLocaleDateString('nl-NL')}
+                    {new Date(match.created_at).toLocaleDateString('nl-NL')}
                   </TableCell>
                   <TableCell className="text-right font-semibold">
                     {formatCurrency(11)} {/* 5 + 6 euro per match */}

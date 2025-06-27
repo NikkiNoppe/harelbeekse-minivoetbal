@@ -44,14 +44,14 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     }
   });
   
-  // Check if there's already a match form for this team
-  const { data: existingForm, isLoading: loadingForm } = useQuery({
-    queryKey: ['matchForm', matchId, teamId],
+  // Check if there's already match data for this team
+  const { data: existingMatch, isLoading: loadingMatch } = useQuery({
+    queryKey: ['matchData', matchId, teamId],
     queryFn: async () => {
       try {
         const { data, error } = await supabase
-          .from('match_forms')
-          .select('form_id, is_submitted, home_players, away_players')
+          .from('matches')
+          .select('match_id, is_submitted, home_players, away_players, home_team_id, away_team_id')
           .eq('match_id', matchId)
           .single();
         
@@ -61,7 +61,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         
         return data;
       } catch (error) {
-        console.error("Error fetching match form:", error);
+        console.error("Error fetching match data:", error);
         return null;
       }
     }
@@ -77,10 +77,10 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     if (teamPlayers && !isLoading) {
       let initialPlayers = teamPlayers;
       
-      // If there's an existing form, try to populate from the JSONB data
-      if (existingForm) {
-        const isHomeTeam = true; // You might need to determine this based on your logic
-        const existingPlayerData = isHomeTeam ? existingForm.home_players : existingForm.away_players;
+      // If there's an existing match, try to populate from the JSONB data
+      if (existingMatch) {
+        const isHomeTeam = existingMatch.home_team_id === teamId;
+        const existingPlayerData = isHomeTeam ? existingMatch.home_players : existingMatch.away_players;
         
         if (Array.isArray(existingPlayerData)) {
           initialPlayers = teamPlayers.map(player => {
@@ -100,7 +100,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       
       form.reset({ players: initialPlayers });
     }
-  }, [teamPlayers, existingForm, isLoading, loadingForm]);
+  }, [teamPlayers, existingMatch, isLoading, loadingMatch]);
 
   const onSubmit = async (data: FormData) => {
     setSubmitting(true);
@@ -110,7 +110,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       
       if (selectedPlayers.length === 0) {
         toast({
-          title: "Geen spelers geselecteerd",
+          title: "Geen spelers geselecteer",
           description: "Selecteer ten minste één speler voor het formulier.",
           variant: "destructive"
         });
@@ -118,7 +118,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         return;
       }
       
-      // Convert selected players to the format expected by match_forms
+      // Convert selected players to the format expected by matches table
       const playerData = selectedPlayers.map(player => ({
         playerId: player.playerId,
         playerName: player.playerName,
@@ -126,37 +126,23 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         isCaptain: player.isCaptain
       }));
       
-      // Determine if this is home or away team (you might need to adjust this logic)
-      const isHomeTeam = true; // This should be determined based on your application logic
+      // Determine if this is home or away team
+      const isHomeTeam = existingMatch?.home_team_id === teamId;
       
       const updateData = isHomeTeam 
         ? { home_players: playerData, is_submitted: true }
         : { away_players: playerData, is_submitted: true };
       
-      // Update or insert the match form
-      if (existingForm) {
-        const { error } = await supabase
-          .from('match_forms')
-          .update({
-            ...updateData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('form_id', existingForm.form_id);
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('match_forms')
-          .insert({
-            match_id: matchId,
-            team_id: teamId,
-            ...updateData,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-        
-        if (error) throw error;
-      }
+      // Update the match with player data
+      const { error } = await supabase
+        .from('matches')
+        .update({
+          ...updateData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('match_id', matchId);
+      
+      if (error) throw error;
       
       toast({
         title: "Formulier opgeslagen",
@@ -213,7 +199,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
 
   return {
     form,
-    isLoading: isLoading || loadingForm,
+    isLoading: isLoading || loadingMatch,
     submitting,
     onSubmit,
     togglePlayerSelection,
