@@ -61,29 +61,15 @@ export const saveCompetitionToDatabase = async (
     
     const competitionId = compData[0].competition_id;
 
-    // 2. Create matchdays for each selected date
+    // 2. Create matches directly with speeldag instead of using matchdays
     const uniqueDates = [...new Set(selectedDatesWithVenues?.map(d => d.available_date))];
-    const matchdaysToCreate = uniqueDates.map((date, index) => ({
-      competition_id: competitionId,
-      name: `Speeldag ${index + 1}`,
-      matchday_date: date,
-      is_playoff: false
-    }));
-
-    const { data: matchdayData, error: matchdayError } = await supabase
-      .from('matchdays')
-      .insert(matchdaysToCreate)
-      .select();
-      
-    if (matchdayError) throw matchdayError;
     
-    // 3. Assign matches to matchdays
-    const matchDays = matchdayData || [];
+    // 3. Create matches with speeldag column
     const matchesToCreate = generatedMatches.map((match, index) => {
-      const matchdayIndex = Math.floor(index / 9) % matchDays.length; // Max 9 matches per matchday
+      const matchdayIndex = Math.floor(index / 9) % uniqueDates.length; // Max 9 matches per matchday
       
       // Generate formatted match date with time
-      const matchDate = new Date(matchDays[matchdayIndex].matchday_date);
+      const matchDate = new Date(uniqueDates[matchdayIndex]);
       const [hours, minutes] = (match.match_time || "18:30").split(":");
       matchDate.setHours(parseInt(hours), parseInt(minutes));
       
@@ -91,11 +77,12 @@ export const saveCompetitionToDatabase = async (
         home_team_id: match.home_team_id,
         away_team_id: match.away_team_id,
         match_date: matchDate.toISOString(),
-        matchday_id: matchDays[matchdayIndex].matchday_id,
+        speeldag: `Speeldag ${matchdayIndex + 1}`, // Use speeldag directly instead of matchday_id
         unique_number: match.unique_code,
         referee_cost: 25.00,
         field_cost: 50.00,
         is_cup_match: format?.isCup || false,
+        location: selectedDatesWithVenues?.[matchdayIndex]?.venues?.name || 'Te bepalen'
       };
     });
     

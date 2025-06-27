@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -125,25 +126,6 @@ Speeldag 2 - 2024-02-17
 
       if (competitionError) throw competitionError;
 
-      // Create matchdays
-      const uniqueMatchdays = [...new Set(parsedMatches.map(m => m.matchday))];
-      const matchdayInserts = uniqueMatchdays.map(matchdayNum => {
-        const matchesForDay = parsedMatches.filter(m => m.matchday === matchdayNum);
-        return {
-          name: `Speeldag ${matchdayNum}`,
-          matchday_date: matchesForDay[0]?.date,
-          competition_id: competition.competition_id,
-          is_playoff: false
-        };
-      });
-
-      const { data: matchdays, error: matchdaysError } = await supabase
-        .from('matchdays')
-        .insert(matchdayInserts)
-        .select();
-
-      if (matchdaysError) throw matchdaysError;
-
       // Get team IDs
       const { data: teams } = await supabase
         .from('teams')
@@ -151,17 +133,18 @@ Speeldag 2 - 2024-02-17
 
       const teamMap = new Map(teams?.map(t => [t.team_name, t.team_id]) || []);
 
-      // Create matches in the matches table
+      // Create matches directly in the matches table with speeldag
       const matchesToInsert = parsedMatches.map(match => {
-        const matchday = matchdays?.find(md => md.name === `Speeldag ${match.matchday}`);
+        const matchDateTime = new Date(`${match.date}T${match.time}:00`);
         return {
           home_team_id: teamMap.get(match.homeTeam) || null,
           away_team_id: teamMap.get(match.awayTeam) || null,
-          match_date: `${match.date} ${match.time}:00`,
-          matchday_id: matchday?.matchday_id || null,
+          match_date: matchDateTime.toISOString(),
+          speeldag: `Speeldag ${match.matchday}`, // Use speeldag directly
+          location: match.venue,
           is_cup_match: false,
-          field_cost: 50.00, // Default field cost
-          referee_cost: 25.00, // Default referee cost
+          field_cost: 50.00,
+          referee_cost: 25.00,
           result: null
         };
       });
