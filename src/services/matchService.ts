@@ -8,7 +8,7 @@ export interface MatchMetadata {
   homeTeamId: number;
   awayTeamId: number;
   location: string;
-  matchday: string; // Changed from matchdayId to matchday string
+  matchday: string;
 }
 
 export const matchService = {
@@ -22,7 +22,7 @@ export const matchService = {
         home_team_id: metadata.homeTeamId,
         away_team_id: metadata.awayTeamId,
         location: metadata.location,
-        speeldag: metadata.matchday // Use speeldag column instead of matchday_id
+        speeldag: metadata.matchday
       })
       .eq('match_id', metadata.matchId);
 

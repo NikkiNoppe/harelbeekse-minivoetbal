@@ -39,16 +39,14 @@ export const fetchCompetitionMatches = async () => {
       speeldag,
       home_team_id,
       away_team_id,
+      home_score,
+      away_score,
+      referee,
+      is_submitted,
+      home_players,
+      away_players,
       teams_home:teams!home_team_id ( team_name ),
-      teams_away:teams!away_team_id ( team_name ),
-      match_forms (
-        is_submitted,
-        home_score,
-        away_score,
-        referee,
-        home_players,
-        away_players
-      )
+      teams_away:teams!away_team_id ( team_name )
     `)
     .order("match_date", { ascending: true });
 
@@ -61,8 +59,6 @@ export const fetchCompetitionMatches = async () => {
   const past: MatchData[] = [];
 
   for (const row of data as any[]) {
-    const form = Array.isArray(row.match_forms) && row.match_forms.length > 0 ? row.match_forms[0] : null;
-    
     let date = "", time = "";
     if (row.match_date) {
       const d = new Date(row.match_date);
@@ -80,11 +76,11 @@ export const fetchCompetitionMatches = async () => {
       awayTeamId: row.away_team_id,
       awayTeamName: row.teams_away?.team_name || "Onbekend",
       location: row.location || "Te bepalen",
-      matchday: row.speeldag || "Te bepalen", // Use speeldag column
-      isCompleted: form ? !!form.is_submitted : false,
-      homeScore: form?.home_score ?? undefined,
-      awayScore: form?.away_score ?? undefined,
-      referee: form?.referee ?? undefined
+      matchday: row.speeldag || "Te bepalen",
+      isCompleted: !!row.is_submitted,
+      homeScore: row.home_score ?? undefined,
+      awayScore: row.away_score ?? undefined,
+      referee: row.referee ?? undefined
     };
 
     if (matchData.isCompleted) {
@@ -104,15 +100,13 @@ export const fetchAllCards = async (): Promise<CardData[]> => {
       match_id,
       unique_number,
       match_date,
+      home_players,
+      away_players,
       teams_home:teams!home_team_id ( team_name ),
-      teams_away:teams!away_team_id ( team_name ),
-      match_forms (
-        home_players,
-        away_players
-      )
+      teams_away:teams!away_team_id ( team_name )
     `)
-    .not("match_forms.home_players", "is", null)
-    .not("match_forms.away_players", "is", null);
+    .not("home_players", "is", null)
+    .not("away_players", "is", null);
 
   if (error || !data) {
     console.error("[fetchAllCards] Error:", error);
@@ -122,14 +116,11 @@ export const fetchAllCards = async (): Promise<CardData[]> => {
   const cards: CardData[] = [];
 
   for (const row of data as any[]) {
-    const form = Array.isArray(row.match_forms) && row.match_forms.length > 0 ? row.match_forms[0] : null;
-    if (!form) continue;
-
     const matchDate = row.match_date ? new Date(row.match_date).toISOString().slice(0, 10) : "";
     
     // Extract cards from home players
-    if (Array.isArray(form.home_players)) {
-      for (const player of form.home_players) {
+    if (Array.isArray(row.home_players)) {
+      for (const player of row.home_players) {
         if (player.cardType && player.cardType !== 'none' && player.playerId && player.playerName) {
           cards.push({
             playerId: player.playerId,
@@ -145,8 +136,8 @@ export const fetchAllCards = async (): Promise<CardData[]> => {
     }
 
     // Extract cards from away players
-    if (Array.isArray(form.away_players)) {
-      for (const player of form.away_players) {
+    if (Array.isArray(row.away_players)) {
+      for (const player of row.away_players) {
         if (player.cardType && player.cardType !== 'none' && player.playerId && player.playerName) {
           cards.push({
             playerId: player.playerId,

@@ -1,225 +1,133 @@
 
-import { MatchFormData, PlayerSelection } from "./types";
 import { supabase } from "@/integrations/supabase/client";
+import { MatchFormData } from "./types";
 
-/**
- * Ophalen van alle aankomende of relevante wedstrijdformulieren 
- * gebaseerd op het team en de rechten van de gebruiker.
- */
-export const fetchUpcomingMatches = async (
-  teamId: number = 0,
-  hasElevatedPermissions: boolean = false
-): Promise<MatchFormData[]> => {
-  let query = supabase
-    .from("matches")
-    .select(`
-      match_id,
-      unique_number,
-      match_date,
-      home_team_id,
-      away_team_id,
-      location,
-      speeldag,
-      is_cup_match,
-      teams_home:teams!home_team_id ( team_name ),
-      teams_away:teams!away_team_id ( team_name ),
-      match_forms:match_forms (
-        is_submitted,
-        is_locked,
+export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermissions: boolean = false): Promise<MatchFormData[]> => {
+  try {
+    let query = supabase
+      .from("matches")
+      .select(`
+        match_id,
+        unique_number,
+        match_date,
+        location,
+        speeldag,
+        home_team_id,
+        away_team_id,
         home_score,
         away_score,
         referee,
         referee_notes,
+        is_submitted,
+        is_locked,
         home_players,
-        away_players
-      )
-    `);
+        away_players,
+        teams_home:teams!home_team_id ( team_name ),
+        teams_away:teams!away_team_id ( team_name )
+      `)
+      .order("match_date", { ascending: true });
 
-  if (!hasElevatedPermissions && teamId) {
-    query = query.or(
-      `home_team_id.eq.${teamId},away_team_id.eq.${teamId}`
-    );
-  }
-
-  const { data, error } = await query.order("match_date", { ascending: true });
-
-  if (error || !data) {
-    console.error("[fetchUpcomingMatches] Error:", error);
-    return [];
-  }
-
-  const list: MatchFormData[] = [];
-  for (const row of data as any[]) {
-    const form = Array.isArray(row.match_forms) && row.match_forms.length > 0 ? row.match_forms[0] : null;
-    let date = "", time = "";
-    if (row.match_date) {
-      const d = new Date(row.match_date);
-      date = d.toISOString().slice(0, 10);
-      time = d.toISOString().slice(11, 16);
+    // Filter by team if not elevated permissions
+    if (!hasElevatedPermissions && teamId > 0) {
+      query = query.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
     }
-    list.push({
-      matchId: row.match_id,
-      uniqueNumber: row.unique_number || "",
-      date,
-      time,
-      homeTeamId: row.home_team_id,
-      homeTeamName: row.teams_home?.team_name || "Onbekend",
-      awayTeamId: row.away_team_id,
-      awayTeamName: row.teams_away?.team_name || "Onbekend",
-      location: row.location || "Te bepalen",
-      matchday: row.speeldag || "Te bepalen", // Use speeldag directly
-      isCompleted: form ? !!form.is_submitted : false,
-      isLocked: form ? !!form.is_locked : false,
-      homeScore: form ? form.home_score ?? undefined : undefined,
-      awayScore: form ? form.away_score ?? undefined : undefined,
-      referee: form ? form.referee ?? "" : "",
-      refereeNotes: form ? form.referee_notes ?? "" : "",
-      homePlayers: form ? form.home_players || [] : [],
-      awayPlayers: form ? form.away_players || [] : []
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("[fetchUpcomingMatches] Error:", error);
+      throw error;
+    }
+
+    if (!data) return [];
+
+    const matches: MatchFormData[] = data.map((row: any) => {
+      let date = "", time = "";
+      if (row.match_date) {
+        const d = new Date(row.match_date);
+        date = d.toISOString().slice(0, 10);
+        time = d.toISOString().slice(11, 16);
+      }
+
+      return {
+        matchId: row.match_id,
+        uniqueNumber: row.unique_number || "",
+        date,
+        time,
+        homeTeamId: row.home_team_id,
+        homeTeamName: row.teams_home?.team_name || "Onbekend",
+        awayTeamId: row.away_team_id,
+        awayTeamName: row.teams_away?.team_name || "Onbekend",
+        location: row.location || "Te bepalen",
+        matchday: row.speeldag || "Te bepalen",
+        isCompleted: !!row.is_submitted,
+        isLocked: !!row.is_locked,
+        homeScore: row.home_score,
+        awayScore: row.away_score,
+        referee: row.referee,
+        refereeNotes: row.referee_notes,
+        homePlayers: Array.isArray(row.home_players) ? row.home_players : [],
+        awayPlayers: Array.isArray(row.away_players) ? row.away_players : []
+      };
     });
-  }
-  return list;
-};
 
-export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | null> => {
-  const { data, error } = await supabase
-    .from("matches")
-    .select(`
-      match_id,
-      unique_number,
-      match_date,
-      home_team_id,
-      away_team_id,
-      location,
-      speeldag,
-      is_cup_match,
-      teams_home:teams!home_team_id ( team_name ),
-      teams_away:teams!away_team_id ( team_name ),
-      match_forms:match_forms (
-        is_submitted,
-        is_locked,
-        home_score,
-        away_score,
-        referee,
-        referee_notes,
-        home_players,
-        away_players
-      )
-    `)
-    .eq("match_id", matchId)
-    .maybeSingle();
-
-  if (error || !data || typeof data !== "object" || Array.isArray(data)) {
-    return null;
-  }
-
-  let date = "", time = "";
-  if (data.match_date) {
-    const d = new Date(data.match_date);
-    date = d.toISOString().slice(0, 10);
-    time = d.toISOString().slice(11, 16);
-  }
-
-  let form: any = undefined;
-  if (
-    Array.isArray(data.match_forms) &&
-    data.match_forms.length > 0 &&
-    typeof data.match_forms[0] === "object" &&
-    data.match_forms[0] !== null &&
-    !("code" in data.match_forms[0])
-  ) {
-    form = data.match_forms[0];
-  }
-
-  return {
-    matchId: data.match_id,
-    uniqueNumber: data.unique_number || "",
-    date,
-    time,
-    homeTeamId: data.home_team_id,
-    homeTeamName: data.teams_home?.team_name || "Onbekend",
-    awayTeamId: data.away_team_id,
-    awayTeamName: data.teams_away?.team_name || "Onbekend",
-    location: data.location || "Te bepalen",
-    matchday: data.speeldag || "Te bepalen", // Use speeldag directly
-    isCompleted: form ? !!form.is_submitted : false,
-    isLocked: form ? !!form.is_locked : false,
-    homeScore: form?.home_score ?? undefined,
-    awayScore: form?.away_score ?? undefined,
-    referee: form?.referee ?? "",
-    refereeNotes: form?.referee_notes ?? "",
-    homePlayers: Array.isArray(form?.home_players) ? form.home_players : [],
-    awayPlayers: Array.isArray(form?.away_players) ? form.away_players : [],
-  };
-};
-
-export const updateMatchForm = async (
-  matchData: Partial<MatchFormData> & { matchId: number }
-): Promise<void> => {
-  if (!matchData.matchId) return;
-  
-  // Ensure all player data including cards and jersey numbers are properly formatted
-  const formatPlayerData = (players: PlayerSelection[] | undefined) => {
-    if (!players) return [];
-    return players.map(player => ({
-      playerId: player.playerId,
-      playerName: player.playerName,
-      jerseyNumber: player.jerseyNumber,
-      isCaptain: player.isCaptain,
-      cardType: player.cardType || undefined
-    }));
-  };
-
-  const updateData: any = {
-    home_score: matchData.homeScore,
-    away_score: matchData.awayScore,
-    referee: matchData.referee,
-    referee_notes: matchData.refereeNotes,
-    is_submitted: !!matchData.isCompleted,
-    is_locked: !!matchData.isLocked,
-    home_players: formatPlayerData(matchData.homePlayers),
-    away_players: formatPlayerData(matchData.awayPlayers),
-    updated_at: new Date().toISOString(),
-  };
-  
-  Object.keys(updateData).forEach((k) => {
-    if (updateData[k] === undefined) delete updateData[k];
-  });
-
-  const { error } = await supabase
-    .from("match_forms")
-    .update(updateData)
-    .eq("match_id", matchData.matchId);
-
-  if (error) {
-    console.error("[updateMatchForm] Error:", error);
+    return matches;
+  } catch (error) {
+    console.error("[fetchUpcomingMatches] Error:", error);
     throw error;
   }
+};
 
-  // Trigger standings update if match is being completed
-  if (matchData.isCompleted && matchData.homeScore !== undefined && matchData.awayScore !== undefined) {
-    try {
-      const { error: functionError } = await supabase.rpc('update_competition_standings');
-      if (functionError) {
-        console.error("[updateMatchForm] Error updating standings:", functionError);
-      }
-    } catch (err) {
-      console.error("[updateMatchForm] Error calling standings function:", err);
+export const updateMatchForm = async (matchData: MatchFormData): Promise<void> => {
+  try {
+    const matchDateTime = new Date(`${matchData.date}T${matchData.time}`);
+    
+    const { error } = await supabase
+      .from('matches')
+      .update({
+        match_date: matchDateTime.toISOString(),
+        home_team_id: matchData.homeTeamId,
+        away_team_id: matchData.awayTeamId,
+        location: matchData.location,
+        speeldag: matchData.matchday,
+        home_score: matchData.homeScore,
+        away_score: matchData.awayScore,
+        referee: matchData.referee,
+        referee_notes: matchData.refereeNotes,
+        is_submitted: matchData.isCompleted,
+        is_locked: matchData.isLocked,
+        home_players: matchData.homePlayers || [],
+        away_players: matchData.awayPlayers || [],
+        updated_at: new Date().toISOString()
+      })
+      .eq('match_id', matchData.matchId);
+
+    if (error) {
+      console.error('Error updating match:', error);
+      throw error;
     }
+  } catch (error) {
+    console.error('Error in updateMatchForm:', error);
+    throw error;
   }
 };
 
 export const lockMatchForm = async (matchId: number): Promise<void> => {
-  const { error } = await supabase
-    .from("match_forms")
-    .update({
-      is_locked: true,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("match_id", matchId);
+  try {
+    const { error } = await supabase
+      .from('matches')
+      .update({
+        is_locked: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('match_id', matchId);
 
-  if (error) {
-    console.error("[lockMatchForm] Error:", error);
+    if (error) {
+      console.error('Error locking match:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error in lockMatchForm:', error);
     throw error;
   }
 };

@@ -395,108 +395,75 @@ export type Database = {
           },
         ]
       }
-      match_forms: {
+      matches: {
         Row: {
           away_players: Json | null
           away_score: number | null
+          away_team_id: number | null
           created_at: string | null
-          form_id: number
+          field_cost: number
           home_players: Json | null
           home_score: number | null
+          home_team_id: number | null
+          is_cup_match: boolean | null
           is_locked: boolean | null
           is_submitted: boolean | null
+          location: string | null
+          match_date: string
           match_id: number
           referee: string | null
+          referee_cost: number
           referee_notes: string | null
-          team_id: number
+          result: string | null
+          speeldag: string | null
+          unique_number: string | null
           updated_at: string | null
         }
         Insert: {
           away_players?: Json | null
           away_score?: number | null
+          away_team_id?: number | null
           created_at?: string | null
-          form_id?: number
+          field_cost: number
           home_players?: Json | null
           home_score?: number | null
+          home_team_id?: number | null
+          is_cup_match?: boolean | null
           is_locked?: boolean | null
           is_submitted?: boolean | null
-          match_id: number
+          location?: string | null
+          match_date: string
+          match_id?: number
           referee?: string | null
+          referee_cost: number
           referee_notes?: string | null
-          team_id: number
+          result?: string | null
+          speeldag?: string | null
+          unique_number?: string | null
           updated_at?: string | null
         }
         Update: {
           away_players?: Json | null
           away_score?: number | null
+          away_team_id?: number | null
           created_at?: string | null
-          form_id?: number
+          field_cost?: number
           home_players?: Json | null
           home_score?: number | null
+          home_team_id?: number | null
+          is_cup_match?: boolean | null
           is_locked?: boolean | null
           is_submitted?: boolean | null
-          match_id?: number
-          referee?: string | null
-          referee_notes?: string | null
-          team_id?: number
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "match_forms_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: false
-            referencedRelation: "matches"
-            referencedColumns: ["match_id"]
-          },
-          {
-            foreignKeyName: "match_forms_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["team_id"]
-          },
-        ]
-      }
-      matches: {
-        Row: {
-          away_team_id: number | null
-          field_cost: number
-          home_team_id: number | null
-          is_cup_match: boolean | null
-          location: string | null
-          match_date: string
-          match_id: number
-          referee_cost: number
-          result: string | null
-          speeldag: string | null
-          unique_number: string | null
-        }
-        Insert: {
-          away_team_id?: number | null
-          field_cost: number
-          home_team_id?: number | null
-          is_cup_match?: boolean | null
-          location?: string | null
-          match_date: string
-          match_id?: number
-          referee_cost: number
-          result?: string | null
-          speeldag?: string | null
-          unique_number?: string | null
-        }
-        Update: {
-          away_team_id?: number | null
-          field_cost?: number
-          home_team_id?: number | null
-          is_cup_match?: boolean | null
           location?: string | null
           match_date?: string
           match_id?: number
+          referee?: string | null
           referee_cost?: number
+          referee_notes?: string | null
           result?: string | null
           speeldag?: string | null
           unique_number?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
