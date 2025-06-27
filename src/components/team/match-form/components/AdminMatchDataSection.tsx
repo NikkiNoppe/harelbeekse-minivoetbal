@@ -1,15 +1,20 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Settings } from "lucide-react";
 import { MatchFormData } from "../types";
+import { matchService, MatchMetadata } from "@/services/matchService";
 import { teamService, Team } from "@/services/teamService";
-import { matchService } from "@/services/matchService";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 interface AdminMatchDataSectionProps {
   match: MatchFormData;
@@ -22,8 +27,9 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
   onMatchUpdate,
   canEdit
 }) => {
+  const { toast } = useToast();
   const [teams, setTeams] = useState<Team[]>([]);
-  const [matchdays, setMatchdays] = useState<{ matchday_id: number; name: string }[]>([]);
+  const [loadingTeams, setLoadingTeams] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     date: match.date,
@@ -31,60 +37,48 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
     homeTeamId: match.homeTeamId,
     awayTeamId: match.awayTeamId,
     location: match.location,
-    matchdayId: match.matchdayId || 0
+    matchday: match.matchday
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadTeams = async () => {
       try {
-        const [teamsData, matchdaysData] = await Promise.all([
-          teamService.getAllTeams(),
-          matchService.getMatchdays()
-        ]);
+        const teamsData = await teamService.getAllTeams();
         setTeams(teamsData);
-        setMatchdays(matchdaysData);
       } catch (error) {
+        console.error("Error loading teams:", error);
         toast({
-          title: "Fout bij laden gegevens",
-          description: "Er is een fout opgetreden bij het laden van teams en speeldagen.",
+          title: "Fout bij laden teams",
+          description: "Er is een fout opgetreden bij het laden van de teams.",
           variant: "destructive",
         });
+      } finally {
+        setLoadingTeams(false);
       }
     };
 
-    if (isEditing) {
-      loadData();
-    }
-  }, [isEditing]);
+    loadTeams();
+  }, [toast]);
 
   const handleSave = async () => {
-    if (!editData.date || !editData.time || !editData.homeTeamId || !editData.awayTeamId || !editData.location || !editData.matchdayId) {
-      toast({
-        title: "Validatie fout",
-        description: "Vul alle velden in.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
     try {
-      await matchService.updateMatchMetadata({
+      const metadata: MatchMetadata = {
         matchId: match.matchId,
         date: editData.date,
         time: editData.time,
         homeTeamId: editData.homeTeamId,
         awayTeamId: editData.awayTeamId,
         location: editData.location,
-        matchdayId: editData.matchdayId
-      });
+        matchday: editData.matchday
+      };
 
+      await matchService.updateMatchMetadata(metadata);
+
+      // Find team names
       const homeTeam = teams.find(t => t.team_id === editData.homeTeamId);
       const awayTeam = teams.find(t => t.team_id === editData.awayTeamId);
-      const matchday = matchdays.find(m => m.matchday_id === editData.matchdayId);
 
+      // Update local match data
       const updatedMatch: MatchFormData = {
         ...match,
         date: editData.date,
@@ -94,8 +88,7 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
         awayTeamId: editData.awayTeamId,
         awayTeamName: awayTeam?.team_name || "Onbekend",
         location: editData.location,
-        matchdayId: editData.matchdayId,
-        matchday: matchday?.name || `Speeldag ${editData.matchdayId}`
+        matchday: editData.matchday
       };
 
       onMatchUpdate(updatedMatch);
@@ -106,13 +99,12 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
         description: "De wedstrijdgegevens zijn succesvol bijgewerkt.",
       });
     } catch (error) {
+      console.error("Error updating match:", error);
       toast({
-        title: "Fout bij opslaan",
+        title: "Fout bij bijwerken",
         description: "Er is een fout opgetreden bij het bijwerken van de wedstrijd.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -123,56 +115,74 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
       homeTeamId: match.homeTeamId,
       awayTeamId: match.awayTeamId,
       location: match.location,
-      matchdayId: match.matchdayId || 0
+      matchday: match.matchday
     });
     setIsEditing(false);
   };
 
-  if (!canEdit) {
-    return null;
+  if (loadingTeams) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Admin: Wedstrijdgegevens</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Teams laden...</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
-    <Card className="border-2 border-orange-200">
-      <CardHeader className="pb-4 bg-orange-100">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Admin: Wedstrijd Gegevens
-          </CardTitle>
-          {!isEditing && (
-            <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">
-              Bewerken
-            </Button>
-          )}
-        </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Admin: Wedstrijdgegevens</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {!isEditing ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div><strong>Datum:</strong> {match.date}</div>
-            <div><strong>Tijd:</strong> {match.time}</div>
-            <div><strong>Locatie:</strong> {match.location}</div>
-            <div><strong>Speeldag:</strong> {match.matchday}</div>
-            <div><strong>Thuisteam:</strong> {match.homeTeamName}</div>
-            <div><strong>Uitteam:</strong> {match.awayTeamName}</div>
-          </div>
+          <>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <strong>Datum:</strong> {match.date}
+              </div>
+              <div>
+                <strong>Tijd:</strong> {match.time}
+              </div>
+              <div>
+                <strong>Thuisteam:</strong> {match.homeTeamName}
+              </div>
+              <div>
+                <strong>Uitteam:</strong> {match.awayTeamName}
+              </div>
+              <div>
+                <strong>Locatie:</strong> {match.location}
+              </div>
+              <div>
+                <strong>Speeldag:</strong> {match.matchday}
+              </div>
+            </div>
+            {canEdit && (
+              <Button onClick={() => setIsEditing(true)}>
+                Bewerken
+              </Button>
+            )}
+          </>
         ) : (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="admin-date">Datum</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-date">Datum</Label>
                 <Input
-                  id="admin-date"
+                  id="edit-date"
                   type="date"
                   value={editData.date}
                   onChange={(e) => setEditData(prev => ({ ...prev, date: e.target.value }))}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="admin-time">Tijd</Label>
+              <div>
+                <Label htmlFor="edit-time">Tijd</Label>
                 <Input
-                  id="admin-time"
+                  id="edit-time"
                   type="time"
                   value={editData.time}
                   onChange={(e) => setEditData(prev => ({ ...prev, time: e.target.value }))}
@@ -180,44 +190,15 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="admin-location">Locatie</Label>
-              <Input
-                id="admin-location"
-                value={editData.location}
-                onChange={(e) => setEditData(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="Bijv. Sporthal De Brug"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="admin-matchday">Speeldag</Label>
-              <Select
-                value={editData.matchdayId.toString()}
-                onValueChange={(value) => setEditData(prev => ({ ...prev, matchdayId: parseInt(value) }))}
-              >
-                <SelectTrigger id="admin-matchday">
-                  <SelectValue placeholder="Selecteer speeldag" />
-                </SelectTrigger>
-                <SelectContent>
-                  {matchdays.map((matchday) => (
-                    <SelectItem key={matchday.matchday_id} value={matchday.matchday_id.toString()}>
-                      {matchday.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="admin-home-team">Thuisteam</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-home-team">Thuisteam</Label>
                 <Select
                   value={editData.homeTeamId.toString()}
                   onValueChange={(value) => setEditData(prev => ({ ...prev, homeTeamId: parseInt(value) }))}
                 >
-                  <SelectTrigger id="admin-home-team">
-                    <SelectValue placeholder="Selecteer thuisteam" />
+                  <SelectTrigger>
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {teams.map((team) => (
@@ -228,14 +209,14 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="admin-away-team">Uitteam</Label>
+              <div>
+                <Label htmlFor="edit-away-team">Uitteam</Label>
                 <Select
                   value={editData.awayTeamId.toString()}
                   onValueChange={(value) => setEditData(prev => ({ ...prev, awayTeamId: parseInt(value) }))}
                 >
-                  <SelectTrigger id="admin-away-team">
-                    <SelectValue placeholder="Selecteer uitteam" />
+                  <SelectTrigger>
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {teams.map((team) => (
@@ -248,12 +229,31 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
               </div>
             </div>
 
-            <div className="flex justify-end gap-2">
-              <Button onClick={handleCancel} variant="outline" disabled={isLoading}>
-                Annuleren
+            <div>
+              <Label htmlFor="edit-location">Locatie</Label>
+              <Input
+                id="edit-location"
+                value={editData.location}
+                onChange={(e) => setEditData(prev => ({ ...prev, location: e.target.value }))}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-matchday">Speeldag</Label>
+              <Input
+                id="edit-matchday"
+                value={editData.matchday}
+                onChange={(e) => setEditData(prev => ({ ...prev, matchday: e.target.value }))}
+                placeholder="bijv. Speeldag 1"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleSave}>
+                Opslaan
               </Button>
-              <Button onClick={handleSave} disabled={isLoading}>
-                {isLoading ? "Opslaan..." : "Opslaan"}
+              <Button variant="outline" onClick={handleCancel}>
+                Annuleren
               </Button>
             </div>
           </div>

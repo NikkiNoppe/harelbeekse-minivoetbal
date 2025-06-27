@@ -8,7 +8,7 @@ export interface MatchMetadata {
   homeTeamId: number;
   awayTeamId: number;
   location: string;
-  matchdayId: number;
+  matchday: string; // Changed from matchdayId to matchday string
 }
 
 export const matchService = {
@@ -22,7 +22,7 @@ export const matchService = {
         home_team_id: metadata.homeTeamId,
         away_team_id: metadata.awayTeamId,
         location: metadata.location,
-        matchday_id: metadata.matchdayId
+        speeldag: metadata.matchday // Use speeldag column instead of matchday_id
       })
       .eq('match_id', metadata.matchId);
 
@@ -30,19 +30,5 @@ export const matchService = {
       console.error('Error updating match metadata:', error);
       throw error;
     }
-  },
-
-  async getMatchdays(): Promise<{ matchday_id: number; name: string }[]> {
-    const { data, error } = await supabase
-      .from('matchdays')
-      .select('matchday_id, name')
-      .order('matchday_id');
-
-    if (error) {
-      console.error('Error fetching matchdays:', error);
-      throw error;
-    }
-
-    return data || [];
   }
 };

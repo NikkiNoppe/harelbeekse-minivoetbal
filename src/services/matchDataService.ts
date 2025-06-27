@@ -36,12 +36,11 @@ export const fetchCompetitionMatches = async () => {
       unique_number,
       match_date,
       location,
+      speeldag,
       home_team_id,
       away_team_id,
-      matchday_id,
       teams_home:teams!home_team_id ( team_name ),
       teams_away:teams!away_team_id ( team_name ),
-      matchdays ( name ),
       match_forms (
         is_submitted,
         home_score,
@@ -81,7 +80,7 @@ export const fetchCompetitionMatches = async () => {
       awayTeamId: row.away_team_id,
       awayTeamName: row.teams_away?.team_name || "Onbekend",
       location: row.location || "Te bepalen",
-      matchday: row.matchdays?.name || `Speeldag ${row.matchday_id}`,
+      matchday: row.speeldag || "Te bepalen", // Use speeldag column
       isCompleted: form ? !!form.is_submitted : false,
       homeScore: form?.home_score ?? undefined,
       awayScore: form?.away_score ?? undefined,

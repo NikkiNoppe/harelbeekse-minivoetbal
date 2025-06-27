@@ -1,3 +1,4 @@
+
 export interface PlayerSelection {
   playerId: number | null;
   playerName: string;
@@ -16,8 +17,7 @@ export interface MatchFormData {
   awayTeamId: number;
   awayTeamName: string;
   location: string;
-  matchday: string;
-  matchdayId?: number; // Add this for admin editing
+  matchday: string; // Simplified - no more matchdayId needed
   isCompleted: boolean;
   isLocked: boolean;
   homeScore?: number;

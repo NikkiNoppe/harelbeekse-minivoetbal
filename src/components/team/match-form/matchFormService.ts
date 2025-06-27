@@ -1,3 +1,4 @@
+
 import { MatchFormData, PlayerSelection } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,11 +19,10 @@ export const fetchUpcomingMatches = async (
       home_team_id,
       away_team_id,
       location,
+      speeldag,
       is_cup_match,
-      matchday_id,
       teams_home:teams!home_team_id ( team_name ),
       teams_away:teams!away_team_id ( team_name ),
-      matchdays ( name ),
       match_forms:match_forms (
         is_submitted,
         is_locked,
@@ -66,9 +66,8 @@ export const fetchUpcomingMatches = async (
       homeTeamName: row.teams_home?.team_name || "Onbekend",
       awayTeamId: row.away_team_id,
       awayTeamName: row.teams_away?.team_name || "Onbekend",
-      location: row.location || "",
-      matchday: row.matchdays?.name || `Speeldag ${row.matchday_id}`,
-      matchdayId: row.matchday_id,
+      location: row.location || "Te bepalen",
+      matchday: row.speeldag || "Te bepalen", // Use speeldag directly
       isCompleted: form ? !!form.is_submitted : false,
       isLocked: form ? !!form.is_locked : false,
       homeScore: form ? form.home_score ?? undefined : undefined,
@@ -92,11 +91,10 @@ export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | n
       home_team_id,
       away_team_id,
       location,
+      speeldag,
       is_cup_match,
-      matchday_id,
       teams_home:teams!home_team_id ( team_name ),
       teams_away:teams!away_team_id ( team_name ),
-      matchdays ( name ),
       match_forms:match_forms (
         is_submitted,
         is_locked,
@@ -142,9 +140,8 @@ export const fetchMatchForm = async (matchId: number): Promise<MatchFormData | n
     homeTeamName: data.teams_home?.team_name || "Onbekend",
     awayTeamId: data.away_team_id,
     awayTeamName: data.teams_away?.team_name || "Onbekend",
-    location: data.location || "",
-    matchday: data.matchdays?.name || `Speeldag ${data.matchday_id}`,
-    matchdayId: data.matchday_id,
+    location: data.location || "Te bepalen",
+    matchday: data.speeldag || "Te bepalen", // Use speeldag directly
     isCompleted: form ? !!form.is_submitted : false,
     isLocked: form ? !!form.is_locked : false,
     homeScore: form?.home_score ?? undefined,

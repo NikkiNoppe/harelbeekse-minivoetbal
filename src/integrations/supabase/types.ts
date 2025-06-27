@@ -458,41 +458,6 @@ export type Database = {
           },
         ]
       }
-      matchdays: {
-        Row: {
-          competition_id: number | null
-          is_playoff: boolean | null
-          matchday_date: string
-          matchday_id: number
-          name: string
-          playoff_stage: string | null
-        }
-        Insert: {
-          competition_id?: number | null
-          is_playoff?: boolean | null
-          matchday_date: string
-          matchday_id?: number
-          name: string
-          playoff_stage?: string | null
-        }
-        Update: {
-          competition_id?: number | null
-          is_playoff?: boolean | null
-          matchday_date?: string
-          matchday_id?: number
-          name?: string
-          playoff_stage?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "matchdays_competition_id_fkey"
-            columns: ["competition_id"]
-            isOneToOne: false
-            referencedRelation: "competitions"
-            referencedColumns: ["competition_id"]
-          },
-        ]
-      }
       matches: {
         Row: {
           away_team_id: number | null
@@ -502,9 +467,9 @@ export type Database = {
           location: string | null
           match_date: string
           match_id: number
-          matchday_id: number | null
           referee_cost: number
           result: string | null
+          speeldag: string | null
           unique_number: string | null
         }
         Insert: {
@@ -515,9 +480,9 @@ export type Database = {
           location?: string | null
           match_date: string
           match_id?: number
-          matchday_id?: number | null
           referee_cost: number
           result?: string | null
+          speeldag?: string | null
           unique_number?: string | null
         }
         Update: {
@@ -528,9 +493,9 @@ export type Database = {
           location?: string | null
           match_date?: string
           match_id?: number
-          matchday_id?: number | null
           referee_cost?: number
           result?: string | null
+          speeldag?: string | null
           unique_number?: string | null
         }
         Relationships: [
@@ -547,13 +512,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["team_id"]
-          },
-          {
-            foreignKeyName: "matches_matchday_id_fkey"
-            columns: ["matchday_id"]
-            isOneToOne: false
-            referencedRelation: "matchdays"
-            referencedColumns: ["matchday_id"]
           },
         ]
       }
@@ -601,7 +559,9 @@ export type Database = {
           last_name: string
           locked_from_date: string | null
           player_id: number
+          red_cards: number | null
           team_id: number | null
+          yellow_cards: number | null
         }
         Insert: {
           birth_date: string
@@ -611,7 +571,9 @@ export type Database = {
           last_name: string
           locked_from_date?: string | null
           player_id?: number
+          red_cards?: number | null
           team_id?: number | null
+          yellow_cards?: number | null
         }
         Update: {
           birth_date?: string
@@ -621,7 +583,9 @@ export type Database = {
           last_name?: string
           locked_from_date?: string | null
           player_id?: number
+          red_cards?: number | null
           team_id?: number | null
+          yellow_cards?: number | null
         }
         Relationships: [
           {
@@ -630,35 +594,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["team_id"]
-          },
-        ]
-      }
-      suspensions: {
-        Row: {
-          end_date: string
-          player_id: number | null
-          start_date: string
-          suspension_id: number
-        }
-        Insert: {
-          end_date: string
-          player_id?: number | null
-          start_date: string
-          suspension_id?: number
-        }
-        Update: {
-          end_date?: string
-          player_id?: number | null
-          start_date?: string
-          suspension_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "suspensions_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["player_id"]
           },
         ]
       }
@@ -921,6 +856,10 @@ export type Database = {
         Returns: boolean
       }
       update_competition_standings: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_player_cards: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
