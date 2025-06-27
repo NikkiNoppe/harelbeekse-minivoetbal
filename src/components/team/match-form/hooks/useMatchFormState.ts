@@ -8,21 +8,30 @@ export const useMatchFormState = (match: MatchFormData) => {
   const [awayScore, setAwayScore] = useState(match.awayScore?.toString() || "");
   const [selectedReferee, setSelectedReferee] = useState(match.referee || "");
   const [refereeNotes, setRefereeNotes] = useState(match.refereeNotes || "");
-  const [playerCards, setPlayerCards] = useState<Record<number, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Initialize player selections with existing data including cards
+  // Initialize player cards directly from existing data
+  const initializePlayerCards = (players: PlayerSelection[]) => {
+    const cards: Record<number, string> = {};
+    players.forEach(player => {
+      if (player.playerId && player.cardType) {
+        cards[player.playerId] = player.cardType;
+      }
+    });
+    return cards;
+  };
+
+  // Initialize player cards state with existing data
+  const [playerCards, setPlayerCards] = useState<Record<number, string>>(() => {
+    const allPlayers = [...(match.homePlayers || []), ...(match.awayPlayers || [])];
+    return initializePlayerCards(allPlayers);
+  });
+  
+  // Initialize player selections with existing data
   const initializePlayerSelections = (players: PlayerSelection[]) => {
     const selections = Array.from({ length: 8 }, (_, index) => {
       const existingPlayer = players[index];
       if (existingPlayer) {
-        // Initialize player cards state from existing data
-        if (existingPlayer.playerId && existingPlayer.cardType) {
-          setPlayerCards(prev => ({
-            ...prev,
-            [existingPlayer.playerId!]: existingPlayer.cardType!
-          }));
-        }
         return existingPlayer;
       }
       return {
