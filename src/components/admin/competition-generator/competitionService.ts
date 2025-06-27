@@ -24,12 +24,12 @@ export const saveCompetitionToDatabase = async (
   const format = findFormatById(selectedFormat);
   
   try {
-    // Get the selected dates objects with venue information
+    // Get the selected dates objects with venue information - fix the query
     const { data: selectedDatesWithVenues } = await supabase
       .from('available_dates')
       .select(`
         *,
-        venues (
+        venues!venue_id (
           venue_id,
           name
         )
