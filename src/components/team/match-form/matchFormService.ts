@@ -96,8 +96,8 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<void> =
         referee_notes: matchData.refereeNotes,
         is_submitted: matchData.isCompleted,
         is_locked: matchData.isLocked,
-        home_players: matchData.homePlayers || [],
-        away_players: matchData.awayPlayers || [],
+        home_players: matchData.homePlayers as any, // Cast to any to satisfy Json type
+        away_players: matchData.awayPlayers as any, // Cast to any to satisfy Json type
         updated_at: new Date().toISOString()
       })
       .eq('match_id', matchData.matchId);
