@@ -1,6 +1,9 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { MatchesResult, PastMatch, MatchFormData } from "./types";
+import { updateMatchData, MatchUpdateData } from "./matchUpdateService";
+
+export { updateMatchData };
+export type { MatchUpdateData };
 
 export async function fetchMatches(): Promise<MatchesResult> {
   try {

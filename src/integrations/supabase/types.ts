@@ -273,6 +273,38 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_settings: {
+        Row: {
+          field_cost_per_match: number | null
+          id: number
+          referee_cost_per_match: number | null
+          updated_at: string | null
+          updated_by: number | null
+        }
+        Insert: {
+          field_cost_per_match?: number | null
+          id?: number
+          referee_cost_per_match?: number | null
+          updated_at?: string | null
+          updated_by?: number | null
+        }
+        Update: {
+          field_cost_per_match?: number | null
+          id?: number
+          referee_cost_per_match?: number | null
+          updated_at?: string | null
+          updated_by?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       manual_competition_schedules: {
         Row: {
           competition_id: number | null
@@ -479,6 +511,33 @@ export type Database = {
           },
         ]
       }
+      penalty_types: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: number
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       player_list_lock_settings: {
         Row: {
           created_at: string | null
@@ -622,6 +681,74 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "team_preferences_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+        ]
+      }
+      team_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          created_by: number | null
+          description: string | null
+          id: number
+          match_id: number | null
+          penalty_type_id: number | null
+          team_id: number | null
+          transaction_date: string
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          created_by?: number | null
+          description?: string | null
+          id?: number
+          match_id?: number | null
+          penalty_type_id?: number | null
+          team_id?: number | null
+          transaction_date?: string
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          created_by?: number | null
+          description?: string | null
+          id?: number
+          match_id?: number | null
+          penalty_type_id?: number | null
+          team_id?: number | null
+          transaction_date?: string
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "team_transactions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "team_transactions_penalty_type_id_fkey"
+            columns: ["penalty_type_id"]
+            isOneToOne: false
+            referencedRelation: "penalty_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_transactions_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
@@ -795,6 +922,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_team_balance: {
+        Args: { team_id_param: number }
+        Returns: number
+      }
       create_user_with_hashed_password: {
         Args: {
           username_param: string
@@ -824,6 +955,10 @@ export type Database = {
         Returns: undefined
       }
       update_player_cards: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_team_balances: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
