@@ -50,7 +50,12 @@ export const financialService = {
         .order('transaction_date', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Cast the transaction_type to the correct union type
+      return (data || []).map(transaction => ({
+        ...transaction,
+        transaction_type: transaction.transaction_type as 'deposit' | 'penalty' | 'match_cost' | 'adjustment'
+      }));
     } catch (error) {
       console.error('Error fetching team transactions:', error);
       return [];
