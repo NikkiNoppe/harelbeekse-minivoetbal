@@ -12,9 +12,13 @@ export async function fetchMatches(): Promise<MatchesResult> {
         match_id,
         unique_number,
         match_date,
-        result,
+        home_score,
+        away_score,
+        is_submitted,
         referee_cost,
         field_cost,
+        location,
+        referee,
         home_team:teams!home_team_id(team_id, team_name),
         away_team:teams!away_team_id(team_id, team_name)
       `)
@@ -35,18 +39,17 @@ export async function fetchMatches(): Promise<MatchesResult> {
       const homeTeam = match.home_team as { team_id: number, team_name: string } | null;
       const awayTeam = match.away_team as { team_id: number, team_name: string } | null;
       
-      if (match.result) {
+      if (match.is_submitted && match.home_score !== null && match.away_score !== null) {
         // This is a past match with a result
-        const [homeScore, awayScore] = match.result.split('-').map(score => parseInt(score.trim()));
         past.push({
           id: match.match_id,
           date: dateStr,
           homeTeam: homeTeam?.team_name || 'Onbekend',
           awayTeam: awayTeam?.team_name || 'Onbekend',
-          homeScore,
-          awayScore,
-          location: 'Sporthal', // This would ideally come from the database
-          referee: 'Admin', // This would ideally come from the database
+          homeScore: match.home_score,
+          awayScore: match.away_score,
+          location: match.location || 'Sporthal',
+          referee: match.referee || 'Admin',
           uniqueNumber: match.unique_number
         });
       } else {
@@ -57,7 +60,7 @@ export async function fetchMatches(): Promise<MatchesResult> {
           time: timeStr,
           homeTeam: homeTeam?.team_name || 'Onbekend',
           awayTeam: awayTeam?.team_name || 'Onbekend',
-          location: 'Sporthal', // This would ideally come from the database
+          location: match.location || 'Sporthal',
           uniqueNumber: match.unique_number
         });
       }
