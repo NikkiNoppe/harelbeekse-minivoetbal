@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,13 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Euro, TrendingDown, TrendingUp, Settings } from "lucide-react";
 import TeamDetailModal from "@/components/admin/financial/TeamDetailModal";
 import CostSettingsModal from "@/components/admin/financial/CostSettingsModal";
-
 interface Team {
   team_id: number;
   team_name: string;
   balance: number;
 }
-
 interface SubmittedMatch {
   match_id: number;
   home_team_id: number;
@@ -31,33 +28,38 @@ interface SubmittedMatch {
   match_date: string;
   unique_number: string;
 }
-
 const FinancialTabUpdated: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   // Fetch teams with their balances
-  const { data: teams, isLoading: loadingTeams } = useQuery({
+  const {
+    data: teams,
+    isLoading: loadingTeams
+  } = useQuery({
     queryKey: ['teams-financial'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name, balance')
-        .order('team_name');
-      
+      const {
+        data,
+        error
+      } = await supabase.from('teams').select('team_id, team_name, balance').order('team_name');
       if (error) throw error;
       return data as Team[];
     }
   });
 
   // Fetch submitted matches for financial calculations
-  const { data: submittedMatches, isLoading: loadingMatches } = useQuery({
+  const {
+    data: submittedMatches,
+    isLoading: loadingMatches
+  } = useQuery({
     queryKey: ['submitted-matches'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('matches')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('matches').select(`
           match_id,
           home_team_id,
           away_team_id,
@@ -67,10 +69,9 @@ const FinancialTabUpdated: React.FC = () => {
           unique_number,
           teams_home:teams!home_team_id(team_name),
           teams_away:teams!away_team_id(team_name)
-        `)
-        .eq('is_submitted', true)
-        .order('created_at', { ascending: false });
-      
+        `).eq('is_submitted', true).order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
       return data as SubmittedMatch[];
     }
@@ -78,16 +79,21 @@ const FinancialTabUpdated: React.FC = () => {
 
   // Calculate total costs per team
   const calculateTeamCosts = (teamId: number) => {
-    if (!submittedMatches) return { fieldCosts: 0, refereeCosts: 0, totalMatches: 0 };
-    
-    const teamMatches = submittedMatches.filter(match => 
-      match.home_team_id === teamId || match.away_team_id === teamId
-    );
+    if (!submittedMatches) return {
+      fieldCosts: 0,
+      refereeCosts: 0,
+      totalMatches: 0
+    };
+    const teamMatches = submittedMatches.filter(match => match.home_team_id === teamId || match.away_team_id === teamId);
     const totalMatches = teamMatches.length;
     const fieldCosts = totalMatches * 5; // 5 euro per match for field
     const refereeCosts = totalMatches * 6; // 6 euro per match for referee
-    
-    return { fieldCosts, refereeCosts, totalMatches };
+
+    return {
+      fieldCosts,
+      refereeCosts,
+      totalMatches
+    };
   };
 
   // Format currency
@@ -97,22 +103,16 @@ const FinancialTabUpdated: React.FC = () => {
       currency: 'EUR'
     }).format(amount);
   };
-
   const handleTeamClick = (team: Team) => {
     setSelectedTeam(team);
     setTeamModalOpen(true);
   };
-
   if (loadingTeams || loadingMatches) {
-    return (
-      <div className="flex items-center justify-center h-40">
+    return <div className="flex items-center justify-center h-40">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -125,11 +125,7 @@ const FinancialTabUpdated: React.FC = () => {
                 Overzicht van team saldi en kosten van gespeelde wedstrijden. Klik op een team voor details.
               </CardDescription>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={() => setSettingsModalOpen(true)}
-              className="flex items-center gap-2"
-            >
+            <Button variant="outline" onClick={() => setSettingsModalOpen(true)} className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Kostentarieven
             </Button>
@@ -149,17 +145,11 @@ const FinancialTabUpdated: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {teams?.map((team) => {
-                const costs = calculateTeamCosts(team.team_id);
-                const totalCosts = costs.fieldCosts + costs.refereeCosts;
-                const isNegative = team.balance < 0;
-                
-                return (
-                  <TableRow 
-                    key={team.team_id} 
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => handleTeamClick(team)}
-                  >
+              {teams?.map(team => {
+              const costs = calculateTeamCosts(team.team_id);
+              const totalCosts = costs.fieldCosts + costs.refereeCosts;
+              const isNegative = team.balance < 0;
+              return <TableRow key={team.team_id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleTeamClick(team)}>
                     <TableCell className="font-medium">{team.team_name}</TableCell>
                     <TableCell className="text-center">{costs.totalMatches}</TableCell>
                     <TableCell className="text-center">{formatCurrency(costs.fieldCosts)}</TableCell>
@@ -167,11 +157,7 @@ const FinancialTabUpdated: React.FC = () => {
                     <TableCell className="text-center font-semibold">{formatCurrency(totalCosts)}</TableCell>
                     <TableCell className={`text-right font-semibold ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
                       <div className="flex items-center justify-end gap-1">
-                        {isNegative ? (
-                          <TrendingDown className="h-4 w-4" />
-                        ) : (
-                          <TrendingUp className="h-4 w-4" />
-                        )}
+                        {isNegative ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
                         {formatCurrency(team.balance)}
                       </div>
                     </TableCell>
@@ -180,67 +166,21 @@ const FinancialTabUpdated: React.FC = () => {
                         {isNegative ? "Tekort" : "Positief"}
                       </Badge>
                     </TableCell>
-                  </TableRow>
-                );
-              })}
+                  </TableRow>;
+            })}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Recente Wedstrijden</CardTitle>
-          <CardDescription>
-            Laatste ingediende wedstrijden die het saldo beïnvloeden
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Wedstrijd Nr.</TableHead>
-                <TableHead>Thuis Team</TableHead>
-                <TableHead>Uit Team</TableHead>
-                <TableHead>Wedstrijddatum</TableHead>
-                <TableHead>Ingediend Op</TableHead>
-                <TableHead className="text-right">Kosten</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {submittedMatches?.slice(0, 10).map((match) => (
-                <TableRow key={match.match_id}>
-                  <TableCell className="font-mono">{match.unique_number}</TableCell>
-                  <TableCell>{match.teams_home?.team_name}</TableCell>
-                  <TableCell>{match.teams_away?.team_name}</TableCell>
-                  <TableCell>
-                    {new Date(match.match_date).toLocaleDateString('nl-NL')}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(match.created_at).toLocaleDateString('nl-NL')}
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">
-                    {formatCurrency(11)} {/* 5 + 6 euro per match */}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
+        
+        
       </Card>
 
-      <TeamDetailModal
-        open={teamModalOpen}
-        onOpenChange={setTeamModalOpen}
-        team={selectedTeam}
-      />
+      <TeamDetailModal open={teamModalOpen} onOpenChange={setTeamModalOpen} team={selectedTeam} />
 
-      <CostSettingsModal
-        open={settingsModalOpen}
-        onOpenChange={setSettingsModalOpen}
-      />
-    </div>
-  );
+      <CostSettingsModal open={settingsModalOpen} onOpenChange={setSettingsModalOpen} />
+    </div>;
 };
-
 export default FinancialTabUpdated;
