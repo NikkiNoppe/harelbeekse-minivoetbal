@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { updateMatchData } from "../../match/matchUpdateService";
+import { updateMatchData } from "@/components/match/matchUpdateService";
 import { MatchFormData } from "../types";
 import { Calendar, MapPin, Users, Settings } from "lucide-react";
 

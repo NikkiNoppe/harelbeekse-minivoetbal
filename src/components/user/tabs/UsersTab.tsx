@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { 
@@ -56,7 +55,7 @@ const UsersTab: React.FC = () => {
       setLoading(true);
       console.log('📋 Fetching users and teams data...');
       
-      // Fetch users with their team relationships
+      // Fetch users with their team relationships - fix the ambiguous relationship
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select(`
@@ -66,7 +65,7 @@ const UsersTab: React.FC = () => {
           role,
           team_users!left (
             team_id,
-            teams!inner (
+            teams!team_users_team_id_fkey (
               team_id,
               team_name
             )
@@ -90,9 +89,9 @@ const UsersTab: React.FC = () => {
       const transformedUsers: User[] = (usersData || []).map(user => {
         const teamUsers = user.team_users || [];
         const userTeams = teamUsers.map(tu => ({
-          team_id: tu.teams.team_id,
-          team_name: tu.teams.team_name
-        }));
+          team_id: tu.teams?.team_id || 0,
+          team_name: tu.teams?.team_name || ''
+        })).filter(t => t.team_id > 0);
         
         const transformedUser = {
           id: user.user_id,

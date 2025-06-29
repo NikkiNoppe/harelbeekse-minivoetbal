@@ -7,7 +7,7 @@ export const useUserDataService = () => {
     try {
       console.log('Fetching users and teams from database');
       
-      // Fetch users with their team relationships
+      // Fetch users with their team relationships - fix the ambiguous relationship
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select(`
@@ -17,7 +17,7 @@ export const useUserDataService = () => {
           role,
           team_users!left (
             team_id,
-            teams!inner (
+            teams!team_users_team_id_fkey (
               team_id,
               team_name
             )
@@ -45,9 +45,9 @@ export const useUserDataService = () => {
       const transformedUsers: DbUser[] = (usersData || []).map(user => {
         const teamUsers = user.team_users || [];
         const teams = teamUsers.map(tu => ({
-          team_id: tu.teams.team_id,
-          team_name: tu.teams.team_name
-        }));
+          team_id: tu.teams?.team_id || 0,
+          team_name: tu.teams?.team_name || ''
+        })).filter(t => t.team_id > 0);
         
         return {
           user_id: user.user_id,

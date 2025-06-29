@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { costSettingsService } from "./costSettingsService";
 
@@ -65,7 +66,13 @@ export const financialService = {
   },
 
   async addTransaction(transaction: Omit<TeamTransaction, 'id' | 'created_at'>): Promise<{ success: boolean; message: string }> {
-    return costSettingsService.addTransaction(transaction);
+    // Convert old interface to new interface for costSettingsService
+    const newTransaction = {
+      ...transaction,
+      cost_setting_id: null // Will be set based on transaction type
+    };
+    
+    return costSettingsService.addTransaction(newTransaction);
   },
 
   async getPenaltyTypes(): Promise<PenaltyType[]> {

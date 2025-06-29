@@ -45,7 +45,10 @@ export const costSettingsService = {
         .order('name', { ascending: true });
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        category: item.category as 'match_cost' | 'penalty' | 'other'
+      }));
     } catch (error) {
       console.error('Error fetching cost settings:', error);
       return [];
@@ -62,7 +65,10 @@ export const costSettingsService = {
         .order('name');
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        category: item.category as 'match_cost' | 'penalty' | 'other'
+      }));
     } catch (error) {
       console.error('Error fetching match costs:', error);
       return [];
@@ -79,7 +85,10 @@ export const costSettingsService = {
         .order('name');
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        category: item.category as 'match_cost' | 'penalty' | 'other'
+      }));
     } catch (error) {
       console.error('Error fetching penalties:', error);
       return [];
