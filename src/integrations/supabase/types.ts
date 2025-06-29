@@ -414,7 +414,6 @@ export type Database = {
           referee: string | null
           referee_cost: number
           referee_notes: string | null
-          result: string | null
           speeldag: string | null
           unique_number: string | null
           updated_at: string | null
@@ -437,7 +436,6 @@ export type Database = {
           referee?: string | null
           referee_cost: number
           referee_notes?: string | null
-          result?: string | null
           speeldag?: string | null
           unique_number?: string | null
           updated_at?: string | null
@@ -460,7 +458,6 @@ export type Database = {
           referee?: string | null
           referee_cost?: number
           referee_notes?: string | null
-          result?: string | null
           speeldag?: string | null
           unique_number?: string | null
           updated_at?: string | null

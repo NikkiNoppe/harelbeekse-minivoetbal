@@ -32,6 +32,12 @@ export const cleanupMockData = async () => {
     // Clear competition standings
     await supabase.from('competition_standings').delete().gt('standing_id', 0);
     
+    // Trigger standings update to reinitialize all teams
+    const { error: standingsError } = await supabase.rpc('update_competition_standings');
+    if (standingsError) {
+      console.error('Error updating competition standings:', standingsError);
+    }
+    
     return { success: true, message: "Mock data successfully cleaned" };
   } catch (error) {
     console.error("Error cleaning mock data:", error);
