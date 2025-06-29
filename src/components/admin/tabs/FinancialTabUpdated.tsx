@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Euro, TrendingDown, TrendingUp, Settings } from "lucide-react";
 import TeamDetailModal from "@/components/admin/financial/TeamDetailModal";
-import FinancialSettingsModal from "@/components/admin/financial/FinancialSettingsModal";
+import CostSettingsModal from "@/components/admin/financial/CostSettingsModal";
 
 interface Team {
   team_id: number;
@@ -131,7 +131,7 @@ const FinancialTabUpdated: React.FC = () => {
               className="flex items-center gap-2"
             >
               <Settings className="h-4 w-4" />
-              Instellingen
+              Kostentarieven
             </Button>
           </div>
         </CardHeader>
@@ -235,7 +235,7 @@ const FinancialTabUpdated: React.FC = () => {
         team={selectedTeam}
       />
 
-      <FinancialSettingsModal
+      <CostSettingsModal
         open={settingsModalOpen}
         onOpenChange={setSettingsModalOpen}
       />

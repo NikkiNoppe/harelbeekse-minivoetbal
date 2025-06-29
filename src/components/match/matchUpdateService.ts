@@ -13,6 +13,7 @@ export interface MatchUpdateData {
   home_players?: any[];
   away_players?: any[];
   is_submitted?: boolean;
+  speeldag?: string;
 }
 
 export const updateMatchData = async (data: MatchUpdateData): Promise<{ success: boolean; message: string }> => {
@@ -30,6 +31,7 @@ export const updateMatchData = async (data: MatchUpdateData): Promise<{ success:
         home_players: data.home_players,
         away_players: data.away_players,
         is_submitted: data.is_submitted,
+        speeldag: data.speeldag,
         updated_at: new Date().toISOString()
       })
       .eq('match_id', data.match_id);

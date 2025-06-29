@@ -273,6 +273,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cost_settings: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string | null
+          description: string | null
+          id: number
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       financial_settings: {
         Row: {
           field_cost_per_match: number | null
@@ -691,6 +724,7 @@ export type Database = {
       team_transactions: {
         Row: {
           amount: number
+          cost_setting_id: number | null
           created_at: string | null
           created_by: number | null
           description: string | null
@@ -703,6 +737,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          cost_setting_id?: number | null
           created_at?: string | null
           created_by?: number | null
           description?: string | null
@@ -715,6 +750,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          cost_setting_id?: number | null
           created_at?: string | null
           created_by?: number | null
           description?: string | null
@@ -726,6 +762,13 @@ export type Database = {
           transaction_type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "team_transactions_cost_setting_id_fkey"
+            columns: ["cost_setting_id"]
+            isOneToOne: false
+            referencedRelation: "cost_settings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "team_transactions_created_by_fkey"
             columns: ["created_by"]
@@ -786,6 +829,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "team_users_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
           },
         ]
       }
@@ -923,6 +973,10 @@ export type Database = {
     }
     Functions: {
       calculate_team_balance: {
+        Args: { team_id_param: number }
+        Returns: number
+      }
+      calculate_team_balance_updated: {
         Args: { team_id_param: number }
         Returns: number
       }

@@ -1,6 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { costSettingsService } from "./costSettingsService";
 
+// Keep existing interfaces for backward compatibility
 export interface TeamTransaction {
   id: number;
   team_id: number;
@@ -36,6 +37,7 @@ export interface FinancialSettings {
   updated_at: string;
 }
 
+// Backward compatibility wrapper around costSettingsService
 export const financialService = {
   async getTeamTransactions(teamId: number): Promise<TeamTransaction[]> {
     try {
@@ -63,29 +65,19 @@ export const financialService = {
   },
 
   async addTransaction(transaction: Omit<TeamTransaction, 'id' | 'created_at'>): Promise<{ success: boolean; message: string }> {
-    try {
-      const { error } = await supabase
-        .from('team_transactions')
-        .insert([transaction]);
-
-      if (error) throw error;
-      return { success: true, message: 'Transactie succesvol toegevoegd' };
-    } catch (error) {
-      console.error('Error adding transaction:', error);
-      return { success: false, message: 'Fout bij toevoegen transactie' };
-    }
+    return costSettingsService.addTransaction(transaction);
   },
 
   async getPenaltyTypes(): Promise<PenaltyType[]> {
     try {
-      const { data, error } = await supabase
-        .from('penalty_types')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      return data || [];
+      const costSettings = await costSettingsService.getPenalties();
+      return costSettings.map(cs => ({
+        id: cs.id,
+        name: cs.name,
+        description: cs.description,
+        amount: cs.amount,
+        is_active: cs.is_active
+      }));
     } catch (error) {
       console.error('Error fetching penalty types:', error);
       return [];
@@ -94,14 +86,16 @@ export const financialService = {
 
   async getFinancialSettings(): Promise<FinancialSettings | null> {
     try {
-      const { data, error } = await supabase
-        .from('financial_settings')
-        .select('*')
-        .eq('id', 1)
-        .single();
-
-      if (error) throw error;
-      return data;
+      const matchCosts = await costSettingsService.getMatchCosts();
+      const fieldCost = matchCosts.find(c => c.name.includes('Veld')) || { amount: 5 };
+      const refereeCost = matchCosts.find(c => c.name.includes('Scheidsrechter')) || { amount: 6 };
+      
+      return {
+        id: 1,
+        field_cost_per_match: fieldCost.amount,
+        referee_cost_per_match: refereeCost.amount,
+        updated_at: new Date().toISOString()
+      };
     } catch (error) {
       console.error('Error fetching financial settings:', error);
       return null;
@@ -110,15 +104,24 @@ export const financialService = {
 
   async updateFinancialSettings(settings: { field_cost_per_match: number; referee_cost_per_match: number }): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
-        .from('financial_settings')
-        .update({
-          ...settings,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', 1);
-
-      if (error) throw error;
+      const costSettings = await costSettingsService.getMatchCosts();
+      
+      // Update field cost
+      const fieldCost = costSettings.find(c => c.name.includes('Veld'));
+      if (fieldCost) {
+        await costSettingsService.updateCostSetting(fieldCost.id, {
+          amount: settings.field_cost_per_match
+        });
+      }
+      
+      // Update referee cost
+      const refereeCost = costSettings.find(c => c.name.includes('Scheidsrechter'));
+      if (refereeCost) {
+        await costSettingsService.updateCostSetting(refereeCost.id, {
+          amount: settings.referee_cost_per_match
+        });
+      }
+      
       return { success: true, message: 'Instellingen succesvol bijgewerkt' };
     } catch (error) {
       console.error('Error updating financial settings:', error);

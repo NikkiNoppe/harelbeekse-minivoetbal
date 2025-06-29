@@ -1,20 +1,14 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { updateMatchData } from "../../match/matchUpdateService";
 import { MatchFormData } from "../types";
-import { matchService, MatchMetadata } from "@/services/matchService";
-import { teamService, Team } from "@/services/teamService";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+import { Calendar, MapPin, Users, Settings } from "lucide-react";
 
 interface AdminMatchDataSectionProps {
   match: MatchFormData;
@@ -22,243 +16,170 @@ interface AdminMatchDataSectionProps {
   canEdit: boolean;
 }
 
-export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
+const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
   match,
   onMatchUpdate,
   canEdit
 }) => {
   const { toast } = useToast();
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [loadingTeams, setLoadingTeams] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState({
-    date: match.date,
-    time: match.time,
-    homeTeamId: match.homeTeamId,
-    awayTeamId: match.awayTeamId,
-    location: match.location,
-    matchday: match.matchday
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [formData, setFormData] = useState({
+    date: match.date || "",
+    time: match.time || "",
+    location: match.location || "",
+    homeTeamName: match.homeTeamName || "",
+    awayTeamName: match.awayTeamName || "",
+    speeldag: match.matchday || ""
   });
 
-  useEffect(() => {
-    const loadTeams = async () => {
-      try {
-        const teamsData = await teamService.getAllTeams();
-        setTeams(teamsData);
-      } catch (error) {
-        console.error("Error loading teams:", error);
-        toast({
-          title: "Fout bij laden teams",
-          description: "Er is een fout opgetreden bij het laden van de teams.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoadingTeams(false);
-      }
-    };
-
-    loadTeams();
-  }, [toast]);
-
   const handleSave = async () => {
+    if (!canEdit) return;
+
+    setIsUpdating(true);
     try {
-      const metadata: MatchMetadata = {
-        matchId: match.matchId,
-        date: editData.date,
-        time: editData.time,
-        homeTeamId: editData.homeTeamId,
-        awayTeamId: editData.awayTeamId,
-        location: editData.location,
-        matchday: editData.matchday
-      };
-
-      await matchService.updateMatchMetadata(metadata);
-
-      // Find team names
-      const homeTeam = teams.find(t => t.team_id === editData.homeTeamId);
-      const awayTeam = teams.find(t => t.team_id === editData.awayTeamId);
-
-      // Update local match data
-      const updatedMatch: MatchFormData = {
-        ...match,
-        date: editData.date,
-        time: editData.time,
-        homeTeamId: editData.homeTeamId,
-        homeTeamName: homeTeam?.team_name || "Onbekend",
-        awayTeamId: editData.awayTeamId,
-        awayTeamName: awayTeam?.team_name || "Onbekend",
-        location: editData.location,
-        matchday: editData.matchday
-      };
-
-      onMatchUpdate(updatedMatch);
-      setIsEditing(false);
-
-      toast({
-        title: "Wedstrijd bijgewerkt",
-        description: "De wedstrijdgegevens zijn succesvol bijgewerkt.",
+      const result = await updateMatchData({
+        match_id: match.matchId,
+        location: formData.location,
+        speeldag: formData.speeldag
       });
+
+      if (result.success) {
+        toast({
+          title: "Succesvol",
+          description: "Wedstrijdgegevens zijn bijgewerkt"
+        });
+
+        // Update the local match data
+        const updatedMatch: MatchFormData = {
+          ...match,
+          location: formData.location,
+          matchday: formData.speeldag
+        };
+        onMatchUpdate(updatedMatch);
+      } else {
+        toast({
+          title: "Fout",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
     } catch (error) {
-      console.error("Error updating match:", error);
       toast({
-        title: "Fout bij bijwerken",
-        description: "Er is een fout opgetreden bij het bijwerken van de wedstrijd.",
-        variant: "destructive",
+        title: "Fout",
+        description: "Er is een onverwachte fout opgetreden",
+        variant: "destructive"
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  const handleCancel = () => {
-    setEditData({
-      date: match.date,
-      time: match.time,
-      homeTeamId: match.homeTeamId,
-      awayTeamId: match.awayTeamId,
-      location: match.location,
-      matchday: match.matchday
-    });
-    setIsEditing(false);
-  };
-
-  if (loadingTeams) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Admin: Wedstrijdgegevens</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>Teams laden...</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Admin: Wedstrijdgegevens</CardTitle>
+    <Card className="border-blue-200 bg-blue-50/50">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2 text-blue-700">
+          <Settings className="h-5 w-5" />
+          Admin: Wedstrijdgegevens
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!isEditing ? (
-          <>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <strong>Datum:</strong> {match.date}
-              </div>
-              <div>
-                <strong>Tijd:</strong> {match.time}
-              </div>
-              <div>
-                <strong>Thuisteam:</strong> {match.homeTeamName}
-              </div>
-              <div>
-                <strong>Uitteam:</strong> {match.awayTeamName}
-              </div>
-              <div>
-                <strong>Locatie:</strong> {match.location}
-              </div>
-              <div>
-                <strong>Speeldag:</strong> {match.matchday}
-              </div>
-            </div>
-            {canEdit && (
-              <Button onClick={() => setIsEditing(true)}>
-                Bewerken
-              </Button>
-            )}
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-date">Datum</Label>
-                <Input
-                  id="edit-date"
-                  type="date"
-                  value={editData.date}
-                  onChange={(e) => setEditData(prev => ({ ...prev, date: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-time">Tijd</Label>
-                <Input
-                  id="edit-time"
-                  type="time"
-                  value={editData.time}
-                  onChange={(e) => setEditData(prev => ({ ...prev, time: e.target.value }))}
-                />
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="admin-date" className="text-sm font-medium">
+              <Calendar className="h-4 w-4 inline mr-1" />
+              Datum
+            </Label>
+            <Input
+              id="admin-date"
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({...formData, date: e.target.value})}
+              disabled={!canEdit}
+              className="mt-1"
+            />
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-home-team">Thuisteam</Label>
-                <Select
-                  value={editData.homeTeamId.toString()}
-                  onValueChange={(value) => setEditData(prev => ({ ...prev, homeTeamId: parseInt(value) }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teams.map((team) => (
-                      <SelectItem key={team.team_id} value={team.team_id.toString()}>
-                        {team.team_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="edit-away-team">Uitteam</Label>
-                <Select
-                  value={editData.awayTeamId.toString()}
-                  onValueChange={(value) => setEditData(prev => ({ ...prev, awayTeamId: parseInt(value) }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teams.map((team) => (
-                      <SelectItem key={team.team_id} value={team.team_id.toString()}>
-                        {team.team_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+          <div>
+            <Label htmlFor="admin-time" className="text-sm font-medium">
+              Tijd
+            </Label>
+            <Input
+              id="admin-time"
+              type="time"
+              value={formData.time}
+              onChange={(e) => setFormData({...formData, time: e.target.value})}
+              disabled={!canEdit}
+              className="mt-1"
+            />
+          </div>
 
-            <div>
-              <Label htmlFor="edit-location">Locatie</Label>
-              <Input
-                id="edit-location"
-                value={editData.location}
-                onChange={(e) => setEditData(prev => ({ ...prev, location: e.target.value }))}
-              />
-            </div>
+          <div>
+            <Label htmlFor="admin-location" className="text-sm font-medium">
+              <MapPin className="h-4 w-4 inline mr-1" />
+              Locatie
+            </Label>
+            <Input
+              id="admin-location"
+              value={formData.location}
+              onChange={(e) => setFormData({...formData, location: e.target.value})}
+              disabled={!canEdit}
+              placeholder="Sporthal/Veld"
+              className="mt-1"
+            />
+          </div>
 
-            <div>
-              <Label htmlFor="edit-matchday">Speeldag</Label>
-              <Input
-                id="edit-matchday"
-                value={editData.matchday}
-                onChange={(e) => setEditData(prev => ({ ...prev, matchday: e.target.value }))}
-                placeholder="bijv. Speeldag 1"
-              />
-            </div>
+          <div>
+            <Label htmlFor="admin-speeldag" className="text-sm font-medium">
+              Speeldag
+            </Label>
+            <Input
+              id="admin-speeldag"
+              value={formData.speeldag}
+              onChange={(e) => setFormData({...formData, speeldag: e.target.value})}
+              disabled={!canEdit}
+              placeholder="Speeldag 1"
+              className="mt-1"
+            />
+          </div>
 
-            <div className="flex gap-2">
-              <Button onClick={handleSave}>
-                Opslaan
-              </Button>
-              <Button variant="outline" onClick={handleCancel}>
-                Annuleren
-              </Button>
-            </div>
+          <div>
+            <Label className="text-sm font-medium">
+              <Users className="h-4 w-4 inline mr-1" />
+              Thuis Team
+            </Label>
+            <Input
+              value={formData.homeTeamName}
+              disabled
+              className="mt-1 bg-gray-100"
+            />
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium">
+              Uit Team
+            </Label>
+            <Input
+              value={formData.awayTeamName}
+              disabled
+              className="mt-1 bg-gray-100"
+            />
+          </div>
+        </div>
+
+        {canEdit && (
+          <div className="flex justify-end pt-2">
+            <Button
+              onClick={handleSave}
+              disabled={isUpdating}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isUpdating ? "Opslaan..." : "Opslaan"}
+            </Button>
           </div>
         )}
       </CardContent>
     </Card>
   );
 };
+
+export default AdminMatchDataSection;
