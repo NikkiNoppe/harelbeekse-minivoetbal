@@ -11,8 +11,7 @@ import {
 import { RefereePenaltySection } from "./components/RefereePenaltySection";
 import { MatchFormData, PlayerSelection } from "./types";
 import { useMatchFormState } from "./hooks/useMatchFormState";
-import { useMatchFormSubmission } from "./hooks/useMatchFormSubmission";
-import { updateMatchForm, lockMatchForm } from "./matchFormService";
+import { useEnhancedMatchFormSubmission } from "./hooks/useEnhancedMatchFormSubmission";
 
 interface CompactMatchFormProps {
   match: MatchFormData;
@@ -29,6 +28,14 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   isReferee,
   teamId
 }) => {
+  console.log('[CompactMatchForm] RENDER START:', { 
+    matchId: match.matchId, 
+    isAdmin, 
+    isReferee, 
+    teamId,
+    isLocked: match.isLocked
+  });
+
   const {
     homeScore,
     setHomeScore,
@@ -50,16 +57,29 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     getAwayTeamSelectionsWithCards
   } = useMatchFormState(match);
 
+  const { submitMatchForm, lockMatch, unlockMatch } = useEnhancedMatchFormSubmission();
+
   const [currentMatch, setCurrentMatch] = React.useState<MatchFormData>(match);
 
   const canEdit = !currentMatch.isLocked || isAdmin;
   const showRefereeFields = isReferee || isAdmin;
 
+  console.log('[CompactMatchForm] PERMISSIONS:', { 
+    canEdit, 
+    showRefereeFields, 
+    isLocked: currentMatch.isLocked 
+  });
+
   const handleMatchUpdate = (updatedMatch: MatchFormData) => {
+    console.log('[CompactMatchForm] MATCH UPDATE:', { 
+      oldMatchId: currentMatch.matchId, 
+      newMatchId: updatedMatch.matchId 
+    });
     setCurrentMatch(updatedMatch);
   };
 
   const handleCardChange = (playerId: number, cardType: string) => {
+    console.log('[CompactMatchForm] CARD CHANGE:', { playerId, cardType });
     setPlayerCards(prev => ({
       ...prev,
       [playerId]: cardType === "none" ? "" : cardType
@@ -72,6 +92,13 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     value: any,
     isHomeTeam: boolean
   ) => {
+    console.log('[CompactMatchForm] PLAYER SELECTION:', { 
+      index, 
+      field, 
+      value, 
+      isHomeTeam 
+    });
+    
     const setSelections = isHomeTeam ? setHomeTeamSelections : setAwayTeamSelections;
     setSelections(prev => {
       const updated = [...prev];
@@ -101,7 +128,17 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   };
 
   const handleSubmit = async () => {
+    console.log('[CompactMatchForm] SUBMIT START:', {
+      matchId: currentMatch.matchId,
+      homeScore,
+      awayScore,
+      selectedReferee,
+      isReferee,
+      canEdit
+    });
+
     setIsSubmitting(true);
+    
     try {
       const updatedMatch: MatchFormData = {
         ...currentMatch,
@@ -110,25 +147,40 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         referee: selectedReferee,
         refereeNotes: refereeNotes,
         isCompleted: true,
-        isLocked: isReferee ? true : currentMatch.isLocked,
         homePlayers: getHomeTeamSelectionsWithCards(),
         awayPlayers: getAwayTeamSelectionsWithCards()
       };
 
-      await updateMatchForm({
-        ...updatedMatch,
-        matchId: currentMatch.matchId,
+      console.log('[CompactMatchForm] CALLING submitMatchForm:', {
+        matchId: updatedMatch.matchId,
+        hasHomeScore: updatedMatch.homeScore !== undefined,
+        hasAwayScore: updatedMatch.awayScore !== undefined,
+        homePlayersCount: updatedMatch.homePlayers?.length || 0,
+        awayPlayersCount: updatedMatch.awayPlayers?.length || 0
       });
 
-      if (isReferee && !currentMatch.isLocked) {
-        await lockMatchForm(currentMatch.matchId);
-      }
+      const result = await submitMatchForm(updatedMatch);
+      
+      console.log('[CompactMatchForm] submitMatchForm RESULT:', result);
 
-      onComplete();
+      if (result.success) {
+        if (isReferee && !currentMatch.isLocked) {
+          console.log('[CompactMatchForm] LOCKING MATCH for referee:', currentMatch.matchId);
+          const lockResult = await lockMatch(currentMatch.matchId);
+          console.log('[CompactMatchForm] LOCK RESULT:', lockResult);
+        }
+        
+        console.log('[CompactMatchForm] CALLING onComplete');
+        onComplete();
+      }
+    } catch (error) {
+      console.error('[CompactMatchForm] SUBMIT ERROR:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  console.log('[CompactMatchForm] RENDER END');
 
   return (
     <div className="space-y-6">

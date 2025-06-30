@@ -8,15 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, Users, AlertTriangle } from "lucide-react";
-
-interface Team {
-  team_id: number;
-  team_name: string;
-  balance: number;
-}
+import { enhancedTeamService, Team } from "@/services/enhancedTeamService";
 
 const TeamsTab: React.FC = () => {
   const { toast } = useToast();
@@ -27,24 +21,20 @@ const TeamsTab: React.FC = () => {
   const [teamBalance, setTeamBalance] = useState("0.00");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch teams
+  // Fetch teams using enhanced service
   const { data: teams, isLoading } = useQuery({
     queryKey: ['teams'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name, balance')
-        .order('team_name');
-      
-      if (error) {
-        console.error('Error fetching teams:', error);
-        throw error;
-      }
-      return data as Team[];
+      console.log('[TeamsTab] Fetching teams...');
+      const teams = await enhancedTeamService.getAllTeams();
+      console.log('[TeamsTab] Teams fetched:', teams);
+      return teams;
     }
   });
 
   const handleAddTeam = async () => {
+    console.log('[TeamsTab] Adding team:', { teamName, teamBalance });
+    
     if (!teamName.trim()) {
       toast({
         title: "Fout",
@@ -56,31 +46,32 @@ const TeamsTab: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase
-        .from('teams')
-        .insert([{
-          team_name: teamName.trim(),
-          balance: parseFloat(teamBalance) || 0
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Add team error:', error);
-        throw error;
-      }
-
-      toast({
-        title: "Team toegevoegd",
-        description: `${teamName} is succesvol toegevoegd`
+      const result = await enhancedTeamService.createTeam({
+        team_name: teamName.trim(),
+        balance: parseFloat(teamBalance) || 0
       });
 
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
-      setIsAddModalOpen(false);
-      setTeamName("");
-      setTeamBalance("0.00");
+      console.log('[TeamsTab] Add team result:', result);
+
+      if (result.success) {
+        toast({
+          title: "Team toegevoegd",
+          description: result.message
+        });
+
+        queryClient.invalidateQueries({ queryKey: ['teams'] });
+        setIsAddModalOpen(false);
+        setTeamName("");
+        setTeamBalance("0.00");
+      } else {
+        toast({
+          title: "Fout bij toevoegen",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
     } catch (error: any) {
-      console.error('Add team error:', error);
+      console.error('[TeamsTab] Add team error:', error);
       toast({
         title: "Fout bij toevoegen",
         description: error.message || "Er is een fout opgetreden bij het toevoegen van het team",
@@ -92,6 +83,8 @@ const TeamsTab: React.FC = () => {
   };
 
   const handleEditTeam = async () => {
+    console.log('[TeamsTab] Editing team:', { editingTeam, teamName, teamBalance });
+    
     if (!editingTeam || !teamName.trim()) {
       toast({
         title: "Fout",
@@ -103,30 +96,30 @@ const TeamsTab: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase
-        .from('teams')
-        .update({
-          team_name: teamName.trim(),
-          balance: parseFloat(teamBalance) || 0
-        })
-        .eq('team_id', editingTeam.team_id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Update team error:', error);
-        throw error;
-      }
-
-      toast({
-        title: "Team bijgewerkt",
-        description: `${teamName} is succesvol bijgewerkt`
+      const result = await enhancedTeamService.updateTeam(editingTeam.team_id, {
+        team_name: teamName.trim(),
+        balance: parseFloat(teamBalance) || 0
       });
 
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
-      closeEditModal();
+      console.log('[TeamsTab] Edit team result:', result);
+
+      if (result.success) {
+        toast({
+          title: "Team bijgewerkt",
+          description: result.message
+        });
+
+        queryClient.invalidateQueries({ queryKey: ['teams'] });
+        closeEditModal();
+      } else {
+        toast({
+          title: "Fout bij bijwerken",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
     } catch (error: any) {
-      console.error('Update team error:', error);
+      console.error('[TeamsTab] Edit team error:', error);
       toast({
         title: "Fout bij bijwerken",
         description: error.message || "Er is een fout opgetreden bij het bijwerken van het team",
@@ -138,25 +131,29 @@ const TeamsTab: React.FC = () => {
   };
 
   const handleDeleteTeam = async (team: Team) => {
+    console.log('[TeamsTab] Deleting team:', team);
+    
     try {
-      const { error } = await supabase
-        .from('teams')
-        .delete()
-        .eq('team_id', team.team_id);
+      const result = await enhancedTeamService.deleteTeam(team.team_id);
 
-      if (error) {
-        console.error('Delete team error:', error);
-        throw error;
+      console.log('[TeamsTab] Delete team result:', result);
+
+      if (result.success) {
+        toast({
+          title: "Team verwijderd",
+          description: result.message
+        });
+
+        queryClient.invalidateQueries({ queryKey: ['teams'] });
+      } else {
+        toast({
+          title: "Fout bij verwijderen",
+          description: result.message,
+          variant: "destructive"
+        });
       }
-
-      toast({
-        title: "Team verwijderd",
-        description: `${team.team_name} is succesvol verwijderd. Alle gerelateerde data is automatisch verwijderd.`
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
     } catch (error: any) {
-      console.error('Delete team error:', error);
+      console.error('[TeamsTab] Delete team error:', error);
       toast({
         title: "Fout bij verwijderen",
         description: error.message || "Er is een fout opgetreden bij het verwijderen van het team",
@@ -166,12 +163,14 @@ const TeamsTab: React.FC = () => {
   };
 
   const openEditModal = (team: Team) => {
+    console.log('[TeamsTab] Opening edit modal for team:', team);
     setEditingTeam(team);
     setTeamName(team.team_name);
     setTeamBalance(team.balance.toString());
   };
 
   const closeEditModal = () => {
+    console.log('[TeamsTab] Closing edit modal');
     setEditingTeam(null);
     setTeamName("");
     setTeamBalance("0.00");

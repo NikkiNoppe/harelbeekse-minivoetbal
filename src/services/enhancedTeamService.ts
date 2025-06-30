@@ -74,13 +74,21 @@ export const enhancedTeamService = {
         .from('teams')
         .insert([teamData])
         .select()
-        .single();
+        .maybeSingle();
 
       logTeamOperation('createTeam - QUERY RESULT', { data, error });
 
       if (error) {
         logTeamOperation('createTeam - ERROR', { error });
         throw error;
+      }
+
+      if (!data) {
+        logTeamOperation('createTeam - NO DATA RETURNED');
+        return { 
+          success: false, 
+          message: 'Geen data geretourneerd bij aanmaken team' 
+        };
       }
 
       logTeamOperation('createTeam - SUCCESS', { createdTeam: data });
