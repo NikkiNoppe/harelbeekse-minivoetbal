@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { costSettingsService } from "./costSettingsService";
 
@@ -13,9 +12,10 @@ export interface TeamTransaction {
   match_id: number | null;
   transaction_date: string;
   created_at: string;
-  penalty_types?: {
+  cost_settings?: {
     name: string;
     description: string;
+    category: string;
   };
   matches?: {
     unique_number: string;
@@ -38,7 +38,7 @@ export interface FinancialSettings {
   updated_at: string;
 }
 
-// Backward compatibility wrapper around costSettingsService
+// Updated service to work with new cost_settings structure
 export const financialService = {
   async getTeamTransactions(teamId: number): Promise<TeamTransaction[]> {
     try {
@@ -46,7 +46,7 @@ export const financialService = {
         .from('team_transactions')
         .select(`
           *,
-          penalty_types(name, description),
+          cost_settings(name, description, category),
           matches(unique_number, match_date)
         `)
         .eq('team_id', teamId)
@@ -54,7 +54,6 @@ export const financialService = {
 
       if (error) throw error;
       
-      // Cast the transaction_type to the correct union type
       return (data || []).map(transaction => ({
         ...transaction,
         transaction_type: transaction.transaction_type as 'deposit' | 'penalty' | 'match_cost' | 'adjustment'
@@ -66,13 +65,7 @@ export const financialService = {
   },
 
   async addTransaction(transaction: Omit<TeamTransaction, 'id' | 'created_at'>): Promise<{ success: boolean; message: string }> {
-    // Convert old interface to new interface for costSettingsService
-    const newTransaction = {
-      ...transaction,
-      cost_setting_id: null // Will be set based on transaction type
-    };
-    
-    return costSettingsService.addTransaction(newTransaction);
+    return costSettingsService.addTransaction(transaction);
   },
 
   async getPenaltyTypes(): Promise<PenaltyType[]> {

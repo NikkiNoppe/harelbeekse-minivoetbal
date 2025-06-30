@@ -22,6 +22,7 @@ interface TeamDependencies {
   players: number;
   matches: number;
   transactions: number;
+  users: number;
 }
 
 const TeamsTab: React.FC = () => {
@@ -48,16 +49,18 @@ const TeamsTab: React.FC = () => {
 
   // Get team dependencies
   const getTeamDependencies = async (teamId: number): Promise<TeamDependencies> => {
-    const [playersResult, matchesResult, transactionsResult] = await Promise.all([
+    const [playersResult, matchesResult, transactionsResult, usersResult] = await Promise.all([
       supabase.from('players').select('player_id').eq('team_id', teamId),
       supabase.from('matches').select('match_id').or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`),
-      supabase.from('team_transactions').select('id').eq('team_id', teamId)
+      supabase.from('team_transactions').select('id').eq('team_id', teamId),
+      supabase.from('team_users').select('id').eq('team_id', teamId)
     ]);
 
     return {
       players: playersResult.data?.length || 0,
       matches: matchesResult.data?.length || 0,
-      transactions: transactionsResult.data?.length || 0
+      transactions: transactionsResult.data?.length || 0,
+      users: usersResult.data?.length || 0
     };
   };
 
@@ -87,10 +90,12 @@ const TeamsTab: React.FC = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['teams-financial'] });
       setIsAddModalOpen(false);
       setTeamName("");
       setTeamBalance("0.00");
     } catch (error) {
+      console.error('Add team error:', error);
       toast({
         title: "Fout",
         description: "Fout bij toevoegen team",
@@ -100,7 +105,14 @@ const TeamsTab: React.FC = () => {
   };
 
   const handleEditTeam = async () => {
-    if (!editingTeam || !teamName.trim()) return;
+    if (!editingTeam || !teamName.trim()) {
+      toast({
+        title: "Fout",
+        description: "Vul een teamnaam in",
+        variant: "destructive"
+      });
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -119,10 +131,12 @@ const TeamsTab: React.FC = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['teams-financial'] });
       setEditingTeam(null);
       setTeamName("");
       setTeamBalance("0.00");
     } catch (error) {
+      console.error('Update team error:', error);
       toast({
         title: "Fout",
         description: "Fout bij bijwerken team",
@@ -132,17 +146,9 @@ const TeamsTab: React.FC = () => {
   };
 
   const handleDeleteTeam = async (team: Team) => {
-    const dependencies = await getTeamDependencies(team.team_id);
-    
-    if (dependencies.players > 0 || dependencies.matches > 0 || dependencies.transactions > 0) {
-      toast({
-        title: "Waarschuwing",
-        description: `Dit team heeft nog ${dependencies.players} spelers, ${dependencies.matches} wedstrijden en ${dependencies.transactions} transacties. Deze worden automatisch losgekoppeld.`,
-        variant: "destructive"
-      });
-    }
-
     try {
+      const dependencies = await getTeamDependencies(team.team_id);
+      
       const { error } = await supabase
         .from('teams')
         .delete()
@@ -152,11 +158,13 @@ const TeamsTab: React.FC = () => {
 
       toast({
         title: "Succesvol",
-        description: "Team succesvol verwijderd"
+        description: `Team "${team.team_name}" succesvol verwijderd. ${dependencies.players} spelers, ${dependencies.transactions} transacties en ${dependencies.users} gebruikers zijn automatisch verwijderd.`
       });
 
       queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['teams-financial'] });
     } catch (error) {
+      console.error('Delete team error:', error);
       toast({
         title: "Fout",
         description: "Fout bij verwijderen team",
@@ -199,7 +207,7 @@ const TeamsTab: React.FC = () => {
                 Teams Beheer
               </CardTitle>
               <CardDescription>
-                Beheer alle teams in de competitie
+                Beheer alle teams in de competitie. Verwijderen van teams zal automatisch alle gerelateerde spelers, transacties en gebruikers verwijderen.
               </CardDescription>
             </div>
             <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
@@ -290,9 +298,22 @@ const TeamsTab: React.FC = () => {
                               Team Verwijderen
                             </AlertDialogTitle>
                             <AlertDialogDescription>
-                              Weet je zeker dat je het team "{team.team_name}" wilt verwijderen? 
-                              Dit kan niet ongedaan worden gemaakt. Alle gekoppelde spelers, 
-                              wedstrijden en transacties worden automatisch losgekoppeld.
+                              <div className="space-y-2">
+                                <p>Weet je zeker dat je het team "{team.team_name}" wilt verwijderen?</p>
+                                <p className="font-semibold text-red-600">
+                                  ⚠️ Dit zal automatisch verwijderen:
+                                </p>
+                                <ul className="list-disc list-inside text-sm space-y-1 ml-4">
+                                  <li>Alle spelers van dit team</li>
+                                  <li>Alle financiële transacties</li>
+                                  <li>Alle team gebruikers</li>
+                                  <li>Team voorkeuren en instellingen</li>
+                                </ul>
+                                <p className="text-sm text-gray-600">
+                                  Wedstrijden worden behouden maar worden losgekoppeld van dit team.
+                                </p>
+                                <p className="font-semibold">Deze actie kan niet ongedaan worden gemaakt!</p>
+                              </div>
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -301,7 +322,7 @@ const TeamsTab: React.FC = () => {
                               onClick={() => handleDeleteTeam(team)}
                               className="bg-red-600 hover:bg-red-700"
                             >
-                              Verwijderen
+                              Permanent Verwijderen
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

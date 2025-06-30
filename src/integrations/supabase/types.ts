@@ -306,38 +306,6 @@ export type Database = {
         }
         Relationships: []
       }
-      financial_settings: {
-        Row: {
-          field_cost_per_match: number | null
-          id: number
-          referee_cost_per_match: number | null
-          updated_at: string | null
-          updated_by: number | null
-        }
-        Insert: {
-          field_cost_per_match?: number | null
-          id?: number
-          referee_cost_per_match?: number | null
-          updated_at?: string | null
-          updated_by?: number | null
-        }
-        Update: {
-          field_cost_per_match?: number | null
-          id?: number
-          referee_cost_per_match?: number | null
-          updated_at?: string | null
-          updated_by?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "financial_settings_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
       manual_competition_schedules: {
         Row: {
           competition_id: number | null
@@ -543,33 +511,6 @@ export type Database = {
             referencedColumns: ["team_id"]
           },
         ]
-      }
-      penalty_types: {
-        Row: {
-          amount: number
-          created_at: string | null
-          description: string | null
-          id: number
-          is_active: boolean | null
-          name: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string | null
-          description?: string | null
-          id?: number
-          is_active?: boolean | null
-          name: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string | null
-          description?: string | null
-          id?: number
-          is_active?: boolean | null
-          name?: string
-        }
-        Relationships: []
       }
       player_list_lock_settings: {
         Row: {
@@ -782,13 +723,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "matches"
             referencedColumns: ["match_id"]
-          },
-          {
-            foreignKeyName: "team_transactions_penalty_type_id_fkey"
-            columns: ["penalty_type_id"]
-            isOneToOne: false
-            referencedRelation: "penalty_types"
-            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "team_transactions_team_id_fkey"

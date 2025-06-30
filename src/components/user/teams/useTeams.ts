@@ -31,7 +31,8 @@ export function useTeams() {
       setLoading(true);
       const { data, error } = await supabase
         .from('teams')
-        .select('*');
+        .select('*')
+        .order('team_name');
       
       if (error) {
         throw error;
@@ -77,7 +78,7 @@ export function useTeams() {
   };
 
   const handleSaveTeam = async () => {
-    if (!formData.name) {
+    if (!formData.name.trim()) {
       toast({
         title: "Naam ontbreekt",
         description: "Vul een teamnaam in",
@@ -92,8 +93,8 @@ export function useTeams() {
         const { error } = await supabase
           .from('teams')
           .update({ 
-            team_name: formData.name, 
-            balance: parseFloat(formData.balance) 
+            team_name: formData.name.trim(), 
+            balance: parseFloat(formData.balance) || 0
           })
           .eq('team_id', editingTeam.team_id);
         
@@ -101,7 +102,7 @@ export function useTeams() {
         
         setTeams(teams.map(team => 
           team.team_id === editingTeam.team_id 
-            ? { ...team, team_name: formData.name, balance: parseFloat(formData.balance) } 
+            ? { ...team, team_name: formData.name.trim(), balance: parseFloat(formData.balance) || 0 } 
             : team
         ));
         
@@ -114,8 +115,8 @@ export function useTeams() {
         const { data, error } = await supabase
           .from('teams')
           .insert({ 
-            team_name: formData.name, 
-            balance: parseFloat(formData.balance) 
+            team_name: formData.name.trim(), 
+            balance: parseFloat(formData.balance) || 0
           })
           .select();
         
@@ -155,7 +156,7 @@ export function useTeams() {
       
       toast({
         title: "Team verwijderd",
-        description: "Het team is verwijderd uit de competitie",
+        description: "Het team en alle gerelateerde data zijn verwijderd uit de competitie",
       });
     } catch (error) {
       console.error('Error deleting team:', error);

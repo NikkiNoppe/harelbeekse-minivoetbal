@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,11 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Euro, TrendingDown, TrendingUp, Settings } from "lucide-react";
 import TeamDetailModal from "@/components/admin/financial/TeamDetailModal";
 import CostSettingsModal from "@/components/admin/financial/CostSettingsModal";
+import { costSettingsService } from "@/services/costSettingsService";
+
 interface Team {
   team_id: number;
   team_name: string;
   balance: number;
 }
+
 interface SubmittedMatch {
   match_id: number;
   home_team_id: number;
@@ -28,6 +32,7 @@ interface SubmittedMatch {
   match_date: string;
   unique_number: string;
 }
+
 const FinancialTabUpdated: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
@@ -77,17 +82,32 @@ const FinancialTabUpdated: React.FC = () => {
     }
   });
 
-  // Calculate total costs per team
+  // Fetch cost settings for dynamic calculations
+  const { data: costSettings } = useQuery({
+    queryKey: ['cost-settings'],
+    queryFn: costSettingsService.getCostSettings
+  });
+
+  // Calculate total costs per team using cost settings
   const calculateTeamCosts = (teamId: number) => {
-    if (!submittedMatches) return {
+    if (!submittedMatches || !costSettings) return {
       fieldCosts: 0,
       refereeCosts: 0,
       totalMatches: 0
     };
+    
     const teamMatches = submittedMatches.filter(match => match.home_team_id === teamId || match.away_team_id === teamId);
     const totalMatches = teamMatches.length;
-    const fieldCosts = totalMatches * 5; // 5 euro per match for field
-    const refereeCosts = totalMatches * 6; // 6 euro per match for referee
+    
+    // Get current costs from cost settings
+    const fieldCostSetting = costSettings.find(cs => cs.category === 'match_cost' && cs.name.includes('Veld'));
+    const refereeCostSetting = costSettings.find(cs => cs.category === 'match_cost' && cs.name.includes('Scheidsrechter'));
+    
+    const fieldCostPerMatch = fieldCostSetting?.amount || 5;
+    const refereeCostPerMatch = refereeCostSetting?.amount || 6;
+    
+    const fieldCosts = totalMatches * fieldCostPerMatch;
+    const refereeCosts = totalMatches * refereeCostPerMatch;
 
     return {
       fieldCosts,
@@ -103,15 +123,18 @@ const FinancialTabUpdated: React.FC = () => {
       currency: 'EUR'
     }).format(amount);
   };
+
   const handleTeamClick = (team: Team) => {
     setSelectedTeam(team);
     setTeamModalOpen(true);
   };
+
   if (loadingTeams || loadingMatches) {
     return <div className="flex items-center justify-center h-40">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>;
   }
+
   return <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -173,14 +196,10 @@ const FinancialTabUpdated: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        
-        
-      </Card>
-
       <TeamDetailModal open={teamModalOpen} onOpenChange={setTeamModalOpen} team={selectedTeam} />
 
       <CostSettingsModal open={settingsModalOpen} onOpenChange={setSettingsModalOpen} />
     </div>;
 };
+
 export default FinancialTabUpdated;
