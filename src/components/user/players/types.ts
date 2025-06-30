@@ -5,7 +5,6 @@ export interface Player {
   last_name: string;
   birth_date: string;
   team_id: number;
-  is_active: boolean;
 }
 
 export interface Team {
