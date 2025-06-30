@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { MatchFormData } from "@/components/team/match-form/types";
+import { PlayerSelection } from "@/components/team/match-form/components/types";
 
 // Enhanced logging utility
 const logMatchOperation = (operation: string, data?: any, error?: any) => {
@@ -36,9 +37,9 @@ export const enhancedMatchService = {
         logMatchOperation('updateMatch - Adding referee_notes', { value: updateData.refereeNotes });
       }
       
-      if (updateData.speeldag !== undefined) {
-        updateObject.speeldag = updateData.speeldag;
-        logMatchOperation('updateMatch - Adding speeldag', { value: updateData.speeldag });
+      if (updateData.matchday !== undefined) {
+        updateObject.speeldag = updateData.matchday;
+        logMatchOperation('updateMatch - Adding speeldag', { value: updateData.matchday });
       }
       
       if (updateData.location !== undefined) {
@@ -46,9 +47,11 @@ export const enhancedMatchService = {
         logMatchOperation('updateMatch - Adding location', { value: updateData.location });
       }
       
-      if (updateData.matchDate !== undefined) {
-        updateObject.match_date = updateData.matchDate;
-        logMatchOperation('updateMatch - Adding match_date', { value: updateData.matchDate });
+      if (updateData.date !== undefined && updateData.time !== undefined) {
+        // Combine date and time into match_date timestamp
+        const matchDateTime = new Date(`${updateData.date}T${updateData.time}`);
+        updateObject.match_date = matchDateTime.toISOString();
+        logMatchOperation('updateMatch - Adding match_date', { value: matchDateTime.toISOString() });
       }
       
       if (updateData.homePlayers !== undefined) {
@@ -136,27 +139,44 @@ export const enhancedMatchService = {
         return null;
       }
 
+      // Parse the match_date timestamp to separate date and time
+      const matchDate = new Date(data.match_date);
+      const dateStr = matchDate.toISOString().split('T')[0];
+      const timeStr = matchDate.toTimeString().split(' ')[0].substring(0, 5);
+
+      // Safely parse players arrays from JSONB
+      const parsePlayersArray = (playersData: any): PlayerSelection[] => {
+        if (!playersData) return [];
+        if (Array.isArray(playersData)) return playersData as PlayerSelection[];
+        if (typeof playersData === 'string') {
+          try {
+            return JSON.parse(playersData) as PlayerSelection[];
+          } catch {
+            return [];
+          }
+        }
+        return [];
+      };
+
       const matchData: MatchFormData = {
         matchId: data.match_id,
         homeTeamId: data.home_team_id,
         awayTeamId: data.away_team_id,
         homeTeamName: data.home_team?.team_name || 'Onbekend',
         awayTeamName: data.away_team?.team_name || 'Onbekend',
-        matchDate: data.match_date,
+        date: dateStr,
+        time: timeStr,
         location: data.location,
-        speeldag: data.speeldag,
+        matchday: data.speeldag || '',
         uniqueNumber: data.unique_number,
         homeScore: data.home_score,
         awayScore: data.away_score,
         referee: data.referee,
         refereeNotes: data.referee_notes,
-        homePlayers: data.home_players || [],
-        awayPlayers: data.away_players || [],
+        homePlayers: parsePlayersArray(data.home_players),
+        awayPlayers: parsePlayersArray(data.away_players),
         isCompleted: data.is_submitted || false,
-        isLocked: data.is_locked || false,
-        fieldCost: data.field_cost,
-        refereeCost: data.referee_cost,
-        isCupMatch: data.is_cup_match || false
+        isLocked: data.is_locked || false
       };
 
       logMatchOperation('getMatch - SUCCESS', { 
