@@ -1,0 +1,239 @@
+
+import { supabase } from "@/integrations/supabase/client";
+import { MatchFormData } from "@/components/team/match-form/types";
+
+// Enhanced logging utility
+const logMatchOperation = (operation: string, data?: any, error?: any) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] MatchService ${operation}:`, { data, error });
+};
+
+export const enhancedMatchService = {
+  async updateMatch(matchId: number, updateData: Partial<MatchFormData>): Promise<{ success: boolean; message: string }> {
+    logMatchOperation('updateMatch - START', { matchId, updateData });
+    
+    try {
+      // Prepare the update object with proper validation
+      const updateObject: any = {};
+      
+      if (updateData.homeScore !== undefined) {
+        updateObject.home_score = updateData.homeScore;
+        logMatchOperation('updateMatch - Adding home_score', { value: updateData.homeScore });
+      }
+      
+      if (updateData.awayScore !== undefined) {
+        updateObject.away_score = updateData.awayScore;
+        logMatchOperation('updateMatch - Adding away_score', { value: updateData.awayScore });
+      }
+      
+      if (updateData.referee !== undefined) {
+        updateObject.referee = updateData.referee;
+        logMatchOperation('updateMatch - Adding referee', { value: updateData.referee });
+      }
+      
+      if (updateData.refereeNotes !== undefined) {
+        updateObject.referee_notes = updateData.refereeNotes;
+        logMatchOperation('updateMatch - Adding referee_notes', { value: updateData.refereeNotes });
+      }
+      
+      if (updateData.speeldag !== undefined) {
+        updateObject.speeldag = updateData.speeldag;
+        logMatchOperation('updateMatch - Adding speeldag', { value: updateData.speeldag });
+      }
+      
+      if (updateData.location !== undefined) {
+        updateObject.location = updateData.location;
+        logMatchOperation('updateMatch - Adding location', { value: updateData.location });
+      }
+      
+      if (updateData.matchDate !== undefined) {
+        updateObject.match_date = updateData.matchDate;
+        logMatchOperation('updateMatch - Adding match_date', { value: updateData.matchDate });
+      }
+      
+      if (updateData.homePlayers !== undefined) {
+        updateObject.home_players = updateData.homePlayers;
+        logMatchOperation('updateMatch - Adding home_players', { count: updateData.homePlayers?.length });
+      }
+      
+      if (updateData.awayPlayers !== undefined) {
+        updateObject.away_players = updateData.awayPlayers;
+        logMatchOperation('updateMatch - Adding away_players', { count: updateData.awayPlayers?.length });
+      }
+      
+      if (updateData.isCompleted !== undefined) {
+        updateObject.is_submitted = updateData.isCompleted;
+        logMatchOperation('updateMatch - Adding is_submitted', { value: updateData.isCompleted });
+      }
+      
+      if (updateData.isLocked !== undefined) {
+        updateObject.is_locked = updateData.isLocked;
+        logMatchOperation('updateMatch - Adding is_locked', { value: updateData.isLocked });
+      }
+
+      // Always update the updated_at timestamp
+      updateObject.updated_at = new Date().toISOString();
+      
+      logMatchOperation('updateMatch - Final update object', { updateObject });
+
+      const { data, error } = await supabase
+        .from('matches')
+        .update(updateObject)
+        .eq('match_id', matchId)
+        .select();
+
+      logMatchOperation('updateMatch - QUERY RESULT', { data, error, matchId });
+
+      if (error) {
+        logMatchOperation('updateMatch - ERROR', { error, matchId });
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        logMatchOperation('updateMatch - NO DATA RETURNED', { matchId });
+        throw new Error(`Geen wedstrijd gevonden met ID ${matchId}`);
+      }
+
+      logMatchOperation('updateMatch - SUCCESS', { 
+        matchId, 
+        updatedMatch: data[0],
+        fieldsUpdated: Object.keys(updateObject)
+      });
+      
+      return { success: true, message: 'Wedstrijd succesvol bijgewerkt' };
+    } catch (error) {
+      logMatchOperation('updateMatch - CATCH ERROR', { error, matchId });
+      return { 
+        success: false, 
+        message: `Fout bij bijwerken wedstrijd: ${error instanceof Error ? error.message : error}` 
+      };
+    }
+  },
+
+  async getMatch(matchId: number): Promise<MatchFormData | null> {
+    logMatchOperation('getMatch - START', { matchId });
+    
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .select(`
+          *,
+          home_team:teams!matches_home_team_id_fkey(team_id, team_name),
+          away_team:teams!matches_away_team_id_fkey(team_id, team_name)
+        `)
+        .eq('match_id', matchId)
+        .maybeSingle();
+
+      logMatchOperation('getMatch - QUERY RESULT', { data, error, matchId });
+
+      if (error) {
+        logMatchOperation('getMatch - ERROR', { error, matchId });
+        throw error;
+      }
+
+      if (!data) {
+        logMatchOperation('getMatch - NO MATCH FOUND', { matchId });
+        return null;
+      }
+
+      const matchData: MatchFormData = {
+        matchId: data.match_id,
+        homeTeamId: data.home_team_id,
+        awayTeamId: data.away_team_id,
+        homeTeamName: data.home_team?.team_name || 'Onbekend',
+        awayTeamName: data.away_team?.team_name || 'Onbekend',
+        matchDate: data.match_date,
+        location: data.location,
+        speeldag: data.speeldag,
+        uniqueNumber: data.unique_number,
+        homeScore: data.home_score,
+        awayScore: data.away_score,
+        referee: data.referee,
+        refereeNotes: data.referee_notes,
+        homePlayers: data.home_players || [],
+        awayPlayers: data.away_players || [],
+        isCompleted: data.is_submitted || false,
+        isLocked: data.is_locked || false,
+        fieldCost: data.field_cost,
+        refereeCost: data.referee_cost,
+        isCupMatch: data.is_cup_match || false
+      };
+
+      logMatchOperation('getMatch - SUCCESS', { 
+        matchId, 
+        matchData: {
+          ...matchData,
+          homePlayers: `${matchData.homePlayers?.length || 0} players`,
+          awayPlayers: `${matchData.awayPlayers?.length || 0} players`
+        }
+      });
+
+      return matchData;
+    } catch (error) {
+      logMatchOperation('getMatch - CATCH ERROR', { error, matchId });
+      return null;
+    }
+  },
+
+  async lockMatch(matchId: number): Promise<{ success: boolean; message: string }> {
+    logMatchOperation('lockMatch - START', { matchId });
+    
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .update({ 
+          is_locked: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('match_id', matchId)
+        .select();
+
+      logMatchOperation('lockMatch - QUERY RESULT', { data, error, matchId });
+
+      if (error) {
+        logMatchOperation('lockMatch - ERROR', { error, matchId });
+        throw error;
+      }
+
+      logMatchOperation('lockMatch - SUCCESS', { matchId, lockedMatch: data });
+      return { success: true, message: 'Wedstrijd succesvol vergrendeld' };
+    } catch (error) {
+      logMatchOperation('lockMatch - CATCH ERROR', { error, matchId });
+      return { 
+        success: false, 
+        message: `Fout bij vergrendelen wedstrijd: ${error instanceof Error ? error.message : error}` 
+      };
+    }
+  },
+
+  async unlockMatch(matchId: number): Promise<{ success: boolean; message: string }> {
+    logMatchOperation('unlockMatch - START', { matchId });
+    
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .update({ 
+          is_locked: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('match_id', matchId)
+        .select();
+
+      logMatchOperation('unlockMatch - QUERY RESULT', { data, error, matchId });
+
+      if (error) {
+        logMatchOperation('unlockMatch - ERROR', { error, matchId });
+        throw error;
+      }
+
+      logMatchOperation('unlockMatch - SUCCESS', { matchId, unlockedMatch: data });
+      return { success: true, message: 'Wedstrijd succesvol ontgrendeld' };
+    } catch (error) {
+      logMatchOperation('unlockMatch - CATCH ERROR', { error, matchId });
+      return { 
+        success: false, 
+        message: `Fout bij ontgrendelen wedstrijd: ${error instanceof Error ? error.message : error}` 
+      };
+    }
+  }
+};
