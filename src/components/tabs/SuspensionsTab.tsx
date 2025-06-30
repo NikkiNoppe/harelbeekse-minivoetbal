@@ -3,11 +3,16 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, RefreshCw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { suspensionService, PlayerCard, Suspension } from "@/services/suspensionService";
 
 const SuspensionsTab: React.FC = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: playerCards, isLoading: loadingCards } = useQuery({
     queryKey: ['playerCards'],
     queryFn: suspensionService.getPlayerCards
@@ -17,6 +22,24 @@ const SuspensionsTab: React.FC = () => {
     queryKey: ['suspensions'],
     queryFn: suspensionService.getActiveSuspensions
   });
+
+  const handleRefresh = async () => {
+    try {
+      await suspensionService.refreshPlayerCards();
+      queryClient.invalidateQueries({ queryKey: ['playerCards'] });
+      queryClient.invalidateQueries({ queryKey: ['suspensions'] });
+      toast({
+        title: "Vernieuwd",
+        description: "Kaarten en schorsingen zijn bijgewerkt.",
+      });
+    } catch (error) {
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het vernieuwen.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusBadge = (status: 'active' | 'pending' | 'completed') => {
     if (status === 'active') {
@@ -44,8 +67,15 @@ const SuspensionsTab: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-slide-up">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Actuele Schorsingen</h2>
+        <Button onClick={handleRefresh} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Vernieuwen
+        </Button>
+      </div>
+
       <section>
-        <h2 className="text-2xl font-semibold mt-8">Actuele Schorsingen</h2>
         <Card>
           <CardContent className="p-0 overflow-x-auto">
             <Table>
@@ -98,7 +128,8 @@ const SuspensionsTab: React.FC = () => {
                     <TableRow className="bg-muted/30">
                       <TableHead>Speler</TableHead>
                       <TableHead>Team</TableHead>
-                      <TableHead className="text-center">Aantal</TableHead>
+                      <TableHead className="text-center">Geel</TableHead>
+                      <TableHead className="text-center">Rood</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -114,12 +145,19 @@ const SuspensionsTab: React.FC = () => {
                               ))}
                             </div>
                           </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex items-center justify-center space-x-1">
+                              {[...Array(player.redCards)].map((_, i) => (
+                                <div key={i} className="h-5 w-3 bg-red-500 rounded-sm"></div>
+                              ))}
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                          Geen gele kaarten geregistreerd
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          Geen kaarten geregistreerd
                         </TableCell>
                       </TableRow>
                     )}

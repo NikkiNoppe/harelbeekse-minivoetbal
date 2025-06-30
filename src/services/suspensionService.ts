@@ -59,6 +59,8 @@ export const suspensionService = {
       const playerCards = await this.getPlayerCards();
       const suspensions: Suspension[] = [];
 
+      console.log('Player cards data:', playerCards); // Debug log
+
       playerCards.forEach(player => {
         // Logic voor schorsingen op basis van gele kaarten
         if (player.yellowCards >= 2) {
@@ -101,10 +103,25 @@ export const suspensionService = {
         }
       });
 
+      console.log('Generated suspensions:', suspensions); // Debug log
       return suspensions;
     } catch (error) {
       console.error('Error in getActiveSuspensions:', error);
       return [];
+    }
+  },
+
+  // Trigger manual update of player cards
+  async refreshPlayerCards(): Promise<void> {
+    try {
+      const { error } = await supabase.rpc('update_player_cards');
+      if (error) {
+        console.error('Error refreshing player cards:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error in refreshPlayerCards:', error);
+      throw error;
     }
   }
 };

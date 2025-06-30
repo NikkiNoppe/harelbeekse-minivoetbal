@@ -1,7 +1,8 @@
 
-export { MatchHeader } from "./MatchHeader";
-export { MatchDataSection } from "./MatchDataSection";
-export { PlayerSelectionSection } from "./PlayerSelectionSection";
-export { RefereeNotesSection } from "./RefereeNotesSection";
-export { MatchFormActions } from "./MatchFormActions";
-export { default as AdminMatchDataSection } from "./AdminMatchDataSection";
+export { MatchHeader } from './MatchHeader';
+export { MatchDataSection } from './MatchDataSection';
+export { AdminMatchDataSection } from './AdminMatchDataSection';
+export { PlayerSelectionSection } from './PlayerSelectionSection';
+export { RefereeNotesSection } from './RefereeNotesSection';
+export { MatchFormActions } from './MatchFormActions';
+export { RefereePenaltySection } from './RefereePenaltySection';

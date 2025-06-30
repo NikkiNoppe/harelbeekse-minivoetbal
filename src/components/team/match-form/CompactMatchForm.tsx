@@ -8,6 +8,7 @@ import {
   MatchFormActions,
   AdminMatchDataSection
 } from "./components";
+import { RefereePenaltySection } from "./components/RefereePenaltySection";
 import { MatchFormData, PlayerSelection } from "./types";
 import { useMatchFormState } from "./hooks/useMatchFormState";
 import { useMatchFormSubmission } from "./hooks/useMatchFormSubmission";
@@ -167,11 +168,18 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       />
 
       {showRefereeFields && (
-        <RefereeNotesSection
-          refereeNotes={refereeNotes}
-          onRefereeNotesChange={setRefereeNotes}
-          canEdit={canEdit}
-        />
+        <>
+          <RefereeNotesSection
+            refereeNotes={refereeNotes}
+            onRefereeNotesChange={setRefereeNotes}
+            canEdit={canEdit}
+          />
+          
+          <RefereePenaltySection
+            match={currentMatch}
+            canEdit={canEdit}
+          />
+        </>
       )}
 
       <MatchFormActions
