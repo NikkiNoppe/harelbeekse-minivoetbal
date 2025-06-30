@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { costSettingsService } from "./costSettingsService";
+import { costSettingsService, TeamTransaction as CostServiceTransaction } from "./costSettingsService";
 
 // Keep existing interfaces for backward compatibility
 export interface TeamTransaction {
@@ -12,6 +12,7 @@ export interface TeamTransaction {
   match_id: number | null;
   transaction_date: string;
   created_at: string;
+  cost_setting_id?: number | null;
   cost_settings?: {
     name: string;
     description: string;
@@ -65,7 +66,13 @@ export const financialService = {
   },
 
   async addTransaction(transaction: Omit<TeamTransaction, 'id' | 'created_at'>): Promise<{ success: boolean; message: string }> {
-    return costSettingsService.addTransaction(transaction);
+    // Convert to the format expected by costSettingsService
+    const costServiceTransaction: Omit<CostServiceTransaction, 'id' | 'created_at'> = {
+      ...transaction,
+      cost_setting_id: transaction.cost_setting_id || null
+    };
+    
+    return costSettingsService.addTransaction(costServiceTransaction);
   },
 
   async getPenaltyTypes(): Promise<PenaltyType[]> {
