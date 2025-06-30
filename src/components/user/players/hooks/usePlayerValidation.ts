@@ -17,8 +17,7 @@ export const usePlayerValidation = () => {
         `)
         .eq('first_name', firstName.trim())
         .eq('last_name', lastName.trim())
-        .eq('birth_date', birthDate)
-        .eq('is_active', true);
+        .eq('birth_date', birthDate);
 
       if (excludePlayerId) {
         query = query.neq('player_id', excludePlayerId);
@@ -52,8 +51,7 @@ export const usePlayerValidation = () => {
           teams!inner(team_name)
         `)
         .eq('first_name', firstName.trim())
-        .eq('last_name', lastName.trim())
-        .eq('is_active', true);
+        .eq('last_name', lastName.trim());
 
       if (excludePlayerId) {
         query = query.neq('player_id', excludePlayerId);

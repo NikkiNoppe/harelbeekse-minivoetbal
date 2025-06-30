@@ -36,7 +36,7 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
       // Get current player data first for debugging
       const { data: currentPlayer, error: fetchError } = await supabase
         .from('players')
-        .select('player_id, first_name, last_name, birth_date, is_active, team_id')
+        .select('player_id, first_name, last_name, birth_date, team_id')
         .eq('player_id', playerId)
         .single();
 
@@ -53,15 +53,6 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
         toast({
           title: "Speler niet gevonden",
           description: "De speler bestaat niet meer",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      if (!currentPlayer.is_active) {
-        toast({
-          title: "Inactieve speler",
-          description: "Deze speler is gedeactiveerd en kan niet worden bijgewerkt",
           variant: "destructive",
         });
         return false;

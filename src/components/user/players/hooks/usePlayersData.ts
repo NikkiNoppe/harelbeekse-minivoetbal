@@ -43,13 +43,11 @@ export const usePlayersData = (authUser: User | null) => {
           last_name,
           birth_date,
           team_id,
-          is_active,
           teams (
             team_id,
             team_name
           )
         `)
-        .eq('is_active', true)
         .order('last_name')
         .order('first_name');
 
