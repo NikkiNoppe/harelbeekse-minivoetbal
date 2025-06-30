@@ -551,7 +551,6 @@ export type Database = {
         Row: {
           birth_date: string
           first_name: string
-          is_active: boolean | null
           is_locked: boolean | null
           last_name: string
           locked_from_date: string | null
@@ -563,7 +562,6 @@ export type Database = {
         Insert: {
           birth_date: string
           first_name: string
-          is_active?: boolean | null
           is_locked?: boolean | null
           last_name: string
           locked_from_date?: string | null
@@ -575,7 +573,6 @@ export type Database = {
         Update: {
           birth_date?: string
           first_name?: string
-          is_active?: boolean | null
           is_locked?: boolean | null
           last_name?: string
           locked_from_date?: string | null

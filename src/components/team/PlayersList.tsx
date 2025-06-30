@@ -106,8 +106,7 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
           first_name: newPlayerFirstName,
           last_name: newPlayerLastName,
           birth_date: newPlayerBirthDate,
-          team_id: teamId,
-          is_active: true
+          team_id: teamId
         });
 
       if (error) throw error;
@@ -141,14 +140,14 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
     try {
       const { error } = await supabase
         .from('players')
-        .update({ is_active: false })
+        .delete()
         .eq('player_id', playerId);
 
       if (error) throw error;
 
       toast({
         title: "Speler verwijderd",
-        description: "De speler is verwijderd uit het team",
+        description: "De speler is permanent verwijderd uit het team",
       });
 
       // Reload players

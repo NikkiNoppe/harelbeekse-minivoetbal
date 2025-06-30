@@ -33,7 +33,6 @@ export const suspensionService = {
             team_name
           )
         `)
-        .eq('is_active', true)
         .order('yellow_cards', { ascending: false });
 
       if (error) {

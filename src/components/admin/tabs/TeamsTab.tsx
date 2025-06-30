@@ -18,13 +18,6 @@ interface Team {
   balance: number;
 }
 
-interface TeamDependencies {
-  players: number;
-  matches: number;
-  transactions: number;
-  users: number;
-}
-
 const TeamsTab: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -32,6 +25,7 @@ const TeamsTab: React.FC = () => {
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [teamName, setTeamName] = useState("");
   const [teamBalance, setTeamBalance] = useState("0.00");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch teams
   const { data: teams, isLoading } = useQuery({
@@ -39,30 +33,16 @@ const TeamsTab: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('teams')
-        .select('*')
+        .select('team_id, team_name, balance')
         .order('team_name');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching teams:', error);
+        throw error;
+      }
       return data as Team[];
     }
   });
-
-  // Get team dependencies
-  const getTeamDependencies = async (teamId: number): Promise<TeamDependencies> => {
-    const [playersResult, matchesResult, transactionsResult, usersResult] = await Promise.all([
-      supabase.from('players').select('player_id').eq('team_id', teamId),
-      supabase.from('matches').select('match_id').or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`),
-      supabase.from('team_transactions').select('id').eq('team_id', teamId),
-      supabase.from('team_users').select('id').eq('team_id', teamId)
-    ]);
-
-    return {
-      players: playersResult.data?.length || 0,
-      matches: matchesResult.data?.length || 0,
-      transactions: transactionsResult.data?.length || 0,
-      users: usersResult.data?.length || 0
-    };
-  };
 
   const handleAddTeam = async () => {
     if (!teamName.trim()) {
@@ -74,33 +54,40 @@ const TeamsTab: React.FC = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('teams')
         .insert([{
           team_name: teamName.trim(),
           balance: parseFloat(teamBalance) || 0
-        }]);
+        }])
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Add team error:', error);
+        throw error;
+      }
 
       toast({
-        title: "Succesvol",
-        description: "Team succesvol toegevoegd"
+        title: "Team toegevoegd",
+        description: `${teamName} is succesvol toegevoegd`
       });
 
       queryClient.invalidateQueries({ queryKey: ['teams'] });
-      queryClient.invalidateQueries({ queryKey: ['teams-financial'] });
       setIsAddModalOpen(false);
       setTeamName("");
       setTeamBalance("0.00");
-    } catch (error) {
+    } catch (error: any) {
       console.error('Add team error:', error);
       toast({
-        title: "Fout",
-        description: "Fout bij toevoegen team",
+        title: "Fout bij toevoegen",
+        description: error.message || "Er is een fout opgetreden bij het toevoegen van het team",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -114,60 +101,65 @@ const TeamsTab: React.FC = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('teams')
         .update({
           team_name: teamName.trim(),
           balance: parseFloat(teamBalance) || 0
         })
-        .eq('team_id', editingTeam.team_id);
+        .eq('team_id', editingTeam.team_id)
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Update team error:', error);
+        throw error;
+      }
 
       toast({
-        title: "Succesvol",
-        description: "Team succesvol bijgewerkt"
+        title: "Team bijgewerkt",
+        description: `${teamName} is succesvol bijgewerkt`
       });
 
       queryClient.invalidateQueries({ queryKey: ['teams'] });
-      queryClient.invalidateQueries({ queryKey: ['teams-financial'] });
-      setEditingTeam(null);
-      setTeamName("");
-      setTeamBalance("0.00");
-    } catch (error) {
+      closeEditModal();
+    } catch (error: any) {
       console.error('Update team error:', error);
       toast({
-        title: "Fout",
-        description: "Fout bij bijwerken team",
+        title: "Fout bij bijwerken",
+        description: error.message || "Er is een fout opgetreden bij het bijwerken van het team",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDeleteTeam = async (team: Team) => {
     try {
-      const dependencies = await getTeamDependencies(team.team_id);
-      
       const { error } = await supabase
         .from('teams')
         .delete()
         .eq('team_id', team.team_id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete team error:', error);
+        throw error;
+      }
 
       toast({
-        title: "Succesvol",
-        description: `Team "${team.team_name}" succesvol verwijderd. ${dependencies.players} spelers, ${dependencies.transactions} transacties en ${dependencies.users} gebruikers zijn automatisch verwijderd.`
+        title: "Team verwijderd",
+        description: `${team.team_name} is succesvol verwijderd. Alle gerelateerde data is automatisch verwijderd.`
       });
 
       queryClient.invalidateQueries({ queryKey: ['teams'] });
-      queryClient.invalidateQueries({ queryKey: ['teams-financial'] });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Delete team error:', error);
       toast({
-        title: "Fout",
-        description: "Fout bij verwijderen team",
+        title: "Fout bij verwijderen",
+        description: error.message || "Er is een fout opgetreden bij het verwijderen van het team",
         variant: "destructive"
       });
     }
@@ -217,7 +209,7 @@ const TeamsTab: React.FC = () => {
                   Nieuw Team
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="bg-purple-100 shadow-lg border-purple-200">
                 <DialogHeader>
                   <DialogTitle>Nieuw Team Toevoegen</DialogTitle>
                 </DialogHeader>
@@ -243,7 +235,9 @@ const TeamsTab: React.FC = () => {
                     />
                   </div>
                   <div className="flex gap-2 pt-4">
-                    <Button onClick={handleAddTeam}>Toevoegen</Button>
+                    <Button onClick={handleAddTeam} disabled={isSubmitting}>
+                      {isSubmitting ? "Toevoegen..." : "Toevoegen"}
+                    </Button>
                     <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
                       Annuleren
                     </Button>
@@ -259,7 +253,7 @@ const TeamsTab: React.FC = () => {
               <TableRow>
                 <TableHead>Teamnaam</TableHead>
                 <TableHead className="text-right">Saldo</TableHead>
-                <TableHead className="text-center">Acties</TableHead>
+                <TableHead className="text-right w-24">Acties</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -269,29 +263,27 @@ const TeamsTab: React.FC = () => {
                   <TableCell className={`text-right font-semibold ${team.balance < 0 ? 'text-red-600' : 'text-green-600'}`}>
                     {formatCurrency(team.balance)}
                   </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-2">
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() => openEditModal(team)}
-                        className="flex items-center gap-1"
+                        className="h-8 w-8 p-0"
                       >
-                        <Edit className="h-3 w-3" />
-                        Bewerken
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
-                            variant="destructive"
+                            variant="ghost"
                             size="sm"
-                            className="flex items-center gap-1"
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-100/10"
                           >
-                            <Trash2 className="h-3 w-3" />
-                            Verwijderen
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="bg-purple-100 shadow-lg border-purple-200">
                           <AlertDialogHeader>
                             <AlertDialogTitle className="flex items-center gap-2">
                               <AlertTriangle className="h-5 w-5 text-red-500" />
@@ -338,7 +330,7 @@ const TeamsTab: React.FC = () => {
 
       {/* Edit Team Modal */}
       <Dialog open={!!editingTeam} onOpenChange={(open) => !open && closeEditModal()}>
-        <DialogContent>
+        <DialogContent className="bg-purple-100 shadow-lg border-purple-200">
           <DialogHeader>
             <DialogTitle>Team Bewerken</DialogTitle>
           </DialogHeader>
@@ -364,7 +356,9 @@ const TeamsTab: React.FC = () => {
               />
             </div>
             <div className="flex gap-2 pt-4">
-              <Button onClick={handleEditTeam}>Opslaan</Button>
+              <Button onClick={handleEditTeam} disabled={isSubmitting}>
+                {isSubmitting ? "Opslaan..." : "Opslaan"}
+              </Button>
               <Button variant="outline" onClick={closeEditModal}>
                 Annuleren
               </Button>

@@ -16,7 +16,7 @@ export const useRemovePlayer = (refreshPlayers: () => Promise<void>) => {
       // Fetch player for context
       const { data: currentPlayer, error: fetchError } = await supabase
         .from('players')
-        .select('player_id, first_name, last_name, is_active, team_id, birth_date')
+        .select('player_id, first_name, last_name, team_id, birth_date')
         .eq('player_id', playerId)
         .single();
 
@@ -38,53 +38,47 @@ export const useRemovePlayer = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      if (!currentPlayer.is_active) {
-        toast({
-          title: "Speler al verwijderd",
-          description: "Deze speler is al gedeactiveerd",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      // Perform the removal in one go
-      const { data: removeResult, error: removeError } = await supabase
+      // Perform the real delete
+      const { error: deleteError } = await supabase
         .from('players')
-        .update({ is_active: false })
-        .eq('player_id', playerId)
-        .select('*');
+        .delete()
+        .eq('player_id', playerId);
 
-      if (removeError) {
+      if (deleteError) {
         toast({
           title: "Database fout",
-          description: `Kon speler niet verwijderen: ${removeError.message}`,
+          description: `Kon speler niet verwijderen: ${deleteError.message}`,
           variant: "destructive",
         });
         return false;
       }
 
-      // Final check
-      const { data: finalCheck, error: finalError } = await supabase
+      // Verify deletion
+      const { data: verifyCheck, error: verifyError } = await supabase
         .from('players')
-        .select('player_id, is_active')
+        .select('player_id')
         .eq('player_id', playerId)
-        .single();
+        .maybeSingle();
 
-      if (finalError || typeof finalCheck?.is_active !== "boolean" || finalCheck.is_active !== false) {
+      if (verifyError) {
+        console.error('Error verifying deletion:', verifyError);
+      }
+
+      if (verifyCheck) {
         toast({
           title: "Verificatie mislukt",
-          description: "Speler lijkt niet gedeactiveerd te zijn.",
+          description: "Speler lijkt niet verwijderd te zijn.",
           variant: "destructive",
         });
         return false;
       }
 
-      // Only one refresh
+      // Refresh player list
       await refreshPlayers();
 
       toast({
         title: "Speler verwijderd",
-        description: `${currentPlayer.first_name} ${currentPlayer.last_name} is verwijderd uit het team`,
+        description: `${currentPlayer.first_name} ${currentPlayer.last_name} is permanent verwijderd`,
       });
 
       return true;

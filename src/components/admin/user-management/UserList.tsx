@@ -50,7 +50,7 @@ const UserList: React.FC<UserListProps> = ({
             <TableHead>Email</TableHead>
             <TableHead>Rol</TableHead>
             <TableHead>Teams</TableHead>
-            <TableHead className="text-right">Acties</TableHead>
+            <TableHead className="text-right w-24">Acties</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -68,7 +68,7 @@ const UserList: React.FC<UserListProps> = ({
                 <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-1">
                     <Skeleton className="h-8 w-8 rounded-md" />
                     <Skeleton className="h-8 w-8 rounded-md" />
                   </div>
@@ -138,7 +138,7 @@ const UserList: React.FC<UserListProps> = ({
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -151,21 +151,19 @@ const UserList: React.FC<UserListProps> = ({
                       ) : (
                         <Edit className="h-4 w-4" />
                       )}
-                      <span className="sr-only">Bewerken</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => onDeleteUser(user.user_id)}
-                      className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-100/10"
                       disabled={isUpdating || isDeleting}
                     >
-                      {isDeleting && user.user_id === users.find(u => u.user_id === user.user_id)?.user_id ? (
+                      {isDeleting ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Trash2 className="h-4 w-4" />
                       )}
-                      <span className="sr-only">Verwijderen</span>
                     </Button>
                   </div>
                 </TableCell>
