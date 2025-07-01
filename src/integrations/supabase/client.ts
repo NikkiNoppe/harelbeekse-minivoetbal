@@ -11,6 +11,14 @@ export const supabase = {
         data: null,
         error: null
       }),
+      eq: (column: string, value: any) => ({
+        data: [],
+        error: null
+      }),
+      gte: (column: string, value: any) => ({
+        data: [],
+        error: null
+      }),
       data: [],
       error: null
     }),
@@ -34,6 +42,10 @@ export const supabase = {
     }),
     delete: () => ({
       eq: (column: string, value: any) => ({
+        data: [],
+        error: null
+      }),
+      gte: (column: string, value: any) => ({
         data: [],
         error: null
       })

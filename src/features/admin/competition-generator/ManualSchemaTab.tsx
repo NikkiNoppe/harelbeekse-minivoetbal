@@ -245,7 +245,7 @@ Speeldag 2 - 2024-02-17
           </div>
 
           {validationErrors.length > 0 && (
-            <Alert variant="destructive">
+            <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 <ul className="list-disc list-inside">

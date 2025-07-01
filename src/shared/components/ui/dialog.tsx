@@ -2,7 +2,10 @@
 import * as React from "react"
 import { cn } from "@shared/utils/utils"
 
-const Dialog = ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+const Dialog = ({ children, open, onOpenChange, ...props }: React.HTMLAttributes<HTMLDivElement> & {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;  
+}) => (
   <div {...props}>{children}</div>
 )
 
@@ -57,10 +60,36 @@ const DialogTitle = React.forwardRef<
 ))
 DialogTitle.displayName = "DialogTitle"
 
+const DialogDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+))
+DialogDescription.displayName = "DialogDescription"
+
+const DialogFooter = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)}
+    {...props}
+  />
+))
+DialogFooter.displayName = "DialogFooter"
+
 export {
   Dialog,
   DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 }

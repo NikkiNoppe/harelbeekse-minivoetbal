@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { Button } from "@shared/components/ui/button";
@@ -222,16 +223,18 @@ const DateGeneratorTab: React.FC<DateGeneratorTabProps> = ({ onDatesGenerated })
   // Clean up mock data from database
   const cleanupMockDataHandler = async () => {
     try {
-      const result = await cleanupMockData();
+      // Simple cleanup implementation
+      const { error } = await supabase
+        .from('available_dates')
+        .delete()
+        .gte('date_id', 0);
       
-      if (result.success) {
-        toast({
-          title: "Mock data opgeschoond",
-          description: "Alle test data is succesvol verwijderd uit de database."
-        });
-      } else {
-        throw new Error(result.message);
-      }
+      if (error) throw error;
+      
+      toast({
+        title: "Mock data opgeschoond",
+        description: "Alle test data is succesvol verwijderd uit de database."
+      });
     } catch (error: any) {
       toast({
         title: "Fout bij opschonen",

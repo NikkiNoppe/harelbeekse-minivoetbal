@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -18,7 +19,7 @@ import AdvancedCompetitionGenerator from "./competition-generator/AdvancedCompet
 import DateGeneratorTab from "./DateGeneratorTab";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/components/ui/table";
 import { useToast } from "@shared/hooks/use-toast";
-import { Settings, Users, Calendar, TrendingUp, Trophy, FileText, Plus, Edit, Trash2, Play, Pause, AlertCircle } from "lucide-react";
+import { Settings, Users, Calendar, TrendingUp, Trophy, FileText, Plus, Edit, Trash2, Play, Pause, AlertCircle, AlertTriangle } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -61,7 +62,7 @@ const AdminPanel: React.FC = () => {
   const loadTeams = async () => {
     try {
       setLoading(true);
-      const teamsData = await teamService.getAllTeams();
+      const teamsData = await teamService.getTeams(); // Fixed: changed from getAllTeams to getTeams
       setTeams(teamsData);
     } catch (error) {
       toast({
