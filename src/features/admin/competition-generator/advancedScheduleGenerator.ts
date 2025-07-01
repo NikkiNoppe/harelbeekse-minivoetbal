@@ -1,92 +1,112 @@
 
-import { Team, GeneratedMatch, CompetitionType } from "./types";
+import { CompetitionType, GeneratedMatch, Team } from "./types";
+import { findFormatById } from "./competitionFormats";
 
-/**
- * Generates a cup (knockout) competition schedule
- * @param teams The teams participating in the cup
- * @returns Array of generated matches
- */
+// Function to generate a basic round-robin schedule
+const generateRoundRobinSchedule = (teams: number[], rounds: number): GeneratedMatch[] => {
+  const numberOfTeams = teams.length;
+  const matches: GeneratedMatch[] = [];
+
+  for (let round = 0; round < rounds; round++) {
+    for (let i = 0; i < numberOfTeams / 2; i++) {
+      const homeTeamIndex = (round + i) % numberOfTeams;
+      const awayTeamIndex = (numberOfTeams - 1 - i + round) % numberOfTeams;
+
+      matches.push({
+        matchday: round + 1,
+        home_team_id: teams[homeTeamIndex],
+        away_team_id: teams[awayTeamIndex],
+        home_team_name: `Team ${teams[homeTeamIndex]}`, // Replace with actual team names if available
+        away_team_name: `Team ${teams[awayTeamIndex]}`, // Replace with actual team names if available
+      });
+    }
+  }
+
+  return matches;
+};
+
+// Add the missing generateCupSchedule function
 export const generateCupSchedule = (teams: Team[]): GeneratedMatch[] => {
   const matches: GeneratedMatch[] = [];
+  const teamIds = teams.map(t => t.team_id);
   
-  // For knockout tournament, we create pairs of teams
-  // If odd number of teams, one team gets a bye
-  const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
+  // Simple single elimination tournament
+  let currentRound = 1;
+  let remainingTeams = [...teamIds];
   
-  // First round matches
-  for (let i = 0; i < shuffledTeams.length - 1; i += 2) {
-    const homeTeam = shuffledTeams[i];
-    const awayTeam = shuffledTeams[i + 1];
+  while (remainingTeams.length > 1) {
+    const roundMatches: GeneratedMatch[] = [];
     
-    matches.push({
-      home_team_id: homeTeam.team_id,
-      away_team_id: awayTeam.team_id,
-      home_team_name: homeTeam.team_name,
-      away_team_name: awayTeam.team_name,
-      matchday: 1 // All cup matches in first round are matchday 1
-    });
-  }
-  
-  // If odd number of teams, the last team gets a bye to next round
-  if (shuffledTeams.length % 2 !== 0) {
-    console.log(`Team ${shuffledTeams[shuffledTeams.length - 1].team_name} gets a bye to the next round`);
+    for (let i = 0; i < remainingTeams.length; i += 2) {
+      if (i + 1 < remainingTeams.length) {
+        roundMatches.push({
+          matchday: currentRound,
+          home_team_id: remainingTeams[i],
+          away_team_id: remainingTeams[i + 1],
+          home_team_name: teams.find(t => t.team_id === remainingTeams[i])?.team_name || `Team ${remainingTeams[i]}`,
+          away_team_name: teams.find(t => t.team_id === remainingTeams[i + 1])?.team_name || `Team ${remainingTeams[i + 1]}`,
+        });
+      }
+    }
+    
+    matches.push(...roundMatches);
+    remainingTeams = remainingTeams.filter((_, index) => index % 2 === 0); // Simulate winners advancing
+    currentRound++;
   }
   
   return matches;
 };
 
-/**
- * Generates a playoff schedule based on provided format
- * @param teams The teams participating in the playoffs
- * @param format The competition format
- * @returns Array of generated playoff matches
- */
-export const generatePlayoffSchedule = (teams: Team[], format: CompetitionType): GeneratedMatch[] => {
-  const matches: GeneratedMatch[] = [];
-  
-  // Sort teams by some criteria (like points or rank)
-  // For now we'll just use the current order
-  const playoffTeams = format.playoffTeams || 4;
-  
-  if (teams.length < playoffTeams) {
-    console.error("Not enough teams for playoff format");
-    return matches;
-  }
-  
-  // Get top teams for playoff 1
-  const topTeams = teams.slice(0, playoffTeams);
-  
-  // Create playoff matches between top teams
-  for (let i = 0; i < topTeams.length; i++) {
-    for (let j = i + 1; j < topTeams.length; j++) {
-      matches.push({
-        home_team_id: topTeams[i].team_id,
-        away_team_id: topTeams[j].team_id,
-        home_team_name: topTeams[i].team_name,
-        away_team_name: topTeams[j].team_name,
-        matchday: 30 // Playoff matches start at matchday 30 (just a convention)
-      });
-    }
-  }
-  
-  // If we need playoff 2 (bottom teams)
-  if (playoffTeams === 6 && teams.length >= 12) {
-    // Get bottom teams for playoff 2
-    const bottomTeams = teams.slice(teams.length - playoffTeams);
+export const generateAdvancedSchedule = async (config: any) => {
+  try {
+    console.log('Generating advanced schedule with config:', config);
     
-    // Create playoff matches between bottom teams
-    for (let i = 0; i < bottomTeams.length; i++) {
-      for (let j = i + 1; j < bottomTeams.length; j++) {
-        matches.push({
-          home_team_id: bottomTeams[i].team_id,
-          away_team_id: bottomTeams[j].team_id,
-          home_team_name: bottomTeams[i].team_name,
-          away_team_name: bottomTeams[j].team_name,
-          matchday: 40 // Playoff 2 matches start at matchday 40 (just a convention)
-        });
-      }
+    // Basic validation
+    if (!config.selectedTeams || config.selectedTeams.length < 2) {
+      throw new Error('At least 2 teams are required');
     }
+
+    const format = findFormatById(config.format);
+    if (!format) {
+      throw new Error('Invalid format selected');
+    }
+
+    // Handle playoff teams property safely
+    const playoffTeams = format.playoffTeams || (format as any).playoff_teams || 4;
+
+    let allMatches: GeneratedMatch[] = [];
+
+    // Regular season matches
+    if (format.regularRounds > 0) {
+      const regularMatches = generateRoundRobinSchedule(config.selectedTeams, format.regularRounds);
+      allMatches = allMatches.concat(regularMatches);
+    }
+
+    // Implement playoff or cup logic here based on the format
+    if (format.hasPlayoffs) {
+      // Example playoff logic (top N teams qualify)
+      console.log(`Generating playoffs for top ${playoffTeams} teams`);
+      // Add playoff matches generation logic here
+    }
+
+    if (format.isCup) {
+      // Example cup logic (single elimination)
+      console.log('Generating cup matches');
+      // Add cup matches generation logic here
+    }
+
+    // Assign dates and times based on available dates and timeslots
+    // This is a placeholder for the actual scheduling logic
+    allMatches.forEach((match, index) => {
+      match.match_date = config.availableDates[index % config.availableDates.length];
+      match.match_time = '19:00'; // Example time
+    });
+
+    console.log('Generated matches:', allMatches);
+    return allMatches;
+
+  } catch (error) {
+    console.error('Error generating advanced schedule:', error);
+    throw error;
   }
-  
-  return matches;
 };

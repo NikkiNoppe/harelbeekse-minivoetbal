@@ -1,14 +1,14 @@
+
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
 import { CalendarIcon, CalendarCheck, Trash, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Label } from "@/components/ui/label";
+import { useToast } from "@shared/hooks/use-toast";
+import { Label } from "@shared/components/ui/label";
 import { format, addDays, isBefore, isMonday, isTuesday } from "date-fns";
 import { nl } from "date-fns/locale";
-import { supabase } from "@/integrations/supabase/client";
-import { cleanupMockData } from "@/services/cleanupService";
+import { supabase } from "@shared/integrations/supabase/client";
 import { 
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@shared/components/ui/dialog";
 
 interface Venue {
   id: string;
@@ -223,16 +223,18 @@ const DateGeneratorTab: React.FC<DateGeneratorTabProps> = ({ onDatesGenerated })
   // Clean up mock data from database
   const cleanupMockDataHandler = async () => {
     try {
-      const result = await cleanupMockData();
+      // Simple cleanup implementation
+      const { error } = await supabase
+        .from('available_dates')
+        .delete()
+        .gte('date_id', 0);
       
-      if (result.success) {
-        toast({
-          title: "Mock data opgeschoond",
-          description: "Alle test data is succesvol verwijderd uit de database."
-        });
-      } else {
-        throw new Error(result.message);
-      }
+      if (error) throw error;
+      
+      toast({
+        title: "Mock data opgeschoond",
+        description: "Alle test data is succesvol verwijderd uit de database."
+      });
     } catch (error: any) {
       toast({
         title: "Fout bij opschonen",

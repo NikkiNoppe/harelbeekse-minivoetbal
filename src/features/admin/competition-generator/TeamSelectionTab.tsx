@@ -1,10 +1,9 @@
-
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Button } from "@shared/components/ui/button";
+import { Checkbox } from "@shared/components/ui/checkbox";
+import { Label } from "@shared/components/ui/label";
 import { Loader2 } from "lucide-react";
-import { Team } from "@/components/admin/competition-generator/types";
+import { Team } from "./types";
 
 interface TeamSelectionTabProps {
   teams: Team[] | undefined;

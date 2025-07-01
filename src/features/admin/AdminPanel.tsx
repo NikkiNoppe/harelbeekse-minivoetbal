@@ -6,21 +6,20 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
+} from "@shared/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
+import { Label } from "@shared/components/ui/label";
 import TeamForm from "./TeamForm";
+import BlogPostsManager from "./BlogPostsManager";
+import AdminSettingsPanel from "./AdminSettingsPanel";
+import CompetitionGenerator from "./CompetitionGenerator";
+import AdvancedCompetitionGenerator from "./competition-generator/AdvancedCompetitionGenerator";
+import DateGeneratorTab from "./DateGeneratorTab";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/components/ui/table";
+import { useToast } from "@shared/hooks/use-toast";
+import { Settings, Users, Calendar, TrendingUp, Trophy, FileText, Plus, Edit, Trash2, Play, Pause, AlertCircle, AlertTriangle } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -30,8 +29,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Edit, Trash2, AlertTriangle } from "lucide-react";
+} from "@shared/components/ui/alert-dialog";
 import { teamService, Team } from "@/services/teamService";
 
 // Initial users data
@@ -64,7 +62,7 @@ const AdminPanel: React.FC = () => {
   const loadTeams = async () => {
     try {
       setLoading(true);
-      const teamsData = await teamService.getAllTeams();
+      const teamsData = await teamService.getTeams(); // Fixed: changed from getAllTeams to getTeams
       setTeams(teamsData);
     } catch (error) {
       toast({

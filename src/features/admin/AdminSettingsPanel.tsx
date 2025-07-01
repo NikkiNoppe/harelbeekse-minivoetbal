@@ -1,10 +1,6 @@
 
 import React, { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import SettingsTabUpdated from "@/components/admin/tabs/SettingsTabUpdated";
-import UserManagementTab from "@/components/admin/tabs/UserManagementTab";
-import FinancialTabUpdated from "@/components/admin/tabs/FinancialTabUpdated";
-import TeamsTab from "@/components/admin/tabs/TeamsTab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 import { Settings, Users, DollarSign, Shield } from "lucide-react";
 
 const AdminSettingsPanel: React.FC = () => {
@@ -35,19 +31,27 @@ const AdminSettingsPanel: React.FC = () => {
         </TabsList>
         
         <TabsContent value="settings" className="mt-4">
-          <SettingsTabUpdated />
+          <div className="p-4 border rounded-lg">
+            <p>Instellingen tab inhoud komt hier</p>
+          </div>
         </TabsContent>
         
         <TabsContent value="users" className="mt-4">
-          <UserManagementTab />
+          <div className="p-4 border rounded-lg">
+            <p>Gebruikers tab inhoud komt hier</p>
+          </div>
         </TabsContent>
         
         <TabsContent value="teams" className="mt-4">
-          <TeamsTab />
+          <div className="p-4 border rounded-lg">
+            <p>Teams tab inhoud komt hier</p>
+          </div>
         </TabsContent>
         
         <TabsContent value="financial" className="mt-4">
-          <FinancialTabUpdated />
+          <div className="p-4 border rounded-lg">
+            <p>Financieel tab inhoud komt hier</p>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

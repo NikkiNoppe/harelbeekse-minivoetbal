@@ -46,15 +46,22 @@ export interface GeneratedMatch {
   match_time?: string;
 }
 
+export interface Matchday {
+  name: string;
+  date: string;
+  matches: GeneratedMatch[];
+}
+
 export interface AIGeneratedSchedule {
   matches: GeneratedMatch[];
-  matchdays: {
-    name: string;
-    date: string;
-    matches: GeneratedMatch[];
-  }[];
+  matchdays: Matchday[];
   validation_notes: string[];
   confidence_score: number;
+  metadata: {
+    total_matches: number;
+    total_rounds: number;
+    generation_time: number;
+  };
 }
 
 export interface AIGenerationRequest {

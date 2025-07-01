@@ -1,8 +1,7 @@
-
 import React from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@shared/components/ui/button";
 import { Check, Loader2 } from "lucide-react";
-import { CompetitionFormat, CompetitionType } from "@/components/admin/competition-generator/types";
+import { CompetitionFormat, CompetitionType } from "./types";
 
 interface FormatSelectionTabProps {
   competitionFormats: CompetitionType[];

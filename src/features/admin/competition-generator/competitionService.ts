@@ -1,8 +1,7 @@
-
-import { supabase } from "@/integrations/supabase/client";
-import { CompetitionType, GeneratedMatch, AvailableDate } from "./types";
-import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@shared/integrations/supabase/client";
+import { Team, CompetitionType, AvailableDate, GeneratedMatch } from "./types";
 import { findFormatById } from "./competitionFormats";
+import { useToast } from "@shared/hooks/use-toast";
 
 export const saveCompetitionToDatabase = async (
   generatedMatches: GeneratedMatch[],

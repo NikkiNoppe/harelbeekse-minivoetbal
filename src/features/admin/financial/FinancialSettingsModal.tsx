@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@shared/components/ui/dialog";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
+import { Label } from "@shared/components/ui/label";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { financialService } from "@/services/financialService";
-import { useToast } from "@/hooks/use-toast";
+import { financialService } from "@shared/services/financialService";
+import { useToast } from "@shared/hooks/use-toast";
 import { Settings } from "lucide-react";
 
 interface FinancialSettingsModalProps {
@@ -28,10 +28,11 @@ const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({ open, o
   });
 
   useEffect(() => {
-    if (settings) {
+    if (settings && typeof settings === 'object') {
+      const settingsObj = settings as any;
       setFormData({
-        field_cost_per_match: settings.field_cost_per_match.toString(),
-        referee_cost_per_match: settings.referee_cost_per_match.toString()
+        field_cost_per_match: settingsObj.field_cost_per_match?.toString() || '',
+        referee_cost_per_match: settingsObj.referee_cost_per_match?.toString() || ''
       });
     }
   }, [settings]);
