@@ -25,7 +25,7 @@ const FinancialTab: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [financialSettingsOpen, setFinancialSettingsOpen] = useState(false);
   const [teamDetailOpen, setTeamDetailOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
 
   const { data: costs, isLoading, error } = useQuery({
     queryKey: ['cost_settings'],
@@ -53,6 +53,11 @@ const FinancialTab: React.FC = () => {
   const totalRevenue = costs?.filter(cost => cost.category === 'revenue').reduce((sum, cost) => sum + cost.amount, 0) || 0;
   const totalExpenses = costs?.filter(cost => cost.category === 'expense').reduce((sum, cost) => sum + cost.amount, 0) || 0;
   const balance = totalRevenue - totalExpenses;
+
+  const handleOpenTeamDetail = (teamId: number) => {
+    setSelectedTeamId(teamId);
+    setTeamDetailOpen(true);
+  };
 
   return (
     <div>
@@ -146,8 +151,8 @@ const FinancialTab: React.FC = () => {
 
       <CostSettingsModal open={open} onOpenChange={setOpen} />
       <FinancialSettingsModal open={financialSettingsOpen} onOpenChange={setFinancialSettingsOpen} />
-      {selectedTeam && (
-        <TeamDetailModal open={teamDetailOpen} onOpenChange={setTeamDetailOpen} team={selectedTeam} />
+      {selectedTeamId && (
+        <TeamDetailModal open={teamDetailOpen} onOpenChange={setTeamDetailOpen} team={selectedTeamId} />
       )}
     </div>
   );

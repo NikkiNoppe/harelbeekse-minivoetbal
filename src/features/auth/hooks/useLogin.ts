@@ -1,9 +1,9 @@
 
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@/types/auth";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@shared/hooks/use-toast";
+import { supabase } from "@shared/integrations/supabase/client";
+import { User } from "@shared/types/auth";
+import { useAuth } from "../AuthProvider";
 
 export const useLogin = (onLoginSuccess: () => void) => {
   const { toast } = useToast();
@@ -18,13 +18,14 @@ export const useLogin = (onLoginSuccess: () => void) => {
       console.log('📧 Username/Email:', usernameOrEmail);
       console.log('🔑 Password length:', password.length);
       
-      // Use the corrected verify_user_password function
+      // Direct database query for authentication
       console.log('🔐 Attempting password verification...');
       const { data: result, error } = await supabase
-        .rpc('verify_user_password', {
-          input_username_or_email: usernameOrEmail,
-          input_password: password
-        });
+        .from('users')
+        .select('*')
+        .or(`username.eq.${usernameOrEmail},email.eq.${usernameOrEmail}`)
+        .eq('password', password)
+        .single();
 
       console.log('✅ Verification result:', result);
       console.log('❌ Verification error:', error);
@@ -39,9 +40,8 @@ export const useLogin = (onLoginSuccess: () => void) => {
         return;
       }
 
-      // Check if we have a result and it's an array with data
-      if (result && Array.isArray(result) && result.length > 0) {
-        const dbUser = result[0];
+      if (result) {
+        const dbUser = result;
         console.log('🎉 Login successful for user:', dbUser);
         
         // Create user object from the database result
@@ -77,11 +77,6 @@ export const useLogin = (onLoginSuccess: () => void) => {
         }
       } else {
         console.log('❌ No user found or password mismatch');
-        console.log('📊 Result details:', {
-          result,
-          isArray: Array.isArray(result),
-          length: Array.isArray(result) ? result.length : 'N/A'
-        });
         
         toast({
           title: "Login mislukt",

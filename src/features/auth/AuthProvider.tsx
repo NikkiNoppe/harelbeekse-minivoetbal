@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, AuthState } from '@/types/auth';
-import { supabase } from '@/integrations/supabase/client';
+import { User, AuthState } from '@shared/types/auth';
+import { supabase } from '@shared/integrations/supabase/client';
 
 interface AuthContextType extends AuthState {
   login: (username: string, password: string) => Promise<boolean>;
@@ -16,11 +16,13 @@ async function fetchTeamIdForUser(userId: number): Promise<number | undefined> {
     .from("team_users")
     .select("team_id")
     .eq("user_id", userId)
-    .maybeSingle();
+    .single();
+  
   if (error) {
     console.error("Failed to fetch teamId for user", error);
     return undefined;
   }
+  
   // Return the team_id if found and a number
   if (data && typeof data.team_id === "number") {
     return data.team_id;
@@ -42,16 +44,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => clearTimeout(timer);
   }, []);
 
-  // Use the corrected verify_user_password function
+  // Use the verify_user_password function
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       console.log('🔐 AuthProvider login called with username:', username);
       
-      // Use the corrected verify_user_password function
-      const { data, error } = await supabase.rpc('verify_user_password', {
-        input_username_or_email: username,
-        input_password: password
-      });
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .or(`username.eq.${username},email.eq.${username}`)
+        .eq('password', password)
+        .single();
 
       console.log('🔍 AuthProvider verification result:', data);
       console.log('❌ AuthProvider verification error:', error);
@@ -61,21 +64,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
       }
 
-      // Check if data is an array and has results
-      if (data && Array.isArray(data) && data.length > 0) {
-        const userData = data[0];
-        console.log('👤 AuthProvider user data:', userData);
+      if (data) {
+        console.log('👤 AuthProvider user data:', data);
         
         // Fetch possible teamId mapping
-        const teamId = await fetchTeamIdForUser(userData.user_id);
+        const teamId = await fetchTeamIdForUser(data.user_id);
         console.log('🏀 Fetched teamId:', teamId);
 
         const loggedInUser: User = {
-          id: userData.user_id,
-          username: userData.username,
+          id: data.user_id,
+          username: data.username,
           password: '', // Don't store password
-          role: userData.role,
-          email: userData.email,
+          role: data.role,
+          email: data.email,
           ...(teamId !== undefined ? { teamId } : {})
         };
 
@@ -92,12 +93,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return false;
     }
   };
-
-  // If not logged in via login function (e.g., page refresh), try to hydrate from storage
-  useEffect(() => {
-    // Optionally, you can enhance to hydrate session for persistent login
-    // Not implemented now for simplicity
-  }, []);
 
   const logout = () => {
     console.log('👋 Logging out user');

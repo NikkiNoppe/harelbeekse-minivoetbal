@@ -11,6 +11,9 @@ import { useUserFilters } from "../user-management/useUserFilters";
 
 const UserManagementTab: React.FC = () => {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<number | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+  
   const {
     users,
     teams,
@@ -20,7 +23,6 @@ const UserManagementTab: React.FC = () => {
     deletingUser,
     handleAddUser,
     handleUpdateUser,
-    handleOpenDeleteConfirmation,
     handleDeleteUser,
   } = useUserManagement();
 
@@ -34,9 +36,6 @@ const UserManagementTab: React.FC = () => {
     handleTeamFilterChange
   } = useUserFilters(users);
 
-  const [userToDelete, setUserToDelete] = useState<number | null>(null);
-  const [error, setError] = useState<Error | null>(null);
-
   const handleConfirmDelete = () => {
     if (userToDelete) {
       handleDeleteUser();
@@ -44,7 +43,7 @@ const UserManagementTab: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = (userId: number) => {
+  const handleUserDelete = (userId: number) => {
     setUserToDelete(userId);
   };
 
@@ -88,7 +87,7 @@ const UserManagementTab: React.FC = () => {
               users={filteredUsers}
               loading={loading}
               onUpdateUser={handleUpdateUser}
-              onDeleteUser={handleDeleteUser}
+              onDeleteUser={handleUserDelete}
               isUpdatingUser={updatingUser}
             />
           </div>
