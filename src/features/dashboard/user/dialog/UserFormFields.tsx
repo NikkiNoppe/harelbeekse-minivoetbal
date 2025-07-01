@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Label } from "@shared/components/ui/label";
 import { Input } from "@shared/components/ui/input";
@@ -31,16 +32,16 @@ const UserFormFields: React.FC<UserFormFieldsProps> = ({
     const teamIdNum = typeof teamId === 'string' ? parseInt(teamId) : teamId;
     
     // Check if team is already selected
-    const isSelected = formData.teamIds.includes(teamIdNum);
+    const isSelected = (formData.teamIds || []).includes(teamIdNum);
     
     let newTeamIds: number[];
     
     if (isSelected) {
       // Remove team if already selected
-      newTeamIds = formData.teamIds.filter(id => id !== teamIdNum);
+      newTeamIds = (formData.teamIds || []).filter(id => id !== teamIdNum);
     } else {
       // Add team if not selected
-      newTeamIds = [...formData.teamIds, teamIdNum];
+      newTeamIds = [...(formData.teamIds || []), teamIdNum];
     }
     
     setFormData({ 
@@ -101,7 +102,7 @@ const UserFormFields: React.FC<UserFormFieldsProps> = ({
               ...formData, 
               role: value,
               // Reset teamIds if role is not player_manager
-              teamIds: value === "player_manager" ? formData.teamIds : []
+              teamIds: value === "player_manager" ? (formData.teamIds || []) : []
             });
           }}
           disabled={isLoading}
@@ -120,7 +121,7 @@ const UserFormFields: React.FC<UserFormFieldsProps> = ({
       {formData.role === "player_manager" && teams.length > 0 && (
         <TeamSelector
           teams={teams}
-          selectedTeamIds={formData.teamIds}
+          selectedTeamIds={formData.teamIds || []}
           onTeamSelect={handleTeamSelect}
           disabled={isLoading}
         />

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -17,7 +18,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
   editingUser,
   onSave,
   teams,
-  isLoading
+  isLoading = false
 }) => {
   const [formData, setFormData] = useState<UserFormData>({
     username: "",
@@ -32,10 +33,6 @@ const UserDialog: React.FC<UserDialogProps> = ({
   useEffect(() => {
     if (editingUser) {
       console.log('Setting form data for editing user:', editingUser);
-      // Get team IDs from the teams array if available, otherwise use teamId
-      const teamIds = editingUser.teams && editingUser.teams.length > 0 
-        ? editingUser.teams.map(team => team.team_id) 
-        : (editingUser.teamId ? [editingUser.teamId] : []);
       
       setFormData({
         username: editingUser.username,
@@ -43,7 +40,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
         password: "",
         role: editingUser.role,
         teamId: editingUser.teamId || 0,
-        teamIds: teamIds
+        teamIds: editingUser.teamId ? [editingUser.teamId] : []
       });
     } else {
       // Reset form for new user

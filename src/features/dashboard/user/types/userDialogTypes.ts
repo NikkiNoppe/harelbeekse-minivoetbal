@@ -12,6 +12,7 @@ export interface UserDialogProps {
   editingUser: User | null;
   onSave: (userData: any) => Promise<boolean>;
   teams: TeamOption[];
+  isLoading?: boolean;
 }
 
 export interface UserFormData {
@@ -20,4 +21,5 @@ export interface UserFormData {
   password: string;
   role: string;
   teamId?: number;
+  teamIds?: number[];
 }

@@ -86,7 +86,20 @@ const MatchTab: React.FC = () => {
             />
           </TabsContent>
           <TabsContent value="past" className="mt-6">
-            <PastMatchesTabContent pastMatches={matches.filter(m => m.homeScore !== null)} />
+            <PastMatchesTabContent 
+              pastMatches={matches.filter(m => m.homeScore !== null && m.id !== undefined).map(m => ({
+                id: m.id!,
+                date: m.date,
+                time: m.time,
+                homeTeam: m.homeTeam,
+                awayTeam: m.awayTeam,
+                location: m.location,
+                homeScore: m.homeScore!,
+                awayScore: m.awayScore!,
+                referee: m.referee,
+                uniqueNumber: m.uniqueNumber
+              }))} 
+            />
           </TabsContent>
         </Tabs>
       </CardContent>

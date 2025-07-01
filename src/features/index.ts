@@ -1,17 +1,4 @@
-// Auth Feature
-export * from './auth';
 
-// Teams Feature
-export * from './teams';
-
-// Matches Feature
-export * from './matches';
-
-// Players Feature  
-export * from './players';
-
-// Admin Feature
+// Export only existing features
 export * from './admin';
-
-// Dashboard Feature
-export * from './dashboard'; 
+export * from './dashboard';
