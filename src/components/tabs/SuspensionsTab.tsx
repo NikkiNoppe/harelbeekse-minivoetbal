@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,39 +7,46 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { suspensionService, PlayerCard, Suspension } from "@/services/suspensionService";
-
 const SuspensionsTab: React.FC = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const queryClient = useQueryClient();
-
-  const { data: playerCards, isLoading: loadingCards } = useQuery({
+  const {
+    data: playerCards,
+    isLoading: loadingCards
+  } = useQuery({
     queryKey: ['playerCards'],
     queryFn: suspensionService.getPlayerCards
   });
-
-  const { data: suspensions, isLoading: loadingSuspensions } = useQuery({
+  const {
+    data: suspensions,
+    isLoading: loadingSuspensions
+  } = useQuery({
     queryKey: ['suspensions'],
     queryFn: suspensionService.getActiveSuspensions
   });
-
   const handleRefresh = async () => {
     try {
       await suspensionService.refreshPlayerCards();
-      queryClient.invalidateQueries({ queryKey: ['playerCards'] });
-      queryClient.invalidateQueries({ queryKey: ['suspensions'] });
+      queryClient.invalidateQueries({
+        queryKey: ['playerCards']
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['suspensions']
+      });
       toast({
         title: "Vernieuwd",
-        description: "Kaarten en schorsingen zijn bijgewerkt.",
+        description: "Kaarten en schorsingen zijn bijgewerkt."
       });
     } catch (error) {
       toast({
         title: "Fout",
         description: "Er is een fout opgetreden bij het vernieuwen.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const getStatusBadge = (status: 'active' | 'pending' | 'completed') => {
     if (status === 'active') {
       return <Badge className="badge-purple">Actief</Badge>;
@@ -50,29 +56,17 @@ const SuspensionsTab: React.FC = () => {
     }
     return <Badge className="badge-purple">Afgerond</Badge>;
   };
-
-  const topYellowCardPlayers = playerCards
-    ?.filter(player => player.yellowCards > 0)
-    ?.sort((a, b) => b.yellowCards - a.yellowCards)
-    ?.slice(0, 10) || [];
-
+  const topYellowCardPlayers = playerCards?.filter(player => player.yellowCards > 0)?.sort((a, b) => b.yellowCards - a.yellowCards)?.slice(0, 10) || [];
   if (loadingCards || loadingSuspensions) {
-    return (
-      <div className="flex items-center justify-center h-40">
+    return <div className="flex items-center justify-center h-40">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2">Schorsingen laden...</span>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-8 animate-slide-up">
+  return <div className="space-y-8 animate-slide-up">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Actuele Schorsingen</h2>
-        <Button onClick={handleRefresh} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Vernieuwen
-        </Button>
+        
       </div>
 
       <section>
@@ -89,9 +83,7 @@ const SuspensionsTab: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {suspensions && suspensions.length > 0 ? (
-                  suspensions.map((suspension, index) => (
-                    <TableRow key={`${suspension.playerId}-${index}`} className="hover:bg-muted/30">
+                {suspensions && suspensions.length > 0 ? suspensions.map((suspension, index) => <TableRow key={`${suspension.playerId}-${index}`} className="hover:bg-muted/30">
                       <TableCell className="font-medium">{suspension.playerName}</TableCell>
                       <TableCell>{suspension.teamName}</TableCell>
                       <TableCell>{suspension.reason}</TableCell>
@@ -99,15 +91,11 @@ const SuspensionsTab: React.FC = () => {
                       <TableCell>
                         {getStatusBadge(suspension.status)}
                       </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
+                    </TableRow>) : <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       Geen actieve schorsingen
                     </TableCell>
-                  </TableRow>
-                )}
+                  </TableRow>}
               </TableBody>
             </Table>
           </CardContent>
@@ -133,34 +121,24 @@ const SuspensionsTab: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {topYellowCardPlayers.length > 0 ? (
-                      topYellowCardPlayers.map((player) => (
-                        <TableRow key={player.playerId} className="hover:bg-muted/20">
+                    {topYellowCardPlayers.length > 0 ? topYellowCardPlayers.map(player => <TableRow key={player.playerId} className="hover:bg-muted/20">
                           <TableCell>{player.playerName}</TableCell>
                           <TableCell>{player.teamName}</TableCell>
                           <TableCell className="text-center">
                             <div className="flex items-center justify-center space-x-1">
-                              {[...Array(player.yellowCards)].map((_, i) => (
-                                <div key={i} className="h-5 w-3 bg-yellow-400 rounded-sm"></div>
-                              ))}
+                              {[...Array(player.yellowCards)].map((_, i) => <div key={i} className="h-5 w-3 bg-yellow-400 rounded-sm"></div>)}
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex items-center justify-center space-x-1">
-                              {[...Array(player.redCards)].map((_, i) => (
-                                <div key={i} className="h-5 w-3 bg-red-500 rounded-sm"></div>
-                              ))}
+                              {[...Array(player.redCards)].map((_, i) => <div key={i} className="h-5 w-3 bg-red-500 rounded-sm"></div>)}
                             </div>
                           </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
+                        </TableRow>) : <TableRow>
                         <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                           Geen kaarten geregistreerd
                         </TableCell>
-                      </TableRow>
-                    )}
+                      </TableRow>}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -203,8 +181,6 @@ const SuspensionsTab: React.FC = () => {
           </div>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 export default SuspensionsTab;
