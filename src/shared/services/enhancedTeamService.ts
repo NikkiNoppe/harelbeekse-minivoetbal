@@ -111,6 +111,41 @@ export const enhancedTeamService = {
   async updateTeam(teamId: number, updateData: Partial<Omit<Team, 'team_id'>>): Promise<{ success: boolean; message: string; team?: Team }> {
     logTeamOperation('updateTeam - START', { teamId, updateData });
     
+    // Simpele directe update test
+    if (updateData.team_name && updateData.team_name.trim()) {
+      try {
+        const { data, error } = await supabase
+          .from('teams')
+          .update({ team_name: updateData.team_name.trim() })
+          .eq('team_id', teamId)
+          .select('*')
+          .single();
+
+        if (error) {
+          logTeamOperation('updateTeam - SIMPLE UPDATE ERROR', { error });
+          return { 
+            success: false, 
+            message: `Database fout: ${error.message}` 
+          };
+        }
+
+        if (data) {
+          logTeamOperation('updateTeam - SIMPLE UPDATE SUCCESS', { data });
+          return { 
+            success: true, 
+            message: 'Team succesvol bijgewerkt',
+            team: data
+          };
+        }
+      } catch (error) {
+        logTeamOperation('updateTeam - SIMPLE UPDATE CATCH ERROR', { error });
+        return { 
+          success: false, 
+          message: `Onverwachte fout: ${error instanceof Error ? error.message : String(error)}` 
+        };
+      }
+    }
+    
     try {
       // FASE 1: Pre-update existence and data verification
       const existingTeam = await this.getTeamById(teamId);
@@ -126,7 +161,7 @@ export const enhancedTeamService = {
       
       // FASE 2: Prepare update with proper data types
       const updateObject: any = {};
-      if (updateData.team_name !== undefined) {
+      if (updateData.team_name !== undefined && updateData.team_name.trim() !== '') {
         updateObject.team_name = String(updateData.team_name).trim();
       }
       // Balance wordt automatisch berekend door database triggers, dus niet handmatig updaten
@@ -135,6 +170,16 @@ export const enhancedTeamService = {
       }
       
       logTeamOperation('updateTeam - PREPARED UPDATE OBJECT', { updateObject });
+      
+      // Check if there's actually something to update
+      if (Object.keys(updateObject).length === 0) {
+        logTeamOperation('updateTeam - NO CHANGES TO APPLY');
+        return { 
+          success: true, 
+          message: 'Geen wijzigingen om door te voeren',
+          team: existingTeam
+        };
+      }
       
       // FASE 3: Perform update with enhanced error detection
       const { data, error, count } = await supabase
@@ -170,8 +215,9 @@ export const enhancedTeamService = {
       const verificationTeam = await this.getTeamById(teamId);
       logTeamOperation('updateTeam - POST-UPDATE VERIFICATION', { 
         verificationTeam,
+        updateObject,
         updateWasApplied: verificationTeam && 
-          (updateData.team_name ? verificationTeam.team_name === updateObject.team_name : true)
+          (updateObject.team_name ? verificationTeam.team_name === updateObject.team_name : true)
       });
 
       if (!verificationTeam) {
@@ -183,13 +229,17 @@ export const enhancedTeamService = {
       }
 
       // Check if team name changes were actually applied (balance wordt automatisch berekend door triggers)
+      // Alleen verifiëren voor velden die daadwerkelijk geupdate zijn
       const changesApplied = 
-        (updateData.team_name ? verificationTeam.team_name === updateObject.team_name : true);
+        (updateObject.team_name ? verificationTeam.team_name === updateObject.team_name : true);
 
       if (!changesApplied) {
         logTeamOperation('updateTeam - VERIFICATION FAILED - CHANGES NOT APPLIED', {
           expected: updateObject,
-          actual: verificationTeam
+          actual: {
+            team_name: verificationTeam.team_name,
+            team_id: verificationTeam.team_id
+          }
         });
         return { 
           success: false, 

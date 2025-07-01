@@ -250,7 +250,6 @@ const TeamsTab: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Teamnaam</TableHead>
-                <TableHead className="text-right">Saldo</TableHead>
                 <TableHead className="text-right w-24">Acties</TableHead>
               </TableRow>
             </TableHeader>
@@ -258,9 +257,6 @@ const TeamsTab: React.FC = () => {
               {teams?.map((team) => (
                 <TableRow key={team.team_id}>
                   <TableCell className="font-medium">{team.team_name}</TableCell>
-                  <TableCell className={`text-right font-semibold ${team.balance < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {formatCurrency(team.balance)}
-                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Button
@@ -342,19 +338,7 @@ const TeamsTab: React.FC = () => {
                 placeholder="Voer teamnaam in"
               />
             </div>
-            <div>
-              <Label htmlFor="editTeamBalance">Huidig Saldo (€)</Label>
-              <Input
-                id="editTeamBalance"
-                type="text"
-                value={formatCurrency(editingTeam?.balance || 0)}
-                readOnly
-                className="bg-gray-100 cursor-not-allowed"
-              />
-              <p className="text-sm text-gray-600 mt-1">
-                Het saldo wordt automatisch berekend op basis van transacties en kan niet handmatig worden aangepast.
-              </p>
-            </div>
+
             <div className="flex gap-2 pt-4">
               <Button onClick={handleEditTeam} disabled={isSubmitting}>
                 {isSubmitting ? "Opslaan..." : "Opslaan"}
