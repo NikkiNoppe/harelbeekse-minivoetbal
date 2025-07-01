@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@shared/integrations/supabase/client";
 
@@ -7,7 +6,9 @@ export interface TeamPlayer {
   first_name: string;
   last_name: string;
   birth_date: string;
-  team_id: number;
+  team_id?: number;
+  email?: string;
+  phone?: string;
 }
 
 export function useTeamPlayers(teamId?: number) {

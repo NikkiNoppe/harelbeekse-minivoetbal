@@ -54,8 +54,8 @@ const EditMatchForm: React.FC<EditMatchFormProps> = ({ match, onSave, onCancel }
       <div>
         <Label htmlFor="homeTeam">Home Team</Label>
         <Select
-          value={formData.homeTeam}
-          onValueChange={(value) => setFormData({ ...formData, homeTeam: value })}
+          value={formData.homeTeamName}
+          onValueChange={(value) => setFormData({ ...formData, homeTeamName: value })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -73,8 +73,8 @@ const EditMatchForm: React.FC<EditMatchFormProps> = ({ match, onSave, onCancel }
       <div>
         <Label htmlFor="awayTeam">Away Team</Label>
         <Select
-          value={formData.awayTeam}
-          onValueChange={(value) => setFormData({ ...formData, awayTeam: value })}
+          value={formData.awayTeamName}
+          onValueChange={(value) => setFormData({ ...formData, awayTeamName: value })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -131,8 +131,8 @@ const EditMatchForm: React.FC<EditMatchFormProps> = ({ match, onSave, onCancel }
         <Label htmlFor="notes">Notes</Label>
         <Textarea
           id="notes"
-          value={formData.notes || ""}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          value={formData.refereeNotes || ""}
+          onChange={(e) => setFormData({ ...formData, refereeNotes: e.target.value })}
           rows={3}
         />
       </div>

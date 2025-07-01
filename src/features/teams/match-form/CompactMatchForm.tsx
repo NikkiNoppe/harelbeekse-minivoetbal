@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { Badge } from "@shared/components/ui/badge";
@@ -96,7 +95,6 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({ teamId }) => {
         onAwayScoreChange={() => {}}
         onRefereeChange={() => {}}
         canEdit={canEdit}
-        showScoreEntry={isReferee || isAdmin}
       />
 
       {isAdmin && (
@@ -142,13 +140,6 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({ teamId }) => {
         onNotesChange={() => {}}
         canEdit={canEdit}
       />
-
-      {(isReferee || isAdmin) && (
-        <RefereePenaltySection
-          onPenaltyAdd={() => {}}
-          canEdit={canEdit}
-        />
-      )}
 
       <MatchFormActions
         onSubmit={handleSubmit}

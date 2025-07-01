@@ -143,7 +143,7 @@ export const PlayersList: React.FC<PlayersListProps> = ({ teamId, onPlayersChang
         <CardTitle className="flex items-center justify-between">
           Team Players
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger>
+            <DialogTrigger asChild>
               <Button disabled={isLocked}>
                 Add Player
               </Button>

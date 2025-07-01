@@ -7,7 +7,7 @@ import { useAuth } from "@features/auth/AuthProvider";
 import TeamDashboard from "@features/teams/TeamDashboard";
 import { MOCK_TEAMS } from "@shared/constants/mockData";
 import CompetitionManagementTab from "@features/admin/tabs/CompetitionManagementTab";
-import { MatchFormTab } from "@features/teams/MatchFormTab";
+import MatchFormTab from "@features/teams/MatchFormTab";
 
 const UserDashboard = () => {
   const {

@@ -7,6 +7,8 @@ export interface Player {
   last_name: string;
   birth_date: string;
   team_id: number;
+  email?: string;
+  phone?: string;
 }
 
 export const playerService = {
@@ -52,5 +54,39 @@ export const playerService = {
     }
     
     return data;
+  },
+
+  async addPlayer(playerData: {
+    first_name: string;
+    last_name: string;
+    email?: string | null;
+    phone?: string | null;
+    birth_date?: string | null;
+    team_id: number;
+  }): Promise<Player> {
+    const { data, error } = await supabase
+      .from('players')
+      .insert([playerData])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error adding player:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  async removePlayer(playerId: number): Promise<void> {
+    const { error } = await supabase
+      .from('players')
+      .delete()
+      .eq('player_id', playerId);
+    
+    if (error) {
+      console.error('Error removing player:', error);
+      throw error;
+    }
   }
 };
