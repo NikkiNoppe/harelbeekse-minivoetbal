@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@shared/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/components/ui/table";
@@ -12,19 +13,13 @@ import { costSettingsService } from "@shared/services/costSettingsService";
 import { useToast } from "@shared/hooks/use-toast";
 import { Plus, Trash2, DollarSign } from "lucide-react";
 
-interface Team {
-  team_id: number;
-  team_name: string;
-  balance: number;
-}
-
 interface TeamDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  team: Team | null;
+  teamId: number;
 }
 
-const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, team }) => {
+const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, teamId }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showAddTransaction, setShowAddTransaction] = useState(false);
@@ -35,10 +30,24 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
     cost_setting_id: ''
   });
 
+  // Fetch team info
+  const { data: team } = useQuery({
+    queryKey: ['team', teamId],
+    queryFn: async () => {
+      // Mock team data for now - in real app would fetch from API
+      return {
+        team_id: teamId,
+        team_name: `Team ${teamId}`,
+        balance: 0
+      };
+    },
+    enabled: !!teamId
+  });
+
   const { data: transactions, isLoading: loadingTransactions } = useQuery({
-    queryKey: ['team-transactions', team?.team_id],
-    queryFn: () => team ? costSettingsService.getTeamTransactions(team.team_id) : Promise.resolve([]),
-    enabled: !!team
+    queryKey: ['team-transactions', teamId],
+    queryFn: () => teamId ? costSettingsService.getTeamTransactions(teamId) : Promise.resolve([]),
+    enabled: !!teamId
   });
 
   const { data: costSettings } = useQuery({
