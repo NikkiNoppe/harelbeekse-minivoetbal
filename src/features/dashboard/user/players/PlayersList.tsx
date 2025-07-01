@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Table,
@@ -7,8 +6,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+} from "@shared/components/ui/table";
+import { Button } from "@shared/components/ui/button";
 import { Trash2, Edit2 } from "lucide-react";
 
 interface Player {

@@ -1,17 +1,19 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@shared/components/ui/button";
+import { Form } from "@shared/components/ui/form";
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ForgotPasswordDialog from "./ForgotPasswordDialog";
 import { useLogin } from "./hooks/useLogin";
 import LoginFormFields from "./components/LoginFormFields";
 import TestCredentialsFooter from "./components/TestCredentialsFooter";
 import { formSchema, FormValues } from "./validation/loginFormSchema";
+
 interface LoginFormProps {
   onLoginSuccess: () => void;
 }
+
 const LoginForm: React.FC<LoginFormProps> = ({
   onLoginSuccess
 }) => {
@@ -48,4 +50,5 @@ const LoginForm: React.FC<LoginFormProps> = ({
       <ForgotPasswordDialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen} />
     </>;
 };
+
 export default LoginForm;

@@ -1,6 +1,7 @@
 import React from "react";
-import { CardFooter } from "@/components/ui/card";
+import { CardFooter } from "@shared/components/ui/card";
 import { Shield, User as UserIcon } from "lucide-react";
+
 const TestCredentialsFooter: React.FC = () => {
   return <CardFooter className="flex flex-col space-y-2 text-sm text-purple-dark bg-purple-100">
       <div className="flex items-center gap-1 text-purple-dark">
@@ -17,4 +18,5 @@ const TestCredentialsFooter: React.FC = () => {
       </div>
     </CardFooter>;
 };
+
 export default TestCredentialsFooter;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -7,8 +6,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from "@shared/components/ui/dialog";
+import { Button } from "@shared/components/ui/button";
 import UserFormFields from "./dialog/UserFormFields";
 import { UserDialogProps, UserFormData } from "./types/userDialogTypes";
 

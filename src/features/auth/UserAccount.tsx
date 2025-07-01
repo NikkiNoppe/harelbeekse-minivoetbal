@@ -1,6 +1,5 @@
-
 import React from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@shared/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,8 +7,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+} from "@shared/components/ui/dropdown-menu";
+import { Button } from "@shared/components/ui/button";
 import { Shield, User } from "lucide-react";
 
 interface UserAccountProps {

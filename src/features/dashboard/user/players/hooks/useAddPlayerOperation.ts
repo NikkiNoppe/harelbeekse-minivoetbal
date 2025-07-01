@@ -1,5 +1,4 @@
-
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@shared/hooks/use-toast";
 import { NewPlayerData } from "../types";
 import { usePlayerCRUD } from "./usePlayerCRUD";
 

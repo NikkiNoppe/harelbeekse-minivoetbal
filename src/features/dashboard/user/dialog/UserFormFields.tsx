@@ -1,14 +1,13 @@
-
 import React from "react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Label } from "@shared/components/ui/label";
+import { Input } from "@shared/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from "@/components/ui/select";
+} from "@shared/components/ui/select";
 import TeamSelector from "./TeamSelector";
 import { TeamOption, UserFormData } from "../types/userDialogTypes";
 

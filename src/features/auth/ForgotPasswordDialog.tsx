@@ -1,16 +1,15 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useToast } from "@shared/hooks/use-toast";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@shared/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -18,10 +17,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "@shared/components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@shared/integrations/supabase/client";
 
 const formSchema = z.object({
   email: z.string().email({

@@ -1,9 +1,8 @@
-
 import React, { useState } from "react";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Label } from "@shared/components/ui/label";
+import { Button } from "@shared/components/ui/button";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@shared/utils/utils";
 import {
   Command,
   CommandEmpty,
@@ -11,15 +10,15 @@ import {
   CommandInput,
   CommandItem,
   CommandList
-} from "@/components/ui/command";
+} from "@shared/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger
-} from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+} from "@shared/components/ui/popover";
+import { Checkbox } from "@shared/components/ui/checkbox";
+import { Badge } from "@shared/components/ui/badge";
+import { ScrollArea } from "@shared/components/ui/scroll-area";
 import { TeamOption } from "../types/userDialogTypes";
 
 interface TeamSelectorProps {

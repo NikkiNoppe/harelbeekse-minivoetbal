@@ -1,15 +1,14 @@
-
 import React from "react";
 import { UseFormReturn } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "@shared/components/ui/form";
 import { FormValues } from "../validation/loginFormSchema";
 
 interface LoginFormFieldsProps {

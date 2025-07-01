@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 import PlayersTab from "./tabs/PlayersTab";
-import AdminSettingsPanel from "@/components/admin/AdminSettingsPanel";
-import { useAuth } from "@/components/auth/AuthProvider";
-import TeamDashboard from "@/components/team/TeamDashboard";
-import { MOCK_TEAMS } from "@/data/mockData";
-import CompetitionManagementTab from "@/components/admin/tabs/CompetitionManagementTab";
-import MatchFormTab from "@/components/team/MatchFormTab";
+import AdminSettingsPanel from "@features/admin/AdminSettingsPanel";
+import { useAuth } from "@features/auth/AuthProvider";
+import TeamDashboard from "@features/teams/TeamDashboard";
+import { MOCK_TEAMS } from "@shared/constants/mockData";
+import CompetitionManagementTab from "@features/admin/tabs/CompetitionManagementTab";
+import MatchFormTab from "@features/teams/MatchFormTab";
+
 const UserDashboard = () => {
   const {
     user
@@ -68,4 +69,5 @@ const UserDashboard = () => {
       </Tabs>
     </div>;
 };
+
 export default UserDashboard;

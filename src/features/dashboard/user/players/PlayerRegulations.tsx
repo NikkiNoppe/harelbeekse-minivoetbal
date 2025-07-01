@@ -1,7 +1,6 @@
-
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Alert, AlertDescription } from "@shared/components/ui/alert";
 import { Users, Calendar, Shield, Info } from "lucide-react";
 
 const PlayerRegulations: React.FC = () => {

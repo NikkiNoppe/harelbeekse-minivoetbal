@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Dialog,
@@ -7,9 +6,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from "@shared/components/ui/dialog";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
 
 interface PlayerDialogUpdatedProps {
   open: boolean;
