@@ -42,7 +42,7 @@ const MatchFormDialog: React.FC<MatchFormDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full max-w-5xl mx-4 sm:mx-auto bg-background text-foreground border-border rounded-lg">
         <div className="rounded-b-lg">
-          <Card className="w-full mx-auto shadow-lg border-purple-light">
+          <Card className="w-full mx-auto shadow-lg">
             <CardHeader className="bg-purple-100">
               <CardTitle className="text-2xl text-center text-purple-light">
                 Wedstrijdformulier - {match.homeTeamName} vs {match.awayTeamName}

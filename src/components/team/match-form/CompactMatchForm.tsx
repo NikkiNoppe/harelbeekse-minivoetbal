@@ -3,8 +3,7 @@ import {
   MatchDataSection,
   PlayerSelectionSection,
   RefereeNotesSection,
-  MatchFormActions,
-  AdminMatchDataSection
+  MatchFormActions
 } from "./components";
 import { RefereePenaltySection } from "./components/RefereePenaltySection";
 import { MatchFormData, PlayerSelection } from "./types";
@@ -68,13 +67,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     isLocked: currentMatch.isLocked 
   });
 
-  const handleMatchUpdate = (updatedMatch: MatchFormData) => {
-    console.log('[CompactMatchForm] MATCH UPDATE:', { 
-      oldMatchId: currentMatch.matchId, 
-      newMatchId: updatedMatch.matchId 
-    });
-    setCurrentMatch(updatedMatch);
-  };
+
 
   const handleCardChange = (playerId: number, cardType: string) => {
     console.log('[CompactMatchForm] CARD CHANGE:', { playerId, cardType });
@@ -182,14 +175,6 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
 
   return (
     <div className="space-y-6">
-      {isAdmin && (
-        <AdminMatchDataSection
-          match={currentMatch}
-          onMatchUpdate={handleMatchUpdate}
-          canEdit={canEdit}
-        />
-      )}
-
       <MatchDataSection
         match={currentMatch}
         homeScore={homeScore}

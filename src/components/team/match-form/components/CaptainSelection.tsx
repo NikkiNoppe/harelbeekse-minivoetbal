@@ -36,11 +36,11 @@ const CaptainSelection: React.FC<CaptainSelectionProps> = ({
         value={currentCaptain}
         onValueChange={handleCaptainChange}
       >
-        <SelectTrigger className="w-[180px] mt-1">
+        <SelectTrigger className="w-[180px] mt-1 bg-white text-purple-dark hover:bg-purple-dark hover:text-white border border-purple-dark hover:border-purple-dark">
           <SelectValue placeholder="Selecteer kapitein" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="no-captain">Geen kapitein</SelectItem>
+        <SelectContent className="bg-white shadow-lg z-50 border border-purple-dark">
+          <SelectItem value="no-captain" className="w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white">Geen kapitein</SelectItem>
           {selectedPlayers.map((sel) => {
             let name = sel.playerName;
             const dbPlayer = Array.isArray(players)
@@ -50,7 +50,7 @@ const CaptainSelection: React.FC<CaptainSelectionProps> = ({
               name = `${dbPlayer.first_name} ${dbPlayer.last_name}`;
             }
             return (
-              <SelectItem key={sel.playerId!} value={sel.playerId?.toString() || "no-captain"}>
+              <SelectItem key={sel.playerId!} value={sel.playerId?.toString() || "no-captain"} className="w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white">
                 {name}
               </SelectItem>
             );
