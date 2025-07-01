@@ -45,59 +45,77 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
 
   return (
     <div className="w-full">
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-1 h-auto p-1">
-          {visibleTabs.map((tab) => (
-            <TabsTrigger key={tab.key} value={tab.key} className="flex-1">
-              <TabItem value={tab.key} label={tab.label} icon={tab.icon} />
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        <div className="mt-6">
-          {isTabVisible("algemeen") && (
-            <TabsContent value="algemeen" className="mt-0">
-              <AlgemeenTab />
-            </TabsContent>
-          )}
-          
-          {isTabVisible("beker") && (
-            <TabsContent value="beker" className="mt-0">
-              <CupTab />
-            </TabsContent>
-          )}
-          
-          {isTabVisible("competitie") && (
-            <TabsContent value="competitie" className="mt-0">
-              <CompetitionTab />
-            </TabsContent>
-          )}
-          
-          {isTabVisible("playoff") && (
-            <TabsContent value="playoff" className="mt-0">
-              <PlayOffTab />
-            </TabsContent>
-          )}
-          
-          {isTabVisible("reglement") && (
-            <TabsContent value="reglement" className="mt-0">
-              <RegulationsTab />
-            </TabsContent>
-          )}
-          
-          {isTabVisible("schorsingen") && (
-            <TabsContent value="schorsingen" className="mt-0">
-              <SuspensionsTab />
-            </TabsContent>
-          )}
-          
-          {isTabVisible("kaarten") && (
-            <TabsContent value="kaarten" className="mt-0">
-              <CardsTab />
-            </TabsContent>
-          )}
+      {/* Modern Full-Width Tabs */}
+      <div className="w-full bg-white border-b border-purple-200 shadow-sm">
+        <div className="max-w-7xl mx-auto">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
+            <TabsList className="w-full h-16 bg-transparent border-0 rounded-none p-0 flex justify-center">
+              <div className="flex flex-wrap justify-center gap-1 bg-purple-50 rounded-xl p-1 border border-purple-200">
+                {visibleTabs.map((tab) => (
+                  <TabsTrigger
+                    key={tab.key}
+                    value={tab.key}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all duration-200 rounded-lg border-0 bg-transparent text-purple-700 hover:bg-purple-100 data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
+                  >
+                    {tab.icon}
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                  </TabsTrigger>
+                ))}
+              </div>
+            </TabsList>
+          </Tabs>
         </div>
-      </Tabs>
+      </div>
+
+      {/* Tab Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
+          <div className="animate-fade-in">
+            {isTabVisible("algemeen") && (
+              <TabsContent value="algemeen" className="mt-0">
+                <AlgemeenTab />
+              </TabsContent>
+            )}
+            
+            {isTabVisible("beker") && (
+              <TabsContent value="beker" className="mt-0">
+                <CupTab />
+              </TabsContent>
+            )}
+            
+            {isTabVisible("competitie") && (
+              <TabsContent value="competitie" className="mt-0">
+                <CompetitionTab />
+              </TabsContent>
+            )}
+            
+            {isTabVisible("playoff") && (
+              <TabsContent value="playoff" className="mt-0">
+                <PlayOffTab />
+              </TabsContent>
+            )}
+            
+            {isTabVisible("reglement") && (
+              <TabsContent value="reglement" className="mt-0">
+                <RegulationsTab />
+              </TabsContent>
+            )}
+            
+            {isTabVisible("schorsingen") && (
+              <TabsContent value="schorsingen" className="mt-0">
+                <SuspensionsTab />
+              </TabsContent>
+            )}
+            
+            {isTabVisible("kaarten") && (
+              <TabsContent value="kaarten" className="mt-0">
+                <CardsTab />
+              </TabsContent>
+            )}
+          </div>
+        </Tabs>
+      </div>
     </div>
   );
 };

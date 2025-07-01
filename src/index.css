@@ -219,6 +219,95 @@
   }
 }
 
+/* Modern Tab Styling */
+.modern-tabs {
+  @apply w-full bg-white border-b border-purple-200 shadow-sm;
+}
+
+.modern-tabs-list {
+  @apply w-full h-16 bg-transparent border-0 rounded-none p-0 flex justify-center;
+}
+
+.modern-tab-trigger {
+  @apply flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all duration-200;
+  @apply rounded-lg border-0 bg-transparent text-purple-700 hover:bg-purple-100;
+  @apply data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm;
+}
+
+.modern-tab-container {
+  @apply flex flex-wrap justify-center gap-1 bg-purple-50 rounded-xl p-1 border border-purple-200;
+}
+
+/* Smooth animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsive tab text */
+@media (max-width: 640px) {
+  .tab-text-responsive {
+    display: none;
+  }
+  
+  .tab-text-mobile {
+    display: inline;
+  }
+}
+
+@media (min-width: 641px) {
+  .tab-text-responsive {
+    display: inline;
+  }
+  
+  .tab-text-mobile {
+    display: none;
+  }
+}
+
+/* Modern card styling for content */
+.modern-card {
+  @apply bg-white rounded-xl shadow-sm border border-purple-100 p-6;
+}
+
+.modern-card-header {
+  @apply pb-4 border-b border-purple-100 mb-6;
+}
+
+.modern-card-title {
+  @apply text-xl font-semibold text-purple-700;
+}
+
+.modern-card-description {
+  @apply text-sm text-purple-600 mt-1;
+}
+
+/* Button modernization */
+.modern-button {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+  @apply bg-purple-600 text-white hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2;
+}
+
+.modern-button-outline {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+  @apply border border-purple-300 text-purple-700 hover:bg-purple-50 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2;
+}
+
+/* Content spacing */
+.content-wrapper {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
+}
+
 /* Purple theme typography and colors - Updated for better contrast */
 h1, h2, h3, h4, h5, h6 {
   color: var(--purple-400);
@@ -437,3 +526,5 @@ tbody tr:hover {
 }
 
 /* End Custom site-wide fixes */
+
+</edits_to_apply>

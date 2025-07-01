@@ -1,12 +1,14 @@
+
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import LoginForm from "@/components/auth/LoginForm";
-import UserDashboard from "@/components/user/UserDashboard";
 import Header from "@/components/header/Header";
 import Footer from "@/components/footer/Footer";
 import MainTabs from "@/components/tabs/MainTabs";
+import ModernUserDashboard from "@/components/user/ModernUserDashboard";
+
 const Layout: React.FC = () => {
   const {
     user,
@@ -18,6 +20,7 @@ const Layout: React.FC = () => {
   } = useTabVisibility();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabName>("algemeen");
+
   const handleLogoClick = () => {
     setActiveTab("algemeen");
   };
@@ -38,13 +41,19 @@ const Layout: React.FC = () => {
       setActiveTab(visibleTabs[0]);
     }
   }, [isTabVisible, activeTab]);
-  return <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
+
+  return (
+    <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
       {/* Header */}
       <Header onLogoClick={handleLogoClick} onLoginClick={handleLoginClick} />
 
-      {/* Main Content - responsive container */}
-      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10 max-w-7xl mx-auto bg-purple-100">
-        {isAuthenticated && user ? <UserDashboard /> : <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />}
+      {/* Main Content - full width with modern tabs */}
+      <main className="flex-1 w-full bg-purple-100">
+        {isAuthenticated && user ? (
+          <ModernUserDashboard />
+        ) : (
+          <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+        )}
       </main>
 
       {/* Footer */}
@@ -56,6 +65,8 @@ const Layout: React.FC = () => {
           <LoginForm onLoginSuccess={handleLoginSuccess} />
         </DialogContent>
       </Dialog>
-    </div>;
+    </div>
+  );
 };
+
 export default Layout;
