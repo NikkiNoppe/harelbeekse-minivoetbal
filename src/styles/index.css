@@ -4,11 +4,7 @@
 
 @layer base {
   :root {
-    /* Main colors */
-    --main-color-dark: #60368c;
-    --main-color-light: #ab86dd;
-    
-    /* Color shades */
+    /* Main purple color palette */
     --purple-50: #faf8ff;
     --purple-100: #f5f0ff;
     --purple-200: #e9e0ff;
@@ -21,33 +17,33 @@
     --purple-900: #201029;
     
     /* Theme variables */
-    --background: var(--purple-400);
-    --foreground: var(--purple-600);
+    --background: var(--purple-50);
+    --foreground: var(--purple-800);
 
     --card: 255 255 255;
-    --card-foreground: var(--purple-600);
+    --card-foreground: var(--purple-800);
  
     --popover: 255 255 255;
-    --popover-foreground: var(--purple-600);
+    --popover-foreground: var(--purple-800);
 
     --primary: var(--purple-600);
     --primary-foreground: 255 255 255;
 
-    --secondary: var(--purple-50);
-    --secondary-foreground: var(--purple-600);
+    --secondary: var(--purple-100);
+    --secondary-foreground: var(--purple-800);
  
-    --muted: var(--purple-50);
+    --muted: var(--purple-100);
     --muted-foreground: var(--purple-600);
  
-    --accent: var(--purple-400);
-    --accent-foreground: var(--purple-600);
+    --accent: var(--purple-200);
+    --accent-foreground: var(--purple-800);
  
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 220 84% 56%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 0 0 0 0;
-    --input: var(--purple-200);
-    --ring: var(--purple-600);
+    --border: var(--purple-200);
+    --input: var(--purple-100);
+    --ring: var(--purple-400);
  
     --radius: 0.5rem;
 
@@ -61,32 +57,32 @@
   }
  
   .dark {
-    --background: var(--purple-600);
-    --foreground: 255 255 255;
+    --background: var(--purple-900);
+    --foreground: var(--purple-100);
 
-    --card: var(--purple-700);
-    --card-foreground: 255 255 255;
+    --card: var(--purple-800);
+    --card-foreground: var(--purple-100);
  
-    --popover: var(--purple-700);
-    --popover-foreground: 255 255 255;
+    --popover: var(--purple-800);
+    --popover-foreground: var(--purple-100);
 
     --primary: var(--purple-400);
-    --primary-foreground: var(--purple-600);
+    --primary-foreground: var(--purple-900);
 
-    --secondary: var(--purple-700);
-    --secondary-foreground: 255 255 255;
+    --secondary: var(--purple-800);
+    --secondary-foreground: var(--purple-100);
  
-    --muted: var(--purple-700);
+    --muted: var(--purple-800);
     --muted-foreground: var(--purple-400);
  
-    --accent: var(--purple-400);
-    --accent-foreground: var(--purple-600);
+    --accent: var(--purple-700);
+    --accent-foreground: var(--purple-100);
  
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
  
-    --border: 0 0 0 0;
-    --input: var(--purple-700);
+    --border: var(--purple-700);
+    --input: var(--purple-800);
  
     --ring: var(--purple-400);
 
@@ -101,15 +97,269 @@
   }
 }
 
+/* Professional Typography System */
 @layer base {
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
-    font-feature-settings:
-      "rlig" 1,
-      "calt" 1;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+  }
+
+  /* Uniform Heading System */
+  h1, .heading-1 {
+    @apply text-3xl sm:text-4xl lg:text-5xl font-bold text-purple-dark leading-tight mb-4;
+  }
+
+  h2, .heading-2 {
+    @apply text-2xl sm:text-3xl lg:text-4xl font-semibold text-purple-dark leading-tight mb-3;
+  }
+
+  h3, .heading-3 {
+    @apply text-xl sm:text-2xl lg:text-3xl font-semibold text-purple-dark leading-tight mb-3;
+  }
+
+  h4, .heading-4 {
+    @apply text-lg sm:text-xl lg:text-2xl font-medium text-purple-dark leading-tight mb-2;
+  }
+
+  h5, .heading-5 {
+    @apply text-base sm:text-lg lg:text-xl font-medium text-purple-dark leading-tight mb-2;
+  }
+
+  h6, .heading-6 {
+    @apply text-sm sm:text-base lg:text-lg font-medium text-purple-dark leading-tight mb-2;
+  }
+
+  /* Dark mode headings */
+  .dark h1, .dark .heading-1,
+  .dark h2, .dark .heading-2,
+  .dark h3, .dark .heading-3,
+  .dark h4, .dark .heading-4,
+  .dark h5, .dark .heading-5,
+  .dark h6, .dark .heading-6 {
+    @apply text-purple-100;
+  }
+
+  /* Body text and paragraphs */
+  p, .text-body {
+    @apply text-purple-700 leading-relaxed mb-4;
+  }
+
+  .dark p, .dark .text-body {
+    @apply text-purple-200;
+  }
+
+  /* Professional text utilities */
+  .text-muted {
+    @apply text-purple-600;
+  }
+
+  .dark .text-muted {
+    @apply text-purple-300;
+  }
+
+  /* Links */
+  a {
+    @apply text-purple-600 hover:text-purple-800 transition-colors duration-200;
+  }
+
+  .dark a {
+    @apply text-purple-400 hover:text-purple-200;
+  }
+}
+
+/* Professional Component Styling */
+@layer components {
+  /* Uniform Card System */
+  .card, .card-professional {
+    @apply bg-white border-2 border-purple-200 rounded-lg shadow-md hover:shadow-lg transition-all duration-200;
+  }
+
+  .dark .card, .dark .card-professional {
+    @apply bg-purple-800 border-purple-700;
+  }
+
+  .card-header {
+    @apply p-6 border-b border-purple-100;
+  }
+
+  .dark .card-header {
+    @apply border-purple-700;
+  }
+
+  .card-content {
+    @apply p-6;
+  }
+
+  .card-footer {
+    @apply p-6 pt-0;
+  }
+
+  /* Professional Form Elements */
+  .input-professional {
+    @apply border-2 border-purple-200 focus:border-purple-400 focus:ring-purple-400 focus:ring-2 focus:ring-opacity-20 rounded-md px-4 py-3 text-purple-800 placeholder-purple-400 transition-all duration-200;
+  }
+
+  .dark .input-professional {
+    @apply border-purple-700 focus:border-purple-400 bg-purple-800 text-purple-100 placeholder-purple-500;
+  }
+
+  /* Professional Tables */
+  .table-professional {
+    @apply w-full border-collapse border-2 border-purple-200 rounded-lg overflow-hidden;
+  }
+
+  .table-professional th {
+    @apply bg-purple-100 text-purple-800 font-semibold p-4 text-left border-b border-purple-200;
+  }
+
+  .table-professional td {
+    @apply p-4 border-b border-purple-100 text-purple-700;
+  }
+
+  .table-professional tr:hover {
+    @apply bg-purple-50;
+  }
+
+  .dark .table-professional {
+    @apply border-purple-700;
+  }
+
+  .dark .table-professional th {
+    @apply bg-purple-700 text-purple-100 border-purple-600;
+  }
+
+  .dark .table-professional td {
+    @apply text-purple-200 border-purple-700;
+  }
+
+  .dark .table-professional tr:hover {
+    @apply bg-purple-800;
+  }
+
+  /* Professional Badges */
+  .badge-professional {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200;
+  }
+
+  .badge-success {
+    @apply bg-green-100 text-green-800 border-green-200;
+  }
+
+  .badge-warning {
+    @apply bg-orange-100 text-orange-800 border-orange-200;
+  }
+
+  .badge-error {
+    @apply bg-red-100 text-red-800 border-red-200;
+  }
+
+  .badge-info {
+    @apply bg-blue-100 text-blue-800 border-blue-200;
+  }
+
+  /* Professional Tabs */
+  .tabs-professional .tabs-list {
+    @apply bg-purple-100 p-1 rounded-lg border-2 border-purple-200;
+  }
+
+  .tabs-professional .tabs-trigger {
+    @apply px-4 py-2 rounded-md font-medium text-purple-600 hover:text-purple-800 hover:bg-purple-50 transition-all duration-200;
+  }
+
+  .tabs-professional .tabs-trigger[data-state="active"] {
+    @apply bg-white text-purple-800 shadow-sm border border-purple-200;
+  }
+
+  /* Professional Alerts */
+  .alert-professional {
+    @apply p-4 rounded-lg border-l-4;
+  }
+
+  .alert-info {
+    @apply bg-blue-50 border-blue-400 text-blue-800;
+  }
+
+  .alert-success {
+    @apply bg-green-50 border-green-400 text-green-800;
+  }
+
+  .alert-warning {
+    @apply bg-orange-50 border-orange-400 text-orange-800;
+  }
+
+  .alert-error {
+    @apply bg-red-50 border-red-400 text-red-800;
+  }
+}
+
+/* Mobile Responsive Enhancements */
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+  }
+  
+  html, body {
+    max-width: 100%;
+    overscroll-behavior-x: none;
+  }
+  
+  .card, .card-professional {
+    @apply mx-2;
+    min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  input, textarea, select {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Mobile-optimized headings */
+  h1, .heading-1 { @apply text-2xl; }
+  h2, .heading-2 { @apply text-xl; }
+  h3, .heading-3 { @apply text-lg; }
+  h4, .heading-4 { @apply text-base; }
+  h5, .heading-5 { @apply text-sm; }
+  h6, .heading-6 { @apply text-xs; }
+}
+
+/* Utility Classes */
+@layer utilities {
+  .gradient-purple {
+    @apply bg-gradient-to-r from-purple-600 to-purple-800;
+  }
+
+  .gradient-purple-light {
+    @apply bg-gradient-to-r from-purple-400 to-purple-600;
+  }
+
+  .shadow-professional {
+    box-shadow: 0 4px 6px -1px rgba(96, 54, 140, 0.1), 0 2px 4px -1px rgba(96, 54, 140, 0.06);
+  }
+
+  .shadow-professional-lg {
+    box-shadow: 0 10px 15px -3px rgba(96, 54, 140, 0.1), 0 4px 6px -2px rgba(96, 54, 140, 0.05);
+  }
+
+  .border-professional {
+    @apply border-2 border-purple-200;
+  }
+
+  .dark .border-professional {
+    @apply border-purple-700;
   }
 }
 
@@ -131,38 +381,6 @@
 
 .no-vertical-scroll::-webkit-scrollbar {
   display: none;
-}
-
-/* Prevent horizontal scroll on mobile and ensure proper layout */
-@media (max-width: 768px) {
-  body {
-    overflow-x: hidden;
-    width: 100%;
-    position: relative;
-  }
-  
-  html, body {
-    max-width: 100%;
-    overscroll-behavior-x: none;
-  }
-  
-  /* Ensure cards don't break layout on mobile */
-  .card {
-    min-width: 0;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-  }
-  
-  /* Better mobile touch targets */
-  button, [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
-  }
-  
-  /* Improve mobile input experience */
-  input, textarea, select {
-    font-size: 16px; /* Prevents zoom on iOS */
-  }
 }
 
 /* Dark mode fixes for tabs - Updated for purple theme */

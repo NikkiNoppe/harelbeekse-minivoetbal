@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState } from '@shared/types/auth';
 import { supabase } from '@shared/integrations/supabase/client';
@@ -49,12 +48,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       console.log('🔐 AuthProvider login called with username:', username);
       
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .or(`username.eq.${username},email.eq.${username}`)
-        .eq('password', password)
-        .single();
+      // Use the database function for proper password verification (handles bcrypt)
+      const { data, error } = await supabase.rpc('verify_user_password', {
+        input_username_or_email: username,
+        input_password: password
+      });
 
       console.log('🔍 AuthProvider verification result:', data);
       console.log('❌ AuthProvider verification error:', error);
@@ -64,19 +62,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
       }
 
-      if (data) {
-        console.log('👤 AuthProvider user data:', data);
+      if (data && data.length > 0) {
+        const userData = data[0];
+        console.log('👤 AuthProvider user data:', userData);
         
         // Fetch possible teamId mapping
-        const teamId = await fetchTeamIdForUser(data.user_id);
+        const teamId = await fetchTeamIdForUser(userData.user_id);
         console.log('🏀 Fetched teamId:', teamId);
 
         const loggedInUser: User = {
-          id: data.user_id,
-          username: data.username,
+          id: userData.user_id,
+          username: userData.username,
           password: '', // Don't store password
-          role: data.role,
-          email: data.email,
+          role: userData.role,
+          email: userData.email,
           ...(teamId !== undefined ? { teamId } : {})
         };
 

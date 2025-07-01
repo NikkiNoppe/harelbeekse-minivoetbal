@@ -4,7 +4,7 @@ import { TabVisibilityProvider, TabName } from "@shared/context/TabVisibilityCon
 import Header from "./header/Header";
 import Footer from "./footer/Footer";
 import MainTabs from "./tabs/MainTabs";
-import LoginForm from "@features/auth/LoginForm";
+import LoginDialog from "@features/auth/LoginDialog";
 
 const Layout: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -34,10 +34,13 @@ const Layout: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="container mx-auto p-4 text-center">
-          <h1 className="text-2xl font-bold mb-4">Harelbeekse Minivoetbal</h1>
-          <p>Welcome to the application!</p>
+      <div className="min-h-screen bg-gradient-to-br from-purple-light to-purple-dark flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-4 text-white">Harelbeekse Minivoetbal</h1>
+          <p className="text-purple-100 text-lg">Welcome to the application!</p>
+          <div className="mt-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+          </div>
         </div>
       </div>
     );
@@ -49,18 +52,18 @@ const Layout: React.FC = () => {
         <div className="min-h-screen bg-background flex flex-col">
           <Header onLogoClick={handleLogoClick} onLoginClick={handleLoginClick} />
           
-          <main className="flex-1 container mx-auto p-4">
-            <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+          <main className="flex-1">
+            <div className="container mx-auto px-4 py-6 max-w-7xl">
+              <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+            </div>
           </main>
           
           <Footer />
           
-          {showLogin && (
-            <LoginForm 
-              isOpen={showLogin} 
-              onClose={handleLoginClose}
-            />
-          )}
+          <LoginDialog 
+            isOpen={showLogin} 
+            onClose={handleLoginClose}
+          />
         </div>
       </TabVisibilityProvider>
     </AuthProvider>

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@shared/components/ui/button";
 import { Form } from "@shared/components/ui/form";
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ForgotPasswordDialog from "./ForgotPasswordDialog";
 import { useLogin } from "./hooks/useLogin";
@@ -29,26 +28,33 @@ const LoginForm: React.FC<LoginFormProps> = ({
       password: ""
     }
   });
+  
   const onSubmit = async (data: FormValues) => {
     await login(data.usernameOrEmail, data.password);
   };
-  return <>
-      <Card className="w-full max-w-md mx-auto shadow-lg border-purple-light">
-        <CardHeader className="bg-purple-100">
-          <CardTitle className="text-2xl text-center text-purple-light">Login</CardTitle>
-        </CardHeader>
-        <CardContent className="bg-purple-100">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <LoginFormFields form={form} isLoading={isLoading} onForgotPassword={() => setForgotPasswordOpen(true)} />
-            </form>
-          </Form>
-        </CardContent>
+  
+  return (
+    <div className="w-full space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <LoginFormFields 
+            form={form} 
+            isLoading={isLoading} 
+            onForgotPassword={() => setForgotPasswordOpen(true)} 
+          />
+        </form>
+      </Form>
+      
+      <div className="pt-4 border-t border-purple-100">
         <TestCredentialsFooter />
-      </Card>
+      </div>
 
-      <ForgotPasswordDialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen} />
-    </>;
+      <ForgotPasswordDialog 
+        open={forgotPasswordOpen} 
+        onOpenChange={setForgotPasswordOpen} 
+      />
+    </div>
+  );
 };
 
 export default LoginForm;
