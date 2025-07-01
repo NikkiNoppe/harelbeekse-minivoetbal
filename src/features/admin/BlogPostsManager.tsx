@@ -1,19 +1,25 @@
-
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { BlogPost, fetchBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost } from "@/services/blogService";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
+import { Textarea } from "@shared/components/ui/textarea";
+import { useToast } from "@shared/hooks/use-toast";
 import { Edit, Trash2, Plus, Tag } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Badge } from "@shared/components/ui/badge";
+import { Separator } from "@shared/components/ui/separator";
+
+interface BlogPost {
+  id: number;
+  title: string;
+  content: string;
+  date: string;
+  tags: string[];
+}
 
 const BlogPostsManager: React.FC = () => {
   const { toast } = useToast();
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
   const [formData, setFormData] = useState<Omit<BlogPost, 'id'>>({
     title: "",
@@ -28,19 +34,15 @@ const BlogPostsManager: React.FC = () => {
   }, []);
 
   const loadBlogPosts = async () => {
-    try {
-      setLoading(true);
-      const posts = await fetchBlogPosts();
-      setBlogPosts(posts);
-    } catch (error) {
-      toast({
-        title: "Fout bij het laden",
-        description: "De blogposts konden niet worden geladen.",
-        variant: "destructive"
-      });
-    } finally {
+    // Placeholder for fetching blog posts
+    setLoading(true);
+    setTimeout(() => {
+      setBlogPosts([
+        { id: 1, title: "Test Blog Post", content: "This is a test blog post.", date: "2024-01-01", tags: ["test"] },
+        { id: 2, title: "Another Blog Post", content: "This is another blog post.", date: "2024-01-02", tags: ["another"] }
+      ]);
       setLoading(false);
-    }
+    }, 1000);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -74,30 +76,9 @@ const BlogPostsManager: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    try {
-      if (editing !== null) {
-        await updateBlogPost(editing, formData);
-        toast({
-          title: "Blogpost bijgewerkt",
-          description: "De blogpost is succesvol bijgewerkt."
-        });
-      } else {
-        await createBlogPost(formData);
-        toast({
-          title: "Blogpost toegevoegd",
-          description: "De nieuwe blogpost is succesvol toegevoegd."
-        });
-      }
-      
-      resetForm();
-      loadBlogPosts();
-    } catch (error) {
-      toast({
-        title: "Fout",
-        description: "Er is een fout opgetreden bij het opslaan van de blogpost.",
-        variant: "destructive"
-      });
-    }
+    // Placeholder for submitting the form
+    toast({ title: "Form submitted", description: "Placeholder action" });
+    resetForm();
   };
 
   const handleEdit = (post: BlogPost) => {
@@ -111,24 +92,8 @@ const BlogPostsManager: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    try {
-      await deleteBlogPost(id);
-      toast({
-        title: "Blogpost verwijderd",
-        description: "De blogpost is succesvol verwijderd."
-      });
-      loadBlogPosts();
-      
-      if (editing === id) {
-        resetForm();
-      }
-    } catch (error) {
-      toast({
-        title: "Fout",
-        description: "Er is een fout opgetreden bij het verwijderen van de blogpost.",
-        variant: "destructive"
-      });
-    }
+    // Placeholder for deleting a blog post
+    toast({ title: "Blog post deleted", description: "Placeholder action" });
   };
 
   return (

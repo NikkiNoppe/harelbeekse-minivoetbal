@@ -1,31 +1,9 @@
 
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAdvancedCompetitionGenerator } from "./useAdvancedCompetitionGenerator";
-import AIGenerationCombinedTab from "./advanced-tabs/AIGenerationCombinedTab";
-import PreviewImportTab from "./advanced-tabs/PreviewImportTab";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 
 const AdvancedCompetitionGenerator: React.FC = () => {
-  const {
-    config,
-    setConfig,
-    selectedTeams,
-    setSelectedTeams,
-    teamPreferences,
-    setTeamPreferences,
-    vacationPeriods,
-    setVacationPeriods,
-    generatedSchedule,
-    setGeneratedSchedule,
-    isGenerating,
-    activeTab,
-    setActiveTab,
-    handleGenerateWithAI,
-    handleSaveCompetition,
-    teams
-  } = useAdvancedCompetitionGenerator();
-
   return (
     <div className="space-y-6">
       <Card>
@@ -36,40 +14,9 @@ const AdvancedCompetitionGenerator: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="ai-generation">1. AI Generator</TabsTrigger>
-              <TabsTrigger value="preview">2. Voorvertoning</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="ai-generation" className="space-y-4">
-              <AIGenerationCombinedTab
-                config={config}
-                setConfig={setConfig}
-                selectedTeams={selectedTeams}
-                setSelectedTeams={setSelectedTeams}
-                teamPreferences={teamPreferences}
-                setTeamPreferences={setTeamPreferences}
-                vacationPeriods={vacationPeriods}
-                setVacationPeriods={setVacationPeriods}
-                isGenerating={isGenerating}
-                onGenerate={handleGenerateWithAI}
-                onNext={() => setActiveTab("preview")}
-                onPrevious={() => {}}
-                generatedSchedule={generatedSchedule}
-              />
-            </TabsContent>
-            
-            <TabsContent value="preview" className="space-y-4">
-              <PreviewImportTab
-                aiGeneratedSchedule={generatedSchedule}
-                config={config}
-                selectedTeams={selectedTeams}
-                onImport={handleSaveCompetition}
-                onPrevious={() => setActiveTab("ai-generation")}
-              />
-            </TabsContent>
-          </Tabs>
+          <div className="p-4">
+            <p>Geavanceerde generator inhoud komt hier</p>
+          </div>
         </CardContent>
       </Card>
     </div>

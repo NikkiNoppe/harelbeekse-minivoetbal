@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -6,11 +5,11 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@shared/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
+import { Label } from "@shared/components/ui/label";
 import {
   Table,
   TableBody,
@@ -18,8 +17,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
+} from "@shared/components/ui/table";
+import { useToast } from "@shared/hooks/use-toast";
 import TeamForm from "./TeamForm";
 import { 
   AlertDialog,
@@ -30,7 +29,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@shared/components/ui/alert-dialog";
 import { Edit, Trash2, AlertTriangle } from "lucide-react";
 import { teamService, Team } from "@/services/teamService";
 
