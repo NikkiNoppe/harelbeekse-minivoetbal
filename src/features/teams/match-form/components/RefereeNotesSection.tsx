@@ -2,32 +2,36 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { Textarea } from "@shared/components/ui/textarea";
+import { Label } from "@shared/components/ui/label";
 
 interface RefereeNotesSectionProps {
-  refereeNotes: string;
-  onRefereeNotesChange: (value: string) => void;
+  notes: string;
+  onNotesChange: (notes: string) => void;
   canEdit: boolean;
 }
 
 export const RefereeNotesSection: React.FC<RefereeNotesSectionProps> = ({
-  refereeNotes,
-  onRefereeNotesChange,
+  notes,
+  onNotesChange,
   canEdit
 }) => {
   return (
-    <Card className="border-2" style={{ borderColor: "var(--purple-200)", background: "var(--purple-200)" }}>
+    <Card className="border-2" style={{ borderColor: "var(--purple-200)" }}>
       <CardHeader style={{ background: "var(--main-color-dark)" }} className="rounded-t-lg">
-        <CardTitle className="text-base text-white">Notities scheidsrechter</CardTitle>
+        <CardTitle className="text-base text-white">Scheidsrechter Opmerkingen</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Textarea
-          value={refereeNotes}
-          onChange={(e) => onRefereeNotesChange(e.target.value)}
-          disabled={!canEdit}
-          placeholder="Bijzonderheden, opmerkingen..."
-          rows={4}
-          className="focus:border-[var(--main-color-dark)] focus:ring-[var(--main-color-dark)]"
-        />
+      <CardContent className="pt-4">
+        <div>
+          <Label htmlFor="referee-notes">Opmerkingen</Label>
+          <Textarea
+            id="referee-notes"
+            value={notes}
+            onChange={(e) => onNotesChange(e.target.value)}
+            disabled={!canEdit}
+            rows={4}
+            placeholder="Voer hier eventuele opmerkingen in..."
+          />
+        </div>
       </CardContent>
     </Card>
   );

@@ -44,12 +44,12 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
       await matchService.updateMatchMetadata(metadata);
       
       toast({
-        description: "Match details updated successfully",
+        title: "Match details updated successfully",
       });
     } catch (error) {
       console.error("Error updating match:", error);
       toast({
-        description: "Failed to update match details",
+        title: "Failed to update match details",
         variant: "destructive",
       });
     }

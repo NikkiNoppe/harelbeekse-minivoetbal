@@ -1,7 +1,8 @@
+
 import React from "react";
 import { Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
-import { PlayerSelectionTable } from "./PlayerSelectionTable";
+import PlayerSelectionTable from "./PlayerSelectionTable";
 import { PlayerSelection } from "./types";
 import { TeamPlayer } from "./useTeamPlayers";
 
@@ -37,14 +38,17 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
       </CardHeader>
       <CardContent>
         <PlayerSelectionTable
-          teamId={teamId}
+          teamLabel={teamName}
+          selections={selectedPlayers}
           players={players}
-          selectedPlayers={selectedPlayers}
-          onPlayerSelect={onPlayerSelect}
-          onPlayerRemove={onPlayerRemove}
-          onJerseyNumberChange={onJerseyNumberChange}
-          onCaptainSelect={onCaptainSelect}
+          loading={false}
+          error={null}
+          selectedPlayerIds={selectedPlayers.map(p => p.playerId)}
+          onPlayerSelection={() => {}}
+          onCardChange={() => {}}
+          playerCards={{}}
           canEdit={canEdit && !isLocked}
+          showRefereeFields={false}
         />
       </CardContent>
     </Card>

@@ -28,7 +28,7 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
   const handleSubmit = () => {
     if (!homeScore || !awayScore) {
       toast({
-        description: "Please enter both team scores",
+        title: "Please enter both team scores",
         variant: "destructive",
       });
       return;
@@ -39,7 +39,7 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
 
     if (isNaN(homeScoreNum) || isNaN(awayScoreNum) || homeScoreNum < 0 || awayScoreNum < 0) {
       toast({
-        description: "Please enter valid scores (0 or higher)",
+        title: "Please enter valid scores (0 or higher)",
         variant: "destructive",
       });
       return;

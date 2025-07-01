@@ -1,81 +1,47 @@
 
-import React, { useState, useEffect } from "react";
-import { toast } from "@shared/hooks/use-toast";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
-import { AuthProvider } from "@features/auth/AuthProvider";
+import { toast } from "@shared/hooks/use-toast";
+import { User } from "@shared/types/auth";
 import CompactMatchForm from "./match-form/CompactMatchForm";
 import MatchFormFilter from "./match-form/MatchFormFilter";
 import MatchFormList from "./match-form/MatchFormList";
-import { supabase } from "@shared/integrations/supabase/client";
 
 interface MatchFormTabProps {
-  teamId: string;
+  user: User | null;
+  teamId: number;
 }
 
-export const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId }) => {
-  const [matches, setMatches] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
-  const [loading, setLoading] = useState(true);
+const MatchFormTab: React.FC<MatchFormTabProps> = ({ user, teamId }) => {
+  const handleMatchFormSubmit = (formData: any) => {
+    console.log("Match form submitted:", formData);
+    toast({
+      title: "Match form submitted successfully",
+    });
+  };
 
-  useEffect(() => {
-    const fetchMatches = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('matches')
-          .select('*')
-          .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-          .order('match_date', { ascending: false });
-
-        if (error) {
-          console.error("Error fetching matches:", error);
-          toast({
-            description: "Failed to fetch matches. Please try again.",
-            variant: "destructive",
-          });
-        }
-
-        setMatches(data || []);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMatches();
-  }, [teamId]);
-
-  const filteredMatches = matches.filter(match => {
-    const searchTermLower = searchTerm.toLowerCase();
-    const matchesSearchTerm =
-      match.unique_number?.toLowerCase().includes(searchTermLower) ||
-      match.location?.toLowerCase().includes(searchTermLower);
-
-    const matchesDateFilter = !dateFilter || match.match_date.includes(dateFilter);
-
-    return matchesSearchTerm && matchesDateFilter;
-  });
+  const handleFilterChange = (filters: any) => {
+    console.log("Filters changed:", filters);
+  };
 
   return (
-    <AuthProvider>
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Wedstrijden</CardTitle>
+          <CardTitle>Wedstrijdformulieren</CardTitle>
         </CardHeader>
         <CardContent>
-          <MatchFormFilter
-            searchTerm={searchTerm}
-            onSearchTermChange={setSearchTerm}
-            dateFilter={dateFilter}
-            onDateFilterChange={setDateFilter}
-          />
-          <MatchFormList
-            teamId={teamId}
-            matches={filteredMatches}
-            loading={loading}
-          />
+          <div className="space-y-4">
+            <MatchFormFilter onFilterChange={handleFilterChange} />
+            <MatchFormList 
+              matches={[]}
+              onMatchSelect={(match) => console.log("Match selected:", match)}
+            />
+          </div>
         </CardContent>
       </Card>
-    </AuthProvider>
+    </div>
   );
 };
+
+export default MatchFormTab;

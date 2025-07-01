@@ -1,3 +1,4 @@
+
 import React from "react";
 import { PlayerSelection } from "./types";
 import { Input } from "@shared/components/ui/input";
@@ -20,7 +21,7 @@ import {
 } from "@shared/components/ui/select";
 import { TeamPlayer } from "./useTeamPlayers";
 import { CaptainSelection } from "./CaptainSelection";
-import { CardIcon } from "./CardIcon";
+import CardIcon from "./CardIcon";
 import { Star, Trash2 } from "lucide-react";
 
 interface PlayerSelectionTableProps {
@@ -117,7 +118,6 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                               <SelectItem
                                 key={playerIdNum}
                                 value={playerIdNum.toString()}
-                                disabled={alreadySelected}
                                 className={alreadySelected ? "opacity-50 text-gray-400" : ""}
                               >
                                 {player.first_name} {player.last_name}

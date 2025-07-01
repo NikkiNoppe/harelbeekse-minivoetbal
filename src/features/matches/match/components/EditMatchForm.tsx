@@ -36,7 +36,7 @@ const EditMatchForm: React.FC<EditMatchFormProps> = ({ match, onSave, onCancel }
     } catch (error) {
       console.error("Error loading teams:", error);
       toast({
-        description: "Failed to load teams",
+        title: "Failed to load teams",
         variant: "destructive",
       });
     }
@@ -45,7 +45,7 @@ const EditMatchForm: React.FC<EditMatchFormProps> = ({ match, onSave, onCancel }
   const handleSave = () => {
     onSave(formData);
     toast({
-      description: "Match updated successfully",
+      title: "Match updated successfully",
     });
   };
 
@@ -54,15 +54,15 @@ const EditMatchForm: React.FC<EditMatchFormProps> = ({ match, onSave, onCancel }
       <div>
         <Label htmlFor="homeTeam">Home Team</Label>
         <Select
-          value={formData.homeTeamId.toString()}
-          onValueChange={(value) => setFormData({ ...formData, homeTeamId: parseInt(value) })}
+          value={formData.homeTeam}
+          onValueChange={(value) => setFormData({ ...formData, homeTeam: value })}
         >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {teams.map((team) => (
-              <SelectItem key={team.team_id} value={team.team_id.toString()}>
+              <SelectItem key={team.team_id} value={team.team_name}>
                 {team.team_name}
               </SelectItem>
             ))}
@@ -73,15 +73,15 @@ const EditMatchForm: React.FC<EditMatchFormProps> = ({ match, onSave, onCancel }
       <div>
         <Label htmlFor="awayTeam">Away Team</Label>
         <Select
-          value={formData.awayTeamId.toString()}
-          onValueChange={(value) => setFormData({ ...formData, awayTeamId: parseInt(value) })}
+          value={formData.awayTeam}
+          onValueChange={(value) => setFormData({ ...formData, awayTeam: value })}
         >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {teams.map((team) => (
-              <SelectItem key={team.team_id} value={team.team_id.toString()}>
+              <SelectItem key={team.team_id} value={team.team_name}>
                 {team.team_name}
               </SelectItem>
             ))}
@@ -131,8 +131,8 @@ const EditMatchForm: React.FC<EditMatchFormProps> = ({ match, onSave, onCancel }
         <Label htmlFor="notes">Notes</Label>
         <Textarea
           id="notes"
-          value={formData.refereeNotes || ""}
-          onChange={(e) => setFormData({ ...formData, refereeNotes: e.target.value })}
+          value={formData.notes || ""}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           rows={3}
         />
       </div>

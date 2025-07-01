@@ -42,7 +42,7 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user }) => {
         if (teamError) {
           console.error("Error fetching team:", teamError);
           toast({
-            description: "Failed to load team details.",
+            title: "Failed to load team details",
             variant: "destructive",
           });
           return;
@@ -60,7 +60,7 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user }) => {
         if (adminError) {
           console.error("Error fetching admin status:", adminError);
           toast({
-            description: "Failed to load admin status.",
+            title: "Failed to load admin status",
             variant: "destructive",
           });
           return;
@@ -110,10 +110,7 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user }) => {
             <TabsTrigger value="players" className="focus:shadow-none">Spelers</TabsTrigger>
           </TabsList>
           <TabsContent value="matches" className="mt-6">
-            {/* Will render matches when available */}
-            <div className="text-center py-8 text-muted-foreground">
-              Match forms will be available here
-            </div>
+            <CompactMatchForm teamId={parseInt(teamId)} />
           </TabsContent>
           <TabsContent value="players" className="mt-6">
             <PlayersList teamId={parseInt(teamId)} onPlayersChange={setTeamPlayers} />

@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@shared/components/ui/dialog";
+import { Label } from "@shared/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
 import {
   Table,
@@ -13,28 +15,26 @@ import {
 } from "@shared/components/ui/table";
 import { toast } from "@shared/hooks/use-toast";
 import { usePlayerListLock } from "@features/dashboard/user/players/hooks/usePlayerListLock";
-import { supabase } from "@shared/integrations/supabase/client";
+import { TeamPlayer } from "./match-form/components/useTeamPlayers";
 import { playerService } from "@shared/services/playerService";
-
-interface Player {
-  player_id: number;
-  first_name: string;
-  last_name: string;
-  birth_date: string;
-}
 
 interface PlayersListProps {
   teamId: number;
-  onPlayersChange: (players: any[]) => void;
+  onPlayersChange: (players: TeamPlayer[]) => void;
 }
 
 export const PlayersList: React.FC<PlayersListProps> = ({ teamId, onPlayersChange }) => {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [newPlayerFirstName, setNewPlayerFirstName] = useState("");
-  const [newPlayerLastName, setNewPlayerLastName] = useState("");
-  const [newPlayerBirthDate, setNewPlayerBirthDate] = useState("");
+  const [players, setPlayers] = useState<TeamPlayer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editMode, setEditMode] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newPlayer, setNewPlayer] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    birthDate: "",
+  });
+
   const { isLocked } = usePlayerListLock();
 
   useEffect(() => {
@@ -42,34 +42,26 @@ export const PlayersList: React.FC<PlayersListProps> = ({ teamId, onPlayersChang
   }, [teamId]);
 
   const fetchPlayers = async () => {
-    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .eq('team_id', teamId)
-        .order('first_name');
-
-      if (error) {
-        console.error("Error fetching players:", error);
-        toast({
-          description: "Failed to fetch players. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setPlayers(data || []);
-      onPlayersChange(data || []);
+      setLoading(true);
+      const teamPlayers = await playerService.getPlayersByTeam(teamId);
+      setPlayers(teamPlayers);
+      onPlayersChange(teamPlayers);
+    } catch (error) {
+      console.error("Error fetching players:", error);
+      toast({
+        title: "Failed to load players",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const addPlayer = async () => {
-    if (!newPlayerFirstName.trim() || !newPlayerLastName.trim() || !newPlayerBirthDate) {
+  const handleAddPlayer = async () => {
+    if (!newPlayer.firstName || !newPlayer.lastName) {
       toast({
-        description: "Please fill in all fields",
+        title: "Please fill in required fields",
         variant: "destructive",
       });
       return;
@@ -77,178 +69,174 @@ export const PlayersList: React.FC<PlayersListProps> = ({ teamId, onPlayersChang
 
     if (isLocked) {
       toast({
-        description: "Player list is locked and cannot be modified",
+        title: "Player list is locked",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const { data, error } = await supabase
-        .from('players')
-        .insert([{
-          first_name: newPlayerFirstName.trim(),
-          last_name: newPlayerLastName.trim(),
-          birth_date: newPlayerBirthDate,
-          team_id: teamId
-        }])
-        .select()
-        .single();
+      const playerData = {
+        first_name: newPlayer.firstName,
+        last_name: newPlayer.lastName,
+        email: newPlayer.email || null,
+        phone: newPlayer.phone || null,
+        birth_date: newPlayer.birthDate || null,
+        team_id: teamId,
+      };
 
-      if (error) {
-        console.error("Error adding player:", error);
-        toast({
-          description: "Failed to add player. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setPlayers([...players, data]);
-      onPlayersChange([...players, data]);
-      setNewPlayerFirstName("");
-      setNewPlayerLastName("");
-      setNewPlayerBirthDate("");
+      await playerService.addPlayer(playerData);
       
       toast({
-        description: "Player added successfully",
+        title: "Player added successfully",
       });
+      
+      setNewPlayer({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        birthDate: "",
+      });
+      setIsAddDialogOpen(false);
+      fetchPlayers();
     } catch (error) {
       console.error("Error adding player:", error);
       toast({
-        description: "Failed to add player. Please try again.",
+        title: "Failed to add player",
         variant: "destructive",
       });
     }
   };
 
-  const removePlayer = async (playerId: number) => {
+  const handleRemovePlayer = async (playerId: number) => {
     if (isLocked) {
       toast({
-        description: "Player list is locked and cannot be modified",
+        title: "Player list is locked",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from('players')
-        .delete()
-        .eq('player_id', playerId);
-
-      if (error) {
-        console.error("Error removing player:", error);
-        toast({
-          description: "Failed to remove player. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const updatedPlayers = players.filter(p => p.player_id !== playerId);
-      setPlayers(updatedPlayers);
-      onPlayersChange(updatedPlayers);
-      
+      await playerService.removePlayer(playerId);
       toast({
-        description: "Player removed successfully",
+        title: "Player removed successfully",
       });
+      fetchPlayers();
     } catch (error) {
       console.error("Error removing player:", error);
       toast({
-        description: "Failed to remove player. Please try again.",
+        title: "Failed to remove player",
         variant: "destructive",
       });
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
   if (loading) {
-    return <div className="text-center py-8">Loading players...</div>;
+    return <div>Loading players...</div>;
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex justify-between items-center">
-          Spelers
-          <Button
-            variant="outline"
-            onClick={() => setEditMode(!editMode)}
-            disabled={isLocked}
-          >
-            {editMode ? "Stoppen met bewerken" : "Bewerken"}
-          </Button>
+        <CardTitle className="flex items-center justify-between">
+          Team Players
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger>
+              <Button disabled={isLocked}>
+                Add Player
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Player</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="firstName">First Name *</Label>
+                  <Input
+                    id="firstName"
+                    value={newPlayer.firstName}
+                    onChange={(e) => setNewPlayer({ ...newPlayer, firstName: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Last Name *</Label>
+                  <Input
+                    id="lastName"
+                    value={newPlayer.lastName}
+                    onChange={(e) => setNewPlayer({ ...newPlayer, lastName: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newPlayer.email}
+                    onChange={(e) => setNewPlayer({ ...newPlayer, email: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={newPlayer.phone}
+                    onChange={(e) => setNewPlayer({ ...newPlayer, phone: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="birthDate">Birth Date</Label>
+                  <Input
+                    id="birthDate"
+                    type="date"
+                    value={newPlayer.birthDate}
+                    onChange={(e) => setNewPlayer({ ...newPlayer, birthDate: e.target.value })}
+                  />
+                </div>
+                <Button onClick={handleAddPlayer} className="w-full">
+                  Add Player
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {editMode && !isLocked && (
-          <div className="mb-6 p-4 border rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">Nieuwe speler toevoegen</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Input
-                placeholder="Voornaam"
-                value={newPlayerFirstName}
-                onChange={(e) => setNewPlayerFirstName(e.target.value)}
-              />
-              <Input
-                placeholder="Achternaam"
-                value={newPlayerLastName}
-                onChange={(e) => setNewPlayerLastName(e.target.value)}
-              />
-              <Input
-                type="date"
-                placeholder="Geboortedatum"
-                value={newPlayerBirthDate}
-                onChange={(e) => setNewPlayerBirthDate(e.target.value)}
-              />
-              <Button onClick={addPlayer}>
-                Toevoegen
-              </Button>
-            </div>
-          </div>
-        )}
-
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12">#</TableHead>
-              <TableHead>Naam</TableHead>
-              <TableHead className="w-32">Geboortedatum</TableHead>
-              {editMode && <TableHead className="w-24">Acties</TableHead>}
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Birth Date</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {players.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={editMode ? 4 : 3} className="text-center text-muted-foreground py-4">
-                  Geen spelers gevonden
+            {players.map((player) => (
+              <TableRow key={player.player_id}>
+                <TableCell>
+                  {player.first_name} {player.last_name}
+                </TableCell>
+                <TableCell>{player.email || "-"}</TableCell>
+                <TableCell>{player.phone || "-"}</TableCell>
+                <TableCell>{player.birth_date || "-"}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleRemovePlayer(player.player_id)}
+                    disabled={isLocked}
+                  >
+                    Remove
+                  </Button>
                 </TableCell>
               </TableRow>
-            ) : (
-              players.map((player, index) => (
-                <TableRow key={player.player_id}>
-                  <TableCell className="font-medium text-center">{index + 1}</TableCell>
-                  <TableCell>{`${player.first_name} ${player.last_name}`}</TableCell>
-                  <TableCell>{formatDate(player.birth_date)}</TableCell>
-                  {editMode && (
-                    <TableCell>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => removePlayer(player.player_id)}
-                        disabled={isLocked}
-                      >
-                        Verwijderen
-                      </Button>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
       </CardContent>

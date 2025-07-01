@@ -43,6 +43,14 @@ export const EditMatchTabContent: React.FC<EditMatchTabContentProps> = ({
     return termMatch && dateMatch;
   });
 
+  const defaultMatch: MatchFormData = {
+    date: "",
+    time: "",
+    homeTeam: "",
+    awayTeam: "",
+    location: "",
+  };
+
   return (
     <>
       <Card>
@@ -54,13 +62,7 @@ export const EditMatchTabContent: React.FC<EditMatchTabContentProps> = ({
         </CardHeader>
         <CardContent>
           <EditMatchForm 
-            initialData={selectedMatch || {
-              date: "",
-              time: "",
-              homeTeam: "",
-              awayTeam: "",
-              location: "",
-            }}
+            match={selectedMatch || defaultMatch}
             onSave={onSaveMatch}
             onCancel={onCancelEdit}
           />
