@@ -152,7 +152,7 @@ const FinancialTab: React.FC = () => {
       <CostSettingsModal open={open} onOpenChange={setOpen} />
       <FinancialSettingsModal open={financialSettingsOpen} onOpenChange={setFinancialSettingsOpen} />
       {selectedTeamId && (
-        <TeamDetailModal open={teamDetailOpen} onOpenChange={setTeamDetailOpen} team={selectedTeamId} />
+        <TeamDetailModal open={teamDetailOpen} onOpenChange={setTeamDetailOpen} teamId={selectedTeamId} />
       )}
     </div>
   );

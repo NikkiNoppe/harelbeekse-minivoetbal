@@ -178,7 +178,7 @@ const FinancialTabUpdated = () => {
         <TeamDetailModal
           open={openTeamDetailModal}
           onOpenChange={setOpenTeamDetailModal}
-          team={selectedTeamId}
+          teamId={selectedTeamId}
         />
       )}
     </div>
