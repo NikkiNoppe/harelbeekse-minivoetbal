@@ -12,21 +12,65 @@ import { Plus } from "lucide-react";
 import TeamsList from "../teams/TeamsList";
 import TeamDialog from "../teams/TeamDialog";
 import { useTeams } from "../teams/useTeams";
+import { useAddTeam } from "@/components/team/operations/useAddTeam";
+import { useUpdateTeam } from "@/components/team/operations/useUpdateTeam";
+import { useDeleteTeam } from "@/components/team/operations/useDeleteTeam";
 
 const TeamsTab: React.FC = () => {
   const {
     teams,
+    setTeams,
     loading,
     dialogOpen,
     setDialogOpen,
     editingTeam,
+    setEditingTeam,
     formData,
+    setFormData,
     handleAddNew,
     handleEditTeam,
     handleFormChange,
-    handleSaveTeam,
-    handleDeleteTeam
+    fetchTeams
   } = useTeams();
+
+  // Add
+  const { addTeam } = useAddTeam((newTeam) => {
+    setTeams((prev) => [...prev, newTeam]);
+    setDialogOpen(false);
+    setFormData({ name: "", balance: "0" });
+  });
+
+  // Update
+  const { updateTeam } = useUpdateTeam((updated) => {
+    setTeams((prev) =>
+      prev.map((team) =>
+        team.team_id === updated.team_id ? updated : team
+      )
+    );
+    setDialogOpen(false);
+    setEditingTeam(null);
+    setFormData({ name: "", balance: "0" });
+  });
+
+  // Delete
+  const { deleteTeam } = useDeleteTeam((deletedId) => {
+    setTeams((prev) => prev.filter((team) => team.team_id !== deletedId));
+  });
+
+  // Save handler
+  const handleSaveTeam = async () => {
+    if (!formData.name.trim()) return;
+    if (editingTeam) {
+      await updateTeam(editingTeam.team_id, formData.name, parseFloat(formData.balance) || 0);
+    } else {
+      await addTeam(formData.name, parseFloat(formData.balance) || 0);
+    }
+  };
+
+  // Delete handler
+  const handleDeleteTeam = async (teamId: number) => {
+    await deleteTeam(teamId);
+  };
   
   return (
     <div className="space-y-6">

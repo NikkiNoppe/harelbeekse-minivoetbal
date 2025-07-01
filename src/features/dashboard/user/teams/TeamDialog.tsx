@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Team } from "@/components/team/types";
 
 interface TeamFormData {
   name: string;
@@ -19,7 +20,7 @@ interface TeamFormData {
 interface TeamDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingTeam: { team_id: number; team_name: string; balance: number } | null;
+  editingTeam: Team | null;
   formData: TeamFormData;
   onFormChange: (field: keyof TeamFormData, value: string) => void;
   onSave: () => void;

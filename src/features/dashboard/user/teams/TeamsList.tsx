@@ -10,13 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
-
-interface Team {
-  team_id: number;
-  team_name: string;
-  balance: number;
-  player_manager_id?: number | null;
-}
+import { Team } from "@/components/team/types";
 
 interface TeamsListProps {
   teams: Team[];
