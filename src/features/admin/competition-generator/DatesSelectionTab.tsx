@@ -1,8 +1,9 @@
+
 import React from "react";
 import { Button } from "@shared/components/ui/button";
 import { Checkbox } from "@shared/components/ui/checkbox";
 import { Calendar, Loader2, AlertCircle } from "lucide-react";
-import { AvailableDate } from "@/components/admin/competition-generator/types";
+import { AvailableDate } from "./types";
 import { Alert, AlertDescription, AlertTitle } from "@shared/components/ui/alert";
 
 interface DatesSelectionTabProps {

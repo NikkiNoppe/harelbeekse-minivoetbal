@@ -10,16 +10,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
 import { Label } from "@shared/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@shared/components/ui/table";
-import { useToast } from "@shared/hooks/use-toast";
 import TeamForm from "./TeamForm";
+import BlogPostsManager from "./BlogPostsManager";
+import AdminSettingsPanel from "./AdminSettingsPanel";
+import CompetitionGenerator from "./CompetitionGenerator";
+import AdvancedCompetitionGenerator from "./competition-generator/AdvancedCompetitionGenerator";
+import DateGeneratorTab from "./DateGeneratorTab";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/components/ui/table";
+import { useToast } from "@shared/hooks/use-toast";
+import { Settings, Users, Calendar, TrendingUp, Trophy, FileText, Plus, Edit, Trash2, Play, Pause, AlertCircle } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +29,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@shared/components/ui/alert-dialog";
-import { Edit, Trash2, AlertTriangle } from "lucide-react";
 import { teamService, Team } from "@/services/teamService";
 
 // Initial users data
