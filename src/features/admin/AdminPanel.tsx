@@ -62,7 +62,7 @@ const AdminPanel: React.FC = () => {
   const loadTeams = async () => {
     try {
       setLoading(true);
-      const teamsData = await teamService.getTeams(); // Fixed: changed from getAllTeams to getTeams
+      const teamsData = await teamService.getAllTeams(); // Fixed: use getAllTeams instead of getTeams
       setTeams(teamsData);
     } catch (error) {
       toast({

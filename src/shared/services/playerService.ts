@@ -64,9 +64,17 @@ export const playerService = {
     birth_date?: string | null;
     team_id: number;
   }): Promise<Player> {
+    // Ensure birth_date is provided and convert the data to match the database schema
+    const insertData = {
+      first_name: playerData.first_name,
+      last_name: playerData.last_name,
+      birth_date: playerData.birth_date || new Date().toISOString().split('T')[0], // Provide default if missing
+      team_id: playerData.team_id,
+    };
+
     const { data, error } = await supabase
       .from('players')
-      .insert([playerData])
+      .insert(insertData) // Fixed: pass single object instead of array
       .select()
       .single();
     
