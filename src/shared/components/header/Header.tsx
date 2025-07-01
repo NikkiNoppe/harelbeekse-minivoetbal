@@ -64,7 +64,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
   
   return (
     <header className="w-full bg-purple-900 shadow-lg sticky top-0 z-50">
-      <div className="w-full px-6 lg:px-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo Section */}
           <div className="flex-shrink-0">
