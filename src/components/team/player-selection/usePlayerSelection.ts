@@ -26,57 +26,60 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
-  // Simplified query without explicit generic type parameter
+  // Fetch team players with simplified query structure
+  const fetchTeamPlayers = async () => {
+    const { data, error } = await supabase
+      .from('players')
+      .select('player_id, first_name, last_name')
+      .eq('team_id', teamId)
+      .eq('is_active', true)
+      .order('first_name');
+    
+    if (error) {
+      console.error("Error fetching team players:", error);
+      toast({
+        title: "Fout bij ophalen spelers",
+        description: "Er is een probleem opgetreden bij het ophalen van de teamspelers.",
+        variant: "destructive"
+      });
+      throw error;
+    }
+    
+    // Transform to Player format
+    const players: Player[] = (data || []).map((dbPlayer: DatabasePlayer) => ({
+      playerId: dbPlayer.player_id,
+      playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
+      selected: false,
+      jerseyNumber: "",
+      isCaptain: false
+    }));
+    
+    return players;
+  };
+
+  const fetchMatchData = async () => {
+    const { data, error } = await supabase
+      .from('matches')
+      .select('match_id, is_submitted, home_players, away_players, home_team_id, away_team_id')
+      .eq('match_id', matchId)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') {
+      console.error("Error fetching match data:", error);
+      throw error;
+    }
+    
+    return data as MatchQueryResult | null;
+  };
+
   const teamPlayersQuery = useQuery({
     queryKey: ['teamPlayers', teamId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('players')
-        .select('player_id, first_name, last_name')
-        .eq('team_id', teamId)
-        .eq('is_active', true)
-        .order('first_name');
-      
-      if (error) {
-        console.error("Error fetching team players:", error);
-        toast({
-          title: "Fout bij ophalen spelers",
-          description: "Er is een probleem opgetreden bij het ophalen van de teamspelers.",
-          variant: "destructive"
-        });
-        throw error;
-      }
-      
-      // Transform to Player format
-      const players: Player[] = (data || []).map((dbPlayer: DatabasePlayer) => ({
-        playerId: dbPlayer.player_id,
-        playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
-        selected: false,
-        jerseyNumber: "",
-        isCaptain: false
-      }));
-      
-      return players;
-    }
+    queryFn: fetchTeamPlayers
   });
   
-  // Simplified match query without explicit generic type parameter
   const matchQuery = useQuery({
     queryKey: ['matchData', matchId, teamId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('matches')
-        .select('match_id, is_submitted, home_players, away_players, home_team_id, away_team_id')
-        .eq('match_id', matchId)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') {
-        console.error("Error fetching match data:", error);
-        throw error;
-      }
-      
-      return data as MatchQueryResult | null;
-    }
+    queryFn: fetchMatchData
   });
   
   const form = useForm<FormData>({
