@@ -67,9 +67,9 @@ const handler = async (req: Request): Promise<Response> => {
     const resetUrl = `${req.headers.get('origin')}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
     const emailResponse = await resend.emails.send({
-      from: "Voetbal Arena <noreply@resend.dev>",
+      from: "Harelbeekse Minivoetbal <noreply@resend.dev>",
       to: [email],
-      subject: "Wachtwoord Reset - Voetbal Arena",
+      subject: "Wachtwoord Reset",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #22c55e;">Wachtwoord Reset</h2>
