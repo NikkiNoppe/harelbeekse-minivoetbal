@@ -1,60 +1,39 @@
+
 import React from "react";
 import { Search } from "lucide-react";
 import { Input } from "@shared/components/ui/input";
 
 interface MatchFormFilterProps {
   searchTerm: string;
-  onSearchChange: (value: string) => void;
+  onSearchTermChange: (value: string) => void;
   dateFilter: string;
-  onDateChange: (value: string) => void;
-  matchdayFilter: string;
-  onMatchdayChange: (value: string) => void;
+  onDateFilterChange: (value: string) => void;
 }
 
 const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
   searchTerm,
-  onSearchChange,
+  onSearchTermChange,
   dateFilter,
-  onDateChange,
-  matchdayFilter,
-  onMatchdayChange
+  onDateFilterChange
 }) => {
-  const today = new Date().toISOString().split('T')[0];
-
   return (
-    <div className="mb-4 w-full">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-3">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Zoek op wedstrijdnummer of team..."
-            className="pl-8 bg-gray-50 focus:bg-white"
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
-        </div>
-
-        <div className="relative">
-          <Input
-            type="date"
-            placeholder="Filter op datum"
-            className="pl-8 bg-gray-50 focus:bg-white"
-            value={dateFilter || today}
-            onChange={(e) => onDateChange(e.target.value)}
-          />
-        </div>
-
-        <div className="relative">
-          <Input
-            type="search"
-            placeholder="Filter op speeldag..."
-            className="pl-8 bg-gray-50 focus:bg-white"
-            value={matchdayFilter}
-            onChange={(e) => onMatchdayChange(e.target.value)}
-          />
-        </div>
+    <div className="flex gap-4 mb-4">
+      <div className="relative flex-1">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="search"
+          placeholder="Zoek op wedstrijdnummer of locatie..."
+          className="pl-8"
+          value={searchTerm}
+          onChange={(e) => onSearchTermChange(e.target.value)}
+        />
       </div>
+      <Input
+        type="date"
+        value={dateFilter}
+        onChange={(e) => onDateFilterChange(e.target.value)}
+        className="w-auto"
+      />
     </div>
   );
 };

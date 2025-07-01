@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
@@ -60,7 +61,6 @@ export const PlayersList: React.FC<PlayersListProps> = ({ teamId, onPlayersChang
 
       if (error) {
         toast({
-          title: "Error",
           description: "Failed to load players: " + error.message,
           variant: "destructive",
         });
@@ -76,9 +76,8 @@ export const PlayersList: React.FC<PlayersListProps> = ({ teamId, onPlayersChang
   const addPlayer = async () => {
     if (!newPlayerFirstName || !newPlayerLastName) {
       toast({
-        title: "Waarschuwing",
         description: "Vul voornaam en achternaam in.",
-        variant: "warning",
+        variant: "destructive",
       });
       return;
     }
@@ -91,7 +90,6 @@ export const PlayersList: React.FC<PlayersListProps> = ({ teamId, onPlayersChang
 
       if (error) {
         toast({
-          title: "Error",
           description: "Failed to add player: " + error.message,
           variant: "destructive",
         });
@@ -100,13 +98,11 @@ export const PlayersList: React.FC<PlayersListProps> = ({ teamId, onPlayersChang
         setNewPlayerLastName("");
         fetchPlayers();
         toast({
-          title: "Succes",
           description: "Speler succesvol toegevoegd.",
         });
       }
     } catch (error: any) {
       toast({
-        title: "Error",
         description: "Unexpected error adding player: " + error.message,
         variant: "destructive",
       });
@@ -122,20 +118,17 @@ export const PlayersList: React.FC<PlayersListProps> = ({ teamId, onPlayersChang
 
       if (error) {
         toast({
-          title: "Error",
           description: "Failed to delete player: " + error.message,
           variant: "destructive",
         });
       } else {
         fetchPlayers();
         toast({
-          title: "Succes",
           description: "Speler succesvol verwijderd.",
         });
       }
     } catch (error: any) {
       toast({
-        title: "Error",
         description: "Unexpected error deleting player: " + error.message,
         variant: "destructive",
       });

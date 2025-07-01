@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
@@ -6,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/
 import { User } from "@shared/types/auth";
 import { TeamPlayer } from "./match-form/components/useTeamPlayers";
 import { PlayersList } from "./PlayersList";
-import { CompactMatchForm } from "./match-form/CompactMatchForm";
+import CompactMatchForm from "./match-form/CompactMatchForm";
 import { supabase } from "@shared/integrations/supabase/client";
 
 interface TeamDashboardProps {
@@ -30,16 +31,17 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user }) => {
 
       setLoading(true);
       try {
+        const teamIdNumber = parseInt(teamId);
+        
         const { data: teamData, error: teamError } = await supabase
           .from('teams')
           .select('team_name')
-          .eq('team_id', teamId)
+          .eq('team_id', teamIdNumber)
           .single();
 
         if (teamError) {
           console.error("Error fetching team:", teamError);
           toast({
-            title: "Error",
             description: "Failed to load team details.",
             variant: "destructive",
           });
@@ -50,15 +52,14 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user }) => {
 
         // Check if the current user is an admin for this team
         const { data: adminData, error: adminError } = await supabase
-          .from('team_admins')
+          .from('team_users')
           .select('*')
-          .eq('team_id', teamId)
+          .eq('team_id', teamIdNumber)
           .eq('user_id', user?.id);
 
         if (adminError) {
           console.error("Error fetching admin status:", adminError);
           toast({
-            title: "Error",
             description: "Failed to load admin status.",
             variant: "destructive",
           });
@@ -109,10 +110,10 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user }) => {
             <TabsTrigger value="players" className="focus:shadow-none">Spelers</TabsTrigger>
           </TabsList>
           <TabsContent value="matches" className="mt-6">
-            <CompactMatchForm teamId={teamId} isTeamAdmin={isTeamAdmin} />
+            <CompactMatchForm teamId={parseInt(teamId)} isTeamAdmin={isTeamAdmin} />
           </TabsContent>
           <TabsContent value="players" className="mt-6">
-            <PlayersList teamId={teamId} isTeamAdmin={isTeamAdmin} />
+            <PlayersList teamId={parseInt(teamId)} onPlayersChange={setTeamPlayers} />
           </TabsContent>
         </Tabs>
       </CardContent>

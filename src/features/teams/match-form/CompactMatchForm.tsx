@@ -70,12 +70,10 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     isLocked: currentMatch.isLocked 
   });
 
-  const handleMatchUpdate = (updatedMatch: MatchFormData) => {
-    console.log('[CompactMatchForm] MATCH UPDATE:', { 
-      oldMatchId: currentMatch.matchId, 
-      newMatchId: updatedMatch.matchId 
-    });
-    setCurrentMatch(updatedMatch);
+  // Updated to match the expected signature
+  const handleMatchUpdate = async (matchId: number, updates: Partial<MatchFormData>) => {
+    console.log('[CompactMatchForm] MATCH UPDATE:', { matchId, updates });
+    setCurrentMatch(prev => ({ ...prev, ...updates }));
   };
 
   const handleCardChange = (playerId: number, cardType: string) => {

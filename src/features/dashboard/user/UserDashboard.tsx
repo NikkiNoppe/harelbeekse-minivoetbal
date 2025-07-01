@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 import PlayersTab from "./tabs/PlayersTab";
@@ -6,7 +7,7 @@ import { useAuth } from "@features/auth/AuthProvider";
 import TeamDashboard from "@features/teams/TeamDashboard";
 import { MOCK_TEAMS } from "@shared/constants/mockData";
 import CompetitionManagementTab from "@features/admin/tabs/CompetitionManagementTab";
-import MatchFormTab from "@features/teams/MatchFormTab";
+import { MatchFormTab } from "@features/teams/MatchFormTab";
 
 const UserDashboard = () => {
   const {
@@ -22,7 +23,7 @@ const UserDashboard = () => {
 
   // If it's a team manager, show the team dashboard instead
   if (isTeamManager && teamData) {
-    return <TeamDashboard user={user} teamData={teamData} />;
+    return <TeamDashboard user={user} />;
   }
   return <div className="w-full">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -49,7 +50,7 @@ const UserDashboard = () => {
         <div className="animate-fade-in">
           {/* Base tabs content */}
           <TabsContent value="match-forms" className="mt-0">
-            <MatchFormTab teamId={user?.teamId || 0} teamName={teamData?.name || "Admin"} />
+            <MatchFormTab teamId={user?.teamId?.toString() || "0"} />
           </TabsContent>
           
           <TabsContent value="players" className="mt-0">

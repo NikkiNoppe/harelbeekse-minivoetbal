@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { toast } from "@shared/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { AuthProvider } from "@features/auth/AuthProvider";
-import { CompactMatchForm } from "./match-form/CompactMatchForm";
-import { MatchFormFilter } from "./match-form/MatchFormFilter";
-import { MatchFormList } from "./match-form/MatchFormList";
+import CompactMatchForm from "./match-form/CompactMatchForm";
+import MatchFormFilter from "./match-form/MatchFormFilter";
+import MatchFormList from "./match-form/MatchFormList";
 import { supabase } from "@shared/integrations/supabase/client";
 
 interface MatchFormTabProps {
@@ -30,7 +31,6 @@ export const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId }) => {
         if (error) {
           console.error("Error fetching matches:", error);
           toast({
-            title: "Error",
             description: "Failed to fetch matches. Please try again.",
             variant: "destructive",
           });

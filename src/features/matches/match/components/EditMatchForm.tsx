@@ -6,141 +6,143 @@ import { Input } from "@shared/components/ui/input";
 import { Textarea } from "@shared/components/ui/textarea";
 import { Button } from "@shared/components/ui/button";
 import { toast } from "@shared/hooks/use-toast";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@shared/components/ui/select";
+import { teamService } from "@shared/services/teamService";
 
 interface EditMatchFormProps {
-  initialData: Partial<MatchFormData>;
-  onSave: (data: MatchFormData) => void;
+  match: MatchFormData;
+  onSave: (updatedMatch: MatchFormData) => void;
   onCancel: () => void;
 }
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@shared/components/ui/select";
-
-export const EditMatchForm: React.FC<EditMatchFormProps> = ({
-  initialData,
-  onSave,
-  onCancel
-}) => {
-  const [formData, setFormData] = useState<Partial<MatchFormData>>(initialData);
+const EditMatchForm: React.FC<EditMatchFormProps> = ({ match, onSave, onCancel }) => {
+  const [formData, setFormData] = useState<MatchFormData>(match);
+  const [teams, setTeams] = useState<any[]>([]);
 
   useEffect(() => {
-    setFormData(initialData);
-  }, [initialData]);
+    loadTeams();
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.date || !formData.time || !formData.homeTeam || !formData.awayTeam) {
+  const loadTeams = async () => {
+    try {
+      const teamData = await teamService.getTeams();
+      setTeams(teamData);
+    } catch (error) {
+      console.error("Error loading teams:", error);
       toast({
-        title: "Validatiefout",
-        description: "Vul alle verplichte velden in",
+        description: "Failed to load teams",
         variant: "destructive",
       });
-      return;
     }
-
-    onSave(formData as MatchFormData);
   };
 
-  const handleInputChange = (field: keyof MatchFormData, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleSave = () => {
+    onSave(formData);
+    toast({
+      description: "Match updated successfully",
+    });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="date">Datum</Label>
-          <Input
-            id="date"
-            type="date"
-            value={formData.date || ''}
-            onChange={(e) => handleInputChange('date', e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="time">Tijd</Label>
-          <Input
-            id="time"
-            type="time"
-            value={formData.time || ''}
-            onChange={(e) => handleInputChange('time', e.target.value)}
-            required
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="homeTeam">Thuisteam</Label>
-          <Input
-            id="homeTeam"
-            value={formData.homeTeam || ''}
-            onChange={(e) => handleInputChange('homeTeam', e.target.value)}
-            placeholder="Thuisteam"
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="awayTeam">Uitteam</Label>
-          <Input
-            id="awayTeam"
-            value={formData.awayTeam || ''}
-            onChange={(e) => handleInputChange('awayTeam', e.target.value)}
-            placeholder="Uitteam"
-            required
-          />
-        </div>
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="homeTeam">Home Team</Label>
+        <Select
+          value={formData.homeTeamId.toString()}
+          onValueChange={(value) => setFormData({ ...formData, homeTeamId: parseInt(value) })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {teams.map((team) => (
+              <SelectItem key={team.team_id} value={team.team_id.toString()}>
+                {team.team_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div>
-        <Label htmlFor="location">Locatie</Label>
+        <Label htmlFor="awayTeam">Away Team</Label>
+        <Select
+          value={formData.awayTeamId.toString()}
+          onValueChange={(value) => setFormData({ ...formData, awayTeamId: parseInt(value) })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {teams.map((team) => (
+              <SelectItem key={team.team_id} value={team.team_id.toString()}>
+                {team.team_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label htmlFor="location">Location</Label>
         <Input
           id="location"
-          value={formData.location || ''}
-          onChange={(e) => handleInputChange('location', e.target.value)}
-          placeholder="Wedstrijdlocatie"
+          value={formData.location}
+          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
         />
       </div>
 
       <div>
-        <Label htmlFor="referee">Scheidsrechter</Label>
+        <Label htmlFor="date">Date</Label>
+        <Input
+          id="date"
+          type="date"
+          value={formData.date}
+          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="time">Time</Label>
+        <Input
+          id="time"
+          type="time"
+          value={formData.time}
+          onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="referee">Referee</Label>
         <Input
           id="referee"
-          value={formData.referee || ''}
-          onChange={(e) => handleInputChange('referee', e.target.value)}
-          placeholder="Scheidsrechter"
+          value={formData.referee || ""}
+          onChange={(e) => setFormData({ ...formData, referee: e.target.value })}
         />
       </div>
 
       <div>
-        <Label htmlFor="notes">Opmerkingen</Label>
+        <Label htmlFor="notes">Notes</Label>
         <Textarea
           id="notes"
-          value={formData.notes || ''}
-          onChange={(e) => handleInputChange('notes', e.target.value)}
-          placeholder="Eventuele opmerkingen"
+          value={formData.refereeNotes || ""}
+          onChange={(e) => setFormData({ ...formData, refereeNotes: e.target.value })}
           rows={3}
         />
       </div>
 
-      <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Annuleren
-        </Button>
-        <Button type="submit">
-          Opslaan
-        </Button>
+      <div className="flex gap-2">
+        <Button onClick={handleSave}>Save</Button>
+        <Button variant="outline" onClick={onCancel}>Cancel</Button>
       </div>
-    </form>
+    </div>
   );
 };
+
+export default EditMatchForm;
