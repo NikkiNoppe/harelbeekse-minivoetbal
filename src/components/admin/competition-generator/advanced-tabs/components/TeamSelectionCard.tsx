@@ -19,6 +19,11 @@ interface TeamSelectionCardProps {
   setTeamPreferences: (preferences: TeamPreference[]) => void;
 }
 
+interface DatabaseError {
+  message: string;
+  code?: string;
+}
+
 const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
   selectedTeams,
   setSelectedTeams,
@@ -28,7 +33,7 @@ const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [editingTeam, setEditingTeam] = useState<any>(null);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [formData, setFormData] = useState({ team_name: '' });
@@ -36,14 +41,14 @@ const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
   // Fetch teams
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
-    queryFn: async () => {
+    queryFn: async (): Promise<Team[]> => {
       const { data, error } = await supabase
         .from('teams')
         .select('team_id, team_name')
         .order('team_name');
       
       if (error) throw error;
-      return data as Team[];
+      return data || [];
     }
   });
 
@@ -92,12 +97,14 @@ const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
 
     try {
       if (isAddingNew) {
+        const insertData = {
+          team_name: formData.team_name.trim(),
+          balance: 0.00 as number
+        };
+        
         const { error } = await supabase
           .from('teams')
-          .insert({
-            team_name: formData.team_name.trim(),
-            balance: 0.00
-          });
+          .insert(insertData);
         
         if (error) throw error;
         
@@ -105,12 +112,14 @@ const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
           title: "Team toegevoegd",
           description: `${formData.team_name} is succesvol toegevoegd`,
         });
-      } else {
+      } else if (editingTeam) {
+        const updateData = {
+          team_name: formData.team_name.trim()
+        };
+        
         const { error } = await supabase
           .from('teams')
-          .update({
-            team_name: formData.team_name.trim()
-          })
+          .update(updateData)
           .eq('team_id', editingTeam.team_id);
         
         if (error) throw error;
@@ -125,9 +134,10 @@ const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
       setIsDialogOpen(false);
     } catch (error) {
       console.error('Error saving team:', error);
+      const dbError = error as DatabaseError;
       toast({
         title: "Fout bij opslaan",
-        description: "Er is een fout opgetreden bij het opslaan van het team.",
+        description: `Er is een fout opgetreden bij het opslaan van het team: ${dbError.message}`,
         variant: "destructive",
       });
     }
@@ -143,15 +153,14 @@ const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
       const { data: players, error: playersError } = await supabase
         .from('players')
         .select('player_id')
-        .eq('team_id', team.team_id)
-        .eq('is_active', true);
+        .eq('team_id', team.team_id);
 
       if (playersError) throw playersError;
 
       if (players && players.length > 0) {
         toast({
           title: "Kan team niet verwijderen",
-          description: `${team.team_name} heeft nog ${players.length} actieve speler(s). Verwijder eerst alle spelers.`,
+          description: `${team.team_name} heeft nog ${players.length} speler(s). Verwijder eerst alle spelers.`,
           variant: "destructive",
         });
         return;
@@ -176,9 +185,10 @@ const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
       queryClient.invalidateQueries({ queryKey: ['teams'] });
     } catch (error) {
       console.error('Error deleting team:', error);
+      const dbError = error as DatabaseError;
       toast({
         title: "Fout bij verwijderen",
-        description: "Er is een fout opgetreden bij het verwijderen van het team.",
+        description: `Er is een fout opgetreden bij het verwijderen van het team: ${dbError.message}`,
         variant: "destructive",
       });
     }
