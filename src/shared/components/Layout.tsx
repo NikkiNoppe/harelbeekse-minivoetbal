@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+
+import React, { useState, lazy, Suspense } from "react";
 import { AuthProvider } from "@features/auth/AuthProvider";
 import { TabVisibilityProvider, TabName } from "@shared/context/TabVisibilityContext";
 import Header from "./header/Header";
 import Footer from "./footer/Footer";
 import MainTabs from "./tabs/MainTabs";
-import LoginDialog from "@features/auth/LoginDialog";
+
+// Lazy load the LoginDialog to only load it when needed
+const LoginDialog = lazy(() => import("@features/auth/LoginDialog"));
 
 const Layout: React.FC = () => {
   const [showLogin, setShowLogin] = useState(false);
@@ -25,21 +28,26 @@ const Layout: React.FC = () => {
   return (
     <AuthProvider>
       <TabVisibilityProvider>
-        <div className="min-h-screen bg-background flex flex-col">
+        <div className="min-h-screen bg-purple-50 flex flex-col">
           <Header onLogoClick={handleLogoClick} onLoginClick={handleLoginClick} />
           
           <main className="flex-1">
-            <div className="container mx-auto px-4 py-6 max-w-7xl">
+            <div className="container mx-auto px-4 py-8 max-w-7xl">
               <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>
           </main>
           
           <Footer />
           
-          <LoginDialog 
-            isOpen={showLogin} 
-            onClose={handleLoginClose}
-          />
+          {/* Only render LoginDialog when showLogin is true */}
+          {showLogin && (
+            <Suspense fallback={<div className="fixed inset-0 bg-black/20 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>}>
+              <LoginDialog 
+                isOpen={showLogin} 
+                onClose={handleLoginClose}
+              />
+            </Suspense>
+          )}
         </div>
       </TabVisibilityProvider>
     </AuthProvider>

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Mail, Phone, MapPin } from "lucide-react";
 
@@ -5,7 +6,7 @@ const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
   
   return (
-    <footer className="w-full bg-gradient-to-r from-purple-600 to-purple-dark text-white mt-auto">
+    <footer className="w-full bg-purple-600 text-white mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-8 sm:py-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

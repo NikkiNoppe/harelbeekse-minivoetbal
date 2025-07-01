@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { cn } from "@shared/utils/utils";
 import { useIsMobile } from "@shared/hooks/use-mobile";
@@ -28,12 +29,12 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
   const MobileMenuContent = () => (
     <div className="flex flex-col space-y-6 p-6">
       <div className="flex items-center justify-between pb-4 border-b border-purple-200">
-        <h3 className="text-lg font-semibold text-purple-dark">Menu</h3>
+        <h3 className="text-lg font-semibold text-purple-800">Menu</h3>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setIsMenuOpen(false)}
-          className="h-8 w-8 p-0"
+          className="h-8 w-8 p-0 text-purple-600 hover:text-purple-800"
         >
           <X size={20} />
         </Button>
@@ -52,7 +53,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
               onLoginClick();
               setIsMenuOpen(false);
             }} 
-            className="w-full bg-purple-dark hover:bg-purple-700 text-white"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
             size="lg"
           >
             Inloggen
@@ -63,7 +64,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
   );
   
   return (
-    <header className="w-full bg-gradient-to-r from-purple-dark to-purple-600 shadow-lg sticky top-0 z-50">
+    <header className="w-full bg-white border-b-2 border-purple-200 shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 sm:h-20">
           {/* Logo */}
@@ -73,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
           
           {/* Desktop Navigation */}
           {!isMobile ? (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
               <ThemeToggle />
               
               {isAuthenticated && user ? (
@@ -81,8 +82,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
               ) : (
                 <Button 
                   onClick={onLoginClick} 
-                  variant="secondary"
-                  className="bg-white hover:bg-purple-50 text-purple-dark hover:text-purple-800 transition-all duration-200 font-medium px-6"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium transition-colors duration-200"
                 >
                   Inloggen
                 </Button>
@@ -95,7 +95,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  className="h-10 w-10 p-0 text-white hover:bg-white/10 focus:bg-white/10"
+                  className="h-10 w-10 p-0 text-purple-600 hover:bg-purple-100"
                 >
                   <Menu size={24} />
                   <span className="sr-only">Open menu</span>
@@ -116,4 +116,3 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
 };
 
 export default Header;
-

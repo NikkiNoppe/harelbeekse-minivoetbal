@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 import { useTabVisibility, TabName } from "@shared/context/TabVisibilityContext";
@@ -46,24 +47,26 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
   }
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-8">
       {/* Page Title */}
-      <div className="text-center space-y-2">
-        <h1 className="heading-1">Harelbeekse Minivoetbal</h1>
-        <p className="text-muted max-w-2xl mx-auto">
+      <div className="text-center space-y-4 py-8">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-purple-800 mb-4">
+          Harelbeekse Minivoetbal
+        </h1>
+        <p className="text-lg text-purple-600 max-w-3xl mx-auto leading-relaxed">
           Welkom bij de officiële website van de Harelbeekse Minivoetbal Competitie. 
           Hier vind je alle informatie over wedstrijden, standen en meer.
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full tabs-professional">
-        <TabsList className="grid w-full gap-2 p-2 bg-purple-100 border-2 border-purple-200 rounded-lg" 
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
+        <TabsList className="grid w-full gap-1 p-1 bg-white border-2 border-purple-200 rounded-lg shadow-sm" 
                  style={{ gridTemplateColumns: `repeat(${Math.min(visibleTabs.length, 4)}, 1fr)` }}>
           {visibleTabs.map((tab) => (
             <TabsTrigger 
               key={tab.key} 
               value={tab.key} 
-              className="flex-1 px-4 py-3 rounded-md font-medium text-purple-600 hover:text-purple-800 hover:bg-purple-50 transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-purple-800 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-purple-200"
+              className="flex-1 px-3 py-2 sm:px-4 sm:py-3 rounded-md font-medium text-purple-600 hover:text-purple-800 hover:bg-purple-50 transition-all duration-200 data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
             >
               <TabItem value={tab.key} label={tab.label} icon={tab.icon} />
             </TabsTrigger>
@@ -73,7 +76,7 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
         <div className="mt-8">
           {isTabVisible("algemeen") && (
             <TabsContent value="algemeen" className="mt-0">
-              <div className="card-professional">
+              <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <AlgemeenTab />
               </div>
             </TabsContent>
@@ -81,7 +84,7 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
           
           {isTabVisible("beker") && (
             <TabsContent value="beker" className="mt-0">
-              <div className="card-professional">
+              <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <CupTab />
               </div>
             </TabsContent>
@@ -89,7 +92,7 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
           
           {isTabVisible("competitie") && (
             <TabsContent value="competitie" className="mt-0">
-              <div className="card-professional">
+              <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <CompetitionTab />
               </div>
             </TabsContent>
@@ -97,7 +100,7 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
           
           {isTabVisible("playoff") && (
             <TabsContent value="playoff" className="mt-0">
-              <div className="card-professional">
+              <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <PlayOffTab />
               </div>
             </TabsContent>
@@ -105,7 +108,7 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
           
           {isTabVisible("reglement") && (
             <TabsContent value="reglement" className="mt-0">
-              <div className="card-professional">
+              <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <RegulationsTab />
               </div>
             </TabsContent>
@@ -113,7 +116,7 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
           
           {isTabVisible("schorsingen") && (
             <TabsContent value="schorsingen" className="mt-0">
-              <div className="card-professional">
+              <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <SuspensionsTab />
               </div>
             </TabsContent>
@@ -121,7 +124,7 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
           
           {isTabVisible("kaarten") && (
             <TabsContent value="kaarten" className="mt-0">
-              <div className="card-professional">
+              <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <CardsTab />
               </div>
             </TabsContent>

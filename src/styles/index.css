@@ -1,20 +1,21 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Main purple color palette */
-    --purple-50: #faf8ff;
-    --purple-100: #f5f0ff;
-    --purple-200: #e9e0ff;
-    --purple-300: #d4c0ff;
-    --purple-400: #ab86dd;
-    --purple-500: #8c5dc0;
-    --purple-600: #60368c;
-    --purple-700: #4a2a6b;
-    --purple-800: #351d4a;
-    --purple-900: #201029;
+    /* Modern light purple color palette */
+    --purple-50: #f8f4ff;
+    --purple-100: #f0e8ff;
+    --purple-200: #e0d0ff;
+    --purple-300: #c9b3ff;
+    --purple-400: #a78bfa;
+    --purple-500: #8b5cf6;
+    --purple-600: #6b46c1;
+    --purple-700: #5b21b6;
+    --purple-800: #4c1d95;
+    --purple-900: #3b1764;
     
     /* Theme variables */
     --background: var(--purple-50);
@@ -97,42 +98,42 @@
   }
 }
 
-/* Professional Typography System */
+/* Modern Typography System */
 @layer base {
   * {
     @apply border-border;
   }
   
   body {
-    @apply bg-background text-foreground;
+    @apply bg-purple-50 text-purple-800;
     font-feature-settings: "rlig" 1, "calt" 1;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     line-height: 1.6;
   }
 
-  /* Uniform Heading System */
+  /* Clean Heading System */
   h1, .heading-1 {
-    @apply text-3xl sm:text-4xl lg:text-5xl font-bold text-purple-dark leading-tight mb-4;
+    @apply text-3xl sm:text-4xl lg:text-5xl font-bold text-purple-800 leading-tight mb-4;
   }
 
   h2, .heading-2 {
-    @apply text-2xl sm:text-3xl lg:text-4xl font-semibold text-purple-dark leading-tight mb-3;
+    @apply text-2xl sm:text-3xl lg:text-4xl font-semibold text-purple-800 leading-tight mb-3;
   }
 
   h3, .heading-3 {
-    @apply text-xl sm:text-2xl lg:text-3xl font-semibold text-purple-dark leading-tight mb-3;
+    @apply text-xl sm:text-2xl lg:text-3xl font-semibold text-purple-800 leading-tight mb-3;
   }
 
   h4, .heading-4 {
-    @apply text-lg sm:text-xl lg:text-2xl font-medium text-purple-dark leading-tight mb-2;
+    @apply text-lg sm:text-xl lg:text-2xl font-medium text-purple-800 leading-tight mb-2;
   }
 
   h5, .heading-5 {
-    @apply text-base sm:text-lg lg:text-xl font-medium text-purple-dark leading-tight mb-2;
+    @apply text-base sm:text-lg lg:text-xl font-medium text-purple-800 leading-tight mb-2;
   }
 
   h6, .heading-6 {
-    @apply text-sm sm:text-base lg:text-lg font-medium text-purple-dark leading-tight mb-2;
+    @apply text-sm sm:text-base lg:text-lg font-medium text-purple-800 leading-tight mb-2;
   }
 
   /* Dark mode headings */
@@ -154,7 +155,7 @@
     @apply text-purple-200;
   }
 
-  /* Professional text utilities */
+  /* Muted text */
   .text-muted {
     @apply text-purple-600;
   }
@@ -173,11 +174,11 @@
   }
 }
 
-/* Professional Component Styling */
+/* Modern Component Styling */
 @layer components {
-  /* Uniform Card System */
+  /* Clean Card System */
   .card, .card-professional {
-    @apply bg-white border-2 border-purple-200 rounded-lg shadow-md hover:shadow-lg transition-all duration-200;
+    @apply bg-white border-2 border-purple-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200;
   }
 
   .dark .card, .dark .card-professional {
@@ -200,22 +201,22 @@
     @apply p-6 pt-0;
   }
 
-  /* Professional Form Elements */
+  /* Modern Form Elements */
   .input-professional {
-    @apply border-2 border-purple-200 focus:border-purple-400 focus:ring-purple-400 focus:ring-2 focus:ring-opacity-20 rounded-md px-4 py-3 text-purple-800 placeholder-purple-400 transition-all duration-200;
+    @apply border-2 border-purple-200 focus:border-purple-400 focus:ring-purple-400 focus:ring-2 focus:ring-opacity-20 rounded-md px-4 py-3 text-purple-800 placeholder-purple-400 transition-all duration-200 bg-white;
   }
 
   .dark .input-professional {
     @apply border-purple-700 focus:border-purple-400 bg-purple-800 text-purple-100 placeholder-purple-500;
   }
 
-  /* Professional Tables */
+  /* Clean Tables */
   .table-professional {
-    @apply w-full border-collapse border-2 border-purple-200 rounded-lg overflow-hidden;
+    @apply w-full border-collapse border-2 border-purple-200 rounded-lg overflow-hidden bg-white;
   }
 
   .table-professional th {
-    @apply bg-purple-100 text-purple-800 font-semibold p-4 text-left border-b border-purple-200;
+    @apply bg-purple-600 text-white font-semibold p-4 text-left;
   }
 
   .table-professional td {
@@ -227,11 +228,11 @@
   }
 
   .dark .table-professional {
-    @apply border-purple-700;
+    @apply border-purple-700 bg-purple-800;
   }
 
   .dark .table-professional th {
-    @apply bg-purple-700 text-purple-100 border-purple-600;
+    @apply bg-purple-600 text-white;
   }
 
   .dark .table-professional td {
@@ -239,10 +240,10 @@
   }
 
   .dark .table-professional tr:hover {
-    @apply bg-purple-800;
+    @apply bg-purple-700;
   }
 
-  /* Professional Badges */
+  /* Modern Badges */
   .badge-professional {
     @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200;
   }
@@ -263,9 +264,9 @@
     @apply bg-blue-100 text-blue-800 border-blue-200;
   }
 
-  /* Professional Tabs */
+  /* Clean Tabs */
   .tabs-professional .tabs-list {
-    @apply bg-purple-100 p-1 rounded-lg border-2 border-purple-200;
+    @apply bg-white p-1 rounded-lg border-2 border-purple-200 shadow-sm;
   }
 
   .tabs-professional .tabs-trigger {
@@ -273,32 +274,11 @@
   }
 
   .tabs-professional .tabs-trigger[data-state="active"] {
-    @apply bg-white text-purple-800 shadow-sm border border-purple-200;
-  }
-
-  /* Professional Alerts */
-  .alert-professional {
-    @apply p-4 rounded-lg border-l-4;
-  }
-
-  .alert-info {
-    @apply bg-blue-50 border-blue-400 text-blue-800;
-  }
-
-  .alert-success {
-    @apply bg-green-50 border-green-400 text-green-800;
-  }
-
-  .alert-warning {
-    @apply bg-orange-50 border-orange-400 text-orange-800;
-  }
-
-  .alert-error {
-    @apply bg-red-50 border-red-400 text-red-800;
+    @apply bg-purple-600 text-white shadow-sm;
   }
 }
 
-/* Mobile Responsive Enhancements */
+/* Enhanced Mobile Responsive Design */
 @media (max-width: 768px) {
   body {
     overflow-x: hidden;
@@ -319,8 +299,8 @@
   }
   
   button, [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 48px;
+    min-width: 48px;
   }
   
   input, textarea, select {
@@ -328,42 +308,34 @@
   }
 
   /* Mobile-optimized headings */
-  h1, .heading-1 { @apply text-2xl; }
-  h2, .heading-2 { @apply text-xl; }
-  h3, .heading-3 { @apply text-lg; }
-  h4, .heading-4 { @apply text-base; }
-  h5, .heading-5 { @apply text-sm; }
-  h6, .heading-6 { @apply text-xs; }
+  h1, .heading-1 { @apply text-2xl sm:text-3xl; }
+  h2, .heading-2 { @apply text-xl sm:text-2xl; }
+  h3, .heading-3 { @apply text-lg sm:text-xl; }
+  h4, .heading-4 { @apply text-base sm:text-lg; }
+  h5, .heading-5 { @apply text-sm sm:text-base; }
+  h6, .heading-6 { @apply text-xs sm:text-sm; }
 }
 
 /* Utility Classes */
 @layer utilities {
-  .gradient-purple {
-    @apply bg-gradient-to-r from-purple-600 to-purple-800;
+  .shadow-modern {
+    box-shadow: 0 4px 6px -1px rgba(107, 70, 193, 0.1), 0 2px 4px -1px rgba(107, 70, 193, 0.06);
   }
 
-  .gradient-purple-light {
-    @apply bg-gradient-to-r from-purple-400 to-purple-600;
+  .shadow-modern-lg {
+    box-shadow: 0 10px 15px -3px rgba(107, 70, 193, 0.1), 0 4px 6px -2px rgba(107, 70, 193, 0.05);
   }
 
-  .shadow-professional {
-    box-shadow: 0 4px 6px -1px rgba(96, 54, 140, 0.1), 0 2px 4px -1px rgba(96, 54, 140, 0.06);
-  }
-
-  .shadow-professional-lg {
-    box-shadow: 0 10px 15px -3px rgba(96, 54, 140, 0.1), 0 4px 6px -2px rgba(96, 54, 140, 0.05);
-  }
-
-  .border-professional {
+  .border-modern {
     @apply border-2 border-purple-200;
   }
 
-  .dark .border-professional {
+  .dark .border-modern {
     @apply border-purple-700;
   }
 }
 
-/* Enhanced mobile-specific improvements */
+/* Clean scrollbars */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -373,285 +345,12 @@
   display: none;
 }
 
-.no-vertical-scroll {
-  touch-action: pan-x;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.no-vertical-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-/* Dark mode fixes for tabs - Updated for purple theme */
-.dark .tabs-list [data-state="active"] {
-  background-color: var(--purple-400);
-  color: var(--purple-600);
-}
-
-/* Light mode fixes for tabs */
-.tabs-list [data-state="active"] {
-  background-color: var(--purple-400);
-  color: var(--purple-600);
-}
-
-/* Purple pattern and other styles */
-.soccer-pattern {
-  background-color: var(--purple-600);
-  background-image: linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
-  background-position: -1px -1px;
-}
-
-/* Card hover effect with purple theme */
+/* Card hover effects */
 .card-hover {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(96, 54, 140, 0.15), 0 10px 10px -5px rgba(96, 54, 140, 0.1);
+  box-shadow: 0 10px 25px -5px rgba(107, 70, 193, 0.15), 0 10px 10px -5px rgba(107, 70, 193, 0.1);
 }
-
-/* Enhanced responsive utilities */
-@layer utilities {
-  .text-responsive {
-    @apply text-sm sm:text-base lg:text-lg;
-  }
-  
-  .heading-responsive {
-    @apply text-lg sm:text-xl lg:text-2xl;
-  }
-  
-  .spacing-responsive {
-    @apply space-y-3 sm:space-y-4 lg:space-y-6;
-  }
-  
-  .padding-responsive {
-    @apply p-4 sm:p-6 lg:p-8;
-  }
-  
-  .margin-responsive {
-    @apply m-3 sm:m-4 lg:m-6;
-  }
-}
-
-/* Purple theme typography and colors - Updated for better contrast */
-h1, h2, h3, h4, h5, h6 {
-  color: var(--purple-400);
-}
-
-/* Subtitles and descriptions - Dark purple on white backgrounds */
-p, .card-description, .text-muted-foreground {
-  color: var(--purple-600);
-}
-
-/* Ensure proper text colors for readability on white backgrounds */
-.bg-white, .bg-card, [class*="bg-white"] {
-  color: var(--purple-600); /* Dark purple text on white backgrounds */
-}
-
-/* Dark mode text colors */
-.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
-  color: #ffffff; /* White headings in dark mode */
-}
-
-.dark p, .dark .card-description, .dark .text-muted-foreground {
-  color: var(--purple-400); /* Light purple text in dark mode */
-}
-
-/* Table headers and frame titles */
-th, .table-header, .frame-title, .table-head {
-  color: #ffffff; /* White text for table headers */
-  background-color: var(--purple-600); /* Dark purple background for contrast */
-}
-
-/* Content text in frames and columns */
-td, .table-cell, .content-text, .column-text {
-  color: var(--purple-600); /* Dark purple for content text */
-}
-
-/* Special handling for buttons and interactive elements */
-button {
-  background-color: var(--purple-400); /* Light purple buttons */
-  color: #ffffff; /* White text on buttons only */
-  border-color: var(--purple-400); /* Light purple borders */
-}
-
-button:hover {
-  background-color: var(--purple-500); /* Dark purple on hover */
-  color: #ffffff; /* White text on buttons only */
-}
-
-/* Tab styling improvements */
-.tabs-list {
-  background-color: var(--purple-50); /* Light gray tab background */
-  border-color: var(--purple-400); /* Light purple borders */
-}
-
-.tabs-trigger {
-  color: var(--purple-600); /* Dark purple inactive tab text */
-  border-color: var(--purple-400);
-}
-
-.tabs-trigger[data-state="active"] {
-  background-color: var(--purple-400); /* Light purple active tab */
-  color: var(--purple-600); /* Dark purple active tab text */
-}
-
-/* Badge styling */
-.badge {
-  background-color: var(--purple-400);
-  color: var(--purple-600);
-  border-color: var(--purple-400);
-}
-
-/* Input and form styling */
-input, textarea, select {
-  border-color: var(--purple-400);
-  background-color: #ffffff;
-  color: var(--purple-600);
-}
-
-input:focus, textarea:focus, select:focus {
-  border-color: var(--purple-400);
-  ring-color: var(--purple-400);
-}
-
-/* Table styling with light purple borders */
-table {
-  border-color: var(--purple-400);
-}
-
-tbody tr {
-  border-color: var(--purple-400);
-}
-
-tbody tr:hover {
-  background-color: var(--purple-400);
-}
-
-/* Card and component frames with light purple borders */
-.card, .frame, .component-frame {
-  border-color: var(--purple-400);
-}
-
-.card-header, .frame-header {
-  background-color: var(--purple-50);
-  color: var(--purple-600);
-  border-color: var(--purple-400);
-}
-
-/* Separator and divider styling */
-.separator, .divider, hr {
-  background-color: var(--purple-400);
-  border-color: var(--purple-400);
-}
-
-/* Alert components on white backgrounds */
-.alert {
-  background-color: #ffffff;
-  color: var(--purple-600);
-  border-color: var(--purple-400);
-}
-
-.alert-description {
-  color: var(--purple-600);
-}
-
-/* Muted text should be dark purple on white backgrounds */
-.text-muted-foreground {
-  color: var(--purple-600);
-}
-
-/* Dark mode muted text */
-.dark .text-muted-foreground {
-  color: var(--purple-400);
-}
-
-@layer components {
-  .badge-purple {
-    @apply bg-purple-400 text-white;
-  }
-  .badge-purple-white {
-    @apply bg-purple-600 text-white;
-  }
-}
-
-/* ---- Custom utility for purple_light border [purple-400 is used for purple_light in site vars] ---- */
-.border-\[var\(--purple-400\)\] {
-  border-color: var(--purple-400) !important;
-}
-/* Optional: style for dropdown "Geen speler" on hover/focus for clarity */
-[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:hover, 
-[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:focus {
-  background-color: var(--purple-200) !important;
-}
-
-/* ------ Custom: Lovable site-wide purple theme dropdown and card fixes ------ */
-
-/* Fix select dropdown content background and shadow to match color branding */
-[data-radix-popper-content-wrapper] .bg-\[var\(--purple-200\)\] {
-  background-color: var(--purple-200) !important;
-  color: var(--main-color-dark) !important;
-}
-
-[data-radix-popper-content-wrapper] .border-\[var\(--main-color-dark\)\] {
-  border-color: var(--main-color-dark) !important;
-}
-[data-radix-popper-content-wrapper] .shadow-lg,
-[data-radix-popper-content-wrapper] .shadow-md {
-  box-shadow: 0 8px 24px 0 rgba(96, 54, 140, 0.09), 0 1.5px 4px 0 rgba(96, 54, 140, 0.12) !important;
-}
-[data-radix-popper-content-wrapper] .data-\[highlighted\]\:bg-\[var\(--main-color-dark\)\] {
-  background-color: var(--main-color-dark) !important;
-  color: #fff !important;
-}
-
-/* EXTRA: Ensure "Geen speler" SelectItem always has visible purple_light border */
-[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\],
-[data-radix-select-item][value="no-player"] {
-  border-color: var(--purple-400) !important;
-  border-width: 2px !important;
-  border-style: solid !important;
-  box-shadow: 0 0 0 1px var(--purple-400) !important;
-  background-color: #fff !important;
-  color: var(--main-color-dark) !important;
-}
-
-[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:hover,
-[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:focus,
-[data-radix-select-item][value="no-player"]:hover,
-[data-radix-select-item][value="no-player"]:focus {
-  border-color: var(--purple-400) !important;
-  border-width: 2px !important;
-  border-style: solid !important;
-  box-shadow: 0 0 0 2px var(--purple-400) !important;
-  background-color: var(--purple-200) !important;
-  color: var(--main-color-dark) !important;
-}
-
-/* Main match card headers */
-.bg-\[var\(--main-color-dark\)\] {
-  background-color: var(--main-color-dark) !important;
-}
-.text-\[var\(--main-color-dark\)\] {
-  color: var(--main-color-dark) !important;
-}
-
-.bg-\[var\(--purple-200\)\] {
-  background-color: var(--purple-200) !important;
-}
-.text-\[var\(--purple-200\)\] {
-  color: var(--purple-200) !important;
-}
-
-/* Card & Button tweaks over the match form for better white contrast */
-.card-header,
-.card-title,
-.card-title.text-white {
-  color: #fff !important;
-}
-
-/* End Custom site-wide fixes */
