@@ -13,14 +13,23 @@ interface DatabasePlayer {
   last_name: string;
 }
 
+interface MatchQueryResult {
+  match_id: number;
+  is_submitted: boolean;
+  home_players: any;
+  away_players: any;
+  home_team_id: number;
+  away_team_id: number;
+}
+
 export const usePlayerSelection = (matchId: number, teamId: number, onComplete: () => void) => {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch team players with explicit typing
-  const { data: teamPlayers, isLoading } = useQuery({
+  const { data: teamPlayers, isLoading } = useQuery<Player[]>({
     queryKey: ['teamPlayers', teamId],
-    queryFn: async () => {
+    queryFn: async (): Promise<Player[]> => {
       const { data, error } = await supabase
         .from('players')
         .select('player_id, first_name, last_name')
@@ -38,8 +47,8 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         throw error;
       }
       
-      // Transform database players to Player format
-      const players = (data || []).map((dbPlayer: DatabasePlayer) => ({
+      // Transform database players to Player format with explicit typing
+      const players: Player[] = (data || []).map((dbPlayer: DatabasePlayer): Player => ({
         playerId: dbPlayer.player_id,
         playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
         selected: false,
@@ -52,9 +61,9 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   });
   
   // Check if there's already match data for this team
-  const { data: existingMatch, isLoading: loadingMatch } = useQuery({
+  const { data: existingMatch, isLoading: loadingMatch } = useQuery<MatchQueryResult | null>({
     queryKey: ['matchData', matchId, teamId],
-    queryFn: async () => {
+    queryFn: async (): Promise<MatchQueryResult | null> => {
       const { data, error } = await supabase
         .from('matches')
         .select('match_id, is_submitted, home_players, away_players, home_team_id, away_team_id')
@@ -66,7 +75,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         throw error;
       }
       
-      return data;
+      return data as MatchQueryResult | null;
     }
   });
   
@@ -78,7 +87,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   // Initialize form with team players and any existing selections
   useEffect(() => {
     if (teamPlayers && !isLoading) {
-      let initialPlayers = teamPlayers;
+      let initialPlayers: Player[] = teamPlayers;
       
       // If there's an existing match, try to populate from the JSONB data
       if (existingMatch) {
