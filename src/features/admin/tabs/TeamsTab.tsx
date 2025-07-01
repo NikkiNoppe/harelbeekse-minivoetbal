@@ -200,7 +200,7 @@ const TeamsTab: React.FC = () => {
               </CardDescription>
             </div>
             <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-              <DialogTrigger asChild>
+              <DialogTrigger>
                 <Button className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
                   Nieuw Team
@@ -267,7 +267,7 @@ const TeamsTab: React.FC = () => {
                         <Edit className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
-                        <AlertDialogTrigger asChild>
+                        <AlertDialogTrigger>
                           <Button
                             variant="ghost"
                             size="sm"

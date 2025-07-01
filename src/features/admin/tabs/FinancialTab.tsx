@@ -25,7 +25,7 @@ const FinancialTab: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [financialSettingsOpen, setFinancialSettingsOpen] = useState(false);
   const [teamDetailOpen, setTeamDetailOpen] = useState(false);
-  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
 
   const { data: costs, isLoading, error } = useQuery({
     queryKey: ['cost_settings'],
@@ -146,11 +146,12 @@ const FinancialTab: React.FC = () => {
 
       <CostSettingsModal open={open} onOpenChange={setOpen} />
       <FinancialSettingsModal open={financialSettingsOpen} onOpenChange={setFinancialSettingsOpen} />
-      {selectedTeamId && (
-        <TeamDetailModal open={teamDetailOpen} onOpenChange={setTeamDetailOpen} team={selectedTeamId} />
+      {selectedTeam && (
+        <TeamDetailModal open={teamDetailOpen} onOpenChange={setTeamDetailOpen} team={selectedTeam} />
       )}
     </div>
   );
 };
 
 export default FinancialTab;
+

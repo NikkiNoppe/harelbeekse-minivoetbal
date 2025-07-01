@@ -39,12 +39,13 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({
     name: "",
     description: "",
     amount: 0,
-    category: "expense" as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost',
+    category: "match_cost" as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost',
+    is_active: true,
   });
 
   const { data: costSettings = [], isLoading } = useQuery({
     queryKey: ['enhanced-cost-settings'],
-    queryFn: enhancedCostSettingsService.getAllCostSettings,
+    queryFn: enhancedCostSettingsService.getCostSettings,
     enabled: open,
   });
 
@@ -52,13 +53,14 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({
 
   const handleAddCost = async () => {
     try {
-      await enhancedCostSettingsService.createCostSetting(newCost);
+      await enhancedCostSettingsService.addCostSetting(newCost);
       queryClient.invalidateQueries({ queryKey: ['enhanced-cost-settings'] });
       setNewCost({
         name: "",
         description: "",
         amount: 0,
-        category: "expense" as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost',
+        category: "match_cost" as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost',
+        is_active: true,
       });
       toast({
         title: "Kostenverzameling toegevoegd",
@@ -159,10 +161,11 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="expense">Uitgave</SelectItem>
-                    <SelectItem value="revenue">Inkomst</SelectItem>
-                    <SelectItem value="deposit">Storting</SelectItem>
+                    <SelectItem value="match_cost">Match Kosten</SelectItem>
                     <SelectItem value="penalty">Boete</SelectItem>
+                    <SelectItem value="field_cost">Veld Kosten</SelectItem>
+                    <SelectItem value="referee_cost">Scheidsrechter Kosten</SelectItem>
+                    <SelectItem value="other">Overig</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -317,3 +320,4 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({
 };
 
 export default EnhancedCostSettingsModal;
+
