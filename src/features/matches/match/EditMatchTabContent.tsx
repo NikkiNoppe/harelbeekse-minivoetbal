@@ -1,10 +1,10 @@
 
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Input } from "@shared/components/ui/input";
+import { Button } from "@shared/components/ui/button";
 import { Search, Calendar } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@shared/components/ui/badge";
 import { MatchFormData } from "./types";
 import { FormMessage, FormMenuItem, EditMatchForm } from "./components";
 

@@ -13,6 +13,7 @@ import { supabase } from "@shared/integrations/supabase/client";
 const MatchTab: React.FC = () => {
   const [matches, setMatches] = useState<MatchFormData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMatch, setSelectedMatch] = useState<MatchFormData | null>(null);
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -49,6 +50,19 @@ const MatchTab: React.FC = () => {
     fetchMatches();
   }, []);
 
+  const handleSaveMatch = (matchData: MatchFormData) => {
+    console.log('Saving match:', matchData);
+    // Add save logic here
+  };
+
+  const handleEditMatch = (match: MatchFormData) => {
+    setSelectedMatch(match);
+  };
+
+  const handleCancelEdit = () => {
+    setSelectedMatch(null);
+  };
+
   if (loading) {
     return <Card>
         <CardHeader>
@@ -79,14 +93,15 @@ const MatchTab: React.FC = () => {
             <EditMatchTabContent 
               isLoading={loading}
               upcomingMatches={matches}
-              selectedMatch={null}
-              onSaveMatch={() => {}}
-              onSelectMatch={() => {}}
-              onCloseMatch={() => {}}
+              selectedMatch={selectedMatch}
+              onSaveMatch={handleSaveMatch}
+              onEditMatch={handleEditMatch}
+              onCancelEdit={handleCancelEdit}
             />
           </TabsContent>
           <TabsContent value="past" className="mt-6">
             <PastMatchesTabContent 
+              isLoading={loading}
               pastMatches={matches.filter(m => m.homeScore !== null && m.id !== undefined).map(m => ({
                 id: m.id!,
                 date: m.date,
