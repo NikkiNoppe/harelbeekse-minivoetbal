@@ -1,9 +1,12 @@
+
 import { useState, useCallback } from "react"
 
 interface Toast {
+  id: string
   title: string
   description?: string
   variant?: "default" | "destructive"
+  action?: React.ReactNode
 }
 
 let toastQueue: Toast[] = [];
@@ -17,12 +20,13 @@ export function useToast() {
     setToastsGlobal = setToasts;
   }
 
-  const toast = useCallback((toast: Toast) => {
-    setToasts(prev => [...prev, toast])
+  const toast = useCallback((toast: Omit<Toast, 'id'>) => {
+    const toastWithId = { ...toast, id: Math.random().toString(36) }
+    setToasts(prev => [...prev, toastWithId])
     
     // Auto remove toast after 5 seconds
     setTimeout(() => {
-      setToasts(prev => prev.slice(1))
+      setToasts(prev => prev.filter(t => t.id !== toastWithId.id))
     }, 5000)
   }, [])
 
@@ -33,14 +37,15 @@ export function useToast() {
 }
 
 // Create a standalone toast function
-export const toast = (toastData: Toast) => {
+export const toast = (toastData: Omit<Toast, 'id'>) => {
   if (setToastsGlobal) {
-    toastQueue.push(toastData);
+    const toastWithId = { ...toastData, id: Math.random().toString(36) }
+    toastQueue.push(toastWithId);
     setToastsGlobal([...toastQueue]);
     
     // Auto remove toast after 5 seconds
     setTimeout(() => {
-      toastQueue = toastQueue.slice(1);
+      toastQueue = toastQueue.filter(t => t.id !== toastWithId.id);
       if (setToastsGlobal) {
         setToastsGlobal([...toastQueue]);
       }
