@@ -26,10 +26,10 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch team players with explicit typing
-  const { data: teamPlayers, isLoading } = useQuery<Player[]>({
+  // Simplified query without explicit generic type parameter
+  const teamPlayersQuery = useQuery({
     queryKey: ['teamPlayers', teamId],
-    queryFn: async (): Promise<Player[]> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('players')
         .select('player_id, first_name, last_name')
@@ -47,8 +47,8 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         throw error;
       }
       
-      // Transform database players to Player format with explicit typing
-      const players: Player[] = (data || []).map((dbPlayer: DatabasePlayer): Player => ({
+      // Transform to Player format
+      const players: Player[] = (data || []).map((dbPlayer: DatabasePlayer) => ({
         playerId: dbPlayer.player_id,
         playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
         selected: false,
@@ -60,10 +60,10 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     }
   });
   
-  // Check if there's already match data for this team
-  const { data: existingMatch, isLoading: loadingMatch } = useQuery<MatchQueryResult | null>({
+  // Simplified match query without explicit generic type parameter
+  const matchQuery = useQuery({
     queryKey: ['matchData', matchId, teamId],
-    queryFn: async (): Promise<MatchQueryResult | null> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('matches')
         .select('match_id, is_submitted, home_players, away_players, home_team_id, away_team_id')
@@ -83,6 +83,12 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     resolver: zodResolver(formSchema),
     defaultValues: { players: [] }
   });
+  
+  // Use the simplified query results
+  const teamPlayers = teamPlayersQuery.data;
+  const isLoading = teamPlayersQuery.isLoading;
+  const existingMatch = matchQuery.data;
+  const loadingMatch = matchQuery.isLoading;
   
   // Initialize form with team players and any existing selections
   useEffect(() => {
