@@ -1,7 +1,6 @@
-
 import React from "react";
-import { Input } from "@/components/ui/input";
-import { Search, Calendar, Trophy } from "lucide-react";
+import { Search } from "lucide-react";
+import { Input } from "@shared/components/ui/input";
 
 interface MatchFormFilterProps {
   searchTerm: string;
@@ -37,7 +36,6 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
         </div>
 
         <div className="relative">
-          <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="date"
             placeholder="Filter op datum"
@@ -48,7 +46,6 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
         </div>
 
         <div className="relative">
-          <Trophy className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Filter op speeldag..."

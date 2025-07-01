@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@shared/components/ui/button";
 import { Save, Lock } from "lucide-react";
 
 interface MatchFormActionsProps {

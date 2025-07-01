@@ -1,8 +1,9 @@
+
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Clock, MapPin, Lock, CheckCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Badge } from "@shared/components/ui/badge";
+import { Button } from "@shared/components/ui/button";
+import { Calendar, MapPin, Users, Clock } from "lucide-react";
 import { MatchFormData } from "./types";
 
 interface MatchFormListProps {

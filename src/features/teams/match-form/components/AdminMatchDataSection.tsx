@@ -1,140 +1,148 @@
-
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Lock, Unlock, Save } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Input } from "@shared/components/ui/input";
+import { Label } from "@shared/components/ui/label";
+import { Button } from "@shared/components/ui/button";
 import { MatchFormData } from "../types";
-import { matchService } from "@/services/matchService";
+import { toast } from "@shared/hooks/use-toast";
+import { matchService } from "@shared/services/matchService";
 
 interface AdminMatchDataSectionProps {
   match: MatchFormData;
-  onMatchUpdate: (match: MatchFormData) => void;
+  onMatchUpdate: (matchId: number, updates: Partial<MatchFormData>) => Promise<void>;
+  isSaving: boolean;
   canEdit: boolean;
+  onLockToggle: (matchId: number) => Promise<void>;
 }
 
 export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
   match,
   onMatchUpdate,
-  canEdit
+  isSaving,
+  canEdit,
+  onLockToggle
 }) => {
-  const { toast } = useToast();
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [formData, setFormData] = useState({
-    date: match.date,
-    time: match.time,
-    location: match.location,
-    matchday: match.matchday
-  });
+  const [fieldCost, setFieldCost] = useState<string>(match.fieldCost?.toString() || "");
+  const [refereeCost, setRefereeCost] = useState<string>(match.refereeCost?.toString() || "");
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  const handleSaveCosts = async () => {
+    if (!match.matchId) {
+      toast({
+        title: "Fout",
+        description: "Wedstrijd ID is niet beschikbaar.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const handleSave = async () => {
-    if (!canEdit) return;
+    const parsedFieldCost = parseFloat(fieldCost);
+    const parsedRefereeCost = parseFloat(refereeCost);
 
-    setIsUpdating(true);
+    if (isNaN(parsedFieldCost) || isNaN(parsedRefereeCost)) {
+      toast({
+        title: "Fout",
+        description: "Ongeldige kosten ingevoerd. Vul getallen in.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      await matchService.updateMatchMetadata({
-        matchId: match.matchId,
-        date: formData.date,
-        time: formData.time,
-        homeTeamId: match.homeTeamId,
-        awayTeamId: match.awayTeamId,
-        location: formData.location,
-        matchday: formData.matchday
+      await onMatchUpdate(match.matchId, {
+        fieldCost: parsedFieldCost,
+        refereeCost: parsedRefereeCost,
       });
 
-      const updatedMatch = {
-        ...match,
-        date: formData.date,
-        time: formData.time,
-        location: formData.location,
-        matchday: formData.matchday
-      };
-
-      onMatchUpdate(updatedMatch);
-
       toast({
-        title: "Wedstrijdgegevens bijgewerkt",
-        description: "De wedstrijdgegevens zijn succesvol opgeslagen.",
+        title: "Succes",
+        description: "Kosten succesvol opgeslagen!",
       });
     } catch (error) {
       toast({
-        title: "Fout bij opslaan",
-        description: "Er is een fout opgetreden bij het opslaan van de wedstrijdgegevens.",
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het opslaan van de kosten.",
         variant: "destructive",
       });
-    } finally {
-      setIsUpdating(false);
     }
   };
 
+  const handleLockToggle = async () => {
+    if (!match.matchId) {
+      toast({
+        title: "Fout",
+        description: "Wedstrijd ID is niet beschikbaar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await onLockToggle(match.matchId);
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Admin: Wedstrijdgegevens</CardTitle>
+    <Card className="border-2" style={{ borderColor: "var(--purple-200)" }}>
+      <CardHeader style={{ background: "var(--main-color-dark)" }} className="rounded-t-lg">
+        <CardTitle className="text-base text-white">Admin data</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="admin-date">Datum</Label>
-            <Input
-              id="admin-date"
-              type="date"
-              value={formData.date}
-              onChange={(e) => handleInputChange("date", e.target.value)}
-              disabled={!canEdit}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="admin-time">Tijd</Label>
-            <Input
-              id="admin-time"
-              type="time"
-              value={formData.time}
-              onChange={(e) => handleInputChange("time", e.target.value)}
-              disabled={!canEdit}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="admin-location">Locatie</Label>
+      <CardContent className="flex flex-col gap-4">
+        <div>
+          <Label htmlFor="fieldCost">Veldkosten</Label>
           <Input
-            id="admin-location"
-            value={formData.location}
-            onChange={(e) => handleInputChange("location", e.target.value)}
-            disabled={!canEdit}
-            placeholder="Wedstrijdlocatie"
+            id="fieldCost"
+            type="number"
+            value={fieldCost}
+            onChange={(e) => setFieldCost(e.target.value)}
+            disabled={isSaving || !canEdit}
+            className="focus:border-[var(--main-color-dark)] focus:ring-[var(--main-color-dark)]"
           />
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="admin-matchday">Speeldag</Label>
+        <div>
+          <Label htmlFor="refereeCost">Scheidsrechterkosten</Label>
           <Input
-            id="admin-matchday"
-            value={formData.matchday}
-            onChange={(e) => handleInputChange("matchday", e.target.value)}
-            disabled={!canEdit}
-            placeholder="bijv. 11"
+            id="refereeCost"
+            type="number"
+            value={refereeCost}
+            onChange={(e) => setRefereeCost(e.target.value)}
+            disabled={isSaving || !canEdit}
+            className="focus:border-[var(--main-color-dark)] focus:ring-[var(--main-color-dark)]"
           />
         </div>
-
-        {canEdit && (
+        <div className="flex justify-between">
           <Button
-            onClick={handleSave}
-            disabled={isUpdating}
-            className="w-full"
+            onClick={handleSaveCosts}
+            disabled={isSaving || !canEdit}
+            className="px-6"
+            style={{
+              background: "var(--main-color-dark)",
+              color: "#fff",
+            }}
           >
             <Save className="h-4 w-4 mr-2" />
-            {isUpdating ? "Opslaan..." : "Wedstrijdgegevens Opslaan"}
+            Kosten opslaan
           </Button>
-        )}
+          <Button
+            onClick={handleLockToggle}
+            disabled={isSaving}
+            className="px-6"
+            style={{
+              background: "var(--main-color-dark)",
+              color: "#fff",
+            }}
+          >
+            {match.isLocked ? (
+              <>
+                <Unlock className="h-4 w-4 mr-2" />
+                Ontgrendel
+              </>
+            ) : (
+              <>
+                <Lock className="h-4 w-4 mr-2" />
+                Vergrendel
+              </>
+            )}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

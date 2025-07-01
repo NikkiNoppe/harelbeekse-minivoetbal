@@ -1,64 +1,46 @@
-
 import React from "react";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlayerSelection } from "../types";
-import { TeamPlayer } from "./useTeamPlayers";
+import { PlayerSelection } from "./types";
+import { Label } from "@shared/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@shared/components/ui/select";
 
 interface CaptainSelectionProps {
-  selections: PlayerSelection[];
-  players: TeamPlayer[] | undefined;
-  canEdit: boolean;
-  onChange: (playerId: string) => void;
+  playerList: PlayerSelection[];
+  selectedCaptainId: number | null;
+  onCaptainChange: (playerId: number | null) => void;
+  disabled?: boolean;
 }
 
-const CaptainSelection: React.FC<CaptainSelectionProps> = ({
-  selections,
-  players,
-  canEdit,
-  onChange,
+export const CaptainSelection: React.FC<CaptainSelectionProps> = ({
+  playerList,
+  selectedCaptainId,
+  onCaptainChange,
+  disabled
 }) => {
-  if (!canEdit) return null;
-
-  // Only allow captain selection for selected players
-  const selectedPlayers = selections.filter((sel) => sel.playerId !== null);
-  const currentCaptain = selections.find((sel) => sel.isCaptain)?.playerId?.toString() || "no-captain";
-
-  const handleCaptainChange = (value: string) => {
-    console.log('Captain selection changed:', value);
-    onChange(value);
-  };
-
   return (
-    <div className="mt-2 mb-2">
-      <Label className="text-sm font-medium">Kapitein</Label>
+    <div>
+      <Label htmlFor="captain">Aanvoerder</Label>
       <Select
-        value={currentCaptain}
-        onValueChange={handleCaptainChange}
+        value={selectedCaptainId ? selectedCaptainId.toString() : ""}
+        onValueChange={(value) => onCaptainChange(value ? parseInt(value, 10) : null)}
+        disabled={disabled}
       >
-        <SelectTrigger className="w-[180px] mt-1">
-          <SelectValue placeholder="Selecteer kapitein" />
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Selecteer aanvoerder" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="no-captain">Geen kapitein</SelectItem>
-          {selectedPlayers.map((sel) => {
-            let name = sel.playerName;
-            const dbPlayer = Array.isArray(players)
-              ? players.find((p) => p.player_id === sel.playerId)
-              : undefined;
-            if (dbPlayer) {
-              name = `${dbPlayer.first_name} ${dbPlayer.last_name}`;
-            }
-            return (
-              <SelectItem key={sel.playerId!} value={sel.playerId?.toString() || "no-captain"}>
-                {name}
-              </SelectItem>
-            );
-          })}
+          {playerList.map((player) => (
+            <SelectItem key={player.playerId} value={player.playerId?.toString() || ""}>
+              {player.playerName}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>
   );
 };
-
-export default CaptainSelection;

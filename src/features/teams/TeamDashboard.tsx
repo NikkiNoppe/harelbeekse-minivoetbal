@@ -1,101 +1,122 @@
-
 import React, { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import PlayersTab from "@/components/user/tabs/PlayersTab";
-import { User, TeamData } from "@/types/auth";
-import MatchFormTab from "./MatchFormTab";
-import { teamService } from "@/services/teamService";
+import { useParams } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
+import { toast } from "@shared/hooks/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { User } from "@shared/types/auth";
+import { TeamPlayer } from "./match-form/components/useTeamPlayers";
+import { PlayersList } from "./PlayersList";
+import { CompactMatchForm } from "./match-form/CompactMatchForm";
+import { supabase } from "@shared/integrations/supabase/client";
 
 interface TeamDashboardProps {
-  user: User;
-  teamData: TeamData;
+  user: User | null;
 }
 
-const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("match-forms");
-  const [realTeamData, setRealTeamData] = useState<TeamData>(teamData);
+const TeamDashboard: React.FC<TeamDashboardProps> = ({ user }) => {
+  const { teamId } = useParams<{ teamId: string }>();
+  const [teamName, setTeamName] = useState<string | null>(null);
+  const [isTeamAdmin, setIsTeamAdmin] = useState(false);
+  const [teamPlayers, setTeamPlayers] = useState<TeamPlayer[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Load real team data from database
+
   useEffect(() => {
-    const loadTeamData = async () => {
+    const fetchTeamDetails = async () => {
+      if (!teamId) {
+        console.error("No team ID provided");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
       try {
-        if (user.teamId) {
-          const team = await teamService.getTeamById(user.teamId);
-          if (team) {
-            setRealTeamData({
-              id: team.team_id,
-              name: team.team_name,
-              email: teamData.email // Keep existing email logic for now
-            });
-          }
+        const { data: teamData, error: teamError } = await supabase
+          .from('teams')
+          .select('team_name')
+          .eq('team_id', teamId)
+          .single();
+
+        if (teamError) {
+          console.error("Error fetching team:", teamError);
+          toast({
+            title: "Error",
+            description: "Failed to load team details.",
+            variant: "destructive",
+          });
+          return;
         }
-      } catch (error) {
-        toast({
-          title: "Fout bij laden team gegevens",
-          description: "Er is een fout opgetreden bij het laden van de team gegevens.",
-          variant: "destructive",
-        });
+
+        setTeamName(teamData?.team_name || 'Unknown Team');
+
+        // Check if the current user is an admin for this team
+        const { data: adminData, error: adminError } = await supabase
+          .from('team_admins')
+          .select('*')
+          .eq('team_id', teamId)
+          .eq('user_id', user?.id);
+
+        if (adminError) {
+          console.error("Error fetching admin status:", adminError);
+          toast({
+            title: "Error",
+            description: "Failed to load admin status.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setIsTeamAdmin(adminData && adminData.length > 0);
+
       } finally {
         setLoading(false);
       }
     };
 
-    loadTeamData();
-  }, [user.teamId, teamData.email]);
-
-  // All team managers have access to both capabilities
-  const canManagePlayers = !!realTeamData.email;
-  const canManageMatchForms = !!realTeamData.email;
+    fetchTeamDetails();
+  }, [teamId, user]);
 
   if (loading) {
-    return <div className="flex justify-center items-center py-8">Team gegevens laden...</div>;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Dashboard</CardTitle>
+        </CardHeader>
+        <CardContent>Loading...</CardContent>
+      </Card>
+    );
+  }
+
+  if (!teamId) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Dashboard</CardTitle>
+        </CardHeader>
+        <CardContent>No team ID provided.</CardContent>
+      </Card>
+    );
   }
 
   return (
-    <div className="w-full space-y-4 sm:space-y-6">
-      <div className="px-1">
-        <h1 className="text-xl sm:text-2xl font-bold break-words">
-          Team Dashboard: {realTeamData.name}
-        </h1>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 min-h-[40px] sm:min-h-[44px]">
-          <TabsTrigger 
-            value="match-forms" 
-            disabled={!canManageMatchForms}
-            className="text-xs sm:text-sm px-2 sm:px-4"
-          >
-            Wedstrijdformulieren
-          </TabsTrigger>
-          <TabsTrigger 
-            value="players" 
-            disabled={!canManagePlayers}
-            className="text-xs sm:text-sm px-2 sm:px-4"
-          >
-            Spelerslijst
-          </TabsTrigger>
-        </TabsList>
-
-        {canManageMatchForms && (
-          <TabsContent value="match-forms" className="space-y-4 mt-4">
-            <MatchFormTab
-              teamId={user.teamId || 0}
-              teamName={realTeamData.name}
-            />
+    <Card>
+      <CardHeader>
+        <CardTitle>Team Dashboard</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="matches" className="w-full">
+          <TabsList>
+            <TabsTrigger value="matches" className="focus:shadow-none">Wedstrijden</TabsTrigger>
+            <TabsTrigger value="players" className="focus:shadow-none">Spelers</TabsTrigger>
+          </TabsList>
+          <TabsContent value="matches" className="mt-6">
+            <CompactMatchForm teamId={teamId} isTeamAdmin={isTeamAdmin} />
           </TabsContent>
-        )}
-
-        {canManagePlayers && (
-          <TabsContent value="players" className="space-y-4 mt-4">
-            <PlayersTab />
+          <TabsContent value="players" className="mt-6">
+            <PlayersList teamId={teamId} isTeamAdmin={isTeamAdmin} />
           </TabsContent>
-        )}
-      </Tabs>
-    </div>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 

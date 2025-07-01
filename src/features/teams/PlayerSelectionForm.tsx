@@ -1,76 +1,100 @@
+import React, { useState, useEffect } from "react";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
+import { Label } from "@shared/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Badge } from "@shared/components/ui/badge";
+import { Trash2, UserPlus } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@shared/components/ui/table";
 
-import React from "react";
-import { 
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage 
-} from "@/components/ui/form";
-import { Loader2 } from "lucide-react";
-import { usePlayerSelection } from "./player-selection/usePlayerSelection";
-import PlayerSelectionHeader from "./player-selection/PlayerSelectionHeader";
-import PlayerSelectionTable from "./player-selection/PlayerSelectionTable";
-import PlayerSelectionActions from "./player-selection/PlayerSelectionActions";
-import { PlayerSelectionFormProps } from "./player-selection/types";
+interface PlayerSelectionFormProps {
+  teamId: number | undefined;
+  onClose: () => void;
+  onPlayerAdded: () => void;
+}
 
-const PlayerSelectionForm: React.FC<PlayerSelectionFormProps> = ({ 
-  matchId, 
-  teamId, 
-  teamName,
-  isHomeTeam,
-  onComplete
-}) => {
-  const {
-    form,
-    isLoading,
-    submitting,
-    onSubmit,
-    togglePlayerSelection,
-    toggleCaptain
-  } = usePlayerSelection(matchId, teamId, onComplete);
-  
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Spelersinformatie laden...</span>
-      </div>
-    );
-  }
-  
+export const PlayerSelectionForm: React.FC<PlayerSelectionFormProps> = ({ teamId, onClose, onPlayerAdded }) => {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAddPlayer = async () => {
+    setIsAdding(true);
+    try {
+      const response = await fetch('/api/addPlayer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          teamId: teamId,
+          firstName: firstName,
+          lastName: lastName,
+          birthDate: birthDate,
+        }),
+      });
+
+      if (response.ok) {
+        console.log('Player added successfully');
+        onPlayerAdded();
+        onClose();
+      } else {
+        console.error('Failed to add player');
+      }
+    } catch (error) {
+      console.error('Error adding player:', error);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="space-y-4">
-          <PlayerSelectionHeader 
-            teamName={teamName}
-            selectedCount={form.watch('players').filter(p => p.selected).length}
-          />
-          
-          <PlayerSelectionTable
-            form={form}
-            onTogglePlayerSelection={togglePlayerSelection}
-            onToggleCaptain={toggleCaptain}
-          />
-          
-          {form.formState.errors.players && (
-            <div className="bg-destructive/10 p-3 rounded border border-destructive/20">
-              <p className="text-sm text-destructive font-medium">
-                {form.formState.errors.players.message}
-              </p>
-            </div>
-          )}
-          
-          <PlayerSelectionActions 
-            submitting={submitting}
-            onComplete={onComplete}
+    <Card>
+      <CardHeader>
+        <CardTitle>Nieuwe speler toevoegen</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor="firstName">Voornaam</Label>
+            <Input
+              id="firstName"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Voornaam"
+            />
+          </div>
+          <div>
+            <Label htmlFor="lastName">Achternaam</Label>
+            <Input
+              id="lastName"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Achternaam"
+            />
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="birthDate">Geboortedatum</Label>
+          <Input
+            type="date"
+            id="birthDate"
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
           />
         </div>
-      </form>
-    </Form>
+        <Button onClick={handleAddPlayer} disabled={isAdding}>
+          {isAdding ? "Toevoegen..." : "Speler toevoegen"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 };
-
-export default PlayerSelectionForm;

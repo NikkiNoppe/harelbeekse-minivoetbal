@@ -1,10 +1,27 @@
-
 import React from "react";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import CardIcon from "./CardIcon";
-import { PlayerSelection } from "../types";
+import { PlayerSelection } from "./types";
+import { Input } from "@shared/components/ui/input";
+import { Button } from "@shared/components/ui/button";
+import { Badge } from "@shared/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@shared/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@shared/components/ui/select";
 import { TeamPlayer } from "./useTeamPlayers";
+import { CaptainSelection } from "./CaptainSelection";
+import { CardIcon } from "./CardIcon";
+import { Star, Trash2 } from "lucide-react";
 
 interface PlayerSelectionTableProps {
   teamLabel: string;

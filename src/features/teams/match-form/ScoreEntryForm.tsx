@@ -1,254 +1,165 @@
-
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { Lock, Save } from "lucide-react";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
+import { Label } from "@shared/components/ui/label";
+import { Textarea } from "@shared/components/ui/textarea";
+import { toast } from "@shared/hooks/use-toast";
 import { MatchFormData } from "./types";
-import { updateMatchForm, lockMatchForm } from "./matchFormService";
-import { AlertTriangle, Lock, Save } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { 
+  enhancedMatchService,
+} from "@shared/services/enhancedMatchService";
+import { Alert, AlertDescription } from "@shared/components/ui/alert";
 
 interface ScoreEntryFormProps {
   match: MatchFormData;
-  onComplete: () => void;
+  isSubmitting: boolean;
+  canEdit: boolean;
+  onSubmit: () => void;
+  onScoreChange: (homeScore: number | null, awayScore: number | null) => void;
+  onRefereeNotesChange: (notes: string) => void;
+  isLocked: boolean;
   isAdmin: boolean;
-  isReferee: boolean;
 }
 
-const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
+export const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
   match,
-  onComplete,
-  isAdmin,
-  isReferee
+  isSubmitting,
+  canEdit,
+  onSubmit,
+  onScoreChange,
+  onRefereeNotesChange,
+  isLocked,
+  isAdmin
 }) => {
-  const { toast } = useToast();
-  const [homeScore, setHomeScore] = useState(match.homeScore?.toString() || "");
-  const [awayScore, setAwayScore] = useState(match.awayScore?.toString() || "");
-  const [referee, setReferee] = useState(match.referee || "");
+  const [homeScore, setHomeScore] = useState<number | null>(match.homeScore !== undefined ? match.homeScore : null);
+  const [awayScore, setAwayScore] = useState<number | null>(match.awayScore !== undefined ? match.awayScore : null);
   const [refereeNotes, setRefereeNotes] = useState(match.refereeNotes || "");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showScoreAlert, setShowScoreAlert] = useState(false);
 
-  const handleSave = async () => {
-    if (!homeScore || !awayScore) {
-      toast({
-        title: "Fout",
-        description: "Vul beide scores in",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const updatedMatch: MatchFormData = {
-        ...match,
-        homeScore: parseInt(homeScore),
-        awayScore: parseInt(awayScore),
-        referee,
-        refereeNotes,
-        isCompleted: true
-      };
-
-      await updateMatchForm(updatedMatch);
-      
-      toast({
-        title: isAdmin ? "Admin: Scores opgeslagen" : "Scores opgeslagen",
-        description: "De wedstrijdscores zijn succesvol opgeslagen."
-      });
-      
-      onComplete();
-    } catch (error) {
-      toast({
-        title: "Fout",
-        description: "Er is een fout opgetreden bij het opslaan.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleHomeScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
+    setHomeScore(value);
+    onScoreChange(value, awayScore);
   };
 
-  const handleLock = async () => {
-    if (!homeScore || !awayScore) {
+  const handleAwayScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
+    setAwayScore(value);
+    onScoreChange(homeScore, value);
+  };
+
+  const handleRefereeNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setRefereeNotes(e.target.value);
+    onRefereeNotesChange(e.target.value);
+  };
+
+  const toggleLock = async () => {
+    if (!match.matchId) {
       toast({
-        title: "Fout", 
-        description: "Vul eerst beide scores in voordat je het formulier vergrendelt",
-        variant: "destructive"
+        title: "Error",
+        description: "Match ID is missing.",
+        variant: "destructive",
       });
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      // First save the data
-      const updatedMatch: MatchFormData = {
-        ...match,
-        homeScore: parseInt(homeScore),
-        awayScore: parseInt(awayScore),
-        referee,
-        refereeNotes,
-        isCompleted: true,
-        isLocked: true
-      };
+    const serviceCall = isLocked ? enhancedMatchService.unlockMatch : enhancedMatchService.lockMatch;
+    const result = await serviceCall(match.matchId);
 
-      await updateMatchForm(updatedMatch);
-      await lockMatchForm(match.matchId);
-      
+    if (result.success) {
       toast({
-        title: isAdmin ? "Admin: Formulier vergrendeld" : "Formulier vergrendeld",
-        description: "Het wedstrijdformulier is definitief afgesloten en kan niet meer worden gewijzigd."
+        title: "Success",
+        description: result.message,
       });
-      
-      onComplete();
-    } catch (error) {
+      onSubmit(); // Refresh the form
+    } else {
       toast({
-        title: "Fout",
-        description: "Er is een fout opgetreden bij het vergrendelen.",
-        variant: "destructive"
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h3 className="text-lg font-semibold">Score invoeren</h3>
-        <p className="text-sm text-muted-foreground">
-          {match.homeTeamName} vs {match.awayTeamName}
-        </p>
-        {isAdmin && (
-          <p className="text-sm text-blue-600 font-medium">
-            Admin modus: Je kunt altijd wijzigingen maken
-          </p>
-        )}
-      </div>
-
-      {match.isLocked && !isAdmin && (
-        <Alert>
-          <Lock className="h-4 w-4" />
-          <AlertDescription>
-            Deze wedstrijd is vergrendeld. Alleen een admin kan nog wijzigingen maken.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {match.isLocked && isAdmin && (
-        <Alert>
-          <Lock className="h-4 w-4" />
-          <AlertDescription>
-            Deze wedstrijd is vergrendeld, maar als admin kun je nog wijzigingen maken.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-        <div className="space-y-2">
-          <Label htmlFor="homeScore">{match.homeTeamName}</Label>
-          <Input
-            id="homeScore"
-            type="number"
-            min="0"
-            value={homeScore}
-            onChange={(e) => setHomeScore(e.target.value)}
-            disabled={match.isLocked && !isAdmin}
-            className="text-center text-lg font-bold"
-          />
-        </div>
-        
-        <div className="flex justify-center items-center">
-          <span className="text-2xl font-bold">-</span>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="awayScore">{match.awayTeamName}</Label>
-          <Input
-            id="awayScore"
-            type="number"
-            min="0"
-            value={awayScore}
-            onChange={(e) => setAwayScore(e.target.value)}
-            disabled={match.isLocked && !isAdmin}
-            className="text-center text-lg font-bold"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="referee">Scheidsrechter</Label>
+    <div className="grid gap-4">
+      <div className="flex items-center space-x-2">
+        <Label htmlFor="homeScore">Score Thuisteam</Label>
         <Input
-          id="referee"
-          value={referee}
-          onChange={(e) => setReferee(e.target.value)}
-          disabled={match.isLocked && !isAdmin}
-          placeholder="Naam scheidsrechter"
+          type="number"
+          id="homeScore"
+          value={homeScore === null ? '' : homeScore.toString()}
+          onChange={handleHomeScoreChange}
+          disabled={!canEdit}
+          placeholder="Thuisteam score"
+          className="w-24 text-center"
+        />
+      </div>
+      <div className="flex items-center space-x-2">
+        <Label htmlFor="awayScore">Score Uitteam</Label>
+        <Input
+          type="number"
+          id="awayScore"
+          value={awayScore === null ? '' : awayScore.toString()}
+          onChange={handleAwayScoreChange}
+          disabled={!canEdit}
+          placeholder="Uitteam score"
+          className="w-24 text-center"
+        />
+      </div>
+      <div>
+        <Label htmlFor="refereeNotes">Notities scheidsrechter</Label>
+        <Textarea
+          id="refereeNotes"
+          value={refereeNotes}
+          onChange={handleRefereeNotesChange}
+          disabled={!canEdit}
+          placeholder="Bijzonderheden, opmerkingen..."
+          rows={4}
         />
       </div>
 
-      {(isReferee || isAdmin) && (
-        <div className="space-y-2">
-          <Label htmlFor="refereeNotes">
-            Notities scheidsrechter 
-            <span className="text-sm text-muted-foreground ml-1">
-              (alleen zichtbaar voor scheidsrechters en admins)
-            </span>
-          </Label>
-          <Textarea
-            id="refereeNotes"
-            value={refereeNotes}
-            onChange={(e) => setRefereeNotes(e.target.value)}
-            disabled={match.isLocked && !isAdmin}
-            placeholder="Bijzonderheden, kaarten, opmerkingen..."
-            rows={4}
-          />
-        </div>
-      )}
-
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={onComplete}
-        >
-          Annuleren
-        </Button>
-        
-        {(!match.isLocked || isAdmin) && (
-          <Button
-            onClick={handleSave}
-            disabled={isSubmitting}
-            className="flex items-center gap-2"
-          >
-            <Save className="h-4 w-4" />
-            {isAdmin ? "Admin: Opslaan" : "Opslaan"}
-          </Button>
-        )}
-        
-        {(isReferee || isAdmin) && (!match.isLocked || isAdmin) && (
-          <Button
-            onClick={handleLock}
-            disabled={isSubmitting}
-            variant="destructive"
-            className="flex items-center gap-2"
-          >
-            <Lock className="h-4 w-4" />
-            {isAdmin ? "Admin: Bevestigen & Vergrendelen" : "Bevestigen & Vergrendelen"}
-          </Button>
-        )}
-      </div>
-
-      {(isReferee || isAdmin) && !match.isLocked && (
+      {showScoreAlert && (
         <Alert>
-          <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Let op: Na bevestiging kan het formulier niet meer worden gewijzigd{isAdmin ? ", behalve door een admin" : ""}.
+            Zeker de scores opslaan? Dit kan niet ongedaan gemaakt worden.
           </AlertDescription>
         </Alert>
       )}
+
+      <div className="flex justify-between">
+        {isAdmin && (
+          <Button
+            variant="outline"
+            onClick={toggleLock}
+            disabled={isSubmitting}
+          >
+            {isLocked ? (
+              <>
+                <Lock className="mr-2 h-4 w-4" />
+                Ontgrendel
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Vergrendel
+              </>
+            )}
+          </Button>
+        )}
+        <Button
+          onClick={onSubmit}
+          disabled={isSubmitting || !canEdit}
+          style={{
+            background: "var(--main-color-dark)",
+            color: "#fff",
+            borderColor: "var(--main-color-dark)"
+          }}
+        >
+          Opslaan
+        </Button>
+      </div>
     </div>
   );
 };
-
-export default ScoreEntryForm;

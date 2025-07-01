@@ -1,7 +1,7 @@
 
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@shared/components/ui/badge";
+import { Card, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { Lock } from "lucide-react";
 import { MatchFormData } from "../types";
 

@@ -1,7 +1,7 @@
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Textarea } from "@shared/components/ui/textarea";
 
 interface RefereeNotesSectionProps {
   refereeNotes: string;

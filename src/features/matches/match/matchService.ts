@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+
+import { supabase } from "@shared/integrations/supabase/client";
 import { MatchesResult, PastMatch, MatchFormData } from "./types";
 import { updateMatchData, MatchUpdateData } from "./matchUpdateService";
 
