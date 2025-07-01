@@ -31,10 +31,10 @@ const LayoutContent: React.FC = () => {
 
   return (
     <TabVisibilityProvider>
-      <div className="min-h-screen bg-purple-50 flex flex-col">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
         <Header onLogoClick={handleLogoClick} onLoginClick={handleLoginClick} />
         
-        <main className="flex-1">
+        <main className="flex-1 bg-gray-50">
           <div className="container mx-auto px-4 py-8 max-w-7xl">
             {showAdminDashboard ? (
               <Suspense fallback={

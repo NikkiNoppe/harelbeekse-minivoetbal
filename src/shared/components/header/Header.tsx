@@ -63,17 +63,17 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
   );
   
   return (
-    <header className="w-full bg-white border-b-2 border-purple-200 shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 sm:h-20">
-          {/* Logo */}
+    <header className="w-full bg-purple-900 shadow-lg sticky top-0 z-50">
+      <div className="w-full px-6 lg:px-12">
+        <div className="flex justify-between items-center h-20">
+          {/* Logo Section */}
           <div className="flex-shrink-0">
             <Logo onClick={onLogoClick} />
           </div>
           
           {/* Desktop Navigation */}
           {!isMobile ? (
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-8">
               <ThemeToggle />
               
               {isAuthenticated && user ? (
@@ -81,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
               ) : (
                 <Button 
                   onClick={onLoginClick} 
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium transition-colors duration-200"
+                  className="bg-white text-purple-900 hover:bg-gray-100 px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   Inloggen
                 </Button>
@@ -93,10 +93,10 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
               <SheetTrigger asChild>
                 <Button 
                   variant="ghost" 
-                  size="sm"
-                  className="h-10 w-10 p-0 text-purple-600 hover:bg-purple-100"
+                  size="lg"
+                  className="h-12 w-12 p-0 text-white hover:bg-white/10 rounded-lg"
                 >
-                  <Menu size={24} />
+                  <Menu size={28} />
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
