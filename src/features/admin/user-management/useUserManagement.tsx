@@ -49,8 +49,8 @@ export const useUserManagement = () => {
     handleTeamFilterChange
   } = useUserFilters(users);
 
-  // User operations (add, update, delete)
-  const { addUser, updateUser, deleteUser } = useUserOperations(teams, refreshData);
+  // User operations (add, update, delete) - fixed to pass only refreshData
+  const { addUser, updateUser, deleteUser } = useUserOperations(refreshData);
 
   // Fetch users and teams on component mount
   useEffect(() => {
