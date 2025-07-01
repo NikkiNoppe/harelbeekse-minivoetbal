@@ -14,14 +14,14 @@ const UserManagementTab: React.FC = () => {
   const {
     users,
     teams,
-    loading: isLoading,
-    addingUser: isAddingUser,
-    updatingUser: isUpdatingUser,
-    deletingUser: isDeletingUser,
-    handleAddUser: addUser,
-    handleUpdateUser: updateUser,
-    handleDeleteUser: deleteUser,
-    handleOpenDeleteConfirmation: setUserToDelete
+    loading,
+    addingUser,
+    updatingUser,
+    deletingUser,
+    handleAddUser,
+    handleUpdateUser,
+    handleOpenDeleteConfirmation,
+    handleDeleteUser,
   } = useUserManagement();
 
   const {
@@ -29,19 +29,23 @@ const UserManagementTab: React.FC = () => {
     searchTerm,
     roleFilter,
     teamFilter,
-    handleSearchChange: setSearchTerm,
-    handleRoleFilterChange: setRoleFilter,
-    handleTeamFilterChange: setTeamFilter
+    handleSearchChange,
+    handleRoleFilterChange,
+    handleTeamFilterChange
   } = useUserFilters(users);
 
-  const [userToDelete, setUserToDeleteState] = useState<number | null>(null);
+  const [userToDelete, setUserToDelete] = useState<number | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   const handleConfirmDelete = () => {
     if (userToDelete) {
-      deleteUser(userToDelete);
-      setUserToDeleteState(null);
+      handleDeleteUser();
+      setUserToDelete(null);
     }
+  };
+
+  const handleDeleteUser = (userId: number) => {
+    setUserToDelete(userId);
   };
 
   if (error) {
@@ -72,20 +76,20 @@ const UserManagementTab: React.FC = () => {
           <div className="space-y-4">
             <UserSearchFilter
               searchTerm={searchTerm}
-              onSearchTermChange={setSearchTerm}
+              onSearchTermChange={handleSearchChange}
               roleFilter={roleFilter}
-              onRoleFilterChange={setRoleFilter}
+              onRoleFilterChange={handleRoleFilterChange}
               teamFilter={teamFilter}
-              onTeamFilterChange={setTeamFilter}
+              onTeamFilterChange={handleTeamFilterChange}
               teams={teams}
             />
             
             <UserList
               users={filteredUsers}
-              isLoading={isLoading}
-              onUpdateUser={updateUser}
-              onDeleteUser={(userId) => setUserToDeleteState(userId)}
-              isUpdatingUser={isUpdatingUser}
+              loading={loading}
+              onUpdateUser={handleUpdateUser}
+              onDeleteUser={handleDeleteUser}
+              isUpdatingUser={updatingUser}
             />
           </div>
         </CardContent>
@@ -94,19 +98,18 @@ const UserManagementTab: React.FC = () => {
       <AddUserForm
         isOpen={isAddUserOpen}
         onClose={() => setIsAddUserOpen(false)}
-        onAddUser={addUser}
-        isAdding={isAddingUser}
+        onAddUser={handleAddUser}
+        isAdding={addingUser}
       />
 
       <ConfirmDeleteDialog
         open={!!userToDelete}
-        onOpenChange={(open) => !open && setUserToDeleteState(null)}
+        onOpenChange={(open) => !open && setUserToDelete(null)}
         onConfirmDelete={handleConfirmDelete}
-        isDeleting={isDeletingUser}
+        isDeleting={deletingUser}
       />
     </div>
   );
 };
 
 export default UserManagementTab;
-

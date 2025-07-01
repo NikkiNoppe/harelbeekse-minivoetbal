@@ -7,12 +7,12 @@ import {
   TableHead, 
   TableHeader, 
   TableRow 
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+} from "@shared/components/ui/table";
+import { Button } from "@shared/components/ui/button";
 import { User, Edit, Trash2, Loader2 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@shared/components/ui/skeleton";
+import { Badge } from "@shared/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/components/ui/tooltip";
 
 interface DbUser {
   user_id: number;
@@ -27,18 +27,16 @@ interface DbUser {
 interface UserListProps {
   users: DbUser[];
   loading: boolean;
-  isUpdating: boolean;
-  isDeleting: boolean;
-  onEditUser: (user: DbUser) => void;
+  isUpdatingUser: boolean;
+  onUpdateUser: (userId: number, formData: any) => Promise<boolean>;
   onDeleteUser: (userId: number) => void;
 }
 
 const UserList: React.FC<UserListProps> = ({ 
   users, 
   loading, 
-  isUpdating,
-  isDeleting,
-  onEditUser, 
+  isUpdatingUser,
+  onUpdateUser, 
   onDeleteUser 
 }) => {
   return (
@@ -142,11 +140,11 @@ const UserList: React.FC<UserListProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onEditUser(user)}
+                      onClick={() => onUpdateUser(user.user_id, {})}
                       className="h-8 w-8 p-0"
-                      disabled={isUpdating || isDeleting}
+                      disabled={isUpdatingUser}
                     >
-                      {isUpdating ? (
+                      {isUpdatingUser ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Edit className="h-4 w-4" />
@@ -157,13 +155,8 @@ const UserList: React.FC<UserListProps> = ({
                       size="sm"
                       onClick={() => onDeleteUser(user.user_id)}
                       className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-100/10"
-                      disabled={isUpdating || isDeleting}
                     >
-                      {isDeleting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>

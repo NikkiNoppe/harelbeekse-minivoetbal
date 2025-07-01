@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/components/ui/table";
@@ -186,4 +185,3 @@ const FinancialTabUpdated = () => {
 };
 
 export default FinancialTabUpdated;
-

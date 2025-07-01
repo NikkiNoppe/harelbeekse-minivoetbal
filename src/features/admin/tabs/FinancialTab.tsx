@@ -154,4 +154,3 @@ const FinancialTab: React.FC = () => {
 };
 
 export default FinancialTab;
-
