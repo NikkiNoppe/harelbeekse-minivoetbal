@@ -22,7 +22,7 @@ interface TeamsListProps {
   teams: Team[];
   loading: boolean;
   onEdit: (team: Team) => void;
-  onDelete: (teamId: number) => void;
+  onDelete: (team: Team) => void;
 }
 
 const TeamsList: React.FC<TeamsListProps> = ({
@@ -69,7 +69,7 @@ const TeamsList: React.FC<TeamsListProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onDelete(team.team_id)}
+                    onClick={() => onDelete(team)}
                     className="text-red-500 hover:text-red-700 hover:bg-red-100/10"
                   >
                     <Trash2 size={16} />

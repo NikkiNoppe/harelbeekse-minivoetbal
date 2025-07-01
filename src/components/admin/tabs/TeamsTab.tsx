@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -211,6 +211,9 @@ const TeamsTab: React.FC = () => {
               <DialogContent className="bg-purple-100 shadow-lg border-purple-200">
                 <DialogHeader>
                   <DialogTitle>Nieuw Team Toevoegen</DialogTitle>
+                  <DialogDescription>
+                    Voeg een nieuw team toe aan de competitie met een beginsaldo.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -332,6 +335,9 @@ const TeamsTab: React.FC = () => {
         <DialogContent className="bg-purple-100 shadow-lg border-purple-200">
           <DialogHeader>
             <DialogTitle>Team Bewerken</DialogTitle>
+            <DialogDescription>
+              Bewerk de teamnaam en het saldo van het geselecteerde team.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>

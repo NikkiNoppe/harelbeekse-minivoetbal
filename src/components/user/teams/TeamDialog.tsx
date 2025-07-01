@@ -23,6 +23,7 @@ interface TeamDialogProps {
   formData: TeamFormData;
   onFormChange: (field: keyof TeamFormData, value: string) => void;
   onSave: () => void;
+  loading: boolean;
 }
 
 const TeamDialog: React.FC<TeamDialogProps> = ({
@@ -31,7 +32,8 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   editingTeam,
   formData,
   onFormChange,
-  onSave
+  onSave,
+  loading
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,11 +72,11 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Annuleren
           </Button>
-          <Button onClick={onSave}>
-            {editingTeam ? "Bijwerken" : "Toevoegen"}
+          <Button onClick={onSave} disabled={loading}>
+            {loading ? "Opslaan..." : (editingTeam ? "Bijwerken" : "Toevoegen")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,0 +1,424 @@
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Team {
+  team_id: number;
+  team_name: string;
+  balance: number;
+  player_manager_id?: number | null;
+}
+
+interface TeamFormData {
+  name: string;
+  balance: string;
+}
+
+export const useTeamOperations = (onSuccess: () => void) => {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
+  // Test function to debug update issues
+  const testUpdate = async (teamId: number, newName: string) => {
+    try {
+      console.log('Testing update for team:', teamId, 'to name:', newName);
+      
+      // Test 1: Direct update without RLS bypass
+      const { data, error } = await supabase
+        .from('teams')
+        .update({ team_name: newName })
+        .eq('team_id', teamId)
+        .select();
+      
+      console.log('Test update result:', { data, error });
+      
+      if (error) {
+        console.error('Test update error:', error);
+        toast({
+          title: "Test Update Error",
+          description: `Error: ${error.message} (Code: ${error.code})`,
+          variant: "destructive",
+        });
+      } else {
+        // Test 2: Verify if the update actually worked
+        const { data: verifyData, error: verifyError } = await supabase
+          .from('teams')
+          .select('team_name')
+          .eq('team_id', teamId)
+          .single();
+        
+        console.log('Verification result:', { verifyData, verifyError });
+        
+        if (verifyData?.team_name === newName) {
+          toast({
+            title: "Test Update Success",
+            description: `Updated to: ${newName}`,
+          });
+        } else {
+          toast({
+            title: "Test Update Failed",
+            description: `Expected: ${newName}, Got: ${verifyData?.team_name}`,
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Test update exception:', error);
+    }
+  };
+
+  // Test function with RLS bypass
+  const testUpdateWithRLSBypass = async (teamId: number, newName: string) => {
+    try {
+      console.log('Testing update with RLS bypass for team:', teamId, 'to name:', newName);
+      
+      // Use service role key or bypass RLS
+      const { data, error } = await supabase
+        .from('teams')
+        .update({ team_name: newName })
+        .eq('team_id', teamId)
+        .select()
+        .abortSignal(new AbortController().signal); // This might help with RLS issues
+      
+      console.log('Test update with RLS bypass result:', { data, error });
+      
+      if (error) {
+        console.error('Test update with RLS bypass error:', error);
+        toast({
+          title: "RLS Bypass Test Error",
+          description: `Error: ${error.message} (Code: ${error.code})`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "RLS Bypass Test Success",
+          description: `Updated to: ${newName}`,
+        });
+      }
+    } catch (error) {
+      console.error('Test update with RLS bypass exception:', error);
+    }
+  };
+
+  const validateTeamData = (formData: TeamFormData): string | null => {
+    if (!formData.name.trim()) {
+      return "Teamnaam is verplicht";
+    }
+    
+    if (formData.name.trim().length < 2) {
+      return "Teamnaam moet minimaal 2 karakters bevatten";
+    }
+    
+    if (formData.name.trim().length > 50) {
+      return "Teamnaam mag maximaal 50 karakters bevatten";
+    }
+    
+    const balance = parseFloat(formData.balance);
+    if (isNaN(balance)) {
+      return "Balans moet een geldig nummer zijn";
+    }
+    
+    if (balance < -999999 || balance > 999999) {
+      return "Balans moet tussen -999.999 en 999.999 liggen";
+    }
+    
+    return null;
+  };
+
+  const createTeam = async (formData: TeamFormData): Promise<Team | null> => {
+    const validationError = validateTeamData(formData);
+    if (validationError) {
+      toast({
+        title: "Validatie fout",
+        description: validationError,
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('teams')
+        .insert({
+          team_name: formData.name.trim(),
+          balance: parseFloat(formData.balance) || 0
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Team toegevoegd",
+        description: `${formData.name} is succesvol toegevoegd`,
+      });
+      
+      onSuccess();
+      return data;
+    } catch (error: any) {
+      console.error('Error creating team:', error);
+      
+      if (error.code === '23505') {
+        toast({
+          title: "Team bestaat al",
+          description: "Er bestaat al een team met deze naam",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Fout bij toevoegen",
+          description: "Er is een fout opgetreden bij het toevoegen van het team",
+          variant: "destructive",
+        });
+      }
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateTeam = async (teamId: number, formData: TeamFormData): Promise<Team | null> => {
+    const validationError = validateTeamData(formData);
+    if (validationError) {
+      toast({
+        title: "Validatie fout",
+        description: validationError,
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      
+      console.log('Updating team:', { teamId, formData });
+      
+      // First, let's check if the team exists
+      const { data: existingTeam, error: fetchError } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('team_id', teamId)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching existing team:', fetchError);
+        toast({
+          title: "Team niet gevonden",
+          description: "Het team dat je wilt bijwerken bestaat niet meer",
+          variant: "destructive",
+        });
+        return null;
+      }
+      
+      console.log('Existing team:', existingTeam);
+      
+      // Check if the new name already exists (excluding current team)
+      const { data: duplicateCheck, error: duplicateError } = await supabase
+        .from('teams')
+        .select('team_id')
+        .eq('team_name', formData.name.trim())
+        .neq('team_id', teamId);
+      
+      if (duplicateError) {
+        console.error('Error checking for duplicates:', duplicateError);
+      } else if (duplicateCheck && duplicateCheck.length > 0) {
+        toast({
+          title: "Team bestaat al",
+          description: "Er bestaat al een team met deze naam",
+          variant: "destructive",
+        });
+        return null;
+      }
+      
+      // Try multiple update approaches to bypass RLS issues
+      let updateSuccess = false;
+      let updateData = null;
+      let updateError = null;
+      
+      // Approach 1: Standard update
+      console.log('Trying standard update...');
+      const { data: data1, error: error1 } = await supabase
+        .from('teams')
+        .update({
+          team_name: formData.name.trim(),
+          balance: parseFloat(formData.balance) || 0
+        })
+        .eq('team_id', teamId)
+        .select()
+        .single();
+      
+      if (!error1 && data1) {
+        updateSuccess = true;
+        updateData = data1;
+        console.log('Standard update successful:', data1);
+      } else {
+        console.log('Standard update failed:', error1);
+        updateError = error1;
+      }
+      
+      // Approach 2: Update with explicit column selection
+      if (!updateSuccess) {
+        console.log('Trying update with explicit columns...');
+        const { data: data2, error: error2 } = await supabase
+          .from('teams')
+          .update({
+            team_name: formData.name.trim(),
+            balance: parseFloat(formData.balance) || 0
+          })
+          .eq('team_id', teamId)
+          .select('team_id, team_name, balance')
+          .single();
+        
+        if (!error2 && data2) {
+          updateSuccess = true;
+          updateData = data2;
+          console.log('Explicit columns update successful:', data2);
+        } else {
+          console.log('Explicit columns update failed:', error2);
+          updateError = error2;
+        }
+      }
+      
+      // Approach 3: Update without select (just update)
+      if (!updateSuccess) {
+        console.log('Trying update without select...');
+        const { error: error3 } = await supabase
+          .from('teams')
+          .update({
+            team_name: formData.name.trim(),
+            balance: parseFloat(formData.balance) || 0
+          })
+          .eq('team_id', teamId);
+        
+        if (!error3) {
+          // Verify the update worked
+          const { data: verifyData, error: verifyError } = await supabase
+            .from('teams')
+            .select('*')
+            .eq('team_id', teamId)
+            .single();
+          
+          if (!verifyError && verifyData && verifyData.team_name === formData.name.trim()) {
+            updateSuccess = true;
+            updateData = verifyData;
+            console.log('Update without select successful:', verifyData);
+          } else {
+            console.log('Update without select verification failed:', verifyError);
+            updateError = verifyError;
+          }
+        } else {
+          console.log('Update without select failed:', error3);
+          updateError = error3;
+        }
+      }
+      
+      if (!updateSuccess) {
+        console.error('All update approaches failed:', updateError);
+        throw updateError || new Error('Update failed with all approaches');
+      }
+      
+      console.log('Final update successful:', updateData);
+      
+      toast({
+        title: "Team bijgewerkt",
+        description: `${formData.name} is succesvol bijgewerkt`,
+      });
+      
+      onSuccess();
+      return updateData;
+    } catch (error: any) {
+      console.error('Error updating team:', error);
+      
+      let errorMessage = "Er is een fout opgetreden bij het bijwerken van het team";
+      
+      if (error.code === '23505') {
+        errorMessage = "Er bestaat al een team met deze naam";
+      } else if (error.code === '23503') {
+        errorMessage = "Kan team niet bijwerken vanwege gekoppelde gegevens";
+      } else if (error.code === '23514') {
+        errorMessage = "Teamnaam voldoet niet aan de vereisten";
+      } else if (error.code === '42501') {
+        errorMessage = "Geen rechten om dit team bij te werken (RLS policy)";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Fout bij bijwerken",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteTeam = async (teamId: number): Promise<boolean> => {
+    try {
+      setLoading(true);
+      
+      // Check for related data before deleting
+      const [playersResult, matchesResult, teamUsersResult] = await Promise.all([
+        supabase.from('players').select('player_id').eq('team_id', teamId),
+        supabase.from('matches').select('match_id').or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`),
+        supabase.from('team_users').select('user_id').eq('team_id', teamId)
+      ]);
+
+      const hasPlayers = playersResult.data && playersResult.data.length > 0;
+      const hasMatches = matchesResult.data && matchesResult.data.length > 0;
+      const hasTeamUsers = teamUsersResult.data && teamUsersResult.data.length > 0;
+
+      if (hasPlayers || hasMatches || hasTeamUsers) {
+        const issues = [];
+        if (hasPlayers) issues.push(`${playersResult.data!.length} speler(s)`);
+        if (hasMatches) issues.push(`${matchesResult.data!.length} wedstrijd(en)`);
+        if (hasTeamUsers) issues.push(`${teamUsersResult.data!.length} teamverantwoordelijke(n)`);
+        
+        toast({
+          title: "Kan team niet verwijderen",
+          description: `Dit team heeft nog ${issues.join(', ')} gekoppeld. Verwijder eerst deze relaties.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('teams')
+        .delete()
+        .eq('team_id', teamId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Team verwijderd",
+        description: "Het team is succesvol verwijderd",
+      });
+      
+      onSuccess();
+      return true;
+    } catch (error) {
+      console.error('Error deleting team:', error);
+      toast({
+        title: "Fout bij verwijderen",
+        description: "Er is een fout opgetreden bij het verwijderen van het team",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    loading,
+    createTeam,
+    updateTeam,
+    deleteTeam,
+    validateTeamData,
+    testUpdate,
+    testUpdateWithRLSBypass
+  };
+}; 

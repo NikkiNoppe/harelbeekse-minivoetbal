@@ -19,7 +19,11 @@ export function useTeams() {
   const { toast } = useToast();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [formData, setFormData] = useState<TeamFormData>({
     name: "",
@@ -86,8 +90,25 @@ export function useTeams() {
       });
       return;
     }
+
+    // Check for duplicate team names
+    const existingTeam = teams.find(team => 
+      team.team_name.toLowerCase() === formData.name.trim().toLowerCase() && 
+      team.team_id !== editingTeam?.team_id
+    );
+    
+    if (existingTeam) {
+      toast({
+        title: "Team bestaat al",
+        description: "Er bestaat al een team met deze naam",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
+      setSaving(true);
+      
       if (editingTeam) {
         // Update existing team
         const { error } = await supabase
@@ -108,7 +129,7 @@ export function useTeams() {
         
         toast({
           title: "Team bijgewerkt",
-          description: `${formData.name} is bijgewerkt`,
+          description: `${formData.name} is succesvol bijgewerkt`,
         });
       } else {
         // Add new team
@@ -127,7 +148,7 @@ export function useTeams() {
           
           toast({
             title: "Team toegevoegd",
-            description: `${formData.name} is toegevoegd`,
+            description: `${formData.name} is succesvol toegevoegd`,
           });
         }
       }
@@ -140,11 +161,40 @@ export function useTeams() {
         description: "Er is een fout opgetreden bij het opslaan van het team.",
         variant: "destructive",
       });
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDeleteTeam = async (teamId: number) => {
     try {
+      setDeleting(true);
+      
+      // Check for related data before deleting
+      const [playersResult, matchesResult, teamUsersResult] = await Promise.all([
+        supabase.from('players').select('player_id').eq('team_id', teamId),
+        supabase.from('matches').select('match_id').or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`),
+        supabase.from('team_users').select('user_id').eq('team_id', teamId)
+      ]);
+
+      const hasPlayers = playersResult.data && playersResult.data.length > 0;
+      const hasMatches = matchesResult.data && matchesResult.data.length > 0;
+      const hasTeamUsers = teamUsersResult.data && teamUsersResult.data.length > 0;
+
+      if (hasPlayers || hasMatches || hasTeamUsers) {
+        const issues = [];
+        if (hasPlayers) issues.push(`${playersResult.data!.length} speler(s)`);
+        if (hasMatches) issues.push(`${matchesResult.data!.length} wedstrijd(en)`);
+        if (hasTeamUsers) issues.push(`${teamUsersResult.data!.length} teamverantwoordelijke(n)`);
+        
+        toast({
+          title: "Kan team niet verwijderen",
+          description: `Dit team heeft nog ${issues.join(', ')} gekoppeld. Verwijder eerst deze relaties.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('teams')
         .delete()
@@ -156,7 +206,7 @@ export function useTeams() {
       
       toast({
         title: "Team verwijderd",
-        description: "Het team en alle gerelateerde data zijn verwijderd uit de competitie",
+        description: "Het team is succesvol verwijderd uit de competitie",
       });
     } catch (error) {
       console.error('Error deleting team:', error);
@@ -165,20 +215,35 @@ export function useTeams() {
         description: "Er is een fout opgetreden bij het verwijderen van het team.",
         variant: "destructive",
       });
+    } finally {
+      setDeleting(false);
+      setConfirmDeleteOpen(false);
+      setTeamToDelete(null);
     }
+  };
+
+  const confirmDelete = (team: Team) => {
+    setTeamToDelete(team);
+    setConfirmDeleteOpen(true);
   };
 
   return {
     teams,
     loading,
+    saving,
+    deleting,
     dialogOpen,
     setDialogOpen,
+    confirmDeleteOpen,
+    setConfirmDeleteOpen,
+    teamToDelete,
     editingTeam,
     formData,
     handleAddNew,
     handleEditTeam,
     handleFormChange,
     handleSaveTeam,
-    handleDeleteTeam
+    handleDeleteTeam,
+    confirmDelete
   };
 }
