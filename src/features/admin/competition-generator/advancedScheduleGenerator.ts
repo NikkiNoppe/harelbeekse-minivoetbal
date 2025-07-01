@@ -1,4 +1,5 @@
-import { CompetitionType, GeneratedMatch } from "./types";
+
+import { CompetitionType, GeneratedMatch, Team } from "./types";
 import { findFormatById } from "./competitionFormats";
 
 // Function to generate a basic round-robin schedule
@@ -21,6 +22,38 @@ const generateRoundRobinSchedule = (teams: number[], rounds: number): GeneratedM
     }
   }
 
+  return matches;
+};
+
+// Add the missing generateCupSchedule function
+export const generateCupSchedule = (teams: Team[]): GeneratedMatch[] => {
+  const matches: GeneratedMatch[] = [];
+  const teamIds = teams.map(t => t.team_id);
+  
+  // Simple single elimination tournament
+  let currentRound = 1;
+  let remainingTeams = [...teamIds];
+  
+  while (remainingTeams.length > 1) {
+    const roundMatches: GeneratedMatch[] = [];
+    
+    for (let i = 0; i < remainingTeams.length; i += 2) {
+      if (i + 1 < remainingTeams.length) {
+        roundMatches.push({
+          matchday: currentRound,
+          home_team_id: remainingTeams[i],
+          away_team_id: remainingTeams[i + 1],
+          home_team_name: teams.find(t => t.team_id === remainingTeams[i])?.team_name || `Team ${remainingTeams[i]}`,
+          away_team_name: teams.find(t => t.team_id === remainingTeams[i + 1])?.team_name || `Team ${remainingTeams[i + 1]}`,
+        });
+      }
+    }
+    
+    matches.push(...roundMatches);
+    remainingTeams = remainingTeams.filter((_, index) => index % 2 === 0); // Simulate winners advancing
+    currentRound++;
+  }
+  
   return matches;
 };
 

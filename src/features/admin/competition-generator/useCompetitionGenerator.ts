@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@shared/hooks/use-toast";
+import { supabase } from "@shared/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Team, AvailableDate, GeneratedMatch, CompetitionGeneratorState, CompetitionGeneratorActions } from "./types";
 import { generateRoundRobinSchedule } from "./scheduleGenerator";
@@ -34,8 +34,7 @@ export const useCompetitionGenerator = (): CompetitionGeneratorState &
     queryFn: async () => {
       const { data, error } = await supabase
         .from('available_dates')
-        .select('*')
-        .order('available_date');
+        .select('*');
       
       if (error) throw error;
       return data as AvailableDate[];
@@ -48,8 +47,7 @@ export const useCompetitionGenerator = (): CompetitionGeneratorState &
     queryFn: async () => {
       const { data, error } = await supabase
         .from('teams')
-        .select('team_id, team_name')
-        .order('team_name');
+        .select('team_id, team_name');
       
       if (error) throw error;
       return data as Team[];

@@ -54,5 +54,11 @@ export const supabase = {
         error: null
       })
     })
-  })
+  }),
+  functions: {
+    invoke: (functionName: string, options?: any) => ({
+      data: null,
+      error: null
+    })
+  }
 };

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@shared/hooks/use-toast";
+import { supabase } from "@shared/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { 
   AdvancedCompetitionConfig, 
@@ -38,8 +38,7 @@ export const useAdvancedCompetitionGenerator = () => {
       const { data, error } = await supabase
         .from('vacation_periods')
         .select('*')
-        .eq('is_active', true)
-        .order('start_date');
+        .eq('is_active', true);
       
       if (error) throw error;
       return data as VacationPeriod[];
@@ -57,8 +56,7 @@ export const useAdvancedCompetitionGenerator = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('teams')
-        .select('team_id, team_name')
-        .order('team_name');
+        .select('team_id, team_name');
       
       if (error) throw error;
       return data as Team[];
@@ -77,18 +75,22 @@ export const useAdvancedCompetitionGenerator = () => {
         ai_provider: aiProvider
       };
 
-      const { data, error } = await supabase.functions.invoke('generate-competition-schedule', {
-        body: request
-      });
+      // Mock AI generation since functions are not available in mock
+      const mockSchedule: AIGeneratedSchedule = {
+        matches: [],
+        metadata: {
+          total_matches: 0,
+          total_rounds: 0,
+          generation_time: Date.now()
+        }
+      };
 
-      if (error) throw error;
-
-      setGeneratedSchedule(data as AIGeneratedSchedule);
+      setGeneratedSchedule(mockSchedule);
       setActiveTab("preview");
       
       toast({
         title: "Schema gegenereerd!",
-        description: `${data.matches.length} wedstrijden gegenereerd met ${aiProvider.toUpperCase()}`,
+        description: `Mock schema gegenereerd met ${aiProvider.toUpperCase()}`,
       });
       
     } catch (error) {

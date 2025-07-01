@@ -1,16 +1,16 @@
 
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@shared/components/ui/dialog";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
+import { Label } from "@shared/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/components/ui/select";
+import { Textarea } from "@shared/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/components/ui/table";
+import { Badge } from "@shared/components/ui/badge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { costSettingsService } from "@/services/costSettingsService";
-import { useToast } from "@/hooks/use-toast";
+import { costSettingsService } from "@shared/services/costSettingsService";
+import { useToast } from "@shared/hooks/use-toast";
 import { Settings, Plus, Edit, Trash2, Euro } from "lucide-react";
 
 interface CostSettingsModalProps {
@@ -30,7 +30,7 @@ const CostSettingsModal: React.FC<CostSettingsModalProps> = ({ open, onOpenChang
     category: 'penalty' as 'match_cost' | 'penalty' | 'other'
   });
 
-  const { data: costSettings, isLoading } = useQuery({
+  const { data: costSettings = [], isLoading } = useQuery({
     queryKey: ['cost-settings'],
     queryFn: costSettingsService.getCostSettings
   });
@@ -150,13 +150,13 @@ const CostSettingsModal: React.FC<CostSettingsModalProps> = ({ open, onOpenChang
   };
 
   // Group settings by category
-  const groupedSettings = costSettings?.reduce((acc, setting) => {
+  const groupedSettings = Array.isArray(costSettings) ? costSettings.reduce((acc, setting) => {
     if (!acc[setting.category]) {
       acc[setting.category] = [];
     }
     acc[setting.category].push(setting);
     return acc;
-  }, {} as Record<string, any[]>) || {};
+  }, {} as Record<string, any[]>) : {};
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -265,7 +265,7 @@ const CostSettingsModal: React.FC<CostSettingsModalProps> = ({ open, onOpenChang
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {settings.map((setting) => (
+                  {Array.isArray(settings) && settings.map((setting) => (
                     <TableRow key={setting.id}>
                       <TableCell className="font-medium">{setting.name}</TableCell>
                       <TableCell className="text-gray-600">

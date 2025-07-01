@@ -43,3 +43,23 @@ export interface GeneratedMatch {
   location?: string;
   unique_code?: string;
 }
+
+// Add missing state and actions interfaces
+export interface CompetitionGeneratorState {
+  selectedDates: number[];
+  selectedFormat: string | null;
+  generatedMatches: GeneratedMatch[];
+  competitionName: string;
+  isCreating: boolean;
+  minimumDatesRequired: number;
+  activeTab: string;
+}
+
+export interface CompetitionGeneratorActions {
+  setActiveTab: (tab: string) => void;
+  setSelectedFormat: (format: string | null) => void;
+  setCompetitionName: (name: string) => void;
+  toggleDate: (dateId: number) => void;
+  generateSchedule: () => Promise<void>;
+  saveCompetition: () => Promise<void>;
+}
