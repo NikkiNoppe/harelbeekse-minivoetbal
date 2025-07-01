@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,40 +17,37 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch team players - simplified type inference
+  // Fetch team players with explicit typing
   const { data: teamPlayers, isLoading } = useQuery({
     queryKey: ['teamPlayers', teamId],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('players')
-          .select('player_id, first_name, last_name')
-          .eq('team_id', teamId)
-          .eq('is_active', true)
-          .order('first_name');
-        
-        if (error) throw error;
-        
-        // Type the database result and map to Player interface
-        const dbPlayers = data as DatabasePlayer[] || [];
-        const players: Player[] = dbPlayers.map(player => ({
-          playerId: player.player_id,
-          playerName: `${player.first_name} ${player.last_name}`,
-          selected: false,
-          jerseyNumber: "",
-          isCaptain: false
-        }));
-        
-        return players;
-      } catch (error) {
+      const { data, error } = await supabase
+        .from('players')
+        .select('player_id, first_name, last_name')
+        .eq('team_id', teamId)
+        .eq('is_active', true)
+        .order('first_name');
+      
+      if (error) {
         console.error("Error fetching team players:", error);
         toast({
           title: "Fout bij ophalen spelers",
           description: "Er is een probleem opgetreden bij het ophalen van de teamspelers.",
           variant: "destructive"
         });
-        return [] as Player[];
+        throw error;
       }
+      
+      // Transform database players to Player format
+      const players = (data || []).map((dbPlayer: DatabasePlayer) => ({
+        playerId: dbPlayer.player_id,
+        playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
+        selected: false,
+        jerseyNumber: "",
+        isCaptain: false
+      }));
+      
+      return players;
     }
   });
   
@@ -57,22 +55,18 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const { data: existingMatch, isLoading: loadingMatch } = useQuery({
     queryKey: ['matchData', matchId, teamId],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('matches')
-          .select('match_id, is_submitted, home_players, away_players, home_team_id, away_team_id')
-          .eq('match_id', matchId)
-          .single();
-        
-        if (error && error.code !== 'PGRST116') {
-          throw error;
-        }
-        
-        return data;
-      } catch (error) {
+      const { data, error } = await supabase
+        .from('matches')
+        .select('match_id, is_submitted, home_players, away_players, home_team_id, away_team_id')
+        .eq('match_id', matchId)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
         console.error("Error fetching match data:", error);
-        return null;
+        throw error;
       }
+      
+      return data;
     }
   });
   
