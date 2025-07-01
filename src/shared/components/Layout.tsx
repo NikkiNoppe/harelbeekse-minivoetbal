@@ -7,7 +7,7 @@ import MainTabs from "./tabs/MainTabs";
 
 // Lazy load components
 const LoginDialog = lazy(() => import("@features/auth/LoginDialog"));
-const MatchFormTab = lazy(() => import("@features/teams/MatchFormTab"));
+const AdminDashboard = lazy(() => import("@features/admin/AdminDashboard"));
 
 const LayoutContent: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -26,8 +26,8 @@ const LayoutContent: React.FC = () => {
     setShowLogin(false);
   };
 
-  // Show match forms if user is authenticated
-  const showMatchForms = isAuthenticated && user;
+  // Show admin dashboard if user is authenticated
+  const showAdminDashboard = isAuthenticated && user;
 
   return (
     <TabVisibilityProvider>
@@ -36,14 +36,14 @@ const LayoutContent: React.FC = () => {
         
         <main className="flex-1">
           <div className="container mx-auto px-4 py-8 max-w-7xl">
-            {showMatchForms ? (
+            {showAdminDashboard ? (
               <Suspense fallback={
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                  <span className="ml-2 text-purple-600">Wedstrijdformulieren laden...</span>
+                  <span className="ml-2 text-purple-600">Admin dashboard laden...</span>
                 </div>
               }>
-                <MatchFormTab teamId={user?.teamId?.toString() || "1"} />
+                <AdminDashboard user={user} />
               </Suspense>
             ) : (
               <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
