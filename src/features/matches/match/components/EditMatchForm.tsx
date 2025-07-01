@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MatchFormData } from "../types";
 import { Label } from "@shared/components/ui/label";
@@ -54,8 +53,8 @@ const EditMatchForm: React.FC<EditMatchFormProps> = ({ match, onSave, onCancel }
       <div>
         <Label htmlFor="homeTeam">Home Team</Label>
         <Select
-          value={formData.homeTeamName}
-          onValueChange={(value) => setFormData({ ...formData, homeTeamName: value })}
+          value={formData.homeTeam}
+          onValueChange={(value) => setFormData({ ...formData, homeTeam: value })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -73,8 +72,8 @@ const EditMatchForm: React.FC<EditMatchFormProps> = ({ match, onSave, onCancel }
       <div>
         <Label htmlFor="awayTeam">Away Team</Label>
         <Select
-          value={formData.awayTeamName}
-          onValueChange={(value) => setFormData({ ...formData, awayTeamName: value })}
+          value={formData.awayTeam}
+          onValueChange={(value) => setFormData({ ...formData, awayTeam: value })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -131,8 +130,8 @@ const EditMatchForm: React.FC<EditMatchFormProps> = ({ match, onSave, onCancel }
         <Label htmlFor="notes">Notes</Label>
         <Textarea
           id="notes"
-          value={formData.refereeNotes || ""}
-          onChange={(e) => setFormData({ ...formData, refereeNotes: e.target.value })}
+          value={formData.notes || ""}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           rows={3}
         />
       </div>

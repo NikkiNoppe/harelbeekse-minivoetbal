@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Badge } from "@shared/components/ui/badge";
 import { Tag } from "lucide-react";
-import { fetchBlogPosts, BlogPost } from "@/services/blogService";
-import { useToast } from "@/hooks/use-toast";
+import { fetchBlogPosts, BlogPost } from "@shared/services/blogService";
+import { useToast } from "@shared/hooks/use-toast";
 const AlgemeenTab: React.FC = () => {
   const {
     toast

@@ -1,4 +1,3 @@
-
 // Match types for the different components
 export interface MatchFormData {
   id?: number;
@@ -6,11 +5,14 @@ export interface MatchFormData {
   time: string;
   homeTeam: string;
   awayTeam: string;
+  homeTeamName?: string;
+  awayTeamName?: string;
   location: string;
   homeScore?: number | null;
   awayScore?: number | null;
   referee?: string;
   notes?: string;
+  refereeNotes?: string;
   uniqueNumber?: string;
 }
 

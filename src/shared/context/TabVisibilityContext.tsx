@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext } from 'react';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { useTabVisibilitySettings } from '@/hooks/useTabVisibilitySettings';
+import { useAuth } from '@features/auth/AuthProvider';
+import { useTabVisibilitySettings } from '@shared/hooks/useTabVisibilitySettings';
 
 interface TabVisibilityContextProps {
   isTabVisible: (tab: TabName) => boolean;

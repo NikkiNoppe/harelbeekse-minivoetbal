@@ -1,7 +1,7 @@
 
 import React from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
+import { useTabVisibility, TabName } from "@shared/context/TabVisibilityContext";
 import { Home, Award, Trophy, Target, BookOpen, Ban, AlertTriangle } from "lucide-react";
 import TabItem from "./TabItem";
 import AlgemeenTab from "./AlgemeenTab";

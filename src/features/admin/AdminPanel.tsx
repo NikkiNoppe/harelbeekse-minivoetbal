@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@shared/components/ui/alert-dialog";
-import { teamService, Team } from "@/services/teamService";
+import { teamService, Team } from "@shared/services/teamService";
 
 // Initial users data
 const initialUsers = [

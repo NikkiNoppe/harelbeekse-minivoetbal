@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Import mapping voor oude naar nieuwe paden
 const importMappings = {
@@ -47,23 +51,23 @@ function updateImportsInFile(filePath) {
 }
 
 function walkDirectory(dir) {
-  const files = fs.readdirSync(dir);
+  const items = fs.readdirSync(dir);
   
-  files.forEach(file => {
-    const filePath = path.join(dir, file);
-    const stat = fs.statSync(filePath);
+  items.forEach(item => {
+    const fullPath = path.join(dir, item);
+    const stat = fs.statSync(fullPath);
     
-    if (stat.isDirectory() && !file.startsWith('.') && file !== 'node_modules') {
-      walkDirectory(filePath);
-    } else if (file.endsWith('.ts') || file.endsWith('.tsx')) {
-      updateImportsInFile(filePath);
+    if (stat.isDirectory()) {
+      walkDirectory(fullPath);
+    } else if (fullPath.endsWith('.tsx') || fullPath.endsWith('.ts')) {
+      updateImportsInFile(fullPath);
     }
   });
 }
 
 console.log('🔄 Updating import paths...');
-walkDirectory('./src');
-console.log('✅ Import update complete!');
+walkDirectory('src');
+console.log('✅ Import path update complete!');
 
 console.log('\n📋 Manual updates needed:');
 console.log('1. Check any dynamic imports');

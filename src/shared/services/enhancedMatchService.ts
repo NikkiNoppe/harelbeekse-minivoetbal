@@ -1,6 +1,6 @@
-import { supabase } from "@/integrations/supabase/client";
-import { MatchFormData } from "@/components/team/match-form/types";
-import { PlayerSelection } from "@/components/team/match-form/components/types";
+import { supabase } from "@shared/integrations/supabase/client";
+import { MatchFormData } from "@features/teams/match-form/types";
+import { PlayerSelection } from "@features/teams/match-form/components/types";
 
 // Enhanced logging utility
 const logMatchOperation = (operation: string, data?: any, error?: any) => {

@@ -13,8 +13,6 @@ export const usePlayerSelectionHandler = () => {
       playerName: `${player.first_name} ${player.last_name}`,
       jerseyNumber: "",
       isCaptain: false,
-      yellowCards: 0,
-      redCards: 0,
     };
     setSelectedPlayers([...selectedPlayers, newPlayer]);
   };

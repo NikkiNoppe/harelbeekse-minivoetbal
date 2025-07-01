@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@shared/integrations/supabase/client";
 import { DbUser, Team } from "./types";
 
 export const useUserDataService = () => {

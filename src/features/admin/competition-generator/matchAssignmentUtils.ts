@@ -1,6 +1,6 @@
 
 import { AvailableDate, GeneratedMatch } from "./types";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@shared/integrations/supabase/client";
 
 export const assignMatchDetails = async (
   matches: GeneratedMatch[], 

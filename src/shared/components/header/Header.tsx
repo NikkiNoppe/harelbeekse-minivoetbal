@@ -1,14 +1,12 @@
-
-
 import React, { useState } from "react";
-import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/components/auth/AuthProvider";
-import UserAccount from "@/components/auth/UserAccount";
-import ThemeToggle from "@/components/theme/ThemeToggle";
-import Logo from "@/components/header/Logo";
+import { cn } from "@shared/utils/utils";
+import { useIsMobile } from "@shared/hooks/use-mobile";
+import { useAuth } from "@features/auth/AuthProvider";
+import UserAccount from "@features/auth/UserAccount";
+import ThemeToggle from "@shared/components/theme/ThemeToggle";
+import Logo from "@shared/components/header/Logo";
 import { Menu } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@shared/components/ui/sheet";
 
 interface HeaderProps {
   onLogoClick: () => void;

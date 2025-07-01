@@ -8,7 +8,7 @@ import { Input } from "@shared/components/ui/input";
 import { Textarea } from "@shared/components/ui/textarea";
 import { Users, Settings, MapPin, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@shared/integrations/supabase/client";
 import { TeamPreference, Team } from "../types-advanced";
 
 interface TeamsPreferencesTabProps {

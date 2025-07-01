@@ -1,6 +1,6 @@
 import React from "react";
-import { useTheme } from "@/hooks/use-theme";
-import { Switch } from "@/components/ui/switch";
+import { useTheme } from "@shared/hooks/use-theme";
+import { Switch } from "@shared/components/ui/switch";
 import { Sun, Moon } from "lucide-react";
 const ThemeToggle: React.FC = () => {
   const {

@@ -1,7 +1,6 @@
-
 import React from "react";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@shared/components/ui/input";
+import { Checkbox } from "@shared/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -9,7 +8,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "@/components/ui/table";
+} from "@shared/components/ui/table";
 import { UseFormReturn } from "react-hook-form";
 import { FormData } from "./types";
 
