@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@shared/integrations/supabase/client";
 import { useToast } from "@shared/hooks/use-toast";
@@ -39,7 +38,7 @@ export const useTabVisibilitySettings = () => {
       setTabVisibility(visibilityState);
     } catch (error) {
       console.error('Error fetching tab settings:', error);
-      // Fallback to main tabs only
+      // Fallback to all tabs visible
       const fallbackSettings = [
         { id: 1, setting_name: 'algemeen', is_visible: true, requires_login: false },
         { id: 2, setting_name: 'competitie', is_visible: true, requires_login: false },
@@ -47,6 +46,7 @@ export const useTabVisibilitySettings = () => {
         { id: 4, setting_name: 'beker', is_visible: true, requires_login: false },
         { id: 5, setting_name: 'schorsingen', is_visible: true, requires_login: false },
         { id: 6, setting_name: 'reglement', is_visible: true, requires_login: false },
+        { id: 7, setting_name: 'kaarten', is_visible: true, requires_login: false },
       ];
       setSettings(fallbackSettings);
       
@@ -58,7 +58,7 @@ export const useTabVisibilitySettings = () => {
       
       toast({
         title: "Info",
-        description: "Gebruikt standaard tab instellingen voor hoofdtabs",
+        description: "Alle tabbladen zijn nu zichtbaar",
       });
     } finally {
       setLoading(false);

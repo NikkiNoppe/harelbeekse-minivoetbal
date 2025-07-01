@@ -2,7 +2,6 @@ import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 import { useTabVisibility, TabName } from "@shared/context/TabVisibilityContext";
 import { Home, Award, Trophy, Target, BookOpen, Ban, AlertTriangle } from "lucide-react";
-import TabItem from "./TabItem";
 import AlgemeenTab from "./AlgemeenTab";
 import CompetitionTab from "./CompetitionTab";
 import PlayOffTab from "./PlayOffTab";
@@ -10,10 +9,12 @@ import CupTab from "./CupTab";
 import SuspensionsTab from "./SuspensionsTab";
 import CardsTab from "./CardsTab";
 import RegulationsTab from "./RegulationsTab";
+
 interface MainTabsProps {
   activeTab: TabName;
   setActiveTab: (tab: TabName) => void;
 }
+
 const MainTabs: React.FC<MainTabsProps> = ({
   activeTab,
   setActiveTab
@@ -66,63 +67,88 @@ const MainTabs: React.FC<MainTabsProps> = ({
         </div>
       </div>;
   }
-  return <div className="w-full space-y-8">
+
+  return (
+    <div className="w-full space-y-8">
       {/* Page Title */}
       
-
       <Tabs value={activeTab} onValueChange={value => setActiveTab(value as TabName)} className="w-full">
-        <TabsList className="grid w-full gap-1 p-1 bg-white border-2 border-purple-200 rounded-lg shadow-sm" style={{
-        gridTemplateColumns: `repeat(${Math.min(visibleTabs.length, 4)}, 1fr)`
-      }}>
-          {visibleTabs.map(tab => <TabsTrigger key={tab.key} value={tab.key} className="flex-1 px-3 py-2 sm:px-4 sm:py-3 rounded-md font-medium text-purple-600 hover:text-purple-800 hover:bg-purple-50 transition-all duration-200 data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
-              <TabItem value={tab.key} label={tab.label} icon={tab.icon} />
-            </TabsTrigger>)}
+        <TabsList className="grid w-full gap-2 p-2 bg-white border-2 border-purple-200 rounded-xl shadow-sm">
+          {visibleTabs.map(tab => (
+            <TabsTrigger 
+              key={tab.key} 
+              value={tab.key} 
+              className="flex-1 px-3 py-3 sm:px-4 sm:py-3 rounded-lg font-medium text-purple-600 hover:text-purple-800 hover:bg-purple-50 transition-all duration-200 data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:scale-105"
+            >
+              <div className="flex items-center justify-center gap-2 w-full">
+                {tab.icon}
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden text-xs">{tab.label}</span>
+              </div>
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <div className="mt-8">
-          {isTabVisible("algemeen") && <TabsContent value="algemeen" className="mt-0">
+          {isTabVisible("algemeen") && (
+            <TabsContent value="algemeen" className="mt-0">
               <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <AlgemeenTab />
               </div>
-            </TabsContent>}
+            </TabsContent>
+          )}
           
-          {isTabVisible("beker") && <TabsContent value="beker" className="mt-0">
+          {isTabVisible("beker") && (
+            <TabsContent value="beker" className="mt-0">
               <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <CupTab />
               </div>
-            </TabsContent>}
+            </TabsContent>
+          )}
           
-          {isTabVisible("competitie") && <TabsContent value="competitie" className="mt-0">
+          {isTabVisible("competitie") && (
+            <TabsContent value="competitie" className="mt-0">
               <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <CompetitionTab />
               </div>
-            </TabsContent>}
+            </TabsContent>
+          )}
           
-          {isTabVisible("playoff") && <TabsContent value="playoff" className="mt-0">
+          {isTabVisible("playoff") && (
+            <TabsContent value="playoff" className="mt-0">
               <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <PlayOffTab />
               </div>
-            </TabsContent>}
+            </TabsContent>
+          )}
           
-          {isTabVisible("reglement") && <TabsContent value="reglement" className="mt-0">
+          {isTabVisible("reglement") && (
+            <TabsContent value="reglement" className="mt-0">
               <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <RegulationsTab />
               </div>
-            </TabsContent>}
+            </TabsContent>
+          )}
           
-          {isTabVisible("schorsingen") && <TabsContent value="schorsingen" className="mt-0">
+          {isTabVisible("schorsingen") && (
+            <TabsContent value="schorsingen" className="mt-0">
               <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <SuspensionsTab />
               </div>
-            </TabsContent>}
+            </TabsContent>
+          )}
           
-          {isTabVisible("kaarten") && <TabsContent value="kaarten" className="mt-0">
+          {isTabVisible("kaarten") && (
+            <TabsContent value="kaarten" className="mt-0">
               <div className="bg-white border-2 border-purple-200 rounded-lg shadow-sm">
                 <CardsTab />
               </div>
-            </TabsContent>}
+            </TabsContent>
+          )}
         </div>
       </Tabs>
-    </div>;
+    </div>
+  );
 };
+
 export default MainTabs;
