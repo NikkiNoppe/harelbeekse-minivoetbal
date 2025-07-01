@@ -1,0 +1,94 @@
+
+import React from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Trash2, Edit2 } from "lucide-react";
+
+interface Player {
+  player_id: number;
+  player_name: string;
+  birth_date: string;
+}
+
+interface PlayersListProps {
+  players: Player[];
+  loading: boolean;
+  editMode: boolean;
+  onRemovePlayer: (playerId: number) => void;
+  onEditPlayer: (playerId: number) => void;
+  formatDate: (dateString: string) => string;
+}
+
+const PlayersList: React.FC<PlayersListProps> = ({
+  players,
+  loading,
+  editMode,
+  onRemovePlayer,
+  onEditPlayer,
+  formatDate
+}) => {
+  if (loading) {
+    return <div className="py-4 text-center text-muted-foreground">Spelers laden...</div>;
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-12">#</TableHead>
+          <TableHead>Naam</TableHead>
+          <TableHead className="w-32">Geboortedatum</TableHead>
+          {editMode && <TableHead className="w-24">Acties</TableHead>}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {players.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={editMode ? 4 : 3} className="text-center text-muted-foreground py-4">
+              Geen spelers gevonden
+            </TableCell>
+          </TableRow>
+        ) : (
+          players.map((player, index) => (
+            <TableRow key={player.player_id} className="h-10">
+              <TableCell className="font-medium text-center">{index + 1}</TableCell>
+              <TableCell className="py-1">{player.player_name}</TableCell>
+              <TableCell className="py-1">{formatDate(player.birth_date)}</TableCell>
+              {editMode && (
+                <TableCell className="py-1">
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEditPlayer(player.player_id)}
+                      className="h-7 w-7 p-0"
+                    >
+                      <Edit2 size={15} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onRemovePlayer(player.player_id)}
+                      className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-100/10"
+                    >
+                      <Trash2 size={15} />
+                    </Button>
+                  </div>
+                </TableCell>
+              )}
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+};
+
+export default PlayersList;
