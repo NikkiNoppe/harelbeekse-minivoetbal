@@ -30,7 +30,7 @@ const AlgemeenTab: React.FC = () => {
   }, [toast]);
   return <div className="space-y-6 sm:space-y-8 animate-slide-up">
       <section>
-        <h2 className="text-xl sm:text-2xl font-semibold mt-8 px-1 my-[30px]">Over de Competitie</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold mt-8 px-1 my-[30px]">Over de Competitie 15u42</h2>
         <Card>
           <CardContent className="pt-4 sm:pt-6 text-sm sm:text-base bg-transparent ">
             <p className="mb-3 sm:mb-4">De Harelbeekse Minivoetbal Competitie is opgericht in 1979 en is uitgegroeid tot een vaste waarde in de regio. </p>
