@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MOCK_TEAM_PLAYERS } from "@/data/mockData";
+import { formatDateShort } from "@/lib/dateUtils";
 
 interface Player {
   player_id: number;
@@ -220,7 +220,7 @@ export const usePlayers = () => {
   // Format date to display in DD-MM-YYYY format
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('nl-NL');
+    return formatDateShort(dateString);
   };
   
   return {

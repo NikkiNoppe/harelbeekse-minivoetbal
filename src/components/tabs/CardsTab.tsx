@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, AlertTriangle, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllCards, CardData } from "@/services/matchDataService";
+import { sortDatesDesc } from "@/lib/dateUtils";
 
 interface PlayerCardSummary {
   playerId: number;
@@ -76,7 +76,7 @@ const CardsTab: React.FC = () => {
         totalCards: yellowCards + redCards,
         isSuspended,
         suspensionReason,
-        cards: group.cards.sort((a, b) => new Date(b.matchDate).getTime() - new Date(a.matchDate).getTime())
+        cards: group.cards.sort((a, b) => sortDatesDesc(a.matchDate, b.matchDate))
       };
     }).sort((a, b) => b.totalCards - a.totalCards);
   }, [allCards]);

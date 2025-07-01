@@ -1,10 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import { MatchFormData } from "@/components/team/match-form/types";
 import { PlayerSelection } from "@/components/team/match-form/components/types";
+import { localDateTimeToISO, isoToLocalDateTime, getCurrentISO } from "@/lib/dateUtils";
 
 // Enhanced logging utility
 const logMatchOperation = (operation: string, data?: any, error?: any) => {
-  const timestamp = new Date().toISOString();
+  const timestamp = getCurrentISO();
   console.log(`[${timestamp}] MatchService ${operation}:`, { data, error });
 };
 
@@ -35,64 +36,63 @@ export const enhancedMatchService = {
       
       if (updateData.homeScore !== undefined) {
         updateObject.home_score = Number(updateData.homeScore);
-        logMatchOperation('updateMatch - Adding home_score', { value: updateObject.home_score });
       }
       
       if (updateData.awayScore !== undefined) {
         updateObject.away_score = Number(updateData.awayScore);
-        logMatchOperation('updateMatch - Adding away_score', { value: updateObject.away_score });
       }
       
       if (updateData.referee !== undefined) {
         updateObject.referee = String(updateData.referee);
-        logMatchOperation('updateMatch - Adding referee', { value: updateObject.referee });
       }
       
       if (updateData.refereeNotes !== undefined) {
         updateObject.referee_notes = String(updateData.refereeNotes);
-        logMatchOperation('updateMatch - Adding referee_notes', { value: updateObject.referee_notes });
       }
       
       if (updateData.matchday !== undefined) {
         updateObject.speeldag = String(updateData.matchday);
-        logMatchOperation('updateMatch - Adding speeldag', { value: updateObject.speeldag });
       }
       
       if (updateData.location !== undefined) {
         updateObject.location = String(updateData.location);
-        logMatchOperation('updateMatch - Adding location', { value: updateObject.location });
       }
       
       if (updateData.date !== undefined && updateData.time !== undefined) {
-        const matchDateTime = new Date(`${updateData.date}T${updateData.time}`);
-        updateObject.match_date = matchDateTime.toISOString();
-        logMatchOperation('updateMatch - Adding match_date', { value: updateObject.match_date });
+        updateObject.match_date = localDateTimeToISO(updateData.date, updateData.time);
       }
       
       if (updateData.homePlayers !== undefined) {
         updateObject.home_players = updateData.homePlayers;
-        logMatchOperation('updateMatch - Adding home_players', { count: updateData.homePlayers?.length });
       }
       
       if (updateData.awayPlayers !== undefined) {
         updateObject.away_players = updateData.awayPlayers;
-        logMatchOperation('updateMatch - Adding away_players', { count: updateData.awayPlayers?.length });
       }
       
       if (updateData.isCompleted !== undefined) {
         updateObject.is_submitted = Boolean(updateData.isCompleted);
-        logMatchOperation('updateMatch - Adding is_submitted', { value: updateObject.is_submitted });
       }
       
       if (updateData.isLocked !== undefined) {
         updateObject.is_locked = Boolean(updateData.isLocked);
-        logMatchOperation('updateMatch - Adding is_locked', { value: updateObject.is_locked });
       }
 
       // Always update the updated_at timestamp
-      updateObject.updated_at = new Date().toISOString();
-      
-      logMatchOperation('updateMatch - PREPARED UPDATE OBJECT', { updateObject });
+      updateObject.updated_at = getCurrentISO();
+
+      // Verwijder alle undefined of lege string velden uit het updateObject
+      Object.keys(updateObject).forEach(
+        (key) => (updateObject[key] === undefined || updateObject[key] === "") && delete updateObject[key]
+      );
+
+      logMatchOperation('updateMatch - FILTERED UPDATE OBJECT', { 
+        updateObject: JSON.stringify(updateObject),
+        keys: Object.keys(updateObject),
+        hasEmptyStrings: Object.values(updateObject).some(val => val === ""),
+        hasUndefined: Object.values(updateObject).some(val => val === undefined),
+        values: Object.entries(updateObject).map(([key, value]) => `${key}: ${typeof value} = ${JSON.stringify(value)}`)
+      });
 
       // FASE 3: Perform update with enhanced error detection
       const { data, error, count } = await supabase
@@ -111,10 +111,11 @@ export const enhancedMatchService = {
 
       if (error) {
         logMatchOperation('updateMatch - UPDATE ERROR DETECTED', { 
-          error,
+          error: JSON.stringify(error),
           errorMessage: error.message,
           errorCode: error.code,
-          errorDetails: error.details
+          errorDetails: error.details,
+          updateObject: JSON.stringify(updateObject)
         });
         
         const errorMessage = error.message || 'Onbekende database fout';
@@ -223,9 +224,7 @@ export const enhancedMatchService = {
       }
 
       // Parse the match_date timestamp to separate date and time
-      const matchDate = new Date(data.match_date);
-      const dateStr = matchDate.toISOString().split('T')[0];
-      const timeStr = matchDate.toTimeString().split(' ')[0].substring(0, 5);
+      const { date: dateStr, time: timeStr } = isoToLocalDateTime(data.match_date);
 
       // Safely parse players arrays from JSONB
       const parsePlayersArray = (playersData: any): PlayerSelection[] => {
@@ -286,7 +285,7 @@ export const enhancedMatchService = {
         .from('matches')
         .update({ 
           is_locked: true,
-          updated_at: new Date().toISOString()
+          updated_at: getCurrentISO()
         })
         .eq('match_id', matchId);
 
@@ -323,7 +322,7 @@ export const enhancedMatchService = {
         .from('matches')
         .update({ 
           is_locked: false,
-          updated_at: new Date().toISOString()
+          updated_at: getCurrentISO()
         })
         .eq('match_id', matchId);
 

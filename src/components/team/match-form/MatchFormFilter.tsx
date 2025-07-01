@@ -1,7 +1,7 @@
-
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Search, Calendar, Trophy } from "lucide-react";
+import { getCurrentDate } from "@/lib/dateUtils";
 
 interface MatchFormFilterProps {
   searchTerm: string;
@@ -20,7 +20,7 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
   matchdayFilter,
   onMatchdayChange
 }) => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getCurrentDate();
 
   return (
     <div className="mb-4 w-full">

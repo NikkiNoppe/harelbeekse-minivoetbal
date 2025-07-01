@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePlayerValidation } from "../usePlayerValidation";
+import { formatDateShort } from "@/lib/dateUtils";
 
 export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -85,7 +85,7 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
           const teamName = existingName.teams?.team_name || 'onbekend team';
           toast({
             title: "Naam bestaat al",
-            description: `${firstName} ${lastName} bestaat al bij ${teamName} met geboortedatum ${new Date(existingName.birth_date).toLocaleDateString('nl-NL')}`,
+            description: `${firstName} ${lastName} bestaat al bij ${teamName} met geboortedatum ${formatDateShort(existingName.birth_date)}`,
             variant: "destructive",
           });
           return false;

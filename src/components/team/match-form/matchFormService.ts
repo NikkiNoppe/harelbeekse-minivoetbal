@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { MatchFormData } from "./types";
+import { localDateTimeToISO, isoToLocalDateTime, getCurrentISO } from "@/lib/dateUtils";
 
 export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermissions: boolean = false): Promise<MatchFormData[]> => {
   try {
@@ -42,12 +42,7 @@ export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermission
     if (!data) return [];
 
     const matches: MatchFormData[] = data.map((row: any) => {
-      let date = "", time = "";
-      if (row.match_date) {
-        const d = new Date(row.match_date);
-        date = d.toISOString().slice(0, 10);
-        time = d.toISOString().slice(11, 16);
-      }
+      const { date, time } = isoToLocalDateTime(row.match_date);
 
       return {
         matchId: row.match_id,
@@ -80,12 +75,10 @@ export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermission
 
 export const updateMatchForm = async (matchData: MatchFormData): Promise<void> => {
   try {
-    const matchDateTime = new Date(`${matchData.date}T${matchData.time}`);
-    
     const { error } = await supabase
       .from('matches')
       .update({
-        match_date: matchDateTime.toISOString(),
+        match_date: localDateTimeToISO(matchData.date, matchData.time),
         home_team_id: matchData.homeTeamId,
         away_team_id: matchData.awayTeamId,
         location: matchData.location,
@@ -98,7 +91,7 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<void> =
         is_locked: matchData.isLocked,
         home_players: matchData.homePlayers as any, // Cast to any to satisfy Json type
         away_players: matchData.awayPlayers as any, // Cast to any to satisfy Json type
-        updated_at: new Date().toISOString()
+        updated_at: getCurrentISO()
       })
       .eq('match_id', matchData.matchId);
 
@@ -118,7 +111,7 @@ export const lockMatchForm = async (matchId: number): Promise<void> => {
       .from('matches')
       .update({
         is_locked: true,
-        updated_at: new Date().toISOString()
+        updated_at: getCurrentISO()
       })
       .eq('match_id', matchId);
 

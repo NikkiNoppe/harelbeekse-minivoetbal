@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
@@ -7,9 +6,6 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -87,52 +83,49 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Wachtwoord Reset</DialogTitle>
-          <DialogDescription>
-            Voer je email adres in om een wachtwoord reset link te ontvangen.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email adres</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="email"
-                      placeholder="voer.email@example.com" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <div className="flex gap-2 justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isLoading}
-              >
-                Annuleren
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isLoading}
-              >
-                {isLoading ? "Versturen..." : "Reset Link Versturen"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+      <DialogContent className="w-full max-w-md mx-4 sm:mx-auto bg-purple-100 text-foreground border-border rounded-lg">
+        <div className="rounded-b-lg">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-purple-dark">Email adres</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="email"
+                        placeholder="voer.email@example.com" 
+                        className="bg-white placeholder:text-purple-200"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  className="bg-purple-light text-white hover:bg-purple-dark hover:text-white border border-purple-light hover:border-purple-dark"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isLoading}
+                >
+                  Annuleren
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="bg-purple-dark text-white hover:bg-purple-light hover:text-white border border-purple-dark"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Versturen..." : "Reset Link Versturen"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );

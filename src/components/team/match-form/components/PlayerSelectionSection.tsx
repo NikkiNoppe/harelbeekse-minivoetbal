@@ -1,6 +1,4 @@
-
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PlayerSelectionTable from "./PlayerSelectionTable";
 import CaptainSelection from "./CaptainSelection";
 import { useTeamPlayers } from "./useTeamPlayers";
@@ -56,12 +54,10 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   };
 
   return (
-    <Card className="border-2" style={{ borderColor: "var(--purple-200)", background: "var(--purple-200)" }}>
-      <CardHeader style={{ background: "var(--main-color-dark)" }} className="rounded-t-lg">
-        <CardTitle className="text-base text-white">Spelers</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="space-y-4">
+      <h3 className="text-2xl text-center text-purple-light">Spelers</h3>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
             <PlayerSelectionTable
               teamLabel={`${match.homeTeamName} (Thuis)`}
@@ -105,7 +101,6 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             />
           </div>
         </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 };

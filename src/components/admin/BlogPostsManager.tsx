@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { BlogPost, fetchBlogPosts, createBlogPost, updateBlogPost, deleteBlogPos
 import { Edit, Trash2, Plus, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { formatDateForDisplay, getCurrentDate } from "@/lib/dateUtils";
 
 const BlogPostsManager: React.FC = () => {
   const { toast } = useToast();
@@ -18,7 +18,7 @@ const BlogPostsManager: React.FC = () => {
   const [formData, setFormData] = useState<Omit<BlogPost, 'id'>>({
     title: "",
     content: "",
-    date: new Date().toISOString().split('T')[0],
+    date: getCurrentDate(),
     tags: []
   });
   const [tagInput, setTagInput] = useState("");
@@ -65,7 +65,7 @@ const BlogPostsManager: React.FC = () => {
     setFormData({
       title: "",
       content: "",
-      date: new Date().toISOString().split('T')[0],
+      date: getCurrentDate(),
       tags: []
     });
     setEditing(null);
@@ -243,7 +243,7 @@ const BlogPostsManager: React.FC = () => {
                           </Button>
                         </div>
                       </div>
-                      <CardDescription>{new Date(post.date).toLocaleDateString('nl-NL')}</CardDescription>
+                      <CardDescription>{formatDateForDisplay(post.date)}</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <p className="line-clamp-3">{post.content}</p>

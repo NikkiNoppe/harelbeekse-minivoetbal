@@ -55,7 +55,7 @@ export const suspensionService = {
 
   async getActiveSuspensions(): Promise<Suspension[]> {
     try {
-      const playerCards = await this.getPlayerCards();
+      const playerCards = await suspensionService.getPlayerCards();
       const suspensions: Suspension[] = [];
 
       console.log('Player cards data:', playerCards); // Debug log

@@ -1,8 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { CompetitionType, GeneratedMatch, AvailableDate } from "./types";
 import { useToast } from "@/hooks/use-toast";
 import { findFormatById } from "./competitionFormats";
+import { getCurrentDate } from "@/lib/dateUtils";
 
 export const saveCompetitionToDatabase = async (
   generatedMatches: GeneratedMatch[],
@@ -39,10 +39,10 @@ export const saveCompetitionToDatabase = async (
     
     const startDate = selectedDatesWithVenues?.length > 0 ? 
       selectedDatesWithVenues[0].available_date : 
-      new Date().toISOString().split('T')[0];
+      getCurrentDate();
     const endDate = selectedDatesWithVenues?.length > 0 ? 
       selectedDatesWithVenues[selectedDatesWithVenues.length - 1].available_date : 
-      new Date().toISOString().split('T')[0];
+      getCurrentDate();
     
     // 1. Create a new competition
     const { data: compData, error: compError } = await supabase

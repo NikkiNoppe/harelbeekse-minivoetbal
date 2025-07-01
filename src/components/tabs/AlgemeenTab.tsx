@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tag } from "lucide-react";
 import { fetchBlogPosts, BlogPost } from "@/services/blogService";
 import { useToast } from "@/hooks/use-toast";
+import { formatDateShort } from "@/lib/dateUtils";
+
 const AlgemeenTab: React.FC = () => {
   const {
     toast
@@ -49,7 +51,7 @@ const AlgemeenTab: React.FC = () => {
                 <CardHeader className="pb-3 sm:pb-4 bg-transparent ">
                   <div className="flex justify-between items-start mb-2 gap-2">
                     <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">
-                      {new Date(post.date).toLocaleDateString('nl-NL')}
+                      {formatDateShort(post.date)}
                     </span>
                   </div>
                   <CardTitle className="text-lg sm:text-xl break-words">{post.title}</CardTitle>

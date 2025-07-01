@@ -6,7 +6,7 @@ import { fetchUpcomingMatches } from "./match-form/matchFormService";
 import { MatchFormData } from "./match-form/types";
 import MatchFormFilter from "./match-form/MatchFormFilter";
 import MatchFormList from "./match-form/MatchFormList";
-import CompactMatchForm from "./match-form/CompactMatchForm";
+import MatchFormDialog from "./match-form/MatchFormDialog";
 
 interface MatchFormTabProps {
   teamId: number;
@@ -17,6 +17,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [selectedMatchForm, setSelectedMatchForm] = useState<MatchFormData | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [matchdayFilter, setMatchdayFilter] = useState("");
@@ -39,37 +40,20 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
 
   const handleSelectMatch = (match: MatchFormData) => {
     setSelectedMatchForm(match);
+    setIsDialogOpen(true);
   };
 
-  if (selectedMatchForm) {
-    return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-purple-dark tracking-tight">
-            Wedstrijdformulier
-          </h2>
-          <button 
-            onClick={() => setSelectedMatchForm(null)}
-            className="text-primary underline underline-offset-4 hover:text-primary-dark text-sm transition"
-          >
-            ← Terug naar overzicht
-          </button>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow mb-4">
-          <CompactMatchForm
-            match={selectedMatchForm}
-            onComplete={() => {
-              setSelectedMatchForm(null);
-              refetch();
-            }}
-            isAdmin={isAdmin}
-            isReferee={isReferee}
-            teamId={teamId}
-          />
-        </div>
-      </div>
-    );
-  }
+  const handleDialogClose = () => {
+    setIsDialogOpen(false);
+    setSelectedMatchForm(null);
+    // Refresh data when dialog closes to show any updates
+    refetch();
+  };
+
+  const handleFormComplete = () => {
+    refetch();
+    handleDialogClose();
+  };
 
   if (!user?.teamId && !hasElevatedPermissions) {
     return (
@@ -126,6 +110,24 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
           teamId={teamId}
         />
       </div>
+      
+      {selectedMatchForm && (
+        <MatchFormDialog
+          open={isDialogOpen}
+          onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              // Refresh data when dialog is closed (by any means)
+              refetch();
+            }
+          }}
+          match={selectedMatchForm}
+          isAdmin={isAdmin}
+          isReferee={isReferee}
+          teamId={teamId}
+          onComplete={handleFormComplete}
+        />
+      )}
     </div>
   );
 };

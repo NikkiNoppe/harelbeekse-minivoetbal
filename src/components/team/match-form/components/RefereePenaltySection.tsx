@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -10,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { costSettingsService } from "@/services/costSettingsService";
 import { financialService } from "@/services/financialService";
 import { MatchFormData } from "../types";
+import { getCurrentDate } from "@/lib/dateUtils";
 
 interface PenaltyItem {
   id?: number;
@@ -71,58 +70,51 @@ export const RefereePenaltySection: React.FC<RefereePenaltySectionProps> = ({
     setPenalties(prev => prev.filter((_, i) => i !== index));
   };
 
-  const savePenalty = async (index: number) => {
-    const penalty = penalties[index];
-    if (!penalty.costSettingId || !penalty.teamId) {
-      toast({
-        title: "Fout",
-        description: "Selecteer een boete en team",
-        variant: "destructive"
-      });
-      return;
-    }
+  const savePenalties = async () => {
+    if (penalties.length === 0) return;
 
     setIsLoading(true);
     try {
-      const selectedPenalty = availablePenalties.find(p => p.id === penalty.costSettingId);
+      const currentDate = getCurrentDate();
       
-      await financialService.addTransaction({
-        team_id: penalty.teamId,
-        transaction_type: 'penalty',
-        amount: selectedPenalty?.amount || penalty.amount || 0,
-        description: penalty.description || selectedPenalty?.description || 'Boete',
-        penalty_type_id: null,
-        match_id: match.matchId,
-        transaction_date: new Date().toISOString().split('T')[0],
-        cost_setting_id: penalty.costSettingId
-      });
+      for (const penalty of penalties) {
+        if (penalty.costSettingId && penalty.teamId) {
+          const costSetting = availablePenalties.find(cs => cs.id === penalty.costSettingId);
+          if (costSetting) {
+            await financialService.addTeamTransaction({
+              teamId: penalty.teamId,
+              amount: costSetting.amount,
+              description: penalty.description || costSetting.name,
+              transactionType: 'penalty',
+              date: currentDate,
+              matchId: match.matchId
+            });
+          }
+        }
+      }
 
       toast({
-        title: "Boete toegevoegd",
-        description: "De boete is succesvol toegevoegd aan het team.",
+        title: "Boetes opgeslagen",
+        description: "De boetes zijn succesvol toegevoegd aan de teamtransacties.",
       });
 
-      // Update the penalty with the saved state
-      updatePenalty(index, 'id', Date.now()); // Temporary ID for UI
+      setPenalties([]);
     } catch (error) {
       toast({
         title: "Fout bij opslaan",
-        description: "Er is een fout opgetreden bij het opslaan van de boete.",
-        variant: "destructive"
+        description: "Er is een fout opgetreden bij het opslaan van de boetes.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!canEdit) return null;
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Scheidsrechter: Boetes</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="space-y-4">
+      <h3 className="text-2xl text-center text-purple-light">Scheidsrechter: Boetes</h3>
+      
+      <div className="space-y-4">
         {penalties.map((penalty, index) => (
           <div key={index} className="border rounded-lg p-4 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -171,40 +163,43 @@ export const RefereePenaltySection: React.FC<RefereePenaltySectionProps> = ({
               <Input
                 value={penalty.description || ''}
                 onChange={(e) => updatePenalty(index, 'description', e.target.value)}
-                placeholder="Extra details over de boete"
+                placeholder="Extra details over de boete..."
               />
             </div>
 
-            <div className="flex justify-between">
-              <Button
-                onClick={() => savePenalty(index)}
-                disabled={isLoading || !!penalty.id}
-                variant="default"
-                size="sm"
-              >
-                {penalty.id ? "Opgeslagen" : "Opslaan"}
-              </Button>
-              
-              <Button
-                onClick={() => removePenalty(index)}
-                variant="destructive"
-                size="sm"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => removePenalty(index)}
+              className="w-full"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Boete Verwijderen
+            </Button>
           </div>
         ))}
 
-        <Button
-          onClick={addPenalty}
-          variant="outline"
-          className="w-full"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Boete Toevoegen
-        </Button>
-      </CardContent>
-    </Card>
+        <div className="flex gap-2">
+          <Button
+            onClick={addPenalty}
+            variant="outline"
+            className="flex-1"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Boete Toevoegen
+          </Button>
+          
+          {penalties.length > 0 && (
+            <Button
+              onClick={savePenalties}
+              disabled={isLoading}
+              className="flex-1"
+            >
+              {isLoading ? "Opslaan..." : "Boetes Opslaan"}
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };

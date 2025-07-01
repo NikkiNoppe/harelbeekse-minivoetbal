@@ -1,7 +1,5 @@
-
 import React from "react";
 import {
-  MatchHeader,
   MatchDataSection,
   PlayerSelectionSection,
   RefereeNotesSection,
@@ -184,8 +182,6 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
 
   return (
     <div className="space-y-6">
-      <MatchHeader match={currentMatch} />
-
       {isAdmin && (
         <AdminMatchDataSection
           match={currentMatch}

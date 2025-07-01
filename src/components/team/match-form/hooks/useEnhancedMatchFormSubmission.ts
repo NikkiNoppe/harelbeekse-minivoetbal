@@ -1,15 +1,17 @@
-
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { enhancedMatchService } from "@/services/enhancedMatchService";
 import { MatchFormData } from "../types";
 import { useToast } from "@/hooks/use-toast";
+import { getCurrentISO } from "@/lib/dateUtils";
 
 export const useEnhancedMatchFormSubmission = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const submitMatchForm = async (matchData: MatchFormData) => {
-    const timestamp = new Date().toISOString();
+    const timestamp = getCurrentISO();
     console.log(`[${timestamp}] useEnhancedMatchFormSubmission - submitMatchForm START:`, { 
       matchId: matchData.matchId,
       hasHomeScore: matchData.homeScore !== undefined,
@@ -39,6 +41,10 @@ export const useEnhancedMatchFormSubmission = () => {
       console.log(`[${timestamp}] useEnhancedMatchFormSubmission - submitMatchForm RESULT:`, result);
 
       if (result.success) {
+        // Refresh wedstrijdformulieren na succesvolle update
+        queryClient.invalidateQueries({ queryKey: ['teamMatches'] });
+        queryClient.invalidateQueries({ queryKey: ['matches'] });
+        queryClient.invalidateQueries({ queryKey: ['matchData'] });
         toast({
           title: "Succesvol",
           description: result.message
@@ -68,7 +74,7 @@ export const useEnhancedMatchFormSubmission = () => {
   };
 
   const lockMatch = async (matchId: number) => {
-    const timestamp = new Date().toISOString();
+    const timestamp = getCurrentISO();
     console.log(`[${timestamp}] useEnhancedMatchFormSubmission - lockMatch START:`, { matchId });
 
     try {
@@ -104,7 +110,7 @@ export const useEnhancedMatchFormSubmission = () => {
   };
 
   const unlockMatch = async (matchId: number) => {
-    const timestamp = new Date().toISOString();
+    const timestamp = getCurrentISO();
     console.log(`[${timestamp}] useEnhancedMatchFormSubmission - unlockMatch START:`, { matchId });
 
     try {

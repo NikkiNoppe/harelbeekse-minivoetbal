@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { VacationPeriod } from "../../types-advanced";
+import { formatDateShort } from "@/lib/dateUtils";
 
 interface VacationPeriodsCardProps {
   vacationPeriods: VacationPeriod[];
@@ -210,7 +210,7 @@ const VacationPeriodsCard: React.FC<VacationPeriodsCardProps> = ({
               <div key={period.id} className="p-3 border rounded-lg bg-muted relative group">
                 <div className="font-medium">{period.name}</div>
                 <div className="text-sm text-muted-foreground">
-                  {new Date(period.start_date).toLocaleDateString('nl-NL')} - {new Date(period.end_date).toLocaleDateString('nl-NL')}
+                  {formatDateShort(period.start_date)} - {formatDateShort(period.end_date)}
                 </div>
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button

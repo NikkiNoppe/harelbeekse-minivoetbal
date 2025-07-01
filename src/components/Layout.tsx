@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import LoginForm from "@/components/auth/LoginForm";
 import Header from "@/components/header/Header";
 import Footer from "@/components/footer/Footer";
@@ -61,8 +60,10 @@ const Layout: React.FC = () => {
 
       {/* Login Dialog */}
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
-        <DialogContent className="w-full max-w-md mx-4 sm:mx-auto bg-background text-foreground border-border">
-          <LoginForm onLoginSuccess={handleLoginSuccess} />
+        <DialogContent className="w-full max-w-md mx-4 sm:mx-auto bg-background text-foreground border-border rounded-lg">
+          <div className="rounded-b-lg">
+            <LoginForm onLoginSuccess={handleLoginSuccess} />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,13 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { MatchesResult, PastMatch, MatchFormData } from "./types";
 import { updateMatchData, MatchUpdateData } from "./matchUpdateService";
+import { formatDateShort, formatTimeForDisplay, getCurrentDate } from "@/lib/dateUtils";
 
 export { updateMatchData };
 export type { MatchUpdateData };
 
 export async function fetchMatches(): Promise<MatchesResult> {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentDate();
     
     const { data, error } = await supabase
       .from('matches')
@@ -35,8 +36,8 @@ export async function fetchMatches(): Promise<MatchesResult> {
     
     data.forEach(match => {
       const matchDate = new Date(match.match_date);
-      const dateStr = matchDate.toLocaleDateString('nl-NL');
-      const timeStr = matchDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+      const dateStr = formatDateShort(match.match_date);
+      const timeStr = formatTimeForDisplay(match.match_date);
       
       // Make sure we safely access nested objects
       const homeTeam = match.home_team as { team_id: number, team_name: string } | null;

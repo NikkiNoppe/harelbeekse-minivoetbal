@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -22,6 +21,7 @@ import { usePlayerListLock } from "@/components/user/players/hooks/usePlayerList
 import { Lock } from "lucide-react";
 import { playerService, Player } from "@/services/playerService";
 import { supabase } from "@/integrations/supabase/client";
+import { formatDateShort } from "@/lib/dateUtils";
 
 interface PlayersListProps {
   teamId: number;
@@ -63,7 +63,7 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
     if (isLocked && lockDate) {
       toast({
         title: "Spelerslijst vergrendeld",
-        description: `Wijzigingen zijn niet toegestaan vanaf ${new Date(lockDate).toLocaleDateString('nl-NL')}`,
+        description: `Wijzigingen zijn niet toegestaan vanaf ${formatDateShort(lockDate)}`,
         variant: "destructive",
       });
     } else {
@@ -178,7 +178,7 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
           Beheer tot 20 spelers voor uw team • Contact: {teamEmail}
           {isLocked && lockDate && (
             <span className="block text-red-600 mt-1">
-              Spelerslijst vergrendeld vanaf {new Date(lockDate).toLocaleDateString('nl-NL')}
+              Spelerslijst vergrendeld vanaf {formatDateShort(lockDate)}
             </span>
           )}
         </CardDescription>
@@ -255,7 +255,7 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
                     <TableRow key={player.player_id}>
                       <TableCell className="font-medium">{player.first_name}</TableCell>
                       <TableCell>{player.last_name}</TableCell>
-                      <TableCell>{new Date(player.birth_date).toLocaleDateString('nl-NL')}</TableCell>
+                      <TableCell>{formatDateShort(player.birth_date)}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"

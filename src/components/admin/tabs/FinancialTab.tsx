@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -6,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Euro, TrendingDown, TrendingUp } from "lucide-react";
+import { formatDateShort } from "@/lib/dateUtils";
 
 interface Team {
   team_id: number;
@@ -186,10 +186,10 @@ const FinancialTab: React.FC = () => {
                   <TableCell>{match.teams_home?.team_name}</TableCell>
                   <TableCell>{match.teams_away?.team_name}</TableCell>
                   <TableCell>
-                    {new Date(match.match_date).toLocaleDateString('nl-NL')}
+                    {formatDateShort(match.match_date)}
                   </TableCell>
                   <TableCell>
-                    {new Date(match.created_at).toLocaleDateString('nl-NL')}
+                    {formatDateShort(match.created_at)}
                   </TableCell>
                   <TableCell className="text-right font-semibold">
                     {formatCurrency(11)} {/* 5 + 6 euro per match */}

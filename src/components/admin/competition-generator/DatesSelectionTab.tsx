@@ -1,10 +1,10 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar, Loader2, AlertCircle } from "lucide-react";
 import { AvailableDate } from "@/components/admin/competition-generator/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { formatDateForDisplay } from "@/lib/dateUtils";
 
 interface DatesSelectionTabProps {
   availableDates: AvailableDate[] | undefined;
@@ -44,12 +44,7 @@ const DatesSelectionTab: React.FC<DatesSelectionTabProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {availableDates?.map((date) => {
             const isSelected = selectedDates.includes(date.date_id);
-            const formattedDate = new Date(date.available_date).toLocaleDateString('nl-NL', {
-              weekday: 'short',
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric'
-            });
+            const formattedDate = formatDateForDisplay(date.available_date);
             
             return (
               <div 

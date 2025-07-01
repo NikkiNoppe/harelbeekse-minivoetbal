@@ -1,4 +1,3 @@
-
 import React from "react";
 import { 
   Card, 
@@ -18,6 +17,7 @@ import PlayerListLockSettings from "@/components/admin/settings/PlayerListLockSe
 import { usePlayersUpdated } from "../players/usePlayersUpdated";
 import { usePlayerListLock } from "../players/hooks/usePlayerListLock";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { formatDateShort } from "@/lib/dateUtils";
 
 const PlayersTab: React.FC = () => {
   // Use main AuthProvider instead of separate auth system
@@ -83,7 +83,7 @@ const PlayersTab: React.FC = () => {
                 )}
                 {isLocked && lockDate && authUser?.role !== "admin" && (
                   <span className="block text-red-600 mt-1">
-                    Spelerslijst vergrendeld vanaf {new Date(lockDate).toLocaleDateString('nl-NL')}
+                    Spelerslijst vergrendeld vanaf {formatDateShort(lockDate)}
                   </span>
                 )}
               </CardDescription>

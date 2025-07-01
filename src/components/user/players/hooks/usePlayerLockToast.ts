@@ -1,5 +1,5 @@
-
 import { useToast } from "@/hooks/use-toast";
+import { formatDateShort } from "@/lib/dateUtils";
 
 export const usePlayerLockToast = (isLocked: boolean, lockDate: string | null) => {
   const { toast } = useToast();
@@ -8,7 +8,7 @@ export const usePlayerLockToast = (isLocked: boolean, lockDate: string | null) =
     if (isLocked && lockDate) {
       toast({
         title: "Spelerslijst vergrendeld",
-        description: `Wijzigingen zijn niet toegestaan vanaf ${new Date(lockDate).toLocaleDateString('nl-NL')}`,
+        description: `Wijzigingen zijn niet toegestaan vanaf ${formatDateShort(lockDate)}`,
         variant: "destructive",
       });
     } else {

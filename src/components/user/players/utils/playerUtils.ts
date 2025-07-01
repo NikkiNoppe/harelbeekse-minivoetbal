@@ -1,10 +1,10 @@
-
 import { Player } from "../types";
+import { formatDateShort } from "@/lib/dateUtils";
 
 // Format date to display in DD-MM-YYYY format
 export const formatDate = (dateString: string) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('nl-NL');
+  return formatDateShort(dateString);
 };
 
 // Get full name

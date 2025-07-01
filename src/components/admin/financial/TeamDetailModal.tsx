@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,6 +11,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { costSettingsService } from "@/services/costSettingsService";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Euro, TrendingDown, TrendingUp } from "lucide-react";
+import { formatDateShort, getCurrentDate } from "@/lib/dateUtils";
 
 interface Team {
   team_id: number;
@@ -65,7 +65,7 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
       cost_setting_id: transactionForm.cost_setting_id ? parseInt(transactionForm.cost_setting_id) : null,
       penalty_type_id: null,
       match_id: null,
-      transaction_date: new Date().toISOString().split('T')[0]
+      transaction_date: getCurrentDate()
     });
 
     if (result.success) {
@@ -283,7 +283,7 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
                   transactions?.map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell>
-                        {new Date(transaction.transaction_date).toLocaleDateString('nl-NL')}
+                        {formatDateShort(transaction.transaction_date)}
                       </TableCell>
                       <TableCell>
                         <Badge className={getTransactionColor(transaction.transaction_type)}>

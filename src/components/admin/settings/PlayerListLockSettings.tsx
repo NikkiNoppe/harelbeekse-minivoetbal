@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Lock, Unlock } from "lucide-react";
+import { formatDateShort } from "@/lib/dateUtils";
 
 interface LockSettings {
   id: number;
@@ -136,11 +137,11 @@ const PlayerListLockSettings: React.FC = () => {
             <p className="text-sm text-gray-600">
               Status: {isCurrentlyLocked() ? (
                 <span className="text-red-600 font-medium">
-                  Spelerslijst is vergrendeld sinds {new Date(lockDate).toLocaleDateString('nl-NL')}
+                  Spelerslijst is vergrendeld sinds {formatDateShort(lockDate)}
                 </span>
               ) : (
                 <span className="text-green-600 font-medium">
-                  Spelerslijst wordt vergrendeld op {new Date(lockDate).toLocaleDateString('nl-NL')}
+                  Spelerslijst wordt vergrendeld op {formatDateShort(lockDate)}
                 </span>
               )}
             </p>

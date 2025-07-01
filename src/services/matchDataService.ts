@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { isoToLocalDateTime, sortDatesDesc } from "@/lib/dateUtils";
 
 export interface MatchData {
   matchId: number;
@@ -59,12 +59,7 @@ export const fetchCompetitionMatches = async () => {
   const past: MatchData[] = [];
 
   for (const row of data as any[]) {
-    let date = "", time = "";
-    if (row.match_date) {
-      const d = new Date(row.match_date);
-      date = d.toISOString().slice(0, 10);
-      time = d.toISOString().slice(11, 16);
-    }
+    const { date, time } = isoToLocalDateTime(row.match_date);
 
     const matchData: MatchData = {
       matchId: row.match_id,
@@ -153,5 +148,5 @@ export const fetchAllCards = async (): Promise<CardData[]> => {
     }
   }
 
-  return cards.sort((a, b) => new Date(b.matchDate).getTime() - new Date(a.matchDate).getTime());
+  return cards.sort((a, b) => sortDatesDesc(a.matchDate, b.matchDate));
 };
