@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@shared/components/ui/dialog";
@@ -16,7 +17,7 @@ interface CostSetting {
   name: string;
   description?: string;
   amount: number;
-  category: string;
+  category: 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost';
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -38,7 +39,7 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({
     name: "",
     description: "",
     amount: 0,
-    category: "expense",
+    category: "expense" as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost',
   });
 
   const { data: costSettings = [], isLoading } = useQuery({
@@ -57,7 +58,7 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({
         name: "",
         description: "",
         amount: 0,
-        category: "expense",
+        category: "expense" as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost',
       });
       toast({
         title: "Kostenverzameling toegevoegd",
@@ -152,7 +153,7 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({
                 <Label htmlFor="category">Categorie</Label>
                 <Select
                   value={newCost.category}
-                  onValueChange={(value) => setNewCost({ ...newCost, category: value })}
+                  onValueChange={(value) => setNewCost({ ...newCost, category: value as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost' })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -217,7 +218,7 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {Array.isArray(costSettings) && costSettings.map((cost: CostSetting) => (
+                    {Array.isArray(costSettings) && costSettings.length > 0 ? costSettings.map((cost: CostSetting) => (
                       <TableRow key={cost.id}>
                         <TableCell>
                           {editingId === cost.id ? (
@@ -233,16 +234,17 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({
                           {editingId === cost.id ? (
                             <Select
                               value={editData.category || cost.category}
-                              onValueChange={(value) => setEditData({ ...editData, category: value })}
+                              onValueChange={(value) => setEditData({ ...editData, category: value as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost' })}
                             >
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="expense">Uitgave</SelectItem>
-                                <SelectItem value="revenue">Inkomst</SelectItem>
-                                <SelectItem value="deposit">Storting</SelectItem>
+                                <SelectItem value="match_cost">Match Kosten</SelectItem>
                                 <SelectItem value="penalty">Boete</SelectItem>
+                                <SelectItem value="field_cost">Veld Kosten</SelectItem>
+                                <SelectItem value="referee_cost">Scheidsrechter Kosten</SelectItem>
+                                <SelectItem value="other">Overig</SelectItem>
                               </SelectContent>
                             </Select>
                           ) : (
@@ -296,7 +298,13 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({
                           )}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center">
+                          Geen kostenverzamelingen gevonden
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>

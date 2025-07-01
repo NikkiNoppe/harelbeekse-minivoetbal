@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/components/ui/table";
@@ -16,30 +17,34 @@ const FinancialTabUpdated = () => {
   const [openTeamDetailModal, setOpenTeamDetailModal] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
 
-  const { data: transactions, isLoading, error } = useQuery(
-    ['transactions'],
-    async () => {
+  const { data: transactions = [], isLoading, error } = useQuery({
+    queryKey: ['transactions'],
+    queryFn: async () => {
       const { data, error } = await supabase
-        .from('transactions')
+        .from('team_transactions')
         .select('*')
         .order('transaction_date', { ascending: false });
 
       if (error) {
         throw new Error(error.message);
       }
-      return data;
+      return data || [];
     }
-  );
+  });
 
-  const totalRevenue = transactions?.reduce((sum, transaction) => {
-    return sum + transaction.amount;
-  }, 0) || 0;
+  const totalRevenue = Array.isArray(transactions) 
+    ? transactions.reduce((sum, transaction) => {
+        return sum + (transaction.amount > 0 ? transaction.amount : 0);
+      }, 0) 
+    : 0;
 
-  const totalExpenses = transactions?.reduce((sum, transaction) => {
-    return sum + (transaction.amount < 0 ? transaction.amount : 0);
-  }, 0) || 0;
+  const totalExpenses = Array.isArray(transactions) 
+    ? transactions.reduce((sum, transaction) => {
+        return sum + (transaction.amount < 0 ? Math.abs(transaction.amount) : 0);
+      }, 0) 
+    : 0;
 
-  const netRevenue = totalRevenue + totalExpenses;
+  const netRevenue = totalRevenue - totalExpenses;
 
   const handleOpenTeamDetailModal = (teamId: number) => {
     setSelectedTeamId(teamId);
@@ -86,7 +91,7 @@ const FinancialTabUpdated = () => {
             <CardDescription>Totaal gemaakte kosten</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">€{Math.abs(totalExpenses).toFixed(2)}</div>
+            <div className="text-2xl font-bold">€{totalExpenses.toFixed(2)}</div>
             <Badge variant="secondary">-15% vergeleken met vorige maand</Badge>
           </CardContent>
         </Card>
@@ -136,15 +141,15 @@ const FinancialTabUpdated = () => {
                   </TableCell>
                 </TableRow>
               )}
-              {transactions?.length === 0 && !isLoading && !error && (
+              {Array.isArray(transactions) && transactions.length === 0 && !isLoading && !error && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center">
                     Geen transacties gevonden.
                   </TableCell>
                 </TableRow>
               )}
-              {transactions?.map((transaction) => (
-                <TableRow key={transaction.transaction_id}>
+              {Array.isArray(transactions) && transactions.map((transaction) => (
+                <TableRow key={transaction.id}>
                   <TableCell>{new Date(transaction.transaction_date).toLocaleDateString()}</TableCell>
                   <TableCell>{transaction.description}</TableCell>
                   <TableCell>€{transaction.amount.toFixed(2)}</TableCell>
@@ -173,7 +178,7 @@ const FinancialTabUpdated = () => {
         <TeamDetailModal
           open={openTeamDetailModal}
           onOpenChange={setOpenTeamDetailModal}
-          teamId={selectedTeamId}
+          team={selectedTeamId}
         />
       )}
     </div>

@@ -41,20 +41,19 @@ const logOperation = (operation: string, data?: any, error?: any) => {
 };
 
 export const enhancedCostSettingsService = {
-  async getCostSettings(): Promise<CostSetting[]> {
-    logOperation('getCostSettings - START');
+  async getAllCostSettings(): Promise<CostSetting[]> {
+    logOperation('getAllCostSettings - START');
     try {
       const { data, error } = await supabase
         .from('cost_settings')
         .select('*')
-        .eq('is_active', true)
         .order('category', { ascending: true })
         .order('name', { ascending: true });
 
-      logOperation('getCostSettings - QUERY RESULT', { data, error });
+      logOperation('getAllCostSettings - QUERY RESULT', { data, error });
 
       if (error) {
-        logOperation('getCostSettings - ERROR', { error });
+        logOperation('getAllCostSettings - ERROR', { error });
         throw error;
       }
       
@@ -63,12 +62,16 @@ export const enhancedCostSettingsService = {
         category: item.category as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost'
       }));
 
-      logOperation('getCostSettings - SUCCESS', { count: mappedData.length });
+      logOperation('getAllCostSettings - SUCCESS', { count: mappedData.length });
       return mappedData;
     } catch (error) {
-      logOperation('getCostSettings - CATCH ERROR', { error });
+      logOperation('getAllCostSettings - CATCH ERROR', { error });
       return [];
     }
+  },
+
+  async getCostSettings(): Promise<CostSetting[]> {
+    return this.getAllCostSettings();
   },
 
   async getMatchCosts(): Promise<CostSetting[]> {
@@ -131,27 +134,31 @@ export const enhancedCostSettingsService = {
     }
   },
 
-  async addCostSetting(setting: Omit<CostSetting, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; message: string }> {
-    logOperation('addCostSetting - START', { setting });
+  async createCostSetting(setting: Omit<CostSetting, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; message: string }> {
+    logOperation('createCostSetting - START', { setting });
     try {
       const { data, error } = await supabase
         .from('cost_settings')
         .insert([setting])
         .select();
 
-      logOperation('addCostSetting - QUERY RESULT', { data, error });
+      logOperation('createCostSetting - QUERY RESULT', { data, error });
 
       if (error) {
-        logOperation('addCostSetting - ERROR', { error });
+        logOperation('createCostSetting - ERROR', { error });
         throw error;
       }
       
-      logOperation('addCostSetting - SUCCESS', { insertedData: data });
+      logOperation('createCostSetting - SUCCESS', { insertedData: data });
       return { success: true, message: 'Kostentarief succesvol toegevoegd' };
     } catch (error) {
-      logOperation('addCostSetting - CATCH ERROR', { error });
+      logOperation('createCostSetting - CATCH ERROR', { error });
       return { success: false, message: `Fout bij toevoegen kostentarief: ${error}` };
     }
+  },
+
+  async addCostSetting(setting: Omit<CostSetting, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; message: string }> {
+    return this.createCostSetting(setting);
   },
 
   async updateCostSetting(id: number, setting: Partial<CostSetting>): Promise<{ success: boolean; message: string }> {
