@@ -189,6 +189,8 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
           match={currentMatch}
           onMatchUpdate={handleMatchUpdate}
           canEdit={canEdit}
+          isSaving={false}
+          onLockToggle={() => {}}
         />
       )}
 
@@ -205,7 +207,6 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       />
 
       <PlayerSelectionSection
-        match={currentMatch}
         homeTeamSelections={homeTeamSelections}
         awayTeamSelections={awayTeamSelections}
         onPlayerSelection={handlePlayerSelection}

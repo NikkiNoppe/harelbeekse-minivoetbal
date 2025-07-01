@@ -11,17 +11,27 @@ export const teamService = {
     return [];
   },
   
-  async createTeam(name: string): Promise<Team> {
-    // Placeholder implementation
-    return { team_id: 1, team_name: name };
+  async getAllTeams(): Promise<Team[]> {
+    // Alias for getTeams for compatibility
+    return this.getTeams();
   },
   
-  async updateTeam(id: number, name: string): Promise<Team> {
+  async getTeamById(teamId: number): Promise<Team> {
     // Placeholder implementation
-    return { team_id: id, team_name: name };
+    return { team_id: teamId, team_name: `Team ${teamId}` };
   },
   
-  async deleteTeam(id: number): Promise<void> {
+  async createTeam(teamName: string): Promise<Team> {
+    // Placeholder implementation
+    return { team_id: 1, team_name: teamName };
+  },
+  
+  async updateTeam(teamId: number, teamName: string): Promise<Team> {
+    // Placeholder implementation
+    return { team_id: teamId, team_name: teamName };
+  },
+  
+  async deleteTeam(teamId: number): Promise<void> {
     // Placeholder implementation
   }
 };

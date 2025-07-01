@@ -110,7 +110,10 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user }) => {
             <TabsTrigger value="players" className="focus:shadow-none">Spelers</TabsTrigger>
           </TabsList>
           <TabsContent value="matches" className="mt-6">
-            <CompactMatchForm teamId={parseInt(teamId)} isTeamAdmin={isTeamAdmin} />
+            {/* Will render matches when available */}
+            <div className="text-center py-8 text-muted-foreground">
+              Match forms will be available here
+            </div>
           </TabsContent>
           <TabsContent value="players" className="mt-6">
             <PlayersList teamId={parseInt(teamId)} onPlayersChange={setTeamPlayers} />

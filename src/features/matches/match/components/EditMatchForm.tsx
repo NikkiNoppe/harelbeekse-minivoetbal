@@ -31,7 +31,7 @@ const EditMatchForm: React.FC<EditMatchFormProps> = ({ match, onSave, onCancel }
 
   const loadTeams = async () => {
     try {
-      const teamData = await teamService.getTeams();
+      const teamData = await teamService.getAllTeams();
       setTeams(teamData);
     } catch (error) {
       console.error("Error loading teams:", error);

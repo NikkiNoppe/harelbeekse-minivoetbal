@@ -1,165 +1,118 @@
+
 import React, { useState } from "react";
-import { Lock, Save } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
 import { Label } from "@shared/components/ui/label";
 import { Textarea } from "@shared/components/ui/textarea";
 import { toast } from "@shared/hooks/use-toast";
 import { MatchFormData } from "./types";
-import { 
-  enhancedMatchService,
-} from "@shared/services/enhancedMatchService";
+import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@shared/components/ui/alert";
 
 interface ScoreEntryFormProps {
   match: MatchFormData;
-  isSubmitting: boolean;
-  canEdit: boolean;
-  onSubmit: () => void;
-  onScoreChange: (homeScore: number | null, awayScore: number | null) => void;
-  onRefereeNotesChange: (notes: string) => void;
-  isLocked: boolean;
-  isAdmin: boolean;
+  onScoreSubmit: (homeScore: number, awayScore: number, refereeNotes: string) => void;
+  isReferee?: boolean;
 }
 
-export const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
-  match,
-  isSubmitting,
-  canEdit,
-  onSubmit,
-  onScoreChange,
-  onRefereeNotesChange,
-  isLocked,
-  isAdmin
+const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({ 
+  match, 
+  onScoreSubmit, 
+  isReferee = false 
 }) => {
-  const [homeScore, setHomeScore] = useState<number | null>(match.homeScore !== undefined ? match.homeScore : null);
-  const [awayScore, setAwayScore] = useState<number | null>(match.awayScore !== undefined ? match.awayScore : null);
+  const [homeScore, setHomeScore] = useState(match.homeScore?.toString() || "");
+  const [awayScore, setAwayScore] = useState(match.awayScore?.toString() || "");
   const [refereeNotes, setRefereeNotes] = useState(match.refereeNotes || "");
-  const [showScoreAlert, setShowScoreAlert] = useState(false);
 
-  const handleHomeScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
-    setHomeScore(value);
-    onScoreChange(value, awayScore);
-  };
-
-  const handleAwayScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
-    setAwayScore(value);
-    onScoreChange(homeScore, value);
-  };
-
-  const handleRefereeNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setRefereeNotes(e.target.value);
-    onRefereeNotesChange(e.target.value);
-  };
-
-  const toggleLock = async () => {
-    if (!match.matchId) {
+  const handleSubmit = () => {
+    if (!homeScore || !awayScore) {
       toast({
-        title: "Error",
-        description: "Match ID is missing.",
+        description: "Please enter both team scores",
         variant: "destructive",
       });
       return;
     }
 
-    const serviceCall = isLocked ? enhancedMatchService.unlockMatch : enhancedMatchService.lockMatch;
-    const result = await serviceCall(match.matchId);
+    const homeScoreNum = parseInt(homeScore);
+    const awayScoreNum = parseInt(awayScore);
 
-    if (result.success) {
+    if (isNaN(homeScoreNum) || isNaN(awayScoreNum) || homeScoreNum < 0 || awayScoreNum < 0) {
       toast({
-        title: "Success",
-        description: result.message,
-      });
-      onSubmit(); // Refresh the form
-    } else {
-      toast({
-        title: "Error",
-        description: result.message,
+        description: "Please enter valid scores (0 or higher)",
         variant: "destructive",
       });
+      return;
     }
+
+    onScoreSubmit(homeScoreNum, awayScoreNum, refereeNotes);
   };
 
+  if (match.isLocked && !isReferee) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          This match has been locked by the referee and can no longer be edited.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
-    <div className="grid gap-4">
-      <div className="flex items-center space-x-2">
-        <Label htmlFor="homeScore">Score Thuisteam</Label>
-        <Input
-          type="number"
-          id="homeScore"
-          value={homeScore === null ? '' : homeScore.toString()}
-          onChange={handleHomeScoreChange}
-          disabled={!canEdit}
-          placeholder="Thuisteam score"
-          className="w-24 text-center"
-        />
-      </div>
-      <div className="flex items-center space-x-2">
-        <Label htmlFor="awayScore">Score Uitteam</Label>
-        <Input
-          type="number"
-          id="awayScore"
-          value={awayScore === null ? '' : awayScore.toString()}
-          onChange={handleAwayScoreChange}
-          disabled={!canEdit}
-          placeholder="Uitteam score"
-          className="w-24 text-center"
-        />
-      </div>
-      <div>
-        <Label htmlFor="refereeNotes">Notities scheidsrechter</Label>
-        <Textarea
-          id="refereeNotes"
-          value={refereeNotes}
-          onChange={handleRefereeNotesChange}
-          disabled={!canEdit}
-          placeholder="Bijzonderheden, opmerkingen..."
-          rows={4}
-        />
-      </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Score Entry</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="homeScore">{match.homeTeamName} Score</Label>
+            <Input
+              id="homeScore"
+              type="number"
+              min="0"
+              value={homeScore}
+              onChange={(e) => setHomeScore(e.target.value)}
+              disabled={match.isLocked && !isReferee}
+            />
+          </div>
+          <div>
+            <Label htmlFor="awayScore">{match.awayTeamName} Score</Label>
+            <Input
+              id="awayScore"
+              type="number"
+              min="0"
+              value={awayScore}
+              onChange={(e) => setAwayScore(e.target.value)}
+              disabled={match.isLocked && !isReferee}
+            />
+          </div>
+        </div>
 
-      {showScoreAlert && (
-        <Alert>
-          <AlertDescription>
-            Zeker de scores opslaan? Dit kan niet ongedaan gemaakt worden.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <div className="flex justify-between">
-        {isAdmin && (
-          <Button
-            variant="outline"
-            onClick={toggleLock}
-            disabled={isSubmitting}
-          >
-            {isLocked ? (
-              <>
-                <Lock className="mr-2 h-4 w-4" />
-                Ontgrendel
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Vergrendel
-              </>
-            )}
-          </Button>
+        {isReferee && (
+          <div>
+            <Label htmlFor="refereeNotes">Referee Notes</Label>
+            <Textarea
+              id="refereeNotes"
+              value={refereeNotes}
+              onChange={(e) => setRefereeNotes(e.target.value)}
+              rows={3}
+              placeholder="Optional notes about the match..."
+            />
+          </div>
         )}
-        <Button
-          onClick={onSubmit}
-          disabled={isSubmitting || !canEdit}
-          style={{
-            background: "var(--main-color-dark)",
-            color: "#fff",
-            borderColor: "var(--main-color-dark)"
-          }}
+
+        <Button 
+          onClick={handleSubmit}
+          disabled={match.isLocked && !isReferee}
+          className="w-full"
         >
-          Opslaan
+          Submit Score
         </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
+
+export default ScoreEntryForm;

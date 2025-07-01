@@ -1,148 +1,129 @@
+
 import React, { useState } from "react";
-import { Lock, Unlock, Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { Input } from "@shared/components/ui/input";
 import { Label } from "@shared/components/ui/label";
 import { Button } from "@shared/components/ui/button";
 import { MatchFormData } from "../types";
 import { toast } from "@shared/hooks/use-toast";
+import { Lock, Unlock } from "lucide-react";
 import { matchService } from "@shared/services/matchService";
 
 interface AdminMatchDataSectionProps {
   match: MatchFormData;
   onMatchUpdate: (matchId: number, updates: Partial<MatchFormData>) => Promise<void>;
-  isSaving: boolean;
   canEdit: boolean;
-  onLockToggle: (matchId: number) => Promise<void>;
+  isSaving?: boolean;
+  onLockToggle?: () => void;
 }
 
 export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
   match,
   onMatchUpdate,
-  isSaving,
   canEdit,
+  isSaving = false,
   onLockToggle
 }) => {
-  const [fieldCost, setFieldCost] = useState<string>(match.fieldCost?.toString() || "");
-  const [refereeCost, setRefereeCost] = useState<string>(match.refereeCost?.toString() || "");
-
-  const handleSaveCosts = async () => {
-    if (!match.matchId) {
-      toast({
-        title: "Fout",
-        description: "Wedstrijd ID is niet beschikbaar.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const parsedFieldCost = parseFloat(fieldCost);
-    const parsedRefereeCost = parseFloat(refereeCost);
-
-    if (isNaN(parsedFieldCost) || isNaN(parsedRefereeCost)) {
-      toast({
-        title: "Fout",
-        description: "Ongeldige kosten ingevoerd. Vul getallen in.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const [date, setDate] = useState(match.date);
+  const [time, setTime] = useState(match.time);
+  const [location, setLocation] = useState(match.location);
+  const [matchday, setMatchday] = useState(match.matchday);
+  
+  const handleSave = async () => {
     try {
-      await onMatchUpdate(match.matchId, {
-        fieldCost: parsedFieldCost,
-        refereeCost: parsedRefereeCost,
-      });
-
+      const metadata = {
+        matchId: match.matchId,
+        date,
+        time,
+        homeTeamId: match.homeTeamId,
+        awayTeamId: match.awayTeamId,
+        location,
+        matchday
+      };
+      
+      await matchService.updateMatchMetadata(metadata);
+      
       toast({
-        title: "Succes",
-        description: "Kosten succesvol opgeslagen!",
+        description: "Match details updated successfully",
       });
     } catch (error) {
+      console.error("Error updating match:", error);
       toast({
-        title: "Fout",
-        description: "Er is een fout opgetreden bij het opslaan van de kosten.",
+        description: "Failed to update match details",
         variant: "destructive",
       });
     }
-  };
-
-  const handleLockToggle = async () => {
-    if (!match.matchId) {
-      toast({
-        title: "Fout",
-        description: "Wedstrijd ID is niet beschikbaar.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    await onLockToggle(match.matchId);
   };
 
   return (
-    <Card className="border-2" style={{ borderColor: "var(--purple-200)" }}>
-      <CardHeader style={{ background: "var(--main-color-dark)" }} className="rounded-t-lg">
-        <CardTitle className="text-base text-white">Admin data</CardTitle>
+    <Card className="border-orange-200 bg-orange-50">
+      <CardHeader>
+        <CardTitle className="text-orange-800 flex items-center justify-between">
+          Admin: Match Details
+          {onLockToggle && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onLockToggle}
+              className="flex items-center gap-2"
+            >
+              {match.isLocked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+              {match.isLocked ? "Unlock" : "Lock"} Match
+            </Button>
+          )}
+        </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="admin-date">Date</Label>
+            <Input
+              id="admin-date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              disabled={!canEdit || isSaving}
+            />
+          </div>
+          <div>
+            <Label htmlFor="admin-time">Time</Label>
+            <Input
+              id="admin-time"
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              disabled={!canEdit || isSaving}
+            />
+          </div>
+        </div>
+
         <div>
-          <Label htmlFor="fieldCost">Veldkosten</Label>
+          <Label htmlFor="admin-location">Location</Label>
           <Input
-            id="fieldCost"
-            type="number"
-            value={fieldCost}
-            onChange={(e) => setFieldCost(e.target.value)}
-            disabled={isSaving || !canEdit}
-            className="focus:border-[var(--main-color-dark)] focus:ring-[var(--main-color-dark)]"
+            id="admin-location"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            disabled={!canEdit || isSaving}
           />
         </div>
+
         <div>
-          <Label htmlFor="refereeCost">Scheidsrechterkosten</Label>
+          <Label htmlFor="admin-matchday">Matchday</Label>
           <Input
-            id="refereeCost"
-            type="number"
-            value={refereeCost}
-            onChange={(e) => setRefereeCost(e.target.value)}
-            disabled={isSaving || !canEdit}
-            className="focus:border-[var(--main-color-dark)] focus:ring-[var(--main-color-dark)]"
+            id="admin-matchday"
+            value={matchday}
+            onChange={(e) => setMatchday(e.target.value)}
+            disabled={!canEdit || isSaving}
           />
         </div>
-        <div className="flex justify-between">
-          <Button
-            onClick={handleSaveCosts}
-            disabled={isSaving || !canEdit}
-            className="px-6"
-            style={{
-              background: "var(--main-color-dark)",
-              color: "#fff",
-            }}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Kosten opslaan
-          </Button>
-          <Button
-            onClick={handleLockToggle}
-            disabled={isSaving}
-            className="px-6"
-            style={{
-              background: "var(--main-color-dark)",
-              color: "#fff",
-            }}
-          >
-            {match.isLocked ? (
-              <>
-                <Unlock className="h-4 w-4 mr-2" />
-                Ontgrendel
-              </>
-            ) : (
-              <>
-                <Lock className="h-4 w-4 mr-2" />
-                Vergrendel
-              </>
-            )}
-          </Button>
-        </div>
+
+        <Button 
+          onClick={handleSave}
+          disabled={!canEdit || isSaving}
+          className="w-full"
+        >
+          {isSaving ? "Saving..." : "Save Changes"}
+        </Button>
       </CardContent>
     </Card>
   );
