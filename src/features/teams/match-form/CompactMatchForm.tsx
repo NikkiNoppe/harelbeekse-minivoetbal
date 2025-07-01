@@ -95,6 +95,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({ teamId }) => {
         onAwayScoreChange={() => {}}
         onRefereeChange={() => {}}
         canEdit={canEdit}
+        canEditMatchData={canEdit}
       />
 
       {isAdmin && (
@@ -140,6 +141,8 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({ teamId }) => {
         onNotesChange={() => {}}
         canEdit={canEdit}
       />
+
+      <RefereePenaltySection canEdit={canEdit} />
 
       <MatchFormActions
         onSubmit={handleSubmit}

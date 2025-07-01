@@ -1,42 +1,29 @@
 
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { Loader2, Save } from "lucide-react";
+import { Button } from "@shared/components/ui/button";
+import { Save } from "lucide-react";
 
 interface PlayerSelectionActionsProps {
-  submitting: boolean;
-  onComplete: () => void;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+  hasSelectedPlayers: boolean;
 }
 
 const PlayerSelectionActions: React.FC<PlayerSelectionActionsProps> = ({
-  submitting,
-  onComplete
+  onSubmit,
+  isSubmitting,
+  hasSelectedPlayers
 }) => {
   return (
-    <div className="flex justify-between mt-6">
+    <div className="flex justify-center pt-6 border-t">
       <Button
-        type="button"
-        variant="outline"
-        onClick={onComplete}
+        onClick={onSubmit}
+        disabled={isSubmitting || !hasSelectedPlayers}
+        className="flex items-center gap-2 px-8"
+        size="lg"
       >
-        Annuleren
-      </Button>
-      <Button 
-        type="submit"
-        disabled={submitting}
-        className="flex items-center gap-2"
-      >
-        {submitting ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Opslaan...</span>
-          </>
-        ) : (
-          <>
-            <Save className="h-4 w-4" />
-            <span>Formulier opslaan</span>
-          </>
-        )}
+        <Save className="h-4 w-4" />
+        {isSubmitting ? "Opslaan..." : "Selectie Opslaan"}
       </Button>
     </div>
   );

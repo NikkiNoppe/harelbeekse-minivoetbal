@@ -1,8 +1,7 @@
-
 import { useState } from "react";
-import { enhancedMatchService } from "@/services/enhancedMatchService";
+import { enhancedMatchService } from "@shared/services/enhancedMatchService";
 import { MatchFormData } from "../types";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@shared/hooks/use-toast";
 
 export const useEnhancedMatchFormSubmission = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);

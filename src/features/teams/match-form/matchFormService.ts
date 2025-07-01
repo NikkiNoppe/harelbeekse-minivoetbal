@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@shared/integrations/supabase/client";
 import { MatchFormData } from "./types";
 
 export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermissions: boolean = false): Promise<MatchFormData[]> => {

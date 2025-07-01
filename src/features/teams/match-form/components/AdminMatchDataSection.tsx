@@ -23,32 +23,30 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
   isSaving = false,
   onLockToggle
 }) => {
-  const [date, setDate] = useState(match.date);
-  const [time, setTime] = useState(match.time);
-  const [location, setLocation] = useState(match.location);
-  const [matchday, setMatchday] = useState(match.matchday);
-  
+  const [matchData, setMatchData] = useState({
+    location: match.location || "",
+    date: match.date || "",
+    time: match.time || "",
+    matchday: match.matchday || "",
+    fieldCost: "0",
+    refereeCost: "0"
+  });
+
   const handleSave = async () => {
     try {
-      const metadata = {
-        matchId: match.matchId,
-        date,
-        time,
-        homeTeamId: match.homeTeamId,
-        awayTeamId: match.awayTeamId,
-        location,
-        matchday
-      };
-      
-      await matchService.updateMatchMetadata(metadata);
+      await onMatchUpdate(match.matchId, {
+        location: matchData.location,
+        date: matchData.date,
+        time: matchData.time,
+        matchday: matchData.matchday
+      });
       
       toast({
-        title: "Match details updated successfully",
+        title: "Match data updated successfully",
       });
     } catch (error) {
-      console.error("Error updating match:", error);
       toast({
-        title: "Failed to update match details",
+        title: "Failed to update match data",
         variant: "destructive",
       });
     }
@@ -79,8 +77,8 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
             <Input
               id="admin-date"
               type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+              value={matchData.date}
+              onChange={(e) => setMatchData({ ...matchData, date: e.target.value })}
               disabled={!canEdit || isSaving}
             />
           </div>
@@ -89,8 +87,8 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
             <Input
               id="admin-time"
               type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
+              value={matchData.time}
+              onChange={(e) => setMatchData({ ...matchData, time: e.target.value })}
               disabled={!canEdit || isSaving}
             />
           </div>
@@ -100,8 +98,8 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
           <Label htmlFor="admin-location">Location</Label>
           <Input
             id="admin-location"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            value={matchData.location}
+            onChange={(e) => setMatchData({ ...matchData, location: e.target.value })}
             disabled={!canEdit || isSaving}
           />
         </div>
@@ -110,8 +108,8 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
           <Label htmlFor="admin-matchday">Matchday</Label>
           <Input
             id="admin-matchday"
-            value={matchday}
-            onChange={(e) => setMatchday(e.target.value)}
+            value={matchData.matchday}
+            onChange={(e) => setMatchData({ ...matchData, matchday: e.target.value })}
             disabled={!canEdit || isSaving}
           />
         </div>
