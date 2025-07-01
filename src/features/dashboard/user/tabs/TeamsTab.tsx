@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Plus, Users, Edit, Trash2, AlertCircle } from "lucide-react";
 import { useToast } from "@shared/hooks/use-toast";
@@ -20,19 +21,20 @@ import { useDeleteTeam } from "@features/teams/operations/useDeleteTeam";
 import { useTeams } from "../teams/useTeams";
 
 const TeamsTab: React.FC = () => {
-  const { teams, loading, refreshTeams } = useTeams();
+  const { teams, loading, fetchTeams } = useTeams();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editTeamId, setEditTeamId] = useState<number | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<number | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
-  const { addTeam, isAdding } = useAddTeam(refreshTeams);
-  const { updateTeam, isUpdating } = useUpdateTeam(refreshTeams);
-  const { deleteTeam, isDeleting } = useDeleteTeam(refreshTeams);
+  const { addTeam } = useAddTeam(fetchTeams);
+  const { updateTeam } = useUpdateTeam(fetchTeams);
+  const { deleteTeam } = useDeleteTeam(fetchTeams);
 
   const [newTeamName, setNewTeamName] = useState("");
   const [editedTeamName, setEditedTeamName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleAddTeam = async () => {
     if (newTeamName.trim() === "") {
@@ -44,16 +46,21 @@ const TeamsTab: React.FC = () => {
       return;
     }
 
-    const success = await addTeam(newTeamName);
-    if (success) {
+    setIsLoading(true);
+    try {
+      await addTeam(newTeamName);
       setAddDialogOpen(false);
       setNewTeamName("");
+    } catch (error) {
+      console.error('Error adding team:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleEditTeam = (teamId: number, teamName: string) => {
-    setEditTeamId(teamId);
-    setEditedTeamName(teamName);
+  const handleEditTeam = (team: { team_id: number; team_name: string }) => {
+    setEditTeamId(team.team_id);
+    setEditedTeamName(team.team_name);
     setEditDialogOpen(true);
   };
 
@@ -67,26 +74,36 @@ const TeamsTab: React.FC = () => {
       return;
     }
 
-    const success = await updateTeam(editTeamId, editedTeamName);
-    if (success) {
+    setIsLoading(true);
+    try {
+      await updateTeam(editTeamId, editedTeamName, 0);
       setEditDialogOpen(false);
       setEditTeamId(null);
       setEditedTeamName("");
+    } catch (error) {
+      console.error('Error updating team:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDeleteTeam = (teamId: number) => {
-    setTeamToDelete(teamId);
+  const handleDeleteTeam = (team: { team_id: number; team_name: string }) => {
+    setTeamToDelete(team.team_id);
     setDeleteDialogOpen(true);
   };
 
   const handleConfirmDeleteTeam = async () => {
     if (!teamToDelete) return;
 
-    const success = await deleteTeam(teamToDelete);
-    if (success) {
+    setIsLoading(true);
+    try {
+      await deleteTeam(teamToDelete);
       setDeleteDialogOpen(false);
       setTeamToDelete(null);
+    } catch (error) {
+      console.error('Error deleting team:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -129,41 +146,29 @@ const TeamsTab: React.FC = () => {
       <TeamDialog
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
-        title="Nieuw team toevoegen"
-        description="Voer de naam van het nieuwe team in"
         value={newTeamName}
         onValueChange={setNewTeamName}
         onSave={handleAddTeam}
-        isSaving={isAdding}
+        isSaving={isLoading}
       />
 
       <TeamDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
-        title="Team bewerken"
-        description="Bewerk de naam van het team"
         value={editedTeamName}
         onValueChange={setEditedTeamName}
         onSave={handleSaveEditedTeam}
-        isSaving={isUpdating}
+        isSaving={isLoading}
       />
 
-      {/* Delete Confirmation Dialog */}
-      {teamToDelete !== null && (
-        <TeamDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          title="Team verwijderen?"
-          description="Weet je zeker dat je dit team wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
-          value=""
-          onValueChange={() => {}} // Dummy function
-          onSave={handleConfirmDeleteTeam}
-          isSaving={isDeleting}
-          showCancelButton={true}
-          cancelButtonText="Annuleren"
-          confirmButtonText="Verwijderen"
-        />
-      )}
+      <TeamDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        value=""
+        onValueChange={() => {}}
+        onSave={handleConfirmDeleteTeam}
+        isSaving={isLoading}
+      />
     </div>
   );
 };

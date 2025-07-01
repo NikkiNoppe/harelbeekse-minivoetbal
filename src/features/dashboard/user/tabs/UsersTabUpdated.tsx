@@ -6,19 +6,19 @@ import {
   CardTitle, 
   CardDescription,
   CardContent
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+} from "@shared/components/ui/card";
+import { Button } from "@shared/components/ui/button";
 import {
   Table,
   TableBody,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@shared/components/ui/table";
 import { Plus } from "lucide-react";
-import { User } from "@/types/auth";
-import UserRow from "@/components/user/UserRow";
-import UserDialog from "@/components/user/UserDialog";
+import { User } from "@shared/types/auth";
+import UserRow from "../UserRow";
+import UserDialog from "../UserDialog";
 import { useUsersData } from "./hooks/useUsersData";
 
 const UsersTabUpdated: React.FC = () => {

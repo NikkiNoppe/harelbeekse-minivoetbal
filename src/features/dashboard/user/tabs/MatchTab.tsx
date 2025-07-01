@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
@@ -5,8 +6,8 @@ import { Badge } from "@shared/components/ui/badge";
 import { Button } from "@shared/components/ui/button";
 import { Calendar, Users, MapPin, Clock } from "lucide-react";
 import { Match } from "@features/matches/match/types";
-import EditMatchTabContent from "@features/matches/match/EditMatchTabContent";
-import PastMatchesTabContent from "@features/matches/match/PastMatchesTabContent";
+import { EditMatchTabContent } from "@features/matches/match/EditMatchTabContent";
+import { PastMatchesTabContent } from "@features/matches/match/PastMatchesTabContent";
 import { matchService } from "@features/matches/match/matchService";
 
 const MatchTab: React.FC = () => {
