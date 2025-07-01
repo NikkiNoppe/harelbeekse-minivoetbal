@@ -7,7 +7,7 @@ import MainTabs from "./tabs/MainTabs";
 
 // Lazy load components
 const LoginDialog = lazy(() => import("@features/auth/LoginDialog"));
-const AdminPanel = lazy(() => import("@features/admin/AdminPanel"));
+const MatchFormTab = lazy(() => import("@features/teams/MatchFormTab"));
 
 const LayoutContent: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -26,8 +26,8 @@ const LayoutContent: React.FC = () => {
     setShowLogin(false);
   };
 
-  // Show admin dashboard if user is authenticated
-  const showAdminDashboard = isAuthenticated && user;
+  // Show match forms if user is authenticated
+  const showMatchForms = isAuthenticated && user;
 
   return (
     <TabVisibilityProvider>
@@ -36,24 +36,14 @@ const LayoutContent: React.FC = () => {
         
         <main className="flex-1">
           <div className="container mx-auto px-4 py-8 max-w-7xl">
-            {showAdminDashboard ? (
+            {showMatchForms ? (
               <Suspense fallback={
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                  <span className="ml-2 text-purple-600">Admin dashboard laden...</span>
+                  <span className="ml-2 text-purple-600">Wedstrijdformulieren laden...</span>
                 </div>
               }>
-                <div className="space-y-6">
-                  <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg p-6 text-white">
-                    <h1 className="text-2xl font-bold mb-2">
-                      Welkom terug, {user?.username}!
-                    </h1>
-                    <p className="text-purple-100">
-                      Admin Dashboard - Beheer je competitie, teams en gebruikers
-                    </p>
-                  </div>
-                  <AdminPanel />
-                </div>
+                <MatchFormTab teamId={user?.teamId?.toString() || "1"} />
               </Suspense>
             ) : (
               <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />

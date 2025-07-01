@@ -5,10 +5,9 @@ import { useAuth } from "@features/auth/AuthProvider";
 import UserAccount from "@features/auth/UserAccount";
 import ThemeToggle from "@shared/components/theme/ThemeToggle";
 import Logo from "@shared/components/header/Logo";
-import { Menu, X, Settings } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@shared/components/ui/sheet";
 import { Button } from "@shared/components/ui/button";
-import { Badge } from "@shared/components/ui/badge";
 
 interface HeaderProps {
   onLogoClick: () => void;
@@ -45,13 +44,6 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
         
         {isAuthenticated && user ? (
           <div className="space-y-3">
-            <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Settings className="w-4 h-4 text-purple-600" />
-                <span className="font-medium text-purple-800">Admin Dashboard</span>
-              </div>
-              <Badge className="bg-purple-600 text-white">Actief</Badge>
-            </div>
             <UserAccount user={user} onLogout={handleLogout} />
           </div>
         ) : (
@@ -71,24 +63,12 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
   );
   
   return (
-    <header className={cn(
-      "w-full shadow-sm sticky top-0 z-50 transition-colors duration-200",
-      isAuthenticated 
-        ? "bg-gradient-to-r from-purple-600 to-purple-800 border-b-2 border-purple-500" 
-        : "bg-white border-b-2 border-purple-200"
-    )}>
+    <header className="w-full bg-white border-b-2 border-purple-200 shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 sm:h-20">
           {/* Logo */}
-          <div className="flex-shrink-0 flex items-center gap-4">
+          <div className="flex-shrink-0">
             <Logo onClick={onLogoClick} />
-            {isAuthenticated && (
-              <div className="hidden md:flex items-center gap-2">
-                <Settings className="w-5 h-5 text-white" />
-                <span className="text-white font-medium">Admin Dashboard</span>
-                <Badge className="bg-white/20 text-white border-white/30">Actief</Badge>
-              </div>
-            )}
           </div>
           
           {/* Desktop Navigation */}
@@ -114,12 +94,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  className={cn(
-                    "h-10 w-10 p-0 transition-colors duration-200",
-                    isAuthenticated 
-                      ? "text-white hover:bg-white/10" 
-                      : "text-purple-600 hover:bg-purple-100"
-                  )}
+                  className="h-10 w-10 p-0 text-purple-600 hover:bg-purple-100"
                 >
                   <Menu size={24} />
                   <span className="sr-only">Open menu</span>

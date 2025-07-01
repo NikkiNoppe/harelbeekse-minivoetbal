@@ -3,66 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shar
 import { Badge } from "@shared/components/ui/badge";
 import { Button } from "@shared/components/ui/button";
 import { Calendar, Users, Trophy, MapPin, Clock, Star, Mail, Phone } from "lucide-react";
-import { supabase } from "@shared/integrations/supabase/client";
-import { useToast } from "@shared/hooks/use-toast";
 
 const AlgemeenTab = () => {
-  const { toast } = useToast();
-
-  const testSupabaseConnection = async () => {
-    try {
-      console.log('🔗 Testing Supabase connection...');
-      
-      // Test basic connection
-      const { data, error } = await supabase
-        .from('users')
-        .select('username, role')
-        .limit(5);
-      
-      if (error) {
-        console.error('❌ Connection failed:', error);
-        toast({
-          title: "Connection Test Failed",
-          description: `Error: ${error.message}`,
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      console.log('✅ Connected! Found users:', data);
-      
-      // Test the verify function
-      const { data: rpcData, error: rpcError } = await supabase.rpc('verify_user_password', {
-        input_username_or_email: 'admin',
-        input_password: 'admin123'
-      });
-      
-      if (rpcError) {
-        console.error('❌ RPC function failed:', rpcError);
-        toast({
-          title: "RPC Test Failed",
-          description: `RPC Error: ${rpcError.message}. Users found: ${data?.length || 0}`,
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      console.log('✅ RPC successful:', rpcData);
-      toast({
-        title: "Connection Test Successful!",
-        description: `Found ${data?.length || 0} users. RPC function working: ${rpcData?.length > 0 ? 'Yes' : 'No'}`,
-      });
-      
-    } catch (error) {
-      console.error('💀 Test failed:', error);
-      toast({
-        title: "Test Failed",
-        description: `Unexpected error: ${error}`,
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <div className="space-y-8">
       {/* Hero Section */}
@@ -89,16 +31,6 @@ const AlgemeenTab = () => {
               >
                 <Users className="w-5 h-5 mr-2" />
                 Inschrijven
-              </Button>
-              
-              {/* Debug Test Button */}
-              <Button 
-                onClick={testSupabaseConnection}
-                variant="outline"
-                size="sm"
-                className="bg-white/10 text-white border-white/30 hover:bg-white/20 font-medium"
-              >
-                🔧 Test Database
               </Button>
             </div>
           </div>
