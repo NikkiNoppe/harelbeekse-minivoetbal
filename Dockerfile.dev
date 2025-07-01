@@ -1,0 +1,20 @@
+# Use Node.js 18 alpine for smaller image size
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev dependencies)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Expose port 8080
+EXPOSE 8080
+
+# Command to run the development server
+CMD ["npm", "run", "dev"] 

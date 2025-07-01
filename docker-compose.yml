@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  harelbeekse-minivoetbal:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    container_name: harelbeekse-minivoetbal-app 
