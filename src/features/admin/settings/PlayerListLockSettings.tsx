@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Lock, Unlock } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
+import { Switch } from "@shared/components/ui/switch";
+import { Label } from "@shared/components/ui/label";
+import { useToast } from "@shared/hooks/use-toast";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@shared/integrations/supabase/client";
+import { Calendar, Lock, Unlock } from "lucide-react";
 
 interface LockSettings {
   id: number;

@@ -1,17 +1,16 @@
-
-import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import React, { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@shared/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/components/ui/table";
+import { Badge } from "@shared/components/ui/badge";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
+import { Label } from "@shared/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/components/ui/select";
+import { Textarea } from "@shared/components/ui/textarea";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { costSettingsService } from "@/services/costSettingsService";
-import { useToast } from "@/hooks/use-toast";
-import { Plus, Euro, TrendingDown, TrendingUp } from "lucide-react";
+import { costSettingsService } from "@shared/services/costSettingsService";
+import { useToast } from "@shared/hooks/use-toast";
+import { Plus, Trash2, DollarSign } from "lucide-react";
 
 interface Team {
   team_id: number;
@@ -101,13 +100,13 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'deposit':
-        return <TrendingUp className="h-4 w-4 text-green-600" />;
+        return <DollarSign className="h-4 w-4 text-green-600" />;
       case 'penalty':
       case 'match_cost':
       case 'adjustment':
-        return <TrendingDown className="h-4 w-4 text-red-600" />;
+        return <Trash2 className="h-4 w-4 text-red-600" />;
       default:
-        return <Euro className="h-4 w-4" />;
+        return <DollarSign className="h-4 w-4" />;
     }
   };
 
@@ -148,7 +147,7 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Euro className="h-5 w-5" />
+            <DollarSign className="h-5 w-5" />
             {team.team_name} - Financieel Detail
           </DialogTitle>
         </DialogHeader>

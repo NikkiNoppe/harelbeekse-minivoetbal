@@ -1,26 +1,28 @@
-
-import React, { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
+import CompetitionGenerator from "../CompetitionGenerator";
 import AdvancedCompetitionGenerator from "../competition-generator/AdvancedCompetitionGenerator";
-import ManualSchemaTabWrapper from "./ManualSchemaTab";
+import { Trophy, Zap } from "lucide-react";
 
 const CompetitionManagementTab: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("advanced");
-
   return (
-    <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="advanced">AI Generator</TabsTrigger>
-          <TabsTrigger value="manual-schema">Handmatig Schema</TabsTrigger>
+    <div className="w-full">
+      <Tabs defaultValue="basic" className="w-full">
+        <TabsList>
+          <TabsTrigger value="basic" className="flex items-center gap-2">
+            <Trophy className="h-4 w-4" />
+            Basic
+          </TabsTrigger>
+          <TabsTrigger value="advanced" className="flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            Advanced
+          </TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="advanced" className="space-y-4 mt-6">
-          <AdvancedCompetitionGenerator />
+        <TabsContent value="basic">
+          <CompetitionGenerator />
         </TabsContent>
-        
-        <TabsContent value="manual-schema" className="space-y-4 mt-6">
-          <ManualSchemaTabWrapper />
+        <TabsContent value="advanced">
+          <AdvancedCompetitionGenerator />
         </TabsContent>
       </Tabs>
     </div>

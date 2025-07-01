@@ -1,4 +1,3 @@
-
 export interface AdvancedCompetitionConfig {
   name: string;
   format_type: string;
@@ -48,13 +47,11 @@ export interface GeneratedMatch {
 
 export interface AIGeneratedSchedule {
   matches: GeneratedMatch[];
-  matchdays: {
-    name: string;
-    date: string;
-    matches: GeneratedMatch[];
-  }[];
-  validation_notes: string[];
-  confidence_score: number;
+  metadata: {
+    total_matches: number;
+    total_rounds: number;
+    generation_time: number;
+  };
 }
 
 export interface AIGenerationRequest {

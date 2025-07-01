@@ -1,11 +1,11 @@
-
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, RotateCcw } from "lucide-react";
-import { useTabVisibilitySettings } from "@/hooks/useTabVisibilitySettings";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Switch } from "@shared/components/ui/switch";
+import { Button } from "@shared/components/ui/button";
+import { Label } from "@shared/components/ui/label";
+import { Separator } from "@shared/components/ui/separator";
+import { useTabVisibilitySettings } from "@shared/hooks/useTabVisibilitySettings";
+import { Eye, EyeOff, Save } from "lucide-react";
 
 const TabVisibilitySettings: React.FC = () => {
   const { settings, loading, updateSetting } = useTabVisibilitySettings();
@@ -43,7 +43,7 @@ const TabVisibilitySettings: React.FC = () => {
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button variant="outline" className="flex items-center gap-2">
-          <RotateCcw className="h-4 w-4" />
+          <Save className="h-4 w-4" />
           Standaardinstellingen
         </Button>
         <Button>
