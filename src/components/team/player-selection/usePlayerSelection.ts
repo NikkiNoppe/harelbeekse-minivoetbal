@@ -16,10 +16,10 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch team players with explicit return type
-  const { data: teamPlayers, isLoading } = useQuery<Player[]>({
+  // Fetch team players - simplified type inference
+  const { data: teamPlayers, isLoading } = useQuery({
     queryKey: ['teamPlayers', teamId],
-    queryFn: async (): Promise<Player[]> => {
+    queryFn: async () => {
       try {
         const { data, error } = await supabase
           .from('players')
@@ -30,15 +30,17 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         
         if (error) throw error;
         
-        // Explicitly type the data and map it
-        const players: DatabasePlayer[] = data || [];
-        return players.map((player): Player => ({
+        // Type the database result and map to Player interface
+        const dbPlayers = data as DatabasePlayer[] || [];
+        const players: Player[] = dbPlayers.map(player => ({
           playerId: player.player_id,
           playerName: `${player.first_name} ${player.last_name}`,
           selected: false,
           jerseyNumber: "",
           isCaptain: false
         }));
+        
+        return players;
       } catch (error) {
         console.error("Error fetching team players:", error);
         toast({
@@ -46,7 +48,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
           description: "Er is een probleem opgetreden bij het ophalen van de teamspelers.",
           variant: "destructive"
         });
-        return [];
+        return [] as Player[];
       }
     }
   });
