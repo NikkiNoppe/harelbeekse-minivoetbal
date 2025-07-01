@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Dialog,
@@ -21,12 +22,9 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md bg-white border-2 border-purple-200 shadow-2xl">
         <DialogHeader className="pb-4 border-b border-purple-100">
-          <DialogTitle className="text-2xl font-bold text-purple-dark text-center">
+          <DialogTitle className="text-2xl font-bold text-purple-800 text-center">
             Inloggen
           </DialogTitle>
-          <p className="text-sm text-purple-600 text-center mt-2">
-            Welkom terug! Log in om door te gaan.
-          </p>
         </DialogHeader>
         <div className="pt-4">
           <LoginForm onLoginSuccess={handleLoginSuccess} />
@@ -36,4 +34,4 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose }) => {
   );
 };
 
-export default LoginDialog; 
+export default LoginDialog;

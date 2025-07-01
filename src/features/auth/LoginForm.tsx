@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@shared/components/ui/button";
@@ -6,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import ForgotPasswordDialog from "./ForgotPasswordDialog";
 import { useLogin } from "./hooks/useLogin";
 import LoginFormFields from "./components/LoginFormFields";
-import TestCredentialsFooter from "./components/TestCredentialsFooter";
 import { formSchema, FormValues } from "./validation/loginFormSchema";
 
 interface LoginFormProps {
@@ -34,9 +34,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
   };
   
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-4">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <LoginFormFields 
             form={form} 
             isLoading={isLoading} 
@@ -44,10 +44,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
           />
         </form>
       </Form>
-      
-      <div className="pt-4 border-t border-purple-100">
-        <TestCredentialsFooter />
-      </div>
 
       <ForgotPasswordDialog 
         open={forgotPasswordOpen} 

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Button } from "@shared/components/ui/button";
@@ -23,13 +24,13 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
   onForgotPassword 
 }) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <FormField
         control={form.control}
         name="usernameOrEmail"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-purple-dark font-medium">
+            <FormLabel className="text-purple-800 font-medium">
               Gebruikersnaam of Email
             </FormLabel>
             <FormControl>
@@ -49,7 +50,7 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
         name="password"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-purple-dark font-medium">
+            <FormLabel className="text-purple-800 font-medium">
               Wachtwoord
             </FormLabel>
             <FormControl>
@@ -65,12 +66,11 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
         )}
       />
       
-      <div className="space-y-4">
+      <div className="space-y-3">
         <Button 
           type="submit" 
-          className="w-full" 
+          className="w-full bg-purple-600 hover:bg-purple-700 text-white" 
           size="lg"
-          loading={isLoading}
           disabled={isLoading}
         >
           {isLoading ? "Bezig met inloggen..." : "Inloggen"}
@@ -79,7 +79,7 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
         <Button
           type="button"
           variant="link"
-          className="w-full text-purple-600 hover:text-purple-800"
+          className="w-full text-purple-600 hover:text-purple-800 text-sm"
           onClick={onForgotPassword}
         >
           Wachtwoord vergeten?
