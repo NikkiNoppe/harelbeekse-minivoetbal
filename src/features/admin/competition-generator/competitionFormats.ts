@@ -8,8 +8,7 @@ export const predefinedFormats: CompetitionType[] = [
     description: "Elke ploeg speelt één keer tegen elke andere ploeg",
     hasPlayoffs: false,
     regularRounds: 1,
-    has_playoffs: false,
-    regular_rounds: 1,
+    isCup: false,
   },
   {
     id: "regular-double",
@@ -17,8 +16,7 @@ export const predefinedFormats: CompetitionType[] = [
     description: "Elke ploeg speelt twee keer tegen elke andere ploeg (thuis en uit)",
     hasPlayoffs: false,
     regularRounds: 2,
-    has_playoffs: false,
-    regular_rounds: 2,
+    isCup: false,
   },
   {
     id: "playoff-top6-bottom6",
@@ -27,8 +25,7 @@ export const predefinedFormats: CompetitionType[] = [
     hasPlayoffs: true,
     regularRounds: 1,
     playoffTeams: 6,
-    has_playoffs: true,
-    regular_rounds: 1,
+    isCup: false,
   },
   {
     id: "playoff-top4",
@@ -37,8 +34,7 @@ export const predefinedFormats: CompetitionType[] = [
     hasPlayoffs: true,
     regularRounds: 1,
     playoffTeams: 4,
-    has_playoffs: true,
-    regular_rounds: 1,
+    isCup: false,
   },
   {
     id: "cup",
@@ -47,8 +43,6 @@ export const predefinedFormats: CompetitionType[] = [
     hasPlayoffs: false,
     regularRounds: 0,
     isCup: true,
-    has_playoffs: false,
-    regular_rounds: 0,
   }
 ];
 

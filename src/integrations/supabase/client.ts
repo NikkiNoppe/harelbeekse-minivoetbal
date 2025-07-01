@@ -19,6 +19,10 @@ export const supabase = {
         data: [],
         error: null
       }),
+      in: (column: string, values: any[]) => ({
+        data: [],
+        error: null
+      }),
       data: [],
       error: null
     }),

@@ -20,6 +20,9 @@ export interface CompetitionType {
   regularRounds: number;
   hasPlayoffs: boolean;
   isCup: boolean;
+  has_playoffs?: boolean; // Added for compatibility
+  regular_rounds?: number; // Added for compatibility
+  playoffTeams?: number; // Added missing property
 }
 
 export interface AvailableDate {
