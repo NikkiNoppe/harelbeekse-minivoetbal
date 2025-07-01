@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Dialog,
@@ -20,13 +19,14 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-white border-2 border-purple-200 shadow-2xl">
-        <DialogHeader className="pb-4 border-b border-purple-100">
-          <DialogTitle className="text-2xl font-bold text-purple-800 text-center">
+      <DialogContent onClose={onClose}>
+        <DialogHeader>
+          <DialogTitle className="text-purple-800">
             Inloggen
           </DialogTitle>
         </DialogHeader>
-        <div className="pt-4">
+        
+        <div className="px-6 pb-6">
           <LoginForm onLoginSuccess={handleLoginSuccess} />
         </div>
       </DialogContent>
