@@ -1,346 +1,307 @@
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@shared/components/ui/dialog";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@shared/components/ui/dialog";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
 import { Label } from "@shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/components/ui/select";
 import { Textarea } from "@shared/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/components/ui/table";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, Trash2, Edit, Save, X } from "lucide-react";
 import { enhancedCostSettingsService } from "@shared/services/enhancedCostSettingsService";
 import { useToast } from "@shared/hooks/use-toast";
-import { Plus, Trash2, Edit, Settings } from "lucide-react";
+
+interface CostSetting {
+  id: number;
+  name: string;
+  description?: string;
+  amount: number;
+  category: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 interface EnhancedCostSettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ open, onOpenChange }) => {
+const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({
+  open,
+  onOpenChange,
+}) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    amount: '',
-    category: 'penalty' as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost'
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [newCost, setNewCost] = useState({
+    name: "",
+    description: "",
+    amount: 0,
+    category: "expense",
   });
 
-  const { data: costSettings, isLoading } = useQuery({
+  const { data: costSettings = [], isLoading } = useQuery({
     queryKey: ['enhanced-cost-settings'],
-    queryFn: enhancedCostSettingsService.getCostSettings
+    queryFn: enhancedCostSettingsService.getAllCostSettings,
+    enabled: open,
   });
 
-  const handleSave = async () => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - handleSave START:`, { formData, editingItem });
+  const [editData, setEditData] = useState<Partial<CostSetting>>({});
 
-    if (!formData.name || !formData.amount) {
-      console.log(`[${timestamp}] EnhancedCostSettingsModal - Validation failed:`, { 
-        hasName: !!formData.name, 
-        hasAmount: !!formData.amount 
-      });
-      toast({
-        title: "Fout",
-        description: "Vul alle verplichte velden in",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const settingData = {
-      name: formData.name,
-      description: formData.description || null,
-      amount: parseFloat(formData.amount),
-      category: formData.category,
-      is_active: true
-    };
-
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - Prepared data:`, { settingData });
-
-    let result;
-    if (editingItem) {
-      result = await enhancedCostSettingsService.updateCostSetting(editingItem.id, settingData);
-    } else {
-      result = await enhancedCostSettingsService.addCostSetting(settingData);
-    }
-
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - Operation result:`, { result, isEdit: !!editingItem });
-
-    if (result.success) {
-      toast({
-        title: "Succesvol",
-        description: result.message
-      });
+  const handleAddCost = async () => {
+    try {
+      await enhancedCostSettingsService.createCostSetting(newCost);
       queryClient.invalidateQueries({ queryKey: ['enhanced-cost-settings'] });
-      resetForm();
-    } else {
+      setNewCost({
+        name: "",
+        description: "",
+        amount: 0,
+        category: "expense",
+      });
+      toast({
+        title: "Kostenverzameling toegevoegd",
+        description: "De nieuwe kostenverzameling is succesvol toegevoegd.",
+      });
+    } catch (error) {
       toast({
         title: "Fout",
-        description: result.message,
-        variant: "destructive"
+        description: "Er is een fout opgetreden bij het toevoegen van de kostenverzameling.",
+        variant: "destructive",
       });
     }
+  };
+
+  const handleEdit = (cost: CostSetting) => {
+    setEditingId(cost.id);
+    setEditData(cost);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId || !editData) return;
+
+    try {
+      await enhancedCostSettingsService.updateCostSetting(editingId, editData);
+      queryClient.invalidateQueries({ queryKey: ['enhanced-cost-settings'] });
+      setEditingId(null);
+      setEditData({});
+      toast({
+        title: "Kostenverzameling bijgewerkt",
+        description: "De kostenverzameling is succesvol bijgewerkt.",
+      });
+    } catch (error) {
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het bijwerken van de kostenverzameling.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditData({});
   };
 
   const handleDelete = async (id: number) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - handleDelete START:`, { id });
-
-    const result = await enhancedCostSettingsService.deleteCostSetting(id);
-    
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - Delete result:`, { result, id });
-
-    if (result.success) {
-      toast({
-        title: "Succesvol",
-        description: result.message
-      });
+    try {
+      await enhancedCostSettingsService.deleteCostSetting(id);
       queryClient.invalidateQueries({ queryKey: ['enhanced-cost-settings'] });
-    } else {
+      toast({
+        title: "Kostenverzameling verwijderd",
+        description: "De kostenverzameling is succesvol verwijderd.",
+      });
+    } catch (error) {
       toast({
         title: "Fout",
-        description: result.message,
-        variant: "destructive"
+        description: "Er is een fout opgetreden bij het verwijderen van de kostenverzameling.",
+        variant: "destructive",
       });
     }
   };
 
-  const handleEdit = (item: any) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - handleEdit:`, { item });
-
-    setEditingItem(item);
-    setFormData({
-      name: item.name,
-      description: item.description || '',
-      amount: item.amount.toString(),
-      category: item.category
-    });
-    setShowAddForm(true);
-  };
-
-  const resetForm = () => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - resetForm`);
-
-    setFormData({
-      name: '',
-      description: '',
-      amount: '',
-      category: 'penalty'
-    });
-    setShowAddForm(false);
-    setEditingItem(null);
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('nl-NL', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
-
-  const getCategoryLabel = (category: string) => {
-    switch (category) {
-      case 'match_cost':
-        return 'Wedstrijdkosten';
-      case 'penalty':
-        return 'Boete';
-      case 'field_cost':
-        return 'Veldkosten';
-      case 'referee_cost':
-        return 'Scheidsrechterkosten';
-      case 'other':
-        return 'Overig';
-      default:
-        return category;
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'match_cost':
-        return 'bg-blue-100 text-blue-800';
-      case 'penalty':
-        return 'bg-red-100 text-red-800';
-      case 'field_cost':
-        return 'bg-green-100 text-green-800';
-      case 'referee_cost':
-        return 'bg-purple-100 text-purple-800';
-      case 'other':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // Group settings by category
-  const groupedSettings = costSettings?.reduce((acc, setting) => {
-    if (!acc[setting.category]) {
-      acc[setting.category] = [];
-    }
-    acc[setting.category].push(setting);
-    return acc;
-  }, {} as Record<string, any[]>) || {};
+  const totalActive = Array.isArray(costSettings) 
+    ? costSettings.filter((cost: CostSetting) => cost.is_active).reduce((sum: number, cost: CostSetting) => sum + cost.amount, 0)
+    : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Enhanced Kostentarieven Beheer
-          </DialogTitle>
+          <DialogTitle>Uitgebreide Kosten Instellingen</DialogTitle>
+          <DialogDescription>
+            Beheer alle kostenverzamelingen en hun instellingen
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-600">
-              Beheer alle kosten en boetes met uitgebreide logging
-            </p>
-            <Button 
-              onClick={() => setShowAddForm(!showAddForm)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              {showAddForm ? 'Annuleren' : 'Nieuw Tarief'}
+          {/* Add New Cost Section */}
+          <div className="border rounded-lg p-4 space-y-4">
+            <h3 className="text-lg font-semibold">Nieuwe Kostenverzameling Toevoegen</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Naam</Label>
+                <Input
+                  id="name"
+                  value={newCost.name}
+                  onChange={(e) => setNewCost({ ...newCost, name: e.target.value })}
+                  placeholder="Kostenverzameling naam"
+                />
+              </div>
+              <div>
+                <Label htmlFor="category">Categorie</Label>
+                <Select
+                  value={newCost.category}
+                  onValueChange={(value) => setNewCost({ ...newCost, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="expense">Uitgave</SelectItem>
+                    <SelectItem value="revenue">Inkomst</SelectItem>
+                    <SelectItem value="deposit">Storting</SelectItem>
+                    <SelectItem value="penalty">Boete</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="amount">Bedrag (€)</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  value={newCost.amount}
+                  onChange={(e) => setNewCost({ ...newCost, amount: parseFloat(e.target.value) || 0 })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="description">Beschrijving</Label>
+                <Textarea
+                  id="description"
+                  value={newCost.description}
+                  onChange={(e) => setNewCost({ ...newCost, description: e.target.value })}
+                  placeholder="Optionele beschrijving"
+                />
+              </div>
+            </div>
+            <Button onClick={handleAddCost} className="w-full">
+              <Plus className="mr-2 h-4 w-4" />
+              Kostenverzameling Toevoegen
             </Button>
           </div>
 
-          {showAddForm && (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4">
-                {editingItem ? 'Tarief Bewerken' : 'Nieuw Tarief Toevoegen'}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Naam *</Label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="Naam van het tarief"
-                  />
-                </div>
-
-                <div>
-                  <Label>Categorie *</Label>
-                  <Select 
-                    value={formData.category} 
-                    onValueChange={(value: any) => setFormData({...formData, category: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="match_cost">Wedstrijdkosten</SelectItem>
-                      <SelectItem value="penalty">Boete</SelectItem>
-                      <SelectItem value="field_cost">Veldkosten</SelectItem>
-                      <SelectItem value="referee_cost">Scheidsrechterkosten</SelectItem>
-                      <SelectItem value="other">Overig</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Bedrag (€) *</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label>Beschrijving</Label>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    placeholder="Optionele beschrijving..."
-                    rows={2}
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2 mt-4">
-                <Button onClick={handleSave}>
-                  {editingItem ? 'Bijwerken' : 'Toevoegen'}
-                </Button>
-                <Button variant="outline" onClick={resetForm}>
-                  Annuleren
-                </Button>
+          {/* Cost Settings Table */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Bestaande Kostenverzamelingen</h3>
+              <div className="text-sm text-muted-foreground">
+                Totaal actief: €{totalActive.toFixed(2)}
               </div>
             </div>
-          )}
 
-          {/* Settings by Category with enhanced display */}
-          {Object.entries(groupedSettings).map(([category, settings]) => (
-            <div key={category} className="border rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Euro className="h-5 w-5" />
-                {getCategoryLabel(category)}
-                <span className={`px-2 py-1 rounded-full text-xs ${getCategoryColor(category)}`}>
-                  {settings.length} items
-                </span>
-              </h3>
-              
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Naam</TableHead>
-                    <TableHead>Beschrijving</TableHead>
-                    <TableHead className="text-right">Bedrag</TableHead>
-                    <TableHead className="text-center">Acties</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {settings.map((setting) => (
-                    <TableRow key={setting.id}>
-                      <TableCell className="font-medium">{setting.name}</TableCell>
-                      <TableCell className="text-gray-600">
-                        {setting.description || '-'}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(setting.amount)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(setting)}
-                            className="flex items-center gap-1"
-                          >
-                            <Edit className="h-3 w-3" />
-                            Bewerken
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDelete(setting.id)}
-                            className="flex items-center gap-1"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Verwijderen
-                          </Button>
-                        </div>
-                      </TableCell>
+            {isLoading ? (
+              <div>Loading...</div>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Naam</TableHead>
+                      <TableHead>Categorie</TableHead>
+                      <TableHead>Bedrag</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Beschrijving</TableHead>
+                      <TableHead>Acties</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ))}
-
-          {isLoading && (
-            <div className="flex items-center justify-center h-40">
-              <p>Kostentarieven laden met enhanced logging...</p>
-            </div>
-          )}
+                  </TableHeader>
+                  <TableBody>
+                    {Array.isArray(costSettings) && costSettings.map((cost: CostSetting) => (
+                      <TableRow key={cost.id}>
+                        <TableCell>
+                          {editingId === cost.id ? (
+                            <Input
+                              value={editData.name || ""}
+                              onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                            />
+                          ) : (
+                            cost.name
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingId === cost.id ? (
+                            <Select
+                              value={editData.category || cost.category}
+                              onValueChange={(value) => setEditData({ ...editData, category: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="expense">Uitgave</SelectItem>
+                                <SelectItem value="revenue">Inkomst</SelectItem>
+                                <SelectItem value="deposit">Storting</SelectItem>
+                                <SelectItem value="penalty">Boete</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            cost.category
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingId === cost.id ? (
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={editData.amount || 0}
+                              onChange={(e) => setEditData({ ...editData, amount: parseFloat(e.target.value) || 0 })}
+                            />
+                          ) : (
+                            `€${cost.amount.toFixed(2)}`
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {cost.is_active ? "Actief" : "Inactief"}
+                        </TableCell>
+                        <TableCell>
+                          {editingId === cost.id ? (
+                            <Textarea
+                              value={editData.description || ""}
+                              onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                            />
+                          ) : (
+                            cost.description || "-"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingId === cost.id ? (
+                            <div className="flex space-x-2">
+                              <Button size="sm" onClick={handleSaveEdit}>
+                                <Save className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex space-x-2">
+                              <Button size="sm" variant="outline" onClick={() => handleEdit(cost)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleDelete(cost.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

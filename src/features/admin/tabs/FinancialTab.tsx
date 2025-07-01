@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/components/ui/table";
@@ -11,12 +12,12 @@ import FinancialSettingsModal from "../financial/FinancialSettingsModal";
 import TeamDetailModal from "../financial/TeamDetailModal";
 
 interface Cost {
-  cost_id: number;
-  description: string;
+  id: number;
+  name: string;
   amount: number;
-  cost_type: string;
-  team_id: number;
-  team_name: string;
+  category: string;
+  team_id?: number;
+  team_name?: string;
   created_at: string;
 }
 
@@ -27,11 +28,11 @@ const FinancialTab: React.FC = () => {
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
 
   const { data: costs, isLoading, error } = useQuery({
-    queryKey: ['costs'],
+    queryKey: ['cost_settings'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('costs')
-        .select('cost_id, description, amount, cost_type, team_id, created_at, teams (team_name)')
+        .from('cost_settings')
+        .select('id, name, description, amount, category, created_at')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -39,19 +40,18 @@ const FinancialTab: React.FC = () => {
       }
 
       return data.map(cost => ({
-        cost_id: cost.cost_id,
-        description: cost.description,
+        id: cost.id,
+        name: cost.name,
         amount: cost.amount,
-        cost_type: cost.cost_type,
-        team_id: cost.team_id,
-        team_name: cost.teams?.team_name || 'N/A',
+        category: cost.category,
+        team_name: 'N/A',
         created_at: cost.created_at,
       }));
     }
   });
 
-  const totalRevenue = costs?.filter(cost => cost.cost_type === 'revenue').reduce((sum, cost) => sum + cost.amount, 0) || 0;
-  const totalExpenses = costs?.filter(cost => cost.cost_type === 'expense').reduce((sum, cost) => sum + cost.amount, 0) || 0;
+  const totalRevenue = costs?.filter(cost => cost.category === 'revenue').reduce((sum, cost) => sum + cost.amount, 0) || 0;
+  const totalExpenses = costs?.filter(cost => cost.category === 'expense').reduce((sum, cost) => sum + cost.amount, 0) || 0;
   const balance = totalRevenue - totalExpenses;
 
   return (
@@ -73,7 +73,7 @@ const FinancialTab: React.FC = () => {
             <div className="text-2xl font-bold">€{totalRevenue.toFixed(2)}</div>
             <Badge variant="secondary">
               <TrendingUp className="mr-2 h-4 w-4" />
-              {((totalRevenue / (balance + totalExpenses)) * 100).toFixed(2)}% van totaal
+              {balance > 0 ? ((totalRevenue / (balance + totalExpenses)) * 100).toFixed(2) : 0}% van totaal
             </Badge>
           </CardContent>
         </Card>
@@ -87,7 +87,7 @@ const FinancialTab: React.FC = () => {
             <div className="text-2xl font-bold">€{totalExpenses.toFixed(2)}</div>
             <Badge variant="destructive">
               <TrendingDown className="mr-2 h-4 w-4" />
-              {((totalExpenses / (balance + totalExpenses)) * 100).toFixed(2)}% van totaal
+              {balance > 0 ? ((totalExpenses / (balance + totalExpenses)) * 100).toFixed(2) : 0}% van totaal
             </Badge>
           </CardContent>
         </Card>
@@ -123,26 +123,17 @@ const FinancialTab: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">Team</TableHead>
-                  <TableHead>Omschrijving</TableHead>
-                  <TableHead>Type</TableHead>
+                  <TableHead>Naam</TableHead>
+                  <TableHead>Categorie</TableHead>
                   <TableHead>Bedrag</TableHead>
                   <TableHead>Datum</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {costs?.map((cost) => (
-                  <TableRow key={cost.cost_id}>
-                    <TableCell className="font-medium">
-                      <Button variant="link" onClick={() => {
-                        setSelectedTeamId(cost.team_id);
-                        setTeamDetailOpen(true);
-                      }}>
-                        {cost.team_name}
-                      </Button>
-                    </TableCell>
-                    <TableCell>{cost.description}</TableCell>
-                    <TableCell>{cost.cost_type}</TableCell>
+                  <TableRow key={cost.id}>
+                    <TableCell className="font-medium">{cost.name}</TableCell>
+                    <TableCell>{cost.category}</TableCell>
                     <TableCell>€{cost.amount.toFixed(2)}</TableCell>
                     <TableCell>{new Date(cost.created_at).toLocaleDateString()}</TableCell>
                   </TableRow>
@@ -155,7 +146,9 @@ const FinancialTab: React.FC = () => {
 
       <CostSettingsModal open={open} onOpenChange={setOpen} />
       <FinancialSettingsModal open={financialSettingsOpen} onOpenChange={setFinancialSettingsOpen} />
-      <TeamDetailModal open={teamDetailOpen} onOpenChange={setTeamDetailOpen} teamId={selectedTeamId} />
+      {selectedTeamId && (
+        <TeamDetailModal open={teamDetailOpen} onOpenChange={setTeamDetailOpen} team={selectedTeamId} />
+      )}
     </div>
   );
 };

@@ -78,6 +78,9 @@ export const useAdvancedCompetitionGenerator = () => {
       // Mock AI generation since functions are not available in mock
       const mockSchedule: AIGeneratedSchedule = {
         matches: [],
+        matchdays: [],
+        validation_notes: [],
+        confidence_score: 0.85,
         metadata: {
           total_matches: 0,
           total_rounds: 0,
