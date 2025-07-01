@@ -1,176 +1,272 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
+import React from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { Badge } from "@shared/components/ui/badge";
-import { Calendar, MapPin, Phone, Mail, Users, Trophy } from "lucide-react";
-import { fetchBlogPosts, BlogPost } from "@shared/services/blogService";
+import { Button } from "@shared/components/ui/button";
+import { Calendar, Users, Trophy, MapPin, Clock, Star, Mail, Phone } from "lucide-react";
+import { supabase } from "@shared/integrations/supabase/client";
 import { useToast } from "@shared/hooks/use-toast";
-const AlgemeenTab: React.FC = () => {
-  const {
-    toast
-  } = useToast();
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const loadBlogPosts = async () => {
-      try {
-        setLoading(true);
-        const posts = await fetchBlogPosts();
-        setBlogPosts(posts);
-      } catch (error) {
+
+const AlgemeenTab = () => {
+  const { toast } = useToast();
+
+  const testSupabaseConnection = async () => {
+    try {
+      console.log('🔗 Testing Supabase connection...');
+      
+      // Test basic connection
+      const { data, error } = await supabase
+        .from('users')
+        .select('username, role')
+        .limit(5);
+      
+      if (error) {
+        console.error('❌ Connection failed:', error);
         toast({
-          title: "Fout bij het laden",
-          description: "De blogposts konden niet worden geladen.",
-          variant: "destructive"
+          title: "Connection Test Failed",
+          description: `Error: ${error.message}`,
+          variant: "destructive",
         });
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
-    loadBlogPosts();
-  }, [toast]);
+      
+      console.log('✅ Connected! Found users:', data);
+      
+      // Test the verify function
+      const { data: rpcData, error: rpcError } = await supabase.rpc('verify_user_password', {
+        input_username_or_email: 'admin',
+        input_password: 'admin123'
+      });
+      
+      if (rpcError) {
+        console.error('❌ RPC function failed:', rpcError);
+        toast({
+          title: "RPC Test Failed",
+          description: `RPC Error: ${rpcError.message}. Users found: ${data?.length || 0}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log('✅ RPC successful:', rpcData);
+      toast({
+        title: "Connection Test Successful!",
+        description: `Found ${data?.length || 0} users. RPC function working: ${rpcData?.length > 0 ? 'Yes' : 'No'}`,
+      });
+      
+    } catch (error) {
+      console.error('💀 Test failed:', error);
+      toast({
+        title: "Test Failed",
+        description: `Unexpected error: ${error}`,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Hero Section */}
-      <section className="text-center space-y-4 py-8 bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg text-white">
-        <div className="flex justify-center mb-4">
-          <Trophy size={48} className="text-purple-200" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 rounded-2xl p-8 md:p-12 text-white shadow-2xl">
+        <div className="relative z-10">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="space-y-4">
+              <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 transition-colors">
+                <Trophy className="w-4 h-4 mr-2" />
+                Seizoen 2024-2025
+              </Badge>
+              <h1 className="text-4xl md:text-5xl font-bold leading-tight">
+                Harelbeekse Minivoetbal
+              </h1>
+              <p className="text-xl text-purple-100 max-w-2xl leading-relaxed">
+                Welkom bij de meest competitieve en gezellige minivoetbalcompetitie van Harelbeke. 
+                Doe mee en ervaar de spanning van echte teamspirit!
+              </p>
+            </div>
+            <div className="flex flex-col gap-4">
+              <Button 
+                size="lg" 
+                className="bg-white text-purple-800 hover:bg-purple-50 font-semibold px-8 py-3 rounded-xl transition-all duration-200 transform hover:scale-105"
+              >
+                <Users className="w-5 h-5 mr-2" />
+                Inschrijven
+              </Button>
+              
+              {/* Debug Test Button */}
+              <Button 
+                onClick={testSupabaseConnection}
+                variant="outline"
+                size="sm"
+                className="bg-white/10 text-white border-white/30 hover:bg-white/20 font-medium"
+              >
+                🔧 Test Database
+              </Button>
+            </div>
+          </div>
         </div>
-        <h2 className="heading-2 text-white mb-0">Over de Competitie</h2>
-        <p className="text-purple-100 max-w-3xl mx-auto leading-relaxed">
-          De Harelbeekse Minivoetbal Competitie is opgericht in 1979 en is uitgegroeid tot een vaste waarde in de regio.
-        </p>
+        
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-2xl"></div>
       </section>
 
-      {/* Competition Info Cards */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="card-professional">
-          <div className="card-header">
+      {/* Info Cards */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card className="group hover:shadow-lg transition-shadow duration-200 border-purple-200">
+          <CardHeader className="pb-3">
             <div className="flex items-center space-x-3">
-              <Users className="text-purple-600" size={24} />
-              <h3 className="heading-3 mb-0">Sportiviteit</h3>
+              <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                <Calendar className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg text-purple-800">Speeldata</CardTitle>
+                <CardDescription>Wekelijkse wedstrijden</CardDescription>
+              </div>
             </div>
-          </div>
-          <div className="card-content">
-            <p className="text-body">
-              Onze competitie staat bekend om zijn sportiviteit en fair play. 
-              We hechten veel waarde aan respectvol sporten en een goede sfeer.
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700 leading-relaxed">
+              Elke donderdagavond van 19:00 tot 22:00 spelen we spannende wedstrijden 
+              in een professionele setting.
             </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="card-professional">
-          <div className="card-header">
+        <Card className="group hover:shadow-lg transition-shadow duration-200 border-purple-200">
+          <CardHeader className="pb-3">
             <div className="flex items-center space-x-3">
-              <Trophy className="text-purple-600" size={24} />
-              <h3 className="heading-3 mb-0">Deelname</h3>
+              <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                <MapPin className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg text-purple-800">Locatie</CardTitle>
+                <CardDescription>Moderne sportfaciliteiten</CardDescription>
+              </div>
             </div>
-          </div>
-          <div className="card-content">
-            <p className="text-body">
-              Interesse om deel te nemen met een team? Neem dan contact op via 
-              <a href="mailto:noppe.nikki@icloud.com" className="ml-1 font-medium">
-                noppe.nikki@icloud.com
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700 leading-relaxed">
+              Sporthal De Krekel, uitgerust met professionele kunststofvelden 
+              en alle benodigde faciliteiten.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="group hover:shadow-lg transition-shadow duration-200 border-purple-200">
+          <CardHeader className="pb-3">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                <Users className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg text-purple-800">Teams</CardTitle>
+                <CardDescription>Verschillende niveaus</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700 leading-relaxed">
+              Van recreatief tot competitief - er is een plaats voor elke speler 
+              ongeacht je niveau of ervaring.
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* News Section */}
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-3xl font-bold text-purple-800">Laatste Nieuws</h2>
+          <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+            <Star className="w-4 h-4 mr-1" />
+            Nieuw
+          </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="hover:shadow-lg transition-shadow duration-200 border-purple-200">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <Badge className="bg-purple-600 text-white">Competitie</Badge>
+                <div className="flex items-center text-sm text-gray-500">
+                  <Clock className="w-4 h-4 mr-1" />
+                  2 dagen geleden
+                </div>
+              </div>
+              <CardTitle className="text-xl text-purple-800 mt-3">
+                Nieuwe seizoen gestart!
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700 leading-relaxed">
+                Het nieuwe seizoen 2024-2025 is officieel van start gegaan met recordaantallen 
+                inschrijvingen. Alle teams zijn klaar voor een fantastisch seizoen vol spanning en sportiviteit.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow duration-200 border-purple-200">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <Badge className="bg-green-600 text-white">Event</Badge>
+                <div className="flex items-center text-sm text-gray-500">
+                  <Clock className="w-4 h-4 mr-1" />
+                  1 week geleden
+                </div>
+              </div>
+              <CardTitle className="text-xl text-purple-800 mt-3">
+                Teambuilding activiteiten
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700 leading-relaxed">
+                Naast de competitie organiseren we ook regelmatig teambuilding evenementen 
+                en sociale activiteiten om de gemeenschap te versterken.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* Contact Cards */}
+      <section>
+        <h2 className="text-3xl font-bold text-purple-800 mb-6">Contact & Info</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="hover:shadow-lg transition-shadow duration-200 border-purple-200">
+            <CardHeader>
+              <CardTitle className="flex items-center text-purple-800">
+                <Mail className="w-5 h-5 mr-2" />
+                Email Contact
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700 mb-2">Voor vragen over inschrijvingen:</p>
+              <a href="mailto:info@harelbeekseminivoetbal.be" 
+                 className="text-purple-600 hover:text-purple-800 font-medium transition-colors">
+                info@harelbeekseminivoetbal.be
               </a>
-            </p>
-          </div>
-        </div>
-      </section>
+            </CardContent>
+          </Card>
 
-      {/* Latest News Section */}
-      <section>
-        <h2 className="heading-2">Laatste Nieuws</h2>
-        <div className="space-y-4">
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-              <p className="text-muted">Berichten laden...</p>
-            </div>
-          ) : blogPosts.length > 0 ? (
-            blogPosts.map(post => (
-              <div key={post.id} className="card-professional hover:shadow-professional-lg transition-all duration-200">
-                <div className="card-header">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center space-x-2 text-purple-600">
-                      <Calendar size={16} />
-                      <span className="text-sm font-medium">
-                        {new Date(post.date).toLocaleDateString('nl-NL')}
-                      </span>
-                    </div>
-                  </div>
-                  <h3 className="heading-3 mb-0">{post.title}</h3>
-                </div>
-                <div className="card-content">
-                  <p className="text-body">{post.content}</p>
-                  
-                  {post.tags && post.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      {post.tags.map((tag, index) => (
-                        <Badge key={index} className="badge-professional">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted">Geen nieuws beschikbaar</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section>
-        <h2 className="heading-2">Contact</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="card-professional">
-            <div className="card-header">
-              <div className="flex items-center space-x-3">
-                <Users className="text-purple-600" size={24} />
-                <h3 className="heading-3 mb-0">Competitieleiding</h3>
-              </div>
-            </div>
-            <div className="card-content space-y-3">
-              <p className="font-semibold text-purple-800">Nikki Noppe</p>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-3">
-                  <Mail size={16} className="text-purple-600 flex-shrink-0" />
-                  <a href="mailto:info@minivoetbalharelbeke.be" className="text-sm">
-                    info@minivoetbalharelbeke.be
-                  </a>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Phone size={16} className="text-purple-600 flex-shrink-0" />
-                  <a href="tel:+32468155216" className="text-sm">
-                    +32 468 15 52 16
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card-professional">
-            <div className="card-header">
-              <div className="flex items-center space-x-3">
-                <MapPin className="text-purple-600" size={24} />
-                <h3 className="heading-3 mb-0">Locatie</h3>
-              </div>
-            </div>
-            <div className="card-content space-y-2">
-              <p className="font-semibold text-purple-800">Sporthal De Dageraad</p>
-              <div className="text-sm space-y-1">
-                <p>Stasegemsesteenweg 21</p>
-                <p>8530 Harelbeke</p>
-                <p className="text-purple-600 font-medium">België</p>
-              </div>
-            </div>
-          </div>
+          <Card className="hover:shadow-lg transition-shadow duration-200 border-purple-200">
+            <CardHeader>
+              <CardTitle className="flex items-center text-purple-800">
+                <Phone className="w-5 h-5 mr-2" />
+                Telefoon
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700 mb-2">Bereikbaar op werkdagen:</p>
+              <a href="tel:+32123456789" 
+                 className="text-purple-600 hover:text-purple-800 font-medium transition-colors">
+                +32 123 456 789
+              </a>
+            </CardContent>
+          </Card>
         </div>
       </section>
     </div>
   );
 };
+
 export default AlgemeenTab;

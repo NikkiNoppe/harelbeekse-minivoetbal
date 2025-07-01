@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@shared/hooks/use-toast";
 import { supabase } from "@shared/integrations/supabase/client";
@@ -18,66 +17,21 @@ export const useLogin = (onLoginSuccess: () => void) => {
       console.log('📧 Username/Email:', usernameOrEmail);
       console.log('🔑 Password length:', password.length);
       
-      // Direct database query for authentication
-      console.log('🔐 Attempting password verification...');
-      const { data: result, error } = await supabase
-        .from('users')
-        .select('*')
-        .or(`username.eq.${usernameOrEmail},email.eq.${usernameOrEmail}`)
-        .eq('password', password)
-        .single();
-
-      console.log('✅ Verification result:', result);
-      console.log('❌ Verification error:', error);
-
-      if (error) {
-        console.error('💥 Database error during password verification:', error);
+      // Use the AuthProvider login function which handles bcrypt properly
+      console.log('🔐 Attempting login via AuthProvider...');
+      const loginSuccess = await authLogin(usernameOrEmail, password);
+      
+      if (loginSuccess) {
+        console.log('✨ Auth login successful');
         toast({
-          title: "Login mislukt",
-          description: `Database fout: ${error.message}`,
-          variant: "destructive",
+          title: "Ingelogd!",
+          description: `Welkom terug!`,
         });
-        return;
-      }
-
-      if (result) {
-        const dbUser = result;
-        console.log('🎉 Login successful for user:', dbUser);
         
-        // Create user object from the database result
-        const user: User = {
-          id: dbUser.user_id,
-          username: dbUser.username,
-          password: '', // Don't expose password in the frontend
-          role: dbUser.role,
-          email: dbUser.email || ''
-        };
-        
-        console.log('👤 Mapped user object:', user);
-        
-        // Call the auth login function
-        const loginSuccess = await authLogin(usernameOrEmail, password);
-        
-        if (loginSuccess) {
-          console.log('✨ Auth login successful');
-          toast({
-            title: "Ingelogd!",
-            description: `Welkom ${user.username}`,
-          });
-          
-          // Call the success callback
-          onLoginSuccess();
-        } else {
-          console.log('❌ Auth login failed');
-          toast({
-            title: "Login mislukt",
-            description: "Er is een fout opgetreden bij het inloggen",
-            variant: "destructive",
-          });
-        }
+        // Call the success callback
+        onLoginSuccess();
       } else {
-        console.log('❌ No user found or password mismatch');
-        
+        console.log('❌ Auth login failed');
         toast({
           title: "Login mislukt",
           description: "Gebruikersnaam/e-mail of wachtwoord is incorrect",
