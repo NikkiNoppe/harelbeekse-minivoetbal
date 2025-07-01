@@ -46,4 +46,7 @@ export const formSchema = z.object({
   })
 });
 
-export type FormData = z.infer<typeof formSchema>;
+// Define the form data type explicitly to avoid infinite type instantiation
+export interface FormData {
+  players: Player[];
+}
