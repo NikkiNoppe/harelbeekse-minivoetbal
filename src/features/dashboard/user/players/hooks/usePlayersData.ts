@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@shared/integrations/supabase/client";
 import { Player, Team } from "../types";
-import { User } from "@/types/auth";
+import { User } from "@shared/types/auth";
 
 export const usePlayersData = (authUser: User | null) => {
   const [players, setPlayers] = useState<Player[]>([]);

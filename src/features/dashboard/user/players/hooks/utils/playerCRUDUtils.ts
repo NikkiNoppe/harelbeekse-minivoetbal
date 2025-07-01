@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+
+import { supabase } from "@shared/integrations/supabase/client";
 
 // Helper function to wait with delay
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

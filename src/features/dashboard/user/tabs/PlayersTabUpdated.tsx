@@ -1,4 +1,3 @@
-
 import React from "react";
 import { 
   Card, 
@@ -7,15 +6,15 @@ import {
   CardDescription,
   CardContent, 
   CardFooter 
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+} from "@shared/components/ui/card";
+import { Button } from "@shared/components/ui/button";
 import { Edit, Save, Plus } from "lucide-react";
 import PlayersListUpdated from "../players/PlayersListUpdated";
 import PlayerDialogUpdated from "../players/PlayerDialogUpdated";
 import EditPlayerDialogUpdated from "../players/EditPlayerDialogUpdated";
 import PlayerRegulations from "../players/PlayerRegulations";
 import { usePlayersUpdated } from "../players/usePlayersUpdated";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useAuth } from "@features/auth/AuthProvider";
 
 const PlayersTabUpdated: React.FC = () => {
   // Use main AuthProvider to get user data

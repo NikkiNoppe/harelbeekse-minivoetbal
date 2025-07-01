@@ -1,9 +1,10 @@
+
 import React from "react";
 import { usePlayersData } from "./hooks/usePlayersData";
 import { usePlayerOperations } from "./hooks/usePlayerOperations";
 import { usePlayerDialogs } from "./hooks/usePlayerDialogs";
 import { formatDate, getFullName, handleTeamChange } from "./utils/playerUtils";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useAuth } from "@features/auth/AuthProvider";
 
 export const usePlayersUpdated = () => {
   // Use main AuthProvider instead of separate auth

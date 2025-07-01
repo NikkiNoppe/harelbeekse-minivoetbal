@@ -1,5 +1,5 @@
 
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@shared/hooks/use-toast";
 
 export const usePlayerLockToast = (isLocked: boolean, lockDate: string | null) => {
   const { toast } = useToast();

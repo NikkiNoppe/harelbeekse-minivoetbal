@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { MOCK_TEAM_PLAYERS } from "@/data/mockData";
+import { useAuth } from "@features/auth/AuthProvider";
+import { supabase } from "@shared/integrations/supabase/client";
+import { useToast } from "@shared/hooks/use-toast";
+import { mockPlayers } from "@shared/constants/mockData";
 
 interface Player {
   player_id: number;
@@ -79,7 +78,7 @@ export const usePlayers = () => {
         setLoading(true);
         
         // Use mock data instead of Supabase for now
-        const teamPlayers = MOCK_TEAM_PLAYERS[selectedTeam as keyof typeof MOCK_TEAM_PLAYERS] || [];
+        const teamPlayers = mockPlayers[selectedTeam as keyof typeof mockPlayers] || [];
         setPlayers(teamPlayers);
       } catch (error) {
         console.error('Error fetching players:', error);

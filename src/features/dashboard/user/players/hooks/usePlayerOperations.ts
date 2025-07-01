@@ -6,7 +6,7 @@ import { usePlayerLockToast } from "./usePlayerLockToast";
 import { useAddPlayerOperation } from "./useAddPlayerOperation";
 import { useEditPlayerOperation } from "./useEditPlayerOperation";
 import { useRemovePlayerOperation } from "./useRemovePlayerOperation";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@shared/hooks/use-toast";
 
 export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers: () => Promise<void>) => {
   const { canEdit, isLocked, lockDate } = usePlayerListLock();

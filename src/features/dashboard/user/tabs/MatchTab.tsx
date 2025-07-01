@@ -1,131 +1,69 @@
-
-import React, { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardEdit, Clock } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-
-// Import the refactored components
-import { MatchFormData, PastMatch } from "@/components/match/types";
-import { EditMatchTabContent } from "@/components/match/EditMatchTabContent";
-import { PastMatchesTabContent } from "@/components/match/PastMatchesTabContent";
-import { fetchMatches } from "@/components/match/matchService";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
+import { Badge } from "@shared/components/ui/badge";
+import { Button } from "@shared/components/ui/button";
+import { Calendar, Users, MapPin, Clock } from "lucide-react";
+import { Match } from "@features/matches/match/types";
+import EditMatchTabContent from "@features/matches/match/EditMatchTabContent";
+import PastMatchesTabContent from "@features/matches/match/PastMatchesTabContent";
+import { matchService } from "@features/matches/match/matchService";
 
 const MatchTab: React.FC = () => {
-  const [pastMatches, setPastMatches] = useState<PastMatch[]>([]);
-  const [upcomingMatches, setUpcomingMatches] = useState<MatchFormData[]>([]);
-  const [selectedMatch, setSelectedMatch] = useState<MatchFormData | null>(null);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch all matches from Supabase
-  const { isLoading } = useQuery({
-    queryKey: ['allMatches'],
-    queryFn: async () => {
-      const result = await fetchMatches();
-      setPastMatches(result.past);
-      setUpcomingMatches(result.upcoming);
-      return result;
-    }
-  });
-
-  const handleSaveMatch = (matchData: MatchFormData) => {
-    console.log("Match saved:", matchData);
-    
-    // In a real app, we would update our backend
-    // For now, we'll just update our local state
-    
-    if (matchData.homeScore !== undefined && matchData.awayScore !== undefined) {
-      // This is a completed match, add to past matches
-      if (matchData.id) {
-        // Update existing past match
-        setPastMatches(prev => prev.map(match => 
-          match.id === matchData.id 
-            ? { 
-                ...match, 
-                homeScore: matchData.homeScore || 0,
-                awayScore: matchData.awayScore || 0,
-                referee: matchData.referee || match.referee,
-                uniqueNumber: matchData.uniqueNumber
-              } 
-            : match
-        ));
-        
-        // Remove from upcoming matches if it was there
-        setUpcomingMatches(prev => prev.filter(match => match.id !== matchData.id));
-      } else {
-        // Add new past match
-        const newId = Math.max(0, ...pastMatches.map(m => m.id)) + 1;
-        setPastMatches(prev => [...prev, {
-          id: newId,
-          date: matchData.date,
-          homeTeam: matchData.homeTeam,
-          awayTeam: matchData.awayTeam,
-          homeScore: matchData.homeScore || 0,
-          awayScore: matchData.awayScore || 0,
-          location: matchData.location,
-          referee: matchData.referee || "Onbekend",
-          uniqueNumber: matchData.uniqueNumber
-        }]);
+  useEffect(() => {
+    const fetchMatches = async () => {
+      setLoading(true);
+      try {
+        const matchesData = await matchService.getAllMatches();
+        setMatches(matchesData);
+      } catch (error) {
+        console.error("Error fetching matches:", error);
+      } finally {
+        setLoading(false);
       }
-    } else {
-      // This is an upcoming match
-      if (matchData.id) {
-        // Update existing upcoming match
-        setUpcomingMatches(prev => prev.map(match => 
-          match.id === matchData.id ? matchData : match
-        ));
-      } else {
-        // Add new upcoming match
-        const newId = Math.max(
-          0, 
-          ...pastMatches.map(m => m.id),
-          ...upcomingMatches.map(m => m.id || 0)
-        ) + 1;
-        setUpcomingMatches(prev => [...prev, {
-          ...matchData,
-          id: newId
-        }]);
-      }
-    }
-    
-    setSelectedMatch(null);
-  };
+    };
 
-  const handleEditMatch = (match: MatchFormData) => {
-    setSelectedMatch(match);
-  };
+    fetchMatches();
+  }, []);
+
+  if (loading) {
+    return <Card>
+        <CardHeader>
+          <CardTitle>Wedstrijden</CardTitle>
+        </CardHeader>
+        <CardContent>Loading matches...</CardContent>
+      </Card>;
+  }
 
   return (
-    <div className="space-y-6">
-      <Tabs defaultValue="new-match">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="new-match" className="flex items-center gap-2">
-            <ClipboardEdit className="h-4 w-4" />
-            Wedstrijdformulieren
-          </TabsTrigger>
-          <TabsTrigger value="past-matches" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Afgelopen wedstrijden
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="new-match" className="mt-4 space-y-4">
-          <EditMatchTabContent 
-            isLoading={isLoading}
-            upcomingMatches={upcomingMatches}
-            selectedMatch={selectedMatch}
-            onSaveMatch={handleSaveMatch}
-            onEditMatch={handleEditMatch}
-            onCancelEdit={() => setSelectedMatch(null)}
-          />
-        </TabsContent>
-        
-        <TabsContent value="past-matches" className="mt-4">
-          <PastMatchesTabContent 
-            isLoading={isLoading}
-            pastMatches={pastMatches}
-          />
-        </TabsContent>
-      </Tabs>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Wedstrijden</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="edit" className="w-full">
+          <TabsList>
+            <TabsTrigger value="edit" className="focus:shadow-none">
+              <Calendar className="mr-2 h-4 w-4" />
+              Aanpassen
+            </TabsTrigger>
+            <TabsTrigger value="past" className="focus:shadow-none">
+              <Clock className="mr-2 h-4 w-4" />
+              Afgelopen wedstrijden
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="edit" className="mt-6">
+            <EditMatchTabContent />
+          </TabsContent>
+          <TabsContent value="past" className="mt-6">
+            <PastMatchesTabContent matches={matches} />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 
