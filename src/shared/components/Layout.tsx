@@ -1,15 +1,16 @@
-
 import React, { useState, lazy, Suspense } from "react";
-import { AuthProvider } from "@features/auth/AuthProvider";
+import { AuthProvider, useAuth } from "@features/auth/AuthProvider";
 import { TabVisibilityProvider, TabName } from "@shared/context/TabVisibilityContext";
 import Header from "./header/Header";
 import Footer from "./footer/Footer";
 import MainTabs from "./tabs/MainTabs";
 
-// Lazy load the LoginDialog to only load it when needed
+// Lazy load components
 const LoginDialog = lazy(() => import("@features/auth/LoginDialog"));
+const AdminPanel = lazy(() => import("@features/admin/AdminPanel"));
 
-const Layout: React.FC = () => {
+const LayoutContent: React.FC = () => {
+  const { isAuthenticated, user } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [activeTab, setActiveTab] = useState<TabName>("algemeen");
 
@@ -25,31 +26,61 @@ const Layout: React.FC = () => {
     setShowLogin(false);
   };
 
+  // Show admin dashboard if user is authenticated
+  const showAdminDashboard = isAuthenticated && user;
+
+  return (
+    <TabVisibilityProvider>
+      <div className="min-h-screen bg-purple-50 flex flex-col">
+        <Header onLogoClick={handleLogoClick} onLoginClick={handleLoginClick} />
+        
+        <main className="flex-1">
+          <div className="container mx-auto px-4 py-8 max-w-7xl">
+            {showAdminDashboard ? (
+              <Suspense fallback={
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  <span className="ml-2 text-purple-600">Admin dashboard laden...</span>
+                </div>
+              }>
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg p-6 text-white">
+                    <h1 className="text-2xl font-bold mb-2">
+                      Welkom terug, {user?.username}!
+                    </h1>
+                    <p className="text-purple-100">
+                      Admin Dashboard - Beheer je competitie, teams en gebruikers
+                    </p>
+                  </div>
+                  <AdminPanel />
+                </div>
+              </Suspense>
+            ) : (
+              <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+            )}
+          </div>
+        </main>
+        
+        <Footer />
+        
+        {/* Only render LoginDialog when showLogin is true */}
+        {showLogin && (
+          <Suspense fallback={<div className="fixed inset-0 bg-black/20 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>}>
+            <LoginDialog 
+              isOpen={showLogin} 
+              onClose={handleLoginClose}
+            />
+          </Suspense>
+        )}
+      </div>
+    </TabVisibilityProvider>
+  );
+};
+
+const Layout: React.FC = () => {
   return (
     <AuthProvider>
-      <TabVisibilityProvider>
-        <div className="min-h-screen bg-purple-50 flex flex-col">
-          <Header onLogoClick={handleLogoClick} onLoginClick={handleLoginClick} />
-          
-          <main className="flex-1">
-            <div className="container mx-auto px-4 py-8 max-w-7xl">
-              <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-            </div>
-          </main>
-          
-          <Footer />
-          
-          {/* Only render LoginDialog when showLogin is true */}
-          {showLogin && (
-            <Suspense fallback={<div className="fixed inset-0 bg-black/20 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>}>
-              <LoginDialog 
-                isOpen={showLogin} 
-                onClose={handleLoginClose}
-              />
-            </Suspense>
-          )}
-        </div>
-      </TabVisibilityProvider>
+      <LayoutContent />
     </AuthProvider>
   );
 };
