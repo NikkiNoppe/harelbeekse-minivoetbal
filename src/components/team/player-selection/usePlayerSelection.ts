@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,14 +6,20 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Player, FormData, formSchema } from "./types";
 
+interface DatabasePlayer {
+  player_id: number;
+  first_name: string;
+  last_name: string;
+}
+
 export const usePlayerSelection = (matchId: number, teamId: number, onComplete: () => void) => {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch team players
-  const { data: teamPlayers, isLoading } = useQuery({
+  // Fetch team players with explicit return type
+  const { data: teamPlayers, isLoading } = useQuery<Player[]>({
     queryKey: ['teamPlayers', teamId],
-    queryFn: async () => {
+    queryFn: async (): Promise<Player[]> => {
       try {
         const { data, error } = await supabase
           .from('players')
@@ -25,7 +30,9 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         
         if (error) throw error;
         
-        return data.map(player => ({
+        // Explicitly type the data and map it
+        const players: DatabasePlayer[] = data || [];
+        return players.map((player): Player => ({
           playerId: player.player_id,
           playerName: `${player.first_name} ${player.last_name}`,
           selected: false,
@@ -100,7 +107,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       
       form.reset({ players: initialPlayers });
     }
-  }, [teamPlayers, existingMatch, isLoading, loadingMatch]);
+  }, [teamPlayers, existingMatch, isLoading, loadingMatch, form]);
 
   const onSubmit = async (data: FormData) => {
     setSubmitting(true);
