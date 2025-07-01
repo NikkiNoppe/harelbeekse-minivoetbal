@@ -83,7 +83,7 @@ const TeamsTab: React.FC = () => {
   };
 
   const handleEditTeam = async () => {
-    console.log('[TeamsTab] Editing team:', { editingTeam, teamName, teamBalance });
+    console.log('[TeamsTab] Editing team:', { editingTeam, teamName });
     
     if (!editingTeam || !teamName.trim()) {
       toast({
@@ -97,8 +97,7 @@ const TeamsTab: React.FC = () => {
     setIsSubmitting(true);
     try {
       const result = await enhancedTeamService.updateTeam(editingTeam.team_id, {
-        team_name: teamName.trim(),
-        balance: parseFloat(teamBalance) || 0
+        team_name: teamName.trim()
       });
 
       console.log('[TeamsTab] Edit team result:', result);
@@ -344,15 +343,17 @@ const TeamsTab: React.FC = () => {
               />
             </div>
             <div>
-              <Label htmlFor="editTeamBalance">Saldo (€)</Label>
+              <Label htmlFor="editTeamBalance">Huidig Saldo (€)</Label>
               <Input
                 id="editTeamBalance"
-                type="number"
-                step="0.01"
-                value={teamBalance}
-                onChange={(e) => setTeamBalance(e.target.value)}
-                placeholder="0.00"
+                type="text"
+                value={formatCurrency(editingTeam?.balance || 0)}
+                readOnly
+                className="bg-gray-100 cursor-not-allowed"
               />
+              <p className="text-sm text-gray-600 mt-1">
+                Het saldo wordt automatisch berekend op basis van transacties en kan niet handmatig worden aangepast.
+              </p>
             </div>
             <div className="flex gap-2 pt-4">
               <Button onClick={handleEditTeam} disabled={isSubmitting}>

@@ -129,8 +129,9 @@ export const enhancedTeamService = {
       if (updateData.team_name !== undefined) {
         updateObject.team_name = String(updateData.team_name).trim();
       }
+      // Balance wordt automatisch berekend door database triggers, dus niet handmatig updaten
       if (updateData.balance !== undefined) {
-        updateObject.balance = Number(updateData.balance);
+        logTeamOperation('updateTeam - WARNING: Balance update ignored - automatically calculated by triggers', { balance: updateData.balance });
       }
       
       logTeamOperation('updateTeam - PREPARED UPDATE OBJECT', { updateObject });
@@ -165,13 +166,12 @@ export const enhancedTeamService = {
         };
       }
 
-      // FASE 4: Post-update verification
+      // FASE 4: Post-update verification (alleen voor team_name, balance wordt automatisch berekend)
       const verificationTeam = await this.getTeamById(teamId);
       logTeamOperation('updateTeam - POST-UPDATE VERIFICATION', { 
         verificationTeam,
         updateWasApplied: verificationTeam && 
-          (updateData.team_name ? verificationTeam.team_name === updateObject.team_name : true) &&
-          (updateData.balance !== undefined ? verificationTeam.balance === updateObject.balance : true)
+          (updateData.team_name ? verificationTeam.team_name === updateObject.team_name : true)
       });
 
       if (!verificationTeam) {
@@ -182,10 +182,9 @@ export const enhancedTeamService = {
         };
       }
 
-      // Check if changes were actually applied
+      // Check if team name changes were actually applied (balance wordt automatisch berekend door triggers)
       const changesApplied = 
-        (updateData.team_name ? verificationTeam.team_name === updateObject.team_name : true) &&
-        (updateData.balance !== undefined ? verificationTeam.balance === updateObject.balance : true);
+        (updateData.team_name ? verificationTeam.team_name === updateObject.team_name : true);
 
       if (!changesApplied) {
         logTeamOperation('updateTeam - VERIFICATION FAILED - CHANGES NOT APPLIED', {
@@ -194,7 +193,7 @@ export const enhancedTeamService = {
         });
         return { 
           success: false, 
-          message: 'Update mislukt: Wijzigingen zijn niet doorgevoerd in de database' 
+          message: 'Update mislukt: Teamnaam wijzigingen zijn niet doorgevoerd in de database' 
         };
       }
 
