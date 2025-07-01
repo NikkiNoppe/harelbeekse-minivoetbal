@@ -110,29 +110,105 @@ export const enhancedTeamService = {
 
   async updateTeam(teamId: number, updateData: Partial<Omit<Team, 'team_id'>>): Promise<{ success: boolean; message: string; team?: Team }> {
     logTeamOperation('updateTeam - START', { teamId, updateData });
+    
     try {
-      // SIMPLIFIED: Follow user service pattern - just update without complex .select() chains
-      const { error } = await supabase
-        .from('teams')
-        .update(updateData)
-        .eq('team_id', teamId);
-
-      logTeamOperation('updateTeam - UPDATE RESULT', { error, teamId });
-
-      if (error) {
-        logTeamOperation('updateTeam - UPDATE ERROR', { error, teamId });
-        const errorMessage = error.message || JSON.stringify(error);
+      // FASE 1: Pre-update existence and data verification
+      const existingTeam = await this.getTeamById(teamId);
+      if (!existingTeam) {
+        logTeamOperation('updateTeam - TEAM NOT FOUND', { teamId });
         return { 
           success: false, 
-          message: `Fout bij bijwerken team: ${errorMessage}` 
+          message: `Team met ID ${teamId} niet gevonden` 
+        };
+      }
+      
+      logTeamOperation('updateTeam - EXISTING TEAM DATA', { existingTeam });
+      
+      // FASE 2: Prepare update with proper data types
+      const updateObject: any = {};
+      if (updateData.team_name !== undefined) {
+        updateObject.team_name = String(updateData.team_name).trim();
+      }
+      if (updateData.balance !== undefined) {
+        updateObject.balance = Number(updateData.balance);
+      }
+      
+      logTeamOperation('updateTeam - PREPARED UPDATE OBJECT', { updateObject });
+      
+      // FASE 3: Perform update with enhanced error detection
+      const { data, error, count } = await supabase
+        .from('teams')
+        .update(updateObject)
+        .eq('team_id', teamId)
+        .select('*');
+
+      logTeamOperation('updateTeam - RAW UPDATE RESULT', { 
+        data, 
+        error, 
+        count,
+        hasData: !!data,
+        dataLength: data?.length || 0
+      });
+
+      if (error) {
+        logTeamOperation('updateTeam - UPDATE ERROR DETECTED', { 
+          error,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorDetails: error.details
+        });
+        
+        const errorMessage = error.message || 'Onbekende database fout';
+        return { 
+          success: false, 
+          message: `Database fout bij bijwerken team: ${errorMessage}` 
         };
       }
 
-      logTeamOperation('updateTeam - SUCCESS', { teamId });
+      // FASE 4: Post-update verification
+      const verificationTeam = await this.getTeamById(teamId);
+      logTeamOperation('updateTeam - POST-UPDATE VERIFICATION', { 
+        verificationTeam,
+        updateWasApplied: verificationTeam && 
+          (updateData.team_name ? verificationTeam.team_name === updateObject.team_name : true) &&
+          (updateData.balance !== undefined ? verificationTeam.balance === updateObject.balance : true)
+      });
+
+      if (!verificationTeam) {
+        logTeamOperation('updateTeam - VERIFICATION FAILED - TEAM NOT FOUND');
+        return { 
+          success: false, 
+          message: 'Update mislukt: Team niet meer gevonden na update' 
+        };
+      }
+
+      // Check if changes were actually applied
+      const changesApplied = 
+        (updateData.team_name ? verificationTeam.team_name === updateObject.team_name : true) &&
+        (updateData.balance !== undefined ? verificationTeam.balance === updateObject.balance : true);
+
+      if (!changesApplied) {
+        logTeamOperation('updateTeam - VERIFICATION FAILED - CHANGES NOT APPLIED', {
+          expected: updateObject,
+          actual: verificationTeam
+        });
+        return { 
+          success: false, 
+          message: 'Update mislukt: Wijzigingen zijn niet doorgevoerd in de database' 
+        };
+      }
+
+      logTeamOperation('updateTeam - SUCCESS WITH VERIFICATION', { 
+        teamId, 
+        updatedTeam: verificationTeam 
+      });
+      
       return { 
         success: true, 
-        message: 'Team succesvol bijgewerkt'
+        message: 'Team succesvol bijgewerkt',
+        team: verificationTeam
       };
+      
     } catch (error) {
       logTeamOperation('updateTeam - CATCH ERROR', { error, teamId });
       const errorMessage = error instanceof Error ? error.message : 
@@ -140,7 +216,7 @@ export const enhancedTeamService = {
                           String(error);
       return { 
         success: false, 
-        message: `Fout bij bijwerken team: ${errorMessage}` 
+        message: `Onverwachte fout bij bijwerken team: ${errorMessage}` 
       };
     }
   },

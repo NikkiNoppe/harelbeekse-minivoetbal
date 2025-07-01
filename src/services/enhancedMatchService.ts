@@ -13,44 +13,60 @@ export const enhancedMatchService = {
     logMatchOperation('updateMatch - START', { matchId, updateData });
     
     try {
-      // Prepare the update object with proper validation
+      // FASE 1: Pre-update existence verification
+      const existingMatch = await this.getMatch(matchId);
+      if (!existingMatch) {
+        logMatchOperation('updateMatch - MATCH NOT FOUND', { matchId });
+        return { 
+          success: false, 
+          message: `Wedstrijd met ID ${matchId} niet gevonden` 
+        };
+      }
+      
+      logMatchOperation('updateMatch - EXISTING MATCH DATA', { 
+        matchId: existingMatch.matchId,
+        homeTeam: existingMatch.homeTeamName,
+        awayTeam: existingMatch.awayTeamName,
+        currentScores: `${existingMatch.homeScore} - ${existingMatch.awayScore}`
+      });
+      
+      // FASE 2: Prepare the update object with proper validation and type conversion
       const updateObject: any = {};
       
       if (updateData.homeScore !== undefined) {
-        updateObject.home_score = updateData.homeScore;
-        logMatchOperation('updateMatch - Adding home_score', { value: updateData.homeScore });
+        updateObject.home_score = Number(updateData.homeScore);
+        logMatchOperation('updateMatch - Adding home_score', { value: updateObject.home_score });
       }
       
       if (updateData.awayScore !== undefined) {
-        updateObject.away_score = updateData.awayScore;
-        logMatchOperation('updateMatch - Adding away_score', { value: updateData.awayScore });
+        updateObject.away_score = Number(updateData.awayScore);
+        logMatchOperation('updateMatch - Adding away_score', { value: updateObject.away_score });
       }
       
       if (updateData.referee !== undefined) {
-        updateObject.referee = updateData.referee;
-        logMatchOperation('updateMatch - Adding referee', { value: updateData.referee });
+        updateObject.referee = String(updateData.referee);
+        logMatchOperation('updateMatch - Adding referee', { value: updateObject.referee });
       }
       
       if (updateData.refereeNotes !== undefined) {
-        updateObject.referee_notes = updateData.refereeNotes;
-        logMatchOperation('updateMatch - Adding referee_notes', { value: updateData.refereeNotes });
+        updateObject.referee_notes = String(updateData.refereeNotes);
+        logMatchOperation('updateMatch - Adding referee_notes', { value: updateObject.referee_notes });
       }
       
       if (updateData.matchday !== undefined) {
-        updateObject.speeldag = updateData.matchday;
-        logMatchOperation('updateMatch - Adding speeldag', { value: updateData.matchday });
+        updateObject.speeldag = String(updateData.matchday);
+        logMatchOperation('updateMatch - Adding speeldag', { value: updateObject.speeldag });
       }
       
       if (updateData.location !== undefined) {
-        updateObject.location = updateData.location;
-        logMatchOperation('updateMatch - Adding location', { value: updateData.location });
+        updateObject.location = String(updateData.location);
+        logMatchOperation('updateMatch - Adding location', { value: updateObject.location });
       }
       
       if (updateData.date !== undefined && updateData.time !== undefined) {
-        // Combine date and time into match_date timestamp
         const matchDateTime = new Date(`${updateData.date}T${updateData.time}`);
         updateObject.match_date = matchDateTime.toISOString();
-        logMatchOperation('updateMatch - Adding match_date', { value: matchDateTime.toISOString() });
+        logMatchOperation('updateMatch - Adding match_date', { value: updateObject.match_date });
       }
       
       if (updateData.homePlayers !== undefined) {
@@ -64,43 +80,110 @@ export const enhancedMatchService = {
       }
       
       if (updateData.isCompleted !== undefined) {
-        updateObject.is_submitted = updateData.isCompleted;
-        logMatchOperation('updateMatch - Adding is_submitted', { value: updateData.isCompleted });
+        updateObject.is_submitted = Boolean(updateData.isCompleted);
+        logMatchOperation('updateMatch - Adding is_submitted', { value: updateObject.is_submitted });
       }
       
       if (updateData.isLocked !== undefined) {
-        updateObject.is_locked = updateData.isLocked;
-        logMatchOperation('updateMatch - Adding is_locked', { value: updateData.isLocked });
+        updateObject.is_locked = Boolean(updateData.isLocked);
+        logMatchOperation('updateMatch - Adding is_locked', { value: updateObject.is_locked });
       }
 
       // Always update the updated_at timestamp
       updateObject.updated_at = new Date().toISOString();
       
-      logMatchOperation('updateMatch - Final update object', { updateObject });
+      logMatchOperation('updateMatch - PREPARED UPDATE OBJECT', { updateObject });
 
-      // SIMPLIFIED: Follow user service pattern - just update without complex .select() chains
-      const { error } = await supabase
+      // FASE 3: Perform update with enhanced error detection
+      const { data, error, count } = await supabase
         .from('matches')
         .update(updateObject)
-        .eq('match_id', matchId);
+        .eq('match_id', matchId)
+        .select('*');
 
-      logMatchOperation('updateMatch - UPDATE RESULT', { error, matchId });
+      logMatchOperation('updateMatch - RAW UPDATE RESULT', { 
+        data, 
+        error, 
+        count,
+        hasData: !!data,
+        dataLength: data?.length || 0
+      });
 
       if (error) {
-        logMatchOperation('updateMatch - UPDATE ERROR', { error, matchId });
-        const errorMessage = error.message || JSON.stringify(error);
+        logMatchOperation('updateMatch - UPDATE ERROR DETECTED', { 
+          error,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorDetails: error.details
+        });
+        
+        const errorMessage = error.message || 'Onbekende database fout';
         return { 
           success: false, 
-          message: `Fout bij bijwerken wedstrijd: ${errorMessage}` 
+          message: `Database fout bij bijwerken wedstrijd: ${errorMessage}` 
         };
       }
 
-      logMatchOperation('updateMatch - SUCCESS', { 
+      // FASE 4: Post-update verification
+      const verificationMatch = await this.getMatch(matchId);
+      logMatchOperation('updateMatch - POST-UPDATE VERIFICATION', { 
+        verificationMatch: verificationMatch ? {
+          matchId: verificationMatch.matchId,
+          homeScore: verificationMatch.homeScore,
+          awayScore: verificationMatch.awayScore,
+          referee: verificationMatch.referee,
+          isCompleted: verificationMatch.isCompleted,
+          isLocked: verificationMatch.isLocked
+        } : null
+      });
+
+      if (!verificationMatch) {
+        logMatchOperation('updateMatch - VERIFICATION FAILED - MATCH NOT FOUND');
+        return { 
+          success: false, 
+          message: 'Update mislukt: Wedstrijd niet meer gevonden na update' 
+        };
+      }
+
+      // Check if key changes were actually applied
+      const changesApplied = 
+        (updateData.homeScore !== undefined ? verificationMatch.homeScore === updateObject.home_score : true) &&
+        (updateData.awayScore !== undefined ? verificationMatch.awayScore === updateObject.away_score : true) &&
+        (updateData.referee !== undefined ? verificationMatch.referee === updateObject.referee : true) &&
+        (updateData.isCompleted !== undefined ? verificationMatch.isCompleted === updateObject.is_submitted : true) &&
+        (updateData.isLocked !== undefined ? verificationMatch.isLocked === updateObject.is_locked : true);
+
+      if (!changesApplied) {
+        logMatchOperation('updateMatch - VERIFICATION FAILED - CHANGES NOT APPLIED', {
+          expected: {
+            homeScore: updateObject.home_score,
+            awayScore: updateObject.away_score,
+            referee: updateObject.referee,
+            isCompleted: updateObject.is_submitted,
+            isLocked: updateObject.is_locked
+          },
+          actual: {
+            homeScore: verificationMatch.homeScore,
+            awayScore: verificationMatch.awayScore,
+            referee: verificationMatch.referee,
+            isCompleted: verificationMatch.isCompleted,
+            isLocked: verificationMatch.isLocked
+          }
+        });
+        return { 
+          success: false, 
+          message: 'Update mislukt: Wijzigingen zijn niet doorgevoerd in de database' 
+        };
+      }
+
+      logMatchOperation('updateMatch - SUCCESS WITH VERIFICATION', { 
         matchId, 
-        fieldsUpdated: Object.keys(updateObject)
+        fieldsUpdated: Object.keys(updateObject),
+        verificationPassed: true
       });
       
       return { success: true, message: 'Wedstrijd succesvol bijgewerkt' };
+      
     } catch (error) {
       logMatchOperation('updateMatch - CATCH ERROR', { error, matchId });
       const errorMessage = error instanceof Error ? error.message : 
@@ -108,7 +191,7 @@ export const enhancedMatchService = {
                           String(error);
       return { 
         success: false, 
-        message: `Fout bij bijwerken wedstrijd: ${errorMessage}` 
+        message: `Onverwachte fout bij bijwerken wedstrijd: ${errorMessage}` 
       };
     }
   },
