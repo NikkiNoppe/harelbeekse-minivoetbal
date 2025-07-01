@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    open: process.platform === 'darwin' ? '/Applications/Safari.app' : true,
   },
   plugins: [
     react(),
