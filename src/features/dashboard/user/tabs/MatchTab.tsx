@@ -5,21 +5,40 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/
 import { Badge } from "@shared/components/ui/badge";
 import { Button } from "@shared/components/ui/button";
 import { Calendar, Users, MapPin, Clock } from "lucide-react";
-import { Match } from "@features/matches/match/types";
+import { MatchFormData } from "@features/matches/match/types";
 import { EditMatchTabContent } from "@features/matches/match/EditMatchTabContent";
 import { PastMatchesTabContent } from "@features/matches/match/PastMatchesTabContent";
-import { matchService } from "@features/matches/match/matchService";
+import { supabase } from "@shared/integrations/supabase/client";
 
 const MatchTab: React.FC = () => {
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<MatchFormData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchMatches = async () => {
       setLoading(true);
       try {
-        const matchesData = await matchService.getAllMatches();
-        setMatches(matchesData);
+        const { data: matchesData, error } = await supabase
+          .from('matches')
+          .select('*')
+          .order('match_date', { ascending: true });
+        
+        if (error) throw error;
+        
+        const transformedMatches: MatchFormData[] = (matchesData || []).map(match => ({
+          id: match.match_id,
+          date: new Date(match.match_date).toISOString().split('T')[0],
+          time: new Date(match.match_date).toTimeString().split(' ')[0],
+          homeTeam: match.home_team_id?.toString() || '',
+          awayTeam: match.away_team_id?.toString() || '',
+          location: match.location || '',
+          homeScore: match.home_score,
+          awayScore: match.away_score,
+          referee: match.referee,
+          uniqueNumber: match.unique_number
+        }));
+        
+        setMatches(transformedMatches);
       } catch (error) {
         console.error("Error fetching matches:", error);
       } finally {
@@ -57,10 +76,17 @@ const MatchTab: React.FC = () => {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="edit" className="mt-6">
-            <EditMatchTabContent />
+            <EditMatchTabContent 
+              isLoading={loading}
+              upcomingMatches={matches}
+              selectedMatch={null}
+              onSaveMatch={() => {}}
+              onSelectMatch={() => {}}
+              onCloseMatch={() => {}}
+            />
           </TabsContent>
           <TabsContent value="past" className="mt-6">
-            <PastMatchesTabContent matches={matches} />
+            <PastMatchesTabContent pastMatches={matches.filter(m => m.homeScore !== null)} />
           </TabsContent>
         </Tabs>
       </CardContent>

@@ -3,81 +3,67 @@ import React from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Team } from "@/components/team/types";
+} from "@shared/components/ui/dialog";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
+import { Label } from "@shared/components/ui/label";
 
-interface TeamFormData {
-  name: string;
-  balance: string;
-}
-
-interface TeamDialogProps {
+export interface TeamDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingTeam: Team | null;
-  formData: TeamFormData;
-  onFormChange: (field: keyof TeamFormData, value: string) => void;
-  onSave: () => void;
+  onSave: () => Promise<void>;
+  isSaving: boolean;
+  teamName: string;
+  onTeamNameChange: (name: string) => void;
+  isDeleteMode?: boolean;
 }
 
 const TeamDialog: React.FC<TeamDialogProps> = ({
   open,
   onOpenChange,
-  editingTeam,
-  formData,
-  onFormChange,
-  onSave
+  onSave,
+  isSaving,
+  teamName,
+  onTeamNameChange,
+  isDeleteMode = false
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {editingTeam ? "Team bewerken" : "Nieuw team toevoegen"}
+            {isDeleteMode ? "Team verwijderen" : "Team"}
           </DialogTitle>
-          <DialogDescription>
-            {editingTeam 
-              ? "Bewerk de gegevens van dit team" 
-              : "Voeg een nieuw team toe aan de competitie"}
-          </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <label>Teamnaam</label>
-            <Input
-              value={formData.name}
-              onChange={(e) => onFormChange("name", e.target.value)}
-              placeholder="Naam van het team"
-            />
+        {!isDeleteMode && (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="teamName">Team naam</Label>
+              <Input
+                id="teamName"
+                value={teamName}
+                onChange={(e) => onTeamNameChange(e.target.value)}
+                placeholder="Voer team naam in"
+              />
+            </div>
           </div>
-          
-          <div className="space-y-2">
-            <label>Balans</label>
-            <Input
-              type="number"
-              step="0.01"
-              value={formData.balance}
-              onChange={(e) => onFormChange("balance", e.target.value)}
-              placeholder="0.00"
-            />
-          </div>
-        </div>
+        )}
+
+        {isDeleteMode && (
+          <p>Weet je zeker dat je dit team wilt verwijderen?</p>
+        )}
         
-        <DialogFooter>
+        <div className="flex justify-end space-x-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuleren
           </Button>
-          <Button onClick={onSave}>
-            {editingTeam ? "Bijwerken" : "Toevoegen"}
+          <Button onClick={onSave} disabled={isSaving}>
+            {isSaving ? "Bezig..." : (isDeleteMode ? "Verwijderen" : "Opslaan")}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -1,16 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { User } from "@/types/auth";
-import { fetchUsersWithTeams, fetchTeams, fetchTeamUsers, saveUser, deleteUser } from "../services/userService";
+import { supabase } from "@shared/integrations/supabase/client";
+import { useToast } from "@shared/hooks/use-toast";
+import { User } from "@shared/types/auth";
 
 interface Team {
-  team_id: number;
-  team_name: string;
-}
-
-interface TeamUser {
-  user_id: number;
   team_id: number;
   team_name: string;
 }
@@ -19,22 +13,41 @@ export const useUsersData = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [teamUsers, setTeamUsers] = useState<TeamUser[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       
-      const [usersData, teamsData, teamUsersData] = await Promise.all([
-        fetchUsersWithTeams(),
-        fetchTeams(),
-        fetchTeamUsers()
-      ]);
+      // Fetch users
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('*')
+        .order('username');
 
-      setUsers(usersData);
-      setTeams(teamsData);
-      setTeamUsers(teamUsersData);
+      if (usersError) throw usersError;
+
+      // Fetch teams
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('team_id, team_name')
+        .order('team_name');
+      
+      if (teamsError) throw teamsError;
+      
+      setTeams(teamsData || []);
+
+      // Transform users data
+      const transformedUsers: User[] = (usersData || []).map(user => ({
+        id: user.user_id,
+        username: user.username,
+        email: user.email || '',
+        password: '',
+        role: user.role,
+        teamId: undefined // Will be set by team relationships
+      }));
+
+      setUsers(transformedUsers);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -47,18 +60,52 @@ export const useUsersData = () => {
     }
   };
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   const handleSaveUser = async (formData: any, editingUser: User | null): Promise<boolean> => {
     try {
-      await saveUser(formData, editingUser);
-      
-      toast({
-        title: editingUser ? "Gebruiker bijgewerkt" : "Gebruiker toegevoegd",
-        description: `${formData.username} is ${editingUser ? "bijgewerkt" : "toegevoegd"}`,
-      });
+      if (editingUser) {
+        // Update existing user
+        const { error: userError } = await supabase
+          .from('users')
+          .update({
+            username: formData.username,
+            role: formData.role,
+            email: formData.email || null
+          })
+          .eq('user_id', editingUser.id);
+
+        if (userError) throw userError;
+        
+        toast({
+          title: "Gebruiker bijgewerkt",
+          description: `${formData.username} is bijgewerkt`,
+        });
+      } else {
+        // Add new user
+        const { error: createError } = await supabase
+          .from('users')
+          .insert({
+            username: formData.username,
+            email: formData.email || null,
+            password: formData.password,
+            role: formData.role
+          });
+
+        if (createError) throw createError;
+        
+        toast({
+          title: "Gebruiker toegevoegd",
+          description: `${formData.username} is toegevoegd`,
+        });
+      }
       
       await fetchData();
       return true;
     } catch (error) {
+      console.error('Error saving user:', error);
       toast({
         title: "Fout",
         description: "Er is een fout opgetreden bij het opslaan van de gebruiker",
@@ -68,34 +115,38 @@ export const useUsersData = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: number) => {
+  const handleDeleteUser = async (userId: number): Promise<boolean> => {
     try {
-      await deleteUser(userId);
-      
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
       toast({
         title: "Gebruiker verwijderd",
-        description: "De gebruiker is verwijderd",
+        description: "De gebruiker is succesvol verwijderd",
       });
-      
+
       await fetchData();
+      return true;
     } catch (error) {
       console.error('Error deleting user:', error);
       toast({
-        title: "Fout",
+        title: "Fout bij verwijderen",
         description: "Er is een fout opgetreden bij het verwijderen van de gebruiker",
         variant: "destructive",
       });
+      return false;
     }
   };
 
-  const getTeamName = (userId: number) => {
-    const teamUser = teamUsers.find(tu => tu.user_id === userId);
-    return teamUser ? teamUser.team_name : "-";
+  const getTeamName = (teamId: number | undefined) => {
+    if (!teamId) return "-";
+    const team = teams.find(t => t.team_id === teamId);
+    return team ? team.team_name : `Team ${teamId}`;
   };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   return {
     users,
@@ -103,7 +154,6 @@ export const useUsersData = () => {
     loading,
     handleSaveUser,
     handleDeleteUser,
-    getTeamName,
-    refreshData: fetchData
+    getTeamName
   };
 };

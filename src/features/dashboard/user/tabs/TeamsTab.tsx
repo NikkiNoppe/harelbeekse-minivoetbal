@@ -146,28 +146,29 @@ const TeamsTab: React.FC = () => {
       <TeamDialog
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
-        value={newTeamName}
-        onValueChange={setNewTeamName}
         onSave={handleAddTeam}
         isSaving={isLoading}
+        teamName={newTeamName}
+        onTeamNameChange={setNewTeamName}
       />
 
       <TeamDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
-        value={editedTeamName}
-        onValueChange={setEditedTeamName}
         onSave={handleSaveEditedTeam}
         isSaving={isLoading}
+        teamName={editedTeamName}
+        onTeamNameChange={setEditedTeamName}
       />
 
       <TeamDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        value=""
-        onValueChange={() => {}}
         onSave={handleConfirmDeleteTeam}
         isSaving={isLoading}
+        teamName=""
+        onTeamNameChange={() => {}}
+        isDeleteMode={true}
       />
     </div>
   );

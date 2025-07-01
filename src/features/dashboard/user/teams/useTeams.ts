@@ -1,35 +1,31 @@
 
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Team } from "@/components/team/types";
+import { useToast } from "@shared/hooks/use-toast";
+import { supabase } from "@shared/integrations/supabase/client";
 
-interface TeamFormData {
-  name: string;
-  balance: string;
+interface Team {
+  team_id: number;
+  team_name: string;
 }
 
-export function useTeams() {
+export const useTeams = () => {
   const { toast } = useToast();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
-  const [formData, setFormData] = useState<TeamFormData>({
-    name: "",
-    balance: "0"
-  });
 
   const fetchTeams = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('teams')
-        .select('*')
+        .select('team_id, team_name')
         .order('team_name');
+      
       if (error) throw error;
+      
       setTeams(data || []);
     } catch (error) {
+      console.error('Error fetching teams:', error);
       toast({
         title: "Fout bij laden",
         description: "Er is een fout opgetreden bij het laden van de teams.",
@@ -42,44 +38,20 @@ export function useTeams() {
 
   useEffect(() => {
     fetchTeams();
-    // eslint-disable-next-line
   }, []);
-
-  const handleEditTeam = (team: Team) => {
-    setEditingTeam(team);
-    setFormData({
-      name: team.team_name,
-      balance: team.balance.toString()
-    });
-    setDialogOpen(true);
-  };
-
-  const handleAddNew = () => {
-    setEditingTeam(null);
-    setFormData({
-      name: "",
-      balance: "0"
-    });
-    setDialogOpen(true);
-  };
-
-  const handleFormChange = (field: keyof TeamFormData, value: string) => {
-    setFormData({...formData, [field]: value});
-  };
 
   return {
     teams,
     setTeams,
     loading,
-    dialogOpen,
-    setDialogOpen,
-    editingTeam,
-    setEditingTeam,
-    formData,
-    setFormData,
-    handleAddNew,
-    handleEditTeam,
-    handleFormChange,
+    dialogOpen: false,
+    setDialogOpen: () => {},
+    newTeamName: "",
+    setNewTeamName: () => {},
+    editingTeam: null,
+    setEditingTeam: () => {},
+    editedTeamName: "",
+    setEditedTeamName: () => {},
     fetchTeams
   };
-}
+};
