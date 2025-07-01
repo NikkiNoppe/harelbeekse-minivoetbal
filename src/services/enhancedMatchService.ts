@@ -13,31 +13,6 @@ export const enhancedMatchService = {
     logMatchOperation('updateMatch - START', { matchId, updateData });
     
     try {
-      // FIRST: Check if match exists
-      logMatchOperation('updateMatch - Checking if match exists', { matchId });
-      const { data: existingMatch, error: checkError } = await supabase
-        .from('matches')
-        .select('match_id')
-        .eq('match_id', matchId)
-        .maybeSingle();
-
-      logMatchOperation('updateMatch - Existence check result', { existingMatch, checkError, matchId });
-
-      if (checkError) {
-        logMatchOperation('updateMatch - Existence check ERROR', { checkError, matchId });
-        throw checkError;
-      }
-
-      if (!existingMatch) {
-        logMatchOperation('updateMatch - MATCH NOT FOUND', { matchId });
-        return { 
-          success: false, 
-          message: `Wedstrijd met ID ${matchId} niet gevonden in database` 
-        };
-      }
-
-      logMatchOperation('updateMatch - Match exists, proceeding with update', { matchId });
-
       // Prepare the update object with proper validation
       const updateObject: any = {};
       
@@ -103,63 +78,37 @@ export const enhancedMatchService = {
       
       logMatchOperation('updateMatch - Final update object', { updateObject });
 
-      // IMPROVED UPDATE with better error handling
-      const { data, error } = await supabase
+      // SIMPLIFIED: Follow user service pattern - just update without complex .select() chains
+      const { error } = await supabase
         .from('matches')
         .update(updateObject)
-        .eq('match_id', matchId)
-        .select('*')
-        .single();
+        .eq('match_id', matchId);
 
-      logMatchOperation('updateMatch - UPDATE QUERY RESULT', { data, error, matchId });
+      logMatchOperation('updateMatch - UPDATE RESULT', { error, matchId });
 
       if (error) {
         logMatchOperation('updateMatch - UPDATE ERROR', { error, matchId });
-        throw error;
-      }
-
-      // IMPROVED: If data is null but no error, do a fallback select
-      if (!data) {
-        logMatchOperation('updateMatch - No data returned, doing fallback select', { matchId });
-        
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('matches')
-          .select('*')
-          .eq('match_id', matchId)
-          .single();
-        
-        logMatchOperation('updateMatch - Fallback select result', { fallbackData, fallbackError });
-        
-        if (fallbackError) {
-          logMatchOperation('updateMatch - Fallback select failed', { fallbackError, matchId });
-          return { 
-            success: false, 
-            message: `Update mogelijk uitgevoerd maar kon bijgewerkte data niet ophalen voor wedstrijd ${matchId}` 
-          };
-        }
-        
-        if (fallbackData) {
-          logMatchOperation('updateMatch - SUCCESS via fallback', { 
-            matchId, 
-            updatedMatch: fallbackData,
-            fieldsUpdated: Object.keys(updateObject)
-          });
-          return { success: true, message: 'Wedstrijd succesvol bijgewerkt' };
-        }
+        const errorMessage = error.message || JSON.stringify(error);
+        return { 
+          success: false, 
+          message: `Fout bij bijwerken wedstrijd: ${errorMessage}` 
+        };
       }
 
       logMatchOperation('updateMatch - SUCCESS', { 
         matchId, 
-        updatedMatch: data,
         fieldsUpdated: Object.keys(updateObject)
       });
       
       return { success: true, message: 'Wedstrijd succesvol bijgewerkt' };
     } catch (error) {
       logMatchOperation('updateMatch - CATCH ERROR', { error, matchId });
+      const errorMessage = error instanceof Error ? error.message : 
+                          typeof error === 'object' ? JSON.stringify(error) : 
+                          String(error);
       return { 
         success: false, 
-        message: `Fout bij bijwerken wedstrijd: ${error instanceof Error ? error.message : error}` 
+        message: `Fout bij bijwerken wedstrijd: ${errorMessage}` 
       };
     }
   },
@@ -250,56 +199,35 @@ export const enhancedMatchService = {
     logMatchOperation('lockMatch - START', { matchId });
     
     try {
-      // Pre-check if match exists
-      const { data: existingMatch, error: checkError } = await supabase
-        .from('matches')
-        .select('match_id')
-        .eq('match_id', matchId)
-        .maybeSingle();
-
-      if (checkError) {
-        logMatchOperation('lockMatch - Existence check ERROR', { checkError, matchId });
-        throw checkError;
-      }
-
-      if (!existingMatch) {
-        logMatchOperation('lockMatch - MATCH NOT FOUND', { matchId });
-        return { 
-          success: false, 
-          message: `Wedstrijd met ID ${matchId} niet gevonden` 
-        };
-      }
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('matches')
         .update({ 
           is_locked: true,
           updated_at: new Date().toISOString()
         })
-        .eq('match_id', matchId)
-        .select('*')
-        .single();
+        .eq('match_id', matchId);
 
-      logMatchOperation('lockMatch - QUERY RESULT', { data, error, matchId });
+      logMatchOperation('lockMatch - UPDATE RESULT', { error, matchId });
 
       if (error) {
         logMatchOperation('lockMatch - ERROR', { error, matchId });
-        throw error;
+        const errorMessage = error.message || JSON.stringify(error);
+        return { 
+          success: false, 
+          message: `Fout bij vergrendelen wedstrijd: ${errorMessage}` 
+        };
       }
 
-      // IMPROVED: Handle null data with fallback
-      if (!data) {
-        logMatchOperation('lockMatch - No data returned, assuming success', { matchId });
-        return { success: true, message: 'Wedstrijd succesvol vergrendeld' };
-      }
-
-      logMatchOperation('lockMatch - SUCCESS', { matchId, lockedMatch: data });
+      logMatchOperation('lockMatch - SUCCESS', { matchId });
       return { success: true, message: 'Wedstrijd succesvol vergrendeld' };
     } catch (error) {
       logMatchOperation('lockMatch - CATCH ERROR', { error, matchId });
+      const errorMessage = error instanceof Error ? error.message : 
+                          typeof error === 'object' ? JSON.stringify(error) : 
+                          String(error);
       return { 
         success: false, 
-        message: `Fout bij vergrendelen wedstrijd: ${error instanceof Error ? error.message : error}` 
+        message: `Fout bij vergrendelen wedstrijd: ${errorMessage}` 
       };
     }
   },
@@ -308,56 +236,35 @@ export const enhancedMatchService = {
     logMatchOperation('unlockMatch - START', { matchId });
     
     try {
-      // Pre-check if match exists
-      const { data: existingMatch, error: checkError } = await supabase
-        .from('matches')
-        .select('match_id')
-        .eq('match_id', matchId)
-        .maybeSingle();
-
-      if (checkError) {
-        logMatchOperation('unlockMatch - Existence check ERROR', { checkError, matchId });
-        throw checkError;
-      }
-
-      if (!existingMatch) {
-        logMatchOperation('unlockMatch - MATCH NOT FOUND', { matchId });
-        return { 
-          success: false, 
-          message: `Wedstrijd met ID ${matchId} niet gevonden` 
-        };
-      }
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('matches')
         .update({ 
           is_locked: false,
           updated_at: new Date().toISOString()
         })
-        .eq('match_id', matchId)
-        .select('*')
-        .single();
+        .eq('match_id', matchId);
 
-      logMatchOperation('unlockMatch - QUERY RESULT', { data, error, matchId });
+      logMatchOperation('unlockMatch - UPDATE RESULT', { error, matchId });
 
       if (error) {
         logMatchOperation('unlockMatch - ERROR', { error, matchId });
-        throw error;
+        const errorMessage = error.message || JSON.stringify(error);
+        return { 
+          success: false, 
+          message: `Fout bij ontgrendelen wedstrijd: ${errorMessage}` 
+        };
       }
 
-      // IMPROVED: Handle null data with fallback
-      if (!data) {
-        logMatchOperation('unlockMatch - No data returned, assuming success', { matchId });
-        return { success: true, message: 'Wedstrijd succesvol ontgrendeld' };
-      }
-
-      logMatchOperation('unlockMatch - SUCCESS', { matchId, unlockedMatch: data });
+      logMatchOperation('unlockMatch - SUCCESS', { matchId });
       return { success: true, message: 'Wedstrijd succesvol ontgrendeld' };
     } catch (error) {
       logMatchOperation('unlockMatch - CATCH ERROR', { error, matchId });
+      const errorMessage = error instanceof Error ? error.message : 
+                          typeof error === 'object' ? JSON.stringify(error) : 
+                          String(error);
       return { 
         success: false, 
-        message: `Fout bij ontgrendelen wedstrijd: ${error instanceof Error ? error.message : error}` 
+        message: `Fout bij ontgrendelen wedstrijd: ${errorMessage}` 
       };
     }
   }

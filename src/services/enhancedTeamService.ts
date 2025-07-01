@@ -98,9 +98,12 @@ export const enhancedTeamService = {
       };
     } catch (error) {
       logTeamOperation('createTeam - CATCH ERROR', { error });
+      const errorMessage = error instanceof Error ? error.message : 
+                          typeof error === 'object' ? JSON.stringify(error) : 
+                          String(error);
       return { 
         success: false, 
-        message: `Fout bij aanmaken team: ${error instanceof Error ? error.message : error}` 
+        message: `Fout bij aanmaken team: ${errorMessage}` 
       };
     }
   },
@@ -108,87 +111,36 @@ export const enhancedTeamService = {
   async updateTeam(teamId: number, updateData: Partial<Omit<Team, 'team_id'>>): Promise<{ success: boolean; message: string; team?: Team }> {
     logTeamOperation('updateTeam - START', { teamId, updateData });
     try {
-      // FIRST: Check if team exists
-      logTeamOperation('updateTeam - Checking if team exists', { teamId });
-      const { data: existingTeam, error: checkError } = await supabase
-        .from('teams')
-        .select('team_id, team_name, balance')
-        .eq('team_id', teamId)
-        .maybeSingle();
-
-      logTeamOperation('updateTeam - Existence check result', { existingTeam, checkError, teamId });
-
-      if (checkError) {
-        logTeamOperation('updateTeam - Existence check ERROR', { checkError, teamId });
-        throw checkError;
-      }
-
-      if (!existingTeam) {
-        logTeamOperation('updateTeam - TEAM NOT FOUND', { teamId });
-        return { 
-          success: false, 
-          message: `Team met ID ${teamId} niet gevonden in database` 
-        };
-      }
-
-      logTeamOperation('updateTeam - Team exists, proceeding with update', { teamId, existingTeam });
-
-      // IMPROVED UPDATE with better error handling
-      const { data, error } = await supabase
+      // SIMPLIFIED: Follow user service pattern - just update without complex .select() chains
+      const { error } = await supabase
         .from('teams')
         .update(updateData)
-        .eq('team_id', teamId)
-        .select('*')
-        .single();
+        .eq('team_id', teamId);
 
-      logTeamOperation('updateTeam - UPDATE QUERY RESULT', { data, error, teamId });
+      logTeamOperation('updateTeam - UPDATE RESULT', { error, teamId });
 
       if (error) {
         logTeamOperation('updateTeam - UPDATE ERROR', { error, teamId });
-        throw error;
+        const errorMessage = error.message || JSON.stringify(error);
+        return { 
+          success: false, 
+          message: `Fout bij bijwerken team: ${errorMessage}` 
+        };
       }
 
-      // IMPROVED: If data is null but no error, do a fallback select
-      if (!data) {
-        logTeamOperation('updateTeam - No data returned, doing fallback select', { teamId });
-        
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('teams')
-          .select('*')
-          .eq('team_id', teamId)
-          .single();
-        
-        logTeamOperation('updateTeam - Fallback select result', { fallbackData, fallbackError });
-        
-        if (fallbackError) {
-          logTeamOperation('updateTeam - Fallback select failed', { fallbackError, teamId });
-          return { 
-            success: false, 
-            message: `Update mogelijk uitgevoerd maar kon bijgewerkte data niet ophalen voor team ${teamId}` 
-          };
-        }
-        
-        if (fallbackData) {
-          logTeamOperation('updateTeam - SUCCESS via fallback', { teamId, updatedTeam: fallbackData });
-          return { 
-            success: true, 
-            message: 'Team succesvol bijgewerkt',
-            team: fallbackData
-          };
-        }
-      }
-
-      logTeamOperation('updateTeam - SUCCESS', { teamId, updatedTeam: data });
+      logTeamOperation('updateTeam - SUCCESS', { teamId });
       return { 
         success: true, 
-        message: 'Team succesvol bijgewerkt',
-        team: data
+        message: 'Team succesvol bijgewerkt'
       };
     } catch (error) {
       logTeamOperation('updateTeam - CATCH ERROR', { error, teamId });
+      const errorMessage = error instanceof Error ? error.message : 
+                          typeof error === 'object' ? JSON.stringify(error) : 
+                          String(error);
       return { 
         success: false, 
-        message: `Fout bij bijwerken team: ${error instanceof Error ? error.message : error}` 
+        message: `Fout bij bijwerken team: ${errorMessage}` 
       };
     }
   },
@@ -196,52 +148,35 @@ export const enhancedTeamService = {
   async deleteTeam(teamId: number): Promise<{ success: boolean; message: string }> {
     logTeamOperation('deleteTeam - START', { teamId });
     try {
-      // Check if team exists first
-      logTeamOperation('deleteTeam - Checking if team exists', { teamId });
-      const { data: existingTeam, error: checkError } = await supabase
-        .from('teams')
-        .select('team_id')
-        .eq('team_id', teamId)
-        .maybeSingle();
-
-      logTeamOperation('deleteTeam - Existence check result', { existingTeam, checkError, teamId });
-
-      if (checkError) {
-        logTeamOperation('deleteTeam - Existence check ERROR', { checkError, teamId });
-        throw checkError;
-      }
-
-      if (!existingTeam) {
-        logTeamOperation('deleteTeam - TEAM NOT FOUND', { teamId });
-        return { 
-          success: false, 
-          message: `Team met ID ${teamId} niet gevonden in database` 
-        };
-      }
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('teams')
         .delete()
-        .eq('team_id', teamId)
-        .select();
+        .eq('team_id', teamId);
 
-      logTeamOperation('deleteTeam - DELETE QUERY RESULT', { data, error, teamId });
+      logTeamOperation('deleteTeam - DELETE RESULT', { error, teamId });
 
       if (error) {
         logTeamOperation('deleteTeam - DELETE ERROR', { error, teamId });
-        throw error;
+        const errorMessage = error.message || JSON.stringify(error);
+        return { 
+          success: false, 
+          message: `Fout bij verwijderen team: ${errorMessage}` 
+        };
       }
 
-      logTeamOperation('deleteTeam - SUCCESS', { teamId, deletedData: data });
+      logTeamOperation('deleteTeam - SUCCESS', { teamId });
       return { 
         success: true, 
         message: 'Team succesvol verwijderd' 
       };
     } catch (error) {
       logTeamOperation('deleteTeam - CATCH ERROR', { error, teamId });
+      const errorMessage = error instanceof Error ? error.message : 
+                          typeof error === 'object' ? JSON.stringify(error) : 
+                          String(error);
       return { 
         success: false, 
-        message: `Fout bij verwijderen team: ${error instanceof Error ? error.message : error}` 
+        message: `Fout bij verwijderen team: ${errorMessage}` 
       };
     }
   },
@@ -281,28 +216,34 @@ export const enhancedTeamService = {
   async addUserToTeam(teamId: number, userId: number): Promise<{ success: boolean; message: string }> {
     logTeamOperation('addUserToTeam - START', { teamId, userId });
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('team_users')
-        .insert([{ team_id: teamId, user_id: userId }])
-        .select();
+        .insert([{ team_id: teamId, user_id: userId }]);
 
-      logTeamOperation('addUserToTeam - QUERY RESULT', { data, error, teamId, userId });
+      logTeamOperation('addUserToTeam - QUERY RESULT', { error, teamId, userId });
 
       if (error) {
         logTeamOperation('addUserToTeam - ERROR', { error, teamId, userId });
-        throw error;
+        const errorMessage = error.message || JSON.stringify(error);
+        return { 
+          success: false, 
+          message: `Fout bij toevoegen gebruiker aan team: ${errorMessage}` 
+        };
       }
 
-      logTeamOperation('addUserToTeam - SUCCESS', { teamId, userId, insertedData: data });
+      logTeamOperation('addUserToTeam - SUCCESS', { teamId, userId });
       return { 
         success: true, 
         message: 'Gebruiker succesvol toegevoegd aan team' 
       };
     } catch (error) {
       logTeamOperation('addUserToTeam - CATCH ERROR', { error, teamId, userId });
+      const errorMessage = error instanceof Error ? error.message : 
+                          typeof error === 'object' ? JSON.stringify(error) : 
+                          String(error);
       return { 
         success: false, 
-        message: `Fout bij toevoegen gebruiker aan team: ${error instanceof Error ? error.message : error}` 
+        message: `Fout bij toevoegen gebruiker aan team: ${errorMessage}` 
       };
     }
   },
@@ -310,30 +251,36 @@ export const enhancedTeamService = {
   async removeUserFromTeam(teamId: number, userId: number): Promise<{ success: boolean; message: string }> {
     logTeamOperation('removeUserFromTeam - START', { teamId, userId });
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('team_users')
         .delete()
         .eq('team_id', teamId)
-        .eq('user_id', userId)
-        .select();
+        .eq('user_id', userId);
 
-      logTeamOperation('removeUserFromTeam - QUERY RESULT', { data, error, teamId, userId });
+      logTeamOperation('removeUserFromTeam - QUERY RESULT', { error, teamId, userId });
 
       if (error) {
         logTeamOperation('removeUserFromTeam - ERROR', { error, teamId, userId });
-        throw error;
+        const errorMessage = error.message || JSON.stringify(error);
+        return { 
+          success: false, 
+          message: `Fout bij verwijderen gebruiker uit team: ${errorMessage}` 
+        };
       }
 
-      logTeamOperation('removeUserFromTeam - SUCCESS', { teamId, userId, deletedData: data });
+      logTeamOperation('removeUserFromTeam - SUCCESS', { teamId, userId });
       return { 
         success: true, 
         message: 'Gebruiker succesvol verwijderd uit team' 
       };
     } catch (error) {
       logTeamOperation('removeUserFromTeam - CATCH ERROR', { error, teamId, userId });
+      const errorMessage = error instanceof Error ? error.message : 
+                          typeof error === 'object' ? JSON.stringify(error) : 
+                          String(error);
       return { 
         success: false, 
-        message: `Fout bij verwijderen gebruiker uit team: ${error instanceof Error ? error.message : error}` 
+        message: `Fout bij verwijderen gebruiker uit team: ${errorMessage}` 
       };
     }
   }
