@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Team {
@@ -109,16 +108,32 @@ export const enhancedTeamService = {
   async updateTeam(teamId: number, updateData: Partial<Omit<Team, 'team_id'>>): Promise<{ success: boolean; message: string; team?: Team }> {
     logTeamOperation('updateTeam - START', { teamId, updateData });
     try {
-      // Check if team exists first
-      const existingTeam = await this.getTeamById(teamId);
+      // FIRST: Check if team exists using the exact same pattern as match service
+      logTeamOperation('updateTeam - Checking if team exists', { teamId });
+      const { data: existingTeam, error: checkError } = await supabase
+        .from('teams')
+        .select('team_id, team_name, balance')
+        .eq('team_id', teamId)
+        .maybeSingle();
+
+      logTeamOperation('updateTeam - Existence check result', { existingTeam, checkError, teamId });
+
+      if (checkError) {
+        logTeamOperation('updateTeam - Existence check ERROR', { checkError, teamId });
+        throw checkError;
+      }
+
       if (!existingTeam) {
         logTeamOperation('updateTeam - TEAM NOT FOUND', { teamId });
         return { 
           success: false, 
-          message: `Team met ID ${teamId} niet gevonden` 
+          message: `Team met ID ${teamId} niet gevonden in database` 
         };
       }
 
+      logTeamOperation('updateTeam - Team exists, proceeding with update', { teamId, existingTeam });
+
+      // PERFORM THE UPDATE with consistent query pattern
       const { data, error } = await supabase
         .from('teams')
         .update(updateData)
@@ -126,18 +141,18 @@ export const enhancedTeamService = {
         .select()
         .maybeSingle();
 
-      logTeamOperation('updateTeam - QUERY RESULT', { data, error, teamId });
+      logTeamOperation('updateTeam - UPDATE QUERY RESULT', { data, error, teamId });
 
       if (error) {
-        logTeamOperation('updateTeam - ERROR', { error, teamId });
+        logTeamOperation('updateTeam - UPDATE ERROR', { error, teamId });
         throw error;
       }
 
       if (!data) {
-        logTeamOperation('updateTeam - NO DATA RETURNED', { teamId });
+        logTeamOperation('updateTeam - NO DATA RETURNED AFTER UPDATE', { teamId });
         return { 
           success: false, 
-          message: `Geen data geretourneerd bij bijwerken team ${teamId}` 
+          message: `Update uitgevoerd maar geen data geretourneerd voor team ${teamId}` 
         };
       }
 
@@ -159,13 +174,26 @@ export const enhancedTeamService = {
   async deleteTeam(teamId: number): Promise<{ success: boolean; message: string }> {
     logTeamOperation('deleteTeam - START', { teamId });
     try {
-      // Check if team exists first
-      const existingTeam = await this.getTeamById(teamId);
+      // Check if team exists first with the same pattern
+      logTeamOperation('deleteTeam - Checking if team exists', { teamId });
+      const { data: existingTeam, error: checkError } = await supabase
+        .from('teams')
+        .select('team_id')
+        .eq('team_id', teamId)
+        .maybeSingle();
+
+      logTeamOperation('deleteTeam - Existence check result', { existingTeam, checkError, teamId });
+
+      if (checkError) {
+        logTeamOperation('deleteTeam - Existence check ERROR', { checkError, teamId });
+        throw checkError;
+      }
+
       if (!existingTeam) {
         logTeamOperation('deleteTeam - TEAM NOT FOUND', { teamId });
         return { 
           success: false, 
-          message: `Team met ID ${teamId} niet gevonden` 
+          message: `Team met ID ${teamId} niet gevonden in database` 
         };
       }
 
@@ -175,10 +203,10 @@ export const enhancedTeamService = {
         .eq('team_id', teamId)
         .select();
 
-      logTeamOperation('deleteTeam - QUERY RESULT', { data, error, teamId });
+      logTeamOperation('deleteTeam - DELETE QUERY RESULT', { data, error, teamId });
 
       if (error) {
-        logTeamOperation('deleteTeam - ERROR', { error, teamId });
+        logTeamOperation('deleteTeam - DELETE ERROR', { error, teamId });
         throw error;
       }
 

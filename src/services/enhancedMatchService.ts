@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { MatchFormData } from "@/components/team/match-form/types";
 import { PlayerSelection } from "@/components/team/match-form/components/types";
@@ -14,6 +13,31 @@ export const enhancedMatchService = {
     logMatchOperation('updateMatch - START', { matchId, updateData });
     
     try {
+      // FIRST: Check if match exists
+      logMatchOperation('updateMatch - Checking if match exists', { matchId });
+      const { data: existingMatch, error: checkError } = await supabase
+        .from('matches')
+        .select('match_id')
+        .eq('match_id', matchId)
+        .maybeSingle();
+
+      logMatchOperation('updateMatch - Existence check result', { existingMatch, checkError, matchId });
+
+      if (checkError) {
+        logMatchOperation('updateMatch - Existence check ERROR', { checkError, matchId });
+        throw checkError;
+      }
+
+      if (!existingMatch) {
+        logMatchOperation('updateMatch - MATCH NOT FOUND', { matchId });
+        return { 
+          success: false, 
+          message: `Wedstrijd met ID ${matchId} niet gevonden in database` 
+        };
+      }
+
+      logMatchOperation('updateMatch - Match exists, proceeding with update', { matchId });
+
       // Prepare the update object with proper validation
       const updateObject: any = {};
       
@@ -79,27 +103,32 @@ export const enhancedMatchService = {
       
       logMatchOperation('updateMatch - Final update object', { updateObject });
 
+      // PERFORM THE UPDATE with consistent query pattern
       const { data, error } = await supabase
         .from('matches')
         .update(updateObject)
         .eq('match_id', matchId)
-        .select();
+        .select()
+        .maybeSingle();
 
-      logMatchOperation('updateMatch - QUERY RESULT', { data, error, matchId });
+      logMatchOperation('updateMatch - UPDATE QUERY RESULT', { data, error, matchId });
 
       if (error) {
-        logMatchOperation('updateMatch - ERROR', { error, matchId });
+        logMatchOperation('updateMatch - UPDATE ERROR', { error, matchId });
         throw error;
       }
 
-      if (!data || data.length === 0) {
-        logMatchOperation('updateMatch - NO DATA RETURNED', { matchId });
-        throw new Error(`Geen wedstrijd gevonden met ID ${matchId}`);
+      if (!data) {
+        logMatchOperation('updateMatch - NO DATA RETURNED AFTER UPDATE', { matchId });
+        return { 
+          success: false, 
+          message: `Update uitgevoerd maar geen data geretourneerd voor wedstrijd ${matchId}` 
+        };
       }
 
       logMatchOperation('updateMatch - SUCCESS', { 
         matchId, 
-        updatedMatch: data[0],
+        updatedMatch: data,
         fieldsUpdated: Object.keys(updateObject)
       });
       
@@ -199,6 +228,26 @@ export const enhancedMatchService = {
     logMatchOperation('lockMatch - START', { matchId });
     
     try {
+      // Pre-check if match exists
+      const { data: existingMatch, error: checkError } = await supabase
+        .from('matches')
+        .select('match_id')
+        .eq('match_id', matchId)
+        .maybeSingle();
+
+      if (checkError) {
+        logMatchOperation('lockMatch - Existence check ERROR', { checkError, matchId });
+        throw checkError;
+      }
+
+      if (!existingMatch) {
+        logMatchOperation('lockMatch - MATCH NOT FOUND', { matchId });
+        return { 
+          success: false, 
+          message: `Wedstrijd met ID ${matchId} niet gevonden` 
+        };
+      }
+
       const { data, error } = await supabase
         .from('matches')
         .update({ 
@@ -206,13 +255,22 @@ export const enhancedMatchService = {
           updated_at: new Date().toISOString()
         })
         .eq('match_id', matchId)
-        .select();
+        .select()
+        .maybeSingle();
 
       logMatchOperation('lockMatch - QUERY RESULT', { data, error, matchId });
 
       if (error) {
         logMatchOperation('lockMatch - ERROR', { error, matchId });
         throw error;
+      }
+
+      if (!data) {
+        logMatchOperation('lockMatch - NO DATA RETURNED', { matchId });
+        return { 
+          success: false, 
+          message: `Lock uitgevoerd maar geen data geretourneerd voor wedstrijd ${matchId}` 
+        };
       }
 
       logMatchOperation('lockMatch - SUCCESS', { matchId, lockedMatch: data });
@@ -230,6 +288,26 @@ export const enhancedMatchService = {
     logMatchOperation('unlockMatch - START', { matchId });
     
     try {
+      // Pre-check if match exists
+      const { data: existingMatch, error: checkError } = await supabase
+        .from('matches')
+        .select('match_id')
+        .eq('match_id', matchId)
+        .maybeSingle();
+
+      if (checkError) {
+        logMatchOperation('unlockMatch - Existence check ERROR', { checkError, matchId });
+        throw checkError;
+      }
+
+      if (!existingMatch) {
+        logMatchOperation('unlockMatch - MATCH NOT FOUND', { matchId });
+        return { 
+          success: false, 
+          message: `Wedstrijd met ID ${matchId} niet gevonden` 
+        };
+      }
+
       const { data, error } = await supabase
         .from('matches')
         .update({ 
@@ -237,13 +315,22 @@ export const enhancedMatchService = {
           updated_at: new Date().toISOString()
         })
         .eq('match_id', matchId)
-        .select();
+        .select()
+        .maybeSingle();
 
       logMatchOperation('unlockMatch - QUERY RESULT', { data, error, matchId });
 
       if (error) {
         logMatchOperation('unlockMatch - ERROR', { error, matchId });
         throw error;
+      }
+
+      if (!data) {
+        logMatchOperation('unlockMatch - NO DATA RETURNED', { matchId });
+        return { 
+          success: false, 
+          message: `Unlock uitgevoerd maar geen data geretourneerd voor wedstrijd ${matchId}` 
+        };
       }
 
       logMatchOperation('unlockMatch - SUCCESS', { matchId, unlockedMatch: data });
