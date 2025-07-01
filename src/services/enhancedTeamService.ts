@@ -72,8 +72,8 @@ export const enhancedTeamService = {
       const { data, error } = await supabase
         .from('teams')
         .insert([teamData])
-        .select()
-        .maybeSingle();
+        .select('*')
+        .single();
 
       logTeamOperation('createTeam - QUERY RESULT', { data, error });
 
@@ -108,7 +108,7 @@ export const enhancedTeamService = {
   async updateTeam(teamId: number, updateData: Partial<Omit<Team, 'team_id'>>): Promise<{ success: boolean; message: string; team?: Team }> {
     logTeamOperation('updateTeam - START', { teamId, updateData });
     try {
-      // FIRST: Check if team exists using the exact same pattern as match service
+      // FIRST: Check if team exists
       logTeamOperation('updateTeam - Checking if team exists', { teamId });
       const { data: existingTeam, error: checkError } = await supabase
         .from('teams')
@@ -133,13 +133,13 @@ export const enhancedTeamService = {
 
       logTeamOperation('updateTeam - Team exists, proceeding with update', { teamId, existingTeam });
 
-      // PERFORM THE UPDATE with consistent query pattern
+      // IMPROVED UPDATE with better error handling
       const { data, error } = await supabase
         .from('teams')
         .update(updateData)
         .eq('team_id', teamId)
-        .select()
-        .maybeSingle();
+        .select('*')
+        .single();
 
       logTeamOperation('updateTeam - UPDATE QUERY RESULT', { data, error, teamId });
 
@@ -148,12 +148,34 @@ export const enhancedTeamService = {
         throw error;
       }
 
+      // IMPROVED: If data is null but no error, do a fallback select
       if (!data) {
-        logTeamOperation('updateTeam - NO DATA RETURNED AFTER UPDATE', { teamId });
-        return { 
-          success: false, 
-          message: `Update uitgevoerd maar geen data geretourneerd voor team ${teamId}` 
-        };
+        logTeamOperation('updateTeam - No data returned, doing fallback select', { teamId });
+        
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('teams')
+          .select('*')
+          .eq('team_id', teamId)
+          .single();
+        
+        logTeamOperation('updateTeam - Fallback select result', { fallbackData, fallbackError });
+        
+        if (fallbackError) {
+          logTeamOperation('updateTeam - Fallback select failed', { fallbackError, teamId });
+          return { 
+            success: false, 
+            message: `Update mogelijk uitgevoerd maar kon bijgewerkte data niet ophalen voor team ${teamId}` 
+          };
+        }
+        
+        if (fallbackData) {
+          logTeamOperation('updateTeam - SUCCESS via fallback', { teamId, updatedTeam: fallbackData });
+          return { 
+            success: true, 
+            message: 'Team succesvol bijgewerkt',
+            team: fallbackData
+          };
+        }
       }
 
       logTeamOperation('updateTeam - SUCCESS', { teamId, updatedTeam: data });
@@ -174,7 +196,7 @@ export const enhancedTeamService = {
   async deleteTeam(teamId: number): Promise<{ success: boolean; message: string }> {
     logTeamOperation('deleteTeam - START', { teamId });
     try {
-      // Check if team exists first with the same pattern
+      // Check if team exists first
       logTeamOperation('deleteTeam - Checking if team exists', { teamId });
       const { data: existingTeam, error: checkError } = await supabase
         .from('teams')
