@@ -7,12 +7,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Player, FormData, formSchema } from "./types";
 
+// Simplified database player interface
 interface DatabasePlayer {
   player_id: number;
   first_name: string;
   last_name: string;
 }
 
+// Simplified match data interface
 interface MatchData {
   match_id: number;
   is_submitted: boolean;
@@ -26,8 +28,8 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch team players with explicit return type
-  const fetchTeamPlayers = async (): Promise<Player[]> => {
+  // Fetch team players function
+  const fetchTeamPlayers = async () => {
     const { data, error } = await supabase
       .from('players')
       .select('player_id, first_name, last_name')
@@ -45,7 +47,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       throw error;
     }
     
-    const players: Player[] = (data || []).map((dbPlayer: DatabasePlayer) => ({
+    const players = (data || []).map((dbPlayer: DatabasePlayer) => ({
       playerId: dbPlayer.player_id,
       playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
       selected: false,
@@ -56,7 +58,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     return players;
   };
 
-  const fetchMatchData = async (): Promise<MatchData | null> => {
+  const fetchMatchData = async () => {
     const { data, error } = await supabase
       .from('matches')
       .select('match_id, is_submitted, home_players, away_players, home_team_id, away_team_id')
@@ -68,16 +70,16 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       throw error;
     }
     
-    return data as MatchData | null;
+    return data;
   };
 
-  // Simplified query definitions with explicit types
-  const teamPlayersQuery = useQuery<Player[], Error>({
+  // Use simple query definitions without complex generics
+  const teamPlayersQuery = useQuery({
     queryKey: ['teamPlayers', teamId],
     queryFn: fetchTeamPlayers
   });
   
-  const matchQuery = useQuery<MatchData | null, Error>({
+  const matchQuery = useQuery({
     queryKey: ['matchData', matchId, teamId],
     queryFn: fetchMatchData
   });
@@ -95,7 +97,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   // Initialize form with team players and any existing selections
   useEffect(() => {
     if (teamPlayers && !isLoading) {
-      let initialPlayers: Player[] = teamPlayers;
+      let initialPlayers = teamPlayers;
       
       // If there's an existing match, try to populate from the JSONB data
       if (existingMatch) {
