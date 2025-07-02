@@ -28,7 +28,7 @@ export const MatchFormActions: React.FC<MatchFormActionsProps> = ({
   // Determine button text based on role and admin status
   const getButtonText = () => {
     if (isAdmin) {
-      return isLocked ? "Admin: Opslaan & Bijwerken" : "Admin: Opslaan & Indienen";
+      return "Opslaan";
     }
     if (isReferee) {
       return "Bevestigen & Vergrendelen";

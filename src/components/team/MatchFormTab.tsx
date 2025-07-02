@@ -32,10 +32,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
   });
 
   useEffect(() => {
-    console.debug("[MatchFormTab] Loaded user:", user);
-    console.debug("[MatchFormTab] teamId:", teamId, "hasElevatedPermissions:", hasElevatedPermissions);
-    if (matches)
-      console.debug("[MatchFormTab] Matches received:", matches.length);
+
   }, [user, teamId, hasElevatedPermissions, matches]);
 
   const handleSelectMatch = (match: MatchFormData) => {

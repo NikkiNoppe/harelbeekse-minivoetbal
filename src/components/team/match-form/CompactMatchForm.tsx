@@ -25,13 +25,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   isReferee,
   teamId
 }) => {
-  console.log('[CompactMatchForm] RENDER START:', { 
-    matchId: match.matchId, 
-    isAdmin, 
-    isReferee, 
-    teamId,
-    isLocked: match.isLocked
-  });
+
 
   const {
     homeScore,
@@ -61,19 +55,17 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   const canEdit = !currentMatch.isLocked || isAdmin;
   const showRefereeFields = isReferee || isAdmin;
 
-  console.log('[CompactMatchForm] PERMISSIONS:', { 
-    canEdit, 
-    showRefereeFields, 
-    isLocked: currentMatch.isLocked 
-  });
-
-
-
   const handleCardChange = (playerId: number, cardType: string) => {
-    console.log('[CompactMatchForm] CARD CHANGE:', { playerId, cardType });
     setPlayerCards(prev => ({
       ...prev,
       [playerId]: cardType === "none" ? "" : cardType
+    }));
+  };
+
+  const handleMatchDataChange = (field: string, value: string) => {
+    setCurrentMatch(prev => ({
+      ...prev,
+      [field]: value
     }));
   };
 
@@ -83,12 +75,6 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     value: any,
     isHomeTeam: boolean
   ) => {
-    console.log('[CompactMatchForm] PLAYER SELECTION:', { 
-      index, 
-      field, 
-      value, 
-      isHomeTeam 
-    });
     
     const setSelections = isHomeTeam ? setHomeTeamSelections : setAwayTeamSelections;
     setSelections(prev => {
@@ -119,22 +105,16 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   };
 
   const handleSubmit = async () => {
-    console.log('[CompactMatchForm] SUBMIT START:', {
-      matchId: currentMatch.matchId,
-      homeScore,
-      awayScore,
-      selectedReferee,
-      isReferee,
-      canEdit
-    });
+    const parsedHomeScore = homeScore !== "" ? parseInt(homeScore) : undefined;
+    const parsedAwayScore = awayScore !== "" ? parseInt(awayScore) : undefined;
 
     setIsSubmitting(true);
     
     try {
       const updatedMatch: MatchFormData = {
         ...currentMatch,
-        homeScore: homeScore ? parseInt(homeScore) : undefined,
-        awayScore: awayScore ? parseInt(awayScore) : undefined,
+        homeScore: parsedHomeScore,
+        awayScore: parsedAwayScore,
         referee: selectedReferee,
         refereeNotes: refereeNotes,
         isCompleted: true,
@@ -142,36 +122,21 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         awayPlayers: getAwayTeamSelectionsWithCards()
       };
 
-      console.log('[CompactMatchForm] CALLING submitMatchForm:', {
-        matchId: updatedMatch.matchId,
-        hasHomeScore: updatedMatch.homeScore !== undefined,
-        hasAwayScore: updatedMatch.awayScore !== undefined,
-        homePlayersCount: updatedMatch.homePlayers?.length || 0,
-        awayPlayersCount: updatedMatch.awayPlayers?.length || 0
-      });
-
-      const result = await submitMatchForm(updatedMatch);
-      
-      console.log('[CompactMatchForm] submitMatchForm RESULT:', result);
+      const result = await submitMatchForm(updatedMatch, isAdmin);
 
       if (result.success) {
         if (isReferee && !currentMatch.isLocked) {
-          console.log('[CompactMatchForm] LOCKING MATCH for referee:', currentMatch.matchId);
-          const lockResult = await lockMatch(currentMatch.matchId);
-          console.log('[CompactMatchForm] LOCK RESULT:', lockResult);
+          await lockMatch(currentMatch.matchId);
         }
         
-        console.log('[CompactMatchForm] CALLING onComplete');
         onComplete();
       }
     } catch (error) {
-      console.error('[CompactMatchForm] SUBMIT ERROR:', error);
+      console.error('Error submitting match form:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  console.log('[CompactMatchForm] RENDER END');
 
   return (
     <div className="space-y-6">
@@ -183,6 +148,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         onHomeScoreChange={setHomeScore}
         onAwayScoreChange={setAwayScore}
         onRefereeChange={setSelectedReferee}
+        onMatchDataChange={handleMatchDataChange}
         canEdit={canEdit}
         canEditMatchData={showRefereeFields}
       />

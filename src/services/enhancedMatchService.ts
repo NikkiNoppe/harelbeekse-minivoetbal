@@ -1,6 +1,4 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentISO } from "@/lib/dateUtils";
 
 interface MatchUpdateData {
   homeScore?: number;
@@ -24,16 +22,9 @@ interface ServiceResponse {
 }
 
 export const enhancedMatchService = {
-  async updateMatch(matchId: number, updateData: MatchUpdateData): Promise<ServiceResponse> {
-    const timestamp = getCurrentISO();
-    console.log(`[${timestamp}] enhancedMatchService.updateMatch START:`, { 
-      matchId, 
-      updateKeys: Object.keys(updateData),
-      hasMatchId: !!matchId
-    });
+  async updateMatch(matchId: number, updateData: MatchUpdateData, isAdmin: boolean = false): Promise<ServiceResponse> {
 
     if (!matchId || isNaN(matchId)) {
-      console.error(`[${timestamp}] enhancedMatchService.updateMatch ERROR: Invalid matchId:`, matchId);
       return {
         success: false,
         message: "Ongeldige wedstrijd ID"
@@ -41,44 +32,54 @@ export const enhancedMatchService = {
     }
 
     try {
-      // Build update object with only defined values
-      const updateObject: any = {
-        updated_at: new Date().toISOString()
-      };
+      // Build update object with all provided values
+      const updateObject: any = {};
 
-      // Add fields only if they are defined
       if (updateData.homeScore !== undefined) updateObject.home_score = updateData.homeScore;
       if (updateData.awayScore !== undefined) updateObject.away_score = updateData.awayScore;
       if (updateData.referee !== undefined) updateObject.referee = updateData.referee;
       if (updateData.refereeNotes !== undefined) updateObject.referee_notes = updateData.refereeNotes;
       if (updateData.matchday !== undefined) updateObject.speeldag = updateData.matchday;
       if (updateData.location !== undefined) updateObject.location = updateData.location;
+      if (updateData.date !== undefined && updateData.time !== undefined) {
+        // Combine date and time into match_date timestamp
+        updateObject.match_date = `${updateData.date}T${updateData.time}:00`;
+      }
       if (updateData.homePlayers !== undefined) updateObject.home_players = updateData.homePlayers;
       if (updateData.awayPlayers !== undefined) updateObject.away_players = updateData.awayPlayers;
       if (updateData.isCompleted !== undefined) updateObject.is_submitted = updateData.isCompleted;
       if (updateData.isLocked !== undefined) updateObject.is_locked = updateData.isLocked;
 
-      console.log(`[${timestamp}] enhancedMatchService.updateMatch UPDATE OBJECT:`, updateObject);
+      // Add updated_at if we have something to update
+      if (Object.keys(updateObject).length > 0) {
+        updateObject.updated_at = new Date().toISOString();
+      }
 
+      // If nothing to update, return success
+      if (Object.keys(updateObject).length <= 1) {
+        return {
+          success: true,
+          message: "Geen wijzigingen om bij te werken"
+        };
+      }
+      
+      // Debug: Log what we're sending
+      console.log('SENDING UPDATE:', { matchId, updateObject });
+      
+      // Direct database update
       const { data, error } = await supabase
         .from('matches')
         .update(updateObject)
         .eq('match_id', matchId)
         .select();
-
+        
       if (error) {
-        console.error(`[${timestamp}] enhancedMatchService.updateMatch SUPABASE ERROR:`, error);
-        return {
-          success: false,
-          message: `Database fout bij bijwerken wedstrijd: ${error.message}`
-        };
+        console.log('DATABASE ERROR:', error);
+        throw error;
       }
-
-      console.log(`[${timestamp}] enhancedMatchService.updateMatch SUCCESS:`, { 
-        updatedRows: data?.length || 0,
-        matchId 
-      });
-
+      
+      console.log('UPDATE SUCCESS:', data);
+      
       return {
         success: true,
         message: "Wedstrijd succesvol bijgewerkt",
@@ -86,7 +87,6 @@ export const enhancedMatchService = {
       };
 
     } catch (error) {
-      console.error(`[${timestamp}] enhancedMatchService.updateMatch CATCH ERROR:`, error);
       return {
         success: false,
         message: `Onverwachte fout bij bijwerken wedstrijd: ${error instanceof Error ? error.message : 'Onbekende fout'}`
@@ -95,8 +95,6 @@ export const enhancedMatchService = {
   },
 
   async lockMatch(matchId: number): Promise<ServiceResponse> {
-    const timestamp = getCurrentISO();
-    console.log(`[${timestamp}] enhancedMatchService.lockMatch START:`, { matchId });
 
     if (!matchId || isNaN(matchId)) {
       return {
@@ -116,14 +114,11 @@ export const enhancedMatchService = {
         .select();
 
       if (error) {
-        console.error(`[${timestamp}] enhancedMatchService.lockMatch ERROR:`, error);
         return {
           success: false,
           message: `Fout bij vergrendelen wedstrijd: ${error.message}`
         };
       }
-
-      console.log(`[${timestamp}] enhancedMatchService.lockMatch SUCCESS:`, { matchId });
 
       return {
         success: true,
@@ -132,7 +127,6 @@ export const enhancedMatchService = {
       };
 
     } catch (error) {
-      console.error(`[${timestamp}] enhancedMatchService.lockMatch CATCH ERROR:`, error);
       return {
         success: false,
         message: `Onverwachte fout bij vergrendelen: ${error instanceof Error ? error.message : 'Onbekende fout'}`
@@ -141,8 +135,6 @@ export const enhancedMatchService = {
   },
 
   async unlockMatch(matchId: number): Promise<ServiceResponse> {
-    const timestamp = getCurrentISO();
-    console.log(`[${timestamp}] enhancedMatchService.unlockMatch START:`, { matchId });
 
     if (!matchId || isNaN(matchId)) {
       return {
@@ -162,14 +154,11 @@ export const enhancedMatchService = {
         .select();
 
       if (error) {
-        console.error(`[${timestamp}] enhancedMatchService.unlockMatch ERROR:`, error);
         return {
           success: false,
           message: `Fout bij ontgrendelen wedstrijd: ${error.message}`
         };
       }
-
-      console.log(`[${timestamp}] enhancedMatchService.unlockMatch SUCCESS:`, { matchId });
 
       return {
         success: true,
@@ -178,7 +167,6 @@ export const enhancedMatchService = {
       };
 
     } catch (error) {
-      console.error(`[${timestamp}] enhancedMatchService.unlockMatch CATCH ERROR:`, error);
       return {
         success: false,
         message: `Onverwachte fout bij ontgrendelen: ${error instanceof Error ? error.message : 'Onbekende fout'}`
@@ -187,8 +175,6 @@ export const enhancedMatchService = {
   },
 
   async getMatch(matchId: number): Promise<ServiceResponse> {
-    const timestamp = getCurrentISO();
-    console.log(`[${timestamp}] enhancedMatchService.getMatch START:`, { matchId });
 
     if (!matchId || isNaN(matchId)) {
       return {
@@ -209,14 +195,11 @@ export const enhancedMatchService = {
         .single();
 
       if (error) {
-        console.error(`[${timestamp}] enhancedMatchService.getMatch ERROR:`, error);
         return {
           success: false,
           message: `Fout bij ophalen wedstrijd: ${error.message}`
         };
       }
-
-      console.log(`[${timestamp}] enhancedMatchService.getMatch SUCCESS:`, { matchId });
 
       return {
         success: true,
@@ -225,7 +208,6 @@ export const enhancedMatchService = {
       };
 
     } catch (error) {
-      console.error(`[${timestamp}] enhancedMatchService.getMatch CATCH ERROR:`, error);
       return {
         success: false,
         message: `Onverwachte fout bij ophalen wedstrijd: ${error instanceof Error ? error.message : 'Onbekende fout'}`

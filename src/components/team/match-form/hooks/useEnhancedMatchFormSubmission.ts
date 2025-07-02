@@ -1,32 +1,33 @@
-
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { enhancedMatchService } from "@/services/enhancedMatchService";
 import { MatchFormData } from "../types";
 import { useToast } from "@/hooks/use-toast";
-import { getCurrentISO } from "@/lib/dateUtils";
 
 export const useEnhancedMatchFormSubmission = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const submitMatchForm = async (matchData: MatchFormData) => {
-    const timestamp = getCurrentISO();
-    console.log(`[${timestamp}] useEnhancedMatchFormSubmission - submitMatchForm START:`, { 
-      matchId: matchData.matchId,
-      hasHomeScore: matchData.homeScore !== undefined,
-      hasAwayScore: matchData.awayScore !== undefined,
-      hasHomePlayers: !!matchData.homePlayers?.length,
-      hasAwayPlayers: !!matchData.awayPlayers?.length,
+  const submitMatchForm = async (matchData: MatchFormData, isAdmin: boolean = false) => {
+    const updateData = {
+      homeScore: matchData.homeScore,
+      awayScore: matchData.awayScore,
+      referee: matchData.referee,
+      refereeNotes: matchData.refereeNotes,
+      matchday: matchData.matchday,
+      location: matchData.location,
+      date: matchData.date,
+      time: matchData.time,
+      homePlayers: matchData.homePlayers,
+      awayPlayers: matchData.awayPlayers,
       isCompleted: matchData.isCompleted,
       isLocked: matchData.isLocked
-    });
+    };
 
     // Validate required data
     if (!matchData.matchId || isNaN(matchData.matchId)) {
       const errorMsg = "Ongeldige wedstrijd ID";
-      console.error(`[${timestamp}] useEnhancedMatchFormSubmission - VALIDATION ERROR:`, errorMsg);
       toast({
         title: "Validatie Fout",
         description: errorMsg,
@@ -38,22 +39,7 @@ export const useEnhancedMatchFormSubmission = () => {
     setIsSubmitting(true);
     
     try {
-      const result = await enhancedMatchService.updateMatch(matchData.matchId, {
-        homeScore: matchData.homeScore,
-        awayScore: matchData.awayScore,
-        referee: matchData.referee,
-        refereeNotes: matchData.refereeNotes,
-        matchday: matchData.matchday,
-        location: matchData.location,
-        date: matchData.date,
-        time: matchData.time,
-        homePlayers: matchData.homePlayers,
-        awayPlayers: matchData.awayPlayers,
-        isCompleted: matchData.isCompleted,
-        isLocked: matchData.isLocked
-      });
-
-      console.log(`[${timestamp}] useEnhancedMatchFormSubmission - submitMatchForm RESULT:`, result);
+      const result = await enhancedMatchService.updateMatch(matchData.matchId, updateData, isAdmin);
 
       if (result.success) {
         // Refresh queries after successful update
@@ -78,8 +64,6 @@ export const useEnhancedMatchFormSubmission = () => {
         return { success: false, error: result.message };
       }
     } catch (error) {
-      console.error(`[${timestamp}] useEnhancedMatchFormSubmission - submitMatchForm ERROR:`, error);
-      
       const errorMessage = error instanceof Error ? error.message : 'Onbekende fout';
       toast({
         title: "Fout",
@@ -93,12 +77,8 @@ export const useEnhancedMatchFormSubmission = () => {
   };
 
   const lockMatch = async (matchId: number) => {
-    const timestamp = getCurrentISO();
-    console.log(`[${timestamp}] useEnhancedMatchFormSubmission - lockMatch START:`, { matchId });
-
     if (!matchId || isNaN(matchId)) {
       const errorMsg = "Ongeldige wedstrijd ID voor vergrendeling";
-      console.error(`[${timestamp}] useEnhancedMatchFormSubmission - lockMatch VALIDATION ERROR:`, errorMsg);
       toast({
         title: "Validatie Fout",
         description: errorMsg,
@@ -109,8 +89,6 @@ export const useEnhancedMatchFormSubmission = () => {
 
     try {
       const result = await enhancedMatchService.lockMatch(matchId);
-      
-      console.log(`[${timestamp}] useEnhancedMatchFormSubmission - lockMatch RESULT:`, result);
 
       if (result.success) {
         // Refresh queries after successful lock
@@ -134,8 +112,6 @@ export const useEnhancedMatchFormSubmission = () => {
         return { success: false, error: result.message };
       }
     } catch (error) {
-      console.error(`[${timestamp}] useEnhancedMatchFormSubmission - lockMatch ERROR:`, error);
-      
       const errorMessage = error instanceof Error ? error.message : 'Onbekende fout';
       toast({
         title: "Fout",
@@ -147,12 +123,8 @@ export const useEnhancedMatchFormSubmission = () => {
   };
 
   const unlockMatch = async (matchId: number) => {
-    const timestamp = getCurrentISO();
-    console.log(`[${timestamp}] useEnhancedMatchFormSubmission - unlockMatch START:`, { matchId });
-
     if (!matchId || isNaN(matchId)) {
       const errorMsg = "Ongeldige wedstrijd ID voor ontgrendeling";
-      console.error(`[${timestamp}] useEnhancedMatchFormSubmission - unlockMatch VALIDATION ERROR:`, errorMsg);
       toast({
         title: "Validatie Fout",
         description: errorMsg,
@@ -163,8 +135,6 @@ export const useEnhancedMatchFormSubmission = () => {
 
     try {
       const result = await enhancedMatchService.unlockMatch(matchId);
-      
-      console.log(`[${timestamp}] useEnhancedMatchFormSubmission - unlockMatch RESULT:`, result);
 
       if (result.success) {
         // Refresh queries after successful unlock
@@ -188,8 +158,6 @@ export const useEnhancedMatchFormSubmission = () => {
         return { success: false, error: result.message };
       }
     } catch (error) {
-      console.error(`[${timestamp}] useEnhancedMatchFormSubmission - unlockMatch ERROR:`, error);
-      
       const errorMessage = error instanceof Error ? error.message : 'Onbekende fout';
       toast({
         title: "Fout",

@@ -1,13 +1,8 @@
-
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
 import { MatchFormData } from "../types";
-import { enhancedMatchService } from "@/services/enhancedMatchService";
-import { useToast } from "@/hooks/use-toast";
 
 interface MatchDataSectionProps {
   match: MatchFormData;
@@ -17,6 +12,7 @@ interface MatchDataSectionProps {
   onHomeScoreChange: (value: string) => void;
   onAwayScoreChange: (value: string) => void;
   onRefereeChange: (value: string) => void;
+  onMatchDataChange?: (field: string, value: string) => void;
   canEdit: boolean;
   canEditMatchData: boolean;
 }
@@ -36,52 +32,10 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
   onHomeScoreChange,
   onAwayScoreChange,
   onRefereeChange,
+  onMatchDataChange,
   canEdit,
   canEditMatchData
 }) => {
-  const { toast } = useToast();
-  const [isUpdating, setIsUpdating] = React.useState(false);
-  const [formData, setFormData] = React.useState({
-    date: match.date,
-    time: match.time,
-    location: match.location,
-    matchday: match.matchday
-  });
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSave = async () => {
-    if (!canEdit) return;
-
-    setIsUpdating(true);
-    try {
-      const result = await enhancedMatchService.updateMatch(match.matchId, {
-        date: formData.date,
-        time: formData.time,
-        location: formData.location,
-        matchday: formData.matchday
-      });
-
-      if (result.success) {
-        toast({
-          title: "Wedstrijdgegevens bijgewerkt",
-          description: "De wedstrijdgegevens zijn succesvol opgeslagen.",
-        });
-      } else {
-        throw new Error(result.message);
-      }
-    } catch (error) {
-      toast({
-        title: "Fout bij opslaan",
-        description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het opslaan van de wedstrijdgegevens.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
 
   return (
     <div className="space-y-4">
@@ -98,9 +52,9 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
             <Input
               id="match-date"
               type="date"
-              value={formData.date}
-              onChange={(e) => handleInputChange("date", e.target.value)}
-              disabled={!canEdit}
+              value={match.date}
+              onChange={(e) => onMatchDataChange?.("date", e.target.value)}
+              disabled={!canEditMatchData}
               className="input-login-style"
             />
           </div>
@@ -110,9 +64,9 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
             <Input
               id="match-time"
               type="time"
-              value={formData.time}
-              onChange={(e) => handleInputChange("time", e.target.value)}
-              disabled={!canEdit}
+              value={match.time}
+              onChange={(e) => onMatchDataChange?.("time", e.target.value)}
+              disabled={!canEditMatchData}
               className="input-login-style"
             />
           </div>
@@ -124,9 +78,9 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
             <Label htmlFor="match-location">Locatie</Label>
             <Input
               id="match-location"
-              value={formData.location}
-              onChange={(e) => handleInputChange("location", e.target.value)}
-              disabled={!canEdit}
+              value={match.location}
+              onChange={(e) => onMatchDataChange?.("location", e.target.value)}
+              disabled={!canEditMatchData}
               placeholder="Wedstrijdlocatie"
               className="input-login-style"
             />
@@ -136,9 +90,9 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
             <Label htmlFor="match-matchday">Speeldag</Label>
             <Input
               id="match-matchday"
-              value={formData.matchday}
-              onChange={(e) => handleInputChange("matchday", e.target.value)}
-              disabled={!canEdit}
+              value={match.matchday}
+              onChange={(e) => onMatchDataChange?.("matchday", e.target.value)}
+              disabled={!canEditMatchData}
               placeholder="bijv. 11"
               className="input-login-style text-center"
             />
@@ -179,7 +133,9 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
             type="number"
             min="0"
             value={homeScore}
-            onChange={(e) => onHomeScoreChange(e.target.value)}
+            onChange={(e) => {
+              onHomeScoreChange(e.target.value);
+            }}
             disabled={!canEdit || !canEditMatchData}
             className="text-center text-lg font-bold input-login-style"
           />
@@ -196,24 +152,16 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
             type="number"
             min="0"
             value={awayScore}
-            onChange={(e) => onAwayScoreChange(e.target.value)}
+            onChange={(e) => {
+              onAwayScoreChange(e.target.value);
+            }}
             disabled={!canEdit || !canEditMatchData}
             className="text-center text-lg font-bold input-login-style"
           />
         </div>
       </div>
 
-      {/* Save Button */}
-      {canEdit && (
-        <Button
-          onClick={handleSave}
-          disabled={isUpdating}
-          className="btn-login-primary"
-        >
-          <Save className="h-4 w-4 mr-2" />
-          {isUpdating ? "Opslaan..." : "Wedstrijdgegevens opslaan"}
-        </Button>
-      )}
+
     </div>
   );
 };
