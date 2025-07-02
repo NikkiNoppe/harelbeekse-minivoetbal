@@ -105,8 +105,8 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   };
 
   const handleSubmit = async () => {
-    const parsedHomeScore = homeScore !== "" ? parseInt(homeScore) : undefined;
-    const parsedAwayScore = awayScore !== "" ? parseInt(awayScore) : undefined;
+    const parsedHomeScore = homeScore !== "" ? parseInt(homeScore) : null;
+    const parsedAwayScore = awayScore !== "" ? parseInt(awayScore) : null;
 
     setIsSubmitting(true);
     

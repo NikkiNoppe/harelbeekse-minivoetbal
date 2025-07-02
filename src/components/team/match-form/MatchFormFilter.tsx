@@ -1,7 +1,8 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
-import { Search, Calendar, Trophy } from "lucide-react";
+import { Calendar, Trophy } from "lucide-react";
 import { getCurrentDate } from "@/lib/dateUtils";
+import SearchInput from "@/components/ui/search-input";
+import FilterInput from "@/components/ui/filter-input";
 
 interface MatchFormFilterProps {
   searchTerm: string;
@@ -24,39 +25,20 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
 
   return (
     <div className="mb-4 w-full">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-3">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Zoek op wedstrijdnummer of team..."
-            className="pl-8 bg-gray-50 focus:bg-white"
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-3">
+        <SearchInput
+          placeholder="Zoek op speeldag of team..."
+          value={searchTerm}
+          onChange={onSearchChange}
+        />
 
-        <div className="relative">
-          <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="date"
-            placeholder="Filter op datum"
-            className="pl-8 bg-gray-50 focus:bg-white"
-            value={dateFilter || today}
-            onChange={(e) => onDateChange(e.target.value)}
-          />
-        </div>
-
-        <div className="relative">
-          <Trophy className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Filter op speeldag..."
-            className="pl-8 bg-gray-50 focus:bg-white"
-            value={matchdayFilter}
-            onChange={(e) => onMatchdayChange(e.target.value)}
-          />
-        </div>
+        <FilterInput
+          type="date"
+          placeholder="Filter op datum"
+          value={dateFilter || today}
+          onChange={onDateChange}
+          icon={Calendar}
+        />
       </div>
     </div>
   );

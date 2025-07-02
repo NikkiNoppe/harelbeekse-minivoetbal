@@ -5,7 +5,8 @@ import {
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle 
+  CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useUserManagement } from "../user-management/useUserManagement";
@@ -13,7 +14,7 @@ import UserDialog from "@/components/user/UserDialog";
 import UserList from "../user-management/UserList";
 import ConfirmDeleteDialog from "../user-management/ConfirmDeleteDialog";
 import UserSearchFilter from "../user-management/UserSearchFilter";
-import { Plus } from "lucide-react";
+import { Plus, Edit, Save, Users } from "lucide-react";
 
 const UserManagementTab: React.FC = () => {
   const {
@@ -42,6 +43,7 @@ const UserManagementTab: React.FC = () => {
   } = useUserManagement();
   
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   // Handle opening add dialog
   const handleOpenAddDialog = () => {
@@ -77,25 +79,30 @@ const UserManagementTab: React.FC = () => {
   };
   
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div>
-            <CardTitle>Gebruikers Beheren</CardTitle>
-            <CardDescription>Voeg nieuwe gebruikers toe en beheer hun toegang</CardDescription>
-          </div>
-          <Button 
-            onClick={handleOpenAddDialog} 
-            disabled={addingUser}
-            className="flex items-center gap-2"
-          >
-            <Plus size={16} />
-            Nieuwe gebruiker
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <div className="border-t pt-4">
+    <div className="space-y-8 animate-slide-up">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Gebruikers Beheer
+        </h2>
+      </div>
+
+      <section>
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-lg">
+                  Beheer alle gebruikers in het systeem
+                </CardTitle>
+                <CardDescription>
+                  Voeg nieuwe gebruikers toe en beheer hun toegang tot verschillende functies.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="p-4 border-b">
               <UserSearchFilter 
                 searchTerm={searchTerm}
                 onSearchTermChange={handleSearchChange}
@@ -105,19 +112,49 @@ const UserManagementTab: React.FC = () => {
                 onTeamFilterChange={handleTeamFilterChange}
                 teams={teams}
               />
-              
-              <UserList 
-                users={users}
-                loading={loading}
-                isUpdating={updatingUser}
-                isDeleting={deletingUser}
-                onEditUser={handleOpenEditDialog}
-                onDeleteUser={handleOpenDeleteConfirmation}
-              />
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            <UserList 
+              users={users}
+              loading={loading}
+              isUpdating={updatingUser}
+              isDeleting={deletingUser}
+              onEditUser={editMode ? handleOpenEditDialog : undefined}
+              onDeleteUser={editMode ? handleOpenDeleteConfirmation : undefined}
+              editMode={editMode}
+            />
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setEditMode(!editMode)}
+              className="flex items-center gap-2"
+            >
+              {editMode ? (
+                <>
+                  <Save size={16} />
+                  Klaar met bewerken
+                </>
+              ) : (
+                <>
+                  <Edit size={16} />
+                  Lijst bewerken
+                </>
+              )}
+            </Button>
+            
+            {editMode && (
+              <Button
+                onClick={handleOpenAddDialog}
+                disabled={addingUser}
+                className="flex items-center gap-2"
+              >
+                <Plus size={16} />
+                Gebruiker toevoegen
+              </Button>
+            )}
+          </CardFooter>
+        </Card>
+      </section>
       
       {/* Confirm Delete Dialog */}
       <ConfirmDeleteDialog 

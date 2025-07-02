@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -84,6 +85,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full max-w-md mx-4 sm:mx-auto bg-purple-100 text-foreground border-border rounded-lg">
+        <DialogTitle className="sr-only">Wachtwoord vergeten</DialogTitle>
         <div className="rounded-b-lg">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4">

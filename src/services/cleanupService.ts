@@ -2,9 +2,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Clean up test and mock data from the database
+ * Clean up test data from the database and reset matches
  */
-export const cleanupMockData = async () => {
+export const cleanupTestData = async () => {
   try {
     // Clear match data that are test data
     // Reset submitted matches to unsubmitted state
@@ -38,9 +38,9 @@ export const cleanupMockData = async () => {
       console.error('Error updating competition standings:', standingsError);
     }
     
-    return { success: true, message: "Mock data successfully cleaned" };
+    return { success: true, message: "Test data successfully cleaned" };
   } catch (error) {
-    console.error("Error cleaning mock data:", error);
-    return { success: false, message: "Error cleaning mock data" };
+    console.error("Error cleaning test data:", error);
+    return { success: false, message: "Error cleaning test data" };
   }
 };

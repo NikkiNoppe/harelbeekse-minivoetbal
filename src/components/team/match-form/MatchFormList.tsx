@@ -33,14 +33,12 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     const matchesSearch = searchTerm === "" || 
       match.uniqueNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       match.homeTeamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      match.awayTeamName.toLowerCase().includes(searchTerm.toLowerCase());
+      match.awayTeamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (match.matchday && match.matchday.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesDate = dateFilter === "" || match.date === dateFilter;
     
-    const matchesMatchday = matchdayFilter === "" || 
-      (match.matchday && match.matchday.toLowerCase().includes(matchdayFilter.toLowerCase()));
-    
-    return matchesSearch && matchesDate && matchesMatchday;
+    return matchesSearch && matchesDate;
   });
 
   // Separate locked and unlocked matches
@@ -75,13 +73,52 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   const sortedLockedMatchdays = sortMatchdays(Object.keys(lockedGrouped));
 
   const getMatchStatus = (match: MatchFormData) => {
-    if (match.isLocked) {
-      return { label: "Vergrendeld", color: "bg-gray-400", icon: Lock };
+    // 1. Gespeeld - als score is ingevuld (niet null, niet undefined)
+    const hasValidScore = (score: number | null | undefined): boolean => {
+      return score !== null && score !== undefined;
+    };
+    
+    if (hasValidScore(match.homeScore) && hasValidScore(match.awayScore)) {
+      return { label: "Gespeeld", color: "bg-green-500", icon: CheckCircle };
     }
-    if (match.isCompleted) {
-      return { label: "Afgerond", color: "bg-green-500", icon: CheckCircle };
+    
+    // 2. Gesloten - als expliciet vergrendeld OF 5 min voor aanvang
+    const now = new Date();
+    const matchDateTime = new Date(`${match.date}T${match.time}`);
+    const fiveMinutesBeforeMatch = new Date(matchDateTime.getTime() - 5 * 60 * 1000);
+    
+    if (match.isLocked || now >= fiveMinutesBeforeMatch) {
+      return { label: "Gesloten", color: "bg-purple-900", icon: Lock };
     }
-    return { label: "Te spelen", color: "bg-orange-400", icon: Clock };
+    
+    // Helper functies voor team status
+    const hasTeamData = (players: PlayerSelection[]) => {
+      const validPlayers = players?.filter(p => p.playerId !== null && p.playerId !== undefined) || [];
+      const hasCaptain = players?.some(p => p.isCaptain) || false;
+      const hasJerseyNumbers = validPlayers.every(p => p.jerseyNumber && p.jerseyNumber.trim() !== '');
+      return validPlayers.length > 0 && hasCaptain && hasJerseyNumbers;
+    };
+    
+    const homeTeamComplete = hasTeamData(match.homePlayers || []);
+    const awayTeamComplete = hasTeamData(match.awayPlayers || []);
+    
+    // 3. Teams ✅✅ - beide teams compleet
+    if (homeTeamComplete && awayTeamComplete) {
+      return { label: "Teams ✅✅", color: "bg-purple-600", icon: CheckCircle };
+    }
+    
+    // 4. Home ✅ - alleen home team compleet
+    if (homeTeamComplete && !awayTeamComplete) {
+      return { label: "Home ✅", color: "bg-purple-400", icon: CheckCircle };
+    }
+    
+    // 5. Away ✅ - alleen away team compleet  
+    if (!homeTeamComplete && awayTeamComplete) {
+      return { label: "Away ✅", color: "bg-purple-400", icon: CheckCircle };
+    }
+    
+    // 6. Open - nog niets ingevuld
+    return { label: "Open", color: "bg-gray-400", icon: Clock };
   };
 
   const canUserEdit = (match: MatchFormData): boolean => {
@@ -112,51 +149,56 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     const canEdit = canUserEdit(match);
     
     return (
-      <div
+      <button
         key={match.matchId}
-        className="flex items-center justify-between p-3 border border-gray-100 rounded-lg bg-white/60 mb-1 hover:bg-gray-50 transition text-sm"
+        onClick={() => onSelectMatch(match)}
+        className="bg-white border border-purple-dark rounded-lg p-3 hover:shadow-md hover:border-purple-dark hover:bg-purple-dark transition-all duration-200 text-left w-full group"
       >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant="outline" className="text-xs font-semibold border-primary text-primary bg-transparent px-1.5 py-0">
+        <div className="space-y-3">
+          {/* Header met badges */}
+          <div className="flex items-center justify-between">
+            <Badge className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 group-hover:bg-white group-hover:text-purple-600">
               {match.uniqueNumber}
             </Badge>
-            <Badge variant="outline" className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm`}>
+            <Badge className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm group-hover:bg-white group-hover:text-purple-600`}>
               <StatusIcon className="h-3 w-3 mr-1" />
               {status.label}
             </Badge>
           </div>
           
-          <div className="font-medium text-xs mb-0.5 truncate text-purple-dark">
-            {match.homeTeamName} vs {match.awayTeamName}
-            {(match.homeScore !== undefined && match.awayScore !== undefined) && (
-              <span className="ml-2 font-bold text-primary">
-                {match.homeScore} - {match.awayScore}
-              </span>
-            )}
+          {/* Teams op één lijn */}
+          <div className="font-medium text-sm text-purple-dark group-hover:text-white transition-colors">
+            <div className="flex items-center justify-center gap-2">
+              <span className="truncate flex-1 text-right">{match.homeTeamName}</span>
+              <span className="text-xs text-gray-500 group-hover:text-white/70 px-1">vs</span>
+              <span className="truncate flex-1 text-left">{match.awayTeamName}</span>
+            </div>
           </div>
           
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          {/* Score centraal */}
+          <div className="text-center font-bold text-primary group-hover:text-white text-xl py-1">
+            {(match.homeScore !== undefined && match.homeScore !== null && match.awayScore !== undefined && match.awayScore !== null) 
+              ? `${match.homeScore} - ${match.awayScore}`
+              : "  -  "
+            }
+          </div>
+          
+          {/* Datum links, tijd rechts */}
+          <div className="flex items-center justify-between text-xs text-muted-foreground group-hover:text-white/80">
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              <span>{match.date} {match.time && <span>{match.time}</span>}</span>
+              <span>{match.date}</span>
             </div>
-            <div className="flex items-center gap-1 truncate">
-              <MapPin className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">{match.location}</span>
-            </div>
+            <span className="font-medium">{match.time}</span>
+          </div>
+          
+          {/* Locatie centraal */}
+          <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground group-hover:text-white/80">
+            <MapPin className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate text-center">{match.location}</span>
           </div>
         </div>
-        
-        <Button 
-          onClick={() => onSelectMatch(match)}
-          variant={canEdit ? "secondary" : "ghost"}
-          size="sm"
-          className="ml-3 text-xs px-3 py-1 rounded font-medium"
-        >
-          {getButtonText(match)}
-        </Button>
-      </div>
+      </button>
     );
   };
 
@@ -181,10 +223,10 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
       {/* Unlocked matches first */}
       {sortedUnlockedMatchdays.map((matchday) => (
         <div key={`unlocked-${matchday}`} className="pt-0">
-          <div className="flex items-center gap-2 mb-1 text-base text-purple-dark font-semibold pl-2">
+          <div className="flex items-center gap-2 mb-3 text-base text-purple-dark font-semibold pl-2">
             {matchday}
           </div>
-          <div className="space-y-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {unlockedGrouped[matchday].map(renderMatchCard)}
           </div>
         </div>
@@ -195,11 +237,11 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
         <div className="pt-1 opacity-80">
           {sortedLockedMatchdays.map(matchday => (
             <div key={`locked-${matchday}`}>
-              <div className="flex items-center gap-2 mb-1 text-base text-gray-400 font-semibold pl-2">
+              <div className="flex items-center gap-2 mb-3 text-base text-gray-400 font-semibold pl-2">
                 <Lock className="h-4 w-4" />
                 {matchday} (Vergrendeld)
               </div>
-              <div className="space-y-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {lockedGrouped[matchday].map(renderMatchCard)}
               </div>
             </div>

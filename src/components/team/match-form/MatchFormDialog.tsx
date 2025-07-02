@@ -41,6 +41,12 @@ const MatchFormDialog: React.FC<MatchFormDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full max-w-5xl mx-4 sm:mx-auto bg-background text-foreground border-border rounded-lg">
+        <DialogTitle className="sr-only">
+          Wedstrijdformulier - {match.homeTeamName} vs {match.awayTeamName}
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          Beheer de wedstrijdgegevens, spelers en scores voor deze wedstrijd
+        </DialogDescription>
         <div className="rounded-b-lg">
           <Card className="w-full mx-auto shadow-lg">
             <CardHeader className="bg-purple-100">

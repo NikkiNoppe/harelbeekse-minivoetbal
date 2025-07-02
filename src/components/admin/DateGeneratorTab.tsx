@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { format, addDays, isBefore, isMonday, isTuesday } from "date-fns";
 import { nl } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
-import { cleanupMockData } from "@/services/cleanupService";
+import { cleanupTestData } from "@/services/cleanupService";
 import { 
   Dialog,
   DialogContent,
@@ -220,14 +220,14 @@ const DateGeneratorTab: React.FC<DateGeneratorTabProps> = ({ onDatesGenerated })
     }
   };
   
-  // Clean up mock data from database
-  const cleanupMockDataHandler = async () => {
+  // Clean up test data from database
+  const cleanupTestDataHandler = async () => {
     try {
-      const result = await cleanupMockData();
+      const result = await cleanupTestData();
       
       if (result.success) {
         toast({
-          title: "Mock data opgeschoond",
+          title: "Test data opgeschoond",
           description: "Alle test data is succesvol verwijderd uit de database."
         });
       } else {
@@ -236,7 +236,7 @@ const DateGeneratorTab: React.FC<DateGeneratorTabProps> = ({ onDatesGenerated })
     } catch (error: any) {
       toast({
         title: "Fout bij opschonen",
-        description: error.message || "Er is een fout opgetreden bij het verwijderen van de mock data.",
+        description: error.message || "Er is een fout opgetreden bij het verwijderen van de test data.",
         variant: "destructive"
       });
     }
@@ -406,12 +406,12 @@ const DateGeneratorTab: React.FC<DateGeneratorTabProps> = ({ onDatesGenerated })
             <div className="border rounded-md p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-medium">Verwijder mock data</h3>
+                  <h3 className="font-medium">Verwijder test data</h3>
                   <p className="text-sm text-muted-foreground">
                     Dit zal alle test data uit het systeem verwijderen maar behoudt de structuur
                   </p>
                 </div>
-                <Button variant="destructive" onClick={cleanupMockDataHandler}>
+                <Button variant="destructive" onClick={cleanupTestDataHandler}>
                   <Trash className="mr-2 h-4 w-4" />
                   Data opschonen
                 </Button>

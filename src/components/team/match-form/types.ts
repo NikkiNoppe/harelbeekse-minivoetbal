@@ -20,8 +20,8 @@ export interface MatchFormData {
   matchday: string; // Simplified - no more matchdayId needed
   isCompleted: boolean;
   isLocked: boolean;
-  homeScore?: number;
-  awayScore?: number;
+  homeScore?: number | null;
+  awayScore?: number | null;
   referee?: string;
   refereeNotes?: string;
   homePlayers: PlayerSelection[];

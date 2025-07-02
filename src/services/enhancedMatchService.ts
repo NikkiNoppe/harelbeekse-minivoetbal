@@ -1,8 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
 interface MatchUpdateData {
-  homeScore?: number;
-  awayScore?: number;
+  homeScore?: number | null;
+  awayScore?: number | null;
   referee?: string;
   refereeNotes?: string;
   matchday?: string;
@@ -35,6 +35,7 @@ export const enhancedMatchService = {
       // Build update object with all provided values
       const updateObject: any = {};
 
+      // Handle scores - allow null values to clear scores
       if (updateData.homeScore !== undefined) updateObject.home_score = updateData.homeScore;
       if (updateData.awayScore !== undefined) updateObject.away_score = updateData.awayScore;
       if (updateData.referee !== undefined) updateObject.referee = updateData.referee;

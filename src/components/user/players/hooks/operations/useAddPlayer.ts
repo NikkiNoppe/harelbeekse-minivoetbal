@@ -67,8 +67,7 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         birth_date: birthDate,
-        team_id: teamId,
-        is_active: true
+        team_id: teamId
       };
       console.log('📊 Insert data:', insertData);
 

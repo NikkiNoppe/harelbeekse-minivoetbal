@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Users, AlertTriangle } from "lucide-react";
+import { Plus, Edit, Trash2, Users, AlertTriangle, Save } from "lucide-react";
 import { enhancedTeamService, Team } from "@/services/enhancedTeamService";
 
 const TeamsTab: React.FC = () => {
@@ -19,6 +19,7 @@ const TeamsTab: React.FC = () => {
   const [teamName, setTeamName] = useState("");
   const [teamBalance, setTeamBalance] = useState("0.00");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   // Fetch teams using enhanced service
   const { data: teams, isLoading } = useQuery({
@@ -187,157 +188,192 @@ const TeamsTab: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Teams Beheer
-              </CardTitle>
-              <CardDescription>
-                Beheer alle teams in de competitie. Verwijderen van teams zal automatisch alle gerelateerde spelers, transacties en gebruikers verwijderen.
-              </CardDescription>
+    <div className="space-y-8 animate-slide-up">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Teams Beheer
+        </h2>
+      </div>
+
+      <section>
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-lg">
+                  Beheer alle teams in de competitie
+                </CardTitle>
+                <CardDescription>
+                  Verwijderen van teams zal automatisch alle gerelateerde spelers, transacties en gebruikers verwijderen.
+                </CardDescription>
+              </div>
             </div>
-            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Nieuw Team
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-purple-100 shadow-lg border-purple-200">
-                <DialogHeader className="bg-purple-100">
-                  <DialogTitle className="text-2xl text-center text-purple-light">Nieuw Team Toevoegen</DialogTitle>
-                  <DialogDescription className="text-center text-purple-dark">
-                    Voeg een nieuw team toe aan de competitie met een beginsaldo.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 bg-purple-100">
-                  <div className="space-y-2">
-                    <Label htmlFor="teamName" className="text-purple-dark font-medium">Teamnaam</Label>
-                    <Input
-                      id="teamName"
-                      value={teamName}
-                      onChange={(e) => setTeamName(e.target.value)}
-                      placeholder="Voer teamnaam in"
-                      className="bg-white placeholder:text-purple-200 border-purple-200 focus:border-purple-400"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="teamBalance" className="text-purple-dark font-medium">Startsaldo (€)</Label>
-                    <Input
-                      id="teamBalance"
-                      type="number"
-                      step="0.01"
-                      value={teamBalance}
-                      onChange={(e) => setTeamBalance(e.target.value)}
-                      placeholder="0.00"
-                      className="bg-white placeholder:text-purple-200 border-purple-200 focus:border-purple-400"
-                    />
-                  </div>
-                  <div className="flex gap-2 pt-4">
-                    <Button 
-                      onClick={handleAddTeam} 
-                      disabled={isSubmitting}
-                      className="btn-dark"
-                    >
-                      {isSubmitting ? "Toevoegen..." : "Toevoegen"}
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setIsAddModalOpen(false)}
-                      className="btn-light"
-                    >
-                      Annuleren
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Teamnaam</TableHead>
-                <TableHead className="text-right">Saldo</TableHead>
-                <TableHead className="text-right w-24">Acties</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {teams?.map((team) => (
-                <TableRow key={team.team_id}>
-                  <TableCell className="font-medium">{team.team_name}</TableCell>
-                  <TableCell className={`text-right font-semibold ${team.balance < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {formatCurrency(team.balance)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditModal(team)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
+          </CardHeader>
+          <CardContent className="p-0 overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Teamnaam</TableHead>
+                  <TableHead className="text-right">Saldo</TableHead>
+                  {editMode && <TableHead className="text-right w-24">Acties</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {teams?.map((team) => (
+                  <TableRow key={team.team_id}>
+                    <TableCell className="font-medium">{team.team_name}</TableCell>
+                    <TableCell className={`text-right font-semibold ${team.balance < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {formatCurrency(team.balance)}
+                    </TableCell>
+                    {editMode && (
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-100/10"
+                            onClick={() => openEditModal(team)}
+                            className="h-8 w-8 p-0"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Edit className="h-4 w-4" />
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-purple-100 shadow-lg border-purple-200">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle className="flex items-center gap-2">
-                              <AlertTriangle className="h-5 w-5 text-red-500" />
-                              Team Verwijderen
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              <div className="space-y-2">
-                                <p>Weet je zeker dat je het team "{team.team_name}" wilt verwijderen?</p>
-                                <p className="font-semibold text-red-600">
-                                  ⚠️ Dit zal automatisch verwijderen:
-                                </p>
-                                <ul className="list-disc list-inside text-sm space-y-1 ml-4">
-                                  <li>Alle spelers van dit team</li>
-                                  <li>Alle financiële transacties</li>
-                                  <li>Alle team gebruikers</li>
-                                  <li>Team voorkeuren en instellingen</li>
-                                </ul>
-                                <p className="text-sm text-gray-600">
-                                  Wedstrijden worden behouden maar worden losgekoppeld van dit team.
-                                </p>
-                                <p className="font-semibold">Deze actie kan niet ongedaan worden gemaakt!</p>
-                              </div>
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Annuleren</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteTeam(team)}
-                              className="bg-red-600 hover:bg-red-700"
-                            >
-                              Permanent Verwijderen
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-100/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="bg-purple-100 shadow-lg border-purple-200">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="flex items-center gap-2">
+                                  <AlertTriangle className="h-5 w-5 text-red-500" />
+                                  Team Verwijderen
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  <div className="space-y-2">
+                                    <p>Weet je zeker dat je het team "{team.team_name}" wilt verwijderen?</p>
+                                    <p className="font-semibold text-red-600">
+                                      ⚠️ Dit zal automatisch verwijderen:
+                                    </p>
+                                    <ul className="list-disc list-inside text-sm space-y-1 ml-4">
+                                      <li>Alle spelers van dit team</li>
+                                      <li>Alle financiële transacties</li>
+                                      <li>Alle team gebruikers</li>
+                                      <li>Team voorkeuren en instellingen</li>
+                                    </ul>
+                                    <p className="text-sm text-gray-600">
+                                      Wedstrijden worden behouden maar worden losgekoppeld van dit team.
+                                    </p>
+                                    <p className="font-semibold">Deze actie kan niet ongedaan worden gemaakt!</p>
+                                  </div>
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteTeam(team)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Permanent Verwijderen
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setEditMode(!editMode)}
+              className="flex items-center gap-2"
+            >
+              {editMode ? (
+                <>
+                  <Save size={16} />
+                  Klaar met bewerken
+                </>
+              ) : (
+                <>
+                  <Edit size={16} />
+                  Lijst bewerken
+                </>
+              )}
+            </Button>
+            
+            {editMode && (
+              <Button
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus size={16} />
+                Team toevoegen
+              </Button>
+            )}
+          </CardFooter>
+        </Card>
+      </section>
+
+      {/* Dialogs */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="bg-purple-100 shadow-lg border-purple-200">
+          <DialogHeader className="bg-purple-100">
+            <DialogTitle className="text-2xl text-center text-purple-light">Nieuw Team Toevoegen</DialogTitle>
+            <DialogDescription className="text-center text-purple-dark">
+              Voeg een nieuw team toe aan de competitie met een beginsaldo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 bg-purple-100">
+            <div className="space-y-2">
+              <Label htmlFor="teamName" className="text-purple-dark font-medium">Teamnaam</Label>
+              <Input
+                id="teamName"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                placeholder="Voer teamnaam in"
+                className="bg-white placeholder:text-purple-200 border-purple-200 focus:border-purple-400"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="teamBalance" className="text-purple-dark font-medium">Startsaldo (€)</Label>
+              <Input
+                id="teamBalance"
+                type="number"
+                step="0.01"
+                value={teamBalance}
+                onChange={(e) => setTeamBalance(e.target.value)}
+                placeholder="0.00"
+                className="bg-white placeholder:text-purple-200 border-purple-200 focus:border-purple-400"
+              />
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button 
+                onClick={handleAddTeam} 
+                disabled={isSubmitting}
+                className="btn-dark"
+              >
+                {isSubmitting ? "Toevoegen..." : "Toevoegen"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsAddModalOpen(false)}
+                className="btn-light"
+              >
+                Annuleren
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Team Modal */}
       <Dialog open={!!editingTeam} onOpenChange={(open) => !open && closeEditModal()}>

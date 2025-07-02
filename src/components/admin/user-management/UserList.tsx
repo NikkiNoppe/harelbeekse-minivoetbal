@@ -29,8 +29,9 @@ interface UserListProps {
   loading: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
-  onEditUser: (user: DbUser) => void;
-  onDeleteUser: (userId: number) => void;
+  onEditUser?: (user: DbUser) => void;
+  onDeleteUser?: (userId: number) => void;
+  editMode?: boolean;
 }
 
 const UserList: React.FC<UserListProps> = ({ 
@@ -39,7 +40,8 @@ const UserList: React.FC<UserListProps> = ({
   isUpdating,
   isDeleting,
   onEditUser, 
-  onDeleteUser 
+  onDeleteUser,
+  editMode = true
 }) => {
   return (
     <div className="rounded-md border">
@@ -50,7 +52,7 @@ const UserList: React.FC<UserListProps> = ({
             <TableHead>Email</TableHead>
             <TableHead>Rol</TableHead>
             <TableHead>Teams</TableHead>
-            <TableHead className="text-right w-24">Acties</TableHead>
+            {editMode && <TableHead className="text-right w-24">Acties</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -67,17 +69,19 @@ const UserList: React.FC<UserListProps> = ({
                 <TableCell><Skeleton className="h-4 w-40" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Skeleton className="h-8 w-8 rounded-md" />
-                    <Skeleton className="h-8 w-8 rounded-md" />
-                  </div>
-                </TableCell>
+                {editMode && (
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))
           ) : users.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-6">
+              <TableCell colSpan={editMode ? 5 : 4} className="text-center py-6">
                 Geen gebruikers gevonden
               </TableCell>
             </TableRow>
@@ -137,36 +141,38 @@ const UserList: React.FC<UserListProps> = ({
                     "-"
                   )}
                 </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEditUser(user)}
-                      className="h-8 w-8 p-0"
-                      disabled={isUpdating || isDeleting}
-                    >
-                      {isUpdating ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Edit className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDeleteUser(user.user_id)}
-                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-100/10"
-                      disabled={isUpdating || isDeleting}
-                    >
-                      {isDeleting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </TableCell>
+                {editMode && (
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEditUser?.(user)}
+                        className="h-8 w-8 p-0"
+                        disabled={isUpdating || isDeleting}
+                      >
+                        {isUpdating ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Edit className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDeleteUser?.(user.user_id)}
+                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-100/10"
+                        disabled={isUpdating || isDeleting}
+                      >
+                        {isDeleting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))
           )}

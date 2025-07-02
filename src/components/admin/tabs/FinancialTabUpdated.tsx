@@ -1,12 +1,12 @@
 
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Euro, TrendingDown, TrendingUp, Settings } from "lucide-react";
+import { Loader2, Euro, TrendingDown, TrendingUp, Settings, Edit, Save } from "lucide-react";
 import TeamDetailModal from "@/components/admin/financial/TeamDetailModal";
 import CostSettingsModal from "@/components/admin/financial/CostSettingsModal";
 import { costSettingsService } from "@/services/costSettingsService";
@@ -37,6 +37,7 @@ const FinancialTabUpdated: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   // Fetch teams with their balances
   const {
@@ -125,8 +126,10 @@ const FinancialTabUpdated: React.FC = () => {
   };
 
   const handleTeamClick = (team: Team) => {
-    setSelectedTeam(team);
-    setTeamModalOpen(true);
+    if (editMode) {
+      setSelectedTeam(team);
+      setTeamModalOpen(true);
+    }
   };
 
   if (loadingTeams || loadingMatches) {
@@ -135,27 +138,34 @@ const FinancialTabUpdated: React.FC = () => {
       </div>;
   }
 
-  return <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Euro className="h-5 w-5" />
-                Teams Financieel Overzicht
-              </CardTitle>
-              <CardDescription>
-                Overzicht van team saldi en kosten van gespeelde wedstrijden. Klik op een team voor details.
-              </CardDescription>
+  return (
+    <div className="space-y-8 animate-slide-up">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold flex items-center gap-2">
+          <Euro className="h-5 w-5" />
+          Financieel Beheer
+        </h2>
+      </div>
+
+      <section>
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-lg">
+                  Teams Financieel Overzicht
+                </CardTitle>
+                <CardDescription>
+                  {editMode 
+                    ? "Klik op een team voor details en transacties."
+                    : "Overzicht van team saldi en kosten van gespeelde wedstrijden."
+                  }
+                </CardDescription>
+              </div>
             </div>
-            <Button variant="outline" onClick={() => setSettingsModalOpen(true)} className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Kostentarieven
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
+          </CardHeader>
+          <CardContent className="p-0 overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Team</TableHead>
@@ -172,7 +182,7 @@ const FinancialTabUpdated: React.FC = () => {
               const costs = calculateTeamCosts(team.team_id);
               const totalCosts = costs.fieldCosts + costs.refereeCosts;
               const isNegative = team.balance < 0;
-              return <TableRow key={team.team_id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleTeamClick(team)}>
+              return <TableRow key={team.team_id} className={editMode ? "cursor-pointer hover:bg-muted/50 transition-colors" : ""} onClick={() => handleTeamClick(team)}>
                     <TableCell className="font-medium">{team.team_name}</TableCell>
                     <TableCell className="text-center">{costs.totalMatches}</TableCell>
                     <TableCell className="text-center">{formatCurrency(costs.fieldCosts)}</TableCell>
@@ -193,13 +203,45 @@ const FinancialTabUpdated: React.FC = () => {
             })}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setEditMode(!editMode)}
+              className="flex items-center gap-2"
+            >
+              {editMode ? (
+                <>
+                  <Save size={16} />
+                  Klaar met bewerken
+                </>
+              ) : (
+                <>
+                  <Edit size={16} />
+                  Teams bewerken
+                </>
+              )}
+            </Button>
+            
+            {editMode && (
+              <Button
+                variant="outline"
+                onClick={() => setSettingsModalOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Kostentarieven
+              </Button>
+            )}
+          </CardFooter>
+        </Card>
+      </section>
 
       <TeamDetailModal open={teamModalOpen} onOpenChange={setTeamModalOpen} team={selectedTeam} />
 
       <CostSettingsModal open={settingsModalOpen} onOpenChange={setSettingsModalOpen} />
-    </div>;
+    </div>
+  );
 };
 
 export default FinancialTabUpdated;

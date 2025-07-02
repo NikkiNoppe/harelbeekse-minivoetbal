@@ -4,7 +4,7 @@ import PlayersTab from "./tabs/PlayersTab";
 import AdminSettingsPanel from "@/components/admin/AdminSettingsPanel";
 import { useAuth } from "@/components/auth/AuthProvider";
 import TeamDashboard from "@/components/team/TeamDashboard";
-import { MOCK_TEAMS } from "@/data/mockData";
+
 import CompetitionManagementTab from "@/components/admin/tabs/CompetitionManagementTab";
 import MatchFormTab from "@/components/team/MatchFormTab";
 import UserManagementTab from "@/components/admin/tabs/UserManagementTab";
@@ -20,7 +20,7 @@ const ModernUserDashboard = () => {
   const isTeamManager = user?.role === "player_manager";
 
   // Find team data if user is a team role
-  const teamData = user?.teamId ? MOCK_TEAMS.find(team => team.id === user.teamId) : null;
+  // Team data will be fetched from actual database when needed
 
   // If it's a team manager, show the team dashboard instead
   if (isTeamManager && teamData) {

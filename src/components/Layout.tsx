@@ -61,6 +61,7 @@ const Layout: React.FC = () => {
       {/* Login Dialog */}
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
         <DialogContent className="w-full max-w-md mx-4 sm:mx-auto bg-background text-foreground border-border rounded-lg">
+          <DialogTitle className="sr-only">Inloggen</DialogTitle>
           <div className="rounded-b-lg">
             <LoginForm onLoginSuccess={handleLoginSuccess} />
           </div>
