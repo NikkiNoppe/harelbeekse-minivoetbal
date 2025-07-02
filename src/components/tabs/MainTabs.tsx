@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
@@ -46,7 +45,7 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
   return (
     <div className="w-full">
       {/* Modern Full-Width Tabs */}
-      <div className="w-full bg-white border-b border-purple-200 shadow-sm">
+      <div className="w-full bg-transparent shadow-sm">
         <div className="max-w-7xl mx-auto">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
             <TabsList className="w-full h-16 bg-transparent border-0 rounded-none p-0 flex justify-center">

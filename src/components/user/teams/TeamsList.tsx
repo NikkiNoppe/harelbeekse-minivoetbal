@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Table,
@@ -21,6 +20,7 @@ interface Team {
 interface TeamsListProps {
   teams: Team[];
   loading: boolean;
+  editMode?: boolean;
   onEdit: (team: Team) => void;
   onDelete: (team: Team) => void;
 }
@@ -28,6 +28,7 @@ interface TeamsListProps {
 const TeamsList: React.FC<TeamsListProps> = ({
   teams,
   loading,
+  editMode = false,
   onEdit,
   onDelete
 }) => {
@@ -41,13 +42,13 @@ const TeamsList: React.FC<TeamsListProps> = ({
         <TableRow>
           <TableHead>Naam</TableHead>
           <TableHead>Balans</TableHead>
-          <TableHead className="text-right">Acties</TableHead>
+          {editMode && <TableHead className="text-right">Acties</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
         {teams.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
+            <TableCell colSpan={editMode ? 3 : 2} className="text-center text-muted-foreground py-6">
               Geen teams gevonden
             </TableCell>
           </TableRow>
@@ -56,26 +57,28 @@ const TeamsList: React.FC<TeamsListProps> = ({
             <TableRow key={team.team_id}>
               <TableCell className="font-medium">{team.team_name}</TableCell>
               <TableCell>€ {team.balance.toFixed(2)}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEdit(team)}
-                    className="text-purple-500 hover:text-purple-700 hover:bg-purple-100/10"
-                  >
-                    <Edit size={16} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDelete(team)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-100/10"
-                  >
-                    <Trash2 size={16} />
-                  </Button>
-                </div>
-              </TableCell>
+              {editMode && (
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit(team)}
+                      className="text-purple-500 hover:text-purple-700 hover:bg-purple-100/10"
+                    >
+                      <Edit size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDelete(team)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-100/10"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                </TableCell>
+              )}
             </TableRow>
           ))
         )}

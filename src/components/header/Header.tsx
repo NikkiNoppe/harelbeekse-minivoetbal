@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -35,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
             onLoginClick();
             setIsMenuOpen(false);
           }} 
-          className="w-full px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white bg-purple-600 hover:bg-purple-700"
+          className="w-full px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white bg-purple-800 hover:bg-purple-900"
         >
           Inloggen
         </button>
@@ -44,7 +43,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
   );
   
   return (
-    <header className="w-full py-4 px-4 sm:px-6 shadow-sm bg-purple-600 sticky top-0 z-30 border-b border-purple-700">
+    <header className="w-full py-4 px-4 sm:px-6 shadow-sm bg-purple-900 sticky top-0 z-30 border-b border-purple-800">
       <div className="w-full max-w-7xl mx-auto flex justify-between items-center">
         <Logo onClick={onLogoClick} />
         
@@ -68,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick, onLoginClick }) => {
             ) : (
               <button 
                 onClick={onLoginClick} 
-                className="px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white bg-purple-500 hover:bg-purple-400 text-sm lg:text-base"
+                className="px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors font-medium text-white bg-purple-800 hover:bg-purple-700 text-sm lg:text-base"
               >
                 Inloggen
               </button>

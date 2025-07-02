@@ -57,7 +57,7 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
       />
       <Button 
         type="submit" 
-        className="w-full bg-purple-dark text-white hover:bg-purple-light hover:text-white border border-purple-dark" 
+        className="btn-dark" 
         disabled={isLoading}
       >
         {isLoading ? "Inloggen..." : "Inloggen"}
@@ -65,7 +65,7 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
       
       <Button
         type="button"
-        className="w-full text-sm bg-purple-light text-white hover:bg-purple-dark hover:text-white border border-purple-light hover:border-purple-dark"
+        className="btn-light"
         onClick={onForgotPassword}
       >
         Wachtwoord vergeten?

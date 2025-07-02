@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Dialog,
@@ -37,45 +36,56 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="bg-purple-100 border-purple-light shadow-lg">
+        <DialogHeader className="bg-purple-100">
+          <DialogTitle className="text-2xl text-center text-purple-light">
             {editingTeam ? "Team bewerken" : "Nieuw team toevoegen"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-center text-purple-dark">
             {editingTeam 
               ? "Bewerk de gegevens van dit team" 
               : "Voeg een nieuw team toe aan de competitie"}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 bg-purple-100">
           <div className="space-y-2">
-            <label>Teamnaam</label>
+            <label className="text-purple-dark font-medium">Teamnaam</label>
             <Input
               value={formData.name}
               onChange={(e) => onFormChange("name", e.target.value)}
               placeholder="Naam van het team"
+              className="bg-white placeholder:text-purple-200 border-purple-200 focus:border-purple-400"
             />
           </div>
           
           <div className="space-y-2">
-            <label>Balans</label>
+            <label className="text-purple-dark font-medium">Balans</label>
             <Input
               type="number"
               step="0.01"
               value={formData.balance}
               onChange={(e) => onFormChange("balance", e.target.value)}
               placeholder="0.00"
+              className="bg-white placeholder:text-purple-200 border-purple-200 focus:border-purple-400"
             />
           </div>
         </div>
         
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+        <DialogFooter className="bg-purple-100">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)} 
+            disabled={loading}
+            className="btn-light"
+          >
             Annuleren
           </Button>
-          <Button onClick={onSave} disabled={loading}>
+          <Button 
+            onClick={onSave} 
+            disabled={loading}
+            className="btn-dark"
+          >
             {loading ? "Opslaan..." : (editingTeam ? "Bijwerken" : "Toevoegen")}
           </Button>
         </DialogFooter>

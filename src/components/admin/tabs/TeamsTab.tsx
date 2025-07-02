@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -209,24 +208,25 @@ const TeamsTab: React.FC = () => {
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-purple-100 shadow-lg border-purple-200">
-                <DialogHeader>
-                  <DialogTitle>Nieuw Team Toevoegen</DialogTitle>
-                  <DialogDescription>
+                <DialogHeader className="bg-purple-100">
+                  <DialogTitle className="text-2xl text-center text-purple-light">Nieuw Team Toevoegen</DialogTitle>
+                  <DialogDescription className="text-center text-purple-dark">
                     Voeg een nieuw team toe aan de competitie met een beginsaldo.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="teamName">Teamnaam</Label>
+                <div className="space-y-4 bg-purple-100">
+                  <div className="space-y-2">
+                    <Label htmlFor="teamName" className="text-purple-dark font-medium">Teamnaam</Label>
                     <Input
                       id="teamName"
                       value={teamName}
                       onChange={(e) => setTeamName(e.target.value)}
                       placeholder="Voer teamnaam in"
+                      className="bg-white placeholder:text-purple-200 border-purple-200 focus:border-purple-400"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="teamBalance">Startsaldo (€)</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="teamBalance" className="text-purple-dark font-medium">Startsaldo (€)</Label>
                     <Input
                       id="teamBalance"
                       type="number"
@@ -234,13 +234,22 @@ const TeamsTab: React.FC = () => {
                       value={teamBalance}
                       onChange={(e) => setTeamBalance(e.target.value)}
                       placeholder="0.00"
+                      className="bg-white placeholder:text-purple-200 border-purple-200 focus:border-purple-400"
                     />
                   </div>
                   <div className="flex gap-2 pt-4">
-                    <Button onClick={handleAddTeam} disabled={isSubmitting}>
+                    <Button 
+                      onClick={handleAddTeam} 
+                      disabled={isSubmitting}
+                      className="btn-dark"
+                    >
                       {isSubmitting ? "Toevoegen..." : "Toevoegen"}
                     </Button>
-                    <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsAddModalOpen(false)}
+                      className="btn-light"
+                    >
                       Annuleren
                     </Button>
                   </div>
@@ -333,24 +342,25 @@ const TeamsTab: React.FC = () => {
       {/* Edit Team Modal */}
       <Dialog open={!!editingTeam} onOpenChange={(open) => !open && closeEditModal()}>
         <DialogContent className="bg-purple-100 shadow-lg border-purple-200">
-          <DialogHeader>
-            <DialogTitle>Team Bewerken</DialogTitle>
-            <DialogDescription>
+          <DialogHeader className="bg-purple-100">
+            <DialogTitle className="text-2xl text-center text-purple-light">Team Bewerken</DialogTitle>
+            <DialogDescription className="text-center text-purple-dark">
               Bewerk de teamnaam en het saldo van het geselecteerde team.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="editTeamName">Teamnaam</Label>
+          <div className="space-y-4 bg-purple-100">
+            <div className="space-y-2">
+              <Label htmlFor="editTeamName" className="text-purple-dark font-medium">Teamnaam</Label>
               <Input
                 id="editTeamName"
                 value={teamName}
                 onChange={(e) => setTeamName(e.target.value)}
                 placeholder="Voer teamnaam in"
+                className="bg-white placeholder:text-purple-200 border-purple-200 focus:border-purple-400"
               />
             </div>
-            <div>
-              <Label htmlFor="editTeamBalance">Saldo (€)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="editTeamBalance" className="text-purple-dark font-medium">Saldo (€)</Label>
               <Input
                 id="editTeamBalance"
                 type="number"
@@ -358,13 +368,22 @@ const TeamsTab: React.FC = () => {
                 value={teamBalance}
                 onChange={(e) => setTeamBalance(e.target.value)}
                 placeholder="0.00"
+                className="bg-white placeholder:text-purple-200 border-purple-200 focus:border-purple-400"
               />
             </div>
             <div className="flex gap-2 pt-4">
-              <Button onClick={handleEditTeam} disabled={isSubmitting}>
+              <Button 
+                onClick={handleEditTeam} 
+                disabled={isSubmitting}
+                className="btn-dark"
+              >
                 {isSubmitting ? "Opslaan..." : "Opslaan"}
               </Button>
-              <Button variant="outline" onClick={closeEditModal}>
+              <Button 
+                variant="outline" 
+                onClick={closeEditModal}
+                className="btn-light"
+              >
                 Annuleren
               </Button>
             </div>
