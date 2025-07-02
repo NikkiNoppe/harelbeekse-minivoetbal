@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -134,6 +133,55 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         toast({
           title: "Geen spelers geselecteerd",
           description: "Selecteer ten minste één speler voor het formulier.",
+          variant: "destructive"
+        });
+        setSubmitting(false);
+        return;
+      }
+
+      // Validation logic moved from Zod schema
+      if (selectedPlayers.length > 8) {
+        toast({
+          title: "Te veel spelers",
+          description: "Er kunnen maximaal 8 spelers geselecteerd worden.",
+          variant: "destructive"
+        });
+        setSubmitting(false);
+        return;
+      }
+
+      // Check if all selected players have jersey numbers
+      const playersWithoutJersey = selectedPlayers.filter(p => !p.jerseyNumber.trim());
+      if (playersWithoutJersey.length > 0) {
+        toast({
+          title: "Ontbrekende rugnummers",
+          description: "Alle geselecteerde spelers moeten een rugnummer hebben.",
+          variant: "destructive"
+        });
+        setSubmitting(false);
+        return;
+      }
+
+      // Check jersey number range
+      const invalidJerseyNumbers = selectedPlayers.filter(p => {
+        const num = parseInt(p.jerseyNumber);
+        return isNaN(num) || num < 1 || num > 99;
+      });
+      if (invalidJerseyNumbers.length > 0) {
+        toast({
+          title: "Ongeldige rugnummers",
+          description: "Rugnummers moeten tussen 1 en 99 zijn.",
+          variant: "destructive"
+        });
+        setSubmitting(false);
+        return;
+      }
+
+      // Check if there's a captain
+      if (!selectedPlayers.some(p => p.isCaptain)) {
+        toast({
+          title: "Geen kapitein aangeduid",
+          description: "Er moet een kapitein aangeduid worden.",
           variant: "destructive"
         });
         setSubmitting(false);

@@ -1,0 +1,50 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "🚀 Start Development Server (Safari)",
+      "type": "node",
+      "request": "launch",
+      "program": "/usr/local/bin/npm",
+      "args": ["run", "dev"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "hidden": false,
+        "group": "development",
+        "order": 1
+      }
+    },
+    {
+      "name": "🌐 Start Dev Server (Explicit Safari)",
+      "type": "node",
+      "request": "launch",
+      "program": "/usr/local/bin/npm",
+      "args": ["run", "dev:safari"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal", 
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "hidden": false,
+        "group": "development",
+        "order": 2
+      }
+    },
+    {
+      "name": "📱 Start with Safari Script",
+      "type": "node",
+      "request": "launch",
+      "program": "/usr/local/bin/npm",
+      "args": ["run", "safari"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "hidden": false,
+        "group": "development",
+        "order": 3
+      }
+    }
+  ]
+} 

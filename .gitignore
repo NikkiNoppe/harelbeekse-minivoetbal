@@ -13,8 +13,9 @@ dist-ssr
 *.local
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
+.vscode/safari-debug-profile/
+.vscode/chrome-debug-profile/
+.vscode/extensions.json
 .idea
 .DS_Store
 *.suo
