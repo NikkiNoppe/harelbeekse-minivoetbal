@@ -13,7 +13,7 @@ interface DatabasePlayer {
   last_name: string;
 }
 
-interface MatchQueryResult {
+interface MatchData {
   match_id: number;
   is_submitted: boolean;
   home_players: any;
@@ -26,8 +26,8 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch team players with simplified query structure
-  const fetchTeamPlayers = async () => {
+  // Fetch team players
+  const fetchTeamPlayers = async (): Promise<Player[]> => {
     const { data, error } = await supabase
       .from('players')
       .select('player_id, first_name, last_name')
@@ -45,7 +45,6 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       throw error;
     }
     
-    // Transform to Player format
     const players: Player[] = (data || []).map((dbPlayer: DatabasePlayer) => ({
       playerId: dbPlayer.player_id,
       playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
@@ -57,7 +56,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     return players;
   };
 
-  const fetchMatchData = async () => {
+  const fetchMatchData = async (): Promise<MatchData | null> => {
     const { data, error } = await supabase
       .from('matches')
       .select('match_id, is_submitted, home_players, away_players, home_team_id, away_team_id')
@@ -69,7 +68,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       throw error;
     }
     
-    return data as MatchQueryResult | null;
+    return data as MatchData | null;
   };
 
   const teamPlayersQuery = useQuery({
@@ -87,7 +86,6 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     defaultValues: { players: [] }
   });
   
-  // Use the simplified query results
   const teamPlayers = teamPlayersQuery.data;
   const isLoading = teamPlayersQuery.isLoading;
   const existingMatch = matchQuery.data;
@@ -131,7 +129,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       
       if (selectedPlayers.length === 0) {
         toast({
-          title: "Geen spelers geselecteer",
+          title: "Geen spelers geselecteerd",
           description: "Selecteer ten minste één speler voor het formulier.",
           variant: "destructive"
         });

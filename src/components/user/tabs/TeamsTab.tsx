@@ -28,6 +28,10 @@ const TeamsTab: React.FC = () => {
     handleDeleteTeam
   } = useTeams();
   
+  const handleDeleteClick = (team: any) => {
+    handleDeleteTeam(team.team_id);
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -51,7 +55,7 @@ const TeamsTab: React.FC = () => {
             teams={teams}
             loading={loading}
             onEdit={handleEditTeam}
-            onDelete={handleDeleteTeam}
+            onDelete={handleDeleteClick}
           />
         </CardContent>
       </Card>
@@ -64,6 +68,7 @@ const TeamsTab: React.FC = () => {
         formData={formData}
         onFormChange={handleFormChange}
         onSave={handleSaveTeam}
+        loading={loading}
       />
     </div>
   );
