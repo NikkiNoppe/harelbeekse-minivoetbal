@@ -168,15 +168,11 @@ const PlayersTab: React.FC = () => {
       </section>
 
       <section>
-        <h2 className="text-2xl font-semibold mt-8">Beheer & Reglementen</h2>
         <div className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Admin Lock Settings - Only show for admins */}
             {authUser?.role === "admin" && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Spelerslijst Vergrendeling</CardTitle>
-                </CardHeader>
                 <CardContent>
                   <PlayerListLockSettings />
                 </CardContent>
