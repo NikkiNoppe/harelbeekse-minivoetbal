@@ -26,7 +26,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch team players
+  // Fetch team players with explicit return type
   const fetchTeamPlayers = async (): Promise<Player[]> => {
     const { data, error } = await supabase
       .from('players')
@@ -71,12 +71,13 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     return data as MatchData | null;
   };
 
-  const teamPlayersQuery = useQuery({
+  // Simplified query definitions with explicit types
+  const teamPlayersQuery = useQuery<Player[], Error>({
     queryKey: ['teamPlayers', teamId],
     queryFn: fetchTeamPlayers
   });
   
-  const matchQuery = useQuery({
+  const matchQuery = useQuery<MatchData | null, Error>({
     queryKey: ['matchData', matchId, teamId],
     queryFn: fetchMatchData
   });
