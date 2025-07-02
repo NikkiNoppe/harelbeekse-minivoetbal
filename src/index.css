@@ -526,3 +526,32 @@ tbody tr:hover {
 }
 
 /* End Custom site-wide fixes */
+
+/* ===== REUSABLE STYLING UTILITIES ===== */
+
+/* Login-style dropdown styling */
+.dropdown-login-style {
+  @apply w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border border-purple-dark hover:border-purple-dark;
+}
+
+.dropdown-content-login-style {
+  @apply bg-white shadow-lg z-50 border border-purple-dark;
+}
+
+.dropdown-item-login-style {
+  @apply w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white;
+}
+
+/* Login-style input styling */
+.input-login-style {
+  @apply bg-white text-purple-dark border border-purple-dark rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-dark focus:border-purple-dark;
+}
+
+/* Login-style button styling */
+.btn-login-primary {
+  @apply w-full bg-purple-dark text-white hover:bg-purple-light hover:text-white border border-purple-dark;
+}
+
+.btn-login-secondary {
+  @apply w-full text-sm bg-purple-light text-white hover:bg-purple-dark hover:text-white border border-purple-light hover:border-purple-dark;
+}

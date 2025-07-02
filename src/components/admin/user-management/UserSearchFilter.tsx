@@ -38,7 +38,7 @@ const UserSearchFilter: React.FC<UserSearchFilterProps> = ({
           placeholder="Zoeken op naam..."
           value={searchTerm}
           onChange={(e) => onSearchTermChange(e.target.value)}
-          className="pl-8"
+          className="pl-8 input-login-style"
         />
       </div>
 
@@ -47,14 +47,14 @@ const UserSearchFilter: React.FC<UserSearchFilterProps> = ({
         value={roleFilter}
         onValueChange={onRoleFilterChange}
       >
-        <SelectTrigger>
+        <SelectTrigger className="dropdown-login-style">
           <SelectValue placeholder="Alle rollen" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Alle rollen</SelectItem>
-          <SelectItem value="admin">Administrator</SelectItem>
-          <SelectItem value="player_manager">Teamverantwoordelijke</SelectItem>
-          <SelectItem value="referee">Scheidsrechter</SelectItem>
+        <SelectContent className="dropdown-content-login-style">
+          <SelectItem value="all" className="dropdown-item-login-style">Alle rollen</SelectItem>
+          <SelectItem value="admin" className="dropdown-item-login-style">Administrator</SelectItem>
+          <SelectItem value="player_manager" className="dropdown-item-login-style">Teamverantwoordelijke</SelectItem>
+          <SelectItem value="referee" className="dropdown-item-login-style">Scheidsrechter</SelectItem>
         </SelectContent>
       </Select>
 
@@ -64,13 +64,13 @@ const UserSearchFilter: React.FC<UserSearchFilterProps> = ({
         onValueChange={onTeamFilterChange}
         disabled={teams.length === 0}
       >
-        <SelectTrigger>
+        <SelectTrigger className="dropdown-login-style">
           <SelectValue placeholder="Alle teams" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Alle teams</SelectItem>
+        <SelectContent className="dropdown-content-login-style">
+          <SelectItem value="all" className="dropdown-item-login-style">Alle teams</SelectItem>
           {teams.map((team) => (
-            <SelectItem key={team.team_id} value={team.team_id.toString()}>
+            <SelectItem key={team.team_id} value={team.team_id.toString()} className="dropdown-item-login-style">
               {team.team_name}
             </SelectItem>
           ))}

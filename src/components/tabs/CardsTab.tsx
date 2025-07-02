@@ -177,7 +177,7 @@ const CardsTab: React.FC = () => {
                 <Input
                   id="search"
                   placeholder="Speler of team..."
-                  className="pl-8"
+                  className="pl-8 input-login-style"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -187,13 +187,13 @@ const CardsTab: React.FC = () => {
             <div>
               <Label htmlFor="team-filter">Team</Label>
               <Select value={teamFilter} onValueChange={setTeamFilter}>
-                <SelectTrigger id="team-filter">
+                <SelectTrigger id="team-filter" className="dropdown-login-style">
                   <SelectValue placeholder="Alle teams" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Alle teams</SelectItem>
+                <SelectContent className="dropdown-content-login-style">
+                  <SelectItem value="" className="dropdown-item-login-style">Alle teams</SelectItem>
                   {teamNames.map((team, idx) => (
-                    <SelectItem key={idx} value={team}>{team}</SelectItem>
+                    <SelectItem key={idx} value={team} className="dropdown-item-login-style">{team}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -202,14 +202,14 @@ const CardsTab: React.FC = () => {
             <div>
               <Label htmlFor="card-type-filter">Kaarttype</Label>
               <Select value={cardTypeFilter} onValueChange={setCardTypeFilter}>
-                <SelectTrigger id="card-type-filter">
+                <SelectTrigger id="card-type-filter" className="dropdown-login-style">
                   <SelectValue placeholder="Alle kaarten" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Alle kaarten</SelectItem>
-                  <SelectItem value="yellow">Gele kaarten</SelectItem>
-                  <SelectItem value="red">Rode kaarten</SelectItem>
-                  <SelectItem value="suspended">Geschorste spelers</SelectItem>
+                <SelectContent className="dropdown-content-login-style">
+                  <SelectItem value="" className="dropdown-item-login-style">Alle kaarten</SelectItem>
+                  <SelectItem value="yellow" className="dropdown-item-login-style">Gele kaarten</SelectItem>
+                  <SelectItem value="red" className="dropdown-item-login-style">Rode kaarten</SelectItem>
+                  <SelectItem value="suspended" className="dropdown-item-login-style">Geschorste spelers</SelectItem>
                 </SelectContent>
               </Select>
             </div>

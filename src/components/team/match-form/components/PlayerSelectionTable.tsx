@@ -84,11 +84,11 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                       }
                       disabled={!canEdit}
                     >
-                      <SelectTrigger className="w-full min-w-[120px] text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border border-purple-dark hover:border-purple-dark">
+                      <SelectTrigger className="dropdown-login-style min-w-[120px]">
                         <SelectValue placeholder="Selecteer speler" />
                       </SelectTrigger>
-                      <SelectContent className="bg-white shadow-lg z-50 border border-purple-dark">
-                        <SelectItem value="no-player" className="w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white">Geen speler</SelectItem>
+                      <SelectContent className="dropdown-content-login-style">
+                        <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
                         {Array.isArray(players) &&
                           players.map((player) => {
                             const playerIdNum = player.player_id;
@@ -101,7 +101,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                                 key={playerIdNum}
                                 value={playerIdNum.toString()}
                                 disabled={alreadySelected}
-                                className={`w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white ${alreadySelected ? "opacity-50 text-gray-400" : ""}`}
+                                className={`dropdown-item-login-style ${alreadySelected ? "opacity-50 text-gray-400" : ""}`}
                               >
                                 {player.first_name} {player.last_name}
                               </SelectItem>
@@ -126,7 +126,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                       value={selection.jerseyNumber || ""}
                       onChange={(e) => onPlayerSelection(index, 'jerseyNumber', e.target.value)}
                       disabled={!selection.playerId}
-                      className="w-12 text-center text-xs py-1 px-1 bg-white"
+                      className="w-12 text-center text-xs py-1 px-1 input-login-style"
                     />
                   ) : (
                     <span className="text-xs">
@@ -141,15 +141,15 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                         value={playerCards[selection.playerId] || "none"}
                         onValueChange={(value) => onCardChange(selection.playerId!, value)}
                       >
-                        <SelectTrigger className="w-[40px] min-w-0 p-0 justify-center bg-white text-purple-dark hover:bg-purple-dark hover:text-white border border-purple-dark hover:border-purple-dark">
+                        <SelectTrigger className="w-[40px] min-w-0 p-0 justify-center dropdown-login-style">
                           <span className="sr-only">Kaart</span>
                           <CardIcon type={playerCards[selection.playerId] as any || "none"} />
                         </SelectTrigger>
-                        <SelectContent className="bg-white shadow-lg z-50 border border-purple-dark">
-                          <SelectItem value="none" className="w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white">-</SelectItem>
-                          <SelectItem value="yellow" className="w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white"><span className="flex items-center"><CardIcon type="yellow" /><span className="ml-1">Geel</span></span></SelectItem>
-                          <SelectItem value="double_yellow" className="w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white"><span className="flex items-center"><CardIcon type="double_yellow" /><span className="ml-1">2x Geel</span></span></SelectItem>
-                          <SelectItem value="red" className="w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white"><span className="flex items-center"><CardIcon type="red" /><span className="ml-1">Rood</span></span></SelectItem>
+                        <SelectContent className="dropdown-content-login-style">
+                          <SelectItem value="none" className="dropdown-item-login-style">-</SelectItem>
+                          <SelectItem value="yellow" className="dropdown-item-login-style"><span className="flex items-center"><CardIcon type="yellow" /><span className="ml-1">Geel</span></span></SelectItem>
+                          <SelectItem value="double_yellow" className="dropdown-item-login-style"><span className="flex items-center"><CardIcon type="double_yellow" /><span className="ml-1">2x Geel</span></span></SelectItem>
+                          <SelectItem value="red" className="dropdown-item-login-style"><span className="flex items-center"><CardIcon type="red" /><span className="ml-1">Rood</span></span></SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (

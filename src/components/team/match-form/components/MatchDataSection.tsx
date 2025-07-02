@@ -99,7 +99,7 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
               value={formData.date}
               onChange={(e) => handleInputChange("date", e.target.value)}
               disabled={!canEdit}
-              className="bg-white"
+              className="input-login-style"
             />
           </div>
           
@@ -111,7 +111,7 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
               value={formData.time}
               onChange={(e) => handleInputChange("time", e.target.value)}
               disabled={!canEdit}
-              className="bg-white"
+              className="input-login-style"
             />
           </div>
         </div>
@@ -126,7 +126,7 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
               onChange={(e) => handleInputChange("location", e.target.value)}
               disabled={!canEdit}
               placeholder="Wedstrijdlocatie"
-              className="bg-white"
+              className="input-login-style"
             />
           </div>
 
@@ -138,7 +138,7 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
               onChange={(e) => handleInputChange("matchday", e.target.value)}
               disabled={!canEdit}
               placeholder="bijv. 11"
-              className="bg-white text-center"
+              className="input-login-style text-center"
             />
           </div>
 
@@ -149,15 +149,15 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
               onValueChange={onRefereeChange}
               disabled={!canEdit || !canEditMatchData}
             >
-              <SelectTrigger className="w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border border-purple-dark hover:border-purple-dark text-right">
+              <SelectTrigger className="dropdown-login-style text-right">
                 <SelectValue placeholder="Selecteer scheidsrechter" />
               </SelectTrigger>
-              <SelectContent className="bg-white shadow-lg z-50 border border-purple-dark">
+              <SelectContent className="dropdown-content-login-style">
                 {MOCK_REFEREES.map((referee) => (
                   <SelectItem
                     key={referee.id}
                     value={referee.name}
-                    className="w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white"
+                    className="dropdown-item-login-style"
                   >
                     {referee.name}
                   </SelectItem>
@@ -179,7 +179,7 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
             value={homeScore}
             onChange={(e) => onHomeScoreChange(e.target.value)}
             disabled={!canEdit || !canEditMatchData}
-            className="text-center text-lg font-bold bg-white"
+            className="text-center text-lg font-bold input-login-style"
           />
         </div>
         
@@ -196,7 +196,7 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
             value={awayScore}
             onChange={(e) => onAwayScoreChange(e.target.value)}
             disabled={!canEdit || !canEditMatchData}
-            className="text-center text-lg font-bold bg-white"
+            className="text-center text-lg font-bold input-login-style"
           />
         </div>
       </div>
@@ -206,7 +206,7 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
         <Button
           onClick={handleSave}
           disabled={isUpdating}
-          className="w-full bg-purple-dark text-white hover:bg-purple-light hover:text-white border border-purple-dark"
+          className="btn-login-primary"
         >
           <Save className="h-4 w-4 mr-2" />
           {isUpdating ? "Opslaan..." : "Wedstrijdgegevens opslaan"}

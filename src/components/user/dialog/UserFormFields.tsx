@@ -62,6 +62,7 @@ const UserFormFields: React.FC<UserFormFieldsProps> = ({
           placeholder="Gebruikersnaam"
           required
           disabled={isLoading}
+          className="input-login-style"
         />
       </div>
 
@@ -75,6 +76,7 @@ const UserFormFields: React.FC<UserFormFieldsProps> = ({
           placeholder="E-mailadres"
           required
           disabled={isLoading}
+          className="input-login-style"
         />
       </div>
       
@@ -90,6 +92,7 @@ const UserFormFields: React.FC<UserFormFieldsProps> = ({
           placeholder="Wachtwoord"
           required={!isEditing}
           disabled={isLoading}
+          className="input-login-style"
         />
       </div>
       
@@ -107,13 +110,13 @@ const UserFormFields: React.FC<UserFormFieldsProps> = ({
           }}
           disabled={isLoading}
         >
-          <SelectTrigger id="role">
+          <SelectTrigger id="role" className="dropdown-login-style">
             <SelectValue placeholder="Selecteer een rol" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="admin">Beheerder</SelectItem>
-            <SelectItem value="player_manager">Teamverantwoordelijke</SelectItem>
-            <SelectItem value="referee">Scheidsrechter</SelectItem>
+          <SelectContent className="dropdown-content-login-style">
+            <SelectItem value="admin" className="dropdown-item-login-style">Beheerder</SelectItem>
+            <SelectItem value="player_manager" className="dropdown-item-login-style">Teamverantwoordelijke</SelectItem>
+            <SelectItem value="referee" className="dropdown-item-login-style">Scheidsrechter</SelectItem>
           </SelectContent>
         </Select>
       </div>

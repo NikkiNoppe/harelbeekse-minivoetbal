@@ -274,12 +274,12 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
               <div>
                 <Label htmlFor="matchday-filter">Filter op speeldag</Label>
                 <Select value={selectedMatchday} onValueChange={setSelectedMatchday}>
-                  <SelectTrigger id="matchday-filter" className="bg-purple-light text-white hover:bg-purple-dark">
+                  <SelectTrigger id="matchday-filter" className="dropdown-login-style">
                     <SelectValue placeholder="Alle speeldagen" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all-matchdays" className="bg-purple-light text-white hover:bg-purple-dark">Alle speeldagen</SelectItem>
-                    {matchdays.map((day, idx) => <SelectItem key={idx} value={day}>{day}</SelectItem>)}
+                  <SelectContent className="dropdown-content-login-style">
+                    <SelectItem value="all-matchdays" className="dropdown-item-login-style">Alle speeldagen</SelectItem>
+                    {matchdays.map((day, idx) => <SelectItem key={idx} value={day} className="dropdown-item-login-style">{day}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -287,12 +287,12 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
               <div>
                 <Label htmlFor="team-filter">Filter op team</Label>
                 <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                  <SelectTrigger id="team-filter" className="bg-purple-light text-white hover:bg-purple-dark">
+                  <SelectTrigger id="team-filter" className="dropdown-login-style">
                     <SelectValue placeholder="Alle teams" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all-teams" className="bg-purple-light text-white hover:bg-purple-dark">Alle teams</SelectItem>
-                    {teamNames.map((team, idx) => <SelectItem key={idx} value={team}>{team}</SelectItem>)}
+                  <SelectContent className="dropdown-content-login-style">
+                    <SelectItem value="all-teams" className="dropdown-item-login-style">Alle teams</SelectItem>
+                    {teamNames.map((team, idx) => <SelectItem key={idx} value={team} className="dropdown-item-login-style">{team}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -301,7 +301,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
                 <Label htmlFor="search">Zoeken</Label>
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input id="search" placeholder="Zoek op team, locatie, etc." className="pl-8" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                  <Input id="search" placeholder="Zoek op team, locatie, etc." className="pl-8 input-login-style" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                 </div>
               </div>
             </div>

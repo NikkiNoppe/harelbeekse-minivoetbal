@@ -54,6 +54,7 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser, isAdding })
             value={newUser.name}
             onChange={(e) => setNewUser({...newUser, name: e.target.value})}
             disabled={isAdding}
+            className="input-login-style"
           />
         </div>
         
@@ -66,6 +67,7 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser, isAdding })
             value={newUser.email}
             onChange={(e) => setNewUser({...newUser, email: e.target.value})}
             disabled={isAdding}
+            className="input-login-style"
           />
         </div>
       </div>
@@ -85,13 +87,13 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser, isAdding })
             }}
             disabled={isAdding}
           >
-            <SelectTrigger id="role">
+            <SelectTrigger id="role" className="dropdown-login-style">
               <SelectValue placeholder="Selecteer een rol" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="admin">Administrator</SelectItem>
-              <SelectItem value="player_manager">Teamverantwoordelijke</SelectItem>
-              <SelectItem value="referee">Scheidsrechter</SelectItem>
+            <SelectContent className="dropdown-content-login-style">
+              <SelectItem value="admin" className="dropdown-item-login-style">Administrator</SelectItem>
+              <SelectItem value="player_manager" className="dropdown-item-login-style">Teamverantwoordelijke</SelectItem>
+              <SelectItem value="referee" className="dropdown-item-login-style">Scheidsrechter</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -109,12 +111,12 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser, isAdding })
               }}
               disabled={isAdding}
             >
-              <SelectTrigger id="team">
+              <SelectTrigger id="team" className="dropdown-login-style">
                 <SelectValue placeholder="Selecteer een team" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dropdown-content-login-style">
                 {teams.map((team) => (
-                  <SelectItem key={team.team_id} value={team.team_id.toString()}>
+                  <SelectItem key={team.team_id} value={team.team_id.toString()} className="dropdown-item-login-style">
                     {team.team_name}
                   </SelectItem>
                 ))}

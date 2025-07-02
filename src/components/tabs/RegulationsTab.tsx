@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -216,9 +215,9 @@ const RegulationsTab: React.FC = () => {
   const isMobile = useIsMobile();
 
   return (
-    <div className="space-y-6 animate-slide-up">
-      <section className="max-w-3xl mx-auto px-2 sm:px-0">
-        <h2 className="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 my-[30px] text-left">Reglement</h2>
+    <div className="space-y-6 sm:space-y-8 animate-slide-up">
+      <section>
+        <h2 className="text-xl sm:text-2xl font-semibold mt-8 px-1 my-[30px]">Reglement</h2>
         <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8 text-center px-2">
           Dit reglement bevat de officiële regels en richtlijnen voor alle competities
           georganiseerd door Harelbeekse minivoetbal competitie.
@@ -261,12 +260,10 @@ const RegulationsTab: React.FC = () => {
         </Card>
       </section>
 
-      <section className="max-w-3xl mx-auto mt-8 sm:mt-12 px-2 sm:px-0">
+      <section>
+        <h2 className="text-xl sm:text-2xl font-semibold mt-8 px-1 my-[30px]">Contact Tuchtcommissie</h2>
         <Card>
-          <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
-            <CardTitle className="text-base sm:text-lg">Contact Tuchtcommissie</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+          <CardContent className="pt-4 sm:pt-6 bg-transparent">
             <p className="text-sm sm:text-base text-muted-foreground mb-4">
               Voor vragen over het reglement of om beroep aan te tekenen tegen disciplinaire beslissingen,
               kunt u contact opnemen met de tuchtcommissie:
