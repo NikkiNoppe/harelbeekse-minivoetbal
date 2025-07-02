@@ -23,9 +23,10 @@ const ModernUserDashboard = () => {
   // Team data will be fetched from actual database when needed
 
   // If it's a team manager, show the team dashboard instead
-  if (isTeamManager && teamData) {
-    return <TeamDashboard user={user} teamData={teamData} />;
-  }
+  // Note: teamData will need to be fetched from database when this feature is needed
+  // if (isTeamManager && teamData) {
+  //   return <TeamDashboard user={user} teamData={teamData} />;
+  // }
 
   // Define tabs based on user role
   const baseTabs = [
@@ -73,7 +74,7 @@ const ModernUserDashboard = () => {
           <div className="animate-fade-in">
             {/* Base tabs content */}
             <TabsContent value="match-forms" className="mt-0">
-              <MatchFormTab teamId={user?.teamId || 0} teamName={teamData?.name || "Admin"} />
+              <MatchFormTab teamId={user?.teamId || 0} teamName="Admin" />
             </TabsContent>
             
             <TabsContent value="players" className="mt-0">

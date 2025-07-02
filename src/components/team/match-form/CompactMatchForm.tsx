@@ -49,6 +49,9 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   } = useMatchFormState(match);
 
   const { submitMatchForm, lockMatch, unlockMatch } = useEnhancedMatchFormSubmission();
+  
+  // Determine user role for late submission detection
+  const userRole = isAdmin ? "admin" : isReferee ? "referee" : "player_manager";
 
   const [currentMatch, setCurrentMatch] = React.useState<MatchFormData>(match);
 
@@ -122,7 +125,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         awayPlayers: getAwayTeamSelectionsWithCards()
       };
 
-      const result = await submitMatchForm(updatedMatch, isAdmin);
+      const result = await submitMatchForm(updatedMatch, isAdmin, userRole);
 
       if (result.success) {
         if (isReferee && !currentMatch.isLocked) {

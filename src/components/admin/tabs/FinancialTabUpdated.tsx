@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Euro, TrendingDown, TrendingUp, Settings, Edit, Save } from "lucide-react";
+import { Loader2, Euro, TrendingDown, TrendingUp, Settings, Edit, Save, List } from "lucide-react";
 import TeamDetailModal from "@/components/admin/financial/TeamDetailModal";
 import CostSettingsModal from "@/components/admin/financial/CostSettingsModal";
+import CostSettingsManagementModal from "@/components/admin/financial/CostSettingsManagementModal";
 import { costSettingsService } from "@/services/costSettingsService";
 
 interface Team {
@@ -37,6 +38,7 @@ const FinancialTabUpdated: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [costListModalOpen, setCostListModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
 
   // Fetch teams with their balances
@@ -162,6 +164,13 @@ const FinancialTabUpdated: React.FC = () => {
                   }
                 </CardDescription>
               </div>
+              <Button
+                onClick={() => setCostListModalOpen(true)}
+                className="btn-white flex items-center gap-2"
+              >
+                <List className="h-4 w-4" />
+                Kostenlijst
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
@@ -240,6 +249,8 @@ const FinancialTabUpdated: React.FC = () => {
       <TeamDetailModal open={teamModalOpen} onOpenChange={setTeamModalOpen} team={selectedTeam} />
 
       <CostSettingsModal open={settingsModalOpen} onOpenChange={setSettingsModalOpen} />
+      
+      <CostSettingsManagementModal open={costListModalOpen} onOpenChange={setCostListModalOpen} />
     </div>
   );
 };

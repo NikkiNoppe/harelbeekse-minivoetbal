@@ -82,13 +82,19 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
       return { label: "Gespeeld", color: "bg-green-500", icon: CheckCircle };
     }
     
-    // 2. Gesloten - als expliciet vergrendeld OF 5 min voor aanvang
+        // 2. Gesloten - als expliciet vergrendeld OF 5 min voor aanvang OF wedstrijd is voorbij
     const now = new Date();
     const matchDateTime = new Date(`${match.date}T${match.time}`);
+    const fifteenMinutesBeforeMatch = new Date(matchDateTime.getTime() - 15 * 60 * 1000);
     const fiveMinutesBeforeMatch = new Date(matchDateTime.getTime() - 5 * 60 * 1000);
     
-    if (match.isLocked || now >= fiveMinutesBeforeMatch) {
-      return { label: "Gesloten", color: "bg-purple-900", icon: Lock };
+    // Check if match is in the past (after match time) or should be auto-locked
+    const isMatchInPast = now >= matchDateTime;
+    const shouldAutoLock = now >= fiveMinutesBeforeMatch;
+    const isInWarningPeriod = now >= fifteenMinutesBeforeMatch && now < fiveMinutesBeforeMatch;
+    
+    if (match.isLocked || shouldAutoLock || isMatchInPast) {
+      return { label: "Gesloten", color: "bg-red-400", icon: Lock };
     }
     
     // Helper functies voor team status
@@ -104,7 +110,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     
     // 3. Teams ✅✅ - beide teams compleet
     if (homeTeamComplete && awayTeamComplete) {
-      return { label: "Teams ✅✅", color: "bg-purple-600", icon: CheckCircle };
+      return { label: "Teams ✅✅", color: "bg-orange-300", icon: CheckCircle };
     }
     
     // 4. Home ✅ - alleen home team compleet
@@ -160,7 +166,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
             <Badge className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 group-hover:bg-white group-hover:text-purple-600">
               {match.uniqueNumber}
             </Badge>
-            <Badge className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm group-hover:bg-white group-hover:text-purple-600`}>
+            <Badge className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm group-hover:bg-white group-hover:!text-purple-600`}>
               <StatusIcon className="h-3 w-3 mr-1" />
               {status.label}
             </Badge>

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { localDateTimeToISO } from "@/lib/dateUtils";
 
 interface MatchUpdateData {
   homeScore?: number | null;
@@ -22,7 +23,7 @@ interface ServiceResponse {
 }
 
 export const enhancedMatchService = {
-  async updateMatch(matchId: number, updateData: MatchUpdateData, isAdmin: boolean = false): Promise<ServiceResponse> {
+  async updateMatch(matchId: number, updateData: MatchUpdateData, isAdmin: boolean = false, userRole?: string): Promise<ServiceResponse> {
 
     if (!matchId || isNaN(matchId)) {
       return {
@@ -32,8 +33,25 @@ export const enhancedMatchService = {
     }
 
     try {
+      // Check for late submission if this is a player_manager submission
+      let isLateSubmission = false;
+      if (userRole === "player_manager" && updateData.date && updateData.time) {
+        const now = new Date();
+        const matchDateTime = new Date(`${updateData.date}T${updateData.time}`);
+        const fifteenMinutesBeforeMatch = new Date(matchDateTime.getTime() - 15 * 60 * 1000);
+        const fiveMinutesBeforeMatch = new Date(matchDateTime.getTime() - 5 * 60 * 1000);
+        isLateSubmission = now >= fifteenMinutesBeforeMatch && now < fiveMinutesBeforeMatch;
+      }
+      
       // Build update object with all provided values
       const updateObject: any = {};
+      
+      // Add late submission penalty if applicable
+      if (isLateSubmission) {
+        updateObject.referee_notes = (updateData.refereeNotes || '') + 
+          (updateData.refereeNotes ? '\n\n' : '') + 
+          '⚠️ BOETE: Wedstrijdblad te laat ingevuld - €5.00';
+      }
 
       // Handle scores - allow null values to clear scores
       if (updateData.homeScore !== undefined) updateObject.home_score = updateData.homeScore;
@@ -43,8 +61,8 @@ export const enhancedMatchService = {
       if (updateData.matchday !== undefined) updateObject.speeldag = updateData.matchday;
       if (updateData.location !== undefined) updateObject.location = updateData.location;
       if (updateData.date !== undefined && updateData.time !== undefined) {
-        // Combine date and time into match_date timestamp
-        updateObject.match_date = `${updateData.date}T${updateData.time}:00`;
+        // Combine date and time into match_date timestamp with proper timezone handling
+        updateObject.match_date = localDateTimeToISO(updateData.date, updateData.time);
       }
       if (updateData.homePlayers !== undefined) updateObject.home_players = updateData.homePlayers;
       if (updateData.awayPlayers !== undefined) updateObject.away_players = updateData.awayPlayers;
@@ -83,7 +101,9 @@ export const enhancedMatchService = {
       
       return {
         success: true,
-        message: "Wedstrijd succesvol bijgewerkt",
+        message: isLateSubmission 
+          ? "⚠️ Spelerslijst bijgewerkt - LET OP: Te laat ingevuld!"
+          : "Wedstrijd succesvol bijgewerkt",
         data
       };
 

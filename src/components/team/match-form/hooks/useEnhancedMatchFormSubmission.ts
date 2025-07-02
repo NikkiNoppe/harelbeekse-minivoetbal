@@ -9,7 +9,7 @@ export const useEnhancedMatchFormSubmission = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const submitMatchForm = async (matchData: MatchFormData, isAdmin: boolean = false) => {
+  const submitMatchForm = async (matchData: MatchFormData, isAdmin: boolean = false, userRole?: string) => {
     const updateData = {
       homeScore: matchData.homeScore,
       awayScore: matchData.awayScore,
@@ -39,7 +39,7 @@ export const useEnhancedMatchFormSubmission = () => {
     setIsSubmitting(true);
     
     try {
-      const result = await enhancedMatchService.updateMatch(matchData.matchId, updateData, isAdmin);
+      const result = await enhancedMatchService.updateMatch(matchData.matchId, updateData, isAdmin, userRole);
 
       if (result.success) {
         // Refresh queries after successful update

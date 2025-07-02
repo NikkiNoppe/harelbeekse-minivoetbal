@@ -71,7 +71,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
                 <CardTitle className="text-lg">
                   {hasElevatedPermissions 
                     ? isAdmin 
-                      ? "Wedstrijdformulieren (Admin)"
+                      ? ""
                       : "Wedstrijdformulieren (Scheidsrechter)"
                     : `Wedstrijdformulieren voor ${teamName}`
                   }
