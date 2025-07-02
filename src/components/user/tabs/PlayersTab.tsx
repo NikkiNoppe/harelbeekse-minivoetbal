@@ -8,6 +8,7 @@ import {
   CardFooter 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Edit, Save, Plus, Lock } from "lucide-react";
 import PlayersListUpdated from "../players/PlayersListUpdated";
 import PlayerDialogUpdated from "../players/PlayerDialogUpdated";
@@ -64,109 +65,135 @@ const PlayersTab: React.FC = () => {
     : teams.find(team => team.team_id === selectedTeam)?.team_name || "";
   
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                Spelerslijst
-                {isLocked && authUser?.role !== "admin" && (
-                  <Lock className="h-4 w-4 text-red-500" />
-                )}
-              </CardTitle>
-              <CardDescription>
-                {authUser?.role === "player_manager" && currentTeamName ? (
-                  <>Spelers van {currentTeamName}</>
-                ) : (
-                  <>Beheer de spelers in de competitie</>
-                )}
+    <div className="space-y-8 animate-slide-up">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold flex items-center gap-2">
+          Spelerslijst
+          {isLocked && authUser?.role !== "admin" && (
+            <Lock className="h-4 w-4 text-red-500" />
+          )}
+        </h2>
+      </div>
+
+      <section>
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-lg">
+                  {authUser?.role === "player_manager" && currentTeamName ? (
+                    <>Spelers van {currentTeamName}</>
+                  ) : (
+                    <>Beheer de spelers in de competitie</>
+                  )}
+                </CardTitle>
                 {isLocked && lockDate && authUser?.role !== "admin" && (
-                  <span className="block text-red-600 mt-1">
+                  <p className="text-sm text-red-600 mt-1">
                     Spelerslijst vergrendeld vanaf {formatDateShort(lockDate)}
-                  </span>
-                )}
-              </CardDescription>
-            </div>
-            
-            {/* Team selection dropdown - only for admin users */}
-            {authUser?.role === "admin" && (
-              <div className="flex flex-col gap-2">
-                <select 
-                  className="input-login-style min-w-[200px]"
-                  value={selectedTeam || ""}
-                  onChange={(e) => handleTeamChange(parseInt(e.target.value))}
-                >
-                  <option value="" disabled>Selecteer team</option>
-                  {teams.map(team => (
-                    <option key={team.team_id} value={team.team_id}>
-                      {team.team_name}
-                    </option>
-                  ))}
-                </select>
-                {currentTeamName && (
-                  <span className="text-sm text-muted-foreground text-center">
-                    Geselecteerd: {currentTeamName}
-                  </span>
-                )}
-                {teams.length === 0 && (
-                  <span className="text-sm text-red-500 text-center">
-                    Geen teams gevonden
-                  </span>
+                  </p>
                 )}
               </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <PlayersListUpdated 
-            players={players}
-            loading={loading}
-            editMode={editMode && canEdit}
-            onRemovePlayer={handleRemovePlayer}
-            onEditPlayer={handleEditPlayer}
-            formatDate={formatDate}
-            getFullName={getFullName}
-          />
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={() => setEditMode(!editMode)}
-            className="flex items-center gap-2"
-            disabled={!canEdit}
-          >
-            {editMode ? (
-              <>
-                <Save size={16} />
-                Klaar met bewerken
-              </>
-            ) : (
-              <>
-                <Edit size={16} />
-                Lijst bewerken
-              </>
-            )}
-          </Button>
-          
-          {editMode && canEdit && (
+              
+              {/* Team selection dropdown - only for admin users */}
+              {authUser?.role === "admin" && (
+                <div className="flex flex-col gap-2">
+                  <Select value={selectedTeam?.toString() || ""} onValueChange={(value) => handleTeamChange(parseInt(value))}>
+                    <SelectTrigger className="dropdown-login-style min-w-[200px]">
+                      <SelectValue placeholder="Selecteer team" />
+                    </SelectTrigger>
+                    <SelectContent className="dropdown-content-login-style">
+                      {teams.map(team => (
+                        <SelectItem key={team.team_id} value={team.team_id.toString()} className="dropdown-item-login-style">
+                          {team.team_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {currentTeamName && (
+                    <span className="text-sm text-muted-foreground text-center">
+                      Geselecteerd: {currentTeamName}
+                    </span>
+                  )}
+                  {teams.length === 0 && (
+                    <span className="text-sm text-red-500 text-center">
+                      Geen teams gevonden
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="p-0 overflow-x-auto">
+            <PlayersListUpdated 
+              players={players}
+              loading={loading}
+              editMode={editMode && canEdit}
+              onRemovePlayer={handleRemovePlayer}
+              onEditPlayer={handleEditPlayer}
+              formatDate={formatDate}
+              getFullName={getFullName}
+            />
+          </CardContent>
+          <CardFooter className="flex justify-between">
             <Button
-              onClick={() => setDialogOpen(true)}
+              variant="outline"
+              onClick={() => setEditMode(!editMode)}
               className="flex items-center gap-2"
+              disabled={!canEdit}
             >
-              <Plus size={16} />
-              Speler toevoegen
+              {editMode ? (
+                <>
+                  <Save size={16} />
+                  Klaar met bewerken
+                </>
+              ) : (
+                <>
+                  <Edit size={16} />
+                  Lijst bewerken
+                </>
+              )}
             </Button>
-          )}
-        </CardFooter>
-      </Card>
+            
+            {editMode && canEdit && (
+              <Button
+                onClick={() => setDialogOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus size={16} />
+                Speler toevoegen
+              </Button>
+            )}
+          </CardFooter>
+        </Card>
+      </section>
 
-      {/* Admin Lock Settings - Only show for admins */}
-      {authUser?.role === "admin" && (
-        <PlayerListLockSettings />
-      )}
-      
-      <PlayerRegulations />
+      <section>
+        <h2 className="text-2xl font-semibold mt-8">Beheer & Reglementen</h2>
+        <div className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Admin Lock Settings - Only show for admins */}
+            {authUser?.role === "admin" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Spelerslijst Vergrendeling</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <PlayerListLockSettings />
+                </CardContent>
+              </Card>
+            )}
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Spelersreglement</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PlayerRegulations />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
       
       <PlayerDialogUpdated
         open={dialogOpen}

@@ -531,15 +531,28 @@ tbody tr:hover {
 
 /* Login-style dropdown styling */
 .dropdown-login-style {
-  @apply w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border border-purple-dark hover:border-purple-dark;
+  @apply w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border border-purple-dark hover:border-purple-dark rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-dark focus:border-purple-dark transition-all duration-200;
 }
 
 .dropdown-content-login-style {
-  @apply bg-white shadow-lg z-50 border border-purple-dark;
+  @apply bg-white shadow-lg z-50 border border-purple-dark rounded-md overflow-hidden;
 }
 
 .dropdown-item-login-style {
-  @apply w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white;
+  @apply w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white transition-colors duration-200 cursor-pointer;
+}
+
+/* Ensure consistent hover colors with the "Wachtwoord vergeten?" button styling */
+.dropdown-login-style:hover {
+  background-color: var(--main-color-dark) !important;
+  color: white !important;
+  border-color: var(--main-color-dark) !important;
+}
+
+.dropdown-item-login-style:hover,
+.dropdown-item-login-style[data-highlighted] {
+  background-color: var(--main-color-dark) !important;
+  color: white !important;
 }
 
 /* Login-style input styling */
