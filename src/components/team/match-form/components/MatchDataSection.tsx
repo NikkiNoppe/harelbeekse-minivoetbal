@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -5,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
 import { MatchFormData } from "../types";
-import { matchService } from "@/services/matchService";
+import { enhancedMatchService } from "@/services/enhancedMatchService";
 import { useToast } from "@/hooks/use-toast";
 
 interface MatchDataSectionProps {
@@ -56,24 +57,25 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
 
     setIsUpdating(true);
     try {
-      await matchService.updateMatchMetadata({
-        matchId: match.matchId,
+      const result = await enhancedMatchService.updateMatch(match.matchId, {
         date: formData.date,
         time: formData.time,
-        homeTeamId: match.homeTeamId,
-        awayTeamId: match.awayTeamId,
         location: formData.location,
         matchday: formData.matchday
       });
 
-      toast({
-        title: "Wedstrijdgegevens bijgewerkt",
-        description: "De wedstrijdgegevens zijn succesvol opgeslagen.",
-      });
+      if (result.success) {
+        toast({
+          title: "Wedstrijdgegevens bijgewerkt",
+          description: "De wedstrijdgegevens zijn succesvol opgeslagen.",
+        });
+      } else {
+        throw new Error(result.message);
+      }
     } catch (error) {
       toast({
         title: "Fout bij opslaan",
-        description: "Er is een fout opgetreden bij het opslaan van de wedstrijdgegevens.",
+        description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het opslaan van de wedstrijdgegevens.",
         variant: "destructive",
       });
     } finally {

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { MatchFormData } from "./types";
-import { updateMatchForm, lockMatchForm } from "./matchFormService";
+import { enhancedMatchService } from "@/services/enhancedMatchService";
 import { AlertTriangle, Lock, Save } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -42,27 +42,27 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
 
     setIsSubmitting(true);
     try {
-      const updatedMatch: MatchFormData = {
-        ...match,
+      const result = await enhancedMatchService.updateMatch(match.matchId, {
         homeScore: parseInt(homeScore),
         awayScore: parseInt(awayScore),
         referee,
         refereeNotes,
         isCompleted: true
-      };
-
-      await updateMatchForm(updatedMatch);
-      
-      toast({
-        title: isAdmin ? "Admin: Scores opgeslagen" : "Scores opgeslagen",
-        description: "De wedstrijdscores zijn succesvol opgeslagen."
       });
-      
-      onComplete();
+
+      if (result.success) {
+        toast({
+          title: isAdmin ? "Admin: Scores opgeslagen" : "Scores opgeslagen",
+          description: "De wedstrijdscores zijn succesvol opgeslagen."
+        });
+        onComplete();
+      } else {
+        throw new Error(result.message);
+      }
     } catch (error) {
       toast({
         title: "Fout",
-        description: "Er is een fout opgetreden bij het opslaan.",
+        description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het opslaan.",
         variant: "destructive"
       });
     } finally {
@@ -83,18 +83,24 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
     setIsSubmitting(true);
     try {
       // First save the data
-      const updatedMatch: MatchFormData = {
-        ...match,
+      const updateResult = await enhancedMatchService.updateMatch(match.matchId, {
         homeScore: parseInt(homeScore),
         awayScore: parseInt(awayScore),
         referee,
         refereeNotes,
-        isCompleted: true,
-        isLocked: true
-      };
+        isCompleted: true
+      });
 
-      await updateMatchForm(updatedMatch);
-      await lockMatchForm(match.matchId);
+      if (!updateResult.success) {
+        throw new Error(updateResult.message);
+      }
+
+      // Then lock the match
+      const lockResult = await enhancedMatchService.lockMatch(match.matchId);
+      
+      if (!lockResult.success) {
+        throw new Error(lockResult.message);
+      }
       
       toast({
         title: isAdmin ? "Admin: Formulier vergrendeld" : "Formulier vergrendeld",
@@ -105,7 +111,7 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
     } catch (error) {
       toast({
         title: "Fout",
-        description: "Er is een fout opgetreden bij het vergrendelen.",
+        description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het vergrendelen.",
         variant: "destructive"
       });
     } finally {
