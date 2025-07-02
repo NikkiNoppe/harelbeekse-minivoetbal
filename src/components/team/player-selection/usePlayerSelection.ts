@@ -7,13 +7,15 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Player, FormData, formSchema } from "./types";
 
+// Simplified database player interface
 interface DatabasePlayer {
   player_id: number;
   first_name: string;
   last_name: string;
 }
 
-interface MatchQueryResult {
+// Simplified match data interface
+interface MatchData {
   match_id: number;
   is_submitted: boolean;
   home_players: any;
@@ -26,7 +28,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch team players with simplified query structure
+  // Fetch team players function
   const fetchTeamPlayers = async () => {
     const { data, error } = await supabase
       .from('players')
@@ -45,8 +47,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       throw error;
     }
     
-    // Transform to Player format
-    const players: Player[] = (data || []).map((dbPlayer: DatabasePlayer) => ({
+    const players = (data || []).map((dbPlayer: DatabasePlayer) => ({
       playerId: dbPlayer.player_id,
       playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
       selected: false,
@@ -69,9 +70,10 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       throw error;
     }
     
-    return data as MatchQueryResult | null;
+    return data;
   };
 
+  // Use simple query definitions without complex generics
   const teamPlayersQuery = useQuery({
     queryKey: ['teamPlayers', teamId],
     queryFn: fetchTeamPlayers
@@ -87,7 +89,6 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     defaultValues: { players: [] }
   });
   
-  // Use the simplified query results
   const teamPlayers = teamPlayersQuery.data;
   const isLoading = teamPlayersQuery.isLoading;
   const existingMatch = matchQuery.data;
@@ -96,7 +97,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   // Initialize form with team players and any existing selections
   useEffect(() => {
     if (teamPlayers && !isLoading) {
-      let initialPlayers: Player[] = teamPlayers;
+      let initialPlayers = teamPlayers;
       
       // If there's an existing match, try to populate from the JSONB data
       if (existingMatch) {
@@ -131,7 +132,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       
       if (selectedPlayers.length === 0) {
         toast({
-          title: "Geen spelers geselecteer",
+          title: "Geen spelers geselecteerd",
           description: "Selecteer ten minste één speler voor het formulier.",
           variant: "destructive"
         });

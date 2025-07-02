@@ -81,13 +81,15 @@ export const RefereePenaltySection: React.FC<RefereePenaltySectionProps> = ({
         if (penalty.costSettingId && penalty.teamId) {
           const costSetting = availablePenalties.find(cs => cs.id === penalty.costSettingId);
           if (costSetting) {
-            await financialService.addTeamTransaction({
-              teamId: penalty.teamId,
+            await financialService.addTransaction({
+              team_id: penalty.teamId,
               amount: costSetting.amount,
               description: penalty.description || costSetting.name,
-              transactionType: 'penalty',
-              date: currentDate,
-              matchId: match.matchId
+              transaction_type: 'penalty',
+              transaction_date: currentDate,
+              match_id: match.matchId,
+              penalty_type_id: null,
+              cost_setting_id: penalty.costSettingId
             });
           }
         }
