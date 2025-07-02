@@ -1,8 +1,6 @@
-
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdvancedCompetitionGenerator from "../competition-generator/AdvancedCompetitionGenerator";
-import ManualSchemaTabWrapper from "./ManualSchemaTab";
 
 const CompetitionManagementTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState("advanced");
@@ -20,7 +18,7 @@ const CompetitionManagementTab: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="manual-schema" className="space-y-4 mt-6">
-          <ManualSchemaTabWrapper />
+          {/* <ManualSchemaTabWrapper /> */}
         </TabsContent>
       </Tabs>
     </div>
