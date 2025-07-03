@@ -1,7 +1,8 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Clock, MapPin, Users, Award, CheckCircle } from "lucide-react";
+import { Trophy, Clock, MapPin, Users, Award } from "lucide-react";
+import MatchCard, { MatchCardStatus } from "../match/components/MatchCard";
 interface Match {
   id: string;
   home: string;
@@ -54,75 +55,6 @@ const CupTab: React.FC = () => {
       location: "Gemeentelijk Stadion"
     }
   };
-  const MatchCard = ({
-    match,
-    stage
-  }: {
-    match: any;
-    stage: string;
-  }) => {
-    const getStatusBadge = () => {
-      switch (match.status) {
-        case "completed":
-          return { label: "Afgerond", color: "bg-green-500", icon: CheckCircle };
-        case "upcoming":
-          return { label: "→ " + match.nextMatch, color: "bg-orange-400", icon: Clock };
-        case "pending":
-          return { label: "In afwachting", color: "bg-gray-400", icon: Clock };
-        default:
-          return { label: "Onbekend", color: "bg-gray-400", icon: Clock };
-      }
-    };
-
-    const status = getStatusBadge();
-    const StatusIcon = status.icon;
-
-    return (
-      <div className="bg-white border border-purple-dark rounded-lg p-3 hover:shadow-md hover:border-purple-dark hover:bg-purple-dark transition-all duration-200 text-left w-full group">
-        <div className="space-y-3">
-          {/* Header met badges */}
-          <div className="flex items-center justify-between">
-            <Badge className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 group-hover:bg-white group-hover:text-purple-600">
-              {match.id}
-            </Badge>
-            <Badge className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm group-hover:bg-white group-hover:!text-purple-600`}>
-              <StatusIcon className="h-3 w-3 mr-1" />
-              {status.label}
-            </Badge>
-          </div>
-          
-          {/* Teams op één lijn */}
-          <div className="font-medium text-sm text-purple-dark group-hover:text-white transition-colors">
-            <div className="flex items-center justify-center gap-2">
-              <span className="truncate flex-1 text-right">{match.home}</span>
-              <span className="text-xs text-gray-500 group-hover:text-white/70 px-1">vs</span>
-              <span className="truncate flex-1 text-left">{match.away}</span>
-            </div>
-          </div>
-          
-          {/* Score centraal */}
-          <div className="text-center font-bold text-primary group-hover:text-white text-xl py-1">
-            {match.result || "  -  "}
-          </div>
-          
-          {/* Datum links, tijd rechts */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground group-hover:text-white/80">
-            <div className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              <span>{match.date}</span>
-            </div>
-            <span className="font-medium">{match.time}</span>
-          </div>
-          
-          {/* Locatie centraal */}
-          <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground group-hover:text-white/80">
-            <MapPin className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate text-center">{match.location}</span>
-          </div>
-        </div>
-      </div>
-    );
-  };
   return <div className="space-y-8 animate-slide-up">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold flex items-center gap-2">
@@ -174,7 +106,19 @@ const CupTab: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {bracketData.eighthfinals.map(match => <MatchCard key={match.id} match={match} stage="1/8 Finale" />)}
+              {bracketData.eighthfinals.map(match => (
+                <MatchCard
+                  key={match.id}
+                  id={match.id}
+                  home={match.home}
+                  away={match.away}
+                  date={match.date}
+                  time={match.time}
+                  location={match.location}
+                  status={match.status as MatchCardStatus}
+                  nextMatch={match.nextMatch}
+                />
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -190,7 +134,19 @@ const CupTab: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {bracketData.quarterfinals.map(match => <MatchCard key={match.id} match={match} stage="Kwartfinale" />)}
+              {bracketData.quarterfinals.map(match => (
+                <MatchCard
+                  key={match.id}
+                  id={match.id}
+                  home={match.home}
+                  away={match.away}
+                  date={match.date}
+                  time={match.time}
+                  location={match.location}
+                  status={match.status as MatchCardStatus}
+                  nextMatch={match.nextMatch}
+                />
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -206,7 +162,19 @@ const CupTab: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {bracketData.semifinals.map(match => <MatchCard key={match.id} match={match} stage="Halve Finale" />)}
+              {bracketData.semifinals.map(match => (
+                <MatchCard
+                  key={match.id}
+                  id={match.id}
+                  home={match.home}
+                  away={match.away}
+                  date={match.date}
+                  time={match.time}
+                  location={match.location}
+                  status={match.status as MatchCardStatus}
+                  nextMatch={match.nextMatch}
+                />
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -222,7 +190,15 @@ const CupTab: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="max-w-md mx-auto">
-              <MatchCard match={bracketData.final} stage="final" />
+              <MatchCard
+                id={bracketData.final.id}
+                home={bracketData.final.home}
+                away={bracketData.final.away}
+                date={bracketData.final.date}
+                time={bracketData.final.time}
+                location={bracketData.final.location}
+                status={bracketData.final.status as MatchCardStatus}
+              />
             </div>
           </CardContent>
         </Card>

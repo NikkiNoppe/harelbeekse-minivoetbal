@@ -10,6 +10,8 @@ import { Search, Calendar, Loader2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCompetitionMatches, MatchData } from "@/services/matchDataService";
+import MatchCard from "../match/components/MatchCard";
+
 interface Team {
   id: number;
   name: string;
@@ -179,35 +181,19 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
           {loadingMatches ? <div className="flex justify-center items-center h-32">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <span className="ml-2">Wedstrijden laden...</span>
-            </div> : <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Datum</TableHead>
-                    <TableHead>Tijd</TableHead>
-                    <TableHead>Thuisteam</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Uitteam</TableHead>
-                    <TableHead>Locatie</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {upcomingMatches.map(match => <TableRow key={match.matchId}>
-                      <TableCell>
-                        <Badge variant="outline" className="bg-primary text-soccer-black">
-                          {match.uniqueNumber || `M${match.matchId}`}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{match.date}</TableCell>
-                      <TableCell>{match.time}</TableCell>
-                      <TableCell className="font-medium">{match.homeTeamName}</TableCell>
-                      <TableCell className="text-center">VS</TableCell>
-                      <TableCell className="font-medium">{match.awayTeamName}</TableCell>
-                      <TableCell>{match.location}</TableCell>
-                    </TableRow>)}
-                </TableBody>
-              </Table>
+            </div> :
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {upcomingMatches.map(match => (
+                <MatchCard
+                  key={match.matchId}
+                  id={match.uniqueNumber || `M${match.matchId}`}
+                  home={match.homeTeamName}
+                  away={match.awayTeamName}
+                  date={match.date}
+                  time={match.time}
+                  location={match.location}
+                />
+              ))}
             </div>}
         </CardContent>
       </Card>
@@ -222,37 +208,21 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
           {loadingMatches ? <div className="flex justify-center items-center h-32">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <span className="ml-2">Wedstrijden laden...</span>
-            </div> : <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Datum</TableHead>
-                    <TableHead>Tijd</TableHead>
-                    <TableHead>Thuisteam</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Uitteam</TableHead>
-                    <TableHead>Locatie</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pastMatches.map(match => <TableRow key={match.matchId}>
-                      <TableCell>
-                        <Badge variant="outline" className="bg-primary text-soccer-black">
-                          {match.uniqueNumber || `M${match.matchId}`}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{match.date}</TableCell>
-                      <TableCell>{match.time}</TableCell>
-                      <TableCell className="font-medium">{match.homeTeamName}</TableCell>
-                      <TableCell className="text-center font-bold">
-                        {match.homeScore !== undefined && match.awayScore !== undefined ? `${match.homeScore} - ${match.awayScore}` : "- - -"}
-                      </TableCell>
-                      <TableCell className="font-medium">{match.awayTeamName}</TableCell>
-                      <TableCell>{match.location}</TableCell>
-                    </TableRow>)}
-                </TableBody>
-              </Table>
+            </div> :
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {pastMatches.map(match => (
+                <MatchCard
+                  key={match.matchId}
+                  id={match.uniqueNumber || `M${match.matchId}`}
+                  home={match.homeTeamName}
+                  away={match.awayTeamName}
+                  homeScore={match.homeScore}
+                  awayScore={match.awayScore}
+                  date={match.date}
+                  time={match.time}
+                  location={match.location}
+                />
+              ))}
             </div>}
         </CardContent>
       </Card>
