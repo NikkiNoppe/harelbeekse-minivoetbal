@@ -111,17 +111,13 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
     return true;
   });
   const isLoading = loadingStandings || loadingMatches;
-  return <div className="space-y-6">
-      {/* Competitie Stand */}
+  return <div className="space-y-8 animate-slide-up">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Competitiestand</h2>
+        <Badge className="badge-purple">Seizoen 2025-2026</Badge>
+      </div>
+
       <section>
-        <div className="flex items-center justify-between mt-8">
-          <h2 className="text-2xl font-semibold">Competitiestand</h2>
-          <div className="flex items-center gap-2">
-            <Badge className="badge-purple">Seizoen 2025-2026</Badge>
-            
-          </div>
-        </div>
-        <div className="mt-6">
           <Card>
             <CardContent className="bg-transparent">
               {isLoading && !teams ? <div className="flex justify-center items-center h-32">
@@ -171,7 +167,6 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
                 </div>}
             </CardContent>
           </Card>
-        </div>
       </section>
       
       {/* Aankomende Wedstrijden */}

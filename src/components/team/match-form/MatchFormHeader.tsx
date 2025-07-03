@@ -54,7 +54,7 @@ const MatchFormHeader: React.FC<MatchFormHeaderProps> = ({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-medium">Wedstrijdformulier</h2>
-        <Button variant="ghost" onClick={onBackToOverview}>
+        <Button variant="ghost" onClick={onBackToOverview} className="bg-white text-purple-dark border-purple-dark hover:bg-purple-dark hover:text-white">
           Terug naar overzicht
         </Button>
       </div>

@@ -2,13 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   1. CSS VARIABLES & THEME CONFIGURATION
+   ============================================================================ */
+
 @layer base {
   :root {
-    /* Main colors */
+    /* Main Brand Colors */
     --main-color-dark: #60368c;
     --main-color-light: #ab86dd;
     
-    /* Color shades */
+    /* Purple Color Palette */
     --purple-50: #faf8ff;
     --purple-100: #f5f0ff;
     --purple-200: #e9e0ff;
@@ -20,100 +24,72 @@
     --purple-800: #351d4a;
     --purple-900: #201029;
     
-    /* Theme variables */
+    /* Shadcn Theme Variables */
     --background: var(--purple-400);
     --foreground: var(--purple-600);
-
     --card: 255 255 255;
     --card-foreground: var(--purple-600);
- 
     --popover: 255 255 255;
     --popover-foreground: var(--purple-600);
-
     --primary: var(--purple-600);
     --primary-foreground: 255 255 255;
-
     --secondary: var(--purple-50);
     --secondary-foreground: var(--purple-600);
- 
     --muted: var(--purple-50);
     --muted-foreground: var(--purple-600);
- 
     --accent: var(--purple-400);
     --accent-foreground: var(--purple-600);
- 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 0 0 0 0;
     --input: var(--purple-200);
     --ring: var(--purple-600);
- 
     --radius: 0.5rem;
-
-    --sidebar-background: var(--purple-50);
-    --sidebar-foreground: var(--purple-600);
-    --sidebar-primary: var(--purple-600);
-    --sidebar-primary-foreground: 255 255 255;
-    --sidebar-accent: var(--purple-400);
-    --sidebar-accent-foreground: var(--purple-600);
-    --sidebar-ring: var(--purple-600);
   }
  
   .dark {
     --background: var(--purple-600);
     --foreground: 255 255 255;
-
     --card: var(--purple-700);
     --card-foreground: 255 255 255;
- 
     --popover: var(--purple-700);
     --popover-foreground: 255 255 255;
-
     --primary: var(--purple-400);
     --primary-foreground: var(--purple-600);
-
     --secondary: var(--purple-700);
     --secondary-foreground: 255 255 255;
- 
     --muted: var(--purple-700);
     --muted-foreground: var(--purple-400);
- 
     --accent: var(--purple-400);
     --accent-foreground: var(--purple-600);
- 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
- 
     --border: 0 0 0 0;
     --input: var(--purple-700);
- 
     --ring: var(--purple-400);
-
-    --sidebar-background: var(--purple-600);
-    --sidebar-foreground: 255 255 255;
-    --sidebar-primary: var(--purple-400);
-    --sidebar-primary-foreground: var(--purple-600);
-    --sidebar-accent: var(--purple-700);
-    --sidebar-accent-foreground: 255 255 255;
-    --sidebar-border: 0 0 0 0;
-    --sidebar-ring: var(--purple-400);
   }
 }
+
+/* ============================================================================
+   2. BASE STYLES & RESET
+   ============================================================================ */
 
 @layer base {
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
-    font-feature-settings:
-      "rlig" 1,
-      "calt" 1;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-/* Enhanced mobile-specific improvements */
+/* ============================================================================
+   3. MOBILE & RESPONSIVE STYLES
+   ============================================================================ */
+
+/* Scrollbar utilities */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -123,17 +99,7 @@
   display: none;
 }
 
-.no-vertical-scroll {
-  touch-action: pan-x;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.no-vertical-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-/* Prevent horizontal scroll on mobile and ensure proper layout */
+/* Mobile-specific improvements */
 @media (max-width: 768px) {
   body {
     overflow-x: hidden;
@@ -146,115 +112,23 @@
     overscroll-behavior-x: none;
   }
   
-  /* Ensure cards don't break layout on mobile */
   .card {
     min-width: 0;
     word-wrap: break-word;
     overflow-wrap: break-word;
   }
   
-  /* Better mobile touch targets */
   button, [role="button"] {
     min-height: 44px;
     min-width: 44px;
   }
   
-  /* Improve mobile input experience */
   input, textarea, select {
     font-size: 16px; /* Prevents zoom on iOS */
   }
 }
 
-/* Dark mode fixes for tabs - Updated for purple theme */
-.dark .tabs-list [data-state="active"] {
-  background-color: var(--purple-400);
-  color: var(--purple-600);
-}
-
-/* Light mode fixes for tabs */
-.tabs-list [data-state="active"] {
-  background-color: var(--purple-400);
-  color: var(--purple-600);
-}
-
-/* Purple pattern and other styles */
-.soccer-pattern {
-  background-color: var(--purple-600);
-  background-image: linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
-  background-position: -1px -1px;
-}
-
-/* Card hover effect with purple theme */
-.card-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(96, 54, 140, 0.15), 0 10px 10px -5px rgba(96, 54, 140, 0.1);
-}
-
-/* Enhanced responsive utilities */
-@layer utilities {
-  .text-responsive {
-    @apply text-sm sm:text-base lg:text-lg;
-  }
-  
-  .heading-responsive {
-    @apply text-lg sm:text-xl lg:text-2xl;
-  }
-  
-  .spacing-responsive {
-    @apply space-y-3 sm:space-y-4 lg:space-y-6;
-  }
-  
-  .padding-responsive {
-    @apply p-4 sm:p-6 lg:p-8;
-  }
-  
-  .margin-responsive {
-    @apply m-3 sm:m-4 lg:m-6;
-  }
-}
-
-/* Modern Tab Styling */
-.modern-tabs {
-  @apply w-full bg-white border-b border-purple-200 shadow-sm;
-}
-
-.modern-tabs-list {
-  @apply w-full h-16 bg-transparent border-0 rounded-none p-0 flex justify-center;
-}
-
-.modern-tab-trigger {
-  @apply flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all duration-200;
-  @apply rounded-lg border-0 bg-transparent text-purple-700 hover:bg-purple-100;
-  @apply data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm;
-}
-
-.modern-tab-container {
-  @apply flex flex-wrap justify-center gap-1 bg-purple-50 rounded-xl p-1 border border-purple-200;
-}
-
-/* Smooth animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* Responsive tab text */
+/* Responsive text utilities */
 @media (max-width: 640px) {
   .tab-text-responsive {
     display: none;
@@ -275,305 +149,54 @@
   }
 }
 
-/* Modern card styling for content */
-.modern-card {
-  @apply bg-white rounded-xl shadow-sm border border-purple-100 p-6;
-}
+/* ============================================================================
+   4. TYPOGRAPHY & TEXT COLORS
+   ============================================================================ */
 
-.modern-card-header {
-  @apply pb-4 border-b border-purple-100 mb-6;
-}
-
-.modern-card-title {
-  @apply text-xl font-semibold text-purple-700;
-}
-
-.modern-card-description {
-  @apply text-sm text-purple-600 mt-1;
-}
-
-/* Button modernization */
-.modern-button {
-  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
-  @apply bg-purple-600 text-white hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2;
-}
-
-.modern-button-outline {
-  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
-  @apply border border-purple-300 text-purple-700 hover:bg-purple-50 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2;
-}
-
-/* Content spacing */
-.content-wrapper {
-  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
-}
-
-/* Purple theme typography and colors - Updated for better contrast */
+/* Main headings */
 h1, h2, h3, h4, h5, h6 {
   color: var(--purple-400);
 }
 
-/* Subtitles and descriptions - Dark purple on white backgrounds */
+/* Body text and descriptions */
 p, .card-description, .text-muted-foreground {
   color: var(--purple-600);
 }
 
-/* Ensure proper text colors for readability on white backgrounds */
+/* Text on white backgrounds */
 .bg-white, .bg-card, [class*="bg-white"] {
-  color: var(--purple-600); /* Dark purple text on white backgrounds */
+  color: var(--purple-600);
 }
 
 /* Dark mode text colors */
 .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
-  color: #ffffff; /* White headings in dark mode */
+  color: #ffffff;
 }
 
 .dark p, .dark .card-description, .dark .text-muted-foreground {
-  color: var(--purple-400); /* Light purple text in dark mode */
+  color: var(--purple-400);
 }
 
-/* Table headers and frame titles */
-th, .table-header, .frame-title, .table-head {
-  color: #ffffff; /* White text for table headers */
-  background-color: var(--purple-600); /* Dark purple background for contrast */
-}
-
-/* Content text in frames and columns */
-td, .table-cell, .content-text, .column-text {
-  color: var(--purple-600); /* Dark purple for content text */
-}
-
-/* Special handling for buttons and interactive elements */
-button {
-  background-color: var(--purple-400); /* Light purple buttons */
-  color: #ffffff; /* White text on buttons only */
-  border-color: var(--purple-400); /* Light purple borders */
-}
-
-button:hover {
-  background-color: var(--purple-500); /* Dark purple on hover */
-  color: #ffffff; /* White text on buttons only */
-}
-
-/* Tab styling improvements */
-.tabs-list {
-  background-color: var(--purple-50); /* Light gray tab background */
-  border-color: var(--purple-400); /* Light purple borders */
-}
-
-.tabs-trigger {
-  color: var(--purple-600); /* Dark purple inactive tab text */
-  border-color: var(--purple-400);
-}
-
-.tabs-trigger[data-state="active"] {
-  background-color: var(--purple-400); /* Light purple active tab */
-  color: var(--purple-600); /* Dark purple active tab text */
-}
-
-/* Badge styling */
-.badge {
-  background-color: var(--purple-400);
-  color: var(--purple-600);
-  border-color: var(--purple-400);
-}
-
-/* Input and form styling */
-input, textarea, select {
-  border-color: var(--purple-400);
-  background-color: #ffffff;
-  color: var(--purple-600);
-}
-
-input:focus, textarea:focus, select:focus {
-  border-color: var(--purple-400);
-  ring-color: var(--purple-400);
-}
-
-/* Table styling with light purple borders */
-table {
-  border-color: var(--purple-400);
-}
-
-tbody tr {
-  border-color: var(--purple-400);
-}
-
-tbody tr:hover {
-  background-color: var(--purple-400);
-}
-
-/* Card and component frames with light purple borders */
-.card, .frame, .component-frame {
-  border-color: var(--purple-400);
-}
-
-.card-header, .frame-header {
-  background-color: var(--purple-50);
-  color: var(--purple-600);
-  border-color: var(--purple-400);
-}
-
-/* Separator and divider styling */
-.separator, .divider, hr {
-  background-color: var(--purple-400);
-  border-color: var(--purple-400);
-}
-
-/* Alert components on white backgrounds */
-.alert {
-  background-color: #ffffff;
-  color: var(--purple-600);
-  border-color: var(--purple-400);
-}
-
-.alert-description {
-  color: var(--purple-600);
-}
-
-/* Muted text should be dark purple on white backgrounds */
-.text-muted-foreground {
-  color: var(--purple-600);
-}
-
-/* Dark mode muted text */
 .dark .text-muted-foreground {
   color: var(--purple-400);
 }
 
-@layer components {
-  .badge-purple {
-    @apply bg-purple-400 text-white;
-  }
-  .badge-purple-white {
-    @apply bg-purple-600 text-white;
-  }
-}
+/* ============================================================================
+   5. BUTTON STYLES
+   ============================================================================ */
 
-/* ---- Custom utility for purple_light border [purple-400 is used for purple_light in site vars] ---- */
-.border-\[var\(--purple-400\)\] {
-  border-color: var(--purple-400) !important;
-}
-/* Optional: style for dropdown "Geen speler" on hover/focus for clarity */
-[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:hover, 
-[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:focus {
-  background-color: var(--purple-200) !important;
-}
-
-/* ------ Custom: Lovable site-wide purple theme dropdown and card fixes ------ */
-
-/* Fix select dropdown content background and shadow to match color branding */
-[data-radix-popper-content-wrapper] .bg-\[var\(--purple-200\)\] {
-  background-color: var(--purple-200) !important;
-  color: var(--main-color-dark) !important;
-}
-
-[data-radix-popper-content-wrapper] .border-\[var\(--main-color-dark\)\] {
-  border-color: var(--main-color-dark) !important;
-}
-[data-radix-popper-content-wrapper] .shadow-lg,
-[data-radix-popper-content-wrapper] .shadow-md {
-  box-shadow: 0 8px 24px 0 rgba(96, 54, 140, 0.09), 0 1.5px 4px 0 rgba(96, 54, 140, 0.12) !important;
-}
-[data-radix-popper-content-wrapper] .data-\[highlighted\]\:bg-\[var\(--main-color-dark\)\] {
-  background-color: var(--main-color-dark) !important;
-  color: #fff !important;
-}
-
-/* EXTRA: Ensure "Geen speler" SelectItem always has visible purple_light border */
-[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\],
-[data-radix-select-item][value="no-player"] {
-  border-color: var(--purple-400) !important;
-  border-width: 2px !important;
-  border-style: solid !important;
-  box-shadow: 0 0 0 1px var(--purple-400) !important;
-  background-color: #fff !important;
-  color: var(--main-color-dark) !important;
-}
-
-[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:hover,
-[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:focus,
-[data-radix-select-item][value="no-player"]:hover,
-[data-radix-select-item][value="no-player"]:focus {
-  border-color: var(--purple-400) !important;
-  border-width: 2px !important;
-  border-style: solid !important;
-  box-shadow: 0 0 0 2px var(--purple-400) !important;
-  background-color: var(--purple-200) !important;
-  color: var(--main-color-dark) !important;
-}
-
-/* Main match card headers */
-.bg-\[var\(--main-color-dark\)\] {
-  background-color: var(--main-color-dark) !important;
-}
-.text-\[var\(--main-color-dark\)\] {
-  color: var(--main-color-dark) !important;
-}
-
-.bg-\[var\(--purple-200\)\] {
-  background-color: var(--purple-200) !important;
-}
-.text-\[var\(--purple-200\)\] {
-  color: var(--purple-200) !important;
-}
-
-/* Card & Button tweaks over the match form for better white contrast */
-.card-header,
-.card-title,
-.card-title.text-white {
-  color: #fff !important;
-}
-
-/* End Custom site-wide fixes */
-
-/* ===== REUSABLE STYLING UTILITIES ===== */
-
-/* Login-style dropdown styling */
-.dropdown-login-style {
-  @apply w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border border-purple-dark hover:border-purple-dark rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-dark focus:border-purple-dark transition-all duration-200;
-}
-
-.dropdown-content-login-style {
-  @apply bg-white shadow-lg z-50 border border-purple-dark rounded-md overflow-hidden;
-}
-
-.dropdown-item-login-style {
-  @apply w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white transition-colors duration-200 cursor-pointer;
-}
-
-/* Ensure consistent hover colors with the "Wachtwoord vergeten?" button styling */
-.dropdown-login-style:hover {
-  background-color: var(--main-color-dark) !important;
-  color: white !important;
-  border-color: var(--main-color-dark) !important;
-}
-
-.dropdown-item-login-style:hover,
-.dropdown-item-login-style[data-highlighted] {
-  background-color: var(--main-color-dark) !important;
-  color: white !important;
-}
-
-/* Login-style input styling */
-.input-login-style {
-  @apply bg-white text-purple-dark border border-purple-dark rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-dark focus:border-purple-dark;
-}
-
-/* ===== STANDARDIZED BUTTON STYLES ===== */
-
-/* ButtonDark - "Inloggen" button style */
+/* Primary dark button */
 .btn-dark {
   @apply w-full bg-purple-dark text-white hover:bg-purple-light hover:text-white border border-purple-dark transition-all duration-200 font-medium rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-dark focus:ring-offset-2;
 }
 
 .btn-dark:hover {
   background-color: var(--purple-light) !important;
-  color: white !important;
+  color: var(--purple-dark) !important;
   border-color: var(--purple-light) !important;
 }
 
-/* ButtonLight - "Wachtwoord vergeten?" button style */
+/* Secondary light button */
 .btn-light {
   @apply w-full text-sm bg-purple-light text-white hover:bg-purple-dark hover:text-white border border-purple-light hover:border-purple-dark transition-all duration-200 font-medium rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-light focus:ring-offset-2;
 }
@@ -584,15 +207,28 @@ tbody tr:hover {
   border-color: var(--purple-dark) !important;
 }
 
-/* ButtonWhite - White background with dark border (dropdown style) */
-.btn-white {
-  @apply w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border border-purple-dark hover:border-purple-dark transition-all duration-200 font-medium rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-dark focus:ring-offset-2;
+/* White outline button */
+button.btn-white {
+  width: auto;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  transition: all 0.2s ease;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff !important;
+  color: #60368c !important;
+  border: 1px solid #60368c !important;
 }
 
-.btn-white:hover {
-  background-color: var(--purple-dark) !important;
-  color: white !important;
-  border-color: var(--purple-dark) !important;
+button.btn-white:hover,
+button.btn-white:focus {
+  background-color: #60368c !important;
+  color: #ffffff !important;
+  border-color: #60368c !important;
 }
 
 /* Button size variants */
@@ -617,7 +253,7 @@ tbody tr:hover {
   @apply w-auto;
 }
 
-/* Button disabled state */
+/* Disabled button states */
 .btn-dark:disabled,
 .btn-light:disabled,
 .btn-white:disabled {
@@ -632,11 +268,350 @@ tbody tr:hover {
   border-color: inherit !important;
 }
 
-/* Login-style button styling (legacy - keep for backward compatibility) */
-.btn-login-primary {
-  @apply w-full bg-purple-dark text-white hover:bg-purple-light hover:text-white border border-purple-dark;
+/* Default button styling (non-custom buttons) */
+button:not(.btn-white):not(.btn-dark):not(.btn-light) {
+  background-color: var(--purple-400);
+  color: #ffffff;
+  border-color: var(--purple-400);
 }
 
-.btn-login-secondary {
-  @apply w-full text-sm bg-purple-light text-white hover:bg-purple-dark hover:text-white border border-purple-light hover:border-purple-dark;
+button:not(.btn-white):not(.btn-dark):not(.btn-light):hover {
+  background-color: var(--purple-500);
+  color: #ffffff;
 }
+
+/* ============================================================================
+   6. FORM INPUTS & CONTROLS
+   ============================================================================ */
+
+/* Login-style input styling */
+.input-login-style {
+  @apply bg-white text-purple-dark border border-purple-dark rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-dark focus:border-purple-dark;
+}
+
+/* Login-style dropdown styling */
+.dropdown-login-style {
+  @apply w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border border-purple-dark hover:border-purple-dark rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-dark focus:border-purple-dark transition-all duration-200;
+}
+
+.dropdown-login-style:hover {
+  background-color: var(--main-color-dark) !important;
+  color: white !important;
+  border-color: var(--main-color-dark) !important;
+}
+
+.dropdown-content-login-style {
+  @apply bg-white shadow-lg z-50 border border-purple-dark rounded-md overflow-hidden;
+}
+
+.dropdown-item-login-style {
+  @apply w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white transition-colors duration-200 cursor-pointer;
+}
+
+.dropdown-item-login-style:hover,
+.dropdown-item-login-style[data-highlighted] {
+  background-color: var(--main-color-dark) !important;
+  color: white !important;
+}
+
+/* General form styling */
+input, textarea, select {
+  border-color: var(--purple-400);
+  background-color: #ffffff;
+  color: var(--purple-600);
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--purple-400);
+  ring-color: var(--purple-400);
+}
+
+/* ============================================================================
+   7. TAB SYSTEM STYLES
+   ============================================================================ */
+
+/* Main tabs (working tabs: Algemeen, Beker, etc.) */
+.custom-tabs-list {
+  width: 100%;
+  height: 4rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.custom-tabs-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem;
+  background-color: var(--purple-50);
+  border-radius: 0.75rem;
+  padding: 0.25rem;
+  border: 1px solid var(--purple-200);
+}
+
+.custom-tab-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  border-radius: 0.5rem;
+  border: none;
+  background-color: white !important;
+  color: var(--purple-dark) !important;
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+}
+
+.custom-tab-trigger:hover {
+  background-color: var(--purple-100) !important;
+  color: var(--purple-dark) !important;
+}
+
+.custom-tab-trigger[data-state="active"] {
+  background-color: var(--purple-600) !important;
+  color: white !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.custom-tab-trigger:focus-visible {
+  outline: 2px solid var(--purple-600);
+  outline-offset: 2px;
+}
+
+/* Default tab styling fallbacks */
+.tabs-list {
+  background-color: var(--purple-50);
+  border-color: var(--purple-400);
+}
+
+.tabs-trigger {
+  color: var(--purple-600);
+  border-color: var(--purple-400);
+}
+
+.tabs-trigger[data-state="active"] {
+  background-color: var(--purple-400);
+  color: var(--purple-600);
+}
+
+.dark .tabs-list [data-state="active"] {
+  background-color: var(--purple-400);
+  color: var(--purple-600);
+}
+
+/* ============================================================================
+   8. CARD & COMPONENT STYLES
+   ============================================================================ */
+
+/* Card styling */
+.card, .frame, .component-frame {
+  border-color: var(--purple-400);
+}
+
+.card-header, .frame-header {
+  background-color: var(--purple-50);
+  color: var(--purple-600);
+  border-color: var(--purple-400);
+}
+
+.card-header, .card-title, .card-title.text-white {
+  color: #fff !important;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(96, 54, 140, 0.15), 0 10px 10px -5px rgba(96, 54, 140, 0.1);
+}
+
+/* ============================================================================
+   9. TABLE STYLES
+   ============================================================================ */
+
+/* Table headers */
+th, .table-header, .frame-title, .table-head {
+  color: #ffffff;
+  background-color: var(--purple-600);
+}
+
+/* Table content */
+td, .table-cell, .content-text, .column-text {
+  color: var(--purple-600);
+}
+
+/* Table styling */
+table {
+  border-color: var(--purple-400);
+}
+
+tbody tr {
+  border-color: var(--purple-400);
+}
+
+tbody tr:hover {
+  background-color: var(--purple-400);
+}
+
+/* ============================================================================
+   10. BADGE & ALERT STYLES
+   ============================================================================ */
+
+/* Badge styling */
+.badge {
+  background-color: var(--purple-400);
+  color: var(--purple-600);
+  border-color: var(--purple-400);
+}
+
+@layer components {
+  .badge-purple {
+    @apply bg-purple-400 text-white;
+  }
+  .badge-purple-white {
+    @apply bg-purple-600 text-white;
+  }
+}
+
+/* Alert components */
+.alert {
+  background-color: #ffffff;
+  color: var(--purple-600);
+  border-color: var(--purple-400);
+}
+
+.alert-description {
+  color: var(--purple-600);
+}
+
+/* ============================================================================
+   11. UTILITY CLASSES & ANIMATIONS
+   ============================================================================ */
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Separator styling */
+.separator, .divider, hr {
+  background-color: var(--purple-400);
+  border-color: var(--purple-400);
+}
+
+/* Content wrapper */
+.content-wrapper {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
+}
+
+/* Background patterns */
+.soccer-pattern {
+  background-color: var(--purple-600);
+  background-image: linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: -1px -1px;
+}
+
+/* ============================================================================
+   12. RADIX UI & THIRD-PARTY OVERRIDES
+   ============================================================================ */
+
+/* Custom border utility */
+.border-\[var\(--purple-400\)\] {
+  border-color: var(--purple-400) !important;
+}
+
+/* Radix Select "Geen speler" styling */
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:hover, 
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:focus {
+  background-color: var(--purple-200) !important;
+}
+
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\],
+[data-radix-select-item][value="no-player"] {
+  border-color: var(--purple-400) !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  box-shadow: 0 0 0 1px var(--purple-400) !important;
+  background-color: #fff !important;
+  color: var(--main-color-dark) !important;
+}
+
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:hover,
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:focus,
+[data-radix-select-item][value="no-player"]:hover,
+[data-radix-select-item][value="no-player"]:focus {
+  border-color: var(--purple-400) !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  box-shadow: 0 0 0 2px var(--purple-400) !important;
+  background-color: var(--purple-200) !important;
+  color: var(--main-color-dark) !important;
+}
+
+/* Radix Popper content styling */
+[data-radix-popper-content-wrapper] .bg-\[var\(--purple-200\)\] {
+  background-color: var(--purple-200) !important;
+  color: var(--main-color-dark) !important;
+}
+
+[data-radix-popper-content-wrapper] .border-\[var\(--main-color-dark\)\] {
+  border-color: var(--main-color-dark) !important;
+}
+
+[data-radix-popper-content-wrapper] .shadow-lg,
+[data-radix-popper-content-wrapper] .shadow-md {
+  box-shadow: 0 8px 24px 0 rgba(96, 54, 140, 0.09), 0 1.5px 4px 0 rgba(96, 54, 140, 0.12) !important;
+}
+
+[data-radix-popper-content-wrapper] .data-\[highlighted\]\:bg-\[var\(--main-color-dark\)\] {
+  background-color: var(--main-color-dark) !important;
+  color: #fff !important;
+}
+
+/* ============================================================================
+   13. CUSTOM COLOR UTILITIES
+   ============================================================================ */
+
+.bg-\[var\(--main-color-dark\)\] {
+  background-color: var(--main-color-dark) !important;
+}
+
+.text-\[var\(--main-color-dark\)\] {
+  color: var(--main-color-dark) !important;
+}
+
+.bg-\[var\(--purple-200\)\] {
+  background-color: var(--purple-200) !important;
+}
+
+.text-\[var\(--purple-200\)\] {
+  color: var(--purple-200) !important;
+}
+
+

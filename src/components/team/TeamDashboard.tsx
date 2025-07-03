@@ -63,18 +63,18 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 min-h-[40px] sm:min-h-[44px]">
+        <TabsList className="login-tabs-list">
           <TabsTrigger 
             value="match-forms" 
             disabled={!canManageMatchForms}
-            className="text-xs sm:text-sm px-2 sm:px-4"
+            className="login-tab-trigger"
           >
             Wedstrijdformulieren
           </TabsTrigger>
           <TabsTrigger 
             value="players" 
             disabled={!canManagePlayers}
-            className="text-xs sm:text-sm px-2 sm:px-4"
+            className="login-tab-trigger"
           >
             Spelerslijst
           </TabsTrigger>

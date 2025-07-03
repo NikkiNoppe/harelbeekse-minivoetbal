@@ -51,12 +51,7 @@ export const MatchFormActions: React.FC<MatchFormActionsProps> = ({
       <Button
         onClick={onSubmit}
         disabled={isSubmitting || (!canActuallyEdit && !isAdmin)}
-        className="flex items-center gap-2 px-8"
-        style={{
-          background: "var(--main-color-dark)",
-          color: "#fff",
-          borderColor: "var(--main-color-dark)"
-        }}
+        className="flex items-center gap-2 px-8 bg-white text-purple-dark border-purple-dark hover:bg-purple-dark hover:text-white"
       >
         {getButtonIcon()}
         {getButtonText()}

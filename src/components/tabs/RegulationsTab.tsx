@@ -215,9 +215,12 @@ const RegulationsTab: React.FC = () => {
   const isMobile = useIsMobile();
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-slide-up">
+    <div className="space-y-8 animate-slide-up">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Reglement</h2>
+      </div>
+
       <section>
-        <h2 className="text-xl sm:text-2xl font-semibold mt-8 px-1 my-[30px]">Reglement</h2>
         <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8 text-center px-2">
           Dit reglement bevat de officiële regels en richtlijnen voor alle competities
           georganiseerd door Harelbeekse minivoetbal competitie.
@@ -261,7 +264,7 @@ const RegulationsTab: React.FC = () => {
       </section>
 
       <section>
-        <h2 className="text-xl sm:text-2xl font-semibold mt-8 px-1 my-[30px]">Contact Tuchtcommissie</h2>
+        <h2 className="text-2xl font-semibold">Contact Tuchtcommissie</h2>
         <Card>
           <CardContent className="pt-4 sm:pt-6 bg-transparent">
             <p className="text-sm sm:text-base text-muted-foreground mb-4">

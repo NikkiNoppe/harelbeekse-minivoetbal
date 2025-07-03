@@ -164,13 +164,13 @@ const FinancialTabUpdated: React.FC = () => {
                   }
                 </CardDescription>
               </div>
-              <Button
+              <button
                 onClick={() => setCostListModalOpen(true)}
-                className="btn-white flex items-center gap-2"
+                className="btn-white"
               >
-                <List className="h-4 w-4" />
+                <List className="h-4 w-4 mr-2" />
                 Kostenlijst
-              </Button>
+              </button>
             </div>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">

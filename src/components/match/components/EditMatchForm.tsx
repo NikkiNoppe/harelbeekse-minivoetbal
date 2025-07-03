@@ -249,10 +249,10 @@ export const EditMatchForm: React.FC<EditMatchFormProps> = ({
       </div>
       
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel} className="bg-white text-purple-dark border-purple-dark hover:bg-purple-dark hover:text-white">
           Annuleren
         </Button>
-        <Button type="submit">
+        <Button type="submit" className="bg-white text-purple-dark border-purple-dark hover:bg-purple-dark hover:text-white">
           {formData.id ? "Bijwerken" : "Toevoegen"}
         </Button>
       </div>

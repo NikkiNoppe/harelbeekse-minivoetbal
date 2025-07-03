@@ -24,49 +24,62 @@ const UserDashboard = () => {
   // if (isTeamManager && teamData) {
   //   return <TeamDashboard user={user} teamData={teamData} />;
   // }
-  return <div className="w-full">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full flex mb-6 sm:mb-8 overflow-x-auto scrollbar-hide min-h-[40px] sm:min-h-[44px] p-1 bg-transparent ">
-          {/* Base tabs for all authenticated users */}
-          <TabsTrigger value="match-forms" className="flex-shrink-0 text-xs sm:text-sm px-2 sm:px-3">
-            Wedstrijdformulieren
-          </TabsTrigger>
-          <TabsTrigger value="players" className="flex-shrink-0 text-xs sm:text-sm px-2 sm:px-3">
-            Spelerslijst
-          </TabsTrigger>
-          
-          {/* Admin-only tabs */}
-          {isAdmin && <>
-              <TabsTrigger value="competition" className="flex-shrink-0 text-xs sm:text-sm px-2 sm:px-3">
-                Competitiebeheer
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex-shrink-0 text-xs sm:text-sm px-2 sm:px-3">
-                Instellingen
-              </TabsTrigger>
-            </>}
-        </TabsList>
-
-        <div className="animate-fade-in">
-          {/* Base tabs content */}
-          <TabsContent value="match-forms" className="mt-0">
-            <MatchFormTab teamId={user?.teamId || 0} teamName="Admin" />
-          </TabsContent>
-          
-          <TabsContent value="players" className="mt-0">
-            <PlayersTab />
-          </TabsContent>
-          
-          {/* Admin-only content */}
-          {isAdmin && <>
-              <TabsContent value="competition" className="mt-0">
-                <CompetitionManagementTab />
-              </TabsContent>
-              <TabsContent value="settings" className="mt-0">
-                <AdminSettingsPanel />
-              </TabsContent>
-            </>}
+    return <div className="w-full">
+      {/* Modern Full-Width Tabs */}
+      <div className="w-full bg-white border-b border-purple-200 shadow-sm">
+        <div className="max-w-7xl mx-auto">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="custom-tabs-list">
+              <div className="custom-tabs-container">
+                {/* Base tabs for all authenticated users */}
+                <TabsTrigger value="match-forms" className="custom-tab-trigger">
+                  Wedstrijdformulieren
+                </TabsTrigger>
+                <TabsTrigger value="players" className="custom-tab-trigger">
+                  Spelerslijst
+                </TabsTrigger>
+                
+                {/* Admin-only tabs */}
+                {isAdmin && <>
+                    <TabsTrigger value="competition" className="custom-tab-trigger">
+                      Competitiebeheer
+                    </TabsTrigger>
+                    <TabsTrigger value="settings" className="custom-tab-trigger">
+                      Instellingen
+                    </TabsTrigger>
+                  </>}
+              </div>
+            </TabsList>
+          </Tabs>
         </div>
-      </Tabs>
+      </div>
+
+      {/* Tab Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+
+          <div className="animate-fade-in">
+            {/* Base tabs content */}
+            <TabsContent value="match-forms" className="mt-0">
+              <MatchFormTab teamId={user?.teamId || 0} teamName="Admin" />
+            </TabsContent>
+            
+            <TabsContent value="players" className="mt-0">
+              <PlayersTab />
+            </TabsContent>
+            
+            {/* Admin-only content */}
+            {isAdmin && <>
+                <TabsContent value="competition" className="mt-0">
+                  <CompetitionManagementTab />
+                </TabsContent>
+                <TabsContent value="settings" className="mt-0">
+                  <AdminSettingsPanel />
+                </TabsContent>
+              </>}
+          </div>
+        </Tabs>
+      </div>
     </div>;
 };
 export default UserDashboard;

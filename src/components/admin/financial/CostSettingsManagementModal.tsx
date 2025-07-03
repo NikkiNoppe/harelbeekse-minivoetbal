@@ -182,31 +182,31 @@ const CostSettingsManagementModal: React.FC<CostSettingsManagementModalProps> = 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-fit max-h-[90vh] overflow-y-auto bg-white">
+        <DialogContent className="max-w-fit max-h-[90vh] overflow-y-auto bg-purple-100 border-purple-light">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-purple-dark">
+            <DialogTitle className="flex items-center gap-2 text-purple-light">
               <Euro className="h-5 w-5" />
               Kostenlijst Beheer
             </DialogTitle>
-            <DialogDescription className="text-purple-dark/70">
+            <DialogDescription className="text-purple-dark">
               Beheer alle kosten en boetes voor het systeem
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6">
-            <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+            <div className="bg-white rounded-lg p-4 border border-purple-light">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-purple-dark">
                   {showAddForm ? (editingItem ? 'Tarief Bewerken' : 'Nieuw Tarief Toevoegen') : 'Acties'}
                 </h3>
-                <Button 
+                <button 
                   onClick={() => showAddForm ? resetForm() : setShowAddForm(true)}
-                  className="btn-white btn-sm"
+                  className="btn-light"
                   disabled={isSubmitting}
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   {showAddForm ? 'Annuleren' : 'Nieuw Tarief'}
-                </Button>
+                </button>
               </div>
 
               {showAddForm && (
@@ -217,7 +217,7 @@ const CostSettingsManagementModal: React.FC<CostSettingsManagementModalProps> = 
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                       placeholder="Naam van het tarief"
-                      className="input-login-style"
+                      className="bg-white placeholder:text-purple-200"
                       disabled={isSubmitting}
                     />
                   </div>
@@ -229,15 +229,15 @@ const CostSettingsManagementModal: React.FC<CostSettingsManagementModalProps> = 
                       onValueChange={(value: any) => setFormData({...formData, category: value})}
                       disabled={isSubmitting}
                     >
-                      <SelectTrigger className="dropdown-login-style">
+                      <SelectTrigger className="bg-white placeholder:text-purple-200">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="dropdown-content-login-style">
-                        <SelectItem value="match_cost" className="dropdown-item-login-style">Wedstrijdkosten</SelectItem>
-                        <SelectItem value="penalty" className="dropdown-item-login-style">Boete</SelectItem>
-                        <SelectItem value="field_cost" className="dropdown-item-login-style">Veldkosten</SelectItem>
-                        <SelectItem value="referee_cost" className="dropdown-item-login-style">Scheidsrechterkosten</SelectItem>
-                        <SelectItem value="other" className="dropdown-item-login-style">Overig</SelectItem>
+                      <SelectContent className="bg-white">
+                        <SelectItem value="match_cost">Wedstrijdkosten</SelectItem>
+                        <SelectItem value="penalty">Boete</SelectItem>
+                        <SelectItem value="field_cost">Veldkosten</SelectItem>
+                        <SelectItem value="referee_cost">Scheidsrechterkosten</SelectItem>
+                        <SelectItem value="other">Overig</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -251,7 +251,7 @@ const CostSettingsManagementModal: React.FC<CostSettingsManagementModalProps> = 
                       value={formData.amount}
                       onChange={(e) => setFormData({...formData, amount: e.target.value})}
                       placeholder="0.00"
-                      className="input-login-style"
+                      className="bg-white placeholder:text-purple-200"
                       disabled={isSubmitting}
                     />
                   </div>
@@ -263,38 +263,38 @@ const CostSettingsManagementModal: React.FC<CostSettingsManagementModalProps> = 
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
                       placeholder="Optionele beschrijving..."
                       rows={3}
-                      className="input-login-style resize-none"
+                      className="bg-white placeholder:text-purple-200 resize-none"
                       disabled={isSubmitting}
                     />
                   </div>
 
                   <div className="md:col-span-2 flex gap-2 pt-2">
-                    <Button 
+                    <button 
                       onClick={handleSave}
                       className="btn-dark"
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? 'Bezig...' : (editingItem ? 'Bijwerken' : 'Toevoegen')}
-                    </Button>
-                    <Button 
+                    </button>
+                    <button 
                       onClick={resetForm}
-                      className="btn-white"
+                      className="btn-light"
                       disabled={isSubmitting}
                     >
                       Annuleren
-                    </Button>
+                    </button>
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="bg-white border border-purple-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-purple-50 border-b border-purple-200">
+            <div className="bg-white border border-purple-light rounded-lg overflow-hidden">
+              <div className="p-4 bg-purple-100 border-b border-purple-light">
                 <h3 className="text-lg font-semibold text-purple-dark flex items-center gap-2">
                   <Settings className="h-5 w-5" />
                   Huidige Tarieven
                   {costSettings && (
-                    <Badge className="bg-purple-100 text-purple-800">
+                    <Badge className="bg-purple-light text-white">
                       {costSettings.length} items
                     </Badge>
                   )}
@@ -321,7 +321,7 @@ const CostSettingsManagementModal: React.FC<CostSettingsManagementModalProps> = 
                       </TableRow>
                     ) : costSettings && costSettings.length > 0 ? (
                       costSettings.map((setting) => (
-                        <TableRow key={setting.id} className="hover:bg-purple-50">
+                        <TableRow key={setting.id} className="hover:bg-purple-100">
                           <TableCell className="font-medium text-purple-dark">
                             {setting.name}
                           </TableCell>
@@ -340,20 +340,20 @@ const CostSettingsManagementModal: React.FC<CostSettingsManagementModalProps> = 
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex items-center justify-center gap-1">
-                              <Button
+                              <button
                                 onClick={() => handleEdit(setting)}
-                                className="btn-white btn-sm"
+                                className="btn-light"
                                 disabled={isSubmitting}
                               >
                                 <Edit className="h-3 w-3" />
-                              </Button>
-                              <Button
+                              </button>
+                              <button
                                 onClick={() => setDeletingItem(setting)}
-                                className="btn-white btn-sm hover:!bg-red-500 hover:!text-white hover:!border-red-500"
+                                className="btn-light hover:!bg-red-500 hover:!text-white hover:!border-red-500"
                                 disabled={isSubmitting}
                               >
                                 <Trash2 className="h-3 w-3" />
-                              </Button>
+                              </button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -374,20 +374,20 @@ const CostSettingsManagementModal: React.FC<CostSettingsManagementModalProps> = 
       </Dialog>
 
       <AlertDialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
-        <AlertDialogContent className="bg-white">
+        <AlertDialogContent className="bg-purple-100 border-purple-light">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-purple-dark">
+            <AlertDialogTitle className="flex items-center gap-2 text-purple-light">
               <AlertTriangle className="h-5 w-5 text-red-500" />
               Tarief Verwijderen
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-purple-dark/70">
+            <AlertDialogDescription className="text-purple-dark">
               Weet je zeker dat je "{deletingItem?.name}" wilt verwijderen? 
               Deze actie kan niet ongedaan gemaakt worden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel 
-              className="btn-white"
+              className="btn-light"
               disabled={isSubmitting}
             >
               Annuleren

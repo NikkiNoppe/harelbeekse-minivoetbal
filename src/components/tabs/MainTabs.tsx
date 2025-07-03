@@ -45,16 +45,16 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
   return (
     <div className="w-full">
       {/* Modern Full-Width Tabs */}
-      <div className="w-full bg-transparent shadow-sm">
+      <div className="w-full bg-white border-b border-purple-200 shadow-sm">
         <div className="max-w-7xl mx-auto">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
-            <TabsList className="w-full h-16 bg-transparent border-0 rounded-none p-0 flex justify-center">
-              <div className="flex flex-wrap justify-center gap-1 bg-purple-50 rounded-xl p-1 border border-purple-200">
+            <TabsList className="custom-tabs-list">
+              <div className="custom-tabs-container">
                 {visibleTabs.map((tab) => (
                   <TabsTrigger
                     key={tab.key}
                     value={tab.key}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all duration-200 rounded-lg border-0 bg-transparent text-purple-700 hover:bg-purple-100 data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
+                    className="custom-tab-trigger"
                   >
                     {tab.icon}
                     <span className="hidden sm:inline">{tab.label}</span>

@@ -148,13 +148,13 @@ const PlayOffTab: React.FC = () => {
     location: "Sportpark Noord"
   }];
   const upcomingMatches = [];
-  return <div className="space-y-10 animate-slide-up">
+  return <div className="space-y-8 animate-slide-up">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Eindklassement</h2>
+        <Badge className="badge-purple">Seizoen 2025-2026</Badge>
+      </div>
+
       <section>
-        <div className="flex items-center justify-between mt-8">
-          <h2 className="text-2xl font-semibold">Eindklassement</h2>
-          <Badge className="badge-purple">Seizoen 2025-2026</Badge>
-        </div>
-        <div className="mt-6">
           <Card>
             <CardContent className="p-0 overflow-x-auto">
               <div className="w-full">
@@ -187,12 +187,10 @@ const PlayOffTab: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
       </section>
 
       <section>
-        <h2 className="text-2xl font-semibold mt-8">Uitslagen Play-Offs</h2>
-        <div className="mt-6">
+        <h2 className="text-2xl font-semibold">Uitslagen Play-Offs</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
             {playoffMatches.map((match, index) => <Card key={index} className="card-hover">
                 <CardHeader className="pb-2">
@@ -214,7 +212,6 @@ const PlayOffTab: React.FC = () => {
                 </CardContent>
               </Card>)}
           </div>
-        </div>
       </section>
 
       {upcomingMatches.length > 0 && <section>

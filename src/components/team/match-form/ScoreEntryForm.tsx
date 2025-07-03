@@ -217,6 +217,7 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
         <Button
           variant="outline"
           onClick={onComplete}
+          className="bg-white text-purple-dark border-purple-dark hover:bg-purple-dark hover:text-white"
         >
           Annuleren
         </Button>
@@ -225,7 +226,7 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
           <Button
             onClick={handleSave}
             disabled={isSubmitting}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-white text-purple-dark border-purple-dark hover:bg-purple-dark hover:text-white"
           >
             <Save className="h-4 w-4" />
             {isAdmin ? "Admin: Opslaan" : "Opslaan"}

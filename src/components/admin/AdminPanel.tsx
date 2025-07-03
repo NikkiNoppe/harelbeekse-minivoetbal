@@ -219,9 +219,9 @@ const AdminPanel: React.FC = () => {
       <h1 className="text-2xl font-bold">Beheerdersdashboard</h1>
       
       <Tabs defaultValue="teams">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="teams">Teams beheren</TabsTrigger>
-          <TabsTrigger value="users">Gebruikers beheren</TabsTrigger>
+        <TabsList className="login-tabs-list">
+          <TabsTrigger value="teams" className="login-tab-trigger">Teams beheren</TabsTrigger>
+          <TabsTrigger value="users" className="login-tab-trigger">Gebruikers beheren</TabsTrigger>
         </TabsList>
         
         <TabsContent value="teams" className="space-y-4 mt-4">
