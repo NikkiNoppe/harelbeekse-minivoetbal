@@ -28,7 +28,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch team players function
-  const fetchTeamPlayers = async () => {
+  const fetchTeamPlayers = async (): Promise<Player[]> => {
     const { data, error } = await supabase
       .from('players')
       .select('player_id, first_name, last_name')
@@ -57,7 +57,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     return players;
   };
 
-  const fetchMatchData = async () => {
+  const fetchMatchData = async (): Promise<MatchData | null> => {
     const { data, error } = await supabase
       .from('matches')
       .select('match_id, is_submitted, home_players, away_players, home_team_id, away_team_id')
@@ -72,13 +72,13 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     return data;
   };
 
-  // Use simple query definitions without complex generics
-  const teamPlayersQuery = useQuery({
+  // Use React Query with explicit return types
+  const teamPlayersQuery = useQuery<Player[]>({
     queryKey: ['teamPlayers', teamId],
     queryFn: fetchTeamPlayers
   });
   
-  const matchQuery = useQuery({
+  const matchQuery = useQuery<MatchData | null>({
     queryKey: ['matchData', matchId, teamId],
     queryFn: fetchMatchData
   });
@@ -93,12 +93,11 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const existingMatch = matchQuery.data;
   const loadingMatch = matchQuery.isLoading;
   
-  // Initialize form with team players and any existing selections
+  // useEffect and remaining functions
   useEffect(() => {
     if (teamPlayers && !isLoading) {
       let initialPlayers = teamPlayers;
       
-      // If there's an existing match, try to populate from the JSONB data
       if (existingMatch) {
         const isHomeTeam = existingMatch.home_team_id === teamId;
         const existingPlayerData = isHomeTeam ? existingMatch.home_players : existingMatch.away_players;
@@ -139,7 +138,6 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         return;
       }
 
-      // Validation logic moved from Zod schema
       if (selectedPlayers.length > 8) {
         toast({
           title: "Te veel spelers",
@@ -150,7 +148,6 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         return;
       }
 
-      // Check if all selected players have jersey numbers
       const playersWithoutJersey = selectedPlayers.filter(p => !p.jerseyNumber.trim());
       if (playersWithoutJersey.length > 0) {
         toast({
@@ -162,7 +159,6 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         return;
       }
 
-      // Check jersey number range
       const invalidJerseyNumbers = selectedPlayers.filter(p => {
         const num = parseInt(p.jerseyNumber);
         return isNaN(num) || num < 1 || num > 99;
@@ -177,7 +173,6 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         return;
       }
 
-      // Check if there's a captain
       if (!selectedPlayers.some(p => p.isCaptain)) {
         toast({
           title: "Geen kapitein aangeduid",
@@ -188,7 +183,6 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         return;
       }
       
-      // Convert selected players to the format expected by matches table
       const playerData = selectedPlayers.map(player => ({
         playerId: player.playerId,
         playerName: player.playerName,
@@ -196,14 +190,12 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         isCaptain: player.isCaptain
       }));
       
-      // Determine if this is home or away team
       const isHomeTeam = existingMatch?.home_team_id === teamId;
       
       const updateData = isHomeTeam 
         ? { home_players: playerData, is_submitted: true }
         : { away_players: playerData, is_submitted: true };
       
-      // Update the match with player data
       const { error } = await supabase
         .from('matches')
         .update({
