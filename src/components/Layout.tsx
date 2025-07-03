@@ -6,7 +6,7 @@ import LoginForm from "@/components/auth/LoginForm";
 import Header from "@/components/header/Header";
 import Footer from "@/components/footer/Footer";
 import MainTabs from "@/components/tabs/MainTabs";
-import ModernUserDashboard from "@/components/user/ModernUserDashboard";
+import AdminDashboard from "@/components/user/AdminDashboard";
 
 const Layout: React.FC = () => {
   const {
@@ -49,7 +49,7 @@ const Layout: React.FC = () => {
       {/* Main Content - full width with modern tabs */}
       <main className="flex-1 w-full bg-purple-100">
         {isAuthenticated && user ? (
-          <ModernUserDashboard />
+                      <AdminDashboard />
         ) : (
           <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         )}
