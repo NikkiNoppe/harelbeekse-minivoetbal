@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,7 +29,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch team players function
-  const fetchTeamPlayers = async (): Promise<Player[]> => {
+  const fetchTeamPlayers = async () => {
     const { data, error } = await supabase
       .from('players')
       .select('player_id, first_name, last_name')
@@ -57,7 +58,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     return players;
   };
 
-  const fetchMatchData = async (): Promise<MatchData | null> => {
+  const fetchMatchData = async () => {
     const { data, error } = await supabase
       .from('matches')
       .select('match_id, is_submitted, home_players, away_players, home_team_id, away_team_id')
@@ -72,13 +73,13 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     return data;
   };
 
-  // Use React Query with explicit return types
-  const teamPlayersQuery = useQuery<Player[]>({
+  // Use React Query without explicit typing to avoid deep instantiation
+  const teamPlayersQuery = useQuery({
     queryKey: ['teamPlayers', teamId],
     queryFn: fetchTeamPlayers
   });
   
-  const matchQuery = useQuery<MatchData | null>({
+  const matchQuery = useQuery({
     queryKey: ['matchData', matchId, teamId],
     queryFn: fetchMatchData
   });
