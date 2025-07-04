@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -9,9 +10,11 @@ import { useLogin } from "./hooks/useLogin";
 import LoginFormFields from "./components/LoginFormFields";
 import TestCredentialsFooter from "./components/TestCredentialsFooter";
 import { formSchema, FormValues } from "./validation/loginFormSchema";
+
 interface LoginFormProps {
   onLoginSuccess: () => void;
 }
+
 const LoginForm: React.FC<LoginFormProps> = ({
   onLoginSuccess
 }) => {
@@ -20,6 +23,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
     login,
     isLoading
   } = useLogin(onLoginSuccess);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -27,25 +31,37 @@ const LoginForm: React.FC<LoginFormProps> = ({
       password: ""
     }
   });
+
   const onSubmit = async (data: FormValues) => {
     await login(data.usernameOrEmail, data.password);
   };
-  return <>
+
+  return (
+    <>
       <Card className="w-full max-w-md mx-auto shadow-lg border-purple-light">
-        <CardHeader className="bg-purple-100">
-          <CardTitle className="text-2xl text-center text-purple-light">Login</CardTitle>
+        <CardHeader className="bg-purple-100 py-4">
+          <CardTitle className="text-xl sm:text-2xl text-center text-purple-light">Login</CardTitle>
         </CardHeader>
-        <CardContent className="bg-purple-100">
+        <CardContent className="bg-purple-100 p-4 sm:p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <LoginFormFields form={form} isLoading={isLoading} onForgotPassword={() => setForgotPasswordOpen(true)} />
+              <LoginFormFields 
+                form={form} 
+                isLoading={isLoading} 
+                onForgotPassword={() => setForgotPasswordOpen(true)} 
+              />
             </form>
           </Form>
         </CardContent>
         <TestCredentialsFooter />
       </Card>
 
-      <ForgotPasswordDialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen} />
-    </>;
+      <ForgotPasswordDialog 
+        open={forgotPasswordOpen} 
+        onOpenChange={setForgotPasswordOpen} 
+      />
+    </>
+  );
 };
+
 export default LoginForm;

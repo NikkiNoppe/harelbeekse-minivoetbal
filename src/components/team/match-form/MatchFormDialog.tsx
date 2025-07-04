@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Dialog,
@@ -40,34 +41,32 @@ const MatchFormDialog: React.FC<MatchFormDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-5xl mx-4 sm:mx-auto bg-background text-foreground border-border rounded-lg">
+      <DialogContent className="w-full max-w-5xl mx-4 bg-background text-foreground border-border rounded-lg p-0 max-h-[95vh] overflow-hidden">
         <DialogTitle className="sr-only">
           Wedstrijdformulier - {match.homeTeamName} vs {match.awayTeamName}
         </DialogTitle>
         <DialogDescription className="sr-only">
           Beheer de wedstrijdgegevens, spelers en scores voor deze wedstrijd
         </DialogDescription>
-        <div className="rounded-b-lg">
-          <Card className="w-full mx-auto shadow-lg">
-            <CardHeader className="bg-purple-100">
-              <CardTitle className="text-2xl text-center text-purple-light">
-                Wedstrijdformulier - {match.homeTeamName} vs {match.awayTeamName}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="bg-purple-100 max-h-[80vh] overflow-y-auto">
-              <CompactMatchForm
-                match={match}
-                onComplete={handleComplete}
-                isAdmin={isAdmin}
-                isReferee={isReferee}
-                teamId={teamId}
-              />
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="w-full shadow-lg border-0 rounded-lg overflow-hidden">
+          <CardHeader className="bg-purple-100 py-4">
+            <CardTitle className="text-xl sm:text-2xl text-center text-purple-light">
+              Wedstrijdformulier - {match.homeTeamName} vs {match.awayTeamName}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="bg-purple-100 p-4 sm:p-6 max-h-[80vh] overflow-y-auto">
+            <CompactMatchForm
+              match={match}
+              onComplete={handleComplete}
+              isAdmin={isAdmin}
+              isReferee={isReferee}
+              teamId={teamId}
+            />
+          </CardContent>
+        </Card>
       </DialogContent>
     </Dialog>
   );
 };
 
-export default MatchFormDialog; 
+export default MatchFormDialog;

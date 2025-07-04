@@ -7,23 +7,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Player, FormData, formSchema } from "./types";
 
-// Simplified database player interface
-interface DatabasePlayer {
-  player_id: number;
-  first_name: string;
-  last_name: string;
-}
-
-// Simplified match data interface
-interface MatchData {
-  match_id: number;
-  is_submitted: boolean;
-  home_players: any;
-  away_players: any;
-  home_team_id: number;
-  away_team_id: number;
-}
-
 export const usePlayerSelection = (matchId: number, teamId: number, onComplete: () => void) => {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
@@ -47,7 +30,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       throw error;
     }
     
-    const players = (data || []).map((dbPlayer: DatabasePlayer) => ({
+    const players = (data || []).map((dbPlayer: any) => ({
       playerId: dbPlayer.player_id,
       playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
       selected: false,
@@ -73,7 +56,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     return data;
   };
 
-  // Use React Query without explicit typing to avoid deep instantiation
+  // Use React Query with simplified typing
   const teamPlayersQuery = useQuery({
     queryKey: ['teamPlayers', teamId],
     queryFn: fetchTeamPlayers

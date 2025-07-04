@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
@@ -84,11 +85,15 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-md mx-4 sm:mx-auto bg-purple-100 text-foreground border-border rounded-lg">
+      <DialogContent className="w-full max-w-md mx-4 bg-purple-100 text-foreground border-border rounded-lg p-0">
         <DialogTitle className="sr-only">Wachtwoord vergeten</DialogTitle>
-        <div className="rounded-b-lg">
+        <div className="rounded-lg overflow-hidden">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 sm:p-6">
+              <div className="text-center mb-4">
+                <h2 className="text-lg font-semibold text-purple-dark">Wachtwoord vergeten</h2>
+              </div>
+              
               <FormField
                 control={form.control}
                 name="email"
@@ -108,10 +113,10 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                 )}
               />
               
-              <div className="flex gap-2 justify-end">
+              <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4">
                 <Button
                   type="button"
-                  className="bg-purple-light text-white hover:bg-purple-dark hover:text-white border border-purple-light hover:border-purple-dark"
+                  className="bg-purple-light text-white hover:bg-purple-dark hover:text-white border border-purple-light hover:border-purple-dark order-2 sm:order-1"
                   onClick={() => onOpenChange(false)}
                   disabled={isLoading}
                 >
@@ -119,7 +124,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                 </Button>
                 <Button 
                   type="submit" 
-                  className="bg-purple-dark text-white hover:bg-purple-light hover:text-white border border-purple-dark"
+                  className="bg-purple-dark text-white hover:bg-purple-light hover:text-white border border-purple-dark order-1 sm:order-2"
                   disabled={isLoading}
                 >
                   {isLoading ? "Versturen..." : "Reset Link Versturen"}
