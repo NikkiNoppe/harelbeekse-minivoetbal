@@ -1,7 +1,10 @@
+
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Home, Award, Trophy, Target, BookOpen, Ban, AlertTriangle, Calendar, Users, Shield, UserIcon, DollarSign, Settings } from "lucide-react";
 import LoginForm from "@/components/auth/LoginForm";
 import Header from "@/components/header/Header";
 import Footer from "@/components/footer/Footer";
@@ -9,28 +12,22 @@ import MainTabs from "@/components/tabs/MainTabs";
 import AdminDashboard from "@/components/user/AdminDashboard";
 
 const Layout: React.FC = () => {
-  const {
-    user,
-    logout,
-    isAuthenticated
-  } = useAuth();
-  const {
-    isTabVisible
-  } = useTabVisibility();
+  const { user, logout, isAuthenticated } = useAuth();
+  const { isTabVisible } = useTabVisibility();
+  const isMobile = useIsMobile();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabName>("algemeen");
 
   const handleLogoClick = () => {
     setActiveTab("algemeen");
   };
+  
   const handleLoginClick = () => {
     setLoginDialogOpen(true);
   };
+  
   const handleLoginSuccess = () => {
     setLoginDialogOpen(false);
-  };
-  const handleLogout = () => {
-    logout();
   };
 
   // Set the first visible tab as active tab when loading
@@ -41,15 +38,53 @@ const Layout: React.FC = () => {
     }
   }, [isTabVisible, activeTab]);
 
+  // Prepare tabs for mobile navigation
+  const getTabsForMobile = () => {
+    if (isAuthenticated && user) {
+      // Admin/Team tabs
+      const isAdmin = user.role === "admin";
+      const adminTabs = [
+        { key: "match-forms", label: "Wedstrijdformulieren", icon: <Calendar size={16} /> },
+        { key: "players", label: "Spelers", icon: <Users size={16} /> },
+        ...(isAdmin ? [
+          { key: "teams", label: "Teams", icon: <Shield size={16} /> },
+          { key: "users", label: "Gebruikers", icon: <UserIcon size={16} /> },
+          { key: "competition", label: "Competitiebeheer", icon: <Trophy size={16} /> },
+          { key: "financial", label: "Financieel", icon: <DollarSign size={16} /> },
+          { key: "settings", label: "Instellingen", icon: <Settings size={16} /> }
+        ] : [])
+      ];
+      return adminTabs;
+    } else {
+      // Public tabs
+      const publicTabs = [
+        { key: "algemeen", label: "Algemeen", icon: <Home size={16} /> },
+        { key: "beker", label: "Beker", icon: <Award size={16} /> },
+        { key: "competitie", label: "Competitie", icon: <Trophy size={16} /> },
+        { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
+        { key: "reglement", label: "Reglement", icon: <BookOpen size={16} /> },
+        { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> },
+        { key: "kaarten", label: "Kaarten", icon: <AlertTriangle size={16} /> }
+      ];
+      return publicTabs.filter(tab => isTabVisible(tab.key as TabName));
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
-      {/* Header */}
-      <Header onLogoClick={handleLogoClick} onLoginClick={handleLoginClick} />
+      {/* Header with mobile navigation support */}
+      <Header 
+        onLogoClick={handleLogoClick} 
+        onLoginClick={handleLoginClick}
+        tabs={isMobile ? getTabsForMobile() : []}
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab as TabName)}
+      />
 
       {/* Main Content - full width with modern tabs */}
       <main className="flex-1 w-full bg-purple-100">
         {isAuthenticated && user ? (
-                      <AdminDashboard />
+          <AdminDashboard />
         ) : (
           <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         )}
