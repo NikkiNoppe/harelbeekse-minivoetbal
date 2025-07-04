@@ -1,7 +1,8 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import ResponsivePlayoffTable from "@/components/tables/ResponsivePlayoffTable";
+
 const PlayOffTab: React.FC = () => {
   const playoffTeams = {
     playoff1: [{
@@ -72,6 +73,7 @@ const PlayOffTab: React.FC = () => {
       points: 40
     }]
   };
+
   const playoffMatches = [{
     playoff: "Play-Off 1",
     matchday: "Speeldag 1",
@@ -147,46 +149,22 @@ const PlayOffTab: React.FC = () => {
     result: "5-1",
     location: "Sportpark Noord"
   }];
-  const upcomingMatches = [];
-  return <div className="space-y-8 animate-slide-up">
+
+  const upcomingMatches: any[] = [];
+
+  return (
+    <div className="space-y-8 animate-slide-up">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Eindklassement</h2>
         <Badge className="badge-purple">Seizoen 2025-2026</Badge>
       </div>
 
       <section>
-          <Card>
-            <CardContent className="p-0 overflow-x-auto">
-              <div className="w-full">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="w-12">Positie</TableHead>
-                      <TableHead>Team</TableHead>
-                      <TableHead className="text-center">Aant Wed</TableHead>
-                      <TableHead className="text-center">W</TableHead>
-                      <TableHead className="text-center">G</TableHead>
-                      <TableHead className="text-center">V</TableHead>
-                      <TableHead className="text-center">Doelpunten</TableHead>
-                      <TableHead className="text-center">Punten</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {playoffTeams.playoff1.map(team => <TableRow key={team.name} className="hover:bg-muted/30">
-                        <TableCell className="font-medium">{team.position}</TableCell>
-                        <TableCell>{team.name}</TableCell>
-                        <TableCell className="text-center">{team.played}</TableCell>
-                        <TableCell className="text-center">{team.won}</TableCell>
-                        <TableCell className="text-center">{team.draw}</TableCell>
-                        <TableCell className="text-center">{team.lost}</TableCell>
-                        <TableCell className="text-center">{team.goalsFor}-{team.goalsAgainst}</TableCell>
-                        <TableCell className="text-center font-medium">{team.points}</TableCell>
-                      </TableRow>)}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+        <Card>
+          <CardContent className="p-2 sm:p-6 overflow-x-auto">
+            <ResponsivePlayoffTable teams={playoffTeams.playoff1} />
+          </CardContent>
+        </Card>
       </section>
 
       <section>
@@ -241,6 +219,8 @@ const PlayOffTab: React.FC = () => {
               </Card>)}
           </div>
         </section>}
-    </div>;
+    </div>
+  );
 };
+
 export default PlayOffTab;
