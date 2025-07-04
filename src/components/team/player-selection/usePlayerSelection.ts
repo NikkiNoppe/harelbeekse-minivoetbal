@@ -11,8 +11,8 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch team players function
-  const fetchTeamPlayers = async (): Promise<Player[]> => {
+  // Fetch team players function - simplified return type
+  const fetchTeamPlayers = async () => {
     const { data, error } = await supabase
       .from('players')
       .select('player_id, first_name, last_name')
@@ -56,8 +56,8 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     return data;
   };
 
-  // Use React Query with explicit typing
-  const teamPlayersQuery = useQuery<Player[]>({
+  // Use React Query without explicit typing to avoid type recursion
+  const teamPlayersQuery = useQuery({
     queryKey: ['teamPlayers', teamId],
     queryFn: fetchTeamPlayers
   });
@@ -72,7 +72,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     defaultValues: { players: [] }
   });
   
-  const teamPlayers = teamPlayersQuery.data;
+  const teamPlayers = teamPlayersQuery.data as Player[] | undefined;
   const isLoading = teamPlayersQuery.isLoading;
   const existingMatch = matchQuery.data;
   const loadingMatch = matchQuery.isLoading;
