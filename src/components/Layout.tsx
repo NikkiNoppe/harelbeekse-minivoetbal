@@ -11,15 +11,22 @@ import Footer from "@/components/footer/Footer";
 import MainTabs from "@/components/tabs/MainTabs";
 import AdminDashboard from "@/components/user/AdminDashboard";
 
+type AdminTabName = "match-forms" | "players" | "teams" | "users" | "competition" | "financial" | "settings";
+
 const Layout: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { isTabVisible } = useTabVisibility();
   const isMobile = useIsMobile();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabName>("algemeen");
+  const [activeAdminTab, setActiveAdminTab] = useState<AdminTabName>("match-forms");
 
   const handleLogoClick = () => {
-    setActiveTab("algemeen");
+    if (isAuthenticated) {
+      setActiveAdminTab("match-forms");
+    } else {
+      setActiveTab("algemeen");
+    }
   };
   
   const handleLoginClick = () => {
@@ -30,13 +37,32 @@ const Layout: React.FC = () => {
     setLoginDialogOpen(false);
   };
 
+  // Handle tab changes from mobile dropdown
+  const handleTabChange = (tab: string) => {
+    console.log("Tab change requested:", tab);
+    
+    if (isAuthenticated) {
+      // Admin tabs
+      if (["match-forms", "players", "teams", "users", "competition", "financial", "settings"].includes(tab)) {
+        setActiveAdminTab(tab as AdminTabName);
+      }
+    } else {
+      // Public tabs
+      if (["algemeen", "beker", "competitie", "playoff", "reglement", "schorsingen", "kaarten"].includes(tab)) {
+        setActiveTab(tab as TabName);
+      }
+    }
+  };
+
   // Set the first visible tab as active tab when loading
   useEffect(() => {
-    const visibleTabs: TabName[] = ["algemeen", "competitie", "playoff", "beker", "schorsingen", "reglement"].filter(tab => isTabVisible(tab as TabName)) as TabName[];
-    if (visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
-      setActiveTab(visibleTabs[0]);
+    if (!isAuthenticated) {
+      const visibleTabs: TabName[] = ["algemeen", "competitie", "playoff", "beker", "schorsingen", "reglement"].filter(tab => isTabVisible(tab as TabName)) as TabName[];
+      if (visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
+        setActiveTab(visibleTabs[0]);
+      }
     }
-  }, [isTabVisible, activeTab]);
+  }, [isTabVisible, activeTab, isAuthenticated]);
 
   // Prepare tabs for mobile navigation
   const getTabsForMobile = () => {
@@ -77,14 +103,14 @@ const Layout: React.FC = () => {
         onLogoClick={handleLogoClick} 
         onLoginClick={handleLoginClick}
         tabs={isMobile ? getTabsForMobile() : []}
-        activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab as TabName)}
+        activeTab={isAuthenticated ? activeAdminTab : activeTab}
+        onTabChange={handleTabChange}
       />
 
       {/* Main Content - full width with modern tabs */}
       <main className="flex-1 w-full bg-purple-100">
         {isAuthenticated && user ? (
-          <AdminDashboard />
+          <AdminDashboard activeTab={activeAdminTab} setActiveTab={setActiveAdminTab} />
         ) : (
           <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         )}

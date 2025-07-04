@@ -120,11 +120,4 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
   );
 };
 
-// Default wrapper component that manages state
-const AdminDashboardWrapper: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabName>("match-forms");
-  
-  return <AdminDashboard activeTab={activeTab} setActiveTab={setActiveTab} />;
-};
-
-export default AdminDashboardWrapper;
+export default AdminDashboard;

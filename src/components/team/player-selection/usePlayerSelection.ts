@@ -12,7 +12,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch team players function
-  const fetchTeamPlayers = async () => {
+  const fetchTeamPlayers = async (): Promise<Player[]> => {
     const { data, error } = await supabase
       .from('players')
       .select('player_id, first_name, last_name')
@@ -56,8 +56,8 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     return data;
   };
 
-  // Use React Query with simplified typing
-  const teamPlayersQuery = useQuery({
+  // Use React Query with explicit typing
+  const teamPlayersQuery = useQuery<Player[]>({
     queryKey: ['teamPlayers', teamId],
     queryFn: fetchTeamPlayers
   });
