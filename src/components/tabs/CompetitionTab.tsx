@@ -248,7 +248,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
               </div>
             </div>
             
-            <Button variant="outline" className="w-full md:w-auto" onClick={() => {
+            <Button className="btn-white w-full md:w-auto" onClick={() => {
             setSearchTerm("");
             setSelectedMatchday("");
             setSelectedTeam("");
