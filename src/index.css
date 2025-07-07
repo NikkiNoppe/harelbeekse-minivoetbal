@@ -811,7 +811,7 @@ tbody tr.bg-green-50:hover .sticky-column {
 }
 
 .competitie-row:hover .competitie-sticky-column {
-  background-color: white !important;
+  background-color: var(--purple-50) !important;
 }
 
 /* Competition table cells */
