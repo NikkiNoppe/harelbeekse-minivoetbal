@@ -110,7 +110,7 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
   }
   return <Card>
       <CardHeader>
-        <CardTitle>Hoofdtab Zichtbaarheid</CardTitle>
+        <CardTitle>Zichtbaarheid</CardTitle>
         <CardDescription>
           Configureer welke hoofdtabbladen zichtbaar zijn en of inloggen vereist is
         </CardDescription>
