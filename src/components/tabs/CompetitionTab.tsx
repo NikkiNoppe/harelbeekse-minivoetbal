@@ -216,7 +216,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
               <div>
                 <Label htmlFor="matchday-filter">Filter op speeldag</Label>
                 <Select value={selectedMatchday} onValueChange={setSelectedMatchday}>
-                  <SelectTrigger id="matchday-filter" className="dropdown-login-style">
+                  <SelectTrigger id="matchday-filter" className="btn-white">
                     <SelectValue placeholder="Alle speeldagen" />
                   </SelectTrigger>
                   <SelectContent className="dropdown-content-login-style">
@@ -229,7 +229,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
               <div>
                 <Label htmlFor="team-filter">Filter op team</Label>
                 <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                  <SelectTrigger id="team-filter" className="dropdown-login-style">
+                  <SelectTrigger id="team-filter" className="btn-white">
                     <SelectValue placeholder="Alle teams" />
                   </SelectTrigger>
                   <SelectContent className="dropdown-content-login-style">
