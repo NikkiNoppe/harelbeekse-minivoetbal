@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,16 +38,13 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       throw error;
     }
     
-    // Explicitly type the return value to avoid type inference issues
-    const players: Player[] = (data || []).map((dbPlayer) => ({
+    return (data || []).map((dbPlayer) => ({
       playerId: dbPlayer.player_id,
       playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
       selected: false,
       jerseyNumber: "",
       isCaptain: false
     }));
-    
-    return players;
   };
 
   const fetchMatchData = async () => {
@@ -64,13 +62,19 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     return data;
   };
 
-  // Use React Query with proper typing
-  const teamPlayersQuery = useQuery({
+  // Use React Query with explicit typing to avoid deep instantiation
+  const {
+    data: teamPlayers,
+    isLoading
+  } = useQuery<Player[]>({
     queryKey: ['teamPlayers', teamId],
     queryFn: fetchTeamPlayers
   });
   
-  const matchQuery = useQuery({
+  const {
+    data: existingMatch,
+    isLoading: loadingMatch
+  } = useQuery({
     queryKey: ['matchData', matchId, teamId],
     queryFn: fetchMatchData
   });
@@ -79,11 +83,6 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     resolver: zodResolver(formSchema),
     defaultValues: { players: [] }
   });
-  
-  const teamPlayers = teamPlayersQuery.data;
-  const isLoading = teamPlayersQuery.isLoading;
-  const existingMatch = matchQuery.data;
-  const loadingMatch = matchQuery.isLoading;
   
   useEffect(() => {
     if (teamPlayers && !isLoading) {
@@ -96,13 +95,11 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         if (Array.isArray(existingPlayerData)) {
           initialPlayers = teamPlayers.map(player => {
             const existingPlayer = existingPlayerData.find((p: any) => {
-              // Type guard to ensure p is an object with the expected properties
               return p && typeof p === 'object' && !Array.isArray(p) && 
                      'playerId' in p && p.playerId === player.playerId;
             });
             
             if (existingPlayer && typeof existingPlayer === 'object' && !Array.isArray(existingPlayer)) {
-              // Safely extract properties with fallbacks
               const playerData = existingPlayer as Record<string, any>;
               return {
                 ...player,
