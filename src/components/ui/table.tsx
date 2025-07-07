@@ -1,23 +1,17 @@
 
 import * as React from "react"
+
 import { cn } from "@/lib/utils"
 
-// Enhanced table wrapper for visible border & rounded corners with responsive features
+// Enhanced table wrapper for visible border & rounded corners
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement> & {
-    stickyFirstColumn?: boolean;
-    stickyHeader?: boolean;
-  }
->(({ className, stickyFirstColumn = false, stickyHeader = true, ...props }, ref) => (
+  React.HTMLAttributes<HTMLTableElement>
+>(({ className, ...props }, ref) => (
   <div className="relative w-full overflow-auto border border-purple-light rounded-lg">
     <table
       ref={ref}
-      className={cn(
-        "w-full caption-bottom text-sm rounded-lg overflow-hidden",
-        stickyFirstColumn && "sticky-first-column",
-        className
-      )}
+      className={cn("w-full caption-bottom text-sm rounded-lg overflow-hidden", className)}
       {...props}
     />
   </div>
@@ -26,19 +20,9 @@ Table.displayName = "Table"
 
 const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement> & {
-    sticky?: boolean;
-  }
->(({ className, sticky = true, ...props }, ref) => (
-  <thead 
-    ref={ref} 
-    className={cn(
-      "[&_tr]:border-b [&_tr]:border-purple-light bg-purple-light",
-      sticky && "sticky top-0 z-20",
-      className
-    )} 
-    {...props} 
-  />
+  React.HTMLAttributes<HTMLTableSectionElement>
+>(({ className, ...props }, ref) => (
+  <thead ref={ref} className={cn("[&_tr]:border-b [&_tr]:border-purple-light bg-purple-light", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -86,17 +70,12 @@ TableRow.displayName = "TableRow"
 
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
-  React.ThHTMLAttributes<HTMLTableCellElement> & {
-    sticky?: boolean;
-    stickyLeft?: boolean;
-  }
->(({ className, sticky = false, stickyLeft = false, ...props }, ref) => (
+  React.ThHTMLAttributes<HTMLTableCellElement>
+>(({ className, ...props }, ref) => (
   <th
     ref={ref}
     className={cn(
-      "h-12 px-2 sm:px-4 text-center align-middle font-medium text-purple-dark bg-purple-light border-purple-light [&:has([role=checkbox])]:pr-0 text-xs sm:text-sm whitespace-nowrap",
-      sticky && "sticky top-0 z-10",
-      stickyLeft && "sticky left-0 z-30 bg-purple-light shadow-md",
+      "h-12 px-4 text-center align-middle font-medium text-purple-dark bg-purple-light border-purple-light [&:has([role=checkbox])]:pr-0",
       className
     )}
     {...props}
@@ -106,17 +85,11 @@ TableHead.displayName = "TableHead"
 
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement> & {
-    stickyLeft?: boolean;
-  }
->(({ className, stickyLeft = false, ...props }, ref) => (
+  React.TdHTMLAttributes<HTMLTableCellElement>
+>(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn(
-      "p-2 sm:p-4 align-middle text-purple-dark border-purple-light [&:has([role=checkbox])]:pr-0 text-xs sm:text-sm",
-      stickyLeft && "sticky left-0 z-20 bg-white shadow-md font-medium",
-      className
-    )}
+    className={cn("p-4 align-middle text-purple-dark border-purple-light [&:has([role=checkbox])]:pr-0", className)}
     {...props}
   />
 ))
@@ -144,3 +117,4 @@ export {
   TableCell,
   TableCaption,
 }
+
