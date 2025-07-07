@@ -17,10 +17,12 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
-  const { data: report, isLoading } = useQuery({
+  const { data: report, isLoading, error } = useQuery({
     queryKey: ['monthly-report', selectedYear, selectedMonth],
     queryFn: () => monthlyReportsService.getMonthlyReport(selectedYear, selectedMonth || undefined),
-    enabled: open
+    enabled: open,
+    retry: 2,
+    staleTime: 5 * 60 * 1000 // 5 minutes
   });
 
   const { data: yearlyRefereePayments } = useQuery({
@@ -165,33 +167,35 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
           )}
 
           {/* Scheidsrechter Betalingen */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Scheidsrechter Betalingen</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Scheidsrechter</TableHead>
-                    <TableHead className="text-center">Aantal Wedstrijden</TableHead>
-                    <TableHead className="text-right">Te Betalen Bedrag</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {report?.refereeCosts.map((referee, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{referee.referee}</TableCell>
-                      <TableCell className="text-center">{referee.matchCount}</TableCell>
-                      <TableCell className="text-right font-semibold text-red-600">
-                        {formatCurrency(referee.totalCost)}
-                      </TableCell>
+          {report && report.refereeCosts.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Scheidsrechter Betalingen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Scheidsrechter</TableHead>
+                      <TableHead className="text-center">Aantal Wedstrijden</TableHead>
+                      <TableHead className="text-right">Te Betalen Bedrag</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {report.refereeCosts.map((referee, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{referee.referee}</TableCell>
+                        <TableCell className="text-center">{referee.matchCount}</TableCell>
+                        <TableCell className="text-right font-semibold text-red-600">
+                          {formatCurrency(referee.totalCost)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Boetes per Maand */}
           {report?.fines && report.fines.length > 0 && (
@@ -284,8 +288,28 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
             </Card>
           )}
 
+          {/* Error state */}
+          {error && (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-red-500 mb-2">Er is een fout opgetreden bij het laden van het rapport.</p>
+                <p className="text-sm text-gray-500">{error.message}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Loading state */}
+          {isLoading && (
+            <div className="flex items-center justify-center h-40">
+              <div className="flex flex-col items-center gap-2">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <p>Rapport laden...</p>
+              </div>
+            </div>
+          )}
+
           {/* Show message when no data */}
-          {report && !isLoading && report.totalMatches === 0 && (
+          {report && !isLoading && !error && report.totalMatches === 0 && (
             <Card>
               <CardContent className="text-center py-8">
                 <p className="text-gray-500">
@@ -295,10 +319,18 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
             </Card>
           )}
 
-          {isLoading && (
-            <div className="flex items-center justify-center h-40">
-              <p>Rapport laden...</p>
-            </div>
+          {/* Empty state when no referee costs */}
+          {report && !isLoading && !error && report.refereeCosts.length === 0 && report.totalMatches > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Scheidsrechter Betalingen</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center py-8">
+                <p className="text-gray-500">
+                  Geen scheidsrechterkosten gevonden voor deze periode.
+                </p>
+              </CardContent>
+            </Card>
           )}
         </div>
       </DialogContent>
