@@ -1,15 +1,15 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Search, AlertTriangle, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllCards, CardData } from "@/services/matchDataService";
 import { sortDatesDesc } from "@/lib/dateUtils";
+import ResponsiveCardsTable from "../tables/ResponsiveCardsTable";
 
 interface PlayerCardSummary {
   playerId: number;
@@ -235,76 +235,7 @@ const CardsTab: React.FC = () => {
               <span className="ml-2">Kaarten laden...</span>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Speler</TableHead>
-                    <TableHead>Team</TableHead>
-                    <TableHead className="text-center">Gele Kaarten</TableHead>
-                    <TableHead className="text-center">Rode Kaarten</TableHead>
-                    <TableHead className="text-center">Totaal</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                    <TableHead>Laatste Kaart</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSummaries.map((summary) => (
-                    <TableRow key={`${summary.playerId}-${summary.playerName}`}>
-                      <TableCell className="font-medium">{summary.playerName}</TableCell>
-                      <TableCell>{summary.teamName}</TableCell>
-                      <TableCell className="text-center">
-                        {summary.yellowCards > 0 && (
-                          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                            {summary.yellowCards}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {summary.redCards > 0 && (
-                          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">
-                            {summary.redCards}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center font-bold">
-                        {summary.totalCards}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {summary.isSuspended ? (
-                          <Badge variant="destructive" className="flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3" />
-                            Geschorst
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">Actief</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {summary.cards.length > 0 && (
-                          <div className="text-sm">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${summary.cards[0].cardType === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
-                              <span>{summary.cards[0].matchDate}</span>
-                              <Badge variant="outline" className="text-xs">
-                                {summary.cards[0].uniqueNumber}
-                              </Badge>
-                            </div>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredSummaries.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
-                        Geen kaarten gevonden met de huidige filters.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <ResponsiveCardsTable playerSummaries={filteredSummaries} />
           )}
         </CardContent>
       </Card>

@@ -1,16 +1,18 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Search, Calendar, Loader2, RefreshCw } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { fetchCompetitionMatches, MatchData } from "@/services/matchDataService";
+import { fetchCompetitionMatches } from "@/services/matchDataService";
 import MatchCard from "../match/components/MatchCard";
+import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
+import ResponsiveScheduleTable from "../tables/ResponsiveScheduleTable";
 
 interface Team {
   id: number;
@@ -60,9 +62,11 @@ const fetchCompetitionStandings = async () => {
     points: standing.points
   }));
 };
+
 interface CompetitionTabProps {
   teams?: Team[];
 }
+
 const CompetitionTab: React.FC<CompetitionTabProps> = ({
   teams
 }) => {
@@ -80,7 +84,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
     queryKey: ['competitionStandings'],
     queryFn: fetchCompetitionStandings,
     refetchOnWindowFocus: true,
-    staleTime: 30000 // Consider data stale after 30 seconds
+    staleTime: 30000
   });
 
   // Fetch matches data
@@ -91,6 +95,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
     queryKey: ['competitionMatches'],
     queryFn: fetchCompetitionMatches
   });
+  
   const teamsToDisplay = teams || fetchedTeams;
   const upcomingMatches = matchesData?.upcoming || [];
   const pastMatches = matchesData?.past || [];
@@ -99,6 +104,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
   // Get unique matchdays and team names for filtering
   const matchdays = [...new Set(allMatches.map(match => match.matchday))];
   const teamNames = [...new Set([...allMatches.map(match => match.homeTeamName), ...allMatches.map(match => match.awayTeamName)])];
+  
   const filteredMatches = allMatches.filter(match => {
     if (selectedMatchday && match.matchday !== selectedMatchday) {
       return false;
@@ -112,7 +118,9 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
     }
     return true;
   });
+  
   const isLoading = loadingStandings || loadingMatches;
+  
   return <div className="space-y-8 animate-slide-up">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Competitiestand</h2>
@@ -135,38 +143,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
                 </div> : !teamsToDisplay || teamsToDisplay.length === 0 ? <div className="text-center p-8 text-muted-foreground">
                   <p className="mb-2">Nog geen competitiestand beschikbaar.</p>
                   <p className="text-sm">Standings worden automatisch bijgewerkt wanneer wedstrijden worden ingediend.</p>
-                </div> : <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-center">Positie</TableHead>
-                        <TableHead>Team</TableHead>
-                        <TableHead className="text-center">Aant Wed</TableHead>
-                        <TableHead className="text-center">W</TableHead>
-                        <TableHead className="text-center">G</TableHead>
-                        <TableHead className="text-center">V</TableHead>
-                        <TableHead className="text-center">Doelpunten</TableHead>
-                        <TableHead className="text-center">Punten</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {teamsToDisplay.map((team, index) => <TableRow key={team.id} className={index === 0 ? "bg-green-50" : ""}>
-                          <TableCell className="text-center font-medium">{index + 1}</TableCell>
-                          <TableCell className="font-medium">{team.name}</TableCell>
-                          <TableCell className="text-center">{team.played}</TableCell>
-                          <TableCell className="text-center text-green-600 font-medium">{team.won}</TableCell>
-                          <TableCell className="text-center text-yellow-600 font-medium">{team.draw}</TableCell>
-                          <TableCell className="text-center text-red-600 font-medium">{team.lost}</TableCell>
-                          <TableCell className="text-center">
-                            <span className={team.goalDiff > 0 ? "text-green-600 font-medium" : team.goalDiff < 0 ? "text-red-600 font-medium" : ""}>
-                              {team.goalDiff > 0 ? "+" : ""}{team.goalDiff}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center font-bold text-lg">{team.points}</TableCell>
-                        </TableRow>)}
-                    </TableBody>
-                  </Table>
-                </div>}
+                </div> : <ResponsiveStandingsTable teams={teamsToDisplay} />}
             </CardContent>
           </Card>
       </section>
@@ -280,48 +257,10 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
             </Button>
           </div>
           
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Speeldag</TableHead>
-                  <TableHead>Datum</TableHead>
-                  <TableHead>Tijd</TableHead>
-                  <TableHead>Wedstrijd</TableHead>
-                  <TableHead>Locatie</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredMatches.map(match => <TableRow key={match.matchId}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        {match.matchday}
-                      </div>
-                    </TableCell>
-                    <TableCell>{match.date}</TableCell>
-                    <TableCell>{match.time}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col items-center gap-1 sm:flex-row sm:gap-2">
-                        <span className="font-medium">{match.homeTeamName}</span>
-                        {match.isCompleted && match.homeScore !== undefined && match.awayScore !== undefined ? <span className="mx-2 font-bold">
-                            {match.homeScore} - {match.awayScore}
-                          </span> : <span className="mx-2">vs</span>}
-                        <span className="font-medium">{match.awayTeamName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{match.location}</TableCell>
-                  </TableRow>)}
-                {filteredMatches.length === 0 && <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      Geen wedstrijden gevonden met de huidige filters.
-                    </TableCell>
-                  </TableRow>}
-              </TableBody>
-            </Table>
-          </div>
+          <ResponsiveScheduleTable matches={filteredMatches} />
         </CardContent>
       </Card>
     </div>;
 };
+
 export default CompetitionTab;

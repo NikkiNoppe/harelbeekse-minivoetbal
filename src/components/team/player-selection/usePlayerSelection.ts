@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,8 +10,8 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch team players function - simplified return type
-  const fetchTeamPlayers = async () => {
+  // Fetch team players function
+  const fetchTeamPlayers = async (): Promise<Player[]> => {
     const { data, error } = await supabase
       .from('players')
       .select('player_id, first_name, last_name')
@@ -30,15 +29,13 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       throw error;
     }
     
-    const players = (data || []).map((dbPlayer: any) => ({
+    return (data || []).map((dbPlayer: any) => ({
       playerId: dbPlayer.player_id,
       playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
       selected: false,
       jerseyNumber: "",
       isCaptain: false
     }));
-    
-    return players;
   };
 
   const fetchMatchData = async () => {
@@ -56,7 +53,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     return data;
   };
 
-  // Use React Query without explicit typing to avoid type recursion
+  // Use React Query without explicit typing
   const teamPlayersQuery = useQuery({
     queryKey: ['teamPlayers', teamId],
     queryFn: fetchTeamPlayers
@@ -72,12 +69,12 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     defaultValues: { players: [] }
   });
   
-  const teamPlayers = teamPlayersQuery.data as Player[] | undefined;
+  // Type assertions to avoid circular type issues
+  const teamPlayers = teamPlayersQuery.data;
   const isLoading = teamPlayersQuery.isLoading;
   const existingMatch = matchQuery.data;
   const loadingMatch = matchQuery.isLoading;
   
-  // useEffect and remaining functions
   useEffect(() => {
     if (teamPlayers && !isLoading) {
       let initialPlayers = teamPlayers;

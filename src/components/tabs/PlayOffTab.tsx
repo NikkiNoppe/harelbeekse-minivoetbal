@@ -1,77 +1,67 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
+
 const PlayOffTab: React.FC = () => {
   const playoffTeams = {
     playoff1: [{
-      position: 1,
+      id: 1,
       name: "CAFE DE GILDE",
       played: 29,
       won: 22,
       draw: 3,
       lost: 4,
-      goalsFor: 228,
-      goalsAgainst: 102,
       goalDiff: 126,
       points: 70
     }, {
-      position: 2,
-      name: "GARAGE VERBEKE",
+      id: 2,
+      name: "GARAGE VERBEKE", 
       played: 29,
       won: 23,
       draw: 5,
       lost: 1,
-      goalsFor: 229,
-      goalsAgainst: 101,
       goalDiff: 128,
       points: 70
     }, {
-      position: 3,
+      id: 3,
       name: "BEMARMI BOYS",
       played: 29,
       won: 21,
       draw: 6,
       lost: 2,
-      goalsFor: 184,
-      goalsAgainst: 89,
       goalDiff: 95,
       points: 65
     }, {
-      position: 4,
+      id: 4,
       name: "DE FLORRE",
       played: 29,
       won: 16,
       draw: 10,
       lost: 3,
-      goalsFor: 218,
-      goalsAgainst: 130,
       goalDiff: 88,
       points: 51
     }, {
-      position: 5,
+      id: 5,
       name: "DE DAGERAAD",
       played: 29,
       won: 15,
       draw: 12,
       lost: 2,
-      goalsFor: 154,
-      goalsAgainst: 95,
       goalDiff: 59,
       points: 47
     }, {
-      position: 6,
+      id: 6,
       name: "SHAKTHAR TRU.",
       played: 29,
       won: 12,
       draw: 13,
       lost: 4,
-      goalsFor: 124,
-      goalsAgainst: 122,
       goalDiff: 2,
       points: 40
     }]
   };
+  
   const playoffMatches = [{
     playoff: "Play-Off 1",
     matchday: "Speeldag 1",
@@ -120,9 +110,7 @@ const PlayOffTab: React.FC = () => {
     away: "Bemarmi Boys",
     result: "3-1",
     location: "Sportpark Noord"
-  },
-  // New results
-  {
+  }, {
     playoff: "Play-Off 1",
     matchday: "Speeldag 3",
     date: "12 mei",
@@ -147,7 +135,9 @@ const PlayOffTab: React.FC = () => {
     result: "5-1",
     location: "Sportpark Noord"
   }];
+  
   const upcomingMatches = [];
+  
   return <div className="space-y-8 animate-slide-up">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Eindklassement</h2>
@@ -157,34 +147,7 @@ const PlayOffTab: React.FC = () => {
       <section>
           <Card>
             <CardContent className="p-0 overflow-x-auto">
-              <div className="w-full">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="w-12">Positie</TableHead>
-                      <TableHead>Team</TableHead>
-                      <TableHead className="text-center">Aant Wed</TableHead>
-                      <TableHead className="text-center">W</TableHead>
-                      <TableHead className="text-center">G</TableHead>
-                      <TableHead className="text-center">V</TableHead>
-                      <TableHead className="text-center">Doelpunten</TableHead>
-                      <TableHead className="text-center">Punten</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {playoffTeams.playoff1.map(team => <TableRow key={team.name} className="hover:bg-muted/30">
-                        <TableCell className="font-medium">{team.position}</TableCell>
-                        <TableCell>{team.name}</TableCell>
-                        <TableCell className="text-center">{team.played}</TableCell>
-                        <TableCell className="text-center">{team.won}</TableCell>
-                        <TableCell className="text-center">{team.draw}</TableCell>
-                        <TableCell className="text-center">{team.lost}</TableCell>
-                        <TableCell className="text-center">{team.goalsFor}-{team.goalsAgainst}</TableCell>
-                        <TableCell className="text-center font-medium">{team.points}</TableCell>
-                      </TableRow>)}
-                  </TableBody>
-                </Table>
-              </div>
+              <ResponsiveStandingsTable teams={playoffTeams.playoff1} showPlayoff={true} />
             </CardContent>
           </Card>
       </section>
@@ -243,4 +206,5 @@ const PlayOffTab: React.FC = () => {
         </section>}
     </div>;
 };
+
 export default PlayOffTab;
