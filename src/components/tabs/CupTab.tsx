@@ -17,7 +17,7 @@ interface Match {
 const CupTab: React.FC = () => {
   const cupData = {
     title: "Regio Beker 2024",
-    description: "De jaarlijkse bekercompetitie waar alle regionale teams strijden om de felbegeerde regiobeker.",
+    description: "De bekercompetitie waar alle regionale teams strijden om de felbegeerde regiobeker.",
     currentStage: "Kwartfinales",
     finalDate: "15 juli 2024 - 19:30",
     venue: "Gemeentelijk Stadion"
