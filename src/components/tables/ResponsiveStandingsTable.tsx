@@ -27,27 +27,30 @@ const ResponsiveStandingsTable: React.FC<ResponsiveStandingsTableProps> = ({
       <Table stickyColumns={2}>
         <TableHeader>
           <TableRow>
-            <TableHead sticky stickyLeft={0} className="w-16 text-center">
+            <TableHead sticky stickyLeft={0} className="w-16 text-center bg-purple-600 z-20">
               Pos
             </TableHead>
-            <TableHead sticky stickyLeft={64} className="min-w-[150px] text-left">
+            <TableHead sticky stickyLeft={64} className="min-w-[150px] text-left bg-purple-600 z-20">
               Team
             </TableHead>
-            <TableHead className="text-center w-16">Wed</TableHead>
-            <TableHead className="text-center w-12">W</TableHead>
-            <TableHead className="text-center w-12">G</TableHead>
-            <TableHead className="text-center w-12">V</TableHead>
-            <TableHead className="text-center w-20">+/-</TableHead>
-            <TableHead className="text-center w-16">Ptn</TableHead>
+            <TableHead className="text-center w-16 bg-purple-600">Wed</TableHead>
+            <TableHead className="text-center w-12 bg-purple-600">W</TableHead>
+            <TableHead className="text-center w-12 bg-purple-600">G</TableHead>
+            <TableHead className="text-center w-12 bg-purple-600">V</TableHead>
+            <TableHead className="text-center w-20 bg-purple-600">+/-</TableHead>
+            <TableHead className="text-center w-16 bg-purple-600">Ptn</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {teams.map((team, index) => (
-            <TableRow key={team.id} className={index === 0 && !showPlayoff ? "bg-green-50" : ""}>
-              <TableCell sticky stickyLeft={0} className="text-center font-medium">
+            <TableRow 
+              key={team.id} 
+              className={`hover:bg-purple-50 transition-colors ${index === 0 && !showPlayoff ? "bg-green-50 hover:bg-green-100" : ""}`}
+            >
+              <TableCell sticky stickyLeft={0} className="text-center font-medium bg-white z-10 border-r-2 border-purple-400">
                 {index + 1}
               </TableCell>
-              <TableCell sticky stickyLeft={64} className="font-medium min-w-[150px]">
+              <TableCell sticky stickyLeft={64} className="font-medium min-w-[150px] bg-white z-10 border-r-2 border-purple-400">
                 {team.name}
               </TableCell>
               <TableCell className="text-center">{team.played}</TableCell>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +12,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch team players function
-  const fetchTeamPlayers = async (): Promise<Player[]> => {
+  const fetchTeamPlayers = async () => {
     const { data, error } = await supabase
       .from('players')
       .select('player_id, first_name, last_name')
@@ -29,7 +30,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       throw error;
     }
     
-    return (data || []).map((dbPlayer: any) => ({
+    return (data || []).map((dbPlayer) => ({
       playerId: dbPlayer.player_id,
       playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
       selected: false,
@@ -53,7 +54,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     return data;
   };
 
-  // Use React Query without explicit typing
+  // Use React Query with proper typing
   const teamPlayersQuery = useQuery({
     queryKey: ['teamPlayers', teamId],
     queryFn: fetchTeamPlayers
@@ -69,7 +70,6 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
     defaultValues: { players: [] }
   });
   
-  // Type assertions to avoid circular type issues
   const teamPlayers = teamPlayersQuery.data;
   const isLoading = teamPlayersQuery.isLoading;
   const existingMatch = matchQuery.data;
@@ -90,8 +90,8 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
               return {
                 ...player,
                 selected: true,
-                jerseyNumber: (existingPlayer as any).jerseyNumber || "",
-                isCaptain: (existingPlayer as any).isCaptain || false
+                jerseyNumber: existingPlayer.jerseyNumber || "",
+                isCaptain: existingPlayer.isCaptain || false
               };
             }
             return player;
@@ -101,7 +101,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
       
       form.reset({ players: initialPlayers });
     }
-  }, [teamPlayers, existingMatch, isLoading, loadingMatch, form]);
+  }, [teamPlayers, existingMatch, isLoading, loadingMatch, form, teamId]);
 
   const onSubmit = async (data: FormData) => {
     setSubmitting(true);

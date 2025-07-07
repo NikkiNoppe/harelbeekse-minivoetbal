@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -463,7 +464,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background-color: var(--purple-400);
+  background-color: var(--purple-50);
 }
 
 /* ============================================================================
@@ -731,25 +732,27 @@ tbody tr:hover {
 .sticky-column {
   position: sticky;
   z-index: 10;
-  background-color: inherit;
+  background-color: white !important;
   border-right: 2px solid var(--purple-400) !important;
+  box-shadow: 2px 0 4px rgba(96, 54, 140, 0.1);
 }
 
-.sticky-column::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: -2px;
-  width: 2px;
-  height: 100%;
-  background: linear-gradient(90deg, rgba(96, 54, 140, 0.1) 0%, transparent 100%);
-  pointer-events: none;
-}
-
-/* Header sticky columns have higher z-index */
+/* Header sticky columns have higher z-index and purple background */
 thead .sticky-column {
   z-index: 20;
-  background-color: var(--purple-light) !important;
+  background-color: var(--purple-600) !important;
+  color: white !important;
+}
+
+/* Table row hover states should not affect sticky columns */
+tbody tr:hover .sticky-column {
+  background-color: white !important;
+}
+
+/* Special case for first position row */
+tbody tr.bg-green-50 .sticky-column,
+tbody tr.bg-green-50:hover .sticky-column {
+  background-color: white !important;
 }
 
 /* Specific responsive table containers */
