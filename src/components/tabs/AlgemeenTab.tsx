@@ -5,7 +5,6 @@ import { Tag } from "lucide-react";
 import { fetchBlogPosts, BlogPost } from "@/services/blogService";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateShort } from "@/lib/dateUtils";
-
 const AlgemeenTab: React.FC = () => {
   const {
     toast
@@ -79,7 +78,7 @@ const AlgemeenTab: React.FC = () => {
                 <h3 className="text-base sm:text-lg font-medium mb-2">Competitieleiding</h3>
                 <div className="space-y-1 text-sm sm:text-base">
                   <p>Nikki Noppe</p>
-                  <p className="break-all">info@minivoetbalharelbeke.be</p>
+                  <p className="break-all">noppe.nikki@icloud.com</p>
                   <p>+32 468 15 52 16</p>
                 </div>
               </div>
