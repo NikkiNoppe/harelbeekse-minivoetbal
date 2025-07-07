@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +19,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch team players function
-  const fetchTeamPlayers = async (): Promise<Player[]> => {
+  const fetchTeamPlayers = async () => {
     const { data, error } = await supabase
       .from('players')
       .select('player_id, first_name, last_name')
@@ -97,14 +96,16 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
               // Type guard to ensure p is an object with the expected properties
               return p && typeof p === 'object' && !Array.isArray(p) && 
                      'playerId' in p && p.playerId === player.playerId;
-            }) as ExistingPlayerData | undefined;
+            });
             
-            if (existingPlayer) {
+            if (existingPlayer && typeof existingPlayer === 'object' && !Array.isArray(existingPlayer)) {
+              // Safely extract properties with fallbacks
+              const playerData = existingPlayer as Record<string, any>;
               return {
                 ...player,
                 selected: true,
-                jerseyNumber: existingPlayer.jerseyNumber || "",
-                isCaptain: existingPlayer.isCaptain || false
+                jerseyNumber: String(playerData.jerseyNumber || ""),
+                isCaptain: Boolean(playerData.isCaptain || false)
               };
             }
             return player;
