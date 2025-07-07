@@ -246,7 +246,7 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
                   <Input 
                     id="search" 
                     placeholder="Zoek op team, locatie, etc." 
-                    className="pl-10 h-10 bg-white text-purple-600 border border-purple-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-purple-600 placeholder:text-purple-400" 
+                    className="pl-10 input-login-style" 
                     value={searchTerm} 
                     onChange={e => setSearchTerm(e.target.value)} 
                   />
