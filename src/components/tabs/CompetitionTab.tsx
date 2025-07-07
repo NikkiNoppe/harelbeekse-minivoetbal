@@ -212,11 +212,11 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
         </CardHeader>
         <CardContent className="bg-transparent">
           <div className="mb-4 space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 items-end">
               <div>
-                <Label htmlFor="matchday-filter">Filter op speeldag</Label>
+                <Label htmlFor="matchday-filter" className="text-sm font-medium mb-2 block">Filter op speeldag</Label>
                 <Select value={selectedMatchday} onValueChange={setSelectedMatchday}>
-                  <SelectTrigger id="matchday-filter" className="btn-white">
+                  <SelectTrigger id="matchday-filter" className="btn-white h-10">
                     <SelectValue placeholder="Alle speeldagen" />
                   </SelectTrigger>
                   <SelectContent className="dropdown-content-login-style">
@@ -227,9 +227,9 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
               </div>
               
               <div>
-                <Label htmlFor="team-filter">Filter op team</Label>
+                <Label htmlFor="team-filter" className="text-sm font-medium mb-2 block">Filter op team</Label>
                 <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                  <SelectTrigger id="team-filter" className="btn-white">
+                  <SelectTrigger id="team-filter" className="btn-white h-10">
                     <SelectValue placeholder="Alle teams" />
                   </SelectTrigger>
                   <SelectContent className="dropdown-content-login-style">
@@ -240,10 +240,16 @@ const CompetitionTab: React.FC<CompetitionTabProps> = ({
               </div>
               
               <div>
-                <Label htmlFor="search">Zoeken</Label>
+                <Label htmlFor="search" className="text-sm font-medium mb-2 block">Zoeken</Label>
                 <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input id="search" placeholder="Zoek op team, locatie, etc." className="pl-8 input-login-style" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 text-purple-400 transform -translate-y-1/2 z-10" />
+                  <Input 
+                    id="search" 
+                    placeholder="Zoek op team, locatie, etc." 
+                    className="pl-10 h-10 bg-white text-purple-600 border border-purple-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-purple-600 placeholder:text-purple-400" 
+                    value={searchTerm} 
+                    onChange={e => setSearchTerm(e.target.value)} 
+                  />
                 </div>
               </div>
             </div>
