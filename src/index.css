@@ -755,6 +755,121 @@ tbody tr.bg-green-50:hover .sticky-column {
   background-color: white !important;
 }
 
+/* ============================================================================
+   COMPETITION STANDINGS TABLE STYLES
+   ============================================================================ */
+
+/* Competition standings container */
+.competitie-standings-table {
+  width: 100%;
+  min-width: 100%;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--purple-400);
+}
+
+/* Competition table headers */
+.competitie-header {
+  background-color: var(--purple-600) !important;
+  color: white !important;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  border: none;
+  position: relative;
+}
+
+.competitie-header.text-left {
+  text-align: left;
+}
+
+/* Competition sticky columns */
+.competitie-sticky-column {
+  position: sticky;
+  z-index: 15;
+  background-color: white !important;
+  border-right: 2px solid var(--purple-400) !important;
+  box-shadow: 2px 0 6px rgba(96, 54, 140, 0.12);
+}
+
+/* Header sticky columns for competition table */
+.competitie-header.competitie-sticky-column {
+  z-index: 25;
+  background-color: var(--purple-600) !important;
+  color: white !important;
+}
+
+/* Competition table rows */
+.competitie-row {
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid var(--purple-200);
+}
+
+.competitie-row:hover {
+  background-color: var(--purple-50) !important;
+}
+
+.competitie-row:hover .competitie-sticky-column {
+  background-color: white !important;
+}
+
+/* Competition table cells */
+.competitie-cell {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  text-align: center;
+  color: var(--purple-600);
+  border: none;
+}
+
+.competitie-cell.text-left {
+  text-align: left;
+}
+
+.competitie-cell.font-medium {
+  font-weight: 500;
+}
+
+.competitie-cell.font-bold {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* Special styling for first position */
+.competitie-row.first-position {
+  background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+.competitie-row.first-position:hover {
+  background-color: rgba(34, 197, 94, 0.2) !important;
+}
+
+.competitie-row.first-position .competitie-sticky-column {
+  background-color: white !important;
+}
+
+/* Mobile responsive adjustments for competition table */
+@media (max-width: 768px) {
+  .competitie-header {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.75rem;
+  }
+  
+  .competitie-cell {
+    padding: 0.375rem 0.25rem;
+    font-size: 0.75rem;
+  }
+  
+  .competitie-sticky-column:first-child {
+    min-width: 50px;
+  }
+  
+  .competitie-sticky-column:nth-child(2) {
+    min-width: 120px;
+  }
+}
+
 /* Specific responsive table containers */
 .responsive-standings-table,
 .responsive-schedule-table,

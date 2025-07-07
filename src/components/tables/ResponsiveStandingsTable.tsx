@@ -23,53 +23,55 @@ const ResponsiveStandingsTable: React.FC<ResponsiveStandingsTableProps> = ({
   showPlayoff = false 
 }) => {
   return (
-    <div className="responsive-standings-table">
-      <Table stickyColumns={2}>
-        <TableHeader>
-          <TableRow>
-            <TableHead sticky stickyLeft={0} className="w-16 text-center bg-purple-600 text-white z-20">
-              Pos
-            </TableHead>
-            <TableHead sticky stickyLeft={64} className="min-w-[150px] text-left bg-purple-600 text-white z-20 border-r-2 border-purple-400">
-              Team
-            </TableHead>
-            <TableHead className="text-center w-16 bg-purple-600 text-white">Wed</TableHead>
-            <TableHead className="text-center w-12 bg-purple-600 text-white">W</TableHead>
-            <TableHead className="text-center w-12 bg-purple-600 text-white">G</TableHead>
-            <TableHead className="text-center w-12 bg-purple-600 text-white">V</TableHead>
-            <TableHead className="text-center w-20 bg-purple-600 text-white">+/-</TableHead>
-            <TableHead className="text-center w-16 bg-purple-600 text-white">Ptn</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {teams.map((team, index) => (
-            <TableRow 
-              key={team.id} 
-              className={`hover:bg-purple-50 transition-colors ${index === 0 && !showPlayoff ? "bg-green-50 hover:bg-green-100" : ""}`}
-            >
-              <TableCell sticky stickyLeft={0} className="text-center font-medium bg-white z-10 border-r-2 border-purple-400 sticky-column">
-                {index + 1}
-              </TableCell>
-              <TableCell sticky stickyLeft={64} className="font-medium min-w-[150px] bg-white z-10 border-r-2 border-purple-400 sticky-column">
-                {team.name}
-              </TableCell>
-              <TableCell className="text-center">{team.played}</TableCell>
-              <TableCell className="text-center text-green-600 font-medium">{team.won}</TableCell>
-              <TableCell className="text-center text-yellow-600 font-medium">{team.draw}</TableCell>
-              <TableCell className="text-center text-red-600 font-medium">{team.lost}</TableCell>
-              <TableCell className="text-center">
-                <span className={
-                  team.goalDiff > 0 ? "text-green-600 font-medium" : 
-                  team.goalDiff < 0 ? "text-red-600 font-medium" : ""
-                }>
-                  {team.goalDiff > 0 ? "+" : ""}{team.goalDiff}
-                </span>
-              </TableCell>
-              <TableCell className="text-center font-bold text-lg">{team.points}</TableCell>
+    <div className="responsive-table-container">
+      <div className="competitie-standings-table">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="competitie-header competitie-sticky-column" style={{ left: 0, width: '64px' }}>
+                Pos
+              </TableHead>
+              <TableHead className="competitie-header competitie-sticky-column text-left" style={{ left: '64px', minWidth: '150px' }}>
+                Team
+              </TableHead>
+              <TableHead className="competitie-header">Wed</TableHead>
+              <TableHead className="competitie-header">W</TableHead>
+              <TableHead className="competitie-header">G</TableHead>
+              <TableHead className="competitie-header">V</TableHead>
+              <TableHead className="competitie-header">+/-</TableHead>
+              <TableHead className="competitie-header">Ptn</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {teams.map((team, index) => (
+              <TableRow 
+                key={team.id} 
+                className={`competitie-row ${index === 0 && !showPlayoff ? "first-position" : ""}`}
+              >
+                <TableCell className="competitie-cell competitie-sticky-column font-medium" style={{ left: 0 }}>
+                  {index + 1}
+                </TableCell>
+                <TableCell className="competitie-cell competitie-sticky-column font-medium text-left" style={{ left: '64px' }}>
+                  {team.name}
+                </TableCell>
+                <TableCell className="competitie-cell">{team.played}</TableCell>
+                <TableCell className="competitie-cell text-green-600 font-medium">{team.won}</TableCell>
+                <TableCell className="competitie-cell text-yellow-600 font-medium">{team.draw}</TableCell>
+                <TableCell className="competitie-cell text-red-600 font-medium">{team.lost}</TableCell>
+                <TableCell className="competitie-cell">
+                  <span className={
+                    team.goalDiff > 0 ? "text-green-600 font-medium" : 
+                    team.goalDiff < 0 ? "text-red-600 font-medium" : ""
+                  }>
+                    {team.goalDiff > 0 ? "+" : ""}{team.goalDiff}
+                  </span>
+                </TableCell>
+                <TableCell className="competitie-cell font-bold">{team.points}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };
