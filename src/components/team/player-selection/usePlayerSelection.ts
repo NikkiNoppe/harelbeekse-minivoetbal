@@ -7,12 +7,20 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Player, FormData, formSchema } from "./types";
 
+// Define a simplified type for existing player data from the database
+interface ExistingPlayerData {
+  playerId: number;
+  playerName: string;
+  jerseyNumber: string;
+  isCaptain: boolean;
+}
+
 export const usePlayerSelection = (matchId: number, teamId: number, onComplete: () => void) => {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch team players function
-  const fetchTeamPlayers = async () => {
+  const fetchTeamPlayers = async (): Promise<Player[]> => {
     const { data, error } = await supabase
       .from('players')
       .select('player_id, first_name, last_name')
@@ -85,8 +93,13 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         
         if (Array.isArray(existingPlayerData)) {
           initialPlayers = teamPlayers.map(player => {
-            const existingPlayer = existingPlayerData.find((p: any) => p.playerId === player.playerId);
-            if (existingPlayer && typeof existingPlayer === 'object' && existingPlayer !== null) {
+            const existingPlayer = existingPlayerData.find((p: any) => {
+              // Type guard to ensure p is an object with the expected properties
+              return p && typeof p === 'object' && !Array.isArray(p) && 
+                     'playerId' in p && p.playerId === player.playerId;
+            }) as ExistingPlayerData | undefined;
+            
+            if (existingPlayer) {
               return {
                 ...player,
                 selected: true,
