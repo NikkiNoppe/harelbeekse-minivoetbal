@@ -6,9 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Euro, TrendingDown, TrendingUp, Settings, Edit, Save, List, Calendar } from "lucide-react";
+import { Loader2, Euro, TrendingDown, TrendingUp, List, Calendar } from "lucide-react";
 import TeamDetailModal from "@/components/admin/financial/TeamDetailModal";
-import CostSettingsModal from "@/components/admin/financial/CostSettingsModal";
 import CostSettingsManagementModal from "@/components/admin/financial/CostSettingsManagementModal";
 import MonthlyReportsModal from "@/components/admin/financial/MonthlyReportsModal";
 import { costSettingsService } from "@/services/costSettingsService";
@@ -38,10 +37,8 @@ interface SubmittedMatch {
 const FinancialTabUpdated: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
-  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [costListModalOpen, setCostListModalOpen] = useState(false);
   const [monthlyReportsModalOpen, setMonthlyReportsModalOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
 
   // Fetch teams with their balances
   const {
@@ -164,10 +161,8 @@ const FinancialTabUpdated: React.FC = () => {
   };
 
   const handleTeamClick = (team: Team) => {
-    if (editMode) {
-      setSelectedTeam(team);
-      setTeamModalOpen(true);
-    }
+    setSelectedTeam(team);
+    setTeamModalOpen(true);
   };
 
   if (loadingTeams || loadingMatches) {
@@ -194,10 +189,7 @@ const FinancialTabUpdated: React.FC = () => {
                   Teams Financieel Overzicht
                 </CardTitle>
                 <CardDescription>
-                  {editMode 
-                    ? "Klik op een team voor details en transacties."
-                    : "Overzicht van team saldi en kosten van gespeelde wedstrijden."
-                  }
+                  Klik op een team voor details en transacties.
                 </CardDescription>
               </div>
               <div className="flex gap-2">
@@ -234,7 +226,7 @@ const FinancialTabUpdated: React.FC = () => {
               {teams?.map(team => {
               const finances = calculateTeamFinances(team.team_id);
               const isNegative = finances.currentBalance < 0;
-              return <TableRow key={team.team_id} className={editMode ? "cursor-pointer hover:bg-muted/50 transition-colors" : ""} onClick={() => handleTeamClick(team)}>
+              return <TableRow key={team.team_id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleTeamClick(team)}>
                     <TableCell className="font-medium">{team.team_name}</TableCell>
                     <TableCell className="text-center text-green-600 font-semibold">
                       {formatCurrency(finances.startCapital)}
@@ -259,43 +251,11 @@ const FinancialTabUpdated: React.FC = () => {
             </TableBody>
           </Table>
           </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setEditMode(!editMode)}
-              className="flex items-center gap-2"
-            >
-              {editMode ? (
-                <>
-                  <Save size={16} />
-                  Klaar met bewerken
-                </>
-              ) : (
-                <>
-                  <Edit size={16} />
-                  Teams bewerken
-                </>
-              )}
-            </Button>
-            
-            {editMode && (
-              <Button
-                variant="outline"
-                onClick={() => setSettingsModalOpen(true)}
-                className="flex items-center gap-2"
-              >
-                <Settings className="h-4 w-4" />
-                Kostentarieven
-              </Button>
-            )}
-          </CardFooter>
         </Card>
       </section>
 
       <TeamDetailModal open={teamModalOpen} onOpenChange={setTeamModalOpen} team={selectedTeam} />
 
-      <CostSettingsModal open={settingsModalOpen} onOpenChange={setSettingsModalOpen} />
-      
       <CostSettingsManagementModal open={costListModalOpen} onOpenChange={setCostListModalOpen} />
 
       <MonthlyReportsModal open={monthlyReportsModalOpen} onOpenChange={setMonthlyReportsModalOpen} />

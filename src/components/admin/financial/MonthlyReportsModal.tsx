@@ -105,11 +105,25 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
           {/* Summary Cards */}
           {report && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Euro className="h-5 w-5" />
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Euro className="h-4 w-4" />
+                    Wedstrijden Gespeeld
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {report.totalMatches}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Euro className="h-4 w-4" />
                     Totale Veldkosten
                   </CardTitle>
                 </CardHeader>
@@ -122,14 +136,28 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Euro className="h-5 w-5" />
-                    Totale Scheidsrechterkosten
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Euro className="h-4 w-4" />
+                    Scheidsrechterkosten
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-red-600">
                     {formatCurrency(report.totalRefereeCosts)}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Euro className="h-4 w-4" />
+                    Totale Boetes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {formatCurrency(report.totalFines)}
                   </div>
                 </CardContent>
               </Card>
@@ -165,8 +193,68 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
             </CardContent>
           </Card>
 
+          {/* Boetes per Maand */}
+          {report?.fines && report.fines.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Boetes per Maand</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Maand</TableHead>
+                      <TableHead className="text-center">Aantal Boetes</TableHead>
+                      <TableHead className="text-right">Totaal Bedrag</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {report.fines.map((month, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{month.month}</TableCell>
+                        <TableCell className="text-center">{month.fineCount}</TableCell>
+                        <TableCell className="text-right font-semibold text-orange-600">
+                          {formatCurrency(month.totalFines)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Wedstrijdstatistieken per Maand */}
+          {report?.matchStats && report.matchStats.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Wedstrijden per Maand</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Maand</TableHead>
+                      <TableHead className="text-center">Gespeelde Wedstrijden</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {report.matchStats.map((month, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{month.month}</TableCell>
+                        <TableCell className="text-center font-semibold text-blue-600">
+                          {month.totalMatches}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Veldkosten per Maand */}
-          {report?.fieldCosts.length > 0 && (
+          {report?.fieldCosts && report.fieldCosts.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Veldkosten per Maand</CardTitle>
@@ -192,6 +280,17 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Show message when no data */}
+          {report && !isLoading && report.totalMatches === 0 && (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-gray-500">
+                  Geen wedstrijdgegevens gevonden voor {selectedMonth ? months.find(m => m.value === selectedMonth)?.label + ' ' : ''}{selectedYear}
+                </p>
               </CardContent>
             </Card>
           )}
