@@ -67,13 +67,13 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto bg-background text-foreground border-purple-light">
+        <DialogHeader className="bg-purple-100 py-4 -m-4 sm:-m-6 mb-4 sm:mb-6 px-4 sm:px-6">
+          <DialogTitle className="flex items-center gap-2 text-purple-light">
             <Calendar className="h-5 w-5" />
             Maandelijkse Kostenrapportage
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-purple-dark">
             Bekijk maandelijkse kosten, scheidsrechterbetalingen en boetes voor teams
           </DialogDescription>
         </DialogHeader>
@@ -82,29 +82,29 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
           {/* Filters */}
           <div className="flex gap-4 items-end">
             <div>
-              <label className="text-sm font-medium mb-2 block">Jaar</label>
+              <label className="text-sm font-medium mb-2 block text-purple-dark">Jaar</label>
               <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-32 dropdown-login-style">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dropdown-content-login-style">
                   {years.map(year => (
-                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                    <SelectItem key={year} value={year.toString()} className="dropdown-item-login-style">{year}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Maand (optioneel)</label>
+              <label className="text-sm font-medium mb-2 block text-purple-dark">Maand (optioneel)</label>
               <Select value={selectedMonth?.toString() || "all"} onValueChange={(value) => setSelectedMonth(value === "all" ? null : parseInt(value))}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-40 dropdown-login-style">
                   <SelectValue placeholder="Alle maanden" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle maanden</SelectItem>
+                <SelectContent className="dropdown-content-login-style">
+                  <SelectItem value="all" className="dropdown-item-login-style">Alle maanden</SelectItem>
                   {months.map(month => (
-                    <SelectItem key={month.value} value={month.value.toString()}>
+                    <SelectItem key={month.value} value={month.value.toString()} className="dropdown-item-login-style">
                       {month.label}
                     </SelectItem>
                   ))}
@@ -112,7 +112,7 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
               </Select>
             </div>
 
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button className="btn-light flex items-center gap-2">
               <Download className="h-4 w-4" />
               Export
             </Button>
@@ -121,57 +121,57 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
           {/* Summary Cards */}
           {report && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
+              <Card className="border-purple-light">
+                <CardHeader className="bg-purple-100">
+                  <CardTitle className="text-sm flex items-center gap-2 text-purple-light">
                     <Euro className="h-4 w-4" />
                     Wedstrijden Gespeeld
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">
+                <CardContent className="bg-white">
+                  <div className="text-2xl font-bold text-purple-dark">
                     {report.totalMatches}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
+              <Card className="border-purple-light">
+                <CardHeader className="bg-purple-100">
+                  <CardTitle className="text-sm flex items-center gap-2 text-purple-light">
                     <Euro className="h-4 w-4" />
                     Totale Veldkosten
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-red-600">
+                <CardContent className="bg-white">
+                  <div className="text-2xl font-bold text-purple-dark">
                     {formatCurrency(report.totalFieldCosts)}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
+              <Card className="border-purple-light">
+                <CardHeader className="bg-purple-100">
+                  <CardTitle className="text-sm flex items-center gap-2 text-purple-light">
                     <Euro className="h-4 w-4" />
                     Scheidsrechterkosten
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-red-600">
+                <CardContent className="bg-white">
+                  <div className="text-2xl font-bold text-purple-dark">
                     {formatCurrency(report.totalRefereeCosts)}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
+              <Card className="border-purple-light">
+                <CardHeader className="bg-purple-100">
+                  <CardTitle className="text-sm flex items-center gap-2 text-purple-light">
                     <Euro className="h-4 w-4" />
                     Totale Boetes
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">
+                <CardContent className="bg-white">
+                  <div className="text-2xl font-bold text-purple-dark">
                     {formatCurrency(report.totalFines)}
                   </div>
                 </CardContent>
@@ -181,11 +181,11 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
           {/* Scheidsrechter Betalingen */}
           {report && report.refereeCosts.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Scheidsrechter Betalingen</CardTitle>
+            <Card className="border-purple-light">
+              <CardHeader className="bg-purple-100">
+                <CardTitle className="text-purple-light">Scheidsrechter Betalingen</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="bg-white">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -197,9 +197,9 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
                   <TableBody>
                     {report.refereeCosts.map((referee, index) => (
                       <TableRow key={index}>
-                        <TableCell className="font-medium">{referee.referee}</TableCell>
-                        <TableCell className="text-center">{referee.matchCount}</TableCell>
-                        <TableCell className="text-right font-semibold text-red-600">
+                        <TableCell className="font-medium text-purple-dark">{referee.referee}</TableCell>
+                        <TableCell className="text-center text-purple-dark">{referee.matchCount}</TableCell>
+                        <TableCell className="text-right font-semibold text-purple-dark">
                           {formatCurrency(referee.totalCost)}
                         </TableCell>
                       </TableRow>
@@ -212,11 +212,11 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
           {/* Boetes per Maand */}
           {report?.fines && report.fines.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Boetes per Maand</CardTitle>
+            <Card className="border-purple-light">
+              <CardHeader className="bg-purple-100">
+                <CardTitle className="text-purple-light">Boetes per Maand</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="bg-white">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -228,9 +228,9 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
                   <TableBody>
                     {report.fines.map((month, index) => (
                       <TableRow key={index}>
-                        <TableCell className="font-medium">{month.month}</TableCell>
-                        <TableCell className="text-center">{month.fineCount}</TableCell>
-                        <TableCell className="text-right font-semibold text-orange-600">
+                        <TableCell className="font-medium text-purple-dark">{month.month}</TableCell>
+                        <TableCell className="text-center text-purple-dark">{month.fineCount}</TableCell>
+                        <TableCell className="text-right font-semibold text-purple-dark">
                           {formatCurrency(month.totalFines)}
                         </TableCell>
                       </TableRow>
@@ -243,11 +243,11 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
           {/* Wedstrijdstatistieken per Maand */}
           {report?.matchStats && report.matchStats.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Wedstrijden per Maand</CardTitle>
+            <Card className="border-purple-light">
+              <CardHeader className="bg-purple-100">
+                <CardTitle className="text-purple-light">Wedstrijden per Maand</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="bg-white">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -258,8 +258,8 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
                   <TableBody>
                     {report.matchStats.map((month, index) => (
                       <TableRow key={index}>
-                        <TableCell className="font-medium">{month.month}</TableCell>
-                        <TableCell className="text-center font-semibold text-blue-600">
+                        <TableCell className="font-medium text-purple-dark">{month.month}</TableCell>
+                        <TableCell className="text-center font-semibold text-purple-dark">
                           {month.totalMatches}
                         </TableCell>
                       </TableRow>
@@ -272,11 +272,11 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
           {/* Veldkosten per Maand */}
           {report?.fieldCosts && report.fieldCosts.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Veldkosten per Maand</CardTitle>
+            <Card className="border-purple-light">
+              <CardHeader className="bg-purple-100">
+                <CardTitle className="text-purple-light">Veldkosten per Maand</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="bg-white">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -288,9 +288,9 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
                   <TableBody>
                     {report.fieldCosts.map((month, index) => (
                       <TableRow key={index}>
-                        <TableCell className="font-medium">{month.month}</TableCell>
-                        <TableCell className="text-center">{month.matchCount}</TableCell>
-                        <TableCell className="text-right font-semibold text-red-600">
+                        <TableCell className="font-medium text-purple-dark">{month.month}</TableCell>
+                        <TableCell className="text-center text-purple-dark">{month.matchCount}</TableCell>
+                        <TableCell className="text-right font-semibold text-purple-dark">
                           {formatCurrency(month.totalCost)}
                         </TableCell>
                       </TableRow>
@@ -303,10 +303,10 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
           {/* Error state */}
           {error && (
-            <Card>
-              <CardContent className="text-center py-8">
-                <p className="text-red-500 mb-2">Er is een fout opgetreden bij het laden van het rapport.</p>
-                <p className="text-sm text-gray-500">{error.message}</p>
+            <Card className="border-purple-light">
+              <CardContent className="text-center py-8 bg-white">
+                <p className="text-purple-dark mb-2">Er is een fout opgetreden bij het laden van het rapport.</p>
+                <p className="text-sm text-purple-dark opacity-70">{error.message}</p>
               </CardContent>
             </Card>
           )}
@@ -315,17 +315,17 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
           {isLoading && (
             <div className="flex items-center justify-center h-40">
               <div className="flex flex-col items-center gap-2">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                <p>Rapport laden...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-dark"></div>
+                <p className="text-purple-dark">Rapport laden...</p>
               </div>
             </div>
           )}
 
           {/* Show message when no data */}
           {report && !isLoading && !error && report.totalMatches === 0 && (
-            <Card>
-              <CardContent className="text-center py-8">
-                <p className="text-gray-500">
+            <Card className="border-purple-light">
+              <CardContent className="text-center py-8 bg-white">
+                <p className="text-purple-dark">
                   Geen wedstrijdgegevens gevonden voor {selectedMonth ? months.find(m => m.value === selectedMonth)?.label + ' ' : ''}{selectedYear}
                 </p>
               </CardContent>
@@ -334,12 +334,12 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
           {/* Empty state when no referee costs */}
           {report && !isLoading && !error && report.refereeCosts.length === 0 && report.totalMatches > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Scheidsrechter Betalingen</CardTitle>
+            <Card className="border-purple-light">
+              <CardHeader className="bg-purple-100">
+                <CardTitle className="text-purple-light">Scheidsrechter Betalingen</CardTitle>
               </CardHeader>
-              <CardContent className="text-center py-8">
-                <p className="text-gray-500">
+              <CardContent className="text-center py-8 bg-white">
+                <p className="text-purple-dark">
                   Geen scheidsrechterkosten gevonden voor deze periode.
                 </p>
               </CardContent>
