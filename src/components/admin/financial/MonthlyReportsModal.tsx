@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -19,7 +19,17 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
   const { data: report, isLoading, error } = useQuery({
     queryKey: ['monthly-report', selectedYear, selectedMonth],
-    queryFn: () => monthlyReportsService.getMonthlyReport(selectedYear, selectedMonth || undefined),
+    queryFn: async () => {
+      console.log('Fetching monthly report for:', { selectedYear, selectedMonth });
+      try {
+        const result = await monthlyReportsService.getMonthlyReport(selectedYear, selectedMonth || undefined);
+        console.log('Monthly report data:', result);
+        return result;
+      } catch (err) {
+        console.error('Error fetching monthly report:', err);
+        throw err;
+      }
+    },
     enabled: open,
     retry: 2,
     staleTime: 5 * 60 * 1000 // 5 minutes
@@ -63,6 +73,9 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
             <Calendar className="h-5 w-5" />
             Maandelijkse Kostenrapportage
           </DialogTitle>
+          <DialogDescription>
+            Bekijk maandelijkse kosten, scheidsrechterbetalingen en boetes voor teams
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -84,12 +97,12 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
             <div>
               <label className="text-sm font-medium mb-2 block">Maand (optioneel)</label>
-              <Select value={selectedMonth?.toString() || ""} onValueChange={(value) => setSelectedMonth(value ? parseInt(value) : null)}>
+              <Select value={selectedMonth?.toString() || "all"} onValueChange={(value) => setSelectedMonth(value === "all" ? null : parseInt(value))}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Alle maanden" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Alle maanden</SelectItem>
+                  <SelectItem value="all">Alle maanden</SelectItem>
                   {months.map(month => (
                     <SelectItem key={month.value} value={month.value.toString()}>
                       {month.label}
