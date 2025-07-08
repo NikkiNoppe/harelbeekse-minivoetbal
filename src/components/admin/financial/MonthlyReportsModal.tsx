@@ -67,7 +67,7 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto bg-background text-foreground border-purple-light">
+      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto bg-white text-foreground border-purple-light">
         <DialogHeader className="bg-purple-100 py-4 -m-4 sm:-m-6 mb-4 sm:mb-6 px-4 sm:px-6">
           <DialogTitle className="flex items-center gap-2 text-purple-light">
             <Calendar className="h-5 w-5" />
@@ -78,7 +78,7 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 bg-white p-4">
           {/* Filters */}
           <div className="flex gap-4 items-end">
             <div>
@@ -188,15 +188,15 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
               <CardContent className="bg-white">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Scheidsrechter</TableHead>
-                      <TableHead className="text-center">Aantal Wedstrijden</TableHead>
-                      <TableHead className="text-right">Te Betalen Bedrag</TableHead>
+                    <TableRow className="bg-purple-100">
+                      <TableHead className="text-purple-dark">Scheidsrechter</TableHead>
+                      <TableHead className="text-center text-purple-dark">Aantal Wedstrijden</TableHead>
+                      <TableHead className="text-right text-purple-dark">Te Betalen Bedrag</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="bg-white">
                     {report.refereeCosts.map((referee, index) => (
-                      <TableRow key={index}>
+                      <TableRow key={index} className="bg-white hover:bg-purple-50">
                         <TableCell className="font-medium text-purple-dark">{referee.referee}</TableCell>
                         <TableCell className="text-center text-purple-dark">{referee.matchCount}</TableCell>
                         <TableCell className="text-right font-semibold text-purple-dark">
@@ -219,15 +219,15 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
               <CardContent className="bg-white">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Maand</TableHead>
-                      <TableHead className="text-center">Aantal Boetes</TableHead>
-                      <TableHead className="text-right">Totaal Bedrag</TableHead>
+                    <TableRow className="bg-purple-100">
+                      <TableHead className="text-purple-dark">Maand</TableHead>
+                      <TableHead className="text-center text-purple-dark">Aantal Boetes</TableHead>
+                      <TableHead className="text-right text-purple-dark">Totaal Bedrag</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="bg-white">
                     {report.fines.map((month, index) => (
-                      <TableRow key={index}>
+                      <TableRow key={index} className="bg-white hover:bg-purple-50">
                         <TableCell className="font-medium text-purple-dark">{month.month}</TableCell>
                         <TableCell className="text-center text-purple-dark">{month.fineCount}</TableCell>
                         <TableCell className="text-right font-semibold text-purple-dark">
@@ -250,14 +250,14 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
               <CardContent className="bg-white">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Maand</TableHead>
-                      <TableHead className="text-center">Gespeelde Wedstrijden</TableHead>
+                    <TableRow className="bg-purple-100">
+                      <TableHead className="text-purple-dark">Maand</TableHead>
+                      <TableHead className="text-center text-purple-dark">Gespeelde Wedstrijden</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="bg-white">
                     {report.matchStats.map((month, index) => (
-                      <TableRow key={index}>
+                      <TableRow key={index} className="bg-white hover:bg-purple-50">
                         <TableCell className="font-medium text-purple-dark">{month.month}</TableCell>
                         <TableCell className="text-center font-semibold text-purple-dark">
                           {month.totalMatches}
@@ -279,15 +279,15 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
               <CardContent className="bg-white">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Maand</TableHead>
-                      <TableHead className="text-center">Aantal Wedstrijden</TableHead>
-                      <TableHead className="text-right">Totale Kosten</TableHead>
+                    <TableRow className="bg-purple-100">
+                      <TableHead className="text-purple-dark">Maand</TableHead>
+                      <TableHead className="text-center text-purple-dark">Aantal Wedstrijden</TableHead>
+                      <TableHead className="text-right text-purple-dark">Totale Kosten</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="bg-white">
                     {report.fieldCosts.map((month, index) => (
-                      <TableRow key={index}>
+                      <TableRow key={index} className="bg-white hover:bg-purple-50">
                         <TableCell className="font-medium text-purple-dark">{month.month}</TableCell>
                         <TableCell className="text-center text-purple-dark">{month.matchCount}</TableCell>
                         <TableCell className="text-right font-semibold text-purple-dark">
