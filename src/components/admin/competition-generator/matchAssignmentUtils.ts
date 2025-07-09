@@ -1,6 +1,6 @@
 
 import { AvailableDate, GeneratedMatch } from "./types";
-import { supabase } from "@/integrations/supabase/client";
+import { VENUES } from "@/constants/competitionData";
 
 export const assignMatchDetails = async (
   matches: GeneratedMatch[], 
@@ -8,21 +8,12 @@ export const assignMatchDetails = async (
 ): Promise<GeneratedMatch[]> => {
   if (!selectedDatesObjects.length) return matches;
   
-  // Fetch venue information from the database
-  const { data: venues } = await supabase
-    .from('venues')
-    .select('venue_id, name');
-    
-  const { data: availableDatesWithVenues } = await supabase
-    .from('available_dates')
-    .select(`
-      *,
-      venues!fk_available_dates_venue_id (
-        venue_id,
-        name
-      )
-    `)
-    .order('available_date');
+  // Use hardcoded venue data
+  const venues = [{ venue_id: 1, name: "Sporthal De Horizon" }];
+  const availableDatesWithVenues = selectedDatesObjects.map(date => ({
+    ...date,
+    venues: { name: venues[0]?.name || "Sporthal De Horizon" }
+  }));
 
   return matches.map((match, index) => {
     // Create unique code: matchday number (2 digits) + match number in that day (2 digits)
@@ -45,7 +36,7 @@ export const assignMatchDetails = async (
       ...match,
       unique_code: `${matchday}${matchNumber}`,
       location: availableDateWithVenue?.venues?.name || "Locatie TBD",
-      match_time: availableDateWithVenue?.start_time || timeSlots[timeIndex],
+      match_time: timeSlots[timeIndex],
       match_date: dateObj ? dateObj.available_date : ''
     };
   });

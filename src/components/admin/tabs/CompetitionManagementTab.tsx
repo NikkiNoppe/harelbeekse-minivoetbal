@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdvancedCompetitionGenerator from "../competition-generator/AdvancedCompetitionGenerator";
+import CompetitionDataSettings from "../settings/CompetitionDataSettings";
 import { Trophy } from "lucide-react";
 
 const CompetitionManagementTab: React.FC = () => {
@@ -17,9 +18,10 @@ const CompetitionManagementTab: React.FC = () => {
 
       <section>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="advanced">AI Generator</TabsTrigger>
             <TabsTrigger value="manual-schema">Handmatig Schema</TabsTrigger>
+            <TabsTrigger value="competition-data">Competitiedata</TabsTrigger>
           </TabsList>
           
           <TabsContent value="advanced" className="space-y-4 mt-6">
@@ -28,6 +30,10 @@ const CompetitionManagementTab: React.FC = () => {
           
           <TabsContent value="manual-schema" className="space-y-4 mt-6">
             {/* <ManualSchemaTabWrapper /> */}
+          </TabsContent>
+          
+          <TabsContent value="competition-data" className="space-y-4 mt-6">
+            <CompetitionDataSettings />
           </TabsContent>
         </Tabs>
       </section>

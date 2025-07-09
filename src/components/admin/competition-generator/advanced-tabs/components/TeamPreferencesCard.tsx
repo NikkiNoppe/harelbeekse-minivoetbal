@@ -9,6 +9,7 @@ import { Settings, Users, Calendar, Clock, MapPin } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamPreference } from "../../types-advanced";
+import { VENUES } from "@/constants/competitionData";
 
 interface TeamPreferencesCardProps {
   selectedTeams: number[];
@@ -35,19 +36,8 @@ const TeamPreferencesCard: React.FC<TeamPreferencesCardProps> = ({
     }
   });
 
-  // Fetch venues
-  const { data: venues = [] } = useQuery({
-    queryKey: ['venues'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('venues')
-        .select('venue_id, name, address')
-        .order('name');
-      
-      if (error) throw error;
-      return data;
-    }
-  });
+  // Use hardcoded venues
+  const venues = VENUES;
 
   const playDays = [
     { value: 1, label: 'Maandag' },

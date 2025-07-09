@@ -6,32 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { MapPin, Edit, Plus, Trash2 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { VENUES } from "@/constants/competitionData";
 
 const VenuesCard: React.FC = () => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   
   const [editingVenue, setEditingVenue] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [formData, setFormData] = useState({ name: '', address: '' });
 
-  // Fetch venues (locations)
-  const { data: venues = [] } = useQuery({
-    queryKey: ['venues'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('venues')
-        .select('venue_id, name, address')
-        .order('name');
-      
-      if (error) throw error;
-      return data;
-    }
-  });
+  // Use hardcoded venues data
+  const venues = VENUES;
 
   const handleEdit = (venue: any) => {
     setEditingVenue(venue);
@@ -48,86 +35,20 @@ const VenuesCard: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.address.trim()) {
-      toast({
-        title: "Onvolledige gegevens",
-        description: "Vul alle velden in",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      if (isAddingNew) {
-        const { error } = await supabase
-          .from('venues')
-          .insert({
-            name: formData.name.trim(),
-            address: formData.address.trim()
-          });
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Locatie toegevoegd",
-          description: `${formData.name} is succesvol toegevoegd`,
-        });
-      } else {
-        const { error } = await supabase
-          .from('venues')
-          .update({
-            name: formData.name.trim(),
-            address: formData.address.trim()
-          })
-          .eq('venue_id', editingVenue.venue_id);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Locatie bijgewerkt",
-          description: `${formData.name} is succesvol bijgewerkt`,
-        });
-      }
-      
-      queryClient.invalidateQueries({ queryKey: ['venues'] });
-      setIsDialogOpen(false);
-    } catch (error) {
-      console.error('Error saving venue:', error);
-      toast({
-        title: "Fout bij opslaan",
-        description: "Er is een fout opgetreden bij het opslaan van de locatie.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Demo modus",
+      description: "Wijzigingen worden niet opgeslagen in deze demo versie. Gebruik de Competitiedata tab voor echte bewerking.",
+      variant: "destructive",
+    });
+    setIsDialogOpen(false);
   };
 
   const handleDelete = async (venue: any) => {
-    if (!confirm(`Weet je zeker dat je ${venue.name} wilt verwijderen?`)) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('venues')
-        .delete()
-        .eq('venue_id', venue.venue_id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Locatie verwijderd",
-        description: `${venue.name} is succesvol verwijderd`,
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ['venues'] });
-    } catch (error) {
-      console.error('Error deleting venue:', error);
-      toast({
-        title: "Fout bij verwijderen",
-        description: "Er is een fout opgetreden bij het verwijderen van de locatie.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Demo modus",
+      description: "Wijzigingen worden niet opgeslagen in deze demo versie. Gebruik de Competitiedata tab voor echte bewerking.",
+      variant: "destructive",
+    });
   };
 
   return (

@@ -7,13 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Clock, Calendar, Edit, Plus, Trash2 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { VENUES, VENUE_TIMESLOTS, DAY_NAMES, getVenueById } from "@/constants/competitionData";
 
 const TimeslotsCard: React.FC = () => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   
   const [editingTimeslot, setEditingTimeslot] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -25,40 +23,12 @@ const TimeslotsCard: React.FC = () => {
     end_time: ''
   });
 
-  // Fetch venues for dropdown
-  const { data: venues = [] } = useQuery({
-    queryKey: ['venues'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('venues')
-        .select('venue_id, name')
-        .order('name');
-      
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  // Fetch venue timeslots
-  const { data: venueTimeslots = [] } = useQuery({
-    queryKey: ['venue-timeslots'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('venue_timeslots')
-        .select(`
-          timeslot_id,
-          day_of_week,
-          start_time,
-          end_time,
-          venue_id,
-          venues!inner(name)
-        `)
-        .order('day_of_week, start_time');
-      
-      if (error) throw error;
-      return data;
-    }
-  });
+  // Use hardcoded data
+  const venues = VENUES;
+  const venueTimeslots = VENUE_TIMESLOTS.map(slot => ({
+    ...slot,
+    venues: { name: getVenueById(slot.venue_id)?.name || 'Onbekend' }
+  }));
 
   const playDays = [
     { value: 1, label: 'Maandag' },
@@ -90,87 +60,20 @@ const TimeslotsCard: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.venue_id || !formData.day_of_week || !formData.start_time || !formData.end_time) {
-      toast({
-        title: "Onvolledige gegevens",
-        description: "Vul alle velden in",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const timeslotData = {
-        venue_id: parseInt(formData.venue_id),
-        day_of_week: parseInt(formData.day_of_week),
-        start_time: formData.start_time,
-        end_time: formData.end_time
-      };
-
-      if (isAddingNew) {
-        const { error } = await supabase
-          .from('venue_timeslots')
-          .insert(timeslotData);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Speeltijd toegevoegd",
-          description: "De speeltijd is succesvol toegevoegd",
-        });
-      } else {
-        const { error } = await supabase
-          .from('venue_timeslots')
-          .update(timeslotData)
-          .eq('timeslot_id', editingTimeslot.timeslot_id);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Speeltijd bijgewerkt",
-          description: "De speeltijd is succesvol bijgewerkt",
-        });
-      }
-      
-      queryClient.invalidateQueries({ queryKey: ['venue-timeslots'] });
-      setIsDialogOpen(false);
-    } catch (error) {
-      console.error('Error saving timeslot:', error);
-      toast({
-        title: "Fout bij opslaan",
-        description: "Er is een fout opgetreden bij het opslaan van de speeltijd.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Demo modus",
+      description: "Wijzigingen worden niet opgeslagen in deze demo versie. Gebruik de Competitiedata tab voor echte bewerking.",
+      variant: "destructive",
+    });
+    setIsDialogOpen(false);
   };
 
   const handleDelete = async (timeslot: any) => {
-    if (!confirm(`Weet je zeker dat je deze speeltijd wilt verwijderen?`)) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('venue_timeslots')
-        .delete()
-        .eq('timeslot_id', timeslot.timeslot_id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Speeltijd verwijderd",
-        description: "De speeltijd is succesvol verwijderd",
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ['venue-timeslots'] });
-    } catch (error) {
-      console.error('Error deleting timeslot:', error);
-      toast({
-        title: "Fout bij verwijderen",
-        description: "Er is een fout opgetreden bij het verwijderen van de speeltijd.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Demo modus",
+      description: "Wijzigingen worden niet opgeslagen in deze demo versie. Gebruik de Competitiedata tab voor echte bewerking.",
+      variant: "destructive",
+    });
   };
 
   return (
@@ -205,10 +108,10 @@ const TimeslotsCard: React.FC = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {daySlots.map((slot) => (
                     <div key={slot.timeslot_id} className="p-2 border rounded text-center bg-muted text-sm relative group">
-                      <div className="font-medium">{slot.venues.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {slot.start_time} - {slot.end_time}
-                      </div>
+                  <div className="font-medium">{slot.venues.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {slot.start_time.substring(0,5)} - {slot.end_time.substring(0,5)}
+                  </div>
                       <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="ghost"

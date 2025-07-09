@@ -5,11 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calendar, Plus, Edit, Trash2 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { VacationPeriod } from "../../types-advanced";
 import { formatDateShort } from "@/lib/dateUtils";
+import { VACATION_PERIODS } from "@/constants/competitionData";
 
 interface VacationPeriodsCardProps {
   vacationPeriods: VacationPeriod[];
@@ -21,7 +20,6 @@ const VacationPeriodsCard: React.FC<VacationPeriodsCardProps> = ({
   setVacationPeriods
 }) => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   
   const [editingPeriod, setEditingPeriod] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -32,20 +30,8 @@ const VacationPeriodsCard: React.FC<VacationPeriodsCardProps> = ({
     end_date: ''
   });
 
-  // Fetch vacation periods from database
-  const { data: dbVacationPeriods = [] } = useQuery({
-    queryKey: ['vacation-periods'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vacation_periods')
-        .select('*')
-        .eq('is_active', true)
-        .order('start_date');
-      
-      if (error) throw error;
-      return data as VacationPeriod[];
-    }
-  });
+  // Use hardcoded vacation periods
+  const dbVacationPeriods = VACATION_PERIODS;
 
   const handleEdit = (period: VacationPeriod) => {
     setEditingPeriod(period);
@@ -70,96 +56,20 @@ const VacationPeriodsCard: React.FC<VacationPeriodsCardProps> = ({
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.start_date || !formData.end_date) {
-      toast({
-        title: "Onvolledige gegevens",
-        description: "Vul alle velden in",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (new Date(formData.start_date) >= new Date(formData.end_date)) {
-      toast({
-        title: "Ongeldige datums",
-        description: "Einddatum moet na startdatum liggen",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const periodData = {
-        name: formData.name.trim(),
-        start_date: formData.start_date,
-        end_date: formData.end_date,
-        is_active: true
-      };
-
-      if (isAddingNew) {
-        const { error } = await supabase
-          .from('vacation_periods')
-          .insert(periodData);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Verlofperiode toegevoegd",
-          description: `${formData.name} is succesvol toegevoegd`,
-        });
-      } else {
-        const { error } = await supabase
-          .from('vacation_periods')
-          .update(periodData)
-          .eq('id', editingPeriod.id);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Verlofperiode bijgewerkt",
-          description: `${formData.name} is succesvol bijgewerkt`,
-        });
-      }
-      
-      queryClient.invalidateQueries({ queryKey: ['vacation-periods'] });
-      setIsDialogOpen(false);
-    } catch (error) {
-      console.error('Error saving vacation period:', error);
-      toast({
-        title: "Fout bij opslaan",
-        description: "Er is een fout opgetreden bij het opslaan van de verlofperiode.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Demo modus",
+      description: "Wijzigingen worden niet opgeslagen in deze demo versie. Gebruik de Competitiedata tab voor echte bewerking.",
+      variant: "destructive",
+    });
+    setIsDialogOpen(false);
   };
 
   const handleDelete = async (period: VacationPeriod) => {
-    if (!confirm(`Weet je zeker dat je ${period.name} wilt verwijderen?`)) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('vacation_periods')
-        .update({ is_active: false })
-        .eq('id', period.id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Verlofperiode verwijderd",
-        description: `${period.name} is succesvol verwijderd`,
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ['vacation-periods'] });
-    } catch (error) {
-      console.error('Error deleting vacation period:', error);
-      toast({
-        title: "Fout bij verwijderen",
-        description: "Er is een fout opgetreden bij het verwijderen van de verlofperiode.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Demo modus",
+      description: "Wijzigingen worden niet opgeslagen in deze demo versie. Gebruik de Competitiedata tab voor echte bewerking.",
+      variant: "destructive",
+    });
   };
 
   const addVacationPeriod = () => {
@@ -204,7 +114,7 @@ const VacationPeriodsCard: React.FC<VacationPeriodsCardProps> = ({
       <CardContent className="space-y-4">
         {/* Database vacation periods */}
         <div>
-          <Label className="text-sm font-medium mb-2 block">Database verlofperiodes</Label>
+          <Label className="text-sm font-medium mb-2 block">Standaard verlofperiodes (hardcoded)</Label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {dbVacationPeriods.map((period) => (
               <div key={period.id} className="p-3 border rounded-lg bg-muted relative group">

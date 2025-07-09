@@ -14,50 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      ai_generation_logs: {
-        Row: {
-          ai_provider: string
-          config_id: number | null
-          created_at: string | null
-          error_message: string | null
-          generation_time_ms: number | null
-          id: number
-          request_data: Json
-          response_data: Json | null
-          status: string | null
-        }
-        Insert: {
-          ai_provider: string
-          config_id?: number | null
-          created_at?: string | null
-          error_message?: string | null
-          generation_time_ms?: number | null
-          id?: number
-          request_data: Json
-          response_data?: Json | null
-          status?: string | null
-        }
-        Update: {
-          ai_provider?: string
-          config_id?: number | null
-          created_at?: string | null
-          error_message?: string | null
-          generation_time_ms?: number | null
-          id?: number
-          request_data?: Json
-          response_data?: Json | null
-          status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ai_generation_logs_config_id_fkey"
-            columns: ["config_id"]
-            isOneToOne: false
-            referencedRelation: "competition_configs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       available_dates: {
         Row: {
           available_date: string
@@ -86,22 +42,7 @@ export type Database = {
           start_time?: string | null
           venue_id?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_available_dates_venue"
-            columns: ["venue_id"]
-            isOneToOne: false
-            referencedRelation: "venues"
-            referencedColumns: ["venue_id"]
-          },
-          {
-            foreignKeyName: "fk_available_dates_venue_id"
-            columns: ["venue_id"]
-            isOneToOne: false
-            referencedRelation: "venues"
-            referencedColumns: ["venue_id"]
-          },
-        ]
+        Relationships: []
       }
       blogs: {
         Row: {
@@ -124,86 +65,6 @@ export type Database = {
           id?: number
           tags?: string[] | null
           title?: string
-        }
-        Relationships: []
-      }
-      competition_configs: {
-        Row: {
-          config_data: Json | null
-          created_at: string | null
-          created_by: number | null
-          end_date: string
-          format_type: string
-          id: number
-          matches_per_week: number | null
-          name: string
-          playoff_teams: number | null
-          start_date: string
-          total_rounds: number | null
-          vacation_periods: number[] | null
-        }
-        Insert: {
-          config_data?: Json | null
-          created_at?: string | null
-          created_by?: number | null
-          end_date: string
-          format_type: string
-          id?: number
-          matches_per_week?: number | null
-          name: string
-          playoff_teams?: number | null
-          start_date: string
-          total_rounds?: number | null
-          vacation_periods?: number[] | null
-        }
-        Update: {
-          config_data?: Json | null
-          created_at?: string | null
-          created_by?: number | null
-          end_date?: string
-          format_type?: string
-          id?: number
-          matches_per_week?: number | null
-          name?: string
-          playoff_teams?: number | null
-          start_date?: string
-          total_rounds?: number | null
-          vacation_periods?: number[] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "competition_configs_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      competition_formats: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          format_id: number
-          has_playoffs: boolean | null
-          name: string
-          regular_rounds: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          format_id?: number
-          has_playoffs?: boolean | null
-          name: string
-          regular_rounds?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          format_id?: number
-          has_playoffs?: boolean | null
-          name?: string
-          regular_rounds?: number | null
         }
         Relationships: []
       }
@@ -469,13 +330,6 @@ export type Database = {
             referencedRelation: "manual_competition_schedules"
             referencedColumns: ["schedule_id"]
           },
-          {
-            foreignKeyName: "manual_schedule_matches_venue_id_fkey"
-            columns: ["venue_id"]
-            isOneToOne: false
-            referencedRelation: "venues"
-            referencedColumns: ["venue_id"]
-          },
         ]
       }
       matches: {
@@ -662,47 +516,6 @@ export type Database = {
         }
         Relationships: []
       }
-      team_preferences: {
-        Row: {
-          blackout_dates: string[] | null
-          created_at: string | null
-          id: number
-          max_travel_distance: number | null
-          notes: string | null
-          preferred_home_day: number | null
-          preferred_time_slot: string | null
-          team_id: number | null
-        }
-        Insert: {
-          blackout_dates?: string[] | null
-          created_at?: string | null
-          id?: number
-          max_travel_distance?: number | null
-          notes?: string | null
-          preferred_home_day?: number | null
-          preferred_time_slot?: string | null
-          team_id?: number | null
-        }
-        Update: {
-          blackout_dates?: string[] | null
-          created_at?: string | null
-          id?: number
-          max_travel_distance?: number | null
-          notes?: string | null
-          preferred_home_day?: number | null
-          preferred_time_slot?: string | null
-          team_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_preferences_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["team_id"]
-          },
-        ]
-      }
       team_transactions: {
         Row: {
           amount: number
@@ -856,89 +669,6 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           user_id?: number
           username?: string
-        }
-        Relationships: []
-      }
-      vacation_periods: {
-        Row: {
-          created_at: string | null
-          end_date: string
-          id: number
-          is_active: boolean | null
-          name: string
-          start_date: string
-        }
-        Insert: {
-          created_at?: string | null
-          end_date: string
-          id?: number
-          is_active?: boolean | null
-          name: string
-          start_date: string
-        }
-        Update: {
-          created_at?: string | null
-          end_date?: string
-          id?: number
-          is_active?: boolean | null
-          name?: string
-          start_date?: string
-        }
-        Relationships: []
-      }
-      venue_timeslots: {
-        Row: {
-          created_at: string | null
-          day_of_week: number
-          end_time: string
-          start_time: string
-          timeslot_id: number
-          venue_id: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          day_of_week: number
-          end_time: string
-          start_time: string
-          timeslot_id?: number
-          venue_id?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          day_of_week?: number
-          end_time?: string
-          start_time?: string
-          timeslot_id?: number
-          venue_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "venue_timeslots_venue_id_fkey"
-            columns: ["venue_id"]
-            isOneToOne: false
-            referencedRelation: "venues"
-            referencedColumns: ["venue_id"]
-          },
-        ]
-      }
-      venues: {
-        Row: {
-          address: string
-          created_at: string | null
-          name: string
-          venue_id: number
-        }
-        Insert: {
-          address: string
-          created_at?: string | null
-          name: string
-          venue_id?: number
-        }
-        Update: {
-          address?: string
-          created_at?: string | null
-          name?: string
-          venue_id?: number
         }
         Relationships: []
       }

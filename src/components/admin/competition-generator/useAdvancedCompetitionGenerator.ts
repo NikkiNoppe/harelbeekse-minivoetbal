@@ -31,25 +31,10 @@ export const useAdvancedCompetitionGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState("ai-generation");
 
-  // Fetch vacation periods from the consolidated table
-  const { data: vacationPeriodsData = [] } = useQuery({
-    queryKey: ['vacationPeriods'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vacation_periods')
-        .select('*')
-        .eq('is_active', true)
-        .order('start_date');
-      
-      if (error) throw error;
-      return data as VacationPeriod[];
-    }
-  });
-
-  // Update vacation periods when data changes
+  // Use hardcoded vacation periods
   useEffect(() => {
     setVacationPeriods([]);
-  }, [vacationPeriodsData]);
+  }, []);
 
   // Fetch teams
   const { data: teams = [] } = useQuery({
@@ -107,15 +92,6 @@ export const useAdvancedCompetitionGenerator = () => {
     if (!generatedSchedule) return;
 
     try {
-      // Save configuration first
-      const { data: savedConfig, error: configError } = await supabase
-        .from('competition_configs')
-        .insert(config)
-        .select()
-        .single();
-
-      if (configError) throw configError;
-
       toast({
         title: "Schema geïmporteerd!",
         description: "Het AI-gegenereerde schema is succesvol geïmporteerd",

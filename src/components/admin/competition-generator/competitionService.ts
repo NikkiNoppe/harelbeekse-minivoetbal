@@ -3,6 +3,7 @@ import { CompetitionType, GeneratedMatch, AvailableDate } from "./types";
 import { useToast } from "@/hooks/use-toast";
 import { findFormatById } from "./competitionFormats";
 import { getCurrentDate } from "@/lib/dateUtils";
+import { VENUES } from "@/constants/competitionData";
 
 export const saveCompetitionToDatabase = async (
   generatedMatches: GeneratedMatch[],
@@ -24,18 +25,12 @@ export const saveCompetitionToDatabase = async (
   const format = findFormatById(selectedFormat);
   
   try {
-    // Get the selected dates objects with venue information - fix the query
-    const { data: selectedDatesWithVenues } = await supabase
-      .from('available_dates')
-      .select(`
-        *,
-        venues!venue_id (
-          venue_id,
-          name
-        )
-      `)
-      .in('date_id', selectedDates)
-      .order('available_date');
+    // Use hardcoded venue data
+    const selectedDatesWithVenues = selectedDates.map(dateId => ({
+      date_id: dateId,
+      available_date: getCurrentDate(),
+      venues: { name: "Sporthal De Horizon" }
+    }));
     
     const startDate = selectedDatesWithVenues?.length > 0 ? 
       selectedDatesWithVenues[0].available_date : 
@@ -82,7 +77,7 @@ export const saveCompetitionToDatabase = async (
         referee_cost: 25.00,
         field_cost: 50.00,
         is_cup_match: format?.isCup || false,
-        location: selectedDatesWithVenues?.[matchdayIndex]?.venues?.name || 'Te bepalen'
+        location: VENUES[0]?.name || 'Te bepalen'
       };
     });
     
