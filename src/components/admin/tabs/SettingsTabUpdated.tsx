@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TabVisibilitySettingsUpdated from "../settings/TabVisibilitySettingsUpdated";
+import CompetitionDataSettings from "../settings/CompetitionDataSettings";
 import { Settings } from "lucide-react";
 
 const SettingsTabUpdated: React.FC = () => {
@@ -17,8 +18,17 @@ const SettingsTabUpdated: React.FC = () => {
 
       <section>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList>
+            <TabsTrigger value="tab-visibility">Tab Zichtbaarheid</TabsTrigger>
+            <TabsTrigger value="competition-data">Competitiedata</TabsTrigger>
+          </TabsList>
+          
           <TabsContent value="tab-visibility">
             <TabVisibilitySettingsUpdated />
+          </TabsContent>
+          
+          <TabsContent value="competition-data">
+            <CompetitionDataSettings />
           </TabsContent>
         </Tabs>
       </section>

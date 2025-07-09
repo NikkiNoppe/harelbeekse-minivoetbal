@@ -150,7 +150,10 @@ export const enhancedCostSettingsService = {
       return { success: true, message: 'Kostentarief succesvol toegevoegd' };
     } catch (error) {
       logOperation('addCostSetting - CATCH ERROR', { error });
-      return { success: false, message: `Fout bij toevoegen kostentarief: ${error}` };
+      const errorMessage = error instanceof Error ? error.message : 
+                          typeof error === 'string' ? error : 
+                          JSON.stringify(error);
+      return { success: false, message: `Fout bij toevoegen kostentarief: ${errorMessage}` };
     }
   },
 
@@ -179,7 +182,10 @@ export const enhancedCostSettingsService = {
       return { success: true, message: 'Kostentarief succesvol bijgewerkt' };
     } catch (error) {
       logOperation('updateCostSetting - CATCH ERROR', { error });
-      return { success: false, message: `Fout bij bijwerken kostentarief: ${error}` };
+      const errorMessage = error instanceof Error ? error.message : 
+                          typeof error === 'string' ? error : 
+                          JSON.stringify(error);
+      return { success: false, message: `Fout bij bijwerken kostentarief: ${errorMessage}` };
     }
   },
 
@@ -203,7 +209,10 @@ export const enhancedCostSettingsService = {
       return { success: true, message: 'Kostentarief succesvol verwijderd' };
     } catch (error) {
       logOperation('deleteCostSetting - CATCH ERROR', { error });
-      return { success: false, message: `Fout bij verwijderen kostentarief: ${error}` };
+      const errorMessage = error instanceof Error ? error.message : 
+                          typeof error === 'string' ? error : 
+                          JSON.stringify(error);
+      return { success: false, message: `Fout bij verwijderen kostentarief: ${errorMessage}` };
     }
   },
 
@@ -259,7 +268,10 @@ export const enhancedCostSettingsService = {
       return { success: true, message: 'Transactie succesvol toegevoegd' };
     } catch (error) {
       logOperation('addTransaction - CATCH ERROR', { error });
-      return { success: false, message: `Fout bij toevoegen transactie: ${error}` };
+      const errorMessage = error instanceof Error ? error.message : 
+                          typeof error === 'string' ? error : 
+                          JSON.stringify(error);
+      return { success: false, message: `Fout bij toevoegen transactie: ${errorMessage}` };
     }
   }
 };
