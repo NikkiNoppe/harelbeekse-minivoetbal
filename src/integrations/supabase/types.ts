@@ -278,6 +278,51 @@ export type Database = {
         }
         Relationships: []
       }
+      cost_setting_audit_log: {
+        Row: {
+          affected_transactions_count: number | null
+          changed_at: string | null
+          changed_by: number | null
+          cost_setting_id: number | null
+          id: number
+          new_amount: number | null
+          old_amount: number | null
+        }
+        Insert: {
+          affected_transactions_count?: number | null
+          changed_at?: string | null
+          changed_by?: number | null
+          cost_setting_id?: number | null
+          id?: number
+          new_amount?: number | null
+          old_amount?: number | null
+        }
+        Update: {
+          affected_transactions_count?: number | null
+          changed_at?: string | null
+          changed_by?: number | null
+          cost_setting_id?: number | null
+          id?: number
+          new_amount?: number | null
+          old_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cost_setting_audit_log_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "cost_setting_audit_log_cost_setting_id_fkey"
+            columns: ["cost_setting_id"]
+            isOneToOne: false
+            referencedRelation: "cost_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cost_settings: {
         Row: {
           amount: number
@@ -439,7 +484,6 @@ export type Database = {
           away_score: number | null
           away_team_id: number | null
           created_at: string | null
-          field_cost: number
           home_players: Json | null
           home_score: number | null
           home_team_id: number | null
@@ -450,7 +494,6 @@ export type Database = {
           match_date: string
           match_id: number
           referee: string | null
-          referee_cost: number
           referee_notes: string | null
           speeldag: string | null
           unique_number: string | null
@@ -461,7 +504,6 @@ export type Database = {
           away_score?: number | null
           away_team_id?: number | null
           created_at?: string | null
-          field_cost: number
           home_players?: Json | null
           home_score?: number | null
           home_team_id?: number | null
@@ -472,7 +514,6 @@ export type Database = {
           match_date: string
           match_id?: number
           referee?: string | null
-          referee_cost: number
           referee_notes?: string | null
           speeldag?: string | null
           unique_number?: string | null
@@ -483,7 +524,6 @@ export type Database = {
           away_score?: number | null
           away_team_id?: number | null
           created_at?: string | null
-          field_cost?: number
           home_players?: Json | null
           home_score?: number | null
           home_team_id?: number | null
@@ -494,7 +534,6 @@ export type Database = {
           match_date?: string
           match_id?: number
           referee?: string | null
-          referee_cost?: number
           referee_notes?: string | null
           speeldag?: string | null
           unique_number?: string | null

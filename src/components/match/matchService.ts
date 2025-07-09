@@ -19,8 +19,6 @@ export async function fetchMatches(): Promise<MatchesResult> {
         home_score,
         away_score,
         is_submitted,
-        referee_cost,
-        field_cost,
         location,
         referee,
         home_team:teams!home_team_id(team_id, team_name),

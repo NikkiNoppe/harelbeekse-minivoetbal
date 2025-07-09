@@ -51,6 +51,17 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
       return;
     }
 
+    // Check if this is an amount update that will affect existing transactions
+    if (editingItem && parseFloat(formData.amount) !== editingItem.amount) {
+      const confirm = window.confirm(
+        `Let op: Het wijzigen van dit bedrag zal automatisch alle gerelateerde transacties bijwerken. ` +
+        `Dit kan invloed hebben op team balances. Weet je zeker dat je wilt doorgaan?`
+      );
+      if (!confirm) {
+        return;
+      }
+    }
+
     const settingData = {
       name: formData.name,
       description: formData.description || null,
@@ -73,9 +84,12 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
     if (result.success) {
       toast({
         title: "Succesvol",
-        description: result.message
+        description: editingItem && parseFloat(formData.amount) !== editingItem.amount 
+          ? "Kostentarief bijgewerkt en alle gerelateerde transacties zijn automatisch aangepast"
+          : result.message
       });
       queryClient.invalidateQueries({ queryKey: ['enhanced-cost-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
       resetForm();
     } else {
       toast({
