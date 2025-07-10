@@ -41,5 +41,9 @@
   "debug.javascript.usePreview": false,
   "debug.javascript.autoAttach": "disabled",
   "debug.chrome.useV3": false,
-  "debug.safari.useV3": true
+  "debug.safari.useV3": true,
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+  "css.lint.unknownAtRules": "ignore"
 } 

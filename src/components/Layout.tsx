@@ -11,7 +11,7 @@ import Footer from "@/components/footer/Footer";
 import MainTabs from "@/components/tabs/MainTabs";
 import AdminDashboard from "@/components/user/AdminDashboard";
 
-type AdminTabName = "match-forms" | "players" | "teams" | "users" | "competition" | "financial" | "settings";
+type AdminTabName = "match-forms" | "players" | "teams" | "users" | "competition" | "financial" | "settings" | "cup";
 
 const Layout: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -43,7 +43,7 @@ const Layout: React.FC = () => {
     
     if (isAuthenticated) {
       // Admin tabs
-      if (["match-forms", "players", "teams", "users", "competition", "financial", "settings"].includes(tab)) {
+      if (["match-forms", "players", "teams", "users", "competition", "financial", "settings", "cup"].includes(tab)) {
         setActiveAdminTab(tab as AdminTabName);
       }
     } else {
@@ -76,6 +76,7 @@ const Layout: React.FC = () => {
           { key: "teams", label: "Teams", icon: <Shield size={16} /> },
           { key: "users", label: "Gebruikers", icon: <UserIcon size={16} /> },
           { key: "competition", label: "Competitiebeheer", icon: <Trophy size={16} /> },
+          { key: "cup", label: "Bekertoernooi", icon: <Award size={16} /> },
           { key: "financial", label: "Financieel", icon: <DollarSign size={16} /> },
           { key: "settings", label: "Instellingen", icon: <Settings size={16} /> }
         ] : [])
