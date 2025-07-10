@@ -76,7 +76,7 @@ const TeamPreferencesCard: React.FC<TeamPreferencesCardProps> = ({
             <div key={teamId} className="border rounded-lg p-4 space-y-4">
               <h4 className="font-medium flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                {team?.team_name}
+                <span className="text-responsive-card-title">{team?.team_name}</span>
               </h4>
               
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -43,11 +43,13 @@ export const fetchCompetitionMatches = async () => {
       away_score,
       referee,
       is_submitted,
+      is_cup_match,
       home_players,
       away_players,
       teams_home:teams!home_team_id ( team_name ),
       teams_away:teams!away_team_id ( team_name )
     `)
+    .or('is_cup_match.is.null,is_cup_match.eq.false')
     .order("match_date", { ascending: true });
 
   if (error || !data) {

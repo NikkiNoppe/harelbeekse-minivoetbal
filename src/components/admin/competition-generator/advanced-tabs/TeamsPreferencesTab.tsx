@@ -102,8 +102,8 @@ const TeamsPreferencesTab: React.FC<TeamsPreferencesTabProps> = ({
                       handleTeamToggle(team.team_id, checked as boolean)
                     }
                   />
-                  <Label htmlFor={`team-${team.team_id}`}>
-                    {team.team_name}
+                  <Label htmlFor={`team-${team.team_id}`} className="team-name-container">
+                    <span className="team-name-text text-responsive-team">{team.team_name}</span>
                   </Label>
                 </div>
               ))}
@@ -135,7 +135,7 @@ const TeamsPreferencesTab: React.FC<TeamsPreferencesTabProps> = ({
                   <div key={teamId} className="border rounded-lg p-4 space-y-4">
                     <h4 className="font-medium flex items-center gap-2">
                       <Users className="w-4 h-4" />
-                      {team?.team_name}
+                      <span className="text-responsive-card-title">{team?.team_name}</span>
                     </h4>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

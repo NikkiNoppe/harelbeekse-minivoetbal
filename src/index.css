@@ -615,6 +615,178 @@ tbody tr:hover {
   color: var(--purple-200) !important;
 }
 
+/* ============================================================================
+   RESPONSIVE TEXT UTILITIES FOR TEAM NAMES
+   ============================================================================ */
+
+/* Base responsive text sizing for team names - using em units for better scaling */
+.text-responsive-team {
+  font-size: 0.95rem;
+  line-height: 1.2;
+  word-break: break-word;
+  hyphens: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* Container-based responsive scaling */
+@container (max-width: 200px) {
+  .text-responsive-team {
+    font-size: 0.75rem;
+  }
+}
+
+@container (max-width: 150px) {
+  .text-responsive-team {
+    font-size: 0.7rem;
+  }
+}
+
+@container (max-width: 120px) {
+  .text-responsive-team {
+    font-size: 0.65rem;
+  }
+}
+
+/* Fallback media queries for browsers without container query support */
+@media (max-width: 768px) {
+  .text-responsive-team {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .text-responsive-team {
+    font-size: 0.8rem;
+    white-space: normal;
+    line-height: 1.1;
+    max-height: 2.2em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
+
+@media (max-width: 480px) {
+  .text-responsive-team {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .text-responsive-team {
+    font-size: 0.7rem;
+  }
+}
+
+.text-responsive-card-title {
+  font-size: 1rem;
+  line-height: 1.3;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+@media (max-width: 768px) {
+  .text-responsive-card-title {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .text-responsive-card-title {
+    font-size: 0.85rem;
+  }
+}
+
+.text-responsive-small {
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+@media (max-width: 640px) {
+  .text-responsive-small {
+    font-size: 0.75rem;
+  }
+}
+
+/* Enhanced flex containers for responsive team layout with container queries */
+.team-name-container {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  container-type: inline-size;
+  container-name: team-container;
+}
+
+.team-name-text {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* For very small containers, force even smaller text */
+.team-name-container[style*="max-width"] .team-name-text,
+.team-name-container:has(.team-name-text:only-child) .team-name-text {
+  font-size: 0.75rem !important;
+}
+
+/* Match card specific team name styling */
+.match-card .team-name-container {
+  max-width: 47%;
+}
+
+.match-card .team-name-text {
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .match-card .team-name-text {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .match-card .team-name-text {
+    font-size: 0.75rem;
+    white-space: normal;
+    line-height: 1.1;
+    max-height: 2.2em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
+
+@media (max-width: 480px) {
+  .match-card .team-name-text {
+    font-size: 0.7rem;
+  }
+}
+
+/* Auto-sizing utility class for very long team names */
+.text-auto-fit {
+  font-size: 0.9rem;
+  transform-origin: left center;
+}
+
+.text-auto-fit[data-length="long"] {
+  font-size: 0.75rem;
+}
+
+.text-auto-fit[data-length="very-long"] {
+  font-size: 0.65rem;
+}
+
+.text-auto-fit[data-length="extreme"] {
+  font-size: 0.6rem;
+}
+
 /* ==========================================================================
    MATCH CARD STYLING (herbruikbaar voor beker, competitie, enz.)
    ==========================================================================
@@ -632,6 +804,7 @@ tbody tr:hover {
   display: flex;
   flex-direction: column;
   justify-content: stretch;
+  min-height: 140px;
 }
 .match-card:hover {
   background: var(--purple-50);
@@ -663,14 +836,15 @@ tbody tr:hover {
 }
 .match-card .match-card-teams {
   font-weight: 500;
-  font-size: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   margin-bottom: 0.5rem;
   color: var(--purple-600);
   transition: color 0.2s;
+  min-height: 2.5rem;
+  flex: 1;
 }
 .match-card:hover .match-card-teams {
   color: var(--purple-700);

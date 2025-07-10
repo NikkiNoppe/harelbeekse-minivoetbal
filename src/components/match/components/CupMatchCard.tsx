@@ -67,12 +67,6 @@ const CupMatchCard: React.FC<CupMatchCardProps> = ({
                 {tournamentRound}
               </Badge>
             )}
-            {winner && status === 'completed' && (
-              <Badge variant="default" className="text-xs bg-green-600">
-                <Trophy className="h-3 w-3 mr-1" />
-                {winner}
-              </Badge>
-            )}
             {nextMatch && (
               <Badge variant="secondary" className="text-xs">
                 <ArrowRight className="h-3 w-3 mr-1" />

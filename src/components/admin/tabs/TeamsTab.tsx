@@ -222,7 +222,7 @@ const TeamsTab: React.FC = () => {
               <TableBody>
                 {teams?.map((team) => (
                   <TableRow key={team.team_id}>
-                    <TableCell className="font-medium">{team.team_name}</TableCell>
+                    <TableCell className="font-medium text-responsive-team">{team.team_name}</TableCell>
                     <TableCell className={`text-right font-semibold ${team.balance < 0 ? 'text-red-600' : 'text-green-600'}`}>
                       {formatCurrency(team.balance)}
                     </TableCell>

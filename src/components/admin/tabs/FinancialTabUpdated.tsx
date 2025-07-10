@@ -227,7 +227,7 @@ const FinancialTabUpdated: React.FC = () => {
               const finances = calculateTeamFinances(team.team_id);
               const isNegative = finances.currentBalance < 0;
               return <TableRow key={team.team_id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleTeamClick(team)}>
-                    <TableCell className="font-medium">{team.team_name}</TableCell>
+                    <TableCell className="font-medium text-responsive-team">{team.team_name}</TableCell>
                     <TableCell className="text-center text-green-600 font-semibold">
                       {formatCurrency(finances.startCapital)}
                     </TableCell>

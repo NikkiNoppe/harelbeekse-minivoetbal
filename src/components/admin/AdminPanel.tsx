@@ -255,7 +255,7 @@ const AdminPanel: React.FC = () => {
                     <TableBody>
                       {teams.map((team) => (
                         <TableRow key={team.team_id}>
-                          <TableCell className="font-medium">{team.team_name}</TableCell>
+                          <TableCell className="font-medium text-responsive-team">{team.team_name}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Input 
@@ -366,7 +366,7 @@ const AdminPanel: React.FC = () => {
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">{user.username}</TableCell>
                           <TableCell>{user.role === "admin" ? "Administrator" : "Team"}</TableCell>
-                          <TableCell>
+                          <TableCell className="text-responsive-team">
                             {user.teamId
                               ? teams.find((t) => t.team_id === user.teamId)?.team_name || "Onbekend team"
                               : "N/A"}

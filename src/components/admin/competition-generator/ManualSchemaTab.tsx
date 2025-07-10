@@ -330,7 +330,7 @@ Speeldag 2 - 2024-02-17
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                <span className="font-medium">{match.homeTeam}</span>
+                                <span className="font-medium text-responsive-team">{match.homeTeam}</span>
                                 <Badge className="badge-purple">Thuis</Badge>
                               </div>
                             </TableCell>
@@ -339,7 +339,7 @@ Speeldag 2 - 2024-02-17
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                <span className="font-medium">{match.awayTeam}</span>
+                                <span className="font-medium text-responsive-team">{match.awayTeam}</span>
                                 <Badge className="badge-purple">Uit</Badge>
                               </div>
                             </TableCell>

@@ -1,5 +1,6 @@
 import React from "react";
 import { Clock, MapPin, CheckCircle } from "lucide-react";
+import AutoFitText from "@/components/ui/auto-fit-text";
 import "../../../../src/index.css";
 
 export type MatchCardStatus = 'completed' | 'upcoming' | 'pending';
@@ -60,9 +61,25 @@ const MatchCard: React.FC<MatchCardProps> = ({
         )}
       </div>
       <div className="match-card-teams">
-        <span className="truncate flex-1 text-right">{home}</span>
-        <span className="text-xs mx-2" style={{ minWidth: 24, textAlign: 'center' }}>vs</span>
-        <span className="truncate flex-1 text-left">{away}</span>
+        <div className="team-name-container text-right" style={{ maxWidth: '47%' }}>
+          <AutoFitText 
+            text={home}
+            maxFontSize={16}
+            minFontSize={7}
+            className="text-responsive-team font-medium"
+            style={{ textAlign: 'right' }}
+          />
+        </div>
+        <span className="text-xs mx-1" style={{ minWidth: 20, textAlign: 'center' }}>vs</span>
+        <div className="team-name-container text-left" style={{ maxWidth: '47%' }}>
+          <AutoFitText 
+            text={away}
+            maxFontSize={16}
+            minFontSize={7}
+            className="text-responsive-team font-medium"
+            style={{ textAlign: 'left' }}
+          />
+        </div>
       </div>
       <div className="match-card-score">
         {homeScore !== undefined && awayScore !== undefined && homeScore !== null && awayScore !== null
@@ -70,12 +87,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
           : "-"}
       </div>
       <div className="match-card-meta">
-        <span><Clock className="inline h-3 w-3 mr-1" />{date}</span>
-        <span>{time}</span>
+        <span className="text-responsive-small"><Clock className="inline h-3 w-3 mr-1" />{date}</span>
+        <span className="text-responsive-small">{time}</span>
       </div>
       <div className="match-card-location">
         <MapPin className="inline h-3 w-3 mr-1" />
-        <span>{location}</span>
+        <span className="text-responsive-small">{location}</span>
       </div>
     </div>
   );

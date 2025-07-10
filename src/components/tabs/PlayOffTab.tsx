@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import AutoFitText from "@/components/ui/auto-fit-text";
 import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
 
 const PlayOffTab: React.FC = () => {
@@ -168,9 +169,25 @@ const PlayOffTab: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex justify-between items-center py-2">
-                    <div className="font-medium text-left flex-1">{match.home}</div>
-                    <div className="px-4 py-1 bg-muted rounded-lg font-bold">{match.result}</div>
-                    <div className="font-medium text-right flex-1">{match.away}</div>
+                    <div className="team-name-container text-left" style={{ maxWidth: '47%' }}>
+                      <AutoFitText 
+                        text={match.home}
+                        maxFontSize={16}
+                        minFontSize={7}
+                        className="font-medium"
+                        style={{ textAlign: 'left' }}
+                      />
+                    </div>
+                    <div className="px-3 py-1 bg-muted rounded-lg font-bold">{match.result}</div>
+                    <div className="team-name-container text-right" style={{ maxWidth: '47%' }}>
+                      <AutoFitText 
+                        text={match.away}
+                        maxFontSize={16}
+                        minFontSize={7}
+                        className="font-medium"
+                        style={{ textAlign: 'right' }}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>)}
@@ -196,9 +213,25 @@ const PlayOffTab: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex justify-between items-center py-2">
-                    <div className="font-medium text-left flex-1">{match.home}</div>
-                    <div className="px-4 py-1 bg-muted rounded-lg font-medium">VS</div>
-                    <div className="font-medium text-right flex-1">{match.away}</div>
+                    <div className="team-name-container text-left" style={{ maxWidth: '47%' }}>
+                      <AutoFitText 
+                        text={match.home}
+                        maxFontSize={16}
+                        minFontSize={7}
+                        className="font-medium"
+                        style={{ textAlign: 'left' }}
+                      />
+                    </div>
+                    <div className="px-3 py-1 bg-muted rounded-lg font-medium">VS</div>
+                    <div className="team-name-container text-right" style={{ maxWidth: '47%' }}>
+                      <AutoFitText 
+                        text={match.away}
+                        maxFontSize={16}
+                        minFontSize={7}
+                        className="font-medium"
+                        style={{ textAlign: 'right' }}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>)}

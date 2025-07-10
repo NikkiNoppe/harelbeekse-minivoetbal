@@ -1,27 +1,35 @@
 
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Edit, Plus, Trash2 } from "lucide-react";
+import { Edit, Trash2, Users, Plus } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Team, TeamPreference } from "../../types-advanced";
+import AutoFitText from "@/components/ui/auto-fit-text";
+
+interface Team {
+  team_id: number;
+  team_name: string;
+}
+
+interface TeamPreference {
+  team_id: number;
+  preferred_venue?: string;
+  preferred_day?: number;
+  avoid_venue?: string;
+  avoid_day?: number;
+}
 
 interface TeamSelectionCardProps {
   selectedTeams: number[];
   setSelectedTeams: (teams: number[]) => void;
   teamPreferences: TeamPreference[];
-  setTeamPreferences: (preferences: TeamPreference[]) => void;
-}
-
-interface DatabaseError {
-  message: string;
-  code?: string;
+  setTeamPreferences: (prefs: TeamPreference[]) => void;
 }
 
 const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
@@ -88,84 +96,59 @@ const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
   const handleSave = async () => {
     if (!formData.team_name.trim()) {
       toast({
-        title: "Onvolledige gegevens",
-        description: "Vul de teamnaam in",
-        variant: "destructive",
+        title: "Fout",
+        description: "Team naam is verplicht",
+        variant: "destructive"
       });
       return;
     }
 
     try {
       if (isAddingNew) {
-        const insertData = {
-          team_name: formData.team_name.trim(),
-          balance: 0.00 as number
-        };
-        
         const { error } = await supabase
           .from('teams')
-          .insert(insertData);
+          .insert([{ team_name: formData.team_name.trim() }]);
         
         if (error) throw error;
         
         toast({
-          title: "Team toegevoegd",
-          description: `${formData.team_name} is succesvol toegevoegd`,
+          title: "Succes",
+          description: "Team toegevoegd"
         });
       } else if (editingTeam) {
-        const updateData = {
-          team_name: formData.team_name.trim()
-        };
-        
         const { error } = await supabase
           .from('teams')
-          .update(updateData)
+          .update({ team_name: formData.team_name.trim() })
           .eq('team_id', editingTeam.team_id);
         
         if (error) throw error;
         
         toast({
-          title: "Team bijgewerkt",
-          description: `${formData.team_name} is succesvol bijgewerkt`,
+          title: "Succes",
+          description: "Team bijgewerkt"
         });
       }
       
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      await queryClient.invalidateQueries({ queryKey: ['teams'] });
       setIsDialogOpen(false);
+      setFormData({ team_name: '' });
+      setEditingTeam(null);
     } catch (error) {
       console.error('Error saving team:', error);
-      const dbError = error as DatabaseError;
       toast({
-        title: "Fout bij opslaan",
-        description: `Er is een fout opgetreden bij het opslaan van het team: ${dbError.message}`,
-        variant: "destructive",
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het opslaan",
+        variant: "destructive"
       });
     }
   };
 
   const handleDelete = async (team: Team) => {
-    if (!confirm(`Weet je zeker dat je ${team.team_name} wilt verwijderen?`)) {
+    if (!confirm(`Weet je zeker dat je "${team.team_name}" wilt verwijderen?`)) {
       return;
     }
 
     try {
-      // Check if team has players
-      const { data: players, error: playersError } = await supabase
-        .from('players')
-        .select('player_id')
-        .eq('team_id', team.team_id);
-
-      if (playersError) throw playersError;
-
-      if (players && players.length > 0) {
-        toast({
-          title: "Kan team niet verwijderen",
-          description: `${team.team_name} heeft nog ${players.length} speler(s). Verwijder eerst alle spelers.`,
-          variant: "destructive",
-        });
-        return;
-      }
-
       const { error } = await supabase
         .from('teams')
         .delete()
@@ -177,19 +160,18 @@ const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
       setSelectedTeams(selectedTeams.filter(id => id !== team.team_id));
       setTeamPreferences(teamPreferences.filter(pref => pref.team_id !== team.team_id));
       
-      toast({
-        title: "Team verwijderd",
-        description: `${team.team_name} is succesvol verwijderd`,
-      });
+      await queryClient.invalidateQueries({ queryKey: ['teams'] });
       
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      toast({
+        title: "Succes",
+        description: "Team verwijderd"
+      });
     } catch (error) {
       console.error('Error deleting team:', error);
-      const dbError = error as DatabaseError;
       toast({
-        title: "Fout bij verwijderen",
-        description: `Er is een fout opgetreden bij het verwijderen van het team: ${dbError.message}`,
-        variant: "destructive",
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het verwijderen",
+        variant: "destructive"
       });
     }
   };
@@ -197,7 +179,7 @@ const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
               <Users className="w-4 h-4" />
@@ -207,21 +189,29 @@ const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
               Selecteer de teams die deelnemen aan deze competitie
             </CardDescription>
           </div>
-          <Button onClick={handleAdd} size="sm" className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Nieuw team
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={selectAllTeams}
+            >
+              Alles selecteren
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleAdd}
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Team toevoegen
+            </Button>
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="flex justify-between mb-4">
-          <Button variant="outline" onClick={selectAllTeams} size="sm">
-            Alles selecteren
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Geselecteerd: {selectedTeams.length} teams
-          </span>
-        </div>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Geselecteerd: {selectedTeams.length} teams
+        </p>
         
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {teams.map((team) => (
@@ -233,8 +223,13 @@ const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
                   handleTeamToggle(team.team_id, checked as boolean)
                 }
               />
-              <Label htmlFor={`team-${team.team_id}`} className="flex-1">
-                {team.team_name}
+              <Label htmlFor={`team-${team.team_id}`} className="flex-1 team-name-container" style={{ minWidth: 0 }}>
+                <AutoFitText 
+                  text={team.team_name}
+                  maxFontSize={14}
+                  minFontSize={7}
+                  className="text-responsive-team"
+                />
               </Label>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
