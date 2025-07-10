@@ -16,11 +16,8 @@ interface Match {
 }
 const CupTab: React.FC = () => {
   const cupData = {
-    title: "Regio Beker 2024",
-    description: "De jaarlijkse bekercompetitie waar alle regionale teams strijden om de felbegeerde regiobeker.",
-    currentStage: "Kwartfinales",
-    finalDate: "15 juli 2024 - 19:30",
-    venue: "Gemeentelijk Stadion"
+    title: "Beker 2025/2026",
+    description: "De jaarlijkse bekercompetitie",
   };
   const bracketData = {
     eighthfinals: [{
@@ -193,28 +190,10 @@ const CupTab: React.FC = () => {
                 <CardTitle className="text-lg">
                   Bekercompetitie Overzicht
                 </CardTitle>
-                <CardDescription>
-                  {cupData.description}
-                </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" />
-                <span>Huidige fase: <strong>{cupData.currentStage}</strong></span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" />
-                <span><strong>Locatie:</strong> {cupData.venue}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
-                <span><strong>Finale:</strong> {cupData.finalDate}</span>
-              </div>
-            </div>
-          </CardContent>
+    
         </Card>
       </section>
 
@@ -223,7 +202,6 @@ const CupTab: React.FC = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Achtste Finales</CardTitle>
-              <Badge className="bg-orange-400 text-white">Aankomend</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -239,7 +217,6 @@ const CupTab: React.FC = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Kwartfinales</CardTitle>
-              <Badge className="bg-gray-400 text-white">In afwachting</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -255,7 +232,6 @@ const CupTab: React.FC = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Halve Finales</CardTitle>
-              <Badge className="bg-gray-400 text-white">In afwachting</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -288,15 +264,15 @@ const CupTab: React.FC = () => {
             <CardTitle className="text-lg">Toernooiinformatie</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <h4 className="font-medium flex items-center gap-2">
                   <Trophy className="h-4 w-4 text-primary" />
                   Finaleinfo
                 </h4>
                 <div className="space-y-2 text-sm">
-                  <div><strong>Datum:</strong> {cupData.finalDate}</div>
-                  <div><strong>Locatie:</strong> {cupData.venue}</div>
+                  <div><strong>Datum:</strong> nog te bepalen</div>
+                  <div><strong>Locatie:</strong> Dageraad Harelbeke</div>
                 </div>
               </div>
 
