@@ -41,7 +41,7 @@ const UserList: React.FC<UserListProps> = ({
   isDeleting,
   onEditUser, 
   onDeleteUser,
-  editMode = true
+  editMode = false
 }) => {
   return (
     <div className="rounded-md border">
@@ -145,10 +145,10 @@ const UserList: React.FC<UserListProps> = ({
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => onEditUser?.(user)}
-                        className="h-8 w-8 p-0"
+                        className="h-8 w-8 p-0 bg-white text-purple-600 border-purple-400 hover:bg-purple-50"
                         disabled={isUpdating || isDeleting}
                       >
                         {isUpdating ? (
@@ -158,10 +158,10 @@ const UserList: React.FC<UserListProps> = ({
                         )}
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => onDeleteUser?.(user.user_id)}
-                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-100/10"
+                        className="h-8 w-8 p-0 bg-white text-red-500 border-red-400 hover:bg-red-50 hover:text-red-700"
                         disabled={isUpdating || isDeleting}
                       >
                         {isDeleting ? (

@@ -1,16 +1,19 @@
 
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Settings, Edit, Trash2, Plus, AlertTriangle, Info } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { enhancedCostSettingsService } from "@/services/enhancedCostSettingsService";
-import { useToast } from "@/hooks/use-toast";
-import { Settings, Plus, Edit, Trash2, Euro } from "lucide-react";
+import AffectedTransactionsModal from "./AffectedTransactionsModal";
 
 interface EnhancedCostSettingsModalProps {
   open: boolean;
@@ -27,6 +30,15 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
     description: '',
     amount: '',
     category: 'penalty' as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost'
+  });
+
+  // State for affected transactions modal
+  const [showAffectedTransactions, setShowAffectedTransactions] = useState(false);
+  const [affectedTransactionsData, setAffectedTransactionsData] = useState({
+    costSettingId: 0,
+    costSettingName: '',
+    oldAmount: 0,
+    newAmount: 0
   });
 
   const { data: costSettings, isLoading } = useQuery({
@@ -82,14 +94,31 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
     console.log(`[${timestamp}] EnhancedCostSettingsModal - Operation result:`, { result, isEdit: !!editingItem });
 
     if (result.success) {
+      // Show enhanced feedback for automatic transaction updates
+      const message = result.affectedTransactions && result.affectedTransactions > 0
+        ? `${result.message} ${result.affectedTransactions} transactie(s) zijn automatisch aangepast.`
+        : result.message;
+      
       toast({
         title: "Succesvol",
-        description: editingItem && parseFloat(formData.amount) !== editingItem.amount 
-          ? "Kostentarief bijgewerkt en alle gerelateerde transacties zijn automatisch aangepast"
-          : result.message
+        description: message,
+        duration: result.affectedTransactions && result.affectedTransactions > 0 ? 5000 : 3000 // Longer duration for important updates
       });
+      
+      // If there are affected transactions, show the modal
+      if (result.affectedTransactions && result.affectedTransactions > 0 && editingItem) {
+        setAffectedTransactionsData({
+          costSettingId: editingItem.id,
+          costSettingName: editingItem.name,
+          oldAmount: editingItem.amount,
+          newAmount: parseFloat(formData.amount)
+        });
+        setShowAffectedTransactions(true);
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['enhanced-cost-settings'] });
       queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['all-team-transactions'] });
       resetForm();
     } else {
       toast({
@@ -124,9 +153,6 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
   };
 
   const handleEdit = (item: any) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - handleEdit:`, { item });
-
     setEditingItem(item);
     setFormData({
       name: item.name,
@@ -138,9 +164,6 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
   };
 
   const resetForm = () => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - resetForm`);
-
     setFormData({
       name: '',
       description: '',
@@ -164,12 +187,12 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
         return 'Wedstrijdkosten';
       case 'penalty':
         return 'Boete';
+      case 'other':
+        return 'Overig';
       case 'field_cost':
         return 'Veldkosten';
       case 'referee_cost':
         return 'Scheidsrechterkosten';
-      case 'other':
-        return 'Overig';
       default:
         return category;
     }
@@ -181,12 +204,12 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
         return 'bg-blue-100 text-blue-800';
       case 'penalty':
         return 'bg-red-100 text-red-800';
+      case 'other':
+        return 'bg-gray-100 text-gray-800';
       case 'field_cost':
         return 'bg-green-100 text-green-800';
       case 'referee_cost':
         return 'bg-purple-100 text-purple-800';
-      case 'other':
-        return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -202,160 +225,193 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
   }, {} as Record<string, any[]>) || {};
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-purple-100 border-purple-light">
-        <DialogHeader className="bg-purple-100">
-          <DialogTitle className="flex items-center gap-2 text-purple-light">
-            <Settings className="h-5 w-5" />
-            Enhanced Kostentarieven Beheer
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Uitgebreide Kostenbeheer
+            </DialogTitle>
+            <DialogDescription>
+              Beheer alle kostentarieven en boetes. Wijzigingen worden automatisch toegepast op alle gerelateerde transacties.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-6 bg-purple-100 p-4">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-purple-dark">
-              Beheer alle kosten en boetes met uitgebreide logging
-            </p>
-            <Button 
-              onClick={() => setShowAddForm(!showAddForm)}
-              className="flex items-center gap-2 btn-dark"
-            >
-              <Plus className="h-4 w-4" />
-              {showAddForm ? 'Annuleren' : 'Nieuw Tarief'}
-            </Button>
+          <div className="space-y-6">
+            {/* Database Health Warning */}
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Database Probleem:</strong> Er is een probleem met de audit log tabel. 
+                Als je foutmeldingen krijgt bij het bijwerken van tarieven, voer dan de database migratie uit zoals beschreven in FIX_AUDIT_LOG_ISSUE.md
+              </AlertDescription>
+            </Alert>
+
+            {/* Info Alert */}
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Automatische updates:</strong> Wanneer je een kostentarief wijzigt, worden alle gerelateerde transacties automatisch aangepast. 
+                Dit zorgt ervoor dat alle team balances correct blijven.
+              </AlertDescription>
+            </Alert>
+
+            {/* Add/Edit Form */}
+            {showAddForm && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {editingItem ? 'Bewerk Kostentarief' : 'Nieuw Kostentarief'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name">Naam</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Bijv. Veldkosten per wedstrijd"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="amount">Bedrag (€)</Label>
+                      <Input
+                        id="amount"
+                        type="number"
+                        step="0.01"
+                        value={formData.amount}
+                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Beschrijving</Label>
+                    <Input
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Optionele beschrijving"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="category">Categorie</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData({ ...formData, category: value as any })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="match_cost">Wedstrijdkosten</SelectItem>
+                        <SelectItem value="penalty">Boete</SelectItem>
+                        <SelectItem value="field_cost">Veldkosten</SelectItem>
+                        <SelectItem value="referee_cost">Scheidsrechterkosten</SelectItem>
+                        <SelectItem value="other">Overig</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={handleSave}>
+                      {editingItem ? 'Bijwerken' : 'Toevoegen'}
+                    </Button>
+                    <Button variant="outline" onClick={resetForm}>
+                      Annuleren
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Settings List */}
+            {!showAddForm && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Huidige Kostentarieven</h3>
+                  <Button onClick={() => setShowAddForm(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nieuw Tarief
+                  </Button>
+                </div>
+
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-600">Laden van kostentarieven...</p>
+                  </div>
+                ) : (
+                  Object.entries(groupedSettings).map(([category, settings]) => (
+                    <Card key={category}>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Badge className={getCategoryColor(category)}>
+                            {getCategoryLabel(category)}
+                          </Badge>
+                          <span className="text-sm text-gray-500">
+                            ({settings.length} tarief{settings.length !== 1 ? 'en' : ''})
+                          </span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Naam</TableHead>
+                              <TableHead>Beschrijving</TableHead>
+                              <TableHead>Bedrag</TableHead>
+                              <TableHead>Acties</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {settings.map((setting) => (
+                              <TableRow key={setting.id}>
+                                <TableCell className="font-medium">{setting.name}</TableCell>
+                                <TableCell>{setting.description || '-'}</TableCell>
+                                <TableCell className="font-mono">
+                                  {formatCurrency(setting.amount)}
+                                </TableCell>
+                                <TableCell className="action-buttons">
+                                  <Button
+                                    className="btn-action-edit"
+                                    onClick={() => handleEdit(setting)}
+                                  >
+                                    <Edit />
+                                  </Button>
+                                  <Button
+                                    className="btn-action-delete"
+                                    onClick={() => handleDelete(setting.id)}
+                                  >
+                                    <Trash2 />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            )}
           </div>
+        </DialogContent>
+      </Dialog>
 
-          {showAddForm && (
-            <div className="bg-purple-50 rounded-lg p-4 border border-purple-light">
-              <h3 className="text-lg font-semibold mb-4 text-purple-light">
-                {editingItem ? 'Tarief Bewerken' : 'Nieuw Tarief Toevoegen'}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-purple-dark">Naam *</Label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="Naam van het tarief"
-                    className="bg-white placeholder:text-purple-200"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-purple-dark">Categorie *</Label>
-                  <Select 
-                    value={formData.category} 
-                    onValueChange={(value: any) => setFormData({...formData, category: value})}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="match_cost">Wedstrijdkosten</SelectItem>
-                      <SelectItem value="penalty">Boete</SelectItem>
-                      <SelectItem value="field_cost">Veldkosten</SelectItem>
-                      <SelectItem value="referee_cost">Scheidsrechterkosten</SelectItem>
-                      <SelectItem value="other">Overig</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-purple-dark">Bedrag (€) *</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                    placeholder="0.00"
-                    className="bg-white placeholder:text-purple-200"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label className="text-purple-dark">Beschrijving</Label>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    placeholder="Optionele beschrijving..."
-                    rows={2}
-                    className="bg-white placeholder:text-purple-200"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2 mt-4">
-                <Button onClick={handleSave} className="btn-dark">
-                  {editingItem ? 'Bijwerken' : 'Toevoegen'}
-                </Button>
-                <Button onClick={resetForm} className="btn-light">
-                  Annuleren
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Settings by Category with enhanced display */}
-          {Object.entries(groupedSettings).map(([category, settings]) => (
-            <div key={category} className="border rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Euro className="h-5 w-5" />
-                {getCategoryLabel(category)}
-                <span className={`px-2 py-1 rounded-full text-xs ${getCategoryColor(category)}`}>
-                  {settings.length} items
-                </span>
-              </h3>
-              
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Naam</TableHead>
-                    <TableHead>Beschrijving</TableHead>
-                    <TableHead className="text-right">Bedrag</TableHead>
-                    <TableHead className="text-center">Acties</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {settings.map((setting) => (
-                    <TableRow key={setting.id}>
-                      <TableCell className="font-medium">{setting.name}</TableCell>
-                      <TableCell className="text-gray-600">
-                        {setting.description || '-'}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(setting.amount)}
-                      </TableCell>
-                      <TableCell className="flex gap-2 justify-end">
-                        <Button
-                          className="btn-white"
-                          size="sm"
-                          onClick={() => handleEdit(setting)}
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          className="btn-white"
-                          size="sm"
-                          onClick={() => handleDelete(setting.id)}
-                        >
-                          <Trash2 className="h-3 w-3 text-red-500" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ))}
-
-          {isLoading && (
-            <div className="flex items-center justify-center h-40">
-              <p>Kostentarieven laden met enhanced logging...</p>
-            </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+      {/* Affected Transactions Modal */}
+      <AffectedTransactionsModal
+        open={showAffectedTransactions}
+        onOpenChange={setShowAffectedTransactions}
+        costSettingId={affectedTransactionsData.costSettingId}
+        costSettingName={affectedTransactionsData.costSettingName}
+        oldAmount={affectedTransactionsData.oldAmount}
+        newAmount={affectedTransactionsData.newAmount}
+      />
+    </>
   );
 };
 

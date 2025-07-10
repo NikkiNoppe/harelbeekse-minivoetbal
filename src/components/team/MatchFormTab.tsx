@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, memo, useMemo } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Trophy, Calendar } from "lucide-react";
-import { fetchUpcomingMatches } from "./match-form/matchFormService";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { FileText, Trophy, Calendar, AlertCircle } from "lucide-react";
+import { useMatchFormsData, type MatchFormsFilters } from "@/hooks/useMatchFormsData";
 import { MatchFormData } from "./match-form/types";
 import MatchFormFilter from "./match-form/MatchFormFilter";
 import MatchFormList from "./match-form/MatchFormList";
@@ -16,33 +17,208 @@ interface MatchFormTabProps {
   teamName: string;
 }
 
+// Loading skeleton components
+const TabContentSkeleton = memo(() => (
+  <Card>
+    <CardHeader>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <Skeleton className="h-10 w-32" />
+      </div>
+    </CardHeader>
+    <CardContent className="p-0">
+      <div className="p-4 border-b">
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="space-y-3 p-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex items-center justify-between p-4 border rounded">
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <Skeleton className="h-8 w-20" />
+          </div>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+));
+
+TabContentSkeleton.displayName = 'TabContentSkeleton';
+
+
+
+// Error state component
+const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
+  <Alert variant="destructive">
+    <AlertCircle className="h-4 w-4" />
+    <AlertDescription className="flex items-center justify-between">
+      <span>Er is een fout opgetreden bij het laden van de wedstrijdformulieren.</span>
+
+    </AlertDescription>
+  </Alert>
+));
+
+ErrorState.displayName = 'ErrorState';
+
+// Empty state component
+const EmptyState = memo(({ tabType, hasTeam, hasPermissions }: { 
+  tabType: 'league' | 'cup';
+  hasTeam: boolean;
+  hasPermissions: boolean;
+}) => (
+  <div className="p-12 text-center">
+    <div className="flex flex-col items-center space-y-4">
+      {tabType === 'cup' ? <Trophy className="h-12 w-12 text-muted-foreground" /> : <Calendar className="h-12 w-12 text-muted-foreground" />}
+      <div className="space-y-2">
+        <h3 className="font-semibold">
+          {!hasTeam && !hasPermissions 
+            ? "Geen team gekoppeld"
+            : `Geen ${tabType === 'cup' ? 'beker' : 'competitie'}wedstrijden`
+          }
+        </h3>
+        <p className="text-muted-foreground">
+          {!hasTeam && !hasPermissions 
+            ? "Je account is momenteel niet gekoppeld aan een team, waardoor je geen wedstrijdformulieren kunt bekijken."
+            : `Er zijn momenteel geen ${tabType === 'cup' ? 'beker' : 'competitie'}wedstrijden beschikbaar.`
+          }
+        </p>
+      </div>
+    </div>
+  </div>
+));
+
+EmptyState.displayName = 'EmptyState';
+
+// Tab content component
+const TabContent = memo(({ 
+  tabType,
+  tabData,
+  hasElevatedPermissions,
+  teamName,
+  user,
+  filters,
+  onFiltersChange,
+  onSelectMatch
+}: {
+  tabType: 'league' | 'cup';
+  tabData: any;
+  hasElevatedPermissions: boolean;
+  teamName: string;
+  user: any;
+  filters: MatchFormsFilters;
+  onFiltersChange: (filters: MatchFormsFilters) => void;
+  onSelectMatch: (match: MatchFormData) => void;
+}) => {
+  const hasTeam = !!user?.teamId;
+  const isEmpty = !tabData.isLoading && tabData.matches.length === 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              {tabType === 'cup' ? <Trophy className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
+                             {hasElevatedPermissions 
+                 ? user?.role === "admin" 
+                   ? `${tabType === 'cup' ? 'Beker' : 'Competitie'}wedstrijden`
+                   : `${tabType === 'cup' ? 'Beker' : 'Competitie'}wedstrijden (Scheidsrechter)`
+                 : `${tabType === 'cup' ? 'Beker' : 'Competitie'}wedstrijden voor ${teamName}`
+               }
+            </CardTitle>
+            <CardDescription>
+              {isEmpty && hasTeam 
+                ? `Geen ${tabType === 'cup' ? 'beker' : 'competitie'}wedstrijden gevonden.`
+                : !hasTeam && !hasElevatedPermissions
+                ? "Je account is momenteel niet gekoppeld aan een team."
+                : `${tabData.matches.length} van ${tabData.allMatches.length} wedstrijden weergegeven`
+              }
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        {isEmpty || (!hasTeam && !hasElevatedPermissions) ? (
+          <EmptyState 
+            tabType={tabType}
+            hasTeam={hasTeam}
+            hasPermissions={hasElevatedPermissions}
+          />
+        ) : (
+          <div>
+            <div className="p-4 border-b">
+              <MatchFormFilter 
+                searchTerm={filters.searchTerm}
+                onSearchChange={(value) => onFiltersChange({ ...filters, searchTerm: value })}
+                dateFilter={filters.dateFilter}
+                onDateChange={(value) => onFiltersChange({ ...filters, dateFilter: value })}
+                matchdayFilter={filters.matchdayFilter}
+                onMatchdayChange={(value) => onFiltersChange({ ...filters, matchdayFilter: value })}
+              />
+            </div>
+            <MatchFormList 
+              matches={tabData.matches}
+              isLoading={tabData.isLoading}
+              onSelectMatch={onSelectMatch}
+              searchTerm={filters.searchTerm}
+              dateFilter={filters.dateFilter}
+              matchdayFilter={filters.matchdayFilter}
+              hasElevatedPermissions={hasElevatedPermissions}
+              userRole={user?.role}
+              teamId={user?.teamId || 0}
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
+
+TabContent.displayName = 'TabContent';
+
+// Main component
 const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
-  const { toast } = useToast();
   const { user } = useAuth();
   const [selectedMatchForm, setSelectedMatchForm] = useState<MatchFormData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
-  const [matchdayFilter, setMatchdayFilter] = useState("");
   const [activeTab, setActiveTab] = useState("league");
+  
+  // Filter states
+  const [filters, setFilters] = useState<MatchFormsFilters>({
+    searchTerm: "",
+    dateFilter: "",
+    matchdayFilter: ""
+  });
 
   const hasElevatedPermissions = user?.role === "admin" || user?.role === "referee";
   const isAdmin = user?.role === "admin";
   const isReferee = user?.role === "referee";
 
-  const { data: leagueMatches, isLoading: loadingLeagueMatches, refetch: refetchLeague } = useQuery({
-    queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'league'],
-    queryFn: () => fetchUpcomingMatches(hasElevatedPermissions ? 0 : teamId, hasElevatedPermissions, 'league'),
-  });
+  const {
+    leagueMatches,
+    cupMatches,
+    isLoading,
+    hasError,
+    getTabData,
+    refreshInstantly,
+    refetchAll
+  } = useMatchFormsData(teamId, hasElevatedPermissions);
 
-  const { data: cupMatches, isLoading: loadingCupMatches, refetch: refetchCup } = useQuery({
-    queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'cup'],
-    queryFn: () => fetchUpcomingMatches(hasElevatedPermissions ? 0 : teamId, hasElevatedPermissions, 'cup'),
-  });
-
-  useEffect(() => {
-
-  }, [user, teamId, hasElevatedPermissions, leagueMatches, cupMatches]);
+  // Memoized tab data with filters
+  const leagueTabData = useMemo(() => 
+    getTabData('league', filters), 
+    [getTabData, filters]
+  );
+  
+  const cupTabData = useMemo(() => 
+    getTabData('cup', filters), 
+    [getTabData, filters]
+  );
 
   const handleSelectMatch = (match: MatchFormData) => {
     setSelectedMatchForm(match);
@@ -52,100 +228,32 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setSelectedMatchForm(null);
-    // Refresh data when dialog closes to show any updates
-    refetchLeague();
-    refetchCup();
+    // Instant refresh after form changes
+    refreshInstantly();
   };
 
   const handleFormComplete = () => {
-    refetchLeague();
-    refetchCup();
     handleDialogClose();
   };
 
-  // Helper function to get current tab data
-  const getCurrentTabData = () => {
-    if (activeTab === 'cup') {
-      return {
-        matches: cupMatches || [],
-        isLoading: loadingCupMatches
-      };
-    }
-    return {
-      matches: leagueMatches || [],
-      isLoading: loadingLeagueMatches
-    };
+  const handleRetry = () => {
+    refetchAll();
   };
 
-  const renderTabContent = (tabType: 'league' | 'cup') => {
-    const currentData = tabType === 'cup' 
-      ? { matches: cupMatches || [], isLoading: loadingCupMatches }
-      : { matches: leagueMatches || [], isLoading: loadingLeagueMatches };
-
+  // Show error state
+  if (hasError) {
     return (
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-lg flex items-center gap-2">
-                {tabType === 'cup' ? <Trophy className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
-                {hasElevatedPermissions 
-                  ? isAdmin 
-                    ? `${tabType === 'cup' ? 'Beker' : 'Competitie'}wedstrijden`
-                    : `${tabType === 'cup' ? 'Beker' : 'Competitie'}wedstrijden (Scheidsrechter)`
-                  : `${tabType === 'cup' ? 'Beker' : 'Competitie'}wedstrijden voor ${teamName}`
-                }
-              </CardTitle>
-              <CardDescription>
-                {!user?.teamId && !hasElevatedPermissions 
-                  ? "Je account is momenteel niet gekoppeld aan een team."
-                  : !currentData.isLoading && currentData.matches.length === 0
-                  ? `Geen ${tabType === 'cup' ? 'beker' : 'competitie'}wedstrijden gevonden.`
-                  : ""
-                }
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {(!user?.teamId && !hasElevatedPermissions) || (!currentData.isLoading && currentData.matches.length === 0) ? (
-            <div className="p-12 text-center">
-              <p className="text-muted-foreground">
-                {!user?.teamId && !hasElevatedPermissions 
-                  ? "Je account is momenteel niet gekoppeld aan een team, waardoor je geen wedstrijdformulieren kunt bekijken."
-                  : `Geen ${tabType === 'cup' ? 'beker' : 'competitie'}wedstrijden gevonden.`
-                }
-              </p>
-            </div>
-          ) : (
-            <div>
-              <div className="p-4 border-b">
-                <MatchFormFilter 
-                  searchTerm={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  dateFilter={dateFilter}
-                  onDateChange={setDateFilter}
-                  matchdayFilter={matchdayFilter}
-                  onMatchdayChange={setMatchdayFilter}
-                />
-              </div>
-              <MatchFormList 
-                matches={currentData.matches}
-                isLoading={currentData.isLoading}
-                onSelectMatch={handleSelectMatch}
-                searchTerm={searchTerm}
-                dateFilter={dateFilter}
-                matchdayFilter={matchdayFilter}
-                hasElevatedPermissions={hasElevatedPermissions}
-                userRole={user?.role}
-                teamId={teamId}
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="space-y-8 animate-slide-up">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Wedstrijdformulieren
+          </h2>
+        </div>
+        <ErrorState onRetry={handleRetry} />
+      </div>
     );
-  };
+  }
 
   return (
     <div className="space-y-8 animate-slide-up">
@@ -155,6 +263,8 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
           Wedstrijdformulieren
         </h2>
       </div>
+
+
 
       <section>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -170,11 +280,37 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
           </TabsList>
           
           <TabsContent value="league" className="mt-6">
-            {renderTabContent('league')}
+            {isLoading ? (
+              <TabContentSkeleton />
+            ) : (
+              <TabContent
+                tabType="league"
+                tabData={leagueTabData}
+                hasElevatedPermissions={hasElevatedPermissions}
+                teamName={teamName}
+                user={user}
+                filters={filters}
+                onFiltersChange={setFilters}
+                onSelectMatch={handleSelectMatch}
+              />
+            )}
           </TabsContent>
           
           <TabsContent value="cup" className="mt-6">
-            {renderTabContent('cup')}
+            {isLoading ? (
+              <TabContentSkeleton />
+            ) : (
+              <TabContent
+                tabType="cup"
+                tabData={cupTabData}
+                hasElevatedPermissions={hasElevatedPermissions}
+                teamName={teamName}
+                user={user}
+                filters={filters}
+                onFiltersChange={setFilters}
+                onSelectMatch={handleSelectMatch}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </section>
@@ -185,9 +321,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
           onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) {
-              // Refresh data when dialog is closed (by any means)
-              refetchLeague();
-              refetchCup();
+              handleDialogClose();
             }
           }}
           match={selectedMatchForm}
@@ -201,4 +335,4 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
   );
 };
 
-export default MatchFormTab;
+export default memo(MatchFormTab);

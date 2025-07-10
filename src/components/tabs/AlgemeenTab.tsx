@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { BlogPost } from "@/services/blogService";
 import { formatDateShort } from "@/lib/dateUtils";
 import { useBlogPosts } from "@/hooks/useBlogPosts";
@@ -127,10 +127,7 @@ const NewsSection = memo(() => {
             <p className="text-muted-foreground mb-4">
               De nieuwsberichten konden niet worden geladen.
             </p>
-            <Button onClick={() => refetch()} variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Opnieuw proberen
-            </Button>
+
           </CardContent>
         </Card>
       );

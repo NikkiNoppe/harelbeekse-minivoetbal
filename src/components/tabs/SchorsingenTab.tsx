@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, RefreshCw, Shield, Trophy } from "lucide-react";
+import { AlertCircle, Shield, Trophy } from "lucide-react";
 import { useSuspensionsData } from "@/hooks/useSuspensionsData";
 import type { Suspension, PlayerCard } from "@/services/suspensionService";
 
@@ -239,7 +239,6 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
         onClick={onRetry}
         className="ml-2"
       >
-        <RefreshCw className="h-4 w-4 mr-1" />
         Probeer opnieuw
       </Button>
     </AlertDescription>
@@ -253,10 +252,8 @@ const SchorsingenTab: React.FC = () => {
   const {
     suspensions,
     topYellowCardPlayers,
-    suspensionStats,
     isLoading,
     hasError,
-    handleRefresh,
     refetchPlayerCards,
     refetchSuspensions
   } = useSuspensionsData();
@@ -282,64 +279,9 @@ const SchorsingenTab: React.FC = () => {
     <div className="space-y-8 animate-slide-up">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Actuele Schorsingen</h2>
-        <Button 
-          onClick={handleRefresh}
-          variant="outline"
-          size="sm"
-          disabled={isLoading}
-        >
-          <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-          Vernieuwen
-        </Button>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="h-2 w-2 bg-red-500 rounded-full"></div>
-              <div>
-                <p className="text-sm font-medium">Actieve Schorsingen</p>
-                <p className="text-2xl font-bold">{suspensionStats.activeSuspensions}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="h-2 w-2 bg-yellow-500 rounded-full"></div>
-              <div>
-                <p className="text-sm font-medium">In Afwachting</p>
-                <p className="text-2xl font-bold">{suspensionStats.pendingSuspensions}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-              <div>
-                <p className="text-sm font-medium">Afgerond</p>
-                <p className="text-2xl font-bold">{suspensionStats.completedSuspensions}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-              <div>
-                <p className="text-sm font-medium">Totaal</p>
-                <p className="text-2xl font-bold">{suspensionStats.totalSuspensions}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+
 
       {/* Active Suspensions Table */}
       <section>

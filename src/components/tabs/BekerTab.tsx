@@ -2,7 +2,7 @@ import React, { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trophy, Award, AlertCircle, RefreshCw } from "lucide-react";
+import { Trophy, Award, AlertCircle } from "lucide-react";
 import CupMatchCard from "../match/components/CupMatchCard";
 import { useCupData, CupMatchDisplay } from "@/hooks/useCupData";
 
@@ -150,10 +150,7 @@ const TournamentError = memo(({ error, onRetry }: { error: Error; onRetry: () =>
           <p className="text-muted-foreground mb-4">
             Kon toernooigegevens niet laden
           </p>
-          <Button onClick={onRetry} variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Opnieuw proberen
-          </Button>
+
         </div>
       </CardContent>
     </Card>

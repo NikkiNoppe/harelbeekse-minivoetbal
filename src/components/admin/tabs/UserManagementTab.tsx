@@ -118,40 +118,20 @@ const UserManagementTab: React.FC = () => {
               loading={loading}
               isUpdating={updatingUser}
               isDeleting={deletingUser}
-              onEditUser={editMode ? handleOpenEditDialog : undefined}
-              onDeleteUser={editMode ? handleOpenDeleteConfirmation : undefined}
-              editMode={editMode}
+              onEditUser={handleOpenEditDialog}
+              onDeleteUser={handleOpenDeleteConfirmation}
+              editMode={true}
             />
           </CardContent>
-          <CardFooter className="flex justify-between">
+          <CardFooter className="flex justify-end">
             <Button
-              variant="outline"
-              onClick={() => setEditMode(!editMode)}
+              onClick={handleOpenAddDialog}
+              disabled={addingUser}
               className="flex items-center gap-2"
             >
-              {editMode ? (
-                <>
-                  <Save size={16} />
-                  Klaar met bewerken
-                </>
-              ) : (
-                <>
-                  <Edit size={16} />
-                  Lijst bewerken
-                </>
-              )}
+              <Plus size={16} />
+              Gebruiker toevoegen
             </Button>
-            
-            {editMode && (
-              <Button
-                onClick={handleOpenAddDialog}
-                disabled={addingUser}
-                className="flex items-center gap-2"
-              >
-                <Plus size={16} />
-                Gebruiker toevoegen
-              </Button>
-            )}
           </CardFooter>
         </Card>
       </section>

@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, Bug } from "lucide-react";
+import { Plus, Bug } from "lucide-react";
 import { useTeamsEnhanced } from "./hooks/useTeamsEnhanced";
 import TeamsList from "./TeamsList";
 import TeamDialog from "./TeamDialog";
@@ -43,15 +43,6 @@ const TeamsManagement: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={fetchTeams}
-            disabled={loading}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-            Vernieuwen
-          </Button>
           <Button
             onClick={handleAddNew}
             className="flex items-center gap-2"

@@ -3,7 +3,7 @@ import { CompetitionType, GeneratedMatch, AvailableDate } from "./types";
 import { useToast } from "@/hooks/use-toast";
 import { findFormatById } from "./competitionFormats";
 import { getCurrentDate } from "@/lib/dateUtils";
-import { competitionDataService } from "@/services/competitionDataService";
+import { timeslotPriorityService } from "@/services/timeslotPriorityService";
 
 export const saveCompetitionToDatabase = async (
   generatedMatches: GeneratedMatch[],
@@ -25,34 +25,55 @@ export const saveCompetitionToDatabase = async (
   const format = findFormatById(selectedFormat);
   
   try {
-    // Get venues from database
-    const venues = await competitionDataService.getVenues();
-    const defaultVenue = venues[0]?.name || 'Te bepalen';
+    // Group matches by matchday to count matches per day
+    const matchesByDay: { [key: number]: GeneratedMatch[] } = {};
+    generatedMatches.forEach(match => {
+      if (!matchesByDay[match.matchday]) {
+        matchesByDay[match.matchday] = [];
+      }
+      matchesByDay[match.matchday].push(match);
+    });
     
-    // Create matches directly with speeldag
+    // Create matches directly with speeldag using prioritized timeslots
     const uniqueDates = [...new Set(selectedDates.map(() => getCurrentDate()))];
     
-    // Create matches with speeldag column
-    const matchesToCreate = generatedMatches.map((match, index) => {
-      const matchdayIndex = Math.floor(index / 9) % uniqueDates.length; // Max 9 matches per matchday
-      
-      // Generate formatted match date with time
-      const matchDate = new Date(uniqueDates[matchdayIndex]);
-      const [hours, minutes] = (match.match_time || "18:30").split(":");
-      matchDate.setHours(parseInt(hours), parseInt(minutes));
-      
-      return {
-        home_team_id: match.home_team_id,
-        away_team_id: match.away_team_id,
-        match_date: matchDate.toISOString(),
-        speeldag: `Speeldag ${matchdayIndex + 1}`, // Use speeldag directly instead of matchday_id
-        unique_number: match.unique_code,
-        referee_cost: 25.00,
-        field_cost: 50.00,
-        is_cup_match: format?.isCup || false,
-        location: defaultVenue
-      };
-    });
+    // Create matches with speeldag column and prioritized timeslots
+    const matchesToCreate = await Promise.all(
+      generatedMatches.map(async (match, index) => {
+        const matchdayIndex = Math.floor(index / 9) % uniqueDates.length; // Max 9 matches per matchday
+        
+        // Get number of matches on this day and this match's index in that day
+        const matchesThisDay = matchesByDay[match.matchday]?.length || 1;
+        const matchIndexInDay = matchesByDay[match.matchday]?.indexOf(match) || 0;
+        
+        // Generate match date string for timeslot calculation
+        const matchDateStr = uniqueDates[matchdayIndex];
+        
+        // Get optimal timeslot using priority service
+        const { time, venue } = await timeslotPriorityService.getMatchDetails(
+          matchIndexInDay, 
+          matchesThisDay,
+          matchDateStr
+        );
+        
+        // Generate formatted match date with prioritized time
+        const matchDate = new Date(matchDateStr);
+        const [hours, minutes] = time.split(":");
+        matchDate.setHours(parseInt(hours), parseInt(minutes));
+        
+        return {
+          home_team_id: match.home_team_id,
+          away_team_id: match.away_team_id,
+          match_date: matchDate.toISOString(),
+          speeldag: `Speeldag ${matchdayIndex + 1}`, // Use speeldag directly instead of matchday_id
+          unique_number: match.unique_code,
+          referee_cost: 25.00,
+          field_cost: 50.00,
+          is_cup_match: format?.isCup || false,
+          location: venue
+        };
+      })
+    );
     
     const { error: matchesError } = await supabase
       .from('matches')

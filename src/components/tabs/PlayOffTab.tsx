@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, RefreshCw, Trophy } from "lucide-react";
+import { AlertCircle, Trophy } from "lucide-react";
 import AutoFitText from "@/components/ui/auto-fit-text";
 import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
 import { usePlayoffData, PlayoffMatch } from "@/hooks/usePlayoffData";
@@ -91,10 +91,7 @@ const PlayoffError = memo(({ error, onRetry }: { error: Error; onRetry: () => vo
           <p className="text-muted-foreground mb-4">
             Kon playoff gegevens niet laden
           </p>
-          <Button onClick={onRetry} variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Opnieuw proberen
-          </Button>
+
         </div>
       </CardContent>
     </Card>

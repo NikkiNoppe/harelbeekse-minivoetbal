@@ -49,7 +49,7 @@ const Layout: React.FC = () => {
       }
     } else {
       // Public tabs
-      if (["algemeen", "beker", "competitie", "playoff", "reglement", "schorsingen", "kaarten"].includes(tab)) {
+      if (["algemeen", "beker", "competitie", "playoff", "schorsingen", "kaarten", "reglement"].includes(tab)) {
         setActiveTab(tab as TabName);
       }
     }
@@ -88,8 +88,8 @@ const Layout: React.FC = () => {
         { key: "beker", label: "Beker", icon: <Award size={16} /> },
         { key: "competitie", label: "Competitie", icon: <Trophy size={16} /> },
         { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
-        { key: "reglement", label: "Reglement", icon: <BookOpen size={16} /> },
-        { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> }
+        { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> },
+        { key: "reglement", label: "Reglement", icon: <BookOpen size={16} /> }
       ];
       return publicTabs.filter(tab => isTabVisible(tab.key as TabName));
     }

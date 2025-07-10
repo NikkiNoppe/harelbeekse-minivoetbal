@@ -15,17 +15,9 @@ export const seasonService = {
   // Read season data from database with fallback to JSON file
   async getSeasonData(): Promise<SeasonData> {
     try {
-      // Check if we have updated data in localStorage first
-      const storedData = localStorage.getItem('seasonData');
-      if (storedData) {
-        try {
-          return JSON.parse(storedData);
-        } catch (error) {
-          console.error('Error parsing stored season data:', error);
-        }
-      }
-
-      // Try to fetch from database
+      console.log('🔄 Loading season data...');
+      
+      // Try to fetch from database first
       const { data, error } = await supabase
         .from('application_settings')
         .select('setting_value')
@@ -35,29 +27,38 @@ export const seasonService = {
         .single();
 
       if (error) {
-        console.warn('Could not fetch season data from database:', error);
-        // Fallback to JSON file
+        console.warn('⚠️ Could not fetch season data from database:', error);
+        console.log('📁 Falling back to JSON file');
         return seasonConfig;
       }
 
       if (data?.setting_value) {
+        console.log('✅ Season data loaded from database:', data.setting_value);
         // Store in localStorage for caching
         localStorage.setItem('seasonData', JSON.stringify(data.setting_value));
         return data.setting_value as unknown as SeasonData;
       }
 
+      console.log('📁 No database data found, using JSON file');
       // Fallback to JSON file
       return seasonConfig;
     } catch (error) {
-      console.error('Error in getSeasonData:', error);
+      console.error('❌ Error in getSeasonData:', error);
+      console.log('📁 Falling back to JSON file');
       return seasonConfig;
     }
+  },
+
+  // Clear cached season data
+  clearSeasonDataCache(): void {
+    localStorage.removeItem('seasonData');
+    console.log('🗑️ Season data cache cleared');
   },
 
   // Save season data to database and localStorage
   async saveSeasonData(data: SeasonData): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('Saving season data:', data);
+      console.log('💾 Saving season data:', data);
       
       // Store in localStorage for immediate persistence
       localStorage.setItem('seasonData', JSON.stringify(data));
@@ -78,18 +79,20 @@ export const seasonService = {
         });
       
       if (upsertError) {
-        console.warn('Could not save to database:', upsertError);
+        console.warn('⚠️ Could not save to database:', upsertError);
         return {
           success: true,
           message: "Seizoensdata opgeslagen (lokaal, database niet beschikbaar)"
         };
       }
       
+      console.log('✅ Season data saved to database successfully');
       return {
         success: true,
         message: "Seizoensdata succesvol opgeslagen (lokaal en database)"
       };
     } catch (error) {
+      console.error('❌ Error saving season data:', error);
       return {
         success: false,
         message: `Fout bij opslaan: ${error instanceof Error ? error.message : 'Onbekende fout'}`

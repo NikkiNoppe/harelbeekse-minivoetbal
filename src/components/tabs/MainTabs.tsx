@@ -157,9 +157,9 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
           {tabContents.beker}
           {tabContents.competitie}
           {tabContents.playoff}
-          {tabContents.reglement}
           {tabContents.schorsingen}
           {tabContents.kaarten}
+          {tabContents.reglement}
         </Tabs>
       </div>
     </div>

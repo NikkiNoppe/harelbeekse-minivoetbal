@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CalendarIcon, Save, RefreshCw, Clock, MapPin } from "lucide-react";
+import { CalendarIcon, Save, Clock, MapPin } from "lucide-react";
 import { GeneratedMatch } from "./types";
 import { predefinedFormats } from "./competitionFormats";
 import { format } from "date-fns";
@@ -34,10 +34,7 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
         <p className="text-muted-foreground mb-4">
           Geen wedstrijden gegenereerd. Ga naar de vorige stap om een schema te genereren.
         </p>
-        <Button onClick={onRegenerateSchedule} variant="outline">
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Schema genereren
-        </Button>
+
       </div>
     );
   }
@@ -245,14 +242,7 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
 
       {/* Action Buttons */}
       <div className="flex justify-between pt-6 border-t">
-        <Button 
-          variant="outline" 
-          onClick={onRegenerateSchedule}
-          disabled={isCreating}
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Schema opnieuw genereren
-        </Button>
+
         
         <Button 
           onClick={onSaveCompetition}
@@ -261,7 +251,6 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
         >
           {isCreating ? (
             <>
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
               Opslaan...
             </>
           ) : (

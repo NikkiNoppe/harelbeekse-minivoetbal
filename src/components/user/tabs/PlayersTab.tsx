@@ -127,34 +127,15 @@ const PlayersTab: React.FC = () => {
             <PlayersListUpdated 
               players={players}
               loading={loading}
-              editMode={editMode && canEdit}
+              editMode={canEdit}
               onRemovePlayer={handleRemovePlayer}
               onEditPlayer={handleEditPlayer}
               formatDate={formatDate}
               getFullName={getFullName}
             />
           </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setEditMode(!editMode)}
-              className="flex items-center gap-2"
-              disabled={!canEdit}
-            >
-              {editMode ? (
-                <>
-                  <Save size={16} />
-                  Klaar met bewerken
-                </>
-              ) : (
-                <>
-                  <Edit size={16} />
-                  Lijst bewerken
-                </>
-              )}
-            </Button>
-            
-            {editMode && canEdit && (
+          <CardFooter className="flex justify-end">
+            {canEdit && (
               <Button
                 onClick={() => setDialogOpen(true)}
                 className="flex items-center gap-2"
@@ -169,25 +150,14 @@ const PlayersTab: React.FC = () => {
 
       <section>
         <div className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Admin Lock Settings - Only show for admins */}
-            {authUser?.role === "admin" && (
-              <Card>
-                <CardContent>
-                  <PlayerListLockSettings />
-                </CardContent>
-              </Card>
-            )}
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Spelersreglement</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PlayerRegulations />
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Spelersreglement</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PlayerRegulations />
+            </CardContent>
+          </Card>
         </div>
       </section>
       

@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Search, AlertCircle, RefreshCw } from "lucide-react";
+import { Search, AlertCircle } from "lucide-react";
 import MatchCard from "../match/components/MatchCard";
 import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
 import ResponsiveScheduleTable from "../tables/ResponsiveScheduleTable";
@@ -84,10 +84,7 @@ const StandingsSection = memo(({
             <p className="text-red-500 mb-4">
               Er is een fout opgetreden bij het laden van de competitiestand.
             </p>
-            <Button variant="outline" onClick={onRetry}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Opnieuw proberen
-            </Button>
+
           </div>
         ) : !teams || teams.length === 0 ? (
           <div className="text-center p-8 text-muted-foreground">

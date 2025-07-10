@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { teamService } from "./teamService";
 import { seasonService } from "./seasonService";
+import { timeslotPriorityService } from "./timeslotPriorityService";
 
 export interface CupMatch {
   match_id: number;
@@ -30,6 +31,13 @@ export interface TournamentBracket {
 }
 
 export const cupService = {
+  // Helper function to add days to a date string
+  addDaysToDate(dateStr: string, days: number): string {
+    const date = new Date(dateStr);
+    date.setDate(date.getDate() + days);
+    return date.toISOString().split('T')[0];
+  },
+
   async getCupMatches(): Promise<any> {
     const { data, error } = await supabase
       .from('matches')
@@ -166,29 +174,32 @@ export const cupService = {
       // Shuffle teams for random bracket
       const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
 
+      // Convert selected dates to actual playing weeks (Monday + Tuesday)
+      const convertToPlayingWeeks = (selectedDates: string[]): string[] => {
+        return selectedDates.map(dateStr => {
+          const date = new Date(dateStr);
+          const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+          
+          // Calculate Monday of this week
+          const monday = new Date(date);
+          const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Handle Sunday (0) as -6
+          monday.setDate(date.getDate() + daysToMonday);
+          
+          return monday.toISOString().split('T')[0]; // Return Monday in YYYY-MM-DD format
+        });
+      };
+
+      // Convert selected dates to playing weeks (Mondays)
+      const playingWeeks = convertToPlayingWeeks(selectedDates);
+      console.log('📅 Original dates:', selectedDates);
+      console.log('📅 Converted to playing weeks (Mondays):', playingWeeks);
+
       // Create all cup matches
       const cupMatches = [];
 
-      // Helper function to get match date with time using database timeslots
-      const getMatchDateTime = (date: string, timeIndex: number) => {
-        const matchDate = new Date(date);
-        const dayOfWeek = matchDate.getDay();
-        
-        // Filter timeslots for the specific day of week
-        const dayTimeslots = timeslots.filter((slot: any) => slot.day_of_week === dayOfWeek);
-        
-        if (dayTimeslots.length === 0) {
-          // Fallback if no timeslots for this day
-          console.warn(`⚠️ No timeslots found for day ${dayOfWeek}, using default time`);
-          return `${date}T00:00:00+02:00`;
-        }
-        
-        // Use modulo to cycle through available timeslots for the day
-        const selectedSlot = dayTimeslots[timeIndex % dayTimeslots.length];
-        const time = selectedSlot.start_time;
-        
-        console.log(`⏰ Match scheduled for ${date} at ${time} (day ${dayOfWeek})`);
-        return `${date}T${time}:00+02:00`;
+      // Use shared timeslot priority service
+      const getMatchDateTime = async (date: string, timeIndex: number, totalMatchesThisDay: number) => {
+        return await timeslotPriorityService.formatMatchDateTime(date, timeIndex, totalMatchesThisDay);
       };
 
       // 1. Create 8e finales (8 matches) - spread over first 2 weeks (4 matches each week)
@@ -198,13 +209,20 @@ export const cupService = {
         const weekIndex = i < 4 ? 0 : 1; // First 4 matches in week 0, last 4 in week 1
         const timeIndex = i % 4; // Reset time index for second week
         
+        // Determine if this match should be on Monday (first 2 of each week) or Tuesday (last 2 of each week)
+        const isMonday = (i % 4) < 2;
+        const matchDate = isMonday ? playingWeeks[weekIndex] : cupService.addDaysToDate(playingWeeks[weekIndex], 1);
+        
+        const matchDateTime = await getMatchDateTime(matchDate, timeIndex % 2, 2); // 2 matches per day
+        const { venue } = await timeslotPriorityService.getMatchDetails(timeIndex % 2, 2, matchDate);
+        
         cupMatches.push({
           unique_number: `1/8-${i + 1}`,
           speeldag: `1/8 Finale ${i + 1}`,
           home_team_id: shuffledTeams[homeTeamIndex],
           away_team_id: shuffledTeams[awayTeamIndex],
-          match_date: getMatchDateTime(selectedDates[weekIndex], timeIndex),
-          location: venues[i % venues.length]?.name || 'Venue TBD',
+          match_date: matchDateTime,
+          location: venue,
           is_cup_match: true,
           is_submitted: false,
           is_locked: false
@@ -213,42 +231,60 @@ export const cupService = {
 
       // 2. Create kwartfinales (4 matches) - week 3
       for (let i = 0; i < 4; i++) {
+        // Split 4 matches: 2 on Monday, 2 on Tuesday
+        const isMonday = i < 2;
+        const matchDate = isMonday ? playingWeeks[2] : cupService.addDaysToDate(playingWeeks[2], 1);
+        
+        const matchDateTime = await getMatchDateTime(matchDate, i % 2, 2); // 2 matches per day
+        const { venue } = await timeslotPriorityService.getMatchDetails(i % 2, 2, matchDate);
+        
         cupMatches.push({
           unique_number: `QF-${i + 1}`,
           speeldag: `Kwartfinale ${i + 1}`,
           home_team_id: null,
           away_team_id: null,
-          match_date: getMatchDateTime(selectedDates[2], i),
-          location: venues[i % venues.length]?.name || 'Venue TBD',
+          match_date: matchDateTime,
+          location: venue,
           is_cup_match: true,
           is_submitted: false,
           is_locked: false
         });
       }
 
-      // 3. Create halve finales (2 matches) - week 4
+      // 3. Create halve finales (2 matches) - week 4 (both on Monday for prime time)
       for (let i = 0; i < 2; i++) {
+        const matchDate = playingWeeks[3]; // Monday of week 4
+        
+        const matchDateTime = await getMatchDateTime(matchDate, i, 2);
+        // For semi-finals, use the top 2 priority venues
+        const { venue } = await timeslotPriorityService.getMatchDetails(i, 2, matchDate);
+        
         cupMatches.push({
           unique_number: `SF-${i + 1}`,
           speeldag: `Halve Finale ${i + 1}`,
           home_team_id: null,
           away_team_id: null,
-          match_date: getMatchDateTime(selectedDates[3], i),
-          location: venues[0]?.name || 'Main Venue', // Main venue for semi-finals
+          match_date: matchDateTime,
+          location: venue,
           is_cup_match: true,
           is_submitted: false,
           is_locked: false
         });
       }
 
-      // 4. Create finale - week 5 (separate week from halve finales)
+      // 4. Create finale - week 5 (Monday for maximum prime time)
+      const finalDate = playingWeeks[4]; // Monday of week 5
+      const finalMatchDateTime = await getMatchDateTime(finalDate, 0, 1);
+      // For finale, use the top priority venue (best slot)
+      const { venue: finalVenue } = await timeslotPriorityService.getMatchDetails(0, 1, finalDate);
+      
       cupMatches.push({
         unique_number: 'FINAL',
         speeldag: 'Finale',
         home_team_id: null,
         away_team_id: null,
-        match_date: getMatchDateTime(selectedDates[4], 0), // Week 5, time slot 0
-        location: venues[0]?.name || 'Final Venue', // Use main venue for final
+        match_date: finalMatchDateTime,
+        location: finalVenue,
         is_cup_match: true,
         is_submitted: false,
         is_locked: false

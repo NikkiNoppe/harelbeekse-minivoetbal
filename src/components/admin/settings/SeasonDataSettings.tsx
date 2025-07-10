@@ -1,27 +1,51 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, Save, RotateCcw } from "lucide-react";
+import { Settings, Edit, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { seasonService, type SeasonData } from "@/services/seasonService";
 
 const SeasonDataSettings: React.FC = () => {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Load season data from JSON file
-  const [seasonData, setSeasonData] = useState<SeasonData>(() => seasonService.getSeasonData());
+  const [seasonData, setSeasonData] = useState<SeasonData>({
+    season_start_date: '',
+    season_end_date: ''
+  });
   const [localSeasonData, setLocalSeasonData] = useState<SeasonData>(seasonData);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  const handleInputChange = (field: keyof SeasonData, value: string) => {
-    setLocalSeasonData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    setHasChanges(true);
+  useEffect(() => {
+    loadSeasonData();
+  }, []);
+
+  const loadSeasonData = async () => {
+    setIsLoading(true);
+    try {
+      console.log('🔄 Loading season data...');
+      const seasonData = await seasonService.getSeasonData();
+      console.log('✅ Season data loaded:', { season_start_date: seasonData.season_start_date });
+      
+      setSeasonData(seasonData);
+      setLocalSeasonData(seasonData);
+    } catch (error) {
+      console.error('❌ Error loading season data:', error);
+      toast({
+        title: "Fout",
+        description: "Kon seizoensdata niet laden",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEdit = () => {
+    setIsEditDialogOpen(true);
   };
 
   const handleSave = async () => {
@@ -38,7 +62,7 @@ const SeasonDataSettings: React.FC = () => {
         return;
       }
 
-      // Save to JSON file
+      // Save to application_settings
       const result = await seasonService.saveSeasonData(localSeasonData);
       
       if (result.success) {
@@ -49,6 +73,8 @@ const SeasonDataSettings: React.FC = () => {
           title: "Seizoensdata opgeslagen",
           description: result.message,
         });
+        
+        setIsEditDialogOpen(false);
       } else {
         toast({
           title: "Fout bij opslaan",
@@ -67,101 +93,126 @@ const SeasonDataSettings: React.FC = () => {
     }
   };
 
-  const handleReset = () => {
+  const handleCancel = () => {
     setLocalSeasonData(seasonData);
     setHasChanges(false);
+    setIsEditDialogOpen(false);
+  };
+
+  const handleInputChange = (field: keyof SeasonData, value: string) => {
+    setLocalSeasonData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    setHasChanges(true);
   };
 
   const validation = seasonService.validateSeasonData(localSeasonData);
   const isValid = validation.isValid;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          Seizoensdata Beheer
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Belangrijk:</strong> Configureer hier de begin- en einddatum van het volledige seizoen 
-              waar gespeeld kan worden. Deze data wordt gebruikt voor het genereren van competitieschema's.
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Seizoensdata
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Beheer de start- en einddatum van het seizoen.
+              <br />
+              <strong>Let op:</strong> Wijzigingen vereisen een herstart van de applicatie.
             </p>
-          </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="season-start">Seizoen Startdatum</Label>
-                <Input
-                  id="season-start"
-                  type="date"
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Seizoensperiode</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 border border-purple-200 rounded-lg bg-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-purple-600">Startdatum</h4>
+                      <p className="text-sm text-gray-600">{new Date(seasonData.season_start_date).toLocaleDateString('nl-NL')}</p>
+                    </div>
+                    <Button
+                      className="btn-action-edit"
+                      onClick={handleEdit}
+                    >
+                      <Edit />
+                    </Button>
+                  </div>
+                </div>
+                <div className="p-4 border border-purple-200 rounded-lg bg-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-purple-600">Einddatum</h4>
+                      <p className="text-sm text-gray-600">{new Date(seasonData.season_end_date).toLocaleDateString('nl-NL')}</p>
+                    </div>
+                    <Button
+                      className="btn-action-edit"
+                      onClick={handleEdit}
+                    >
+                      <Edit />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light">
+          <DialogHeader className="bg-purple-100">
+            <DialogTitle className="text-xl text-center text-purple-light">
+              Bewerk Seizoensdata
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 bg-purple-100 p-4 sm:p-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="seasonStart">Startdatum</Label>
+                <Input 
+                  id="seasonStart" 
+                  type="date" 
                   value={localSeasonData.season_start_date}
                   onChange={(e) => handleInputChange('season_start_date', e.target.value)}
-                  className="w-full"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Wanneer het seizoen officieel begint
-                </p>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="season-end">Seizoen Einddatum</Label>
-                <Input
-                  id="season-end"
-                  type="date"
+              <div>
+                <Label htmlFor="seasonEnd">Einddatum</Label>
+                <Input 
+                  id="seasonEnd" 
+                  type="date" 
                   value={localSeasonData.season_end_date}
                   onChange={(e) => handleInputChange('season_end_date', e.target.value)}
-                  className="w-full"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Wanneer het seizoen officieel eindigt
-                </p>
               </div>
+              
+              {!isValid && hasChanges && (
+                <div className="bg-red-50 p-4 rounded-lg">
+                  <p className="text-sm text-red-800">
+                    <strong>Validatie fout:</strong> {validation.errors.join(", ")}
+                  </p>
+                </div>
+              )}
             </div>
-
-          {!isValid && hasChanges && (
-            <div className="bg-red-50 p-4 rounded-lg">
-              <p className="text-sm text-red-800">
-                <strong>Validatie fout:</strong> {validation.errors.join(", ")}
-              </p>
-            </div>
-          )}
-
-          <div className="flex gap-2 pt-4">
-            <Button 
-              onClick={handleSave}
-              disabled={!hasChanges || !isValid || isLoading}
-              className="flex-1"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {isLoading ? "Opslaan..." : "Opslaan"}
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              onClick={handleReset}
-              disabled={!hasChanges || isLoading}
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Herstellen
-            </Button>
           </div>
-
-                      <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Huidige Seizoensdata:</h4>
-              <div className="text-sm space-y-1">
-                <p><strong>Seizoen:</strong> {seasonData.season_start_date} - {seasonData.season_end_date}</p>
-                <p><strong>Seizoen lengte:</strong> {
-                  Math.ceil((new Date(seasonData.season_end_date).getTime() - new Date(seasonData.season_start_date).getTime()) / (1000 * 60 * 60 * 24))
-                } dagen</p>
-              </div>
-            </div>
-        </div>
-      </CardContent>
-    </Card>
+          <DialogFooter className="bg-purple-100 p-4">
+            <Button className="btn-light" onClick={handleCancel}>
+              Annuleren
+            </Button>
+            <Button className="btn-dark" onClick={handleSave} disabled={isLoading || !hasChanges || !isValid}>
+              {isLoading ? 'Opslaan...' : 'Opslaan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
