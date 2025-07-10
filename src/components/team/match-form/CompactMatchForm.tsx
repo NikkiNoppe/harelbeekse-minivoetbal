@@ -6,6 +6,7 @@ import {
   MatchFormActions
 } from "./components";
 import { RefereePenaltySection } from "./components/RefereePenaltySection";
+import PenaltyShootoutModal from "./components/PenaltyShootoutModal";
 import { MatchFormData, PlayerSelection } from "./types";
 import { useMatchFormState } from "./hooks/useMatchFormState";
 import { useEnhancedMatchFormSubmission } from "./hooks/useEnhancedMatchFormSubmission";
@@ -54,9 +55,12 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   const userRole = isAdmin ? "admin" : isReferee ? "referee" : "player_manager";
 
   const [currentMatch, setCurrentMatch] = React.useState<MatchFormData>(match);
+  const [showPenaltyModal, setShowPenaltyModal] = React.useState(false);
+  const [pendingSubmission, setPendingSubmission] = React.useState<MatchFormData | null>(null);
 
   const canEdit = !currentMatch.isLocked || isAdmin;
   const showRefereeFields = isReferee || isAdmin;
+  const isCupMatch = currentMatch.matchday?.includes('🏆');
 
   const handleCardChange = (playerId: number, cardType: string) => {
     setPlayerCards(prev => ({
@@ -111,6 +115,24 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     const parsedHomeScore = homeScore !== "" ? parseInt(homeScore) : null;
     const parsedAwayScore = awayScore !== "" ? parseInt(awayScore) : null;
 
+    // Check for draw in cup matches
+    if (isCupMatch && parsedHomeScore !== null && parsedAwayScore !== null && parsedHomeScore === parsedAwayScore) {
+      const updatedMatch: MatchFormData = {
+        ...currentMatch,
+        homeScore: parsedHomeScore,
+        awayScore: parsedAwayScore,
+        referee: selectedReferee,
+        refereeNotes: refereeNotes,
+        isCompleted: true,
+        homePlayers: getHomeTeamSelectionsWithCards(),
+        awayPlayers: getAwayTeamSelectionsWithCards()
+      };
+      
+      setPendingSubmission(updatedMatch);
+      setShowPenaltyModal(true);
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
@@ -138,6 +160,40 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       console.error('Error submitting match form:', error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePenaltyResult = async (winner: 'home' | 'away', homePenalties: number, awayPenalties: number, notes: string) => {
+    if (!pendingSubmission) return;
+
+    setIsSubmitting(true);
+    
+    try {
+      // Add +1 to the winning team's regular score
+      const updatedHomeScore = winner === 'home' ? (pendingSubmission.homeScore || 0) + 1 : pendingSubmission.homeScore;
+      const updatedAwayScore = winner === 'away' ? (pendingSubmission.awayScore || 0) + 1 : pendingSubmission.awayScore;
+      
+      const finalMatch: MatchFormData = {
+        ...pendingSubmission,
+        homeScore: updatedHomeScore,
+        awayScore: updatedAwayScore,
+        refereeNotes: `${pendingSubmission.refereeNotes || ''}${pendingSubmission.refereeNotes ? '\n\n' : ''}${notes}`
+      };
+
+      const result = await submitMatchForm(finalMatch, isAdmin, userRole);
+
+      if (result.success) {
+        if (isReferee && !currentMatch.isLocked) {
+          await lockMatch(currentMatch.matchId);
+        }
+        
+        onComplete();
+      }
+    } catch (error) {
+      console.error('Error submitting match form with penalties:', error);
+    } finally {
+      setIsSubmitting(false);
+      setPendingSubmission(null);
     }
   };
 
@@ -192,6 +248,14 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         isTeamManager={!isAdmin && !isReferee}
         isAdmin={isAdmin}
         isLocked={currentMatch.isLocked}
+      />
+
+      <PenaltyShootoutModal
+        open={showPenaltyModal}
+        onOpenChange={setShowPenaltyModal}
+        homeTeamName={currentMatch.homeTeamName}
+        awayTeamName={currentMatch.awayTeamName}
+        onPenaltyResult={handlePenaltyResult}
       />
     </div>
   );

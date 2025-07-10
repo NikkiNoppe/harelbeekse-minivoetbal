@@ -1,8 +1,37 @@
 import { supabase } from "@/integrations/supabase/client";
 import { MatchFormData } from "./types";
 import { localDateTimeToISO, isoToLocalDateTime, getCurrentISO } from "@/lib/dateUtils";
+import { cupService } from "@/services/cupService";
 
-export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermissions: boolean = false): Promise<MatchFormData[]> => {
+// Helper function to sort cup matches in tournament order
+const sortCupMatches = (matches: MatchFormData[]): MatchFormData[] => {
+  const getRoundOrder = (uniqueNumber: string): number => {
+    if (uniqueNumber.startsWith('1/8-')) return 1; // Achtste finales
+    if (uniqueNumber.startsWith('QF-')) return 2;  // Kwartfinales
+    if (uniqueNumber.startsWith('SF-')) return 3;  // Halve finales
+    if (uniqueNumber === 'FINAL') return 4;        // Finale
+    return 99; // Unknown/other
+  };
+
+  const getRoundSubOrder = (uniqueNumber: string): number => {
+    const match = uniqueNumber.match(/-(\d+)$/);
+    return match ? parseInt(match[1], 10) : 0;
+  };
+
+  return matches.sort((a, b) => {
+    const aRound = getRoundOrder(a.uniqueNumber);
+    const bRound = getRoundOrder(b.uniqueNumber);
+    
+    if (aRound !== bRound) {
+      return aRound - bRound;
+    }
+    
+    // Same round, sort by sub-order (1/8-1, 1/8-2, etc.)
+    return getRoundSubOrder(a.uniqueNumber) - getRoundSubOrder(b.uniqueNumber);
+  });
+};
+
+export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermissions: boolean = false, competitionType?: 'league' | 'cup'): Promise<MatchFormData[]> => {
   try {
     let query = supabase
       .from("matches")
@@ -20,8 +49,9 @@ export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermission
         referee_notes,
         is_submitted,
         is_locked,
-        home_players,
+                home_players,
         away_players,
+        is_cup_match,
         teams_home:teams!home_team_id ( team_name ),
         teams_away:teams!away_team_id ( team_name )
       `)
@@ -30,6 +60,13 @@ export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermission
     // Filter by team if not elevated permissions
     if (!hasElevatedPermissions && teamId > 0) {
       query = query.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
+    }
+
+    // Filter by competition type if specified
+    if (competitionType === 'cup') {
+      query = query.eq('is_cup_match', true);
+    } else if (competitionType === 'league') {
+      query = query.or('is_cup_match.is.null,is_cup_match.eq.false');
     }
 
     const { data, error } = await query;
@@ -43,6 +80,12 @@ export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermission
 
     const matches: MatchFormData[] = data.map((row: any) => {
       const { date, time } = isoToLocalDateTime(row.match_date);
+      
+      // Use speeldag for matchday display, with special handling for cup matches
+      let matchdayDisplay = row.speeldag || "Te bepalen";
+      if (row.is_cup_match) {
+        matchdayDisplay = `🏆 ${matchdayDisplay}`;
+      }
 
       return {
         matchId: row.match_id,
@@ -54,7 +97,7 @@ export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermission
         awayTeamId: row.away_team_id,
         awayTeamName: row.teams_away?.team_name || "Onbekend",
         location: row.location || "Te bepalen",
-        matchday: row.speeldag || "Te bepalen",
+        matchday: matchdayDisplay,
         isCompleted: !!row.is_submitted,
         isLocked: !!row.is_locked,
         homeScore: row.home_score ?? undefined,
@@ -66,6 +109,11 @@ export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermission
       };
     });
 
+    // Apply special sorting for cup matches
+    if (competitionType === 'cup') {
+      return sortCupMatches(matches);
+    }
+
     return matches;
   } catch (error) {
     console.error("[fetchUpcomingMatches] Error:", error);
@@ -73,8 +121,25 @@ export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermission
   }
 };
 
-export const updateMatchForm = async (matchData: MatchFormData): Promise<void> => {
+export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanceMessage?: string}> => {
   try {
+    // First check if this is a cup match that's being completed
+    const { data: existingMatch, error: fetchError } = await supabase
+      .from('matches')
+      .select('is_cup_match, is_submitted, unique_number')
+      .eq('match_id', matchData.matchId)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching existing match:', fetchError);
+      throw fetchError;
+    }
+
+    const isCupMatch = existingMatch?.is_cup_match;
+    const wasAlreadySubmitted = existingMatch?.is_submitted;
+    const isBeingCompleted = matchData.isCompleted && !wasAlreadySubmitted;
+
+    // Update the match
     const { error } = await supabase
       .from('matches')
       .update({
@@ -99,6 +164,42 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<void> =
       console.error('Error updating match:', error);
       throw error;
     }
+
+    // If this is a cup match with scores, check for winner advancement (both new completions and score changes)
+    if (isCupMatch && matchData.isCompleted && 
+        matchData.homeScore !== undefined && matchData.awayScore !== undefined) {
+      console.log('🏆 Cup match with scores being updated:', {
+        matchId: matchData.matchId,
+        uniqueNumber: matchData.uniqueNumber,
+        homeScore: matchData.homeScore,
+        awayScore: matchData.awayScore,
+        isCupMatch,
+        wasAlreadySubmitted,
+        isBeingCompleted
+      });
+      
+      try {
+        const advanceResult = await cupService.autoAdvanceWinner(matchData.matchId);
+        console.log('🚀 Auto-advance result:', advanceResult);
+        
+        if (advanceResult.success) {
+          console.log('✅ Winner advancement processed:', advanceResult.message);
+          return { advanceMessage: advanceResult.message };
+        } else {
+          console.log('⚠️ Could not process winner advancement:', advanceResult.message);
+          // Still return some info for draws or other cases
+          if (advanceResult.message.includes("Gelijkspel")) {
+            return { advanceMessage: "Gelijkspel gedetecteerd - doorschuiving gewist" };
+          }
+        }
+      } catch (advanceError) {
+        console.error('❌ Error during auto-advance:', advanceError);
+        // Don't throw here - the match update was successful, auto-advance is a bonus feature
+      }
+    }
+
+    return {};
+
   } catch (error) {
     console.error('Error in updateMatchForm:', error);
     throw error;

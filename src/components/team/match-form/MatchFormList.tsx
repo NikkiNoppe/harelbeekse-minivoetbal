@@ -53,25 +53,55 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     return matchesSearch && matchesDate;
   });
 
-  // Group by matchday
-  const groupByMatchday = (matches: MatchFormData[]) => {
-    return matches.reduce((groups, match) => {
-      const matchday = match.matchday || "Geen speeldag";
-      if (!groups[matchday]) groups[matchday] = [];
-      groups[matchday].push(match);
-      return groups;
-    }, {} as Record<string, MatchFormData[]>);
+  // Helper function to detect if matches are cup matches
+  const isCupMatchList = filteredMatches.length > 0 && filteredMatches[0].matchday?.includes('🏆');
+
+  // Group by matchday or cup round
+  const groupMatches = (matches: MatchFormData[]) => {
+    if (isCupMatchList) {
+      // Group cup matches by round
+      return matches.reduce((groups, match) => {
+        const roundName = getCupRoundName(match.uniqueNumber);
+        if (!groups[roundName]) groups[roundName] = [];
+        groups[roundName].push(match);
+        return groups;
+      }, {} as Record<string, MatchFormData[]>);
+    } else {
+      // Group regular matches by matchday
+      return matches.reduce((groups, match) => {
+        const matchday = match.matchday || "Geen speeldag";
+        if (!groups[matchday]) groups[matchday] = [];
+        groups[matchday].push(match);
+        return groups;
+      }, {} as Record<string, MatchFormData[]>);
+    }
   };
 
-  const sortedMatchdays = Object.keys(groupByMatchday(filteredMatches)).sort((a, b) => {
-    const getMatchdayNumber = (str: string) => {
-      const num = str.match(/\d+/);
-      return num ? parseInt(num[0]) : 0;
-    };
-    return getMatchdayNumber(a) - getMatchdayNumber(b);
-  });
+  // Helper function to get cup round name from unique_number
+  const getCupRoundName = (uniqueNumber: string): string => {
+    if (uniqueNumber.startsWith('1/8-')) return 'Achtste Finales';
+    if (uniqueNumber.startsWith('QF-')) return 'Kwartfinales';
+    if (uniqueNumber.startsWith('SF-')) return 'Halve Finales';
+    if (uniqueNumber === 'FINAL') return 'Finale';
+    return 'Andere';
+  };
 
-  const grouped = groupByMatchday(filteredMatches);
+  const grouped = groupMatches(filteredMatches);
+  
+  const sortedGroupKeys = Object.keys(grouped).sort((a, b) => {
+    if (isCupMatchList) {
+      // Sort cup rounds in tournament order
+      const roundOrder = { 'Achtste Finales': 1, 'Kwartfinales': 2, 'Halve Finales': 3, 'Finale': 4, 'Andere': 99 };
+      return (roundOrder[a] || 99) - (roundOrder[b] || 99);
+    } else {
+      // Sort matchdays numerically
+      const getMatchdayNumber = (str: string) => {
+        const num = str.match(/\d+/);
+        return num ? parseInt(num[0]) : 0;
+      };
+      return getMatchdayNumber(a) - getMatchdayNumber(b);
+    }
+  });
 
   if (isLoading) {
     return (
@@ -91,13 +121,23 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
 
   return (
     <div className="space-y-8">
-      {sortedMatchdays.map(matchday => (
-        <div key={matchday}>
+      {sortedGroupKeys.map(groupKey => (
+        <div key={groupKey}>
           <div className="flex items-center gap-2 mb-3 text-base text-purple-dark font-semibold pl-2">
-            {matchday}
+            {groupKey}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {grouped[matchday].map(match => {
+          <div className={`grid gap-4 ${
+            isCupMatchList && groupKey === 'Achtste Finales' 
+              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4' 
+              : isCupMatchList && groupKey === 'Kwartfinales'
+              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4'
+              : isCupMatchList && groupKey === 'Halve Finales'
+              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2'
+              : isCupMatchList && groupKey === 'Finale'
+              ? 'grid-cols-1 max-w-md mx-auto'
+              : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+          }`}>
+            {grouped[groupKey].map(match => {
               const status = getMatchStatus(match);
               const StatusIcon = status.icon;
               // Badge always right, keep color and content

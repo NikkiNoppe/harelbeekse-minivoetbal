@@ -155,9 +155,8 @@ const SuspensionsTab: React.FC = () => {
                     Schorsingen na gele kaarten:
                   </p>
                   <ul className="list-disc pl-5 text-muted-foreground space-y-1">
-                    <li>2-3 gele kaarten: 1 wedstrijd schorsing</li>
-                    <li>4-5 gele kaarten: 2 opeenvolgende wedstrijden</li>
-                    <li>6+ gele kaarten: 3 opeenvolgende wedstrijden</li>
+                    <li>3 gele kaarten: 1 wedstrijd schorsing</li>
+                    <li>5 gele kaarten: 2 opeenvolgende wedstrijden</li>
                   </ul>
                 </div>
                 
@@ -174,6 +173,9 @@ const SuspensionsTab: React.FC = () => {
                   <h4 className="font-medium">Beroepsprocedure</h4>
                   <p className="text-muted-foreground">
                     Clubs kunnen binnen 7 werkdagen na de wedstrijd beroep aantekenen tegen een rode kaart.
+                  </p>
+                  <p className="text-muted-foreground">
+                    Dit gebeurd schriftelijk via noppe.nikki@icloud.com.
                   </p>
                 </div>
               </CardContent>

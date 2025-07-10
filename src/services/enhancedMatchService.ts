@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
-import { localDateTimeToISO } from "@/lib/dateUtils";
+import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
+import { updateMatchForm } from "@/components/team/match-form/matchFormService";
+import { MatchFormData } from "@/components/team/match-form/types";
 
 interface MatchUpdateData {
   homeScore?: number | null;
@@ -33,6 +35,71 @@ export const enhancedMatchService = {
     }
 
     try {
+      // Check if this might be a cup match that could use automatic advancement
+      // For cup matches, we want to use the updateMatchForm that has auto-advance logic
+      const { data: matchInfo, error: fetchError } = await supabase
+        .from('matches')
+        .select('is_cup_match, unique_number, home_team_id, away_team_id, match_date, speeldag, location, teams_home:teams!home_team_id(team_name), teams_away:teams!away_team_id(team_name)')
+        .eq('match_id', matchId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching match info:', fetchError);
+        // Continue with regular update if we can't fetch match info
+      }
+
+      const isCupMatch = matchInfo?.is_cup_match;
+
+      // For cup matches with scores (new completions or score changes), use the matchFormService with auto-advance
+      if (isCupMatch && updateData.isCompleted && updateData.homeScore !== undefined && updateData.awayScore !== undefined) {
+        try {
+          // Convert to MatchFormData format
+          const { date: matchDate, time: matchTime } = isoToLocalDateTime(matchInfo.match_date);
+          
+          const matchFormData: MatchFormData = {
+            matchId: matchId,
+            uniqueNumber: matchInfo.unique_number || '',
+            date: updateData.date || matchDate,
+            time: updateData.time || matchTime,
+            homeTeamId: matchInfo.home_team_id,
+            homeTeamName: matchInfo.teams_home?.team_name || 'Onbekend',
+            awayTeamId: matchInfo.away_team_id,
+            awayTeamName: matchInfo.teams_away?.team_name || 'Onbekend',
+            location: updateData.location || matchInfo.location || '',
+            matchday: updateData.matchday || matchInfo.speeldag || '',
+            isCompleted: updateData.isCompleted || false,
+            isLocked: updateData.isLocked || false,
+            homeScore: updateData.homeScore,
+            awayScore: updateData.awayScore,
+            referee: updateData.referee,
+            refereeNotes: updateData.refereeNotes,
+            homePlayers: updateData.homePlayers || [],
+            awayPlayers: updateData.awayPlayers || []
+          };
+
+          const result = await updateMatchForm(matchFormData);
+          
+          let successMessage = "Bekerwedstrijd succesvol bijgewerkt";
+          if (result.advanceMessage) {
+            if (result.advanceMessage.includes("ongewijzigd")) {
+              successMessage += " (winnaar ongewijzigd)";
+            } else {
+              successMessage += ` - ${result.advanceMessage}`;
+            }
+          }
+
+          return {
+            success: true,
+            message: successMessage
+          };
+        } catch (cupError) {
+          console.error('Error with cup match update:', cupError);
+          // Fall back to regular update
+        }
+      }
+
+      // Regular update logic for non-cup matches or when cup-specific logic fails
+      
       // Check for late submission if this is a player_manager submission
       let isLateSubmission = false;
       if (userRole === "player_manager" && updateData.date && updateData.time) {

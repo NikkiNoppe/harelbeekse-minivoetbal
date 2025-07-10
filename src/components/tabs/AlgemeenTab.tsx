@@ -41,7 +41,7 @@ const AlgemeenTab: React.FC = () => {
             <p className="mb-3 sm:mb-4">
               Onze competitie staat bekend om zijn sportiviteit.
             </p>
-            <p className="break-words">Interesse om deel te nemen met een team? Neem dan contact op via noppe.nikki@icloud.com.</p>
+            {/* <p className="break-words">Interesse om deel te nemen met een team? Neem dan contact op via noppe.nikki@icloud.com.</p> */}
           </CardContent>
         </Card>
       </section>

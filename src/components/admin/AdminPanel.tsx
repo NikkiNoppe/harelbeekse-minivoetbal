@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, AlertTriangle } from "lucide-react";
 import { teamService, Team } from "@/services/teamService";
+import CupTournamentManager from "./CupTournamentManager";
 
 // Initial users data
 const initialUsers = [
@@ -222,6 +223,7 @@ const AdminPanel: React.FC = () => {
         <TabsList className="login-tabs-list">
           <TabsTrigger value="teams" className="login-tab-trigger">Teams beheren</TabsTrigger>
           <TabsTrigger value="users" className="login-tab-trigger">Gebruikers beheren</TabsTrigger>
+          <TabsTrigger value="cup" className="login-tab-trigger">Bekertoernooi</TabsTrigger>
         </TabsList>
         
         <TabsContent value="teams" className="space-y-4 mt-4">
@@ -377,6 +379,10 @@ const AdminPanel: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="cup" className="space-y-4 mt-4">
+          <CupTournamentManager />
         </TabsContent>
       </Tabs>
       

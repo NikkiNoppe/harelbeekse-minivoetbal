@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Users, Shield, UserIcon, Trophy, DollarSign, Settings } from "lucide-react";
+import { Calendar, Users, Shield, UserIcon, Trophy, DollarSign, Settings, Award } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import PlayersTab from "./tabs/PlayersTab";
 import AdminSettingsPanel from "@/components/admin/AdminSettingsPanel";
@@ -12,8 +12,9 @@ import FinancialTabUpdated from "@/components/admin/tabs/FinancialTabUpdated";
 import UserManagementTab from "@/components/admin/tabs/UserManagementTab";
 import TeamsTab from "@/components/admin/tabs/TeamsTab";
 import MatchFormTab from "@/components/team/MatchFormTab";
+import CupTournamentManager from "@/components/admin/CupTournamentManager";
 
-type TabName = "match-forms" | "players" | "teams" | "users" | "competition" | "financial" | "settings";
+type TabName = "match-forms" | "players" | "teams" | "users" | "competition" | "financial" | "settings" | "cup";
 
 interface AdminDashboardProps {
   activeTab: TabName;
@@ -32,6 +33,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
     { key: "teams" as TabName, label: "Teams", icon: <Shield size={16} />, adminOnly: true },
     { key: "users" as TabName, label: "Gebruikers", icon: <UserIcon size={16} />, adminOnly: true },
     { key: "competition" as TabName, label: "Competitiebeheer", icon: <Trophy size={16} />, adminOnly: true },
+    { key: "cup" as TabName, label: "Bekertoernooi", icon: <Award size={16} />, adminOnly: true },
     { key: "financial" as TabName, label: "Financieel", icon: <DollarSign size={16} />, adminOnly: true },
     { key: "settings" as TabName, label: "Instellingen", icon: <Settings size={16} />, adminOnly: true }
   ];
@@ -102,6 +104,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 
                 <TabsContent value="competition" className="mt-0">
                   <CompetitionManagementTab />
+                </TabsContent>
+                
+                <TabsContent value="cup" className="mt-0">
+                  <CupTournamentManager />
                 </TabsContent>
                 
                 <TabsContent value="financial" className="mt-0">
