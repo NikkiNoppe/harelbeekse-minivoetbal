@@ -2,6 +2,7 @@
 import React from "react";
 import { Settings } from "lucide-react";
 import TabVisibilitySettingsUpdated from "@/components/admin/settings/TabVisibilitySettingsUpdated";
+import PlayerListLockSettings from "@/components/admin/settings/PlayerListLockSettings";
 
 const AdminSettingsPanel: React.FC = () => {
   return (
@@ -13,8 +14,9 @@ const AdminSettingsPanel: React.FC = () => {
         </h2>
       </div>
 
-      <section>
+      <section className="space-y-6">
         <TabVisibilitySettingsUpdated />
+        <PlayerListLockSettings />
       </section>
     </div>
   );

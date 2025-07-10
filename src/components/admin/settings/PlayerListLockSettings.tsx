@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { Lock, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Lock, Unlock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { formatDateShort } from "@/lib/dateUtils";
 
 interface LockSettings {
@@ -17,14 +17,13 @@ interface LockSettings {
 }
 
 const PlayerListLockSettings: React.FC = () => {
-  const { toast } = useToast();
   const [settings, setSettings] = useState<LockSettings | null>(null);
-  const [lockDate, setLockDate] = useState("");
-  const [isActive, setIsActive] = useState(false);
+  const [lockDate, setLockDate] = useState<string>("");
+  const [isActive, setIsActive] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
 
-  // Fetch current settings
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -32,21 +31,64 @@ const PlayerListLockSettings: React.FC = () => {
   const fetchSettings = async () => {
     try {
       const { data, error } = await supabase
-        .from('player_list_lock_settings')
-        .select('*')
-        .eq('id', 1)
+        .from('application_settings')
+        .select('id, setting_value, is_active')
+        .eq('setting_category', 'player_list_lock')
+        .eq('setting_name', 'global_lock')
         .single();
 
-      if (error) throw error;
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
 
-      setSettings(data);
-      setLockDate(data.lock_from_date || "");
-      setIsActive(data.is_active || false);
+      if (data) {
+        const settingValue = data.setting_value as any;
+        const mappedSettings: LockSettings = {
+          id: data.id,
+          lock_from_date: settingValue?.lock_from_date || null,
+          is_active: data.is_active,
+          created_by: null
+        };
+        
+        setSettings(mappedSettings);
+        setLockDate(settingValue?.lock_from_date || "");
+        setIsActive(data.is_active);
+      } else {
+        // Create default settings if none exist
+        const defaultSettingValue = {
+          lock_from_date: null,
+          updated_at: new Date().toISOString()
+        };
+
+        const { data: newData, error: insertError } = await supabase
+          .from('application_settings')
+          .insert({
+            setting_category: 'player_list_lock',
+            setting_name: 'global_lock',
+            setting_value: defaultSettingValue,
+            is_active: false
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        const mappedSettings: LockSettings = {
+          id: newData.id,
+          lock_from_date: null,
+          is_active: false,
+          created_by: null
+        };
+
+        setSettings(mappedSettings);
+        setLockDate("");
+        setIsActive(false);
+      }
     } catch (error) {
-      console.error('Error fetching lock settings:', error);
+      console.error('Error fetching player list lock settings:', error);
       toast({
-        title: "Fout",
-        description: "Kon lock instellingen niet laden",
+        title: "Fout bij ophalen instellingen",
+        description: "Kon vergrendelingsinstellingen niet ophalen",
         variant: "destructive",
       });
     } finally {
@@ -55,30 +97,41 @@ const PlayerListLockSettings: React.FC = () => {
   };
 
   const saveSettings = async () => {
+    if (!settings) return;
+    
     setSaving(true);
     try {
+      const settingValue = {
+        lock_from_date: lockDate || null,
+        updated_at: new Date().toISOString()
+      };
+
       const { error } = await supabase
-        .from('player_list_lock_settings')
+        .from('application_settings')
         .update({
-          lock_from_date: lockDate || null,
+          setting_value: settingValue,
           is_active: isActive,
           updated_at: new Date().toISOString()
         })
-        .eq('id', 1);
+        .eq('id', settings.id);
 
       if (error) throw error;
 
-      await fetchSettings();
-      
+      setSettings({
+        ...settings,
+        lock_from_date: lockDate || null,
+        is_active: isActive,
+      });
+
       toast({
         title: "Instellingen opgeslagen",
-        description: `Spelerslijst ${isActive ? 'vergrendeld' : 'ontgrendeld'}`,
+        description: "Spelerslijst vergrendelingsinstellingen zijn bijgewerkt",
       });
     } catch (error) {
-      console.error('Error saving lock settings:', error);
+      console.error('Error saving player list lock settings:', error);
       toast({
-        title: "Fout",
-        description: "Kon instellingen niet opslaan",
+        title: "Fout bij opslaan",
+        description: "Kon vergrendelingsinstellingen niet opslaan",
         variant: "destructive",
       });
     } finally {
@@ -86,41 +139,55 @@ const PlayerListLockSettings: React.FC = () => {
     }
   };
 
-  const isCurrentlyLocked = () => {
+  const isCurrentlyLocked = (): boolean => {
     if (!isActive || !lockDate) return false;
-    return new Date() >= new Date(lockDate);
+    const today = new Date();
+    const lockDateObj = new Date(lockDate);
+    return today >= lockDateObj;
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5" />
+            Spelerslijst Vergrendeling
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div>Laden...</div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          {isCurrentlyLocked() ? (
-            <Lock className="h-5 w-5 text-red-500" />
-          ) : (
-            <Unlock className="h-5 w-5 text-green-500" />
-          )}
+          <Lock className="h-5 w-5" />
           Spelerslijst Vergrendeling
         </CardTitle>
+        <CardDescription>
+          Configureer wanneer de spelerslijst wordt vergrendeld voor wijzigingen
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center space-x-2">
           <Switch
-            id="lock-active"
+            id="lock-enabled"
             checked={isActive}
             onCheckedChange={setIsActive}
           />
-          <Label htmlFor="lock-active">
-            Spelerslijst vergrendeling actief
+          <Label htmlFor="lock-enabled">
+            Vergrendeling inschakelen
           </Label>
         </div>
 
-        <div className="space-y-1">
-          <Label htmlFor="lock-date">
+        <div className="space-y-2">
+          <Label htmlFor="lock-date" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
             Vergrendel vanaf datum
           </Label>
           <Input
@@ -132,33 +199,34 @@ const PlayerListLockSettings: React.FC = () => {
           />
         </div>
 
-        {isActive && lockDate && (
-          <div className="p-2 bg-gray-50 rounded-md">
-            <p className="text-sm text-gray-600">
-              Status: {isCurrentlyLocked() ? (
-                <span className="text-red-600 font-medium">
-                  Spelerslijst is vergrendeld sinds {formatDateShort(lockDate)}
-                </span>
-              ) : (
-                <span className="text-green-600 font-medium">
-                  Spelerslijst wordt vergrendeld op {formatDateShort(lockDate)}
-                </span>
-              )}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Teamverantwoordelijken kunnen geen spelers meer toevoegen, bewerken of verwijderen vanaf de lock datum.
-            </p>
-          </div>
-        )}
-
         <Button 
           onClick={saveSettings} 
           disabled={saving}
-          size="sm"
-          className="w-full"
         >
-          {saving ? "Opslaan..." : "Instellingen opslaan"}
+          {saving ? "Opslaan..." : "Opslaan"}
         </Button>
+
+        {settings && (
+          <div className="mt-4 p-4 bg-muted rounded-lg">
+            <h4 className="font-medium mb-2">Status</h4>
+            <div className="space-y-1 text-sm">
+              <div>
+                <strong>Actief:</strong> {isActive ? "Ja" : "Nee"}
+              </div>
+              {lockDate && (
+                <div>
+                  <strong>Vergrendeld vanaf:</strong> {formatDateShort(lockDate)}
+                </div>
+              )}
+              <div>
+                <strong>Momenteel vergrendeld:</strong>{" "}
+                <span className={isCurrentlyLocked() ? "text-destructive" : "text-success"}>
+                  {isCurrentlyLocked() ? "Ja" : "Nee"}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

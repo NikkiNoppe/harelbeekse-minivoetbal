@@ -30,9 +30,10 @@ export const usePlayerListLock = () => {
 
       // Also fetch the lock settings for display
       const { data: settings, error: settingsError } = await supabase
-        .from('player_list_lock_settings')
-        .select('lock_from_date, is_active')
-        .eq('id', 1)
+        .from('application_settings')
+        .select('setting_value, is_active')
+        .eq('setting_category', 'player_list_lock')
+        .eq('setting_name', 'global_lock')
         .single();
 
       if (settingsError) {
@@ -40,8 +41,9 @@ export const usePlayerListLock = () => {
         // Don't throw here, just log and continue
       } else {
         console.log('🔒 Lock settings:', settings);
-        if (settings?.is_active) {
-          setLockDate(settings.lock_from_date);
+        if (settings?.is_active && settings?.setting_value) {
+          const settingValue = settings.setting_value as any;
+          setLockDate(settingValue?.lock_from_date);
         }
       }
     } catch (error) {

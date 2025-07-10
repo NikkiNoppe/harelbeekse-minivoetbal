@@ -18,13 +18,24 @@ export const useTabVisibilitySettings = () => {
   const fetchSettings = async () => {
     try {
       const { data, error } = await supabase
-        .from('tab_visibility_settings')
-        .select('id, setting_name, is_visible, requires_login')
+        .from('application_settings')
+        .select('id, setting_name, setting_value, is_active')
+        .eq('setting_category', 'tab_visibility')
         .order('setting_name');
 
       if (error) throw error;
       
-      setSettings(data || []);
+      const mappedSettings = (data || []).map(item => {
+        const settingValue = item.setting_value as any;
+        return {
+          id: item.id,
+          setting_name: item.setting_name,
+          is_visible: settingValue?.is_visible ?? true,
+          requires_login: settingValue?.requires_login ?? false,
+        };
+      });
+      
+      setSettings(mappedSettings);
     } catch (error) {
       console.error('Error fetching tab settings:', error);
       // Fallback to main tabs only
@@ -47,9 +58,24 @@ export const useTabVisibilitySettings = () => {
 
   const updateSetting = async (settingName: string, updates: Partial<TabVisibilitySetting>) => {
     try {
+      // Get current setting
+      const currentSetting = settings.find(s => s.setting_name === settingName);
+      if (!currentSetting) throw new Error('Setting not found');
+
+      // Merge updates with current values
+      const newSettingValue = {
+        is_visible: updates.is_visible ?? currentSetting.is_visible,
+        requires_login: updates.requires_login ?? currentSetting.requires_login,
+        updated_at: new Date().toISOString(),
+      };
+
       const { error } = await supabase
-        .from('tab_visibility_settings')
-        .update(updates)
+        .from('application_settings')
+        .update({ 
+          setting_value: newSettingValue,
+          updated_at: new Date().toISOString()
+        })
+        .eq('setting_category', 'tab_visibility')
         .eq('setting_name', settingName);
 
       if (error) throw error;
