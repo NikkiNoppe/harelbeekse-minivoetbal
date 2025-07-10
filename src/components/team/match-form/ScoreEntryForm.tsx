@@ -1,12 +1,14 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { MatchFormData } from "./types";
 import { enhancedMatchService } from "@/services/enhancedMatchService";
+import { refereeService, type Referee } from "@/services/refereeService";
 import { AlertTriangle, Lock, Save } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -29,6 +31,25 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
   const [referee, setReferee] = useState(match.referee || "");
   const [refereeNotes, setRefereeNotes] = useState(match.refereeNotes || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [referees, setReferees] = useState<Referee[]>([]);
+  const [loadingReferees, setLoadingReferees] = useState(true);
+
+  // Load referees from database
+  useEffect(() => {
+    const loadReferees = async () => {
+      try {
+        setLoadingReferees(true);
+        const refereesData = await refereeService.getReferees();
+        setReferees(refereesData);
+      } catch (error) {
+        console.error('Error loading referees:', error);
+      } finally {
+        setLoadingReferees(false);
+      }
+    };
+
+    loadReferees();
+  }, []);
 
   const handleSave = async () => {
     if (!homeScore || !awayScore) {
@@ -185,13 +206,41 @@ const ScoreEntryForm: React.FC<ScoreEntryFormProps> = ({
 
       <div className="space-y-2">
         <Label htmlFor="referee">Scheidsrechter</Label>
-        <Input
-          id="referee"
+        <Select
           value={referee}
-          onChange={(e) => setReferee(e.target.value)}
+          onValueChange={setReferee}
           disabled={match.isLocked && !isAdmin}
-          placeholder="Naam scheidsrechter"
-        />
+        >
+          <SelectTrigger id="referee" className="dropdown-login-style">
+            <SelectValue placeholder="Selecteer scheidsrechter" />
+          </SelectTrigger>
+          <SelectContent className="dropdown-content-login-style">
+            {loadingReferees ? (
+              <SelectItem value="loading" disabled className="dropdown-item-login-style">
+                Laden...
+              </SelectItem>
+            ) : referees.length === 0 ? (
+              <SelectItem value="no-referees" disabled className="dropdown-item-login-style">
+                Geen scheidsrechters beschikbaar
+              </SelectItem>
+            ) : (
+              <>
+                <SelectItem value="" className="dropdown-item-login-style">
+                  Geen scheidsrechter
+                </SelectItem>
+                {referees.map((referee) => (
+                  <SelectItem
+                    key={referee.user_id}
+                    value={referee.username}
+                    className="dropdown-item-login-style"
+                  >
+                    {referee.username}
+                  </SelectItem>
+                ))}
+              </>
+            )}
+          </SelectContent>
+        </Select>
       </div>
 
       {(isReferee || isAdmin) && (

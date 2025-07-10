@@ -8,7 +8,7 @@ import { Calendar, Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { VacationPeriod } from "../../types-advanced";
 import { formatDateShort } from "@/lib/dateUtils";
-import { VACATION_PERIODS } from "@/constants/competitionData";
+import { competitionDataService } from "@/services/competitionDataService";
 
 interface VacationPeriodsCardProps {
   vacationPeriods: VacationPeriod[];
@@ -30,8 +30,8 @@ const VacationPeriodsCard: React.FC<VacationPeriodsCardProps> = ({
     end_date: ''
   });
 
-  // Use hardcoded vacation periods
-  const dbVacationPeriods = VACATION_PERIODS;
+  // Use vacation periods from JSON file
+  const dbVacationPeriods = competitionDataService.getVacationPeriods();
 
   const handleEdit = (period: VacationPeriod) => {
     setEditingPeriod(period);

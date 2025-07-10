@@ -9,7 +9,7 @@ import { Settings, Users, Calendar, Clock, MapPin } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamPreference } from "../../types-advanced";
-import { VENUES } from "@/constants/competitionData";
+import { competitionDataService } from "@/services/competitionDataService";
 
 interface TeamPreferencesCardProps {
   selectedTeams: number[];
@@ -37,7 +37,7 @@ const TeamPreferencesCard: React.FC<TeamPreferencesCardProps> = ({
   });
 
   // Use hardcoded venues
-  const venues = VENUES;
+  const venues = competitionDataService.getVenues();
 
   const playDays = [
     { value: 1, label: 'Maandag' },

@@ -3,7 +3,7 @@ import { CompetitionType, GeneratedMatch, AvailableDate } from "./types";
 import { useToast } from "@/hooks/use-toast";
 import { findFormatById } from "./competitionFormats";
 import { getCurrentDate } from "@/lib/dateUtils";
-import { VENUES } from "@/constants/competitionData";
+import { competitionDataService } from "@/services/competitionDataService";
 
 export const saveCompetitionToDatabase = async (
   generatedMatches: GeneratedMatch[],
@@ -77,7 +77,7 @@ export const saveCompetitionToDatabase = async (
         referee_cost: 25.00,
         field_cost: 50.00,
         is_cup_match: format?.isCup || false,
-        location: VENUES[0]?.name || 'Te bepalen'
+        location: competitionDataService.getVenues()[0]?.name || 'Te bepalen'
       };
     });
     

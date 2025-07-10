@@ -96,9 +96,13 @@ export const cupService = {
 
   },
 
-  async createCupTournament(teams: number[]): Promise<{ success: boolean; message: string }> {
+  async createCupTournament(teams: number[], selectedDates: string[]): Promise<{ success: boolean; message: string }> {
     if (teams.length !== 16) {
       return { success: false, message: "Een bekertoernooi vereist exact 16 teams" };
+    }
+
+    if (selectedDates.length !== 5) {
+      return { success: false, message: "Er moeten exact 5 speelweken geselecteerd zijn" };
     }
 
     try {
@@ -118,62 +122,87 @@ export const cupService = {
       // Create all cup matches
       const cupMatches = [];
 
-      // 1. Create 8e finales (8 matches)
+      // Define available venues and times from constants
+      const venues = ['Sporthal De Horizon', 'Sportcomplex Oost', 'Gemeentelijke Sporthal'];
+      const weekdayTimes = ['19:00', '19:30', '20:00', '20:30', '21:00'];
+      const saturdayTimes = ['14:00', '15:30'];
+      const sundayTimes = ['10:00', '11:30'];
+
+      // Helper function to get match date with time
+      const getMatchDateTime = (date: string, timeIndex: number, isWeekend: boolean = false) => {
+        const matchDate = new Date(date);
+        const dayOfWeek = matchDate.getDay();
+        
+        let time = '19:00'; // default
+        if (dayOfWeek === 6) { // Saturday
+          time = saturdayTimes[timeIndex % saturdayTimes.length];
+        } else if (dayOfWeek === 0) { // Sunday
+          time = sundayTimes[timeIndex % sundayTimes.length];
+        } else {
+          time = weekdayTimes[timeIndex % weekdayTimes.length];
+        }
+        
+        return `${date}T${time}:00+02:00`;
+      };
+
+      // 1. Create 8e finales (8 matches) - spread over first 2 weeks
       for (let i = 0; i < 8; i++) {
         const homeTeamIndex = i * 2;
         const awayTeamIndex = i * 2 + 1;
+        const weekIndex = i < 4 ? 0 : 0; // Use first week for all 8e finales, split by time
+        const timeIndex = i;
         
         cupMatches.push({
           unique_number: `1/8-${i + 1}`,
           speeldag: `1/8 Finale ${i + 1}`,
           home_team_id: shuffledTeams[homeTeamIndex],
           away_team_id: shuffledTeams[awayTeamIndex],
-          match_date: i < 4 ? '2024-05-15T19:00:00+02:00' : '2024-05-16T19:00:00+02:00',
-          location: i % 2 === 0 ? 'Sporthal De Dageraad' : 'Sporthal Oost',
+          match_date: getMatchDateTime(selectedDates[weekIndex], timeIndex),
+          location: venues[i % venues.length],
           is_cup_match: true,
           is_submitted: false,
           is_locked: false
         });
       }
 
-      // 2. Create kwartfinales (4 matches) - teams TBD
+      // 2. Create kwartfinales (4 matches) - week 2
       for (let i = 0; i < 4; i++) {
         cupMatches.push({
           unique_number: `QF-${i + 1}`,
           speeldag: `Kwartfinale ${i + 1}`,
           home_team_id: null,
           away_team_id: null,
-          match_date: '2024-05-22T19:00:00+02:00',
-          location: i % 2 === 0 ? 'Sporthal De Dageraad' : 'Sporthal Oost',
+          match_date: getMatchDateTime(selectedDates[1], i),
+          location: venues[i % venues.length],
           is_cup_match: true,
           is_submitted: false,
           is_locked: false
         });
       }
 
-      // 3. Create halve finales (2 matches) - teams TBD
+      // 3. Create halve finales (2 matches) - week 3
       for (let i = 0; i < 2; i++) {
         cupMatches.push({
           unique_number: `SF-${i + 1}`,
           speeldag: `Halve Finale ${i + 1}`,
           home_team_id: null,
           away_team_id: null,
-          match_date: '2024-05-29T19:30:00+02:00',
-          location: 'Sporthal De Dageraad',
+          match_date: getMatchDateTime(selectedDates[2], i),
+          location: venues[0], // Main venue for semi-finals
           is_cup_match: true,
           is_submitted: false,
           is_locked: false
         });
       }
 
-      // 4. Create finale - teams TBD
+      // 4. Create finale - week 4
       cupMatches.push({
         unique_number: 'FINAL',
         speeldag: 'Finale',
         home_team_id: null,
         away_team_id: null,
-        match_date: '2024-07-15T20:00:00+02:00',
-        location: 'Gemeentelijk Stadion',
+        match_date: getMatchDateTime(selectedDates[3], 0),
+        location: 'Gemeentelijk Stadion', // Special venue for final
         is_cup_match: true,
         is_submitted: false,
         is_locked: false
@@ -186,7 +215,7 @@ export const cupService = {
 
       if (error) throw error;
 
-      return { success: true, message: "Bekertoernooi succesvol aangemaakt!" };
+      return { success: true, message: "Bekertoernooi succesvol aangemaakt met geselecteerde speeldata!" };
 
     } catch (error) {
       console.error('Error creating cup tournament:', error);

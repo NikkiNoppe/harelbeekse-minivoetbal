@@ -1,0 +1,122 @@
+{
+  "season_start_date": "2025-09-01",
+  "season_end_date": "2026-06-30",
+  "competition_formats": [
+    {
+      "id": 1,
+      "name": "Reguliere competitie (enkele ronde)",
+      "description": "Elke ploeg speelt één keer tegen elke andere ploeg",
+      "has_playoffs": false,
+      "regular_rounds": 1
+    },
+    {
+      "id": 2,
+      "name": "Reguliere competitie (dubbele ronde)",
+      "description": "Elke ploeg speelt twee keer tegen elke andere ploeg (thuis en uit)",
+      "has_playoffs": false,
+      "regular_rounds": 2
+    },
+    {
+      "id": 3,
+      "name": "Competitie met Play-offs (Top 8 / Bottom 8)",
+      "description": "Reguliere competitie (enkele ronde)gevolgd door playoff tussen top 8 teams en degradatie playoff voor bottom 8 teams",
+      "has_playoffs": true,
+      "regular_rounds": 1
+    }
+  ],
+  "venues": [
+    {
+      "venue_id": 1,
+      "name": "Sporthal De Dageraad Harelbeke",
+      "address": "Horizonlaan 15, 8530 Harelbeke"
+    },
+    {
+      "venue_id": 2,
+      "name": "Spothal De Vlasschaard Bavikhove",
+      "address": "Vlietestraat 25, 8531 Bavikhove"
+    }
+  ],
+  "venue_timeslots": [
+    {
+      "timeslot_id": 1,
+      "venue_id": 1,
+      "day_of_week": 1,
+      "start_time": "19:00",
+      "end_time": "20:30"
+    },
+    {
+      "timeslot_id": 2,
+      "venue_id": 1,
+      "day_of_week": 2,
+      "start_time": "19:00",
+      "end_time": "20:30"
+    },
+    {
+      "timeslot_id": 3,
+      "venue_id": 1,
+      "day_of_week": 3,
+      "start_time": "19:00",
+      "end_time": "20:30"
+    },
+    {
+      "timeslot_id": 4,
+      "venue_id": 1,
+      "day_of_week": 4,
+      "start_time": "19:00",
+      "end_time": "20:30"
+    },
+    {
+      "timeslot_id": 5,
+      "venue_id": 1,
+      "day_of_week": 5,
+      "start_time": "19:00",
+      "end_time": "20:30"
+    },
+    {
+      "timeslot_id": 6,
+      "venue_id": 1,
+      "day_of_week": 6,
+      "start_time": "14:00",
+      "end_time": "15:30"
+    },
+    {
+      "timeslot_id": 7,
+      "venue_id": 1,
+      "day_of_week": 6,
+      "start_time": "15:30",
+      "end_time": "17:00"
+    }
+  ],
+  "vacation_periods": [
+    {
+      "id": 1,
+      "name": "Kerstvakantie",
+      "start_date": "2025-12-23",
+      "end_date": "2026-01-06",
+      "is_active": true
+    },
+    {
+      "id": 2,
+      "name": "Krokusvakantie",
+      "start_date": "2026-02-24",
+      "end_date": "2026-03-02",
+      "is_active": true
+    },
+    {
+      "id": 3,
+      "name": "Paasvakantie",
+      "start_date": "2026-04-14",
+      "end_date": "2026-04-28",
+      "is_active": true
+    }
+  ],
+  "day_names": [
+    "Zondag",
+    "Maandag",
+    "Dinsdag",
+    "Woensdag",
+    "Donderdag",
+    "Vrijdag",
+    "Zaterdag"
+  ]
+} 

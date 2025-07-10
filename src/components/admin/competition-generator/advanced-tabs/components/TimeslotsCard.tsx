@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Clock, Calendar, Edit, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { VENUES, VENUE_TIMESLOTS, DAY_NAMES, getVenueById } from "@/constants/competitionData";
+import { competitionDataService } from "@/services/competitionDataService";
 
 const TimeslotsCard: React.FC = () => {
   const { toast } = useToast();
@@ -23,11 +23,11 @@ const TimeslotsCard: React.FC = () => {
     end_time: ''
   });
 
-  // Use hardcoded data
-  const venues = VENUES;
-  const venueTimeslots = VENUE_TIMESLOTS.map(slot => ({
+  // Use data from JSON file
+  const venues = competitionDataService.getVenues();
+  const venueTimeslots = competitionDataService.getVenueTimeslots().map(slot => ({
     ...slot,
-    venues: { name: getVenueById(slot.venue_id)?.name || 'Onbekend' }
+    venues: { name: competitionDataService.getVenueById(slot.venue_id)?.name || 'Onbekend' }
   }));
 
   const playDays = [

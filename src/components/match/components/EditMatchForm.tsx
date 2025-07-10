@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { MatchFormData } from "../types";
 import { teamService, Team } from "@/services/teamService";
+import { refereeService, type Referee } from "@/services/refereeService";
 import { 
   Select, 
   SelectContent, 
@@ -28,22 +29,27 @@ export const EditMatchForm: React.FC<EditMatchFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<MatchFormData>(initialData);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [referees, setReferees] = useState<Referee[]>([]);
   const [loading, setLoading] = useState(true);
   const [isScoreEntered, setIsScoreEntered] = useState(
     initialData.homeScore !== undefined || initialData.awayScore !== undefined
   );
   const { toast } = useToast();
 
-  // Load teams from database
+  // Load teams and referees from database
   useEffect(() => {
-    const loadTeams = async () => {
+    const loadData = async () => {
       try {
-        const teamsData = await teamService.getAllTeams();
+        const [teamsData, refereesData] = await Promise.all([
+          teamService.getAllTeams(),
+          refereeService.getReferees()
+        ]);
         setTeams(teamsData);
+        setReferees(refereesData);
       } catch (error) {
         toast({
-          title: "Fout bij laden teams",
-          description: "Er is een fout opgetreden bij het laden van de teams.",
+          title: "Fout bij laden data",
+          description: "Er is een fout opgetreden bij het laden van de data.",
           variant: "destructive",
         });
       } finally {
@@ -51,7 +57,7 @@ export const EditMatchForm: React.FC<EditMatchFormProps> = ({
       }
     };
 
-    loadTeams();
+    loadData();
   }, []);
   
   const handleInputChange = (field: keyof MatchFormData, value: any) => {
@@ -230,11 +236,22 @@ export const EditMatchForm: React.FC<EditMatchFormProps> = ({
           
           <div className="space-y-2">
             <Label htmlFor="referee">Scheidsrechter</Label>
-            <Input
-              id="referee"
+            <Select
               value={formData.referee || ""}
-              onChange={(e) => handleInputChange("referee", e.target.value)}
-            />
+              onValueChange={(value) => handleInputChange("referee", value)}
+            >
+              <SelectTrigger id="referee">
+                <SelectValue placeholder="Selecteer scheidsrechter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Geen scheidsrechter</SelectItem>
+                {referees.map((referee) => (
+                  <SelectItem key={referee.user_id} value={referee.username}>
+                    {referee.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </>
       )}

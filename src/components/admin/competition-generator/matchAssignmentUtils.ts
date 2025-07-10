@@ -1,6 +1,6 @@
 
 import { AvailableDate, GeneratedMatch } from "./types";
-import { VENUES } from "@/constants/competitionData";
+import { competitionDataService } from "@/services/competitionDataService";
 
 export const assignMatchDetails = async (
   matches: GeneratedMatch[], 

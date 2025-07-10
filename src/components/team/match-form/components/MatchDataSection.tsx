@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MatchFormData } from "../types";
+import { refereeService, type Referee } from "@/services/refereeService";
 
 interface MatchDataSectionProps {
   match: MatchFormData;
@@ -17,13 +18,6 @@ interface MatchDataSectionProps {
   canEditMatchData: boolean;
 }
 
-const MOCK_REFEREES = [
-  { id: 1, name: "Jan Janssen" },
-  { id: 2, name: "Marie Pieters" },
-  { id: 3, name: "Tom Van Der Berg" },
-  { id: 4, name: "Lisa Vermeulen" }
-];
-
 export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
   match,
   homeScore,
@@ -36,6 +30,25 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
   canEdit,
   canEditMatchData
 }) => {
+  const [referees, setReferees] = useState<Referee[]>([]);
+  const [loadingReferees, setLoadingReferees] = useState(true);
+
+  // Load referees from database
+  useEffect(() => {
+    const loadReferees = async () => {
+      try {
+        setLoadingReferees(true);
+        const refereesData = await refereeService.getReferees();
+        setReferees(refereesData);
+      } catch (error) {
+        console.error('Error loading referees:', error);
+      } finally {
+        setLoadingReferees(false);
+      }
+    };
+
+    loadReferees();
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -109,15 +122,25 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
                 <SelectValue placeholder="Selecteer scheidsrechter" />
               </SelectTrigger>
               <SelectContent className="dropdown-content-login-style">
-                {MOCK_REFEREES.map((referee) => (
-                  <SelectItem
-                    key={referee.id}
-                    value={referee.name}
-                    className="dropdown-item-login-style"
-                  >
-                    {referee.name}
+                {loadingReferees ? (
+                  <SelectItem value="loading" disabled className="dropdown-item-login-style">
+                    Laden...
                   </SelectItem>
-                ))}
+                ) : referees.length === 0 ? (
+                  <SelectItem value="no-referees" disabled className="dropdown-item-login-style">
+                    Geen scheidsrechters beschikbaar
+                  </SelectItem>
+                ) : (
+                  referees.map((referee) => (
+                    <SelectItem
+                      key={referee.user_id}
+                      value={referee.username}
+                      className="dropdown-item-login-style"
+                    >
+                      {referee.username}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>

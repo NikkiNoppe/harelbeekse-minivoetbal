@@ -3,12 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Trophy, Trash2, Plus, Users, AlertTriangle } from "lucide-react";
+import { Trophy, Trash2, Plus, Users, AlertTriangle, Calendar, ArrowRight } from "lucide-react";
 import { cupService } from "@/services/cupService";
 import { teamService, Team } from "@/services/teamService";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import CupWinnerAdvancement from "./CupWinnerAdvancement";
+import CupDateSelector from "./CupDateSelector";
 
 const CupTournamentManager: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,6 +16,8 @@ const CupTournamentManager: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [tournamentData, setTournamentData] = useState<any>(null);
+  const [showDateSelector, setShowDateSelector] = useState(false);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -53,7 +55,7 @@ const CupTournamentManager: React.FC = () => {
     }
   };
 
-  const handleCreateTournament = async () => {
+  const handleTeamSelectionNext = () => {
     if (selectedTeams.length !== 16) {
       toast({
         title: "Ongeldige selectie",
@@ -62,10 +64,14 @@ const CupTournamentManager: React.FC = () => {
       });
       return;
     }
+    setShowDateSelector(true);
+  };
 
+  const handleDatesSelected = async (dates: string[]) => {
+    setSelectedDates(dates);
     setIsLoading(true);
     try {
-      const result = await cupService.createCupTournament(selectedTeams);
+      const result = await cupService.createCupTournament(selectedTeams, dates);
       
       if (result.success) {
         toast({
@@ -74,6 +80,8 @@ const CupTournamentManager: React.FC = () => {
         });
         await loadTournamentData();
         setSelectedTeams([]);
+        setSelectedDates([]);
+        setShowDateSelector(false);
       } else {
         toast({
           title: "Fout",
@@ -90,6 +98,10 @@ const CupTournamentManager: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCancelDateSelection = () => {
+    setShowDateSelector(false);
   };
 
   const handleDeleteTournament = async () => {
@@ -178,10 +190,6 @@ const CupTournamentManager: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Actief Toernooi</span>
-                <Badge variant="default" className="flex items-center gap-1">
-                  <Trophy className="h-3 w-3" />
-                  Lopend
-                </Badge>
               </CardTitle>
               {stats && (
                 <CardDescription>
@@ -216,23 +224,25 @@ const CupTournamentManager: React.FC = () => {
                     Toernooi Verwijderen
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className="w-full max-w-md mx-4 sm:mx-auto bg-purple-50 text-foreground border-border rounded-lg">
                   <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                    <AlertDialogTitle className="flex items-center gap-2 text-purple-800">
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
                       Toernooi Verwijderen
                     </AlertDialogTitle>
-                    <AlertDialogDescription>
+                    <AlertDialogDescription className="text-purple-700">
                       Weet je zeker dat je het volledige bekertoernooi wilt verwijderen? 
                       Alle wedstrijden, scores en voortgang zullen permanent verloren gaan.
                       Deze actie kan niet ongedaan worden gemaakt.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                    <AlertDialogCancel className="bg-white text-purple-700 border-purple-200 hover:bg-purple-100">
+                      Annuleren
+                    </AlertDialogCancel>
                     <AlertDialogAction 
                       onClick={handleDeleteTournament}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      className="bg-red-600 text-white hover:bg-red-700"
                     >
                       Definitief Verwijderen
                     </AlertDialogAction>
@@ -242,95 +252,128 @@ const CupTournamentManager: React.FC = () => {
             </CardContent>
           </Card>
           
-          <CupWinnerAdvancement />
+
         </div>
       ) : (
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5" />
-                Nieuw Toernooi Aanmaken
-              </CardTitle>
-              <CardDescription>
-                Selecteer 16 teams om een nieuw bekertoernooi aan te maken
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-medium">
-                    Geselecteerde teams: {selectedTeams.length}/16
+          {!showDateSelector ? (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Stap 1: Teams Selecteren
+                  </CardTitle>
+                  <CardDescription>
+                    Selecteer 16 teams voor het bekertoernooi
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">
+                        Geselecteerde teams: {selectedTeams.length}/16
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSelectedTeams([])}
+                        disabled={selectedTeams.length === 0}
+                      >
+                        Alles wissen
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto border rounded-md p-3">
+                      {teams.map((team) => (
+                        <div 
+                          key={team.team_id} 
+                          className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm"
+                        >
+                          <Checkbox
+                            id={`team-${team.team_id}`}
+                            checked={selectedTeams.includes(team.team_id)}
+                            onCheckedChange={() => handleTeamToggle(team.team_id)}
+                            disabled={!selectedTeams.includes(team.team_id) && selectedTeams.length >= 16}
+                          />
+                          <label 
+                            htmlFor={`team-${team.team_id}`}
+                            className="text-sm cursor-pointer flex-1"
+                          >
+                            {team.team_name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+
+                    <Button 
+                      onClick={handleTeamSelectionNext}
+                      disabled={selectedTeams.length !== 16}
+                      className="w-full"
+                    >
+                      <ArrowRight className="h-4 w-4 mr-2" />
+                      Volgende: Speeldata Selecteren
+                    </Button>
+
+                    {selectedTeams.length !== 16 && (
+                      <p className="text-sm text-muted-foreground text-center">
+                        {selectedTeams.length < 16 
+                          ? `Selecteer nog ${16 - selectedTeams.length} teams`
+                          : "Te veel teams geselecteerd"
+                        }
+                      </p>
+                    )}
                   </div>
+                </CardContent>
+              </Card>
+
+              {teams.length < 16 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-amber-600">
+                      <AlertTriangle className="h-5 w-5" />
+                      Onvoldoende Teams
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      Er zijn momenteel {teams.length} teams geregistreerd. 
+                      Voor een volledig bekertoernooi zijn 16 teams nodig. 
+                      Voeg eerst meer teams toe via het team beheer.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Stap 2: Speeldata en Toernooi Aanmaken
+                  </CardTitle>
+                  <CardDescription>
+                    {selectedTeams.length} teams geselecteerd - Nu speeldata kiezen
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <Button 
                     variant="outline" 
-                    size="sm"
-                    onClick={() => setSelectedTeams([])}
-                    disabled={selectedTeams.length === 0}
+                    onClick={handleCancelDateSelection}
+                    className="mb-4"
+                    disabled={isLoading}
                   >
-                    Alles wissen
+                    ← Terug naar team selectie
                   </Button>
-                </div>
+                </CardContent>
+              </Card>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto border rounded-md p-3">
-                  {teams.map((team) => (
-                    <div 
-                      key={team.team_id} 
-                      className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm"
-                    >
-                      <Checkbox
-                        id={`team-${team.team_id}`}
-                        checked={selectedTeams.includes(team.team_id)}
-                        onCheckedChange={() => handleTeamToggle(team.team_id)}
-                        disabled={!selectedTeams.includes(team.team_id) && selectedTeams.length >= 16}
-                      />
-                      <label 
-                        htmlFor={`team-${team.team_id}`}
-                        className="text-sm cursor-pointer flex-1"
-                      >
-                        {team.team_name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-
-                <Button 
-                  onClick={handleCreateTournament}
-                  disabled={selectedTeams.length !== 16 || isLoading}
-                  className="w-full"
-                >
-                  <Trophy className="h-4 w-4 mr-2" />
-                  {isLoading ? "Toernooi aanmaken..." : "Toernooi Aanmaken"}
-                </Button>
-
-                {selectedTeams.length !== 16 && (
-                  <p className="text-sm text-muted-foreground text-center">
-                    {selectedTeams.length < 16 
-                      ? `Selecteer nog ${16 - selectedTeams.length} teams`
-                      : "Te veel teams geselecteerd"
-                    }
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {teams.length < 16 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-amber-600">
-                  <AlertTriangle className="h-5 w-5" />
-                  Onvoldoende Teams
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Er zijn momenteel {teams.length} teams geregistreerd. 
-                  Voor een volledig bekertoernooi zijn 16 teams nodig. 
-                  Voeg eerst meer teams toe via het team beheer.
-                </p>
-              </CardContent>
-            </Card>
+              <CupDateSelector 
+                onDatesSelected={handleDatesSelected}
+                onCancel={handleCancelDateSelection}
+              />
+            </div>
           )}
         </div>
       )}

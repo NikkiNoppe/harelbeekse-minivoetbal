@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { MapPin, Edit, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { VENUES } from "@/constants/competitionData";
+import { competitionDataService } from "@/services/competitionDataService";
 
 const VenuesCard: React.FC = () => {
   const { toast } = useToast();
@@ -18,7 +18,7 @@ const VenuesCard: React.FC = () => {
   const [formData, setFormData] = useState({ name: '', address: '' });
 
   // Use hardcoded venues data
-  const venues = VENUES;
+  const venues = competitionDataService.getVenues();
 
   const handleEdit = (venue: any) => {
     setEditingVenue(venue);
