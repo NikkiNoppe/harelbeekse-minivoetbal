@@ -203,22 +203,22 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-purple-100 border-purple-light">
+        <DialogHeader className="bg-purple-100">
+          <DialogTitle className="flex items-center gap-2 text-purple-light">
             <Settings className="h-5 w-5" />
             Enhanced Kostentarieven Beheer
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 bg-purple-100 p-4">
           <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-purple-dark">
               Beheer alle kosten en boetes met uitgebreide logging
             </p>
             <Button 
               onClick={() => setShowAddForm(!showAddForm)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 btn-dark"
             >
               <Plus className="h-4 w-4" />
               {showAddForm ? 'Annuleren' : 'Nieuw Tarief'}
@@ -226,30 +226,31 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
           </div>
 
           {showAddForm && (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4">
+            <div className="bg-purple-50 rounded-lg p-4 border border-purple-light">
+              <h3 className="text-lg font-semibold mb-4 text-purple-light">
                 {editingItem ? 'Tarief Bewerken' : 'Nieuw Tarief Toevoegen'}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Naam *</Label>
+                  <Label className="text-purple-dark">Naam *</Label>
                   <Input
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     placeholder="Naam van het tarief"
+                    className="bg-white placeholder:text-purple-200"
                   />
                 </div>
 
                 <div>
-                  <Label>Categorie *</Label>
+                  <Label className="text-purple-dark">Categorie *</Label>
                   <Select 
                     value={formData.category} 
                     onValueChange={(value: any) => setFormData({...formData, category: value})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white">
                       <SelectItem value="match_cost">Wedstrijdkosten</SelectItem>
                       <SelectItem value="penalty">Boete</SelectItem>
                       <SelectItem value="field_cost">Veldkosten</SelectItem>
@@ -260,32 +261,34 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
                 </div>
 
                 <div>
-                  <Label>Bedrag (€) *</Label>
+                  <Label className="text-purple-dark">Bedrag (€) *</Label>
                   <Input
                     type="number"
                     step="0.01"
                     value={formData.amount}
                     onChange={(e) => setFormData({...formData, amount: e.target.value})}
                     placeholder="0.00"
+                    className="bg-white placeholder:text-purple-200"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label>Beschrijving</Label>
+                  <Label className="text-purple-dark">Beschrijving</Label>
                   <Textarea
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                     placeholder="Optionele beschrijving..."
                     rows={2}
+                    className="bg-white placeholder:text-purple-200"
                   />
                 </div>
               </div>
 
               <div className="flex gap-2 mt-4">
-                <Button onClick={handleSave}>
+                <Button onClick={handleSave} className="btn-dark">
                   {editingItem ? 'Bijwerken' : 'Toevoegen'}
                 </Button>
-                <Button variant="outline" onClick={resetForm}>
+                <Button onClick={resetForm} className="btn-light">
                   Annuleren
                 </Button>
               </div>
@@ -322,27 +325,21 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
                       <TableCell className="text-right font-semibold">
                         {formatCurrency(setting.amount)}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(setting)}
-                            className="flex items-center gap-1"
-                          >
-                            <Edit className="h-3 w-3" />
-                            Bewerken
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDelete(setting.id)}
-                            className="flex items-center gap-1"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Verwijderen
-                          </Button>
-                        </div>
+                      <TableCell className="flex gap-2 justify-end">
+                        <Button
+                          className="btn-white"
+                          size="sm"
+                          onClick={() => handleEdit(setting)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          className="btn-white"
+                          size="sm"
+                          onClick={() => handleDelete(setting.id)}
+                        >
+                          <Trash2 className="h-3 w-3 text-red-500" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

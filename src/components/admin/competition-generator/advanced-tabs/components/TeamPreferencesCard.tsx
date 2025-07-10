@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -36,8 +36,21 @@ const TeamPreferencesCard: React.FC<TeamPreferencesCardProps> = ({
     }
   });
 
-  // Use hardcoded venues
-  const venues = competitionDataService.getVenues();
+  const [venues, setVenues] = useState<any[]>([]);
+
+  // Load venues from database
+  useEffect(() => {
+    const loadVenues = async () => {
+      try {
+        const venuesData = await competitionDataService.getVenues();
+        setVenues(venuesData);
+      } catch (error) {
+        console.error('Error loading venues:', error);
+      }
+    };
+    
+    loadVenues();
+  }, []);
 
   const playDays = [
     { value: 1, label: 'Maandag' },

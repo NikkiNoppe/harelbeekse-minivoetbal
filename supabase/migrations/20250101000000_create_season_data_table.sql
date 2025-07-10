@@ -1,7 +1,30 @@
-{
-  "season_start_date": "2025-09-01",
-  "season_end_date": "2026-06-30",
-  "competition_formats": [
+-- Create season_data table to store season configuration
+CREATE TABLE IF NOT EXISTS season_data (
+  id SERIAL PRIMARY KEY,
+  season_start_date DATE NOT NULL,
+  season_end_date DATE NOT NULL,
+  competition_formats JSONB,
+  venues JSONB,
+  venue_timeslots JSONB,
+  vacation_periods JSONB,
+  day_names JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Insert default season data
+INSERT INTO season_data (
+  season_start_date, 
+  season_end_date, 
+  competition_formats, 
+  venues, 
+  venue_timeslots, 
+  vacation_periods, 
+  day_names
+) VALUES (
+  '2025-09-01',
+  '2026-06-30',
+  '[
     {
       "id": 1,
       "name": "Reguliere competitie (enkele ronde)",
@@ -23,8 +46,8 @@
       "has_playoffs": true,
       "regular_rounds": 1
     }
-  ],
-  "venues": [
+  ]'::jsonb,
+  '[
     {
       "venue_id": 1,
       "name": "Sporthal De Dageraad Harelbeke",
@@ -35,8 +58,8 @@
       "name": "Spothal De Vlasschaard Bavikhove",
       "address": "Vlietestraat 25, 8531 Bavikhove"
     }
-  ],
-  "venue_timeslots": [
+  ]'::jsonb,
+  '[
     {
       "timeslot_id": 1,
       "venue_id": 1,
@@ -86,8 +109,8 @@
       "start_time": "15:30",
       "end_time": "17:00"
     }
-  ],
-  "vacation_periods": [
+  ]'::jsonb,
+  '[
     {
       "id": 1,
       "name": "Kerstvakantie",
@@ -109,9 +132,21 @@
       "end_date": "2026-04-28",
       "is_active": true
     }
-  ],
-  "day_names": [
-    "Maandag",
-    "Dinsdag"
-  ]
-} 
+  ]'::jsonb,
+  '["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag", "Zondag"]'::jsonb
+) ON CONFLICT DO NOTHING;
+
+-- Create function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Create trigger to automatically update updated_at
+CREATE TRIGGER update_season_data_updated_at 
+    BEFORE UPDATE ON season_data 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column(); 

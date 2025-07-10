@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,13 +22,36 @@ const TimeslotsCard: React.FC = () => {
     start_time: '',
     end_time: ''
   });
+  const [venues, setVenues] = useState<any[]>([]);
+  const [venueTimeslots, setVenueTimeslots] = useState<any[]>([]);
 
-  // Use data from JSON file
-  const venues = competitionDataService.getVenues();
-  const venueTimeslots = competitionDataService.getVenueTimeslots().map(slot => ({
-    ...slot,
-    venues: { name: competitionDataService.getVenueById(slot.venue_id)?.name || 'Onbekend' }
-  }));
+  // Load data from database
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [venuesData, timeslotsData] = await Promise.all([
+          competitionDataService.getVenues(),
+          competitionDataService.getVenueTimeslots()
+        ]);
+        
+        setVenues(venuesData);
+        
+        // Map timeslots with venue names
+        const timeslotsWithVenues = timeslotsData.map(slot => ({
+          ...slot,
+          venues: { 
+            name: venuesData.find(v => v.venue_id === slot.venue_id)?.name || 'Onbekend' 
+          }
+        }));
+        
+        setVenueTimeslots(timeslotsWithVenues);
+      } catch (error) {
+        console.error('Error loading timeslots data:', error);
+      }
+    };
+    
+    loadData();
+  }, []);
 
   const playDays = [
     { value: 1, label: 'Maandag' },

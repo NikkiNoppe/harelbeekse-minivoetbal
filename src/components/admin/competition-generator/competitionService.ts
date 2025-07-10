@@ -25,41 +25,14 @@ export const saveCompetitionToDatabase = async (
   const format = findFormatById(selectedFormat);
   
   try {
-    // Use hardcoded venue data
-    const selectedDatesWithVenues = selectedDates.map(dateId => ({
-      date_id: dateId,
-      available_date: getCurrentDate(),
-      venues: { name: "Sporthal De Horizon" }
-    }));
+    // Get venues from database
+    const venues = await competitionDataService.getVenues();
+    const defaultVenue = venues[0]?.name || 'Te bepalen';
     
-    const startDate = selectedDatesWithVenues?.length > 0 ? 
-      selectedDatesWithVenues[0].available_date : 
-      getCurrentDate();
-    const endDate = selectedDatesWithVenues?.length > 0 ? 
-      selectedDatesWithVenues[selectedDatesWithVenues.length - 1].available_date : 
-      getCurrentDate();
+    // Create matches directly with speeldag
+    const uniqueDates = [...new Set(selectedDates.map(() => getCurrentDate()))];
     
-    // 1. Create a new competition
-    const { data: compData, error: compError } = await supabase
-      .from('competitions')
-      .insert([
-        { 
-          name: competitionName, 
-          start_date: startDate, 
-          end_date: endDate, 
-          is_playoff: false 
-        }
-      ])
-      .select();
-    
-    if (compError) throw compError;
-    
-    const competitionId = compData[0].competition_id;
-
-    // 2. Create matches directly with speeldag instead of using matchdays
-    const uniqueDates = [...new Set(selectedDatesWithVenues?.map(d => d.available_date))];
-    
-    // 3. Create matches with speeldag column
+    // Create matches with speeldag column
     const matchesToCreate = generatedMatches.map((match, index) => {
       const matchdayIndex = Math.floor(index / 9) % uniqueDates.length; // Max 9 matches per matchday
       
@@ -77,7 +50,7 @@ export const saveCompetitionToDatabase = async (
         referee_cost: 25.00,
         field_cost: 50.00,
         is_cup_match: format?.isCup || false,
-        location: competitionDataService.getVenues()[0]?.name || 'Te bepalen'
+        location: defaultVenue
       };
     });
     

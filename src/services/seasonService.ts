@@ -1,4 +1,5 @@
 import seasonConfig from '@/config/season2025-2026.json';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface SeasonData {
   season_start_date: string;
@@ -11,24 +12,82 @@ export interface SeasonData {
 }
 
 export const seasonService = {
-  // Read season data from JSON file
-  getSeasonData(): SeasonData {
-    return seasonConfig;
+  // Read season data from database with fallback to JSON file
+  async getSeasonData(): Promise<SeasonData> {
+    try {
+      // Check if we have updated data in localStorage first
+      const storedData = localStorage.getItem('seasonData');
+      if (storedData) {
+        try {
+          return JSON.parse(storedData);
+        } catch (error) {
+          console.error('Error parsing stored season data:', error);
+        }
+      }
+
+      // Try to fetch from database
+      const { data, error } = await supabase
+        .from('application_settings')
+        .select('setting_value')
+        .eq('setting_category', 'season_data')
+        .eq('setting_name', 'main_config')
+        .eq('is_active', true)
+        .single();
+
+      if (error) {
+        console.warn('Could not fetch season data from database:', error);
+        // Fallback to JSON file
+        return seasonConfig;
+      }
+
+      if (data?.setting_value) {
+        // Store in localStorage for caching
+        localStorage.setItem('seasonData', JSON.stringify(data.setting_value));
+        return data.setting_value as unknown as SeasonData;
+      }
+
+      // Fallback to JSON file
+      return seasonConfig;
+    } catch (error) {
+      console.error('Error in getSeasonData:', error);
+      return seasonConfig;
+    }
   },
 
-  // Save season data to JSON file (in a real app, this would write to the file)
+  // Save season data to database and localStorage
   async saveSeasonData(data: SeasonData): Promise<{ success: boolean; message: string }> {
     try {
-      // In a real application, you would write to the JSON file here
-      // For now, we'll simulate the save operation
       console.log('Saving season data:', data);
       
-      // Simulate file write operation
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Store in localStorage for immediate persistence
+      localStorage.setItem('seasonData', JSON.stringify(data));
+      
+      // Update the imported config object (this will persist for the current session)
+      Object.assign(seasonConfig, data);
+      
+      // Save to database in application_settings table
+      const { error: upsertError } = await supabase
+        .from('application_settings')
+        .upsert({
+          setting_category: 'season_data',
+          setting_name: 'main_config',
+          setting_value: data as any,
+          is_active: true
+        }, {
+          onConflict: 'setting_category,setting_name'
+        });
+      
+      if (upsertError) {
+        console.warn('Could not save to database:', upsertError);
+        return {
+          success: true,
+          message: "Seizoensdata opgeslagen (lokaal, database niet beschikbaar)"
+        };
+      }
       
       return {
         success: true,
-        message: "Seizoensdata succesvol opgeslagen in config/season2025-2026.json"
+        message: "Seizoensdata succesvol opgeslagen (lokaal en database)"
       };
     } catch (error) {
       return {

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +16,21 @@ const VenuesCard: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [formData, setFormData] = useState({ name: '', address: '' });
+  const [venues, setVenues] = useState<any[]>([]);
 
-  // Use hardcoded venues data
-  const venues = competitionDataService.getVenues();
+  // Load venues from database
+  useEffect(() => {
+    const loadVenues = async () => {
+      try {
+        const venuesData = await competitionDataService.getVenues();
+        setVenues(venuesData);
+      } catch (error) {
+        console.error('Error loading venues:', error);
+      }
+    };
+    
+    loadVenues();
+  }, []);
 
   const handleEdit = (venue: any) => {
     setEditingVenue(venue);

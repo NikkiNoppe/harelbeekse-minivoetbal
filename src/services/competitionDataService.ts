@@ -1,4 +1,4 @@
-import seasonConfig from '@/config/season2025-2026.json';
+import { seasonService } from './seasonService';
 
 export interface CompetitionFormat {
   id: number;
@@ -32,42 +32,50 @@ export interface VacationPeriod {
 
 export const competitionDataService = {
   // Get all competition formats
-  getCompetitionFormats(): CompetitionFormat[] {
-    return seasonConfig.competition_formats || [];
+  async getCompetitionFormats(): Promise<CompetitionFormat[]> {
+    const data = await seasonService.getSeasonData();
+    return data.competition_formats || [];
   },
 
   // Get all venues
-  getVenues(): Venue[] {
-    return seasonConfig.venues || [];
+  async getVenues(): Promise<Venue[]> {
+    const data = await seasonService.getSeasonData();
+    return data.venues || [];
   },
 
   // Get all venue timeslots
-  getVenueTimeslots(): VenueTimeslot[] {
-    return seasonConfig.venue_timeslots || [];
+  async getVenueTimeslots(): Promise<VenueTimeslot[]> {
+    const data = await seasonService.getSeasonData();
+    return data.venue_timeslots || [];
   },
 
   // Get all vacation periods
-  getVacationPeriods(): VacationPeriod[] {
-    return seasonConfig.vacation_periods || [];
+  async getVacationPeriods(): Promise<VacationPeriod[]> {
+    const data = await seasonService.getSeasonData();
+    return data.vacation_periods || [];
   },
 
   // Get day names
-  getDayNames(): string[] {
-    return seasonConfig.day_names || [];
+  async getDayNames(): Promise<string[]> {
+    const data = await seasonService.getSeasonData();
+    return data.day_names || [];
   },
 
   // Get venue by ID
-  getVenueById(venueId: number): Venue | undefined {
-    return this.getVenues().find(venue => venue.venue_id === venueId);
+  async getVenueById(venueId: number): Promise<Venue | undefined> {
+    const venues = await this.getVenues();
+    return venues.find(venue => venue.venue_id === venueId);
   },
 
   // Get timeslots for a specific venue
-  getTimeslotsForVenue(venueId: number): VenueTimeslot[] {
-    return this.getVenueTimeslots().filter(timeslot => timeslot.venue_id === venueId);
+  async getTimeslotsForVenue(venueId: number): Promise<VenueTimeslot[]> {
+    const timeslots = await this.getVenueTimeslots();
+    return timeslots.filter(timeslot => timeslot.venue_id === venueId);
   },
 
   // Get active vacation periods
-  getActiveVacationPeriods(): VacationPeriod[] {
-    return this.getVacationPeriods().filter(period => period.is_active);
+  async getActiveVacationPeriods(): Promise<VacationPeriod[]> {
+    const periods = await this.getVacationPeriods();
+    return periods.filter(period => period.is_active);
   }
 }; 

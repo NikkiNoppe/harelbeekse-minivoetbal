@@ -47,60 +47,8 @@ export type Database = {
         }
         Relationships: []
       }
-      available_dates: {
-        Row: {
-          available_date: string
-          date_id: number
-          end_time: string | null
-          is_available: boolean | null
-          is_cup_date: boolean | null
-          start_time: string | null
-          venue_id: number | null
-        }
-        Insert: {
-          available_date: string
-          date_id?: number
-          end_time?: string | null
-          is_available?: boolean | null
-          is_cup_date?: boolean | null
-          start_time?: string | null
-          venue_id?: number | null
-        }
-        Update: {
-          available_date?: string
-          date_id?: number
-          end_time?: string | null
-          is_available?: boolean | null
-          is_cup_date?: boolean | null
-          start_time?: string | null
-          venue_id?: number | null
-        }
-        Relationships: []
-      }
-      blogs: {
-        Row: {
-          content: string
-          date: string
-          id: number
-          tags: string[] | null
-          title: string
-        }
-        Insert: {
-          content: string
-          date?: string
-          id?: number
-          tags?: string[] | null
-          title: string
-        }
-        Update: {
-          content?: string
-          date?: string
-          id?: number
-          tags?: string[] | null
-          title?: string
-        }
-        Relationships: []
-      }
+
+
       competition_standings: {
         Row: {
           draws: number | null
@@ -148,75 +96,8 @@ export type Database = {
           },
         ]
       }
-      competitions: {
-        Row: {
-          competition_id: number
-          end_date: string
-          is_playoff: boolean | null
-          name: string
-          start_date: string
-        }
-        Insert: {
-          competition_id?: number
-          end_date: string
-          is_playoff?: boolean | null
-          name: string
-          start_date: string
-        }
-        Update: {
-          competition_id?: number
-          end_date?: string
-          is_playoff?: boolean | null
-          name?: string
-          start_date?: string
-        }
-        Relationships: []
-      }
-      cost_setting_audit_log: {
-        Row: {
-          affected_transactions_count: number | null
-          changed_at: string | null
-          changed_by: number | null
-          cost_setting_id: number | null
-          id: number
-          new_amount: number | null
-          old_amount: number | null
-        }
-        Insert: {
-          affected_transactions_count?: number | null
-          changed_at?: string | null
-          changed_by?: number | null
-          cost_setting_id?: number | null
-          id?: number
-          new_amount?: number | null
-          old_amount?: number | null
-        }
-        Update: {
-          affected_transactions_count?: number | null
-          changed_at?: string | null
-          changed_by?: number | null
-          cost_setting_id?: number | null
-          id?: number
-          new_amount?: number | null
-          old_amount?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cost_setting_audit_log_changed_by_fkey"
-            columns: ["changed_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "cost_setting_audit_log_cost_setting_id_fkey"
-            columns: ["cost_setting_id"]
-            isOneToOne: false
-            referencedRelation: "cost_settings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+
+
       cost_settings: {
         Row: {
           amount: number
@@ -250,121 +131,8 @@ export type Database = {
         }
         Relationships: []
       }
-      manual_competition_schedules: {
-        Row: {
-          competition_id: number | null
-          created_at: string | null
-          created_by: number | null
-          description: string | null
-          is_active: boolean | null
-          name: string
-          parsed_data: Json | null
-          schedule_id: number
-          schema_text: string | null
-          status: string | null
-        }
-        Insert: {
-          competition_id?: number | null
-          created_at?: string | null
-          created_by?: number | null
-          description?: string | null
-          is_active?: boolean | null
-          name: string
-          parsed_data?: Json | null
-          schedule_id?: number
-          schema_text?: string | null
-          status?: string | null
-        }
-        Update: {
-          competition_id?: number | null
-          created_at?: string | null
-          created_by?: number | null
-          description?: string | null
-          is_active?: boolean | null
-          name?: string
-          parsed_data?: Json | null
-          schedule_id?: number
-          schema_text?: string | null
-          status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "manual_competition_schedules_competition_id_fkey"
-            columns: ["competition_id"]
-            isOneToOne: false
-            referencedRelation: "competitions"
-            referencedColumns: ["competition_id"]
-          },
-          {
-            foreignKeyName: "manual_competition_schedules_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      manual_schedule_matches: {
-        Row: {
-          away_team_id: number | null
-          created_at: string | null
-          home_team_id: number | null
-          manual_match_id: number
-          match_date: string
-          match_time: string | null
-          matchday: number
-          notes: string | null
-          schedule_id: number | null
-          venue_id: number | null
-        }
-        Insert: {
-          away_team_id?: number | null
-          created_at?: string | null
-          home_team_id?: number | null
-          manual_match_id?: number
-          match_date: string
-          match_time?: string | null
-          matchday: number
-          notes?: string | null
-          schedule_id?: number | null
-          venue_id?: number | null
-        }
-        Update: {
-          away_team_id?: number | null
-          created_at?: string | null
-          home_team_id?: number | null
-          manual_match_id?: number
-          match_date?: string
-          match_time?: string | null
-          matchday?: number
-          notes?: string | null
-          schedule_id?: number | null
-          venue_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "manual_schedule_matches_away_team_id_fkey"
-            columns: ["away_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["team_id"]
-          },
-          {
-            foreignKeyName: "manual_schedule_matches_home_team_id_fkey"
-            columns: ["home_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["team_id"]
-          },
-          {
-            foreignKeyName: "manual_schedule_matches_schedule_id_fkey"
-            columns: ["schedule_id"]
-            isOneToOne: false
-            referencedRelation: "manual_competition_schedules"
-            referencedColumns: ["schedule_id"]
-          },
-        ]
-      }
+
+
       matches: {
         Row: {
           away_players: Json | null

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -29,9 +29,21 @@ const VacationPeriodsCard: React.FC<VacationPeriodsCardProps> = ({
     start_date: '',
     end_date: ''
   });
+  const [dbVacationPeriods, setDbVacationPeriods] = useState<VacationPeriod[]>([]);
 
-  // Use vacation periods from JSON file
-  const dbVacationPeriods = competitionDataService.getVacationPeriods();
+  // Load vacation periods from database
+  useEffect(() => {
+    const loadVacationPeriods = async () => {
+      try {
+        const periods = await competitionDataService.getVacationPeriods();
+        setDbVacationPeriods(periods);
+      } catch (error) {
+        console.error('Error loading vacation periods:', error);
+      }
+    };
+    
+    loadVacationPeriods();
+  }, []);
 
   const handleEdit = (period: VacationPeriod) => {
     setEditingPeriod(period);

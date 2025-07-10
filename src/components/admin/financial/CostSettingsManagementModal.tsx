@@ -338,23 +338,21 @@ const CostSettingsManagementModal: React.FC<CostSettingsManagementModalProps> = 
                           <TableCell className="text-right font-semibold text-purple-dark">
                             {formatCurrency(setting.amount)}
                           </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <button
-                                onClick={() => handleEdit(setting)}
-                                className="btn-light"
-                                disabled={isSubmitting}
-                              >
-                                <Edit className="h-3 w-3" />
-                              </button>
-                              <button
-                                onClick={() => setDeletingItem(setting)}
-                                className="btn-light hover:!bg-red-500 hover:!text-white hover:!border-red-500"
-                                disabled={isSubmitting}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            </div>
+                          <TableCell className="flex gap-2 justify-end">
+                            <button
+                              onClick={() => handleEdit(setting)}
+                              className="btn-white"
+                              disabled={isSubmitting}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={() => setDeletingItem(setting)}
+                              className="btn-white"
+                              disabled={isSubmitting}
+                            >
+                              <Trash2 className="h-3 w-3 text-red-500" />
+                            </button>
                           </TableCell>
                         </TableRow>
                       ))
