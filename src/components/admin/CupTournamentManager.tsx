@@ -150,6 +150,24 @@ const CupTournamentManager: React.FC = () => {
     });
   };
 
+  const handleSelectAllTeams = () => {
+    if (selectedTeams.length === Math.min(teams.length, 16)) {
+      // Als alle mogelijke teams al geselecteerd zijn, deselecteer alles
+      setSelectedTeams([]);
+    } else {
+      // Selecteer de eerste 16 teams (of alle teams als er minder dan 16 zijn)
+      const teamsToSelect = teams.slice(0, 16).map(team => team.team_id);
+      setSelectedTeams(teamsToSelect);
+      
+      if (teams.length > 16) {
+        toast({
+          title: "Info",
+          description: `De eerste 16 teams zijn geselecteerd. Er zijn ${teams.length - 16} teams niet geselecteerd.`,
+        });
+      }
+    }
+  };
+
   const getTournamentStats = () => {
     if (!tournamentData) return null;
 
@@ -205,7 +223,7 @@ const CupTournamentManager: React.FC = () => {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold">{tournamentData?.kwartfinales?.length || 0}</div>
-                  <div className="text-sm text-muted-foreground">Kwartfinales</div>
+                  <div className="text-sm text-muted-foreground">Kwart Finales</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold">{tournamentData?.halve_finales?.length || 0}</div>
@@ -277,10 +295,10 @@ const CupTournamentManager: React.FC = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => setSelectedTeams([])}
-                        disabled={selectedTeams.length === 0}
+                        onClick={handleSelectAllTeams}
+                        disabled={teams.length === 0}
                       >
-                        Alles wissen
+                        {selectedTeams.length === Math.min(teams.length, 16) ? 'Alles deselecteren' : 'Selecteer allemaal'}
                       </Button>
                     </div>
 

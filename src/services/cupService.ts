@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { teamService } from "./teamService";
+import { seasonService } from "./seasonService";
 
 export interface CupMatch {
   match_id: number;
@@ -106,6 +107,8 @@ export const cupService = {
     }
 
     try {
+      console.log('🏆 Starting cup tournament creation...');
+      
       // Check if cup matches already exist
       const { data: existingMatches } = await supabase
         .from('matches')
@@ -116,41 +119,84 @@ export const cupService = {
         return { success: false, message: "Er bestaat al een bekertoernooi. Verwijder het eerst." };
       }
 
+      // Load competition data from database
+      console.log('📋 Loading competition data from database...');
+      const seasonData = await seasonService.getSeasonData();
+      
+      // Extract venues and timeslots from season data
+      const venues = seasonData.venues || [];
+      const timeslots = seasonData.venue_timeslots || [];
+      const vacations = seasonData.vacation_periods || [];
+      
+      console.log('🏟️ Available venues:', venues.length);
+      console.log('⏰ Available timeslots:', timeslots.length);
+      console.log('🏖️ Vacation periods:', vacations.length);
+      
+      if (venues.length === 0) {
+        return { success: false, message: "Geen venues beschikbaar in de database. Configureer eerst de competitiedata." };
+      }
+      
+      if (timeslots.length === 0) {
+        return { success: false, message: "Geen tijdslots beschikbaar in de database. Configureer eerst de competitiedata." };
+      }
+
+      // Check if selected dates conflict with vacation periods
+      for (const dateStr of selectedDates) {
+        const selectedDate = new Date(dateStr);
+        const isVacation = vacations.some((vacation: any) => {
+          if (!vacation.is_active) return false;
+          const vacStart = new Date(vacation.start_date);
+          const vacEnd = new Date(vacation.end_date);
+          return selectedDate >= vacStart && selectedDate <= vacEnd;
+        });
+        
+        if (isVacation) {
+          const vacation = vacations.find((v: any) => {
+            const vacStart = new Date(v.start_date);
+            const vacEnd = new Date(v.end_date);
+            return selectedDate >= vacStart && selectedDate <= vacEnd;
+          });
+          return { 
+            success: false, 
+            message: `Geselecteerde datum ${selectedDate.toLocaleDateString('nl-NL')} valt in vakantieperiode: ${vacation?.name}` 
+          };
+        }
+      }
+
       // Shuffle teams for random bracket
       const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
 
       // Create all cup matches
       const cupMatches = [];
 
-      // Define available venues and times from constants
-      const venues = ['Sporthal De Horizon', 'Sportcomplex Oost', 'Gemeentelijke Sporthal'];
-      const weekdayTimes = ['19:00', '19:30', '20:00', '20:30', '21:00'];
-      const saturdayTimes = ['14:00', '15:30'];
-      const sundayTimes = ['10:00', '11:30'];
-
-      // Helper function to get match date with time
-      const getMatchDateTime = (date: string, timeIndex: number, isWeekend: boolean = false) => {
+      // Helper function to get match date with time using database timeslots
+      const getMatchDateTime = (date: string, timeIndex: number) => {
         const matchDate = new Date(date);
         const dayOfWeek = matchDate.getDay();
         
-        let time = '19:00'; // default
-        if (dayOfWeek === 6) { // Saturday
-          time = saturdayTimes[timeIndex % saturdayTimes.length];
-        } else if (dayOfWeek === 0) { // Sunday
-          time = sundayTimes[timeIndex % sundayTimes.length];
-        } else {
-          time = weekdayTimes[timeIndex % weekdayTimes.length];
+        // Filter timeslots for the specific day of week
+        const dayTimeslots = timeslots.filter((slot: any) => slot.day_of_week === dayOfWeek);
+        
+        if (dayTimeslots.length === 0) {
+          // Fallback if no timeslots for this day
+          console.warn(`⚠️ No timeslots found for day ${dayOfWeek}, using default time`);
+          return `${date}T00:00:00+02:00`;
         }
         
+        // Use modulo to cycle through available timeslots for the day
+        const selectedSlot = dayTimeslots[timeIndex % dayTimeslots.length];
+        const time = selectedSlot.start_time;
+        
+        console.log(`⏰ Match scheduled for ${date} at ${time} (day ${dayOfWeek})`);
         return `${date}T${time}:00+02:00`;
       };
 
-      // 1. Create 8e finales (8 matches) - spread over first 2 weeks
+      // 1. Create 8e finales (8 matches) - spread over first 2 weeks (4 matches each week)
       for (let i = 0; i < 8; i++) {
         const homeTeamIndex = i * 2;
         const awayTeamIndex = i * 2 + 1;
-        const weekIndex = i < 4 ? 0 : 0; // Use first week for all 8e finales, split by time
-        const timeIndex = i;
+        const weekIndex = i < 4 ? 0 : 1; // First 4 matches in week 0, last 4 in week 1
+        const timeIndex = i % 4; // Reset time index for second week
         
         cupMatches.push({
           unique_number: `1/8-${i + 1}`,
@@ -158,51 +204,51 @@ export const cupService = {
           home_team_id: shuffledTeams[homeTeamIndex],
           away_team_id: shuffledTeams[awayTeamIndex],
           match_date: getMatchDateTime(selectedDates[weekIndex], timeIndex),
-          location: venues[i % venues.length],
+          location: venues[i % venues.length]?.name || 'Venue TBD',
           is_cup_match: true,
           is_submitted: false,
           is_locked: false
         });
       }
 
-      // 2. Create kwartfinales (4 matches) - week 2
+      // 2. Create kwartfinales (4 matches) - week 3
       for (let i = 0; i < 4; i++) {
         cupMatches.push({
           unique_number: `QF-${i + 1}`,
           speeldag: `Kwartfinale ${i + 1}`,
           home_team_id: null,
           away_team_id: null,
-          match_date: getMatchDateTime(selectedDates[1], i),
-          location: venues[i % venues.length],
+          match_date: getMatchDateTime(selectedDates[2], i),
+          location: venues[i % venues.length]?.name || 'Venue TBD',
           is_cup_match: true,
           is_submitted: false,
           is_locked: false
         });
       }
 
-      // 3. Create halve finales (2 matches) - week 3
+      // 3. Create halve finales (2 matches) - week 4
       for (let i = 0; i < 2; i++) {
         cupMatches.push({
           unique_number: `SF-${i + 1}`,
           speeldag: `Halve Finale ${i + 1}`,
           home_team_id: null,
           away_team_id: null,
-          match_date: getMatchDateTime(selectedDates[2], i),
-          location: venues[0], // Main venue for semi-finals
+          match_date: getMatchDateTime(selectedDates[3], i),
+          location: venues[0]?.name || 'Main Venue', // Main venue for semi-finals
           is_cup_match: true,
           is_submitted: false,
           is_locked: false
         });
       }
 
-      // 4. Create finale - week 4
+      // 4. Create finale - week 5 (separate week from halve finales)
       cupMatches.push({
         unique_number: 'FINAL',
         speeldag: 'Finale',
         home_team_id: null,
         away_team_id: null,
-        match_date: getMatchDateTime(selectedDates[3], 0),
-        location: 'Gemeentelijk Stadion', // Special venue for final
+        match_date: getMatchDateTime(selectedDates[4], 0), // Week 5, time slot 0
+        location: venues[0]?.name || 'Final Venue', // Use main venue for final
         is_cup_match: true,
         is_submitted: false,
         is_locked: false
@@ -215,7 +261,11 @@ export const cupService = {
 
       if (error) throw error;
 
-      return { success: true, message: "Bekertoernooi succesvol aangemaakt met geselecteerde speeldata!" };
+      console.log('✅ Cup tournament created successfully with database competition data');
+      return { 
+        success: true, 
+        message: `Bekertoernooi succesvol aangemaakt! Gebruikt ${venues.length} venue(s), ${timeslots.length} tijdslot(s) en ${vacations.length} vakantieperiode(s) uit de database.` 
+      };
 
     } catch (error) {
       console.error('Error creating cup tournament:', error);
@@ -228,19 +278,71 @@ export const cupService = {
 
   async deleteCupTournament(): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
+      console.log('🗑️ Starting cup tournament deletion process...');
+      
+      // First, get all cup match IDs
+      const { data: cupMatches, error: fetchError } = await supabase
+        .from('matches')
+        .select('match_id')
+        .eq('is_cup_match', true);
+
+      if (fetchError) {
+        console.error('Error fetching cup matches:', fetchError);
+        throw fetchError;
+      }
+
+      if (!cupMatches || cupMatches.length === 0) {
+        return { success: false, message: "Geen bekertoernooi gevonden om te verwijderen." };
+      }
+
+      const cupMatchIds = cupMatches.map(match => match.match_id);
+      console.log('🎯 Found cup matches to delete:', cupMatchIds);
+
+      // Delete related team_transactions first (if any exist)
+      const { error: transactionError } = await supabase
+        .from('team_transactions')
+        .delete()
+        .in('match_id', cupMatchIds);
+
+      if (transactionError) {
+        console.error('Error deleting related transactions:', transactionError);
+        // Don't throw here - transactions might not exist, continue with match deletion
+        console.log('⚠️ Warning: Could not delete related transactions, continuing...');
+      } else {
+        console.log('✅ Related transactions deleted successfully');
+      }
+
+      // Now delete the cup matches
+      const { error: matchError } = await supabase
         .from('matches')
         .delete()
         .eq('is_cup_match', true);
 
-      if (error) throw error;
+      if (matchError) {
+        console.error('Error deleting cup matches:', matchError);
+        throw matchError;
+      }
 
+      console.log('✅ Cup tournament deleted successfully');
       return { success: true, message: "Bekertoernooi succesvol verwijderd!" };
     } catch (error) {
-      console.error('Error deleting cup tournament:', error);
+      console.error('❌ Error deleting cup tournament:', error);
+      
+      // Provide more detailed error information
+      let errorMessage = 'Onbekende fout';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        // Check for specific PostgreSQL errors
+        if (error.message.includes('foreign key constraint')) {
+          errorMessage = 'Er zijn nog gerelateerde gegevens gekoppeld aan het toernooi. Probeer opnieuw of neem contact op met de beheerder.';
+        } else if (error.message.includes('violates')) {
+          errorMessage = 'Database constraint overtreding. Er zijn mogelijk nog gekoppelde gegevens.';
+        }
+      }
+      
       return { 
         success: false, 
-        message: `Fout bij verwijderen toernooi: ${error instanceof Error ? error.message : 'Onbekende fout'}` 
+        message: `Fout bij verwijderen toernooi: ${errorMessage}` 
       };
     }
   },

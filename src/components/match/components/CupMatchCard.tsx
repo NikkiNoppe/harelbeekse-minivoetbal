@@ -1,8 +1,8 @@
 import React from "react";
-import { Clock, MapPin, CheckCircle, Trophy, ArrowRight } from "lucide-react";
+import { Clock, MapPin, CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import MatchCard, { MatchCardStatus } from "./MatchCard";
+import MatchCard from "./MatchCard";
 
 interface CupMatchCardProps {
   id?: string;
@@ -13,7 +13,6 @@ interface CupMatchCardProps {
   date?: string;
   time?: string;
   location?: string;
-  status?: MatchCardStatus;
   nextMatch?: string;
   onEditMatch?: (matchId: string) => void;
   canEdit?: boolean;
@@ -29,56 +28,51 @@ const CupMatchCard: React.FC<CupMatchCardProps> = ({
   date,
   time,
   location,
-  status = "pending",
   nextMatch,
   onEditMatch,
   canEdit = false,
   tournamentRound
 }) => {
-  const getWinner = () => {
-    if (homeScore !== null && homeScore !== undefined && 
-        awayScore !== null && awayScore !== undefined) {
-      if (homeScore > awayScore) return home;
-      if (awayScore > homeScore) return away;
-      return "Gelijkspel";
-    }
-    return null;
-  };
-
-  const winner = getWinner();
 
   return (
     <div className="relative">
-      <MatchCard
-        id={id}
-        home={home}
-        away={away}
-        homeScore={homeScore}
-        awayScore={awayScore}
-        date={date}
-        time={time}
-        location={location}
-        status={status}
-        nextMatch={nextMatch}
-        badgeSlot={
-          <div className="flex flex-col gap-1">
-            {tournamentRound && (
-              <Badge variant="outline" className="text-xs">
-                {tournamentRound}
-              </Badge>
-            )}
-            {nextMatch && (
-              <Badge variant="secondary" className="text-xs">
-                <ArrowRight className="h-3 w-3 mr-1" />
-                {nextMatch}
-              </Badge>
-            )}
-          </div>
-        }
-      />
+      <div className="pt-14">
+        <MatchCard
+          id={id}
+          home={home}
+          away={away}
+          homeScore={homeScore}
+          awayScore={awayScore}
+          date={date}
+          time={time}
+          location={location}
+          status={undefined}
+          nextMatch={nextMatch}
+          badgeSlot={<div></div>}
+        />
+      </div>
+      
+      {/* Tournament round badge - positioned absolutely at top right */}
+      {tournamentRound && (
+        <div className="absolute top-16 right-3">
+          <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-300 shadow-sm">
+            {tournamentRound}
+          </Badge>
+        </div>
+      )}
+      
+      {/* Next match badge - positioned below tournament round */}
+      {nextMatch && (
+        <div className="absolute top-2 right-1">
+          <Badge variant="secondary" className="text-xs">
+            <ArrowRight className="h-3 w-3 mr-1" />
+            {nextMatch}
+          </Badge>
+        </div>
+      )}
       
       {canEdit && id && onEditMatch && (
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-1 right-1">
           <Button
             size="sm"
             variant="outline"
@@ -87,13 +81,6 @@ const CupMatchCard: React.FC<CupMatchCardProps> = ({
           >
             Bewerken
           </Button>
-        </div>
-      )}
-      
-      {status === 'completed' && winner && winner !== "Gelijkspel" && nextMatch && (
-        <div className="mt-2 p-2 bg-green-50 rounded text-center text-sm text-green-700">
-          <Trophy className="h-4 w-4 inline mr-1" />
-          {winner} gaat door naar {nextMatch}
         </div>
       )}
     </div>

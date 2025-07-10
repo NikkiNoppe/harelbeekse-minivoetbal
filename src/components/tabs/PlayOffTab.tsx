@@ -1,243 +1,298 @@
-import React from "react";
+import React, { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle, RefreshCw, Trophy } from "lucide-react";
 import AutoFitText from "@/components/ui/auto-fit-text";
 import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
+import { usePlayoffData, PlayoffMatch } from "@/hooks/usePlayoffData";
+import { Team } from "@/hooks/useCompetitionData";
 
-const PlayOffTab: React.FC = () => {
-  const playoffTeams = {
-    playoff1: [{
-      id: 1,
-      name: "CAFE DE GILDE",
-      played: 29,
-      won: 22,
-      draw: 3,
-      lost: 4,
-      goalDiff: 126,
-      points: 70
-    }, {
-      id: 2,
-      name: "GARAGE VERBEKE", 
-      played: 29,
-      won: 23,
-      draw: 5,
-      lost: 1,
-      goalDiff: 128,
-      points: 70
-    }, {
-      id: 3,
-      name: "BEMARMI BOYS",
-      played: 29,
-      won: 21,
-      draw: 6,
-      lost: 2,
-      goalDiff: 95,
-      points: 65
-    }, {
-      id: 4,
-      name: "DE FLORRE",
-      played: 29,
-      won: 16,
-      draw: 10,
-      lost: 3,
-      goalDiff: 88,
-      points: 51
-    }, {
-      id: 5,
-      name: "DE DAGERAAD",
-      played: 29,
-      won: 15,
-      draw: 12,
-      lost: 2,
-      goalDiff: 59,
-      points: 47
-    }, {
-      id: 6,
-      name: "SHAKTHAR TRU.",
-      played: 29,
-      won: 12,
-      draw: 13,
-      lost: 4,
-      goalDiff: 2,
-      points: 40
-    }]
-  };
-  
-  const playoffMatches = [{
-    playoff: "Play-Off 1",
-    matchday: "Speeldag 1",
-    date: "10 juni",
-    home: "Garage Verbeke",
-    away: "Cafe De Gilde",
-    result: "4-1",
-    location: "Sportpark Zuid"
-  }, {
-    playoff: "Play-Off 1",
-    matchday: "Speeldag 1",
-    date: "10 juni",
-    home: "Shakthar Truu",
-    away: "De Dageraad",
-    result: "3-2",
-    location: "Sportpark Oost"
-  }, {
-    playoff: "Play-Off 2",
-    matchday: "Speeldag 1",
-    date: "11 juni",
-    home: "De Florre",
-    away: "Bemarmi Boys",
-    result: "2-2",
-    location: "Sportpark Noord"
-  }, {
-    playoff: "Play-Off 1",
-    matchday: "Speeldag 2",
-    date: "17 juni",
-    home: "Garage Verbeke",
-    away: "De Dageraad",
-    result: "2-1",
-    location: "Sportpark Zuid"
-  }, {
-    playoff: "Play-Off 1",
-    matchday: "Speeldag 2",
-    date: "17 juni",
-    home: "Shakthar Truu",
-    away: "Cafe De Gilde",
-    result: "3-0",
-    location: "Sportpark Oost"
-  }, {
-    playoff: "Play-Off 2",
-    matchday: "Speeldag 2",
-    date: "18 juni",
-    home: "De Florre",
-    away: "Bemarmi Boys",
-    result: "3-1",
-    location: "Sportpark Noord"
-  }, {
-    playoff: "Play-Off 1",
-    matchday: "Speeldag 3",
-    date: "12 mei",
-    home: "Shakthar Tru.",
-    away: "De Florre",
-    result: "0-5",
-    location: "Sportpark Oost"
-  }, {
-    playoff: "Play-Off 1",
-    matchday: "Speeldag 3",
-    date: "12 mei",
-    home: "Cafe De Gilde",
-    away: "Bemarmi Boys",
-    result: "4-4",
-    location: "Sportpark Zuid"
-  }, {
-    playoff: "Play-Off 1",
-    matchday: "Speeldag 3",
-    date: "13 mei",
-    home: "Garage Verbeke",
-    away: "De Dageraad",
-    result: "5-1",
-    location: "Sportpark Noord"
-  }];
-  
-  const upcomingMatches = [];
-  
-  return <div className="space-y-8 animate-slide-up">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Eindklassement</h2>
-        <Badge className="badge-purple">Seizoen 2025-2026</Badge>
+// Skeleton loading components
+const StandingsTableSkeleton = memo(() => (
+  <div className="space-y-4">
+    {[...Array(6)].map((_, index) => (
+      <div key={index} className="flex justify-between items-center p-3">
+        <div className="flex items-center space-x-3">
+          <Skeleton className="h-6 w-6 rounded" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+        <div className="flex space-x-6">
+          <Skeleton className="h-4 w-8" />
+          <Skeleton className="h-4 w-8" />
+          <Skeleton className="h-4 w-8" />
+          <Skeleton className="h-4 w-8" />
+        </div>
       </div>
+    ))}
+  </div>
+));
 
-      <section>
-          <Card>
-            <CardContent className="p-0 overflow-x-auto">
-              <ResponsiveStandingsTable teams={playoffTeams.playoff1} showPlayoff={true} />
-            </CardContent>
-          </Card>
-      </section>
+const PlayoffMatchSkeleton = memo(() => (
+  <Card className="card-hover">
+    <CardHeader className="pb-2">
+      <div className="flex justify-between items-start mb-1">
+        <Skeleton className="h-6 w-20" />
+        <Skeleton className="h-4 w-16" />
+      </div>
+      <Skeleton className="h-5 w-16" />
+      <Skeleton className="h-4 w-24" />
+    </CardHeader>
+    <CardContent>
+      <div className="flex justify-between items-center py-2">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-6 w-12" />
+        <Skeleton className="h-4 w-20" />
+      </div>
+    </CardContent>
+  </Card>
+));
 
-      <section>
-        <h2 className="text-2xl font-semibold">Uitslagen Play-Offs</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
-            {playoffMatches.map((match, index) => <Card key={index} className="card-hover">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start mb-1">
-                    <Badge className="badge-purple">
-                      {match.playoff}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">{match.matchday}</span>
-                  </div>
-                  <CardTitle className="text-lg">{match.date}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{match.location}</p>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-between items-center py-2">
-                    <div className="team-name-container text-left" style={{ maxWidth: '47%' }}>
-                      <AutoFitText 
-                        text={match.home}
-                        maxFontSize={16}
-                        minFontSize={7}
-                        className="font-medium"
-                        style={{ textAlign: 'left' }}
-                      />
-                    </div>
-                    <div className="px-3 py-1 bg-muted rounded-lg font-bold">{match.result}</div>
-                    <div className="team-name-container text-right" style={{ maxWidth: '47%' }}>
-                      <AutoFitText 
-                        text={match.away}
-                        maxFontSize={16}
-                        minFontSize={7}
-                        className="font-medium"
-                        style={{ textAlign: 'right' }}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>)}
-          </div>
-      </section>
+const PlayoffMatchesSkeleton = memo(({ count = 6 }: { count?: number }) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
+    {[...Array(count)].map((_, index) => (
+      <PlayoffMatchSkeleton key={index} />
+    ))}
+  </div>
+));
 
-      {upcomingMatches.length > 0 && <section>
-          <h2 className="text-2xl font-semibold mb-4">Aankomende Play-Off Wedstrijden</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
-            {upcomingMatches.map((match, index) => <Card key={index} className="card-hover">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start mb-1">
-                    <Badge className="badge-purple">
-                      {match.playoff}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">{match.matchday}</span>
-                  </div>
-                  <CardTitle className="flex justify-between items-center text-lg">
-                    <span>{match.date}</span>
-                    <span className="text-soccer-green font-medium">{match.time}</span>
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">{match.location}</p>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-between items-center py-2">
-                    <div className="team-name-container text-left" style={{ maxWidth: '47%' }}>
-                      <AutoFitText 
-                        text={match.home}
-                        maxFontSize={16}
-                        minFontSize={7}
-                        className="font-medium"
-                        style={{ textAlign: 'left' }}
-                      />
-                    </div>
-                    <div className="px-3 py-1 bg-muted rounded-lg font-medium">VS</div>
-                    <div className="team-name-container text-right" style={{ maxWidth: '47%' }}>
-                      <AutoFitText 
-                        text={match.away}
-                        maxFontSize={16}
-                        minFontSize={7}
-                        className="font-medium"
-                        style={{ textAlign: 'right' }}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>)}
-          </div>
-        </section>}
-    </div>;
+// Loading component
+const PlayoffLoading = memo(() => (
+  <div className="space-y-8 animate-slide-up">
+    <div className="flex justify-between items-center">
+      <h2 className="text-2xl font-semibold">Eindklassement</h2>
+      <Badge className="badge-purple">Seizoen 2025-2026</Badge>
+    </div>
+
+    <section>
+      <Card>
+        <CardContent className="p-0 overflow-x-auto">
+          <StandingsTableSkeleton />
+        </CardContent>
+      </Card>
+    </section>
+
+    <section>
+      <h2 className="text-2xl font-semibold">Uitslagen Play-Offs</h2>
+      <PlayoffMatchesSkeleton count={9} />
+    </section>
+  </div>
+));
+
+// Error component
+const PlayoffError = memo(({ error, onRetry }: { error: Error; onRetry: () => void }) => (
+  <div className="space-y-8 animate-slide-up">
+    <Card>
+      <CardContent className="py-12">
+        <div className="text-center">
+          <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
+          <h3 className="text-lg font-semibold mb-2">Fout bij laden</h3>
+          <p className="text-muted-foreground mb-4">
+            Kon playoff gegevens niet laden
+          </p>
+          <Button onClick={onRetry} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Opnieuw proberen
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+));
+
+// Memoized standings section
+const PlayoffStandingsSection = memo(({ teams }: { teams: Team[] }) => (
+  <section>
+    <Card>
+      <CardContent className="p-0 overflow-x-auto">
+        <ResponsiveStandingsTable teams={teams} showPlayoff={true} />
+      </CardContent>
+    </Card>
+  </section>
+));
+
+// Memoized match card component
+const PlayoffMatchCard = memo(({ match }: { match: PlayoffMatch }) => (
+  <Card className="card-hover">
+    <CardHeader className="pb-2">
+      <div className="flex justify-between items-start mb-1">
+        <Badge className="badge-purple">
+          {match.playoff}
+        </Badge>
+        <span className="text-sm text-muted-foreground">{match.matchday}</span>
+      </div>
+      <CardTitle className="text-lg">{match.date}</CardTitle>
+      <p className="text-sm text-muted-foreground">{match.location}</p>
+    </CardHeader>
+    <CardContent>
+      <div className="flex justify-between items-center py-2">
+        <div className="team-name-container text-left" style={{ maxWidth: '47%' }}>
+          <AutoFitText 
+            text={match.home}
+            maxFontSize={16}
+            minFontSize={7}
+            className="font-medium"
+            style={{ textAlign: 'left' }}
+          />
+        </div>
+        <div className="px-3 py-1 bg-muted rounded-lg font-bold">
+          {match.result || 'VS'}
+        </div>
+        <div className="team-name-container text-right" style={{ maxWidth: '47%' }}>
+          <AutoFitText 
+            text={match.away}
+            maxFontSize={16}
+            minFontSize={7}
+            className="font-medium"
+            style={{ textAlign: 'right' }}
+          />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+));
+
+// Memoized matches section
+const PlayoffMatchesSection = memo(({ matches }: { matches: PlayoffMatch[] }) => (
+  <section>
+    <h2 className="text-2xl font-semibold">Uitslagen Play-Offs</h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
+      {matches.map((match, index) => (
+        <PlayoffMatchCard key={index} match={match} />
+      ))}
+    </div>
+  </section>
+));
+
+// Memoized upcoming matches section (conditionally rendered)
+const UpcomingPlayoffMatches = memo(({ matches }: { matches: PlayoffMatch[] }) => (
+  <section>
+    <h2 className="text-2xl font-semibold mb-4">Aankomende Play-Off Wedstrijden</h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
+      {matches.map((match, index) => (
+        <Card key={index} className="card-hover">
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-start mb-1">
+              <Badge className="badge-purple">
+                {match.playoff}
+              </Badge>
+              <span className="text-sm text-muted-foreground">{match.matchday}</span>
+            </div>
+            <CardTitle className="flex justify-between items-center text-lg">
+              <span>{match.date}</span>
+              {match.time && (
+                <span className="text-soccer-green font-medium">{match.time}</span>
+              )}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">{match.location}</p>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center py-2">
+              <div className="team-name-container text-left" style={{ maxWidth: '47%' }}>
+                <AutoFitText 
+                  text={match.home}
+                  maxFontSize={16}
+                  minFontSize={7}
+                  className="font-medium"
+                  style={{ textAlign: 'left' }}
+                />
+              </div>
+              <div className="px-3 py-1 bg-muted rounded-lg font-medium">VS</div>
+              <div className="team-name-container text-right" style={{ maxWidth: '47%' }}>
+                <AutoFitText 
+                  text={match.away}
+                  maxFontSize={16}
+                  minFontSize={7}
+                  className="font-medium"
+                  style={{ textAlign: 'right' }}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  </section>
+));
+
+// Empty state component
+const PlayoffEmptyState = memo(() => (
+  <div className="space-y-8 animate-slide-up">
+    <Card>
+      <CardContent className="py-12">
+        <div className="text-center">
+          <Trophy className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-semibold mb-2">Geen Play-Off Data</h3>
+          <p className="text-muted-foreground">
+            Er zijn momenteel geen play-off gegevens beschikbaar.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+));
+
+// Main content component
+const PlayoffContent = memo(({ 
+  teams, 
+  matches, 
+  upcomingMatches 
+}: { 
+  teams: Team[]; 
+  matches: PlayoffMatch[]; 
+  upcomingMatches: PlayoffMatch[]; 
+}) => (
+  <div className="space-y-8 animate-slide-up">
+    <div className="flex justify-between items-center">
+      <h2 className="text-2xl font-semibold">Eindklassement</h2>
+      <Badge className="badge-purple">Seizoen 2025-2026</Badge>
+    </div>
+
+    <PlayoffStandingsSection teams={teams} />
+    
+    {matches.length > 0 && <PlayoffMatchesSection matches={matches} />}
+    
+    {upcomingMatches.length > 0 && <UpcomingPlayoffMatches matches={upcomingMatches} />}
+  </div>
+));
+
+// Main component
+const PlayOffTab: React.FC = () => {
+  const { teams, matches, upcomingMatches, isLoading, error, refetch } = usePlayoffData();
+
+  if (isLoading) {
+    return <PlayoffLoading />;
+  }
+
+  if (error) {
+    return <PlayoffError error={error} onRetry={() => refetch()} />;
+  }
+
+  if (!teams || teams.length === 0) {
+    return <PlayoffEmptyState />;
+  }
+
+  return (
+    <PlayoffContent 
+      teams={teams} 
+      matches={matches} 
+      upcomingMatches={upcomingMatches} 
+    />
+  );
 };
 
-export default PlayOffTab;
+// Set display names for better debugging
+StandingsTableSkeleton.displayName = 'StandingsTableSkeleton';
+PlayoffMatchSkeleton.displayName = 'PlayoffMatchSkeleton';
+PlayoffMatchesSkeleton.displayName = 'PlayoffMatchesSkeleton';
+PlayoffLoading.displayName = 'PlayoffLoading';
+PlayoffError.displayName = 'PlayoffError';
+PlayoffStandingsSection.displayName = 'PlayoffStandingsSection';
+PlayoffMatchCard.displayName = 'PlayoffMatchCard';
+PlayoffMatchesSection.displayName = 'PlayoffMatchesSection';
+UpcomingPlayoffMatches.displayName = 'UpcomingPlayoffMatches';
+PlayoffEmptyState.displayName = 'PlayoffEmptyState';
+PlayoffContent.displayName = 'PlayoffContent';
+
+export default memo(PlayOffTab);

@@ -49,10 +49,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const StatusIcon = badge.icon;
   return (
     <div className="match-card">
-      <div className="match-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-        {id && (
-          <span className="match-card-id">{id}</span>
-        )}
+      <div className="match-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
         {badgeSlot ? badgeSlot : (
           <span className={`match-card-status-badge ${badge.color} text-white text-xs px-2 py-0.5 rounded font-semibold flex items-center gap-1`}>
             <StatusIcon className="h-3 w-3 mr-1" />

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,7 +22,7 @@ interface PlayerCardSummary {
   cards: CardData[];
 }
 
-const CardsTab: React.FC = () => {
+const KaartenTab: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [cardTypeFilter, setCardTypeFilter] = useState("");
@@ -243,4 +242,4 @@ const CardsTab: React.FC = () => {
   );
 };
 
-export default CardsTab;
+export default KaartenTab; 

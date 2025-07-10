@@ -1,0 +1,383 @@
+import React, { memo, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle, RefreshCw, Shield, Trophy } from "lucide-react";
+import { useSuspensionsData } from "@/hooks/useSuspensionsData";
+import type { Suspension, PlayerCard } from "@/services/suspensionService";
+
+// Loading skeleton components
+const SuspensionsTableSkeleton = memo(() => (
+  <Table>
+    <TableHeader>
+      <TableRow className="bg-muted/50">
+        <TableHead>Speler</TableHead>
+        <TableHead>Team</TableHead>
+        <TableHead>Reden</TableHead>
+        <TableHead>Aantal Wedstrijden</TableHead>
+        <TableHead>Status</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {[...Array(5)].map((_, i) => (
+        <TableRow key={i}>
+          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+          <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+));
+
+const PlayerCardsTableSkeleton = memo(() => (
+  <Table>
+    <TableHeader>
+      <TableRow className="bg-muted/30">
+        <TableHead>Speler</TableHead>
+        <TableHead>Team</TableHead>
+        <TableHead className="text-center">Geel</TableHead>
+        <TableHead className="text-center">Rood</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {[...Array(5)].map((_, i) => (
+        <TableRow key={i}>
+          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+          <TableCell className="text-center"><Skeleton className="h-4 w-12 mx-auto" /></TableCell>
+          <TableCell className="text-center"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+));
+
+SuspensionsTableSkeleton.displayName = 'SuspensionsTableSkeleton';
+PlayerCardsTableSkeleton.displayName = 'PlayerCardsTableSkeleton';
+
+// Status badge component
+const StatusBadge = memo(({ status }: { status: 'active' | 'pending' | 'completed' }) => {
+  const badgeProps = useMemo(() => {
+    switch (status) {
+      case 'active':
+        return { children: 'Actief', className: 'bg-red-100 text-red-800 hover:bg-red-200' };
+      case 'pending':
+        return { children: 'In afwachting', className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' };
+      case 'completed':
+        return { children: 'Afgerond', className: 'bg-green-100 text-green-800 hover:bg-green-200' };
+      default:
+        return { children: 'Onbekend', className: 'bg-gray-100 text-gray-800 hover:bg-gray-200' };
+    }
+  }, [status]);
+
+  return <Badge {...badgeProps} />;
+});
+
+StatusBadge.displayName = 'StatusBadge';
+
+// Card display component
+const CardDisplay = memo(({ count, color }: { count: number; color: string }) => {
+  const cardElements = useMemo(() => 
+    [...Array(count)].map((_, i) => (
+      <div key={i} className={`h-5 w-3 ${color} rounded-sm`} />
+    )), [count, color]);
+
+  return (
+    <div className="flex items-center justify-center space-x-1">
+      {cardElements}
+    </div>
+  );
+});
+
+CardDisplay.displayName = 'CardDisplay';
+
+// Active suspensions table
+const ActiveSuspensionsTable = memo(({ suspensions }: { suspensions: Suspension[] }) => {
+  const suspensionRows = useMemo(() => 
+    suspensions.map((suspension, index) => (
+      <TableRow key={`${suspension.playerId}-${index}`} className="hover:bg-muted/30">
+        <TableCell className="font-medium">{suspension.playerName}</TableCell>
+        <TableCell>{suspension.teamName}</TableCell>
+        <TableCell>{suspension.reason}</TableCell>
+        <TableCell className="text-center">{suspension.matches}</TableCell>
+        <TableCell>
+          <StatusBadge status={suspension.status} />
+        </TableCell>
+      </TableRow>
+    )), [suspensions]);
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="bg-muted/50">
+          <TableHead>Speler</TableHead>
+          <TableHead>Team</TableHead>
+          <TableHead>Reden</TableHead>
+          <TableHead>Aantal Wedstrijden</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {suspensionRows.length > 0 ? suspensionRows : (
+          <TableRow>
+            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+              <div className="flex flex-col items-center space-y-2">
+                <Shield className="h-8 w-8 text-green-500" />
+                <span>Geen actieve schorsingen</span>
+              </div>
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  );
+});
+
+ActiveSuspensionsTable.displayName = 'ActiveSuspensionsTable';
+
+// Player cards table
+const PlayerCardsTable = memo(({ players }: { players: PlayerCard[] }) => {
+  const playerRows = useMemo(() => 
+    players.map(player => (
+      <TableRow key={player.playerId} className="hover:bg-muted/20">
+        <TableCell>{player.playerName}</TableCell>
+        <TableCell>{player.teamName}</TableCell>
+        <TableCell className="text-center">
+          <CardDisplay count={player.yellowCards} color="bg-yellow-400" />
+        </TableCell>
+        <TableCell className="text-center">
+          <CardDisplay count={player.redCards} color="bg-red-500" />
+        </TableCell>
+      </TableRow>
+    )), [players]);
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="bg-muted/30">
+          <TableHead>Speler</TableHead>
+          <TableHead>Team</TableHead>
+          <TableHead className="text-center">Geel</TableHead>
+          <TableHead className="text-center">Rood</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {playerRows.length > 0 ? playerRows : (
+          <TableRow>
+            <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+              <div className="flex flex-col items-center space-y-2">
+                <Trophy className="h-8 w-8 text-blue-500" />
+                <span>Geen kaarten geregistreerd</span>
+              </div>
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  );
+});
+
+PlayerCardsTable.displayName = 'PlayerCardsTable';
+
+// Suspension rules component
+const SuspensionRules = memo(() => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="text-lg">Schorsingsregels</CardTitle>
+    </CardHeader>
+    <CardContent className="text-sm space-y-3">
+      <div className="space-y-1">
+        <h4 className="font-medium">Gele Kaarten</h4>
+        <p className="text-muted-foreground">
+          Schorsingen na gele kaarten:
+        </p>
+        <ul className="list-disc pl-5 text-muted-foreground space-y-1">
+          <li>3 gele kaarten: 1 wedstrijd schorsing</li>
+          <li>5 gele kaarten: 2 opeenvolgende wedstrijden</li>
+        </ul>
+      </div>
+      
+      <div className="space-y-1">
+        <h4 className="font-medium">Rode Kaarten</h4>
+        <ul className="list-disc pl-5 text-muted-foreground">
+          <li>Rode kaart: onmiddellijke uitsluiting ZONDER vervanging</li>
+          <li>Minimum schorsing: 1 wedstrijd</li>
+          <li>Minnelijke schikking mogelijk</li>
+        </ul>
+      </div>
+      
+      <div className="space-y-1">
+        <h4 className="font-medium">Beroepsprocedure</h4>
+        <p className="text-muted-foreground">
+          Clubs kunnen binnen 7 werkdagen na de wedstrijd beroep aantekenen tegen een rode kaart.
+        </p>
+        <p className="text-muted-foreground">
+          Dit gebeurd schriftelijk via noppe.nikki@icloud.com.
+        </p>
+      </div>
+    </CardContent>
+  </Card>
+));
+
+SuspensionRules.displayName = 'SuspensionRules';
+
+// Error state component
+const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
+  <Alert variant="destructive">
+    <AlertCircle className="h-4 w-4" />
+    <AlertDescription className="flex items-center justify-between">
+      <span>Er is een fout opgetreden bij het laden van de schorsingsgegevens.</span>
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={onRetry}
+        className="ml-2"
+      >
+        <RefreshCw className="h-4 w-4 mr-1" />
+        Probeer opnieuw
+      </Button>
+    </AlertDescription>
+  </Alert>
+));
+
+ErrorState.displayName = 'ErrorState';
+
+// Main component
+const SchorsingenTab: React.FC = () => {
+  const {
+    suspensions,
+    topYellowCardPlayers,
+    suspensionStats,
+    isLoading,
+    hasError,
+    handleRefresh,
+    refetchPlayerCards,
+    refetchSuspensions
+  } = useSuspensionsData();
+
+  const handleRetry = () => {
+    refetchPlayerCards();
+    refetchSuspensions();
+  };
+
+  // Show error state
+  if (hasError) {
+    return (
+      <div className="space-y-8 animate-slide-up">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold">Actuele Schorsingen</h2>
+        </div>
+        <ErrorState onRetry={handleRetry} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 animate-slide-up">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Actuele Schorsingen</h2>
+        <Button 
+          onClick={handleRefresh}
+          variant="outline"
+          size="sm"
+          disabled={isLoading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+          Vernieuwen
+        </Button>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <div className="h-2 w-2 bg-red-500 rounded-full"></div>
+              <div>
+                <p className="text-sm font-medium">Actieve Schorsingen</p>
+                <p className="text-2xl font-bold">{suspensionStats.activeSuspensions}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <div className="h-2 w-2 bg-yellow-500 rounded-full"></div>
+              <div>
+                <p className="text-sm font-medium">In Afwachting</p>
+                <p className="text-2xl font-bold">{suspensionStats.pendingSuspensions}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+              <div>
+                <p className="text-sm font-medium">Afgerond</p>
+                <p className="text-2xl font-bold">{suspensionStats.completedSuspensions}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+              <div>
+                <p className="text-sm font-medium">Totaal</p>
+                <p className="text-2xl font-bold">{suspensionStats.totalSuspensions}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Active Suspensions Table */}
+      <section>
+        <Card>
+          <CardContent className="p-0 overflow-x-auto">
+            {isLoading ? (
+              <SuspensionsTableSkeleton />
+            ) : (
+              <ActiveSuspensionsTable suspensions={suspensions || []} />
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Player Cards Section */}
+      <section>
+        <h2 className="text-2xl font-semibold mt-8">Gele Kaarten Register</h2>
+        <div className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Spelers met Meeste Gele Kaarten</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <PlayerCardsTableSkeleton />
+                ) : (
+                  <PlayerCardsTable players={topYellowCardPlayers} />
+                )}
+              </CardContent>
+            </Card>
+
+            <SuspensionRules />
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+export default SchorsingenTab; 

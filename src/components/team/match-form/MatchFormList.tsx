@@ -80,7 +80,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   // Helper function to get cup round name from unique_number
   const getCupRoundName = (uniqueNumber: string): string => {
     if (uniqueNumber.startsWith('1/8-')) return 'Achtste Finales';
-    if (uniqueNumber.startsWith('QF-')) return 'Kwartfinales';
+          if (uniqueNumber.startsWith('QF-')) return 'Kwart Finales';
     if (uniqueNumber.startsWith('SF-')) return 'Halve Finales';
     if (uniqueNumber === 'FINAL') return 'Finale';
     return 'Andere';
@@ -91,7 +91,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   const sortedGroupKeys = Object.keys(grouped).sort((a, b) => {
     if (isCupMatchList) {
       // Sort cup rounds in tournament order
-      const roundOrder = { 'Achtste Finales': 1, 'Kwartfinales': 2, 'Halve Finales': 3, 'Finale': 4, 'Andere': 99 };
+      const roundOrder = { 'Achtste Finales': 1, 'Kwart Finales': 2, 'Halve Finales': 3, 'Finale': 4, 'Andere': 99 };
       return (roundOrder[a] || 99) - (roundOrder[b] || 99);
     } else {
       // Sort matchdays numerically
@@ -129,7 +129,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
           <div className={`grid gap-4 ${
             isCupMatchList && groupKey === 'Achtste Finales' 
               ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4' 
-              : isCupMatchList && groupKey === 'Kwartfinales'
+                                        : isCupMatchList && groupKey === 'Kwart Finales'
               ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4'
               : isCupMatchList && groupKey === 'Halve Finales'
               ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2'
