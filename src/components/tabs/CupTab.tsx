@@ -137,21 +137,6 @@ const CupTab: React.FC = () => {
       <section>
         <Card>
           <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="text-lg">
-                  Bekercompetitie Overzicht
-                </CardTitle>
-              </div>
-            </div>
-          </CardHeader>
-    
-        </Card>
-      </section>
-
-      <section>
-        <Card>
-          <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Achtste Finales</CardTitle>
             </div>

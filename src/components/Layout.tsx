@@ -4,6 +4,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Home, Award, Trophy, Target, BookOpen, Ban, AlertTriangle, Calendar, Users, Shield, UserIcon, DollarSign, Settings } from "lucide-react";
 import LoginForm from "@/components/auth/LoginForm";
 import Header from "@/components/header/Header";
@@ -37,7 +38,7 @@ const Layout: React.FC = () => {
     setLoginDialogOpen(false);
   };
 
-  // Handle tab changes from mobile dropdown
+  // Handle tab changes from mobile navigation
   const handleTabChange = (tab: string) => {
     console.log("Tab change requested:", tab);
     
@@ -64,10 +65,9 @@ const Layout: React.FC = () => {
     }
   }, [isTabVisible, activeTab, isAuthenticated]);
 
-  // Prepare tabs for mobile navigation
-  const getTabsForMobile = () => {
+  // Desktop tabs configuration
+  const getDesktopTabs = () => {
     if (isAuthenticated && user) {
-      // Admin/Team tabs
       const isAdmin = user.role === "admin";
       const adminTabs = [
         { key: "match-forms", label: "Wedstrijdformulieren", icon: <Calendar size={16} /> },
@@ -83,15 +83,13 @@ const Layout: React.FC = () => {
       ];
       return adminTabs;
     } else {
-      // Public tabs
       const publicTabs = [
         { key: "algemeen", label: "Algemeen", icon: <Home size={16} /> },
         { key: "beker", label: "Beker", icon: <Award size={16} /> },
         { key: "competitie", label: "Competitie", icon: <Trophy size={16} /> },
         { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
         { key: "reglement", label: "Reglement", icon: <BookOpen size={16} /> },
-        { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> },
-        { key: "kaarten", label: "Kaarten", icon: <AlertTriangle size={16} /> }
+        { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> }
       ];
       return publicTabs.filter(tab => isTabVisible(tab.key as TabName));
     }
@@ -99,14 +97,48 @@ const Layout: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
-      {/* Header with mobile navigation support */}
+      {/* Header with unified navigation */}
       <Header 
         onLogoClick={handleLogoClick} 
         onLoginClick={handleLoginClick}
-        tabs={isMobile ? getTabsForMobile() : []}
         activeTab={isAuthenticated ? activeAdminTab : activeTab}
         onTabChange={handleTabChange}
       />
+
+      {/* Desktop Tabs - only show on desktop */}
+      {!isMobile && (
+        <div className="w-full bg-white border-b border-purple-200 shadow-sm">
+          <div className="max-w-7xl mx-auto">
+            <Tabs 
+              value={isAuthenticated ? activeAdminTab : activeTab} 
+              onValueChange={(value) => {
+                if (isAuthenticated) {
+                  setActiveAdminTab(value as AdminTabName);
+                } else {
+                  setActiveTab(value as TabName);
+                }
+              }} 
+              className="w-full"
+            >
+              <TabsList className="custom-tabs-list">
+                <div className="custom-tabs-container">
+                  {getDesktopTabs().map((tab) => (
+                    <TabsTrigger
+                      key={tab.key}
+                      value={tab.key}
+                      className="custom-tab-trigger"
+                    >
+                      {tab.icon}
+                      <span className="hidden sm:inline">{tab.label}</span>
+                      <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                    </TabsTrigger>
+                  ))}
+                </div>
+              </TabsList>
+            </Tabs>
+          </div>
+        </div>
+      )}
 
       {/* Main Content - full width with modern tabs */}
       <main className="flex-1 w-full bg-purple-100">

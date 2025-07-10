@@ -1,9 +1,7 @@
 
 import React from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Home, Award, Trophy, Target, BookOpen, Ban, AlertTriangle } from "lucide-react";
 import AlgemeenTab from "./AlgemeenTab";
 import CompetitionTab from "./CompetitionTab";
 import PlayOffTab from "./PlayOffTab";
@@ -19,21 +17,6 @@ interface MainTabsProps {
 
 const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
   const { isTabVisible, loading } = useTabVisibility();
-  const isMobile = useIsMobile();
-
-  // Define all possible tabs with their configurations in the original order
-  const tabConfigs = [
-    { key: "algemeen" as TabName, label: "Algemeen", icon: <Home size={16} /> },
-    { key: "beker" as TabName, label: "Beker", icon: <Award size={16} /> },
-    { key: "competitie" as TabName, label: "Competitie", icon: <Trophy size={16} /> },
-    { key: "playoff" as TabName, label: "Play-off", icon: <Target size={16} /> },
-    { key: "reglement" as TabName, label: "Reglement", icon: <BookOpen size={16} /> },
-    { key: "schorsingen" as TabName, label: "Schorsingen", icon: <Ban size={16} /> },
-    { key: "kaarten" as TabName, label: "Kaarten", icon: <AlertTriangle size={16} /> }
-  ];
-
-  // Filter visible tabs
-  const visibleTabs = tabConfigs.filter(tab => isTabVisible(tab.key));
 
   // Show loading state while fetching settings
   if (loading) {
@@ -46,43 +29,6 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
 
   return (
     <div className="w-full">
-      {/* Desktop Tabs - hidden on mobile */}
-      {!isMobile && (
-        <div className="w-full bg-white border-b border-purple-200 shadow-sm">
-          <div className="max-w-7xl mx-auto">
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
-              <TabsList className="custom-tabs-list">
-                <div className="custom-tabs-container">
-                  {visibleTabs.map((tab) => (
-                    <TabsTrigger
-                      key={tab.key}
-                      value={tab.key}
-                      className="custom-tab-trigger"
-                    >
-                      {tab.icon}
-                      <span className="hidden sm:inline">{tab.label}</span>
-                      <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
-                    </TabsTrigger>
-                  ))}
-                </div>
-              </TabsList>
-            </Tabs>
-          </div>
-        </div>
-      )}
-
-      {/* Mobile - Show current tab title */}
-      {isMobile && (
-        <div className="w-full bg-white border-b border-purple-200 shadow-sm py-4">
-          <div className="max-w-7xl mx-auto px-4">
-            <h1 className="text-lg font-semibold text-purple-700 flex items-center gap-2">
-              {visibleTabs.find(tab => tab.key === activeTab)?.icon}
-              {visibleTabs.find(tab => tab.key === activeTab)?.label}
-            </h1>
-          </div>
-        </div>
-      )}
-
       {/* Tab Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
