@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { BlogPost, fetchBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost } from "@/services/blogService";
+import { BlogPost, fetchBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost } from "@/services";
 import { Edit, Trash2, Plus, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";

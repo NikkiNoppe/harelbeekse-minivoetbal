@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { MatchFormData } from "./types";
 import { localDateTimeToISO, isoToLocalDateTime, getCurrentISO } from "@/lib/dateUtils";
-import { cupService } from "@/services/cupService";
+import { cupService } from "@/services/match";
 
 // Helper function to sort cup matches in tournament order
 const sortCupMatches = (matches: MatchFormData[]): MatchFormData[] => {

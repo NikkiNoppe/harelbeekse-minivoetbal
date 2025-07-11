@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2, Users, AlertTriangle, Save } from "lucide-react";
 import { useTeamsData, type TeamFormData } from "@/hooks/useTeamsData";
-import type { Team } from "@/services/enhancedTeamService";
+import type { Team } from "@/services";
 
 // Loading skeleton components
 const TeamsTableSkeleton = memo(() => (

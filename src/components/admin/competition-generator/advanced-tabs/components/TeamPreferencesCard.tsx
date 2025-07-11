@@ -9,7 +9,7 @@ import { Settings, Users, Calendar, Clock, MapPin } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamPreference } from "../../types-advanced";
-import { competitionDataService } from "@/services/competitionDataService";
+import { competitionDataService } from "@/services";
 
 interface TeamPreferencesCardProps {
   selectedTeams: number[];

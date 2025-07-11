@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { cupService } from "@/services/cupService";
+import { cupService } from "@/services";
 
 export interface CupMatchDisplay {
   id: string;

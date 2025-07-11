@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Shield, Trophy } from "lucide-react";
 import { useSuspensionsData } from "@/hooks/useSuspensionsData";
-import type { Suspension, PlayerCard } from "@/services/suspensionService";
+import type { Suspension, PlayerCard } from "@/services";
 
 // Loading skeleton components
 const SuspensionsTableSkeleton = memo(() => (

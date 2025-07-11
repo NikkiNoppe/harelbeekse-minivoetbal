@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MatchFormData } from "../types";
-import { refereeService, type Referee } from "@/services/refereeService";
+import { refereeService, type Referee } from "@/services/core";
 
 interface MatchDataSectionProps {
   match: MatchFormData;

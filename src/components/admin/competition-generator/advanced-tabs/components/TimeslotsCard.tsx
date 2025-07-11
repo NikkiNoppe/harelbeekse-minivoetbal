@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Clock, Calendar, Edit, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { competitionDataService } from "@/services/competitionDataService";
+import { competitionDataService } from "@/services";
 
 const TimeslotsCard: React.FC = () => {
   const { toast } = useToast();

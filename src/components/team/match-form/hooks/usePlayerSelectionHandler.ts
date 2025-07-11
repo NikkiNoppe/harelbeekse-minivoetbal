@@ -2,7 +2,7 @@
 import { PlayerSelection } from "../components/types";
 import { MatchFormData } from "../types";
 import { useMatchFormValidation } from "./useMatchFormValidation";
-import { playerService } from "@/services/playerService";
+import { playerService } from "@/services/core";
 
 export const usePlayerSelectionHandler = (
   match: MatchFormData,

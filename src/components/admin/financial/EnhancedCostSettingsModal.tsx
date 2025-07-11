@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Settings, Edit, Trash2, Plus, AlertTriangle, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { enhancedCostSettingsService } from "@/services/enhancedCostSettingsService";
+import { enhancedCostSettingsService } from "@/services/financial";
 import AffectedTransactionsModal from "./AffectedTransactionsModal";
 
 interface EnhancedCostSettingsModalProps {

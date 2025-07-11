@@ -19,7 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { usePlayerListLock } from "@/components/user/players/hooks/usePlayerListLock";
 import { Lock } from "lucide-react";
-import { playerService, Player } from "@/services/playerService";
+import { playerService, Player } from "@/services/core";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateShort } from "@/lib/dateUtils";
 

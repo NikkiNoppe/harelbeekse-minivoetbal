@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Settings, Edit, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { seasonService, type SeasonData } from "@/services/seasonService";
+import { seasonService, type SeasonData } from "@/services";
 
 const SeasonDataSettings: React.FC = () => {
   const { toast } = useToast();

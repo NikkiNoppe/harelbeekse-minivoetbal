@@ -10,7 +10,7 @@ import { Loader2, Euro, TrendingDown, TrendingUp, List, Calendar } from "lucide-
 import TeamDetailModal from "@/components/admin/financial/TeamDetailModal";
 import CostSettingsManagementModal from "@/components/admin/financial/CostSettingsManagementModal";
 import MonthlyReportsModal from "@/components/admin/financial/MonthlyReportsModal";
-import { costSettingsService } from "@/services/costSettingsService";
+import { costSettingsService } from "@/services/financial";
 
 interface Team {
   team_id: number;

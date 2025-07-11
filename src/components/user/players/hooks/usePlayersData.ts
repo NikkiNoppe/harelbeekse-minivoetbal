@@ -71,29 +71,24 @@ export const usePlayersData = (authUser: User | null) => {
   };
 
   const refreshPlayers = async () => {
-    console.log('🔄 refreshPlayers called - START');
-    console.log('📊 Refresh context:', {
-      selectedTeam,
-      authUserRole: authUser?.role,
-      timestamp: new Date().toISOString()
-    });
-
+    console.log('🔄 REFRESH TEST - Starting refresh...');
     try {
       setLoading(true);
       
       const targetTeamId = authUser?.role === "player_manager" ? authUser.teamId : selectedTeam;
-      console.log('🎯 Target team ID for refresh:', targetTeamId);
+      console.log('🎯 Target team ID:', targetTeamId);
       
       const playersData = await fetchPlayers(targetTeamId || undefined);
-      console.log('📊 Refreshed players data:', playersData.length, 'players');
+      console.log('📊 Fetched players:', playersData.length, 'players');
+      console.log('📝 First player sample:', playersData[0]);
       
       setPlayers(playersData);
       console.log('✅ Players state updated');
     } catch (error) {
-      console.error('💥 Error in refreshPlayers:', error);
+      console.error('❌ Error refreshing players:', error);
     } finally {
       setLoading(false);
-      console.log('🔄 refreshPlayers called - END');
+      console.log('🔄 Refresh completed');
     }
   };
 

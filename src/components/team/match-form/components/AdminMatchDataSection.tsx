@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MatchFormData } from "../types";
-import { enhancedMatchService } from "@/services/enhancedMatchService";
+import { enhancedMatchService } from "@/services/match";
 
 interface AdminMatchDataSectionProps {
   match: MatchFormData;

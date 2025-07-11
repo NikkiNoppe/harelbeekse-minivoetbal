@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchCompetitionMatches } from "@/services/matchDataService";
+import { fetchCompetitionMatches } from "@/services/match";
 
 export interface Team {
   id: number;

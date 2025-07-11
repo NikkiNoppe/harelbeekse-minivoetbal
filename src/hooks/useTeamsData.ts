@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { enhancedTeamService, Team } from "@/services/enhancedTeamService";
+import { enhancedTeamService, Team } from "@/services";
 
 export interface TeamFormData {
   team_name: string;

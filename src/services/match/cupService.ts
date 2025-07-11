@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
-import { teamService } from "./teamService";
-import { seasonService } from "./seasonService";
-import { timeslotPriorityService } from "./timeslotPriorityService";
+import { teamService } from "../core/teamService";
+import { seasonService } from "../seasonService";
+import { timeslotPriorityService } from "../timeslotPriorityService";
 
 export interface CupMatch {
   match_id: number;

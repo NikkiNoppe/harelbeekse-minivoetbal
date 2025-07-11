@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { costSettingsService } from "@/services/costSettingsService";
+import { costSettingsService } from "@/services/financial";
 
 interface Team {
   team_id: number;

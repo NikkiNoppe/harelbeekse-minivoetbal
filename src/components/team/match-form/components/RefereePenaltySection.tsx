@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { costSettingsService } from "@/services/costSettingsService";
-import { financialService } from "@/services/financialService";
+import { costSettingsService, financialService } from "@/services/financial";
 import { MatchFormData } from "../types";
 import { getCurrentDate } from "@/lib/dateUtils";
 

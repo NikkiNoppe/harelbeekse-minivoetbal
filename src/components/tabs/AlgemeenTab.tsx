@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
-import { BlogPost } from "@/services/blogService";
+import { BlogPost } from "@/services";
 import { formatDateShort } from "@/lib/dateUtils";
 import { useBlogPosts } from "@/hooks/useBlogPosts";
 
@@ -127,7 +127,9 @@ const NewsSection = memo(() => {
             <p className="text-muted-foreground mb-4">
               De nieuwsberichten konden niet worden geladen.
             </p>
-
+            <Button onClick={() => refetch()} className="btn-dark">
+              Opnieuw proberen
+            </Button>
           </CardContent>
         </Card>
       );

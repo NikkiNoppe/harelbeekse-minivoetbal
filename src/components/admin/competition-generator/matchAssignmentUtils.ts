@@ -1,6 +1,6 @@
 
 import { AvailableDate, GeneratedMatch } from "./types";
-import { timeslotPriorityService } from "@/services/timeslotPriorityService";
+import { timeslotPriorityService } from "@/services";
 
 export const assignMatchDetails = async (
   matches: GeneratedMatch[], 

@@ -11,7 +11,8 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
   const { checkPlayerExists, checkNameExists, validatePlayerData } = usePlayerValidation();
 
   const addPlayer = async (firstName: string, lastName: string, birthDate: string, teamId: number) => {
-    console.log('🎯 addPlayer function called with:', {
+    console.log('🎯 ADD PLAYER OPERATION START - DETAILED DEBUG');
+    console.log('📊 Add parameters:', {
       firstName,
       lastName,
       birthDate,
@@ -24,7 +25,7 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
 
     try {
       if (!validatePlayerData(firstName, lastName, birthDate)) {
-        console.warn('⚠️ Validation failed');
+        console.warn('⚠️ Validation failed for add player');
         toast({
           title: "Onvolledige gegevens",
           description: "Vul alle velden in",
@@ -78,7 +79,12 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
       
       if (error) {
         console.error('❌ Database INSERT error:', error);
-        throw error;
+        toast({
+          title: "Database fout",
+          description: `Kon speler niet toevoegen: ${error.message}`,
+          variant: "destructive",
+        });
+        return false;
       }
 
       console.log('✅ Database INSERT successful:', data);
@@ -98,7 +104,7 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
       console.error('💥 Error adding player:', error);
       toast({
         title: "Fout bij toevoegen",
-        description: "Er is een fout opgetreden bij het toevoegen van de speler.",
+        description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het toevoegen van de speler.",
         variant: "destructive",
       });
       return false;

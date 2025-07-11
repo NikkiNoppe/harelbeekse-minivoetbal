@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Search, AlertTriangle, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAllCards, CardData } from "@/services/matchDataService";
+import { fetchAllCards, CardData } from "@/services/match";
 import { sortDatesDesc } from "@/lib/dateUtils";
 import ResponsiveCardsTable from "../tables/ResponsiveCardsTable";
 

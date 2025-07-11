@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { costSettingsService } from "@/services/costSettingsService";
+import { costSettingsService } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
 import { Settings, Plus, Edit, Trash2, Euro } from "lucide-react";
 

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { MapPin, Edit, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { competitionDataService } from "@/services/competitionDataService";
+import { competitionDataService } from "@/services";
 
 const VenuesCard: React.FC = () => {
   const { toast } = useToast();

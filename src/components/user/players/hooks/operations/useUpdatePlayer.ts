@@ -2,29 +2,40 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePlayerValidation } from "../usePlayerValidation";
-import { formatDateShort } from "@/lib/dateUtils";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
-  const { checkPlayerExists, checkNameExists, validatePlayerData } = usePlayerValidation();
+  const { validatePlayerData } = usePlayerValidation();
+  const { user, isAuthenticated } = useAuth();
 
   const updatePlayer = async (playerId: number, firstName: string, lastName: string, birthDate: string) => {
-    console.log('🔄 UPDATE PLAYER OPERATION START - DETAILED DEBUG');
-    console.log('📊 Update parameters:', {
-      playerId,
-      firstName,
-      lastName,
-      birthDate,
-      timestamp: new Date().toISOString()
-    });
+    console.log('🚀 UPDATE FUNCTION CALLED');
+    console.log('🔍 UPDATE TEST - Starting update for player:', playerId);
+    console.log('📝 New data:', { firstName, lastName, birthDate });
+    console.log('👤 Auth status:', { isAuthenticated, user: user?.username, role: user?.role });
 
-    if (isUpdating) return false;
+    if (isUpdating) {
+      console.log('⚠️ Already updating, skipping...');
+      return false;
+    }
+
+    // Check authentication first
+    if (!isAuthenticated || !user) {
+      console.error('❌ User not authenticated');
+      toast({
+        title: "Niet geautoriseerd",
+        description: "U moet ingelogd zijn om spelers te bewerken",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     setIsUpdating(true);
 
     try {
       if (!validatePlayerData(firstName, lastName, birthDate)) {
-        console.log('❌ Validation failed for update');
         toast({
           title: "Onvolledige gegevens",
           description: "Vul alle velden in",
@@ -33,130 +44,137 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      // Get current player data first for debugging
-      const { data: currentPlayer, error: fetchError } = await supabase
+      // First, let's see what the current player data looks like
+      console.log('🔍 Reading current player data...');
+      const { data: currentPlayer, error: readError } = await supabase
         .from('players')
         .select('player_id, first_name, last_name, birth_date, team_id')
         .eq('player_id', playerId)
         .single();
 
-      if (fetchError) {
+      if (readError) {
+        console.error('❌ Cannot read player:', readError);
         toast({
-          title: "Fout bij ophalen speler",
-          description: `Kon spelergegevens niet ophalen: ${fetchError.message}`,
+          title: "Fout bij lezen",
+          description: `Kan speler niet lezen: ${readError.message}`,
           variant: "destructive",
         });
         return false;
       }
 
-      if (!currentPlayer) {
+      console.log('📊 Current player data:', currentPlayer);
+
+      // Check if user has permission to edit this player
+      if (user.role === 'player_manager' && currentPlayer.team_id !== user.teamId) {
+        console.error('❌ User does not have permission to edit this player');
         toast({
-          title: "Speler niet gevonden",
-          description: "De speler bestaat niet meer",
+          title: "Geen toestemming",
+          description: "U kunt alleen spelers van uw eigen team bewerken",
           variant: "destructive",
         });
         return false;
       }
 
-      // Prepare values
-      const trimmedFirstName = firstName.trim();
-      const trimmedLastName = lastName.trim();
-      const normalizedBirthDate = birthDate;
+      // Now try the update
+      console.log('🔄 Attempting update...');
+      const { data: updateResult, error: updateError } = await supabase
+        .from('players')
+        .update({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          birth_date: birthDate
+        })
+        .eq('player_id', playerId)
+        .select();
 
-      // Check "is there a change?"
-      const firstNameChanged = currentPlayer.first_name !== trimmedFirstName;
-      const lastNameChanged = currentPlayer.last_name !== trimmedLastName;
-      const birthDateChanged = currentPlayer.birth_date !== normalizedBirthDate;
-      const hasChanges = firstNameChanged || lastNameChanged || birthDateChanged;
-
-      if (!hasChanges) {
+      if (updateError) {
+        console.error('❌ Update failed:', updateError);
         toast({
-          title: "Geen wijzigingen",
-          description: "Er zijn geen wijzigingen om op te slaan",
+          title: "Update mislukt",
+          description: `Database fout: ${updateError.message}`,
+          variant: "destructive",
         });
-        return true;
+        return false;
       }
 
-      // Check for duplicate name
-      const nameChanged = firstNameChanged || lastNameChanged;
-      if (nameChanged) {
-        const existingName = await checkNameExists(firstName, lastName, playerId);
-        if (existingName) {
-          const teamName = existingName.teams?.team_name || 'onbekend team';
+      console.log('✅ Update result:', updateResult);
+      
+      // Check if update actually worked - improved logic
+      if (!updateResult || updateResult.length === 0) {
+        console.log('⚠️ Update returned empty result - checking if data was actually updated...');
+        
+        // Let's try to read the player again to see if the update actually happened
+        const { data: verifyPlayer, error: verifyError } = await supabase
+          .from('players')
+          .select('player_id, first_name, last_name, birth_date')
+          .eq('player_id', playerId)
+          .single();
+
+        if (verifyError) {
+          console.error('❌ Cannot verify update:', verifyError);
           toast({
-            title: "Naam bestaat al",
-            description: `${firstName} ${lastName} bestaat al bij ${teamName} met geboortedatum ${formatDateShort(existingName.birth_date)}`,
+            title: "Update geblokkeerd",
+            description: "Database rechten staan updates niet toe. Contacteer de beheerder.",
             variant: "destructive",
           });
           return false;
         }
+
+        // Check if the data was actually updated
+        const wasUpdated = verifyPlayer.first_name === firstName.trim() && 
+                          verifyPlayer.last_name === lastName.trim() && 
+                          verifyPlayer.birth_date === birthDate;
+
+        if (wasUpdated) {
+          console.log('✅ Update was successful despite empty result - data was changed');
+          // Continue with success flow
+        } else {
+          console.error('❌ Update did not work - data not changed');
+          console.log('🔍 Data comparison:', {
+            expected: { firstName: firstName.trim(), lastName: lastName.trim(), birthDate },
+            actual: { 
+              firstName: verifyPlayer.first_name, 
+              lastName: verifyPlayer.last_name, 
+              birthDate: verifyPlayer.birth_date 
+            }
+          });
+          toast({
+            title: "Update geblokkeerd",
+            description: "Database rechten staan updates niet toe. Contacteer de beheerder.",
+            variant: "destructive",
+          });
+          return false;
+        }
+      } else {
+        console.log('✅ Update successful with result data');
       }
 
-      // Check for exact player match
-      const existingPlayer = await checkPlayerExists(firstName, lastName, birthDate, playerId);
-
-      if (existingPlayer) {
-        const teamName = existingPlayer.teams?.team_name || 'onbekend team';
-        toast({
-          title: "Speler bestaat al",
-          description: `${firstName} ${lastName} met deze geboortedatum is al ingeschreven bij ${teamName}`,
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      // Perform the update
-      const { data: updateResult, error: updateError } = await supabase
-        .from('players')
-        .update({
-          first_name: trimmedFirstName,
-          last_name: trimmedLastName,
-          birth_date: normalizedBirthDate
-        })
-        .eq('player_id', playerId)
-        .select('*');
-
-      if (updateError) {
-        toast({
-          title: "Database fout",
-          description: `Kon speler niet bijwerken: ${updateError.message}`,
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      // Final fetch for confirmation
-      const { data: finalCheck, error: finalError } = await supabase
+      // Read the player again to verify the update
+      console.log('🔍 Final verification...');
+      const { data: finalVerifyPlayer, error: finalVerifyError } = await supabase
         .from('players')
         .select('player_id, first_name, last_name, birth_date')
         .eq('player_id', playerId)
         .single();
 
-      if (finalError) {
-        toast({
-          title: "Database fout",
-          description: `Kan gegevens niet controleren: ${finalError.message}`,
-          variant: "destructive",
+      if (finalVerifyError) {
+        console.error('❌ Cannot verify final update:', finalVerifyError);
+      } else {
+        console.log('📊 Final verified player data:', finalVerifyPlayer);
+        console.log('🔍 Final data comparison:', {
+          expected: { firstName: firstName.trim(), lastName: lastName.trim(), birthDate },
+          actual: { 
+            firstName: finalVerifyPlayer.first_name, 
+            lastName: finalVerifyPlayer.last_name, 
+            birthDate: finalVerifyPlayer.birth_date 
+          }
         });
-        return false;
       }
 
-      // Only check actual new values
-      if (
-        finalCheck.first_name !== trimmedFirstName ||
-        finalCheck.last_name !== trimmedLastName ||
-        finalCheck.birth_date !== normalizedBirthDate
-      ) {
-        toast({
-          title: "Verificatie mislukt",
-          description: "De wijzigingen zijn mogelijk niet correct opgeslagen.",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      // Only one refresh
+      // Refresh the player list
+      console.log('🔄 Refreshing player list...');
       await refreshPlayers();
+      console.log('✅ Refresh completed');
 
       toast({
         title: "Speler bijgewerkt",
@@ -165,9 +183,10 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
 
       return true;
     } catch (error) {
+      console.error('💥 Unexpected error:', error);
       toast({
-        title: "Fout bij bijwerken",
-        description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het bijwerken van de speler.",
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het bijwerken van de speler.",
         variant: "destructive",
       });
       return false;

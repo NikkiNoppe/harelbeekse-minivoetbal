@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { monthlyReportsService } from "@/services/monthlyReportsService";
+import { monthlyReportsService } from "@/services/financial";
 import { Calendar, Download, Euro } from "lucide-react";
 
 interface MonthlyReportsModalProps {

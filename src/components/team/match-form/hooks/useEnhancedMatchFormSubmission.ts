@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { enhancedMatchService } from "@/services/enhancedMatchService";
+import { enhancedMatchService } from "@/services/match";
 import { MatchFormData } from "../types";
 import { useToast } from "@/hooks/use-toast";
 

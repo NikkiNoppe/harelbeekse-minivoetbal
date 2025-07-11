@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { suspensionService, PlayerCard, Suspension } from "@/services/suspensionService";
+import { suspensionService, PlayerCard, Suspension } from "@/services";
 import { useToast } from "@/hooks/use-toast";
 
 export interface SuspensionStats {

@@ -8,7 +8,7 @@ import { Calendar, Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { VacationPeriod } from "../../types-advanced";
 import { formatDateShort } from "@/lib/dateUtils";
-import { competitionDataService } from "@/services/competitionDataService";
+import { competitionDataService } from "@/services";
 
 interface VacationPeriodsCardProps {
   vacationPeriods: VacationPeriod[];

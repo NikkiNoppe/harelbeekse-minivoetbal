@@ -110,3 +110,58 @@ export const testDatabaseConnection = async () => {
     return false;
   }
 };
+
+// NEW: Simple test function to check if we can read and update players
+export const testPlayerPermissions = async () => {
+  console.log('🔍 TESTING PLAYER PERMISSIONS');
+  
+  try {
+    // Test 1: Can we read players?
+    const { data: readTest, error: readError } = await supabase
+      .from('players')
+      .select('player_id, first_name, last_name')
+      .limit(1);
+
+    console.log('📊 Read test:', {
+      readTest,
+      readError,
+      canRead: !readError && readTest && readTest.length > 0
+    });
+
+    if (readError) {
+      console.error('❌ Cannot read players:', readError);
+      return { canRead: false, canUpdate: false, error: readError.message };
+    }
+
+    if (!readTest || readTest.length === 0) {
+      console.log('ℹ️ No players found to test with');
+      return { canRead: true, canUpdate: false, error: 'No players available for testing' };
+    }
+
+    // Test 2: Can we update a player?
+    const testPlayer = readTest[0];
+    const originalName = testPlayer.last_name;
+    
+    const { data: updateTest, error: updateError } = await supabase
+      .from('players')
+      .update({ last_name: originalName }) // Update with same value (harmless)
+      .eq('player_id', testPlayer.player_id)
+      .select();
+
+    console.log('📊 Update test:', {
+      updateTest,
+      updateError,
+      canUpdate: !updateError && updateTest && updateTest.length > 0
+    });
+
+    return {
+      canRead: true,
+      canUpdate: !updateError && updateTest && updateTest.length > 0,
+      error: updateError?.message || null
+    };
+
+  } catch (error) {
+    console.error('💥 Permission test failed:', error);
+    return { canRead: false, canUpdate: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+};

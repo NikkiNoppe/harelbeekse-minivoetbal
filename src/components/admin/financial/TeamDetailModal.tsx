@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { costSettingsService } from "@/services/costSettingsService";
+import { costSettingsService } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Euro, TrendingDown, TrendingUp } from "lucide-react";
 import { formatDateShort, getCurrentDate } from "@/lib/dateUtils";

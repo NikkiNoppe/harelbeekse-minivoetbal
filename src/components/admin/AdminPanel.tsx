@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, AlertTriangle } from "lucide-react";
-import { teamService, Team } from "@/services/teamService";
+import { teamService, Team } from "@/services/core";
 import CupTournamentManager from "./CupTournamentManager";
 
 // Initial users data

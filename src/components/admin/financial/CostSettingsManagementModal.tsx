@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { enhancedCostSettingsService } from "@/services/enhancedCostSettingsService";
+import { enhancedCostSettingsService } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
 import { Settings, Plus, Edit, Trash2, Euro, AlertTriangle } from "lucide-react";
 import {

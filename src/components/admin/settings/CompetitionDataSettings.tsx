@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings, Edit, Trash2, Trophy, Building, Clock, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { seasonService, type SeasonData } from "@/services/seasonService";
+import { seasonService, type SeasonData } from "@/services";
 
 const CompetitionDataSettings: React.FC = () => {
   const { toast } = useToast();

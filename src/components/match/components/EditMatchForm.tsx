@@ -6,8 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { MatchFormData } from "../types";
-import { teamService, Team } from "@/services/teamService";
-import { refereeService, type Referee } from "@/services/refereeService";
+import { teamService, Team } from "@/services/core";
+import { refereeService, type Referee } from "@/services/core";
 import { 
   Select, 
   SelectContent, 

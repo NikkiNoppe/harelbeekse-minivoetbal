@@ -13,6 +13,7 @@ export const usePlayerDialogs = () => {
     setEditingPlayer: (player: EditingPlayerData | null) => void
   ) => {
     console.log('🎯 handleEditPlayer called for player ID:', playerId);
+    console.log('📊 Available players:', players.length);
     
     const player = players.find(p => p.player_id === playerId);
     if (!player) {
@@ -34,6 +35,7 @@ export const usePlayerDialogs = () => {
     
     setEditingPlayer(editingPlayerData);
     setEditDialogOpen(true);
+    console.log('✅ Edit dialog opened');
   };
 
   return {

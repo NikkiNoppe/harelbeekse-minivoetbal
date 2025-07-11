@@ -7,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { MatchFormData } from "./types";
-import { enhancedMatchService } from "@/services/enhancedMatchService";
-import { refereeService, type Referee } from "@/services/refereeService";
+import { enhancedMatchService } from "@/services/match";
+import { refereeService, type Referee } from "@/services/core";
 import { AlertTriangle, Lock, Save } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 

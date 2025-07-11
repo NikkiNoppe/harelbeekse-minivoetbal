@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import PlayersTab from "@/components/user/tabs/PlayersTab";
 import { User, TeamData } from "@/types/auth";
 import MatchFormTab from "./MatchFormTab";
-import { teamService } from "@/services/teamService";
+import { teamService } from "@/services/core";
 
 interface TeamDashboardProps {
   user: User;

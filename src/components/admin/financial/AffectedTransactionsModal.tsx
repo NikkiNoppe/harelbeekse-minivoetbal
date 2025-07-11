@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Info } from "lucide-react";
-import { enhancedCostSettingsService, type TeamTransaction } from "@/services/enhancedCostSettingsService";
+import { enhancedCostSettingsService, type TeamTransaction } from "@/services/financial";
 
 interface AffectedTransactionsModalProps {
   open: boolean;

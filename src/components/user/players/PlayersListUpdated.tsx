@@ -71,7 +71,10 @@ const PlayersListUpdated: React.FC<PlayersListUpdatedProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onEditPlayer(player.player_id)}
+                      onClick={() => {
+                        console.log('🔘 Edit button clicked for player:', player.player_id);
+                        onEditPlayer(player.player_id);
+                      }}
                       className="h-7 w-7 p-0 bg-white text-purple-600 border-purple-400 hover:bg-purple-50"
                     >
                       <Edit2 size={15} />
