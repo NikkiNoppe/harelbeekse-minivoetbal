@@ -47,8 +47,6 @@ export type Database = {
         }
         Relationships: []
       }
-
-
       competition_standings: {
         Row: {
           draws: number | null
@@ -96,49 +94,38 @@ export type Database = {
           },
         ]
       }
-
-
-      cost_settings: {
+      costs: {
         Row: {
           amount: number
           category: string
-          created_at: string | null
           description: string | null
           id: number
           is_active: boolean | null
           name: string
-          updated_at: string | null
         }
         Insert: {
           amount: number
           category: string
-          created_at?: string | null
           description?: string | null
           id?: number
           is_active?: boolean | null
           name: string
-          updated_at?: string | null
         }
         Update: {
           amount?: number
           category?: string
-          created_at?: string | null
           description?: string | null
           id?: number
           is_active?: boolean | null
           name?: string
-          updated_at?: string | null
         }
         Relationships: []
       }
-
-
       matches: {
         Row: {
           away_players: Json | null
           away_score: number | null
           away_team_id: number | null
-          created_at: string | null
           home_players: Json | null
           home_score: number | null
           home_team_id: number | null
@@ -152,13 +139,11 @@ export type Database = {
           referee_notes: string | null
           speeldag: string | null
           unique_number: string | null
-          updated_at: string | null
         }
         Insert: {
           away_players?: Json | null
           away_score?: number | null
           away_team_id?: number | null
-          created_at?: string | null
           home_players?: Json | null
           home_score?: number | null
           home_team_id?: number | null
@@ -172,13 +157,11 @@ export type Database = {
           referee_notes?: string | null
           speeldag?: string | null
           unique_number?: string | null
-          updated_at?: string | null
         }
         Update: {
           away_players?: Json | null
           away_score?: number | null
           away_team_id?: number | null
-          created_at?: string | null
           home_players?: Json | null
           home_score?: number | null
           home_team_id?: number | null
@@ -192,7 +175,6 @@ export type Database = {
           referee_notes?: string | null
           speeldag?: string | null
           unique_number?: string | null
-          updated_at?: string | null
         }
         Relationships: [
           {
@@ -215,9 +197,7 @@ export type Database = {
         Row: {
           birth_date: string
           first_name: string
-          is_locked: boolean | null
           last_name: string
-          locked_from_date: string | null
           player_id: number
           red_cards: number | null
           team_id: number | null
@@ -226,9 +206,7 @@ export type Database = {
         Insert: {
           birth_date: string
           first_name: string
-          is_locked?: boolean | null
           last_name: string
-          locked_from_date?: string | null
           player_id?: number
           red_cards?: number | null
           team_id?: number | null
@@ -237,9 +215,7 @@ export type Database = {
         Update: {
           birth_date?: string
           first_name?: string
-          is_locked?: boolean | null
           last_name?: string
-          locked_from_date?: string | null
           player_id?: number
           red_cards?: number | null
           team_id?: number | null
@@ -255,70 +231,45 @@ export type Database = {
           },
         ]
       }
-      team_transactions: {
+      team_costs: {
         Row: {
-          amount: number
           cost_setting_id: number | null
-          created_at: string | null
-          created_by: number | null
-          description: string | null
           id: number
           match_id: number | null
-          penalty_type_id: number | null
           team_id: number | null
           transaction_date: string
-          transaction_type: string
         }
         Insert: {
-          amount: number
           cost_setting_id?: number | null
-          created_at?: string | null
-          created_by?: number | null
-          description?: string | null
           id?: number
           match_id?: number | null
-          penalty_type_id?: number | null
           team_id?: number | null
           transaction_date?: string
-          transaction_type: string
         }
         Update: {
-          amount?: number
           cost_setting_id?: number | null
-          created_at?: string | null
-          created_by?: number | null
-          description?: string | null
           id?: number
           match_id?: number | null
-          penalty_type_id?: number | null
           team_id?: number | null
           transaction_date?: string
-          transaction_type?: string
         }
         Relationships: [
           {
-            foreignKeyName: "team_transactions_cost_setting_id_fkey"
+            foreignKeyName: "team_costs_cost_setting_id_fkey"
             columns: ["cost_setting_id"]
             isOneToOne: false
-            referencedRelation: "cost_settings"
+            referencedRelation: "costs"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "team_transactions_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "team_transactions_match_id_fkey"
+            foreignKeyName: "team_costs_match_id_fkey"
             columns: ["match_id"]
             isOneToOne: false
             referencedRelation: "matches"
             referencedColumns: ["match_id"]
           },
           {
-            foreignKeyName: "team_transactions_team_id_fkey"
+            foreignKeyName: "team_costs_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
@@ -386,7 +337,6 @@ export type Database = {
       }
       users: {
         Row: {
-          created_at: string | null
           email: string | null
           password: string
           role: Database["public"]["Enums"]["user_role"]
@@ -394,7 +344,6 @@ export type Database = {
           username: string
         }
         Insert: {
-          created_at?: string | null
           email?: string | null
           password: string
           role: Database["public"]["Enums"]["user_role"]
@@ -402,7 +351,6 @@ export type Database = {
           username: string
         }
         Update: {
-          created_at?: string | null
           email?: string | null
           password?: string
           role?: Database["public"]["Enums"]["user_role"]
@@ -416,13 +364,35 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_team_cost: {
+        Args: {
+          p_team_id: number
+          p_cost_name: string
+          p_amount: number
+          p_category?: string
+          p_match_id?: number
+        }
+        Returns: number
+      }
+      add_team_deposit: {
+        Args: { p_team_id: number; p_deposit_name: string; p_amount: number }
+        Returns: number
+      }
       calculate_team_balance: {
+        Args: { team_id_param: number }
+        Returns: number
+      }
+      calculate_team_balance_final: {
         Args: { team_id_param: number }
         Returns: number
       }
       calculate_team_balance_updated: {
         Args: { team_id_param: number }
         Returns: number
+      }
+      can_current_user_manage_player: {
+        Args: { player_team_id: number }
+        Returns: boolean
       }
       create_user_with_hashed_password: {
         Args: {
@@ -432,7 +402,6 @@ export type Database = {
           role_param?: Database["public"]["Enums"]["user_role"]
         }
         Returns: {
-          created_at: string | null
           email: string | null
           password: string
           role: Database["public"]["Enums"]["user_role"]
@@ -440,7 +409,55 @@ export type Database = {
           username: string
         }
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_user_team_ids: {
+        Args: Record<PropertyKey, never>
+        Returns: number[]
+      }
+      get_match_statistics: {
+        Args: { match_id_param: number }
+        Returns: {
+          total_players: number
+          home_players_count: number
+          away_players_count: number
+          cards_count: number
+        }[]
+      }
+      insert_transaction_with_auto_data: {
+        Args:
+          | {
+              p_team_id: number
+              p_cost_setting_id: number
+              p_amount: number
+              p_date?: string
+              p_match_id?: number
+              p_notes?: string
+            }
+          | {
+              p_team_id: number
+              p_cost_setting_id?: number
+              p_transaction_type?: string
+              p_amount?: number
+              p_description?: string
+              p_match_id?: number
+            }
+          | {
+              p_team_id: number
+              p_transaction_type: string
+              p_amount: number
+              p_description?: string
+              p_match_id?: number
+            }
+        Returns: number
+      }
       is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_current_user_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
@@ -448,7 +465,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      log_cost_setting_change: {
+        Args: {
+          p_cost_setting_id: number
+          p_old_amount: number
+          p_new_amount: number
+          p_user_id?: number
+        }
+        Returns: undefined
+      }
       update_competition_standings: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_competition_standings_optimized: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -462,6 +492,18 @@ export type Database = {
       }
       update_user_password: {
         Args: { user_id_param: number; new_password: string }
+        Returns: boolean
+      }
+      validate_player_data: {
+        Args:
+          | {
+              p_first_name: string
+              p_last_name: string
+              p_birth_date: string
+              p_team_id: number
+              p_exclude_player_id?: number
+            }
+          | { p_name: string; p_team_id?: number }
         Returns: boolean
       }
       verify_user_password: {
