@@ -6,9 +6,7 @@ export { refereeService, type Referee } from './core/refereeService';
 export { playerService, type Player } from './core/playerService';
 export { teamService, type Team } from './core/teamService';
 
-// Optimized Services - React Query enhanced versions
-export { optimizedRefereeService } from './optimized/optimizedRefereeService';
-export { optimizedPlayerService } from './optimized/optimizedPlayerService';
+
 
 // Admin Services - Administrative operations
 export { adminService, type AdminUser } from './admin/adminService';

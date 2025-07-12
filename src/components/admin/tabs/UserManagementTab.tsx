@@ -13,7 +13,7 @@ import { useUserManagement } from "../user-management/useUserManagement";
 import UserDialog from "@/components/user/UserDialog";
 import UserList from "../user-management/UserList";
 import ConfirmDeleteDialog from "../user-management/ConfirmDeleteDialog";
-import UserSearchFilter from "../user-management/UserSearchFilter";
+
 import { Plus, Edit, Save, Users } from "lucide-react";
 
 const UserManagementTab: React.FC = () => {
@@ -102,17 +102,6 @@ const UserManagementTab: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="p-4 border-b">
-              <UserSearchFilter 
-                searchTerm={searchTerm}
-                onSearchTermChange={handleSearchChange}
-                roleFilter={roleFilter}
-                onRoleFilterChange={handleRoleFilterChange}
-                teamFilter={teamFilter}
-                onTeamFilterChange={handleTeamFilterChange}
-                teams={teams}
-              />
-            </div>
             <UserList 
               users={users}
               loading={loading}
@@ -121,6 +110,13 @@ const UserManagementTab: React.FC = () => {
               onEditUser={handleOpenEditDialog}
               onDeleteUser={handleOpenDeleteConfirmation}
               editMode={true}
+              searchTerm={searchTerm}
+              onSearchTermChange={handleSearchChange}
+              roleFilter={roleFilter}
+              onRoleFilterChange={handleRoleFilterChange}
+              teamFilter={teamFilter}
+              onTeamFilterChange={handleTeamFilterChange}
+              teams={teams}
             />
           </CardContent>
           <CardFooter className="flex justify-end">

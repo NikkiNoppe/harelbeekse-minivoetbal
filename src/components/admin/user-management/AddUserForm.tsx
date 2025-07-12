@@ -10,11 +10,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-
-interface Team {
-  team_id: number;
-  team_name: string;
-}
+import { Team } from "./types";
 
 interface AddUserFormProps {
   teams: Team[];

@@ -1,9 +1,18 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { DbUser, Team } from "./types";
-import { useUserDataService } from "./userDataService";
 import { useUserOperations } from "./userOperations";
-import { useUserFilters } from "./useUserFilters";
+
+// Function to generate a secure random password
+const generateRandomPassword = (length: number = 12): string => {
+  const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+  let password = "";
+  for (let i = 0; i < length; i++) {
+    password += charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+  return password;
+};
 
 export const useUserManagement = () => {
   // State for user data and operations
@@ -18,17 +27,83 @@ export const useUserManagement = () => {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<number | null>(null);
 
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [teamFilter, setTeamFilter] = useState("all");
+
   // Fetch data service
-  const { fetchData } = useUserDataService();
+  const fetchData = async () => {
+    try {
+      // Fetch users with their team relationships
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select(`
+          user_id,
+          username,
+          email,
+          role,
+          team_users!left (
+            team_id,
+            teams!team_users_team_id_fkey (
+              team_id,
+              team_name
+            )
+          )
+        `)
+        .order('username');
+
+      if (usersError) {
+        throw usersError;
+      }
+
+      // Fetch teams
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('team_id, team_name')
+        .order('team_name');
+
+      if (teamsError) {
+        throw teamsError;
+      }
+
+      // Transform users data to include team information
+      const transformedUsers: DbUser[] = (usersData || []).map(user => {
+        const teamUsers = user.team_users || [];
+        const teams = teamUsers.map(tu => ({
+          team_id: tu.teams?.team_id || 0,
+          team_name: tu.teams?.team_name || ''
+        })).filter(t => t.team_id > 0);
+        
+        return {
+          user_id: user.user_id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          team_id: teams.length > 0 ? teams[0].team_id : null,
+          team_name: teams.length > 0 ? teams[0].team_name : null,
+          teams: teams
+        };
+      });
+
+      return {
+        users: transformedUsers,
+        teams: teamsData as Team[] || []
+      };
+    } catch (error) {
+      console.error('Error in fetchData:', error);
+      return {
+        users: [],
+        teams: []
+      };
+    }
+  };
 
   // Refresh data function
   async function refreshData() {
-    console.log('Refreshing user management data');
     setLoading(true);
     try {
       const data = await fetchData();
-      console.log('Setting users data:', data.users.length, 'users');
-      console.log('Setting teams data:', data.teams.length, 'teams');
       setUsers(data.users);
       setTeams(data.teams);
     } catch (error) {
@@ -38,16 +113,26 @@ export const useUserManagement = () => {
     }
   }
 
-  // User filtering
-  const {
-    filteredUsers,
-    searchTerm,
-    roleFilter,
-    teamFilter,
-    handleSearchChange,
-    handleRoleFilterChange,
-    handleTeamFilterChange
-  } = useUserFilters(users);
+  // Filter users based on search term and filters
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      // Text search filter (case insensitive)
+      const matchesSearch = searchTerm === "" || 
+        user.username.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Role filter
+      const matchesRole = roleFilter === "all" || user.role === roleFilter;
+      
+      // Team filter
+      const matchesTeam = teamFilter === "all" || 
+        (teamFilter === "none" ? 
+          (!user.teams || user.teams.length === 0) : 
+          (user.teams && user.teams.some(team => team.team_id === parseInt(teamFilter)))
+        );
+      
+      return matchesSearch && matchesRole && matchesTeam;
+    });
+  }, [users, searchTerm, roleFilter, teamFilter]);
 
   // User operations (add, update, delete)
   const { addUser, updateUser, deleteUser } = useUserOperations(teams, refreshData);
@@ -73,7 +158,6 @@ export const useUserManagement = () => {
 
   // Handle updating a user - return success status
   const handleUpdateUser = async (userId: number, formData: any) => {
-    console.log('handleUpdateUser called with userId:', userId, 'formData:', formData);
     setUpdatingUser(true);
     const success = await updateUser(userId, formData);
     setUpdatingUser(false);
@@ -86,7 +170,6 @@ export const useUserManagement = () => {
 
   // Handle opening the delete confirmation dialog
   const handleOpenDeleteConfirmation = (userId: number) => {
-    console.log('Opening delete confirmation for user:', userId);
     setUserToDelete(userId);
     setConfirmDialogOpen(true);
   };
@@ -94,16 +177,12 @@ export const useUserManagement = () => {
   // Handle deleting a user
   const handleDeleteUser = async () => {
     if (userToDelete) {
-      console.log('Starting deletion process for user:', userToDelete);
       setDeletingUser(true);
       const success = await deleteUser(userToDelete);
       setDeletingUser(false);
       if (success) {
-        console.log('User deletion successful, closing dialogs');
         setConfirmDialogOpen(false);
         setUserToDelete(null);
-      } else {
-        console.log('User deletion failed');
       }
     }
   };
@@ -123,9 +202,9 @@ export const useUserManagement = () => {
     searchTerm,
     roleFilter,
     teamFilter,
-    handleSearchChange,
-    handleRoleFilterChange,
-    handleTeamFilterChange,
+    handleSearchChange: setSearchTerm,
+    handleRoleFilterChange: setRoleFilter,
+    handleTeamFilterChange: setTeamFilter,
     handleAddUser,
     handleOpenEditDialog,
     handleUpdateUser,
