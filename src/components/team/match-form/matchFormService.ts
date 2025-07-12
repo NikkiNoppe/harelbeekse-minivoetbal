@@ -155,8 +155,7 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
         is_submitted: matchData.isCompleted,
         is_locked: matchData.isLocked,
         home_players: matchData.homePlayers as any, // Cast to any to satisfy Json type
-        away_players: matchData.awayPlayers as any, // Cast to any to satisfy Json type
-        updated_at: getCurrentISO()
+        away_players: matchData.awayPlayers as any // Cast to any to satisfy Json type
       })
       .eq('match_id', matchData.matchId);
 
@@ -211,8 +210,7 @@ export const lockMatchForm = async (matchId: number): Promise<void> => {
     const { error } = await supabase
       .from('matches')
       .update({
-        is_locked: true,
-        updated_at: getCurrentISO()
+        is_locked: true
       })
       .eq('match_id', matchId);
 

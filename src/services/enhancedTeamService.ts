@@ -136,11 +136,49 @@ export const enhancedTeamService = {
         };
       }
 
+      // If no data returned, try to verify the update worked by fetching the team
       if (!data || data.length === 0) {
-        return { 
-          success: false, 
-          message: 'Geen data geretourneerd bij bijwerken team' 
-        };
+        logTeamOperation('updateTeam - NO DATA RETURNED', { teamId });
+        
+        // Try to fetch the updated team to verify the update worked
+        const { data: verifyData, error: verifyError } = await supabase
+          .from('teams')
+          .select('*')
+          .eq('team_id', teamId)
+          .single();
+        
+        if (verifyError) {
+          logTeamOperation('updateTeam - VERIFY ERROR', { verifyError, teamId });
+          return { 
+            success: false, 
+            message: 'Update lijkt te zijn mislukt - kan team niet verifiëren' 
+          };
+        }
+        
+        // Check if the update actually worked by comparing the data
+        const wasUpdated = (
+          (updateObject.team_name === undefined || verifyData.team_name === updateObject.team_name) &&
+          (updateObject.balance === undefined || verifyData.balance === updateObject.balance)
+        );
+        
+        if (wasUpdated) {
+          logTeamOperation('updateTeam - VERIFY SUCCESS', { verifyData, teamId });
+          return { 
+            success: true, 
+            message: 'Team succesvol bijgewerkt',
+            team: verifyData
+          };
+        } else {
+          logTeamOperation('updateTeam - VERIFY FAILED', { 
+            expected: updateObject, 
+            actual: verifyData, 
+            teamId 
+          });
+          return { 
+            success: false, 
+            message: 'Update lijkt te zijn mislukt - data niet gewijzigd' 
+          };
+        }
       }
 
       return { 

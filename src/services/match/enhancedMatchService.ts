@@ -136,10 +136,7 @@ export const enhancedMatchService = {
       if (updateData.isCompleted !== undefined) updateObject.is_submitted = updateData.isCompleted;
       if (updateData.isLocked !== undefined) updateObject.is_locked = updateData.isLocked;
 
-      // Add updated_at if we have something to update
-      if (Object.keys(updateObject).length > 0) {
-        updateObject.updated_at = new Date().toISOString();
-      }
+      // Note: We don't add updated_at as it's not part of the matches table schema
 
       // If nothing to update, return success
       if (Object.keys(updateObject).length <= 1) {
@@ -195,8 +192,7 @@ export const enhancedMatchService = {
       const { data, error } = await supabase
         .from('matches')
         .update({ 
-          is_locked: true,
-          updated_at: new Date().toISOString()
+          is_locked: true
         })
         .eq('match_id', matchId)
         .select();
@@ -235,8 +231,7 @@ export const enhancedMatchService = {
       const { data, error } = await supabase
         .from('matches')
         .update({ 
-          is_locked: false,
-          updated_at: new Date().toISOString()
+          is_locked: false
         })
         .eq('match_id', matchId)
         .select();
