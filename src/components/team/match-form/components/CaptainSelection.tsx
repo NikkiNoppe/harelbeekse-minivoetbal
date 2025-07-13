@@ -43,7 +43,7 @@ const CaptainSelection: React.FC<CaptainSelectionProps> = ({
           <SelectItem value="no-captain" className="dropdown-item-login-style">Geen kapitein</SelectItem>
           {selectedPlayers.map((sel) => {
             let name = sel.playerName;
-            const dbPlayer = Array.isArray(players)
+            const dbPlayer = players && typeof Array.isArray === 'function' && Array.isArray(players)
               ? players.find((p) => p.player_id === sel.playerId)
               : undefined;
             if (dbPlayer) {

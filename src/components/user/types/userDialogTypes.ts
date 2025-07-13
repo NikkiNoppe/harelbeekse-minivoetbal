@@ -8,7 +8,7 @@ export interface TeamOption {
 
 export interface UserFormData {
   username: string;
-  email: string;
+  email: string | undefined;
   password: string;
   role: "admin" | "referee" | "player_manager";
   teamId: number;

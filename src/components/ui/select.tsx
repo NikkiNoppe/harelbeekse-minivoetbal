@@ -1,3 +1,11 @@
+// Safety check for Array.isArray before any imports
+if (typeof Array.isArray === 'undefined') {
+  Array.isArray = function(arg: any): arg is any[] {
+    return Object.prototype.toString.call(arg) === '[object Array]';
+  };
+  console.log('✅ Array.isArray polyfill loaded in select.tsx');
+}
+
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown, ChevronUp } from "lucide-react"

@@ -67,14 +67,13 @@ const UserFormFields: React.FC<UserFormFieldsProps> = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email">E-mailadres</Label>
+        <Label htmlFor="email">E-mailadres (optioneel)</Label>
         <Input
           id="email"
           type="email"
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          placeholder="E-mailadres"
-          required
+          placeholder="E-mailadres (optioneel)"
           disabled={isLoading}
           className="input-login-style"
         />

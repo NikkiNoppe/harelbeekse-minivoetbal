@@ -1,6 +1,6 @@
 
 import { AvailableDate, GeneratedMatch } from "./types";
-import { timeslotPriorityService } from "@/services";
+import { priorityOrderService } from "@/services/priorityOrderService";
 
 export const assignMatchDetails = async (
   matches: GeneratedMatch[], 
@@ -31,7 +31,7 @@ export const assignMatchDetails = async (
       const matchIndexInDay = matchesByDay[match.matchday]?.indexOf(match) || 0;
       
       // Get optimal timeslot using priority service
-      const { time, venue } = await timeslotPriorityService.getMatchDetails(
+      const { time, venue } = await priorityOrderService.getMatchDetails(
         matchIndexInDay, 
         matchesThisDay,
         dateObj ? dateObj.available_date : undefined

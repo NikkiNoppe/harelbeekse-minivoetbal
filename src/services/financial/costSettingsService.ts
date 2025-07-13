@@ -38,7 +38,7 @@ export const costSettingsService = {
   async getCostSettings(): Promise<CostSetting[]> {
     try {
       const { data, error } = await supabase
-        .from('cost_settings')
+        .from('costs')
         .select('*')
         .eq('is_active', true)
         .order('category', { ascending: true })
@@ -58,7 +58,7 @@ export const costSettingsService = {
   async getMatchCosts(): Promise<CostSetting[]> {
     try {
       const { data, error } = await supabase
-        .from('cost_settings')
+        .from('costs')
         .select('*')
         .eq('category', 'match_cost')
         .eq('is_active', true)
@@ -78,7 +78,7 @@ export const costSettingsService = {
   async getPenalties(): Promise<CostSetting[]> {
     try {
       const { data, error } = await supabase
-        .from('cost_settings')
+        .from('costs')
         .select('*')
         .eq('category', 'penalty')
         .eq('is_active', true)
@@ -98,7 +98,7 @@ export const costSettingsService = {
   async addCostSetting(setting: Omit<CostSetting, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; message: string }> {
     try {
       const { error } = await supabase
-        .from('cost_settings')
+        .from('costs')
         .insert([setting]);
 
       if (error) throw error;
@@ -112,7 +112,7 @@ export const costSettingsService = {
   async updateCostSetting(id: number, setting: Partial<CostSetting>): Promise<{ success: boolean; message: string }> {
     try {
       const { error } = await supabase
-        .from('cost_settings')
+        .from('costs')
         .update({
           ...setting,
           updated_at: new Date().toISOString()
@@ -130,7 +130,7 @@ export const costSettingsService = {
   async deleteCostSetting(id: number): Promise<{ success: boolean; message: string }> {
     try {
       const { error } = await supabase
-        .from('cost_settings')
+        .from('costs')
         .delete()
         .eq('id', id);
 
@@ -145,10 +145,10 @@ export const costSettingsService = {
   async getTeamTransactions(teamId: number): Promise<TeamTransaction[]> {
     try {
       const { data, error } = await supabase
-        .from('team_transactions')
+        .from('team_costs')
         .select(`
           *,
-          cost_settings(name, description, category),
+          costs(name, description, category),
           matches(unique_number, match_date)
         `)
         .eq('team_id', teamId)
@@ -169,7 +169,7 @@ export const costSettingsService = {
   async addTransaction(transaction: Omit<TeamTransaction, 'id' | 'created_at'>): Promise<{ success: boolean; message: string }> {
     try {
       const { error } = await supabase
-        .from('team_transactions')
+        .from('team_costs')
         .insert([transaction]);
 
       if (error) throw error;

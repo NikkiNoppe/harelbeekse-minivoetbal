@@ -2,34 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MatchFormData } from "./types";
 import { localDateTimeToISO, isoToLocalDateTime, getCurrentISO } from "@/lib/dateUtils";
 import { cupService } from "@/services/match";
-
-// Helper function to sort cup matches in tournament order
-const sortCupMatches = (matches: MatchFormData[]): MatchFormData[] => {
-  const getRoundOrder = (uniqueNumber: string): number => {
-    if (uniqueNumber.startsWith('1/8-')) return 1; // Achtste finales
-    if (uniqueNumber.startsWith('QF-')) return 2;  // Kwartfinales
-    if (uniqueNumber.startsWith('SF-')) return 3;  // Halve finales
-    if (uniqueNumber === 'FINAL') return 4;        // Finale
-    return 99; // Unknown/other
-  };
-
-  const getRoundSubOrder = (uniqueNumber: string): number => {
-    const match = uniqueNumber.match(/-(\d+)$/);
-    return match ? parseInt(match[1], 10) : 0;
-  };
-
-  return matches.sort((a, b) => {
-    const aRound = getRoundOrder(a.uniqueNumber);
-    const bRound = getRoundOrder(b.uniqueNumber);
-    
-    if (aRound !== bRound) {
-      return aRound - bRound;
-    }
-    
-    // Same round, sort by sub-order (1/8-1, 1/8-2, etc.)
-    return getRoundSubOrder(a.uniqueNumber) - getRoundSubOrder(b.uniqueNumber);
-  });
-};
+import { sortCupMatches, sortLeagueMatches } from "@/lib/matchSortingUtils";
 
 export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermissions: boolean = false, competitionType?: 'league' | 'cup'): Promise<MatchFormData[]> => {
   try {
@@ -104,14 +77,16 @@ export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermission
         awayScore: row.away_score ?? undefined,
         referee: row.referee,
         refereeNotes: row.referee_notes,
-        homePlayers: Array.isArray(row.home_players) ? row.home_players : [],
-        awayPlayers: Array.isArray(row.away_players) ? row.away_players : []
+        homePlayers: row.home_players && typeof Array.isArray === 'function' && Array.isArray(row.home_players) ? row.home_players : [],
+        awayPlayers: row.away_players && typeof Array.isArray === 'function' && Array.isArray(row.away_players) ? row.away_players : []
       };
     });
 
-    // Apply special sorting for cup matches
+    // Apply appropriate sorting based on competition type
     if (competitionType === 'cup') {
       return sortCupMatches(matches);
+    } else if (competitionType === 'league') {
+      return sortLeagueMatches(matches);
     }
 
     return matches;

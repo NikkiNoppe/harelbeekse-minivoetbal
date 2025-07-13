@@ -91,14 +91,14 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         const isHomeTeam = existingMatch.home_team_id === teamId;
         const existingPlayerData = isHomeTeam ? existingMatch.home_players : existingMatch.away_players;
         
-        if (Array.isArray(existingPlayerData)) {
+        if (existingPlayerData && typeof Array.isArray === 'function' && Array.isArray(existingPlayerData)) {
           initialPlayers = teamPlayers.map(player => {
             const existingPlayer = existingPlayerData.find((p: any) => {
-              return p && typeof p === 'object' && !Array.isArray(p) && 
+              return p && typeof p === 'object' && (typeof Array.isArray !== 'function' || !Array.isArray(p)) && 
                      'playerId' in p && p.playerId === player.playerId;
             });
             
-            if (existingPlayer && typeof existingPlayer === 'object' && !Array.isArray(existingPlayer)) {
+            if (existingPlayer && typeof existingPlayer === 'object' && (typeof Array.isArray !== 'function' || !Array.isArray(existingPlayer))) {
               const playerData = existingPlayer as Record<string, any>;
               return {
                 ...player,

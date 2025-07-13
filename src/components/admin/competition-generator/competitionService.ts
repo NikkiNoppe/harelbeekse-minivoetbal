@@ -3,7 +3,7 @@ import { CompetitionType, GeneratedMatch, AvailableDate } from "./types";
 import { useToast } from "@/hooks/use-toast";
 import { findFormatById } from "./competitionFormats";
 import { getCurrentDate } from "@/lib/dateUtils";
-import { timeslotPriorityService } from "@/services/timeslotPriorityService";
+import { priorityOrderService } from "@/services/priorityOrderService";
 
 export const saveCompetitionToDatabase = async (
   generatedMatches: GeneratedMatch[],
@@ -50,7 +50,7 @@ export const saveCompetitionToDatabase = async (
         const matchDateStr = uniqueDates[matchdayIndex];
         
         // Get optimal timeslot using priority service
-        const { time, venue } = await timeslotPriorityService.getMatchDetails(
+        const { time, venue } = await priorityOrderService.getMatchDetails(
           matchIndexInDay, 
           matchesThisDay,
           matchDateStr

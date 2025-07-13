@@ -24,7 +24,7 @@ export interface UserWithTeam {
 
 export interface NewUser {
   name: string;
-  email: string;
+  email: string | undefined;
   role: "admin" | "referee" | "player_manager";
   teamId: number | null;
   teamIds?: number[];

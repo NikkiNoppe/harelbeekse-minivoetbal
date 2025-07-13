@@ -40,7 +40,7 @@ export const useLogin = (onLoginSuccess: () => void) => {
       }
 
       // Check if we have a result and it's an array with data
-      if (result && Array.isArray(result) && result.length > 0) {
+      if (result && typeof Array.isArray === 'function' && Array.isArray(result) && result.length > 0) {
         const dbUser = result[0];
         console.log('🎉 Login successful for user:', dbUser);
         
@@ -79,8 +79,8 @@ export const useLogin = (onLoginSuccess: () => void) => {
         console.log('❌ No user found or password mismatch');
         console.log('📊 Result details:', {
           result,
-          isArray: Array.isArray(result),
-          length: Array.isArray(result) ? result.length : 'N/A'
+          isArray: typeof Array.isArray === 'function' ? Array.isArray(result) : 'Array.isArray not available',
+          length: (typeof Array.isArray === 'function' && Array.isArray(result)) ? result.length : 'N/A'
         });
         
         toast({

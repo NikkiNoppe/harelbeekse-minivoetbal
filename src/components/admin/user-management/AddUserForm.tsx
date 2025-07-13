@@ -55,11 +55,11 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser, isAdding })
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="email">E-mail</Label>
+          <Label htmlFor="email">E-mail (optioneel)</Label>
           <Input 
             id="email" 
             type="email" 
-            placeholder="E-mailadres"
+            placeholder="E-mailadres (optioneel)"
             value={newUser.email}
             onChange={(e) => setNewUser({...newUser, email: e.target.value})}
             disabled={isAdding}

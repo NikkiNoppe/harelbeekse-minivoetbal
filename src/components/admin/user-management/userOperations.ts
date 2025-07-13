@@ -18,16 +18,16 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
 
   const addUser = async (newUser: {
     name: string;
-    email: string;
+    email: string | undefined;
     role: "admin" | "referee" | "player_manager";
     teamId: number | null;
     teamIds?: number[];
   }) => {
     // Validate form
-    if (!newUser.name || !newUser.email) {
+    if (!newUser.name) {
       toast({
         title: "Fout",
-        description: "Naam en e-mail zijn verplicht",
+        description: "Naam is verplicht",
         variant: "destructive"
       });
       return false;
@@ -42,10 +42,11 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
       return false;
     }
     
-    if (!newUser.email.includes('@')) {
+    // Email is now optional, but if provided, it should be valid
+    if (newUser.email && !newUser.email.includes('@')) {
       toast({
         title: "Fout",
-        description: "Vul een geldig e-mailadres in",
+        description: "Vul een geldig e-mailadres in of laat het veld leeg",
         variant: "destructive"
       });
       return false;
@@ -54,10 +55,10 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
     try {
       const randomPassword = generateRandomPassword();
       
-      // Create user with hashed password
+      // Create user with hashed password - email can be null
       const { data, error } = await supabase.rpc('create_user_with_hashed_password', {
         username_param: newUser.name,
-        email_param: newUser.email,
+        email_param: newUser.email || null,
         password_param: randomPassword,
         role_param: newUser.role
       });
@@ -130,7 +131,7 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
 
   const updateUser = async (userId: number, formData: {
     username: string;
-    email: string;
+    email: string | undefined;
     password?: string;
     role: "admin" | "referee" | "player_manager";
     teamId?: number;

@@ -11,7 +11,7 @@ import Logo from "./Logo";
 interface HeaderProps {
   onLogoClick: () => void;
   onLoginClick: () => void;
-  tabs?: Array<{ key: string; label: string; icon: React.ReactNode }>;
+  tabs?: { key: string; label: string; icon: React.ReactNode }[];
   activeTab?: string;
   onTabChange?: (tab: string) => void;
 }

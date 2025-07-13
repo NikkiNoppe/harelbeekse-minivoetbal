@@ -32,7 +32,7 @@
     },
     {
       "venue_id": 2,
-      "name": "Spothal De Vlasschaard Bavikhove",
+      "name": "Sporthal De Vlasschaard Bavikhove",
       "address": "Vlietestraat 25, 8531 Bavikhove"
     }
   ],
@@ -41,50 +41,115 @@
       "timeslot_id": 1,
       "venue_id": 1,
       "day_of_week": 1,
-      "start_time": "19:00",
-      "end_time": "20:30"
+      "start_time": "20:00",
+      "end_time": "21:00",
+      "priority": 1,
+      "venue_name": "Sporthal De Dageraad Harelbeke"
     },
     {
       "timeslot_id": 2,
-      "venue_id": 1,
-      "day_of_week": 2,
-      "start_time": "19:00",
-      "end_time": "20:30"
+      "venue_id": 2,
+      "day_of_week": 1,
+      "start_time": "20:00",
+      "end_time": "21:00",
+      "priority": 2,
+      "venue_name": "Sporthal De Vlasschaard Bavikhove"
     },
     {
       "timeslot_id": 3,
       "venue_id": 1,
-      "day_of_week": 3,
-      "start_time": "19:00",
-      "end_time": "20:30"
+      "day_of_week": 2,
+      "start_time": "19:30",
+      "end_time": "20:30",
+      "priority": 3,
+      "venue_name": "Sporthal De Dageraad Harelbeke"
     },
     {
       "timeslot_id": 4,
       "venue_id": 1,
-      "day_of_week": 4,
+      "day_of_week": 1,
       "start_time": "19:00",
-      "end_time": "20:30"
+      "end_time": "20:00",
+      "priority": 4,
+      "venue_name": "Sporthal De Dageraad Harelbeke"
     },
     {
       "timeslot_id": 5,
-      "venue_id": 1,
-      "day_of_week": 5,
+      "venue_id": 2,
+      "day_of_week": 1,
       "start_time": "19:00",
-      "end_time": "20:30"
+      "end_time": "20:00",
+      "priority": 5,
+      "venue_name": "Sporthal De Vlasschaard Bavikhove"
     },
     {
       "timeslot_id": 6,
       "venue_id": 1,
-      "day_of_week": 6,
-      "start_time": "14:00",
-      "end_time": "15:30"
+      "day_of_week": 2,
+      "start_time": "18:30",
+      "end_time": "19:30",
+      "priority": 6,
+      "venue_name": "Sporthal De Dageraad Harelbeke"
     },
     {
       "timeslot_id": 7,
+      "venue_id": 2,
+      "day_of_week": 2,
+      "start_time": "18:30",
+      "end_time": "19:30",
+      "priority": 7,
+      "venue_name": "Sporthal De Vlasschaard Bavikhove"
+    }
+  ],
+  "priority_order": [
+    {
+      "priority": 1,
       "venue_id": 1,
-      "day_of_week": 6,
-      "start_time": "15:30",
-      "end_time": "17:00"
+      "day_of_week": 1,
+      "start_time": "20:00",
+      "description": "Dageraad Maandag 20:00"
+    },
+    {
+      "priority": 2,
+      "venue_id": 2,
+      "day_of_week": 1,
+      "start_time": "20:00",
+      "description": "Vlasschaard Maandag 20:00"
+    },
+    {
+      "priority": 3,
+      "venue_id": 1,
+      "day_of_week": 2,
+      "start_time": "19:30",
+      "description": "Dageraad Dinsdag 19:30"
+    },
+    {
+      "priority": 4,
+      "venue_id": 1,
+      "day_of_week": 1,
+      "start_time": "19:00",
+      "description": "Dageraad Maandag 19:00"
+    },
+    {
+      "priority": 5,
+      "venue_id": 2,
+      "day_of_week": 1,
+      "start_time": "19:00",
+      "description": "Vlasschaard Maandag 19:00"
+    },
+    {
+      "priority": 6,
+      "venue_id": 1,
+      "day_of_week": 2,
+      "start_time": "18:30",
+      "description": "Dageraad Dinsdag 18:30"
+    },
+    {
+      "priority": 7,
+      "venue_id": 2,
+      "day_of_week": 2,
+      "start_time": "18:30",
+      "description": "Vlasschaard Dinsdag 18:30"
     }
   ],
   "vacation_periods": [

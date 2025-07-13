@@ -13,11 +13,11 @@ interface PlayerCardSummary {
   totalCards: number;
   isSuspended: boolean;
   suspensionReason?: string;
-  cards: Array<{
+  cards: {
     matchDate: string;
     cardType: 'yellow' | 'red';
     uniqueNumber: string;
-  }>;
+  }[];
 }
 
 interface ResponsiveCardsTableProps {

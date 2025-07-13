@@ -2,6 +2,12 @@ import React from "react";
 import MatchCard from "../../match/components/MatchCard";
 import { Lock, CheckCircle, Clock } from "lucide-react";
 import { MatchFormData } from "./types";
+import { 
+  sortMatchesByDateAndTime, 
+  getCupRoundName, 
+  sortMatchesWithinGroups, 
+  sortGroupKeys 
+} from "@/lib/matchSortingUtils";
 
 interface MatchFormListProps {
   matches: MatchFormData[];
@@ -77,31 +83,13 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     }
   };
 
-  // Helper function to get cup round name from unique_number
-  const getCupRoundName = (uniqueNumber: string): string => {
-    if (uniqueNumber.startsWith('1/8-')) return 'Achtste Finales';
-          if (uniqueNumber.startsWith('QF-')) return 'Kwart Finales';
-    if (uniqueNumber.startsWith('SF-')) return 'Halve Finales';
-    if (uniqueNumber === 'FINAL') return 'Finale';
-    return 'Andere';
-  };
-
   const grouped = groupMatches(filteredMatches);
   
-  const sortedGroupKeys = Object.keys(grouped).sort((a, b) => {
-    if (isCupMatchList) {
-      // Sort cup rounds in tournament order
-      const roundOrder = { 'Achtste Finales': 1, 'Kwart Finales': 2, 'Halve Finales': 3, 'Finale': 4, 'Andere': 99 };
-      return (roundOrder[a] || 99) - (roundOrder[b] || 99);
-    } else {
-      // Sort matchdays numerically
-      const getMatchdayNumber = (str: string) => {
-        const num = str.match(/\d+/);
-        return num ? parseInt(num[0]) : 0;
-      };
-      return getMatchdayNumber(a) - getMatchdayNumber(b);
-    }
-  });
+  // Sort matches within each group by date and time
+  const sortedGroups = sortMatchesWithinGroups(grouped, isCupMatchList);
+  
+  // Sort group keys in the correct order
+  const sortedGroupKeys = sortGroupKeys(Object.keys(sortedGroups), isCupMatchList);
 
   if (isLoading) {
     return (
@@ -137,7 +125,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
               ? 'grid-cols-1 max-w-md mx-auto'
               : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
           }`}>
-            {grouped[groupKey].map(match => {
+            {sortedGroups[groupKey].map(match => {
               const status = getMatchStatus(match);
               const StatusIcon = status.icon;
               // Badge always right, keep color and content

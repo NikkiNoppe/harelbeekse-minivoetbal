@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       // Check if data is an array and has results
-      if (data && Array.isArray(data) && data.length > 0) {
+      if (data && typeof Array.isArray === 'function' && Array.isArray(data) && data.length > 0) {
         const userData = data[0];
         console.log('👤 AuthProvider user data:', userData);
         

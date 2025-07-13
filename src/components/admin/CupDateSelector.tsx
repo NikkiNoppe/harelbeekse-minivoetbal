@@ -10,9 +10,10 @@ import { seasonService } from "@/services";
 interface CupDateSelectorProps {
   onDatesSelected: (dates: string[]) => void;
   onCancel: () => void;
+  isLoading?: boolean;
 }
 
-const CupDateSelector: React.FC<CupDateSelectorProps> = ({ onDatesSelected, onCancel }) => {
+const CupDateSelector: React.FC<CupDateSelectorProps> = ({ onDatesSelected, onCancel, isLoading = false }) => {
   const [selectedDates, setSelectedDates] = useState<string[]>(['', '', '', '', '']);
   const [seasonStartDate, setSeasonStartDate] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -184,15 +185,25 @@ const CupDateSelector: React.FC<CupDateSelectorProps> = ({ onDatesSelected, onCa
           <div className="flex gap-2 pt-4">
             <Button 
               onClick={handleSubmit}
-              disabled={!isValidSelection}
+              disabled={!isValidSelection || isLoading}
               className="flex-1"
             >
-              <Calendar className="h-4 w-4 mr-2" />
-              Data Bevestigen
+              {isLoading ? (
+                <>
+                  <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Bezig met aanmaken...
+                </>
+              ) : (
+                <>
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Data Bevestigen
+                </>
+              )}
             </Button>
             <Button 
               variant="outline" 
               onClick={onCancel}
+              disabled={isLoading}
             >
               Annuleren
             </Button>

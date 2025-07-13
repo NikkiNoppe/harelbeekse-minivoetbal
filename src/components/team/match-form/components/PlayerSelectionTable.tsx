@@ -89,7 +89,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                       </SelectTrigger>
                       <SelectContent className="dropdown-content-login-style">
                         <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
-                        {Array.isArray(players) &&
+                        {players && typeof Array.isArray === 'function' && Array.isArray(players) &&
                           players.map((player) => {
                             const playerIdNum = player.player_id;
                             // Player option is disabled if already selected elsewhere in this team (except for this row)

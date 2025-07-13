@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isoToLocalDateTime, sortDatesDesc } from "@/lib/dateUtils";
+import { sortMatchesByDateAndTime } from "@/lib/matchSortingUtils";
 
 export interface MatchData {
   matchId: number;
@@ -87,7 +88,11 @@ export const fetchCompetitionMatches = async () => {
     }
   }
 
-  return { upcoming, past };
+  // Sort both upcoming and past matches by date and time
+  return { 
+    upcoming: sortMatchesByDateAndTime(upcoming), 
+    past: sortMatchesByDateAndTime(past) 
+  };
 };
 
 export const fetchAllCards = async (): Promise<CardData[]> => {
@@ -116,7 +121,7 @@ export const fetchAllCards = async (): Promise<CardData[]> => {
     const matchDate = row.match_date ? new Date(row.match_date).toISOString().slice(0, 10) : "";
     
     // Extract cards from home players
-    if (Array.isArray(row.home_players)) {
+    if (row.home_players && typeof Array.isArray === 'function' && Array.isArray(row.home_players)) {
       for (const player of row.home_players) {
         if (player.cardType && player.cardType !== 'none' && player.playerId && player.playerName) {
           cards.push({
@@ -133,7 +138,7 @@ export const fetchAllCards = async (): Promise<CardData[]> => {
     }
 
     // Extract cards from away players
-    if (Array.isArray(row.away_players)) {
+    if (row.away_players && typeof Array.isArray === 'function' && Array.isArray(row.away_players)) {
       for (const player of row.away_players) {
         if (player.cardType && player.cardType !== 'none' && player.playerId && player.playerName) {
           cards.push({

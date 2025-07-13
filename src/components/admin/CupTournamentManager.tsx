@@ -296,9 +296,18 @@ const CupTournamentManager: React.FC = () => {
                         variant="outline" 
                         size="sm"
                         onClick={handleSelectAllTeams}
-                        disabled={teams.length === 0}
+                        disabled={teams.length === 0 || isLoading}
                       >
-                        {selectedTeams.length === Math.min(teams.length, 16) ? 'Alles deselecteren' : 'Selecteer allemaal'}
+                        {isLoading ? (
+                          <>
+                            <div className="h-3 w-3 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            Bezig...
+                          </>
+                        ) : (
+                          <>
+                            {selectedTeams.length === Math.min(teams.length, 16) ? 'Alles deselecteren' : 'Selecteer allemaal'}
+                          </>
+                        )}
                       </Button>
                     </div>
 
@@ -312,7 +321,7 @@ const CupTournamentManager: React.FC = () => {
                             id={`team-${team.team_id}`}
                             checked={selectedTeams.includes(team.team_id)}
                             onCheckedChange={() => handleTeamToggle(team.team_id)}
-                            disabled={!selectedTeams.includes(team.team_id) && selectedTeams.length >= 16}
+                            disabled={(!selectedTeams.includes(team.team_id) && selectedTeams.length >= 16) || isLoading}
                           />
                           <label 
                             htmlFor={`team-${team.team_id}`}
@@ -326,11 +335,20 @@ const CupTournamentManager: React.FC = () => {
 
                     <Button 
                       onClick={handleTeamSelectionNext}
-                      disabled={selectedTeams.length !== 16}
+                      disabled={selectedTeams.length !== 16 || isLoading}
                       className="w-full"
                     >
-                      <ArrowRight className="h-4 w-4 mr-2" />
-                      Volgende: Speeldata Selecteren
+                      {isLoading ? (
+                        <>
+                          <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          Bezig...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowRight className="h-4 w-4 mr-2" />
+                          Volgende: Speeldata Selecteren
+                        </>
+                      )}
                     </Button>
 
                     {selectedTeams.length !== 16 && (
@@ -382,7 +400,16 @@ const CupTournamentManager: React.FC = () => {
                     className="mb-4"
                     disabled={isLoading}
                   >
-                    ← Terug naar team selectie
+                    {isLoading ? (
+                      <>
+                        <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Bezig...
+                      </>
+                    ) : (
+                      <>
+                        ← Terug naar team selectie
+                      </>
+                    )}
                   </Button>
                 </CardContent>
               </Card>
@@ -390,6 +417,7 @@ const CupTournamentManager: React.FC = () => {
               <CupDateSelector 
                 onDatesSelected={handleDatesSelected}
                 onCancel={handleCancelDateSelection}
+                isLoading={isLoading}
               />
             </div>
           )}
