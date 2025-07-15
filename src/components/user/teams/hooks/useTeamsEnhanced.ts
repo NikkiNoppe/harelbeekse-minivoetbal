@@ -76,7 +76,11 @@ export function useTeamsEnhanced() {
         throw error;
       }
       
-      setTeams(data || []);
+      setTeams((data || []).map(team => ({ 
+        ...team, 
+        balance: 0,
+        preferred_play_moments: team.preferred_play_moments as any
+      })));
     } catch (error) {
       console.error('Error fetching teams:', error);
       toast({

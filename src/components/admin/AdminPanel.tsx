@@ -129,7 +129,7 @@ const AdminPanel: React.FC = () => {
     try {
       if (editingTeam) {
         // Update existing team
-        await teamService.updateTeam(editingTeam.team_id, name);
+        await teamService.updateTeam(editingTeam.team_id, { team_name: name });
         toast({
           title: "Team bijgewerkt",
           description: `${name} is bijgewerkt`,
@@ -137,7 +137,7 @@ const AdminPanel: React.FC = () => {
         setEditingTeam(null);
       } else {
         // Add new team
-        await teamService.createTeam(name);
+        await teamService.createTeam({ team_name: name });
         toast({
           title: "Team toegevoegd",
           description: `${name} is toegevoegd aan de teamlijst`,

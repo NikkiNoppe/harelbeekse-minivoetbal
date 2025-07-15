@@ -88,7 +88,6 @@ export const useTeamOperations = (onSuccess: () => void) => {
         .from('teams')
         .insert({
           team_name: formData.name.trim(),
-          balance: parseFloat(formData.balance) || 0,
           contact_person: formData.contact_person.trim() || null,
           contact_phone: formData.contact_phone.trim() || null,
           contact_email: formData.contact_email.trim() || null,
@@ -106,7 +105,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
       });
       
       onSuccess();
-      return data;
+      return { ...data, balance: 0 } as Team;
     } catch (error: any) {
       console.error('Error creating team:', error);
       
