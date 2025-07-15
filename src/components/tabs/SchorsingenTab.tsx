@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -185,45 +185,76 @@ const PlayerCardsTable = memo(({ players }: { players: PlayerCard[] }) => {
 
 PlayerCardsTable.displayName = 'PlayerCardsTable';
 
-// Suspension rules component
-const SuspensionRules = memo(() => (
-  <Card>
-    <CardHeader>
-      <CardTitle className="text-lg">Schorsingsregels</CardTitle>
-    </CardHeader>
-    <CardContent className="text-sm space-y-3">
-      <div className="space-y-1">
-        <h4 className="font-medium">Gele Kaarten</h4>
-        <p className="text-muted-foreground">
-          Schorsingen na gele kaarten:
-        </p>
-        <ul className="list-disc pl-5 text-muted-foreground space-y-1">
-          <li>3 gele kaarten: 1 wedstrijd schorsing</li>
-          <li>5 gele kaarten: 2 opeenvolgende wedstrijden</li>
-        </ul>
-      </div>
-      
-      <div className="space-y-1">
-        <h4 className="font-medium">Rode Kaarten</h4>
-        <ul className="list-disc pl-5 text-muted-foreground">
-          <li>Rode kaart: onmiddellijke uitsluiting ZONDER vervanging</li>
-          <li>Minimum schorsing: 1 wedstrijd</li>
-          <li>Minnelijke schikking mogelijk</li>
-        </ul>
-      </div>
-      
-      <div className="space-y-1">
-        <h4 className="font-medium">Beroepsprocedure</h4>
-        <p className="text-muted-foreground">
-          Clubs kunnen binnen 7 werkdagen na de wedstrijd beroep aantekenen tegen een rode kaart.
-        </p>
-        <p className="text-muted-foreground">
-          Dit gebeurd schriftelijk via noppe.nikki@icloud.com.
-        </p>
-      </div>
-    </CardContent>
-  </Card>
-));
+// Dynamic Suspension Rules component
+const SuspensionRules = memo(() => {
+  const [rules, setRules] = useState<any>(null);
+  
+  useEffect(() => {
+    const loadRules = async () => {
+      try {
+        const { suspensionRulesService } = await import("@/services/suspensionRulesService");
+        const suspensionRules = await suspensionRulesService.getSuspensionRules();
+        setRules(suspensionRules);
+      } catch (error) {
+        console.error('Failed to load suspension rules:', error);
+      }
+    };
+    
+    loadRules();
+  }, []);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Huidige Schorsingsregels</CardTitle>
+      </CardHeader>
+      <CardContent className="text-sm space-y-3">
+        <div className="space-y-1">
+          <h4 className="font-medium">Gele Kaarten</h4>
+          <p className="text-muted-foreground">
+            Schorsingen na gele kaarten:
+          </p>
+          <ul className="list-disc pl-5 text-muted-foreground space-y-1">
+            {rules?.yellow_card_rules?.map((rule: any, index: number) => (
+              <li key={index}>
+                {rule.min_cards === rule.max_cards 
+                  ? `${rule.min_cards} gele kaarten` 
+                  : `${rule.min_cards}-${rule.max_cards} gele kaarten`}: {rule.suspension_matches} wedstrijd{rule.suspension_matches > 1 ? 'en' : ''}
+              </li>
+            )) || (
+              <>
+                <li>2-3 gele kaarten: 1 wedstrijd schorsing</li>
+                <li>4-5 gele kaarten: 2 opeenvolgende wedstrijden</li>
+                <li>6+ gele kaarten: 3 opeenvolgende wedstrijden</li>
+              </>
+            )}
+          </ul>
+        </div>
+        
+        <div className="space-y-1">
+          <h4 className="font-medium">Rode Kaarten</h4>
+          <ul className="list-disc pl-5 text-muted-foreground">
+            <li>Rode kaart: onmiddellijke uitsluiting ZONDER vervanging</li>
+            <li>Minimum schorsing: {rules?.red_card_rules?.default_suspension_matches || 1} wedstrijd{(rules?.red_card_rules?.default_suspension_matches || 1) > 1 ? 'en' : ''}</li>
+            {rules?.red_card_rules?.admin_can_modify && (
+              <li>Admin kan schorsing aanpassen (max {rules.red_card_rules.max_suspension_matches} wedstrijden)</li>
+            )}
+          </ul>
+        </div>
+        
+        <div className="space-y-1">
+          <h4 className="font-medium">Beroepsprocedure</h4>
+          <p className="text-muted-foreground">
+            Clubs kunnen binnen 7 werkdagen na de wedstrijd beroep aantekenen tegen een rode kaart.
+          </p>
+          <p className="text-muted-foreground">
+            Dit gebeurd schriftelijk via noppe.nikki@icloud.com.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
 
 SuspensionRules.displayName = 'SuspensionRules';
 

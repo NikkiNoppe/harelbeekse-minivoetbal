@@ -30,4 +30,5 @@ export { timeslotPriorityService } from './timeslotPriorityService';
 export { competitionDataService } from './competitionDataService';
 export { enhancedTeamService } from './enhancedTeamService';
 export { suspensionService, type Suspension, type PlayerCard } from './suspensionService';
+export { suspensionRulesService, type SuspensionRules, type YellowCardRule, type RedCardRules } from './suspensionRulesService';
 export { cleanupTestData } from './cleanupService'; 

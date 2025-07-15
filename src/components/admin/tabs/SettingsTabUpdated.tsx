@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TabVisibilitySettingsUpdated from "../settings/TabVisibilitySettingsUpdated";
 import CompetitionDataSettings from "../settings/CompetitionDataSettings";
+import { SuspensionRulesSettings } from "../settings/SuspensionRulesSettings";
 import { Settings } from "lucide-react";
 
 const SettingsTabUpdated: React.FC = () => {
@@ -21,6 +22,7 @@ const SettingsTabUpdated: React.FC = () => {
           <TabsList>
             <TabsTrigger value="tab-visibility">Tab Zichtbaarheid</TabsTrigger>
             <TabsTrigger value="competition-data">Competitiedata</TabsTrigger>
+            <TabsTrigger value="suspension-rules">Schorsingsregels</TabsTrigger>
           </TabsList>
           
           <TabsContent value="tab-visibility">
@@ -29,6 +31,10 @@ const SettingsTabUpdated: React.FC = () => {
           
           <TabsContent value="competition-data">
             <CompetitionDataSettings />
+          </TabsContent>
+          
+          <TabsContent value="suspension-rules">
+            <SuspensionRulesSettings />
           </TabsContent>
         </Tabs>
       </section>

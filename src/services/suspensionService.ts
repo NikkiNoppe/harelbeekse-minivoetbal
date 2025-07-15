@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { suspensionRulesService } from "./suspensionRulesService";
 
 export interface PlayerCard {
   playerId: number;
@@ -60,21 +61,22 @@ export const suspensionService = {
 
       console.log('Player cards data:', playerCards); // Debug log
 
+      // Get dynamic suspension rules
+      const rules = await suspensionRulesService.getSuspensionRules();
+
       playerCards.forEach(player => {
         // Logic voor schorsingen op basis van gele kaarten
         if (player.yellowCards >= 2) {
           let matches = 0;
           let reason = '';
           
-          if (player.yellowCards === 2 || player.yellowCards === 3) {
-            matches = 1;
-            reason = `${player.yellowCards} gele kaarten`;
-          } else if (player.yellowCards === 4 || player.yellowCards === 5) {
-            matches = 2;
-            reason = `${player.yellowCards} gele kaarten`;
-          } else if (player.yellowCards >= 6) {
-            matches = 3;
-            reason = `${player.yellowCards} gele kaarten`;
+          // Use dynamic rules instead of hardcoded logic
+          for (const rule of rules.yellow_card_rules) {
+            if (player.yellowCards >= rule.min_cards && player.yellowCards <= rule.max_cards) {
+              matches = rule.suspension_matches;
+              reason = `${player.yellowCards} gele kaarten`;
+              break;
+            }
           }
 
           if (matches > 0) {
@@ -89,14 +91,14 @@ export const suspensionService = {
           }
         }
 
-        // Logic voor rode kaarten
+        // Logic voor rode kaarten - use dynamic rules
         if (player.redCards > 0) {
           suspensions.push({
             playerId: player.playerId,
             playerName: player.playerName,
             teamName: player.teamName,
             reason: `${player.redCards} rode kaart${player.redCards > 1 ? 'en' : ''}`,
-            matches: player.redCards,
+            matches: player.redCards * rules.red_card_rules.default_suspension_matches,
             status: 'active'
           });
         }

@@ -322,17 +322,29 @@ export type Database = {
       }
       teams: {
         Row: {
-          balance: number | null
+          club_colors: string | null
+          contact_email: string | null
+          contact_person: string | null
+          contact_phone: string | null
+          preferred_play_moments: Json | null
           team_id: number
           team_name: string
         }
         Insert: {
-          balance?: number | null
+          club_colors?: string | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          preferred_play_moments?: Json | null
           team_id?: number
           team_name: string
         }
         Update: {
-          balance?: number | null
+          club_colors?: string | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          preferred_play_moments?: Json | null
           team_id?: number
           team_name?: string
         }
