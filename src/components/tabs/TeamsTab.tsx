@@ -1,78 +1,18 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Phone, Mail, Palette, Shield, MapPin, RefreshCw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-
-interface Team {
-  team_id: number;
-  team_name: string;
-  contact_person: string | null;
-  contact_phone: string | null;
-  contact_email: string | null;
-  club_colors: string | null;
-}
+import { Users, Phone, Mail, Palette, Shield, MapPin } from "lucide-react";
+import { useTeams } from "@/hooks/useTeams";
+import { TeamCardSkeleton } from "@/components/ui/skeleton";
 
 const TeamsTab: React.FC = () => {
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const fetchTeams = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-
-      const { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors')
-        .order('team_name');
-
-      if (error) {
-        console.error('Error fetching teams:', error);
-        setError('Fout bij het laden van teams');
-        return;
-      }
-
-      setTeams(data || []);
-    } catch (err) {
-      console.error('Error fetching teams:', err);
-      setError('Fout bij het laden van teams');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchTeams();
-  }, [fetchTeams]);
-
-  const handleRefresh = () => {
-    fetchTeams(true);
-  };
+  const { data: teams, isLoading, error, refetch } = useTeams();
 
   const LoadingSkeleton = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="team-skeleton">
       {[...Array(6)].map((_, i) => (
-        <Card key={i} className="animate-pulse">
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              <Skeleton className="h-5 w-32" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <TeamCardSkeleton key={i} />
       ))}
     </div>
   );
@@ -84,21 +24,18 @@ const TeamsTab: React.FC = () => {
           <Shield className="h-8 w-8 mx-auto mb-2" />
           <h3 className="font-semibold">Fout bij laden</h3>
         </div>
-        <p className="text-sm text-red-500 mb-4">{error}</p>
-        <div className="flex gap-2 justify-center">
-          <button
-            onClick={handleRefresh}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Opnieuw proberen
-          </button>
-        </div>
+        <p className="text-sm text-red-500 mb-4">{error?.message || 'Er is een fout opgetreden bij het laden van teams'}</p>
+        <button
+          onClick={() => refetch()}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          Opnieuw proberen
+        </button>
       </CardContent>
     </Card>
   );
 
-  const TeamCard = React.memo(({ team }: { team: Team }) => {
+  const TeamCard = React.memo(({ team }: { team: any }) => {
     const hasContactInfo = team.contact_person || team.contact_phone || team.contact_email;
 
     return (
@@ -170,7 +107,7 @@ const TeamsTab: React.FC = () => {
     </div>
   );
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <Header />
@@ -193,7 +130,7 @@ const TeamsTab: React.FC = () => {
       <Header />
       
       <section>
-        {teams.length === 0 ? (
+        {!teams || teams.length === 0 ? (
           <Card className="border-purple-200 bg-purple-50">
             <CardContent className="p-8 text-center">
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">

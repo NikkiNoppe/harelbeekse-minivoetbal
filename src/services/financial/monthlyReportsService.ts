@@ -85,13 +85,12 @@ export const monthlyReportsService = {
 
       // Fetch all transactions with related data using explicit type casting
       const { data: transactions, error } = await (supabase as any)
-        .from('team_transactions')
+        .from('team_costs')
         .select(`
           *,
-          cost_settings(name, description, category),
+          costs(name, description, category),
           matches(unique_number, match_date, referee)
         `)
-        .eq('transaction_type', 'match_cost')
         .not('matches', 'is', null);
 
       if (error) throw error;
@@ -105,12 +104,12 @@ export const monthlyReportsService = {
       const filteredTransactions = allTransactions.filter(transaction => {
         if (!transaction.matches?.match_date) return false;
         const matchDate = new Date(transaction.matches.match_date);
-        return matchDate >= filterStartDate && matchDate <= filterEndDate;
+        return matchDate >= filterStartDate && matchDate <= filterEndDate && transaction.costs?.category === 'match_cost';
       });
 
       // Filter penalty transactions for the season period
       const filteredPenaltyTransactions = allTransactions.filter(transaction => {
-        if (transaction.transaction_type !== 'penalty') return false;
+        if (transaction.costs?.category !== 'penalty') return false;
         const transactionDate = new Date(transaction.transaction_date);
         return transactionDate >= filterStartDate && transactionDate <= filterEndDate;
       });
@@ -144,10 +143,10 @@ export const monthlyReportsService = {
           date.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' }) :
           `Seizoen ${season}`;
 
-        const isFieldCost = transaction.cost_settings?.name?.toLowerCase().includes('veld') || 
-                           transaction.cost_settings?.description?.toLowerCase().includes('veld');
-        const isRefereeCost = transaction.cost_settings?.name?.toLowerCase().includes('scheidsrechter') || 
-                             transaction.cost_settings?.description?.toLowerCase().includes('scheidsrechter');
+        const isFieldCost = transaction.costs?.name?.toLowerCase().includes('veld') || 
+                           transaction.costs?.description?.toLowerCase().includes('veld');
+        const isRefereeCost = transaction.costs?.name?.toLowerCase().includes('scheidsrechter') || 
+                             transaction.costs?.description?.toLowerCase().includes('scheidsrechter');
 
         if (isFieldCost) {
           const key = month ? monthKey : 'season-total';
@@ -250,29 +249,28 @@ export const monthlyReportsService = {
       const { startDate, endDate } = getSeasonDates(seasonData);
       
       const { data: transactions, error } = await (supabase as any)
-        .from('team_transactions')
+        .from('team_costs')
         .select(`
           *,
-          cost_settings(name, description, category),
+          costs(name, description, category),
           matches(unique_number, match_date, referee)
         `)
-        .eq('transaction_type', 'match_cost')
         .not('matches', 'is', null);
 
       if (error) throw error;
 
-      // Filter by season based on match_date
+      // Filter by season based on match_date and only match_cost category
       const filteredTransactions = transactions?.filter((transaction: any) => {
         if (!transaction.matches?.match_date) return false;
         const matchDate = new Date(transaction.matches.match_date);
-        return matchDate >= startDate && matchDate <= endDate;
+        return matchDate >= startDate && matchDate <= endDate && transaction.costs?.category === 'match_cost';
       });
 
       const refereePayments: Record<string, MonthlyRefereeCosts> = {};
 
       filteredTransactions?.forEach((transaction: any) => {
-        const isRefereeCost = transaction.cost_settings?.name?.toLowerCase().includes('scheidsrechter') || 
-                             transaction.cost_settings?.description?.toLowerCase().includes('scheidsrechter');
+        const isRefereeCost = transaction.costs?.name?.toLowerCase().includes('scheidsrechter') || 
+                             transaction.costs?.description?.toLowerCase().includes('scheidsrechter');
         
         if (isRefereeCost) {
           const referee = transaction.matches?.referee || 'Onbekend';

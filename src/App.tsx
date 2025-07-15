@@ -8,25 +8,28 @@ import { TabVisibilityProvider } from "@/context/TabVisibilityContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./hooks/use-theme";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const App = () => (
-  <ThemeProvider defaultTheme="light">
-    <AuthProvider>
-      <TabVisibilityProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </TabVisibilityProvider>
-    </AuthProvider>
-  </ThemeProvider>
+  <ErrorBoundary>
+    <ThemeProvider defaultTheme="light">
+      <AuthProvider>
+        <TabVisibilityProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </TabVisibilityProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  </ErrorBoundary>
 );
 
 export default App;

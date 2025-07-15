@@ -171,7 +171,7 @@ export const enhancedCostSettingsService = {
         if (currentSetting && currentSetting.amount !== setting.amount) {
           // Get count of affected transactions
           const { count: affectedCount } = await supabase
-            .from('team_transactions')
+            .from('team_costs')
             .select('*', { count: 'exact', head: true })
             .eq('cost_setting_id', id);
           
@@ -205,9 +205,9 @@ export const enhancedCostSettingsService = {
       // If amount changed, manually update related transactions
       if (isAmountChange && setting.amount !== undefined) {
         try {
-          // Update all team_transactions that reference this cost_setting
+          // Update all team_costs that reference this cost_setting
           const { error: updateError } = await supabase
-            .from('team_transactions')
+            .from('team_costs')
             .update({ amount: setting.amount })
             .eq('cost_setting_id', id);
           
@@ -229,7 +229,7 @@ export const enhancedCostSettingsService = {
       
       // Get updated count of affected transactions after the update
       const { count: finalAffectedCount } = await supabase
-        .from('team_transactions')
+        .from('team_costs')
         .select('*', { count: 'exact', head: true })
         .eq('cost_setting_id', id);
       
@@ -336,7 +336,7 @@ export const enhancedCostSettingsService = {
     logOperation('addTransaction - START', { transaction });
     try {
       const { data, error } = await supabase
-        .from('team_transactions')
+        .from('team_costs')
         .insert([transaction])
         .select();
 
@@ -363,10 +363,10 @@ export const enhancedCostSettingsService = {
     logOperation('getAffectedTransactions - START', { costSettingId });
     try {
       const { data, error } = await supabase
-        .from('team_transactions')
+        .from('team_costs')
         .select(`
           *,
-          cost_settings(name, description, category),
+          costs(name, description, category),
           matches(unique_number, match_date)
         `)
         .eq('cost_setting_id', costSettingId)

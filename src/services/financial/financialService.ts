@@ -44,10 +44,10 @@ export const financialService = {
   async getTeamTransactions(teamId: number): Promise<TeamTransaction[]> {
     try {
       const { data, error } = await supabase
-        .from('team_transactions')
+        .from('team_costs')
         .select(`
           *,
-          cost_settings(name, description, category),
+          costs(name, description, category),
           matches(unique_number, match_date)
         `)
         .eq('team_id', teamId)
