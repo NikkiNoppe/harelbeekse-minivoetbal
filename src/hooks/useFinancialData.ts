@@ -71,7 +71,11 @@ export const useFinancialData = () => {
         .order('team_name');
       
       if (error) throw error;
-      return data as Team[];
+      return ((data || []) as any[]).map(team => ({ 
+        ...team, 
+        balance: 0,
+        preferred_play_moments: team.preferred_play_moments as any 
+      })) as Team[];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes - financial data changes less frequently
     gcTime: 15 * 60 * 1000, // 15 minutes cache

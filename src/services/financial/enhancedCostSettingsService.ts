@@ -102,7 +102,7 @@ export const enhancedCostSettingsService = {
     logOperation('getPenalties - START');
     try {
       const { data, error } = await supabase
-        .from('cost_settings')
+        .from('costs')
         .select('*')
         .eq('category', 'penalty')
         .eq('is_active', true)
@@ -132,7 +132,7 @@ export const enhancedCostSettingsService = {
     logOperation('addCostSetting - START', { setting });
     try {
       const { data, error } = await supabase
-        .from('cost_settings')
+        .from('costs')
         .insert([setting])
         .select();
 
@@ -163,7 +163,7 @@ export const enhancedCostSettingsService = {
       if (isAmountChange) {
         // Get current setting to compare amounts
         const { data: currentSetting } = await supabase
-          .from('cost_settings')
+          .from('costs')
           .select('amount')
           .eq('id', id)
           .single();
@@ -190,7 +190,7 @@ export const enhancedCostSettingsService = {
 
       // First, try to update without the trigger to avoid audit log issues
       const { data, error } = await supabase
-        .from('cost_settings')
+        .from('costs')
         .update(updateData)
         .eq('id', id)
         .select();
@@ -260,7 +260,7 @@ export const enhancedCostSettingsService = {
     logOperation('deleteCostSetting - START', { id });
     try {
       const { data, error } = await supabase
-        .from('cost_settings')
+        .from('costs')
         .delete()
         .eq('id', id)
         .select();
@@ -380,8 +380,24 @@ export const enhancedCostSettingsService = {
       }
       
       const mappedData = (data || []).map(transaction => ({
-        ...transaction,
-        transaction_type: transaction.transaction_type as 'deposit' | 'penalty' | 'match_cost' | 'adjustment'
+        id: transaction.id,
+        team_id: transaction.team_id,
+        transaction_type: transaction.costs?.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment' || 'adjustment',
+        amount: transaction.amount || (transaction.costs as any)?.amount || 0,
+        description: transaction.costs?.description || null,
+        cost_setting_id: transaction.cost_setting_id,
+        match_id: transaction.match_id,
+        transaction_date: transaction.transaction_date,
+        created_at: new Date().toISOString(),
+        cost_settings: transaction.costs ? {
+          name: transaction.costs.name,
+          description: transaction.costs.description,
+          category: transaction.costs.category
+        } : undefined,
+        matches: transaction.matches ? {
+          unique_number: transaction.matches.unique_number,
+          match_date: transaction.matches.match_date
+        } : undefined
       }));
 
       logOperation('getAffectedTransactions - SUCCESS', { count: mappedData.length, costSettingId });

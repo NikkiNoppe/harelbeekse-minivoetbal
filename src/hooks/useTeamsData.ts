@@ -120,9 +120,9 @@ export const useTeamsData = () => {
       };
     }
 
-    const totalBalance = teams.reduce((sum, team) => sum + team.balance, 0);
-    const positiveBalance = teams.filter(team => team.balance > 0).length;
-    const negativeBalance = teams.filter(team => team.balance < 0).length;
+    const totalBalance = teams.reduce((sum, team) => sum + (team.balance || 0), 0);
+    const positiveBalance = teams.filter(team => (team.balance || 0) > 0).length;
+    const negativeBalance = teams.filter(team => (team.balance || 0) < 0).length;
 
     return {
       totalTeams: teams.length,
@@ -142,9 +142,9 @@ export const useTeamsData = () => {
         case 'name':
           return a.team_name.localeCompare(b.team_name);
         case 'balance':
-          return a.balance - b.balance;
+          return (a.balance || 0) - (b.balance || 0);
         case 'balance_desc':
-          return b.balance - a.balance;
+          return (b.balance || 0) - (a.balance || 0);
         default:
           return 0;
       }

@@ -88,7 +88,7 @@ class SuspensionRulesService {
       const { error } = await supabase
         .from('application_settings')
         .update({ 
-          setting_value: rules,
+          setting_value: rules as any,
           updated_at: new Date().toISOString()
         })
         .eq('setting_category', 'suspension_rules')
