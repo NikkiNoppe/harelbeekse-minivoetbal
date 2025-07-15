@@ -66,7 +66,7 @@ class SuspensionRulesService {
         return DEFAULT_SUSPENSION_RULES;
       }
 
-      const rules = data.setting_value as SuspensionRules;
+      const rules = data.setting_value as unknown as SuspensionRules;
       
       // Validate and merge with defaults
       this.cachedRules = {
