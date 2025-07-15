@@ -91,17 +91,16 @@ export const useFinancialData = () => {
           home_team_id,
           away_team_id,
           is_submitted,
-          created_at,
           match_date,
           unique_number,
           teams_home:teams!home_team_id(team_name),
           teams_away:teams!away_team_id(team_name)
         `)
         .eq('is_submitted', true)
-        .order('created_at', { ascending: false });
+        .order('match_date', { ascending: false });
       
       if (error) throw error;
-      return data as SubmittedMatch[];
+      return (data as any) || [];
     },
     staleTime: 3 * 60 * 1000, // 3 minutes - match submissions change regularly
     gcTime: 10 * 60 * 1000, // 10 minutes cache
@@ -126,16 +125,37 @@ export const useFinancialData = () => {
     queryKey: ['all-team-transactions'],
     queryFn: async (): Promise<TeamTransaction[]> => {
       const { data, error } = await supabase
-        .from('team_transactions')
+        .from('team_costs')
         .select(`
           *,
-          cost_settings(name, description, category),
+          costs(name, description, category),
           matches(unique_number, match_date)
         `)
         .order('transaction_date', { ascending: false });
       
       if (error) throw error;
-      return data || [];
+      
+      return (data || []).map(transaction => ({
+        id: transaction.id,
+        team_id: transaction.team_id,
+        transaction_type: transaction.costs?.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment' || 'adjustment',
+        amount: (transaction.costs as any)?.amount || 0,
+        description: transaction.costs?.description || null,
+        cost_setting_id: transaction.cost_setting_id,
+        penalty_type_id: null,
+        match_id: transaction.match_id,
+        transaction_date: transaction.transaction_date,
+        created_at: new Date().toISOString(),
+        cost_settings: transaction.costs ? {
+          name: transaction.costs.name,
+          description: transaction.costs.description,
+          category: transaction.costs.category
+        } : undefined,
+        matches: transaction.matches ? {
+          unique_number: transaction.matches.unique_number,
+          match_date: transaction.matches.match_date
+        } : undefined
+      }));
     },
     staleTime: 2 * 60 * 1000, // 2 minutes - transactions change frequently
     gcTime: 10 * 60 * 1000, // 10 minutes cache
@@ -159,30 +179,36 @@ export const useFinancialData = () => {
     
     const teamTransactions = transactionsQuery.data.filter(t => t.team_id === teamId);
     
+    // Startkapitaal: alle stortingen (deposits)
     const startCapital = teamTransactions
       .filter(t => t.transaction_type === 'deposit')
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
+    // Veldkosten: alle match_cost transacties met 'veld' in de naam
     const fieldCosts = teamTransactions
       .filter(t => t.transaction_type === 'match_cost' && 
         (t.cost_settings?.name?.toLowerCase().includes('veld') || 
          t.description?.toLowerCase().includes('veld')))
       .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
     
+    // Scheidsrechterkosten: alle match_cost transacties met 'scheidsrechter' in de naam
     const refereeCosts = teamTransactions
       .filter(t => t.transaction_type === 'match_cost' && 
         (t.cost_settings?.name?.toLowerCase().includes('scheidsrechter') || 
          t.description?.toLowerCase().includes('scheidsrechter')))
       .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
     
+    // Boetes: alle penalty transacties
     const fines = teamTransactions
       .filter(t => t.transaction_type === 'penalty')
       .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
     
+    // Correcties: alle adjustment transacties
     const adjustments = teamTransactions
       .filter(t => t.transaction_type === 'adjustment')
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
+    // Huidig saldo: startkapitaal - alle kosten + correcties
     const currentBalance = startCapital - fieldCosts - refereeCosts - fines + adjustments;
 
     return {

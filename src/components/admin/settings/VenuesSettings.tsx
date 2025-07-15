@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings, Edit, Trash2, Building } from "lucide-react";
+import { Settings, Edit, Trash2, Building, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { competitionDataService } from "@/services";
 import { seasonService } from "@/services";
@@ -43,7 +43,17 @@ const VenuesSettings: React.FC = () => {
   };
 
   const handleEdit = (item: any) => {
-    setEditingItem(item);
+    setEditingItem({ ...item });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleAdd = () => {
+    const newVenue = {
+      venue_id: Date.now(), // Temporary ID
+      name: '',
+      address: ''
+    };
+    setEditingItem(newVenue);
     setIsEditDialogOpen(true);
   };
 
@@ -171,7 +181,13 @@ const VenuesSettings: React.FC = () => {
             </p>
 
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Sportzalen</h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Sportzalen</h3>
+                <Button onClick={handleAdd} className="btn-dark">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nieuwe Locatie
+                </Button>
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -213,18 +229,26 @@ const VenuesSettings: React.FC = () => {
         <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light">
           <DialogHeader className="bg-purple-100">
             <DialogTitle className="text-xl text-center text-purple-light">
-              Bewerk Locatie
+              {editingItem?.venue_id ? 'Bewerk Locatie' : 'Nieuwe Locatie'}
             </DialogTitle>
           </DialogHeader>
           <div className="py-4 bg-purple-100 p-4 sm:p-6">
             <div className="space-y-4">
               <div>
                 <Label htmlFor="venueName">Naam</Label>
-                <Input id="venueName" defaultValue={editingItem?.name} />
+                <Input 
+                  id="venueName" 
+                  value={editingItem?.name || ''} 
+                  onChange={(e) => setEditingItem(prev => ({ ...prev, name: e.target.value }))}
+                />
               </div>
               <div>
                 <Label htmlFor="venueAddress">Adres</Label>
-                <Input id="venueAddress" defaultValue={editingItem?.address} />
+                <Input 
+                  id="venueAddress" 
+                  value={editingItem?.address || ''} 
+                  onChange={(e) => setEditingItem(prev => ({ ...prev, address: e.target.value }))}
+                />
               </div>
             </div>
           </div>

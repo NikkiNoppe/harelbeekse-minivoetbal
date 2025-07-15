@@ -96,7 +96,7 @@ export type Database = {
       }
       costs: {
         Row: {
-          amount: number
+          amount: number | null
           category: string
           description: string | null
           id: number
@@ -104,7 +104,7 @@ export type Database = {
           name: string
         }
         Insert: {
-          amount: number
+          amount?: number | null
           category: string
           description?: string | null
           id?: number
@@ -112,7 +112,7 @@ export type Database = {
           name: string
         }
         Update: {
-          amount?: number
+          amount?: number | null
           category?: string
           description?: string | null
           id?: number
@@ -233,6 +233,7 @@ export type Database = {
       }
       team_costs: {
         Row: {
+          amount: number | null
           cost_setting_id: number | null
           id: number
           match_id: number | null
@@ -240,6 +241,7 @@ export type Database = {
           transaction_date: string
         }
         Insert: {
+          amount?: number | null
           cost_setting_id?: number | null
           id?: number
           match_id?: number | null
@@ -247,6 +249,7 @@ export type Database = {
           transaction_date?: string
         }
         Update: {
+          amount?: number | null
           cost_setting_id?: number | null
           id?: number
           match_id?: number | null

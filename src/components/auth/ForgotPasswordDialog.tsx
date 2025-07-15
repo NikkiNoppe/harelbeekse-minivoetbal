@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
@@ -52,7 +53,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.functions.invoke('send-password-reset', {
+      const { data: response, error } = await supabase.functions.invoke('send-password-reset', {
         body: { email: data.email }
       });
 
@@ -64,10 +65,15 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
           variant: "destructive",
         });
       } else {
+        // Show the specific message from the server
+        const message = response?.message || "Als dit email adres bestaat, zal je een reset link ontvangen.";
+        
         toast({
-          title: "Email verstuurd",
-          description: "Als dit email adres bestaat, zal je een reset link ontvangen.",
+          title: "Verzoek verwerkt",
+          description: message,
+          duration: 8000, // Show longer for important messages
         });
+        
         form.reset();
         onOpenChange(false);
       }
@@ -86,12 +92,16 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full max-w-md mx-4 bg-purple-100 text-foreground border-border rounded-lg p-0">
-        <DialogTitle className="sr-only">Wachtwoord vergeten</DialogTitle>
         <div className="rounded-lg overflow-hidden">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 sm:p-6">
               <div className="text-center mb-4">
-                <h2 className="text-lg font-semibold text-purple-dark">Wachtwoord vergeten</h2>
+                <DialogTitle className="text-lg font-semibold text-purple-dark">
+                  Wachtwoord vergeten
+                </DialogTitle>
+                <DialogDescription className="text-sm text-purple-dark mt-2">
+                  Voer je email adres in om een wachtwoord reset link te ontvangen.
+                </DialogDescription>
               </div>
               
               <FormField
@@ -112,6 +122,15 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                   </FormItem>
                 )}
               />
+              
+              <div className="text-xs text-purple-dark bg-purple-50 p-3 rounded">
+                <p><strong>Let op:</strong></p>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li>Als je account geen email heeft, wordt de beheerder op de hoogte gesteld</li>
+                  <li>Reset links zijn 1 uur geldig</li>
+                  <li>Controleer ook je spam folder</li>
+                </ul>
+              </div>
               
               <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4">
                 <Button

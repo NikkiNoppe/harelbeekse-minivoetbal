@@ -223,7 +223,7 @@ const AdminPanel: React.FC = () => {
         <TabsList className="login-tabs-list">
           <TabsTrigger value="teams" className="login-tab-trigger">Teams beheren</TabsTrigger>
           <TabsTrigger value="users" className="login-tab-trigger">Gebruikers beheren</TabsTrigger>
-          <TabsTrigger value="cup" className="login-tab-trigger">Bekertoernooi</TabsTrigger>
+          <TabsTrigger value="cup" className="login-tab-trigger">Beker</TabsTrigger>
         </TabsList>
         
         <TabsContent value="teams" className="space-y-4 mt-4">

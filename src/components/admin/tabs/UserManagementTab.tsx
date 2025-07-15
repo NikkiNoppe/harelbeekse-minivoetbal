@@ -56,6 +56,7 @@ const UserManagementTab: React.FC = () => {
     const success = await handleAddUser({
       name: formData.username,
       email: formData.email,
+      password: formData.password, // Pass the password
       role: formData.role,
       teamId: formData.teamId || null,
       teamIds: formData.teamIds || []

@@ -43,8 +43,8 @@ const Header: React.FC<HeaderProps> = ({
     { key: "players", label: "Spelers", icon: <Users size={18} />, adminOnly: false },
     { key: "teams", label: "Teams", icon: <Shield size={18} />, adminOnly: true },
     { key: "users", label: "Gebruikers", icon: <User size={18} />, adminOnly: true },
-    { key: "competition", label: "Competitiebeheer", icon: <Trophy size={18} />, adminOnly: true },
-    { key: "cup", label: "Bekertoernooi", icon: <Award size={18} />, adminOnly: true },
+    { key: "competition", label: "Competitie", icon: <Trophy size={18} />, adminOnly: true },
+    { key: "cup", label: "Beker", icon: <Award size={18} />, adminOnly: true },
     { key: "financial", label: "Financieel", icon: <DollarSign size={18} />, adminOnly: true },
     { key: "settings", label: "Instellingen", icon: <Settings size={18} />, adminOnly: true }
   ];
@@ -55,8 +55,9 @@ const Header: React.FC<HeaderProps> = ({
     { key: "beker", label: "Beker", icon: <Award size={18} /> },
     { key: "competitie", label: "Competitie", icon: <Trophy size={18} /> },
     { key: "playoff", label: "Play-off", icon: <Target size={18} /> },
-    { key: "reglement", label: "Reglement", icon: <BookOpen size={18} /> },
-    { key: "schorsingen", label: "Schorsingen", icon: <Ban size={18} /> }
+    { key: "schorsingen", label: "Schorsingen", icon: <Ban size={18} /> },
+    { key: "teams", label: "Teams", icon: <Shield size={18} /> },
+    { key: "reglement", label: "Reglement", icon: <BookOpen size={18} /> }
   ];
 
   const isAdmin = user?.role === "admin";

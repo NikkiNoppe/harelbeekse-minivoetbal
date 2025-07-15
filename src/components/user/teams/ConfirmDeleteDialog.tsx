@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 interface Team {
   team_id: number;
   team_name: string;
-  balance: number;
 }
 
 interface ConfirmDeleteDialogProps {

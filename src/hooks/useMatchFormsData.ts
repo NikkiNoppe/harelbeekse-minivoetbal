@@ -7,6 +7,8 @@ export interface MatchFormsFilters {
   searchTerm: string;
   dateFilter: string;
   matchdayFilter: string;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
 }
 
 export const useMatchFormsData = (
@@ -50,30 +52,104 @@ export const useMatchFormsData = (
     refetchIntervalInBackground: false // Only when tab is active
   });
 
-  // Filter matches based on current filters
-  const filterMatches = (matches: MatchFormData[], filters: MatchFormsFilters) => {
+  // Filter and sort matches based on current filters
+  const filterAndSortMatches = (matches: MatchFormData[], filters: MatchFormsFilters) => {
     if (!matches) return [];
 
-    return matches.filter(match => {
+    // Filter matches
+    const filteredMatches = matches.filter(match => {
       const matchesSearch = !filters.searchTerm || 
         match.homeTeamName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
         match.awayTeamName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        match.uniqueNumber.toLowerCase().includes(filters.searchTerm.toLowerCase());
+        match.uniqueNumber.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        match.matchday.toLowerCase().includes(filters.searchTerm.toLowerCase());
 
       const matchesDate = !filters.dateFilter || 
-        match.date === filters.dateFilter;
+        match.date === filters.dateFilter ||
+        match.date.startsWith(filters.dateFilter) ||
+        match.date.includes(filters.dateFilter);
 
       const matchesMatchday = !filters.matchdayFilter || 
         match.matchday.toLowerCase().includes(filters.matchdayFilter.toLowerCase());
 
       return matchesSearch && matchesDate && matchesMatchday;
     });
+
+    // Sort matches
+    const sortedMatches = [...filteredMatches].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (filters.sortBy) {
+        case 'date':
+          // Parse dates correctly and handle invalid dates
+          const dateA = parseDate(a.date);
+          const dateB = parseDate(b.date);
+          comparison = dateA.getTime() - dateB.getTime();
+          break;
+        case 'matchday':
+          comparison = a.matchday.localeCompare(b.matchday);
+          break;
+        case 'week':
+          // Extract week number from matchday or date
+          const weekA = extractWeekNumber(a.matchday) || getWeekFromDate(a.date);
+          const weekB = extractWeekNumber(b.matchday) || getWeekFromDate(b.date);
+          comparison = weekA - weekB;
+          break;
+        case 'team':
+          comparison = a.homeTeamName.localeCompare(b.homeTeamName);
+          break;
+        case 'status':
+          // Sort by completion status (completed first, then pending)
+          comparison = (a.isCompleted ? 1 : 0) - (b.isCompleted ? 1 : 0);
+          break;
+        default:
+          // Default to date sorting
+          const defaultDateA = parseDate(a.date);
+          const defaultDateB = parseDate(b.date);
+          comparison = defaultDateA.getTime() - defaultDateB.getTime();
+      }
+      
+      return filters.sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return sortedMatches;
+  };
+
+  // Helper function to parse dates safely
+  const parseDate = (dateString: string): Date => {
+    // Handle different date formats
+    if (dateString.includes('T')) {
+      // ISO format
+      return new Date(dateString);
+    } else if (dateString.includes('-')) {
+      // YYYY-MM-DD format
+      return new Date(dateString + 'T00:00:00');
+    } else {
+      // Try to parse as local date
+      const [year, month, day] = dateString.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+  };
+
+  // Helper function to extract week number from matchday string
+  const extractWeekNumber = (matchday: string): number | null => {
+    const weekMatch = matchday.match(/week\s*(\d+)/i) || matchday.match(/speelweek\s*(\d+)/i);
+    return weekMatch ? parseInt(weekMatch[1]) : null;
+  };
+
+  // Helper function to get week number from date
+  const getWeekFromDate = (date: string): number => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   };
 
   // Get current tab data with filters
   const getTabData = (tabType: 'league' | 'cup', filters: MatchFormsFilters) => {
     const query = tabType === 'cup' ? cupQuery : leagueQuery;
-    const filteredMatches = filterMatches(query.data || [], filters);
+    const filteredMatches = filterAndSortMatches(query.data || [], filters);
     
     return {
       matches: filteredMatches,
@@ -137,7 +213,7 @@ export const useMatchFormsData = (
     
     // Utility functions
     getTabData,
-    filterMatches,
+    filterAndSortMatches,
     refreshInstantly,
     
     // Direct query methods for manual control

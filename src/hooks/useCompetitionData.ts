@@ -28,6 +28,25 @@ export interface MatchData {
 
 // Function to fetch competition standings from Supabase
 const fetchCompetitionStandings = async (): Promise<Team[]> => {
+  // First check if there are any submitted matches
+  const { data: matchesData, error: matchesError } = await supabase
+    .from('matches')
+    .select('match_id')
+    .eq('is_submitted', true)
+    .not('home_score', 'is', null)
+    .not('away_score', 'is', null);
+
+  if (matchesError) {
+    console.error("Error checking matches:", matchesError);
+    throw new Error(`Error checking matches: ${matchesError.message}`);
+  }
+
+  // If no submitted matches, return empty array
+  if (!matchesData || matchesData.length === 0) {
+    return [];
+  }
+
+  // If there are submitted matches, fetch standings
   const { data, error } = await supabase
     .from('competition_standings')
     .select(`

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { costSettingsService } from "./costSettingsService";
 
 export interface MonthlyFieldCosts {
   month: string;
@@ -78,18 +79,12 @@ export const monthlyReportsService = {
       const seasonData = getSeasonFromYear(seasonYear);
       const { startDate, endDate } = getSeasonDates(seasonData);
       
-      // If month is specified, narrow down the date range
-      let filterStartDate = startDate;
-      let filterEndDate = endDate;
-      
-      if (month) {
-        const monthYear = month >= 8 ? seasonData.startYear : seasonData.endYear;
-        filterStartDate = new Date(monthYear, month - 1, 1);
-        filterEndDate = new Date(monthYear, month, 0); // Last day of month
-      }
+      // Adjust date range if month is specified
+      const filterStartDate = month ? new Date(seasonYear, month - 1, 1) : startDate;
+      const filterEndDate = month ? new Date(seasonYear, month, 0, 23, 59, 59) : endDate;
 
-      // Fetch all match_cost transactions with proper joins
-      const { data: allTransactions, error: transError } = await supabase
+      // Fetch all transactions with related data using explicit type casting
+      const { data: transactions, error } = await (supabase as any)
         .from('team_transactions')
         .select(`
           *,
@@ -99,14 +94,26 @@ export const monthlyReportsService = {
         .eq('transaction_type', 'match_cost')
         .not('matches', 'is', null);
 
-      // Fetch penalty transactions  
-      const { data: penaltyTransactions, error: penaltyError } = await supabase
-        .from('team_transactions')
-        .select(`
-          *,
-          cost_settings(name, description, category)
-        `)
-        .eq('transaction_type', 'penalty');
+      if (error) throw error;
+
+      const allTransactions: any[] = [];
+      if (transactions) {
+        allTransactions.push(...transactions);
+      }
+
+      // Filter transactions based on match_date from the season period
+      const filteredTransactions = allTransactions.filter(transaction => {
+        if (!transaction.matches?.match_date) return false;
+        const matchDate = new Date(transaction.matches.match_date);
+        return matchDate >= filterStartDate && matchDate <= filterEndDate;
+      });
+
+      // Filter penalty transactions for the season period
+      const filteredPenaltyTransactions = allTransactions.filter(transaction => {
+        if (transaction.transaction_type !== 'penalty') return false;
+        const transactionDate = new Date(transaction.transaction_date);
+        return transactionDate >= filterStartDate && transactionDate <= filterEndDate;
+      });
 
       // Fetch match statistics for the period
       const { data: matches, error: matchError } = await supabase
@@ -114,22 +121,7 @@ export const monthlyReportsService = {
         .select('match_id, match_date, is_submitted')
         .eq('is_submitted', true);
 
-      if (transError) throw transError;
-      if (penaltyError) throw penaltyError;
       if (matchError) throw matchError;
-
-      // Filter transactions based on match_date from the season period
-      const filteredTransactions = allTransactions?.filter(transaction => {
-        if (!transaction.matches?.match_date) return false;
-        const matchDate = new Date(transaction.matches.match_date);
-        return matchDate >= filterStartDate && matchDate <= filterEndDate;
-      });
-
-      // Filter penalty transactions for the season period
-      const filteredPenaltyTransactions = penaltyTransactions?.filter(transaction => {
-        const transactionDate = new Date(transaction.transaction_date);
-        return transactionDate >= filterStartDate && transactionDate <= filterEndDate;
-      });
 
       // Filter matches for the season period
       const filteredMatches = matches?.filter(match => {
@@ -144,7 +136,7 @@ export const monthlyReportsService = {
       const matchStatsByMonth: Record<string, MonthlyMatchStats> = {};
 
       // Process filtered transactions
-      filteredTransactions?.forEach(transaction => {
+      filteredTransactions.forEach(transaction => {
         const date = new Date(transaction.matches.match_date);
         const season = getSeasonFromDate(date);
         const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -153,9 +145,9 @@ export const monthlyReportsService = {
           `Seizoen ${season}`;
 
         const isFieldCost = transaction.cost_settings?.name?.toLowerCase().includes('veld') || 
-                           transaction.description?.toLowerCase().includes('veld');
+                           transaction.cost_settings?.description?.toLowerCase().includes('veld');
         const isRefereeCost = transaction.cost_settings?.name?.toLowerCase().includes('scheidsrechter') || 
-                             transaction.description?.toLowerCase().includes('scheidsrechter');
+                             transaction.cost_settings?.description?.toLowerCase().includes('scheidsrechter');
 
         if (isFieldCost) {
           const key = month ? monthKey : 'season-total';
@@ -190,7 +182,7 @@ export const monthlyReportsService = {
       });
 
       // Process penalty transactions
-      filteredPenaltyTransactions?.forEach(transaction => {
+      filteredPenaltyTransactions.forEach(transaction => {
         const date = new Date(transaction.transaction_date);
         const season = getSeasonFromDate(date);
         const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -257,7 +249,7 @@ export const monthlyReportsService = {
       const seasonData = getSeasonFromYear(seasonYear);
       const { startDate, endDate } = getSeasonDates(seasonData);
       
-      const { data: transactions, error } = await supabase
+      const { data: transactions, error } = await (supabase as any)
         .from('team_transactions')
         .select(`
           *,
@@ -270,7 +262,7 @@ export const monthlyReportsService = {
       if (error) throw error;
 
       // Filter by season based on match_date
-      const filteredTransactions = transactions?.filter(transaction => {
+      const filteredTransactions = transactions?.filter((transaction: any) => {
         if (!transaction.matches?.match_date) return false;
         const matchDate = new Date(transaction.matches.match_date);
         return matchDate >= startDate && matchDate <= endDate;
@@ -278,9 +270,9 @@ export const monthlyReportsService = {
 
       const refereePayments: Record<string, MonthlyRefereeCosts> = {};
 
-      filteredTransactions?.forEach(transaction => {
+      filteredTransactions?.forEach((transaction: any) => {
         const isRefereeCost = transaction.cost_settings?.name?.toLowerCase().includes('scheidsrechter') || 
-                             transaction.description?.toLowerCase().includes('scheidsrechter');
+                             transaction.cost_settings?.description?.toLowerCase().includes('scheidsrechter');
         
         if (isRefereeCost) {
           const referee = transaction.matches?.referee || 'Onbekend';

@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 export interface Team {
   team_id: number;
   team_name: string;
-  balance: number;
 }
 
 export interface TeamUser {
@@ -116,9 +115,6 @@ export const enhancedTeamService = {
       if (updateData.team_name !== undefined) {
         updateObject.team_name = String(updateData.team_name).trim();
       }
-      if (updateData.balance !== undefined) {
-        updateObject.balance = Number(updateData.balance);
-      }
       
       // Perform update
       const { data, error } = await supabase
@@ -157,8 +153,7 @@ export const enhancedTeamService = {
         
         // Check if the update actually worked by comparing the data
         const wasUpdated = (
-          (updateObject.team_name === undefined || verifyData.team_name === updateObject.team_name) &&
-          (updateObject.balance === undefined || verifyData.balance === updateObject.balance)
+          (updateObject.team_name === undefined || verifyData.team_name === updateObject.team_name)
         );
         
         if (wasUpdated) {

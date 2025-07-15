@@ -10,8 +10,9 @@ import UserManagementTab from "@/components/admin/tabs/UserManagementTab";
 import TeamsTab from "@/components/admin/tabs/TeamsTab";
 import MatchFormTab from "@/components/team/MatchFormTab";
 import CupTournamentManager from "@/components/admin/CupTournamentManager";
+import PlayoffManagementTab from "@/components/admin/tabs/PlayoffManagementTab";
 
-type TabName = "match-forms" | "players" | "teams" | "users" | "competition" | "financial" | "settings" | "cup";
+type TabName = "match-forms" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup";
 
 interface AdminDashboardProps {
   activeTab: TabName;
@@ -48,6 +49,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 
                 <TabsContent value="competition" className="mt-0">
                   <CompetitionManagementTab />
+                </TabsContent>
+                
+                <TabsContent value="playoffs" className="mt-0">
+                  <PlayoffManagementTab />
                 </TabsContent>
                 
                 <TabsContent value="cup" className="mt-0">

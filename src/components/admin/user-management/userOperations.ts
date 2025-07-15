@@ -2,16 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Team } from "./types";
 import { useToast } from "@/hooks/use-toast";
-
-// Function to generate a secure random password
-const generateRandomPassword = (length: number = 12): string => {
-  const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-  let password = "";
-  for (let i = 0; i < length; i++) {
-    password += charset.charAt(Math.floor(Math.random() * charset.length));
-  }
-  return password;
-};
+import { hashPassword, generateRandomPassword } from "@/lib/passwordUtils";
 
 export const useUserOperations = (teams: Team[], refreshData: () => Promise<void>) => {
   const { toast } = useToast();
@@ -19,6 +10,7 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
   const addUser = async (newUser: {
     name: string;
     email: string | undefined;
+    password: string; // Add password parameter
     role: "admin" | "referee" | "player_manager";
     teamId: number | null;
     teamIds?: number[];
@@ -53,22 +45,27 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
     }
     
     try {
-      const randomPassword = generateRandomPassword();
+      // Hash the provided password
+      const hashedPassword = await hashPassword(newUser.password);
       
-      // Create user with hashed password - email can be null
-      const { data, error } = await supabase.rpc('create_user_with_hashed_password', {
-        username_param: newUser.name,
-        email_param: newUser.email || null,
-        password_param: randomPassword,
-        role_param: newUser.role
-      });
+      // Create user directly in users table with hashed password
+      const { data, error } = await supabase
+        .from('users')
+        .insert({
+          username: newUser.name,
+          email: newUser.email || null,
+          password: hashedPassword, // Store hashed password
+          role: newUser.role
+        })
+        .select()
+        .single();
       
       if (error) {
         throw error;
       }
       
       if (!data) {
-        throw new Error('No user data returned from creation function');
+        throw new Error('No user data returned from creation');
       }
       
       // Add team assignments for player_manager role
@@ -96,20 +93,20 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
           
           toast({
             title: "Gebruiker toegevoegd",
-            description: `${newUser.name} is toegevoegd als teamverantwoordelijke voor ${teamNames}. Wachtwoord: ${randomPassword}`,
+            description: `${newUser.name} is toegevoegd als teamverantwoordelijke voor ${teamNames}.`,
             duration: 15000
           });
         } else {
           toast({
             title: "Gebruiker toegevoegd",
-            description: `${newUser.name} is toegevoegd zonder teamkoppeling. Wachtwoord: ${randomPassword}`,
+            description: `${newUser.name} is toegevoegd zonder teamkoppeling.`,
             duration: 15000
           });
         }
       } else {
         toast({
           title: "Gebruiker toegevoegd",
-          description: `${newUser.name} is toegevoegd als ${newUser.role}. Wachtwoord: ${randomPassword}`,
+          description: `${newUser.name} is toegevoegd als ${newUser.role}.`,
           duration: 15000
         });
       }
@@ -138,31 +135,26 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
     teamIds?: number[];
   }) => {
     try {
-      // Update user in users table
+      // Update user in users table (including password if provided)
+      const updateData: any = {
+        username: formData.username,
+        email: formData.email,
+        role: formData.role
+      };
+      
+      if (formData.password?.trim()) {
+        // Hash the password before storing
+        const hashedPassword = await hashPassword(formData.password);
+        updateData.password = hashedPassword;
+      }
+      
       const { error: userError } = await supabase
         .from('users')
-        .update({
-          username: formData.username,
-          email: formData.email,
-          role: formData.role
-        })
+        .update(updateData)
         .eq('user_id', userId);
 
       if (userError) {
         throw userError;
-      }
-
-      // Update password if provided
-      if (formData.password?.trim()) {
-        const { error: passwordError } = await supabase
-          .rpc('update_user_password', {
-            user_id_param: userId,
-            new_password: formData.password
-          });
-
-        if (passwordError) {
-          throw passwordError;
-        }
       }
 
       // Handle team assignments

@@ -216,13 +216,12 @@ AS $function$
 DECLARE
   new_user public.users;
 BEGIN
-  INSERT INTO public.users (username, email, password, role, created_at)
+  INSERT INTO public.users (username, email, password, role)
   VALUES (
     username_param,
     email_param,
     crypt(password_param, gen_salt('bf', 8)),
-    role_param,
-    CURRENT_TIMESTAMP
+    role_param
   )
   RETURNING * INTO new_user;
   

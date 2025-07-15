@@ -15,10 +15,19 @@ export interface AdminUser {
 export interface Team {
   team_id: number;
   team_name: string;
-  balance: number;
   created_at: string;
   players?: Player[];
   id?: number; // Add id for generic CRUD compatibility
+  contact_person?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  club_colors?: string;
+  preferred_play_moments?: {
+    days?: string[];
+    timeslots?: string[];
+    venues?: number[];
+    notes?: string;
+  };
 }
 
 export interface Player {
@@ -177,31 +186,31 @@ export const createGenericCRUD = <T extends { id?: number | string }>(
 export const userCRUD = createGenericCRUD<AdminUser>(
   'Gebruiker',
   adminQueryKeys.users,
-  'users' as any
+  'users'
 );
 
 export const teamCRUD = createGenericCRUD<Team>(
   'Team',
   adminQueryKeys.teams,
-  'teams' as any
+  'teams'
 );
 
 export const playerCRUD = createGenericCRUD<Player>(
   'Speler',
   adminQueryKeys.players,
-  'players' as any
+  'players'
 );
 
 export const costSettingCRUD = createGenericCRUD<CostSetting>(
   'Kostentarief',
   adminQueryKeys.costSettings,
-  'costs' as any
+  'costs'
 );
 
 export const blogPostCRUD = createGenericCRUD<BlogPost>(
   'Nieuwsbericht',
   adminQueryKeys.blogPosts,
-  'application_settings' as any,
+  'application_settings',
   (data) => ({
     id: data.setting_value.id,
     title: data.setting_value.title,
@@ -210,45 +219,6 @@ export const blogPostCRUD = createGenericCRUD<BlogPost>(
     tags: data.setting_value.tags || [],
   })
 );
-
-// Specialized hooks for complex operations
-export const useTeamWithPlayers = (teamId: number) => {
-  return useQuery({
-    queryKey: adminQueryKeys.teamPlayers(teamId),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .eq('team_id', teamId)
-        .order('name');
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!teamId,
-  });
-};
-
-export const useTeamTransactions = (teamId: number) => {
-  return useQuery({
-    queryKey: adminQueryKeys.teamTransactions(teamId),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('team_transactions')
-        .select(`
-          *,
-          cost_settings(name, description, category),
-          matches(unique_number, match_date)
-        `)
-        .eq('team_id', teamId)
-        .order('transaction_date', { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!teamId,
-  });
-};
 
 // Bulk operations
 export const useBulkDelete = () => {
@@ -280,7 +250,28 @@ export const adminService = {
   players: playerCRUD,
   costSettings: costSettingCRUD,
   blogPosts: blogPostCRUD,
-  useTeamWithPlayers,
-  useTeamTransactions,
   useBulkDelete,
-}; 
+};
+
+// Gespecialiseerde hook voor team_costs (geen generic CRUD, want niet in Supabase types)
+// Gebruik deze hook alleen voor team_costs queries:
+export function useTeamTransactions(teamId: number) {
+  return useQuery({
+    queryKey: adminQueryKeys.teamTransactions(teamId),
+    queryFn: async () => {
+      // 'team_costs' bestaat niet in de Supabase types, dus expliciet as any
+      const { data, error } = await supabase
+        .from('team_costs' as any)
+        .select(`
+          *,
+          costs(name, description, category),
+          matches(unique_number, match_date)
+        `)
+        .eq('team_id', teamId)
+        .order('transaction_date', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!teamId,
+  });
+} 

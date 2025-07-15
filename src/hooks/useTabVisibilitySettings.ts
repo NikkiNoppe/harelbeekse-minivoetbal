@@ -45,7 +45,8 @@ export const useTabVisibilitySettings = () => {
         { id: 3, setting_name: 'playoff', is_visible: true, requires_login: false },
         { id: 4, setting_name: 'beker', is_visible: true, requires_login: false },
         { id: 5, setting_name: 'schorsingen', is_visible: true, requires_login: false },
-        { id: 6, setting_name: 'reglement', is_visible: true, requires_login: false },
+        { id: 6, setting_name: 'teams', is_visible: true, requires_login: false },
+        { id: 7, setting_name: 'reglement', is_visible: true, requires_login: false },
       ]);
       toast({
         title: "Info",

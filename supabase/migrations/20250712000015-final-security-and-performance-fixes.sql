@@ -67,21 +67,8 @@ SECURITY DEFINER
 SET search_path TO ''
 AS $function$
 BEGIN
-    -- Log the change to audit_log table
-    INSERT INTO audit_log (
-        table_name,
-        operation,
-        old_data,
-        new_data,
-        changed_by
-    ) VALUES (
-        'costs',
-        TG_OP,
-        CASE WHEN TG_OP = 'DELETE' THEN row_to_json(OLD) ELSE NULL END,
-        CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN row_to_json(NEW) ELSE NULL END,
-        (SELECT auth.uid())
-    );
-    
+    -- For now, just return the record without logging
+    -- Audit logging can be re-implemented later if needed
     RETURN COALESCE(NEW, OLD);
 END;
 $function$;

@@ -8,8 +8,6 @@ export interface CostSetting {
   amount: number;
   category: 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost';
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface TeamTransaction {
@@ -44,7 +42,7 @@ export const enhancedCostSettingsService = {
     logOperation('getCostSettings - START');
     try {
       const { data, error } = await supabase
-        .from('cost_settings')
+        .from('costs')
         .select('*')
         .eq('is_active', true)
         .order('category', { ascending: true })
@@ -74,7 +72,7 @@ export const enhancedCostSettingsService = {
     logOperation('getMatchCosts - START');
     try {
       const { data, error } = await supabase
-        .from('cost_settings')
+        .from('costs')
         .select('*')
         .eq('category', 'match_cost')
         .eq('is_active', true)
@@ -289,10 +287,10 @@ export const enhancedCostSettingsService = {
     logOperation('getTeamTransactions - START', { teamId });
     try {
       const { data, error } = await supabase
-        .from('team_transactions')
+        .from('team_costs')
         .select(`
           *,
-          cost_settings(name, description, category),
+          costs(name, description, category),
           matches(unique_number, match_date)
         `)
         .eq('team_id', teamId)
@@ -306,8 +304,24 @@ export const enhancedCostSettingsService = {
       }
       
       const mappedData = (data || []).map(transaction => ({
-        ...transaction,
-        transaction_type: transaction.transaction_type as 'deposit' | 'penalty' | 'match_cost' | 'adjustment'
+        id: transaction.id,
+        team_id: transaction.team_id,
+        transaction_type: transaction.costs?.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment' || 'adjustment',
+        amount: transaction.amount || (transaction.costs as any)?.amount || 0, // Use individual amount or fallback to cost setting amount
+        description: transaction.costs?.description || null,
+        cost_setting_id: transaction.cost_setting_id,
+        match_id: transaction.match_id,
+        transaction_date: transaction.transaction_date,
+        created_at: new Date().toISOString(),
+        cost_settings: transaction.costs ? {
+          name: transaction.costs.name,
+          description: transaction.costs.description,
+          category: transaction.costs.category
+        } : undefined,
+        matches: transaction.matches ? {
+          unique_number: transaction.matches.unique_number,
+          match_date: transaction.matches.match_date
+        } : undefined
       }));
 
       logOperation('getTeamTransactions - SUCCESS', { count: mappedData.length, teamId });

@@ -159,6 +159,17 @@ const TabContent = memo(({
                 onDateChange={(value) => onFiltersChange({ ...filters, dateFilter: value })}
                 matchdayFilter={filters.matchdayFilter}
                 onMatchdayChange={(value) => onFiltersChange({ ...filters, matchdayFilter: value })}
+                sortBy={filters.sortBy}
+                onSortChange={(value) => onFiltersChange({ ...filters, sortBy: value })}
+                sortOrder={filters.sortOrder}
+                onSortOrderChange={(value) => onFiltersChange({ ...filters, sortOrder: value })}
+                onClearFilters={() => onFiltersChange({
+                  searchTerm: "",
+                  dateFilter: "",
+                  matchdayFilter: "",
+                  sortBy: "date",
+                  sortOrder: "asc"
+                })}
               />
             </div>
             <MatchFormList 
@@ -192,7 +203,9 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
   const [filters, setFilters] = useState<MatchFormsFilters>({
     searchTerm: "",
     dateFilter: "",
-    matchdayFilter: ""
+    matchdayFilter: "",
+    sortBy: "date",
+    sortOrder: "asc"
   });
 
   const hasElevatedPermissions = user?.role === "admin" || user?.role === "referee";

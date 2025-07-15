@@ -49,6 +49,47 @@ export const seasonService = {
     }
   },
 
+  // Get available days for team preferences
+  async getAvailableDays(): Promise<string[]> {
+    const seasonData = await this.getSeasonData();
+    return seasonData.day_names || [];
+  },
+
+  // Get available timeslots for team preferences
+  async getAvailableTimeslots(): Promise<Array<{ id: string; label: string }>> {
+    const seasonData = await this.getSeasonData();
+    const timeslots = seasonData.venue_timeslots || [];
+    // Map naar string en id
+    const slotObjects = timeslots.map((ts: any) => {
+      const label = ts.start_time && ts.end_time
+        ? `${ts.start_time} - ${ts.end_time}`
+        : ts.timeslot_id || ts.start_time || 'Onbekend';
+      const id = ts.timeslot_id ? String(ts.timeslot_id) : label;
+      return { id, label };
+    });
+    // Uniek maken op basis van id
+    const uniqueMap = new Map();
+    slotObjects.forEach(obj => {
+      if (!uniqueMap.has(obj.id)) {
+        uniqueMap.set(obj.id, obj);
+      }
+    });
+    return Array.from(uniqueMap.values());
+  },
+
+  // Get available venues for team preferences
+  async getAvailableVenues(): Promise<Array<{venue_id: number; name: string; address: string}>> {
+    const seasonData = await this.getSeasonData();
+    const venues = seasonData.venues || [];
+    
+    // Ensure venues have the correct structure
+    return venues.map((venue: any) => ({
+      venue_id: venue.venue_id || venue.id || 0,
+      name: venue.name || venue.venue_name || 'Onbekende locatie',
+      address: venue.address || venue.venue_address || ''
+    }));
+  },
+
   // Clear cached season data
   clearSeasonDataCache(): void {
     localStorage.removeItem('seasonData');

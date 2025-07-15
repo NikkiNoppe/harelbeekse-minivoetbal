@@ -1,49 +1,13 @@
 {
-  "typescript.preferences.useAliasesForRenames": false,
-  "typescript.suggest.autoImports": true,
-  "typescript.updateImportsOnFileMove.enabled": "always",
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
-  },
-  "eslint.validate": [
-    "javascript",
-    "javascriptreact", 
-    "typescript",
-    "typescriptreact"
+  "deno.enable": true,
+  "deno.enablePaths": [
+    "./supabase/functions"
   ],
-  "eslint.workingDirectories": ["."],
+  "deno.unstable": true,
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "typescript.suggest.autoImports": false,
   "files.associations": {
-    "*.css": "tailwindcss"
+    "*.ts": "typescript"
   },
-  "emmet.includeLanguages": {
-    "javascript": "javascriptreact",
-    "typescript": "typescriptreact"
-  },
-  "tailwindCSS.includeLanguages": {
-    "typescript": "javascript",
-    "typescriptreact": "javascript"
-  },
-  "tailwindCSS.experimental.classRegex": [
-    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
-    ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
-  ],
-  "npm.enableScriptExplorer": true,
-  "debug.allowBreakpointsEverywhere": true,
-  "debug.terminal.clearBeforeReusing": true,
-  "task.autoDetect": "on",
-  "task.showDecorations": true,
-  "terminal.integrated.defaultProfile.osx": "zsh",
-  "typescript.preferences.includePackageJsonAutoImports": "on",
-  "debug.javascript.autoAttachFilter": "disabled",
-  "debug.javascript.terminalOptions": {
-    "skipFiles": ["<node_internals>/**"]
-  },
-  "debug.javascript.usePreview": false,
-  "debug.javascript.autoAttach": "disabled",
-  "debug.chrome.useV3": false,
-  "debug.safari.useV3": true,
-  "css.validate": false,
-  "less.validate": false,
-  "scss.validate": false,
-  "css.lint.unknownAtRules": "ignore"
+  "editor.defaultFormatter": "denoland.vscode-deno"
 } 

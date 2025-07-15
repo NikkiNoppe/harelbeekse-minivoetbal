@@ -1,0 +1,22 @@
+{
+  // Deno configuratie voor Supabase Edge Function
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window", "dom"],
+    "strict": true,
+    "noImplicitAny": false,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
+  },
+  "imports": {
+    // HTTP server utilities
+    "https://deno.land/std@0.190.0/http/server.ts": "https://deno.land/std@0.190.0/http/server.ts",
+    // Email service
+    "npm:resend@2.0.0": "npm:resend@2.0.0",
+    // Supabase client
+    "https://esm.sh/@supabase/supabase-js@2.49.4": "https://esm.sh/@supabase/supabase-js@2.49.4"
+  },
+  "tasks": {
+    "dev": "deno run --allow-net --allow-env --allow-read --watch index.ts"
+  }
+} 

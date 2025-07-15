@@ -11,11 +11,11 @@ import TeamDetailModal from "@/components/admin/financial/TeamDetailModal";
 import CostSettingsManagementModal from "@/components/admin/financial/CostSettingsManagementModal";
 import MonthlyReportsModal from "@/components/admin/financial/MonthlyReportsModal";
 import { costSettingsService } from "@/services/financial";
+import { financialOverviewService } from "@/services/financial/financialOverviewService";
 
 interface Team {
   team_id: number;
   team_name: string;
-  balance: number;
 }
 
 interface SubmittedMatch {
@@ -23,7 +23,6 @@ interface SubmittedMatch {
   home_team_id: number;
   away_team_id: number;
   is_submitted: boolean;
-  created_at: string;
   teams_home: {
     team_name: string;
   };
@@ -40,7 +39,7 @@ const FinancialTabUpdated: React.FC = () => {
   const [costListModalOpen, setCostListModalOpen] = useState(false);
   const [monthlyReportsModalOpen, setMonthlyReportsModalOpen] = useState(false);
 
-  // Fetch teams with their balances
+  // Fetch teams (without balance since we calculate it real-time)
   const {
     data: teams,
     isLoading: loadingTeams
@@ -50,7 +49,7 @@ const FinancialTabUpdated: React.FC = () => {
       const {
         data,
         error
-      } = await supabase.from('teams').select('team_id, team_name, balance').order('team_name');
+      } = await supabase.from('teams').select('team_id, team_name').order('team_name');
       if (error) throw error;
       return data as Team[];
     }
@@ -71,12 +70,11 @@ const FinancialTabUpdated: React.FC = () => {
           home_team_id,
           away_team_id,
           is_submitted,
-          created_at,
           match_date,
           unique_number,
           teams_home:teams!home_team_id(team_name),
           teams_away:teams!away_team_id(team_name)
-        `).eq('is_submitted', true).order('created_at', {
+        `).eq('is_submitted', true).order('match_date', {
         ascending: false
       });
       if (error) throw error;
@@ -90,25 +88,26 @@ const FinancialTabUpdated: React.FC = () => {
     queryFn: costSettingsService.getCostSettings
   });
 
-  // Fetch transactions for detailed calculations
+  // Fetch transactions for detailed calculations using the service
   const { data: allTransactions } = useQuery({
     queryKey: ['all-team-transactions'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('team_transactions')
-        .select(`
-          *,
-          cost_settings(name, description, category),
-          matches(unique_number, match_date)
-        `)
-        .order('transaction_date', { ascending: false });
+      // Get all teams first
+      const { data: teams } = await supabase.from('teams').select('team_id');
+      if (!teams) return [];
       
-      if (error) throw error;
-      return data || [];
+      // Get transactions for all teams
+      const allTransactions = [];
+      for (const team of teams) {
+        const transactions = await costSettingsService.getTeamTransactions(team.team_id);
+        allTransactions.push(...transactions);
+      }
+      
+      return allTransactions;
     }
   });
 
-  // Calculate detailed financial breakdown per team
+  // Calculate detailed financial breakdown per team using transactions
   const calculateTeamFinances = (teamId: number) => {
     if (!allTransactions) return {
       startCapital: 0,
@@ -120,28 +119,37 @@ const FinancialTabUpdated: React.FC = () => {
     
     const teamTransactions = allTransactions.filter(t => t.team_id === teamId);
     
+    // Startkapitaal: alle stortingen (deposits)
     const startCapital = teamTransactions
       .filter(t => t.transaction_type === 'deposit')
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
+    // Veldkosten: alle match_cost transacties met 'veld' in de naam
     const fieldCosts = teamTransactions
       .filter(t => t.transaction_type === 'match_cost' && 
-        (t.cost_settings?.name?.toLowerCase().includes('veld') || t.description?.toLowerCase().includes('veld')))
+        (t.cost_settings?.name?.toLowerCase().includes('veld') || 
+         t.description?.toLowerCase().includes('veld')))
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
+    // Scheidsrechterkosten: alle match_cost transacties met 'scheids' in de naam
     const refereeCosts = teamTransactions
       .filter(t => t.transaction_type === 'match_cost' && 
-        (t.cost_settings?.name?.toLowerCase().includes('scheidsrechter') || t.description?.toLowerCase().includes('scheidsrechter')))
+        (t.cost_settings?.name?.toLowerCase().includes('scheids') || 
+         t.description?.toLowerCase().includes('scheids')))
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
+    // Boetes: alle penalty transacties
     const fines = teamTransactions
       .filter(t => t.transaction_type === 'penalty')
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
-    const currentBalance = startCapital - fieldCosts - refereeCosts - fines + 
-      teamTransactions
-        .filter(t => t.transaction_type === 'adjustment')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+    // Correcties: alle adjustment transacties
+    const adjustments = teamTransactions
+      .filter(t => t.transaction_type === 'adjustment')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+    
+    // Huidig saldo: startkapitaal - alle kosten + correcties
+    const currentBalance = startCapital - fieldCosts - refereeCosts - fines + adjustments;
 
     return {
       startCapital,

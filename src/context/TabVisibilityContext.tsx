@@ -15,6 +15,11 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
   const { settings, loading } = useTabVisibilitySettings();
 
   const isTabVisible = (tab: TabName): boolean => {
+    // Special case for teams tab - always visible for now
+    if (tab === "teams") {
+      return true;
+    }
+    
     // Find the setting for this tab
     const setting = settings.find(s => s.setting_name === tab);
     
@@ -61,4 +66,4 @@ export const useTabVisibility = () => {
   return context;
 };
 
-export type TabName = "algemeen" | "competitie" | "playoff" | "beker" | "schorsingen" | "kaarten" | "reglement";
+export type TabName = "algemeen" | "competitie" | "playoff" | "beker" | "schorsingen" | "kaarten" | "reglement" | "teams";

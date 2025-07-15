@@ -8,11 +8,31 @@ interface Team {
   team_name: string;
   balance: number;
   player_manager_id?: number | null;
+  contact_person?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  club_colors?: string;
+  preferred_play_moments?: {
+    days?: string[];
+    timeslots?: string[];
+    venues?: number[];
+    notes?: string;
+  };
 }
 
 interface TeamFormData {
   name: string;
   balance: string;
+  contact_person: string;
+  contact_phone: string;
+  contact_email: string;
+  club_colors: string;
+  preferred_play_moments: {
+    days: string[];
+    timeslots: string[];
+    venues: number[];
+    notes: string;
+  };
 }
 
 export function useTeamsEnhanced() {
@@ -25,14 +45,24 @@ export function useTeamsEnhanced() {
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [formData, setFormData] = useState<TeamFormData>({
     name: "",
-    balance: "0"
+    balance: "0",
+    contact_person: "",
+    contact_phone: "",
+    contact_email: "",
+    club_colors: "",
+    preferred_play_moments: {
+      days: [],
+      timeslots: [],
+      venues: [],
+      notes: ""
+    }
   });
 
   const refreshData = () => {
     fetchTeams();
   };
 
-  const { loading: operationsLoading, createTeam, updateTeam, deleteTeam, testUpdate, testUpdateWithRLSBypass } = useTeamOperations(refreshData);
+  const { loading: operationsLoading, createTeam, updateTeam, deleteTeam } = useTeamOperations(refreshData);
 
   const fetchTeams = async () => {
     try {
@@ -67,7 +97,17 @@ export function useTeamsEnhanced() {
     setEditingTeam(team);
     setFormData({
       name: team.team_name,
-      balance: team.balance.toString()
+      balance: team.balance.toString(),
+      contact_person: team.contact_person || "",
+      contact_phone: team.contact_phone || "",
+      contact_email: team.contact_email || "",
+      club_colors: team.club_colors || "",
+      preferred_play_moments: {
+        days: team.preferred_play_moments?.days || [],
+        timeslots: team.preferred_play_moments?.timeslots || [],
+        venues: team.preferred_play_moments?.venues || [],
+        notes: team.preferred_play_moments?.notes || ""
+      }
     });
     setDialogOpen(true);
   };
@@ -76,12 +116,22 @@ export function useTeamsEnhanced() {
     setEditingTeam(null);
     setFormData({
       name: "",
-      balance: "0"
+      balance: "0",
+      contact_person: "",
+      contact_phone: "",
+      contact_email: "",
+      club_colors: "",
+      preferred_play_moments: {
+        days: [],
+        timeslots: [],
+        venues: [],
+        notes: ""
+      }
     });
     setDialogOpen(true);
   };
 
-  const handleFormChange = (field: keyof TeamFormData, value: string) => {
+  const handleFormChange = (field: keyof TeamFormData, value: any) => {
     setFormData({...formData, [field]: value});
   };
 
@@ -130,8 +180,6 @@ export function useTeamsEnhanced() {
     handleSaveTeam,
     handleDeleteTeam,
     confirmDelete,
-    fetchTeams: refreshData,
-    testUpdate,
-    testUpdateWithRLSBypass
+    fetchTeams: refreshData
   };
 } 

@@ -63,13 +63,12 @@ BEGIN
     hashed_password := password_param;
   END;
 
-  INSERT INTO public.users (username, email, password, role, created_at)
+  INSERT INTO public.users (username, email, password, role)
   VALUES (
     username_param,
     email_param,
     hashed_password,
-    role_param,
-    CURRENT_TIMESTAMP
+    role_param
   )
   RETURNING * INTO new_user;
   

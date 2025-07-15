@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Home, Award, Trophy, Target, BookOpen, Ban, AlertTriangle, Calendar, Users, Shield, UserIcon, DollarSign, Settings } from "lucide-react";
 import LoginForm from "@/components/auth/LoginForm";
@@ -12,7 +12,7 @@ import Footer from "@/components/footer/Footer";
 import MainTabs from "@/components/tabs/MainTabs";
 import AdminDashboard from "@/components/user/AdminDashboard";
 
-type AdminTabName = "match-forms" | "players" | "teams" | "users" | "competition" | "financial" | "settings" | "cup";
+type AdminTabName = "match-forms" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup";
 
 const Layout: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -44,12 +44,12 @@ const Layout: React.FC = () => {
     
     if (isAuthenticated) {
       // Admin tabs
-      if (["match-forms", "players", "teams", "users", "competition", "financial", "settings", "cup"].includes(tab)) {
+      if (["match-forms", "players", "teams", "users", "competition", "playoffs", "financial", "settings", "cup"].includes(tab)) {
         setActiveAdminTab(tab as AdminTabName);
       }
     } else {
       // Public tabs
-      if (["algemeen", "beker", "competitie", "playoff", "schorsingen", "kaarten", "reglement"].includes(tab)) {
+      if (["algemeen", "beker", "competitie", "playoff", "schorsingen", "teams", "kaarten", "reglement"].includes(tab)) {
         setActiveTab(tab as TabName);
       }
     }
@@ -58,7 +58,7 @@ const Layout: React.FC = () => {
   // Set the first visible tab as active tab when loading
   useEffect(() => {
     if (!isAuthenticated) {
-      const visibleTabs: TabName[] = ["algemeen", "competitie", "playoff", "beker", "schorsingen", "reglement"].filter(tab => isTabVisible(tab as TabName)) as TabName[];
+      const visibleTabs: TabName[] = ["algemeen", "competitie", "playoff", "beker", "schorsingen", "teams", "reglement"].filter(tab => isTabVisible(tab as TabName)) as TabName[];
       if (visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
         setActiveTab(visibleTabs[0]);
       }
@@ -75,8 +75,9 @@ const Layout: React.FC = () => {
         ...(isAdmin ? [
           { key: "teams", label: "Teams", icon: <Shield size={16} /> },
           { key: "users", label: "Gebruikers", icon: <UserIcon size={16} /> },
-          { key: "competition", label: "Competitiebeheer", icon: <Trophy size={16} /> },
-          { key: "cup", label: "Bekertoernooi", icon: <Award size={16} /> },
+          { key: "competition", label: "Competitie", icon: <Trophy size={16} /> },
+          { key: "playoffs", label: "Play-Off", icon: <Target size={16} /> },
+          { key: "cup", label: "Beker", icon: <Award size={16} /> },
           { key: "financial", label: "Financieel", icon: <DollarSign size={16} /> },
           { key: "settings", label: "Instellingen", icon: <Settings size={16} /> }
         ] : [])
@@ -89,6 +90,7 @@ const Layout: React.FC = () => {
         { key: "competitie", label: "Competitie", icon: <Trophy size={16} /> },
         { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
         { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> },
+        { key: "teams", label: "Teams", icon: <Shield size={16} /> },
         { key: "reglement", label: "Reglement", icon: <BookOpen size={16} /> }
       ];
       return publicTabs.filter(tab => isTabVisible(tab.key as TabName));
@@ -156,6 +158,9 @@ const Layout: React.FC = () => {
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
         <DialogContent className="w-full max-w-md mx-4 sm:mx-auto bg-background text-foreground border-border rounded-lg">
           <DialogTitle className="sr-only">Inloggen</DialogTitle>
+          <DialogDescription className="sr-only">
+            Log in op je account om toegang te krijgen tot het systeem
+          </DialogDescription>
           <div className="rounded-b-lg">
             <LoginForm onLoginSuccess={handleLoginSuccess} />
           </div>

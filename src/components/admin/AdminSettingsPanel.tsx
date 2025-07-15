@@ -6,6 +6,8 @@ import TabVisibilitySettingsUpdated from "@/components/admin/settings/TabVisibil
 import PlayerListLockSettings from "@/components/admin/settings/PlayerListLockSettings";
 import CompetitionDataSettings from "@/components/admin/settings/CompetitionDataSettings";
 import VenuesSettings from "@/components/admin/settings/VenuesSettings";
+import TimeslotsSettings from "@/components/admin/settings/TimeslotsSettings";
+import VacationsSettings from "@/components/admin/settings/VacationsSettings";
 import SeasonDataSettings from "@/components/admin/settings/SeasonDataSettings";
 
 const AdminSettingsPanel: React.FC = () => {
@@ -64,23 +66,11 @@ const AdminSettingsPanel: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="timeslots">
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Beheer de tijdslots per locatie waar wedstrijden kunnen worden gespeeld.
-                <br />
-                <strong>Let op:</strong> Deze functionaliteit is beschikbaar in de Competitie Generator.
-              </p>
-            </div>
+            <TimeslotsSettings />
           </TabsContent>
           
           <TabsContent value="vacations">
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Beheer de vakantieperiodes waar geen wedstrijden worden gespeeld.
-                <br />
-                <strong>Let op:</strong> Deze functionaliteit is beschikbaar in de Competitie Generator.
-              </p>
-            </div>
+            <VacationsSettings />
           </TabsContent>
           
           <TabsContent value="season">

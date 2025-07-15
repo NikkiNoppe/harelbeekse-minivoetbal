@@ -10,6 +10,7 @@ import BekerTab from "./BekerTab";
 import SchorsingenTab from "./SchorsingenTab";
 import KaartenTab from "./KaartenTab";
 import ReglementTab from "./ReglementTab";
+import TeamsTab from "./TeamsTab";
 
 interface MainTabsProps {
   activeTab: TabName;
@@ -45,6 +46,7 @@ const MemoizedBekerTab = memo(BekerTab);
 const MemoizedSchorsingenTab = memo(SchorsingenTab);
 const MemoizedKaartenTab = memo(KaartenTab);
 const MemoizedReglementTab = memo(ReglementTab);
+const MemoizedTeamsTab = memo(TeamsTab);
 
 MemoizedAlgemeenTab.displayName = 'MemoizedAlgemeenTab';
 MemoizedCompetitieTab.displayName = 'MemoizedCompetitieTab';
@@ -53,6 +55,7 @@ MemoizedBekerTab.displayName = 'MemoizedBekerTab';
 MemoizedSchorsingenTab.displayName = 'MemoizedSchorsingenTab';
 MemoizedKaartenTab.displayName = 'MemoizedKaartenTab';
 MemoizedReglementTab.displayName = 'MemoizedReglementTab';
+MemoizedTeamsTab.displayName = 'MemoizedTeamsTab';
 
 // Tab content wrapper with animation
 const TabContentWrapper = memo(({ children }: { children: React.ReactNode }) => (
@@ -122,6 +125,14 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
           <MemoizedKaartenTab />
         </TabContentWrapper>
       </TabsContent>
+    ),
+    
+    teams: isTabVisible("teams") && (
+      <TabsContent value="teams" className="mt-0" key="teams">
+        <TabContentWrapper>
+          <MemoizedTeamsTab />
+        </TabContentWrapper>
+      </TabsContent>
     )
   }), [isTabVisible]);
 
@@ -158,6 +169,7 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
           {tabContents.competitie}
           {tabContents.playoff}
           {tabContents.schorsingen}
+          {tabContents.teams}
           {tabContents.kaarten}
           {tabContents.reglement}
         </Tabs>

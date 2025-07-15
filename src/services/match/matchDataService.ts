@@ -30,7 +30,8 @@ export interface CardData {
 }
 
 export const fetchCompetitionMatches = async () => {
-  const { data, error } = await supabase
+  // First check if there are any matches
+  const { data: matchesData, error: matchesError } = await supabase
     .from("matches")
     .select(`
       match_id,
@@ -53,45 +54,54 @@ export const fetchCompetitionMatches = async () => {
     .or('is_cup_match.is.null,is_cup_match.eq.false')
     .order("match_date", { ascending: true });
 
-  if (error || !data) {
-    console.error("[fetchCompetitionMatches] Error:", error);
+  if (matchesError) {
+    console.error("[fetchCompetitionMatches] Error:", matchesError);
     return { upcoming: [], past: [] };
   }
 
-  const upcoming: MatchData[] = [];
-  const past: MatchData[] = [];
+  // If there are matches, process them normally
+  if (matchesData && matchesData.length > 0) {
+    const upcoming: MatchData[] = [];
+    const past: MatchData[] = [];
 
-  for (const row of data as any[]) {
-    const { date, time } = isoToLocalDateTime(row.match_date);
+    for (const row of matchesData as any[]) {
+      const { date, time } = isoToLocalDateTime(row.match_date);
 
-    const matchData: MatchData = {
-      matchId: row.match_id,
-      uniqueNumber: row.unique_number || "",
-      date,
-      time,
-      homeTeamId: row.home_team_id,
-      homeTeamName: row.teams_home?.team_name || "Onbekend",
-      awayTeamId: row.away_team_id,
-      awayTeamName: row.teams_away?.team_name || "Onbekend",
-      location: row.location || "Te bepalen",
-      matchday: row.speeldag || "Te bepalen",
-      isCompleted: !!row.is_submitted,
-      homeScore: row.home_score ?? undefined,
-      awayScore: row.away_score ?? undefined,
-      referee: row.referee ?? undefined
-    };
+      const matchData: MatchData = {
+        matchId: row.match_id,
+        uniqueNumber: row.unique_number || "",
+        date,
+        time,
+        homeTeamId: row.home_team_id,
+        homeTeamName: row.teams_home?.team_name || "Onbekend",
+        awayTeamId: row.away_team_id,
+        awayTeamName: row.teams_away?.team_name || "Onbekend",
+        location: row.location || "Te bepalen",
+        matchday: row.speeldag || "Te bepalen",
+        isCompleted: !!row.is_submitted,
+        homeScore: row.home_score ?? undefined,
+        awayScore: row.away_score ?? undefined,
+        referee: row.referee ?? undefined
+      };
 
-    if (matchData.isCompleted) {
-      past.push(matchData);
-    } else {
-      upcoming.push(matchData);
+      if (matchData.isCompleted) {
+        past.push(matchData);
+      } else {
+        upcoming.push(matchData);
+      }
     }
+
+    // Sort both upcoming and past matches by date and time
+    return { 
+      upcoming: sortMatchesByDateAndTime(upcoming), 
+      past: sortMatchesByDateAndTime(past) 
+    };
   }
 
-  // Sort both upcoming and past matches by date and time
+  // If no matches exist, return empty arrays
   return { 
-    upcoming: sortMatchesByDateAndTime(upcoming), 
-    past: sortMatchesByDateAndTime(past) 
+    upcoming: [], 
+    past: [] 
   };
 };
 

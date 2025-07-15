@@ -7,98 +7,38 @@ interface Team {
   team_name: string;
   balance: number;
   player_manager_id?: number | null;
+  contact_person?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  club_colors?: string;
+  preferred_play_moments?: {
+    days?: string[];
+    timeslots?: string[];
+    venues?: number[];
+    notes?: string;
+  };
 }
 
 interface TeamFormData {
   name: string;
   balance: string;
+  contact_person: string;
+  contact_phone: string;
+  contact_email: string;
+  club_colors: string;
+  preferred_play_moments: {
+    days: string[];
+    timeslots: string[];
+    venues: number[];
+    notes: string;
+  };
 }
 
 export const useTeamOperations = (onSuccess: () => void) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
-  // Test function to debug update issues
-  const testUpdate = async (teamId: number, newName: string) => {
-    try {
-      console.log('Testing update for team:', teamId, 'to name:', newName);
-      
-      // Test 1: Direct update without RLS bypass
-      const { data, error } = await supabase
-        .from('teams')
-        .update({ team_name: newName })
-        .eq('team_id', teamId)
-        .select();
-      
-      console.log('Test update result:', { data, error });
-      
-      if (error) {
-        console.error('Test update error:', error);
-        toast({
-          title: "Test Update Error",
-          description: `Error: ${error.message} (Code: ${error.code})`,
-          variant: "destructive",
-        });
-      } else {
-        // Test 2: Verify if the update actually worked
-        const { data: verifyData, error: verifyError } = await supabase
-          .from('teams')
-          .select('team_name')
-          .eq('team_id', teamId)
-          .single();
-        
-        console.log('Verification result:', { verifyData, verifyError });
-        
-        if (verifyData?.team_name === newName) {
-          toast({
-            title: "Test Update Success",
-            description: `Updated to: ${newName}`,
-          });
-        } else {
-          toast({
-            title: "Test Update Failed",
-            description: `Expected: ${newName}, Got: ${verifyData?.team_name}`,
-            variant: "destructive",
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Test update exception:', error);
-    }
-  };
 
-  // Test function with RLS bypass
-  const testUpdateWithRLSBypass = async (teamId: number, newName: string) => {
-    try {
-      console.log('Testing update with RLS bypass for team:', teamId, 'to name:', newName);
-      
-      // Use service role key or bypass RLS
-      const { data, error } = await supabase
-        .from('teams')
-        .update({ team_name: newName })
-        .eq('team_id', teamId)
-        .select()
-        .abortSignal(new AbortController().signal); // This might help with RLS issues
-      
-      console.log('Test update with RLS bypass result:', { data, error });
-      
-      if (error) {
-        console.error('Test update with RLS bypass error:', error);
-        toast({
-          title: "RLS Bypass Test Error",
-          description: `Error: ${error.message} (Code: ${error.code})`,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "RLS Bypass Test Success",
-          description: `Updated to: ${newName}`,
-        });
-      }
-    } catch (error) {
-      console.error('Test update with RLS bypass exception:', error);
-    }
-  };
 
   const validateTeamData = (formData: TeamFormData): string | null => {
     if (!formData.name.trim()) {
@@ -122,6 +62,11 @@ export const useTeamOperations = (onSuccess: () => void) => {
       return "Balans moet tussen -999.999 en 999.999 liggen";
     }
     
+    // Validate email if provided
+    if (formData.contact_email && !formData.contact_email.includes('@')) {
+      return "Email adres moet een geldig formaat hebben";
+    }
+    
     return null;
   };
 
@@ -143,7 +88,12 @@ export const useTeamOperations = (onSuccess: () => void) => {
         .from('teams')
         .insert({
           team_name: formData.name.trim(),
-          balance: parseFloat(formData.balance) || 0
+          balance: parseFloat(formData.balance) || 0,
+          contact_person: formData.contact_person.trim() || null,
+          contact_phone: formData.contact_phone.trim() || null,
+          contact_email: formData.contact_email.trim() || null,
+          club_colors: formData.club_colors.trim() || null,
+          preferred_play_moments: formData.preferred_play_moments
         })
         .select()
         .single();
@@ -193,8 +143,6 @@ export const useTeamOperations = (onSuccess: () => void) => {
     try {
       setLoading(true);
       
-      console.log('Updating team:', { teamId, formData });
-      
       // First, let's check if the team exists
       const { data: existingTeam, error: fetchError } = await supabase
         .from('teams')
@@ -203,7 +151,6 @@ export const useTeamOperations = (onSuccess: () => void) => {
         .single();
       
       if (fetchError) {
-        console.error('Error fetching existing team:', fetchError);
         toast({
           title: "Team niet gevonden",
           description: "Het team dat je wilt bijwerken bestaat niet meer",
@@ -237,13 +184,17 @@ export const useTeamOperations = (onSuccess: () => void) => {
       let updateData = null;
       let updateError = null;
       
-      // Approach 1: Standard update
-      console.log('Trying standard update...');
+      // Approach 1: Standard update with new fields
       const { data: data1, error: error1 } = await supabase
         .from('teams')
         .update({
           team_name: formData.name.trim(),
-          balance: parseFloat(formData.balance) || 0
+          balance: parseFloat(formData.balance) || 0,
+          contact_person: formData.contact_person.trim() || null,
+          contact_phone: formData.contact_phone.trim() || null,
+          contact_email: formData.contact_email.trim() || null,
+          club_colors: formData.club_colors.trim() || null,
+          preferred_play_moments: formData.preferred_play_moments
         })
         .eq('team_id', teamId)
         .select()
@@ -252,43 +203,47 @@ export const useTeamOperations = (onSuccess: () => void) => {
       if (!error1 && data1) {
         updateSuccess = true;
         updateData = data1;
-        console.log('Standard update successful:', data1);
       } else {
-        console.log('Standard update failed:', error1);
         updateError = error1;
       }
       
-      // Approach 2: Update with explicit column selection
+      // Approach 2: Update with explicit column selection including new fields
       if (!updateSuccess) {
-        console.log('Trying update with explicit columns...');
         const { data: data2, error: error2 } = await supabase
           .from('teams')
           .update({
             team_name: formData.name.trim(),
-            balance: parseFloat(formData.balance) || 0
+            balance: parseFloat(formData.balance) || 0,
+            contact_person: formData.contact_person.trim() || null,
+            contact_phone: formData.contact_phone.trim() || null,
+            contact_email: formData.contact_email.trim() || null,
+            club_colors: formData.club_colors.trim() || null,
+            preferred_play_moments: formData.preferred_play_moments
           })
           .eq('team_id', teamId)
-          .select('team_id, team_name, balance')
+          .select('team_id, team_name, balance, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
           .single();
         
         if (!error2 && data2) {
           updateSuccess = true;
           updateData = data2;
-          console.log('Explicit columns update successful:', data2);
         } else {
-          console.log('Explicit columns update failed:', error2);
           updateError = error2;
         }
       }
       
-      // Approach 3: Update without select (just update)
+      // Approach 3: Update without select (just update) including new fields
       if (!updateSuccess) {
-        console.log('Trying update without select...');
         const { error: error3 } = await supabase
           .from('teams')
           .update({
             team_name: formData.name.trim(),
-            balance: parseFloat(formData.balance) || 0
+            balance: parseFloat(formData.balance) || 0,
+            contact_person: formData.contact_person.trim() || null,
+            contact_phone: formData.contact_phone.trim() || null,
+            contact_email: formData.contact_email.trim() || null,
+            club_colors: formData.club_colors.trim() || null,
+            preferred_play_moments: formData.preferred_play_moments
           })
           .eq('team_id', teamId);
         
@@ -303,23 +258,17 @@ export const useTeamOperations = (onSuccess: () => void) => {
           if (!verifyError && verifyData && verifyData.team_name === formData.name.trim()) {
             updateSuccess = true;
             updateData = verifyData;
-            console.log('Update without select successful:', verifyData);
           } else {
-            console.log('Update without select verification failed:', verifyError);
             updateError = verifyError;
           }
         } else {
-          console.log('Update without select failed:', error3);
           updateError = error3;
         }
       }
       
       if (!updateSuccess) {
-        console.error('All update approaches failed:', updateError);
         throw updateError || new Error('Update failed with all approaches');
       }
-      
-      console.log('Final update successful:', updateData);
       
       toast({
         title: "Team bijgewerkt",
@@ -417,8 +366,6 @@ export const useTeamOperations = (onSuccess: () => void) => {
     createTeam,
     updateTeam,
     deleteTeam,
-    validateTeamData,
-    testUpdate,
-    testUpdateWithRLSBypass
+    validateTeamData
   };
 }; 
