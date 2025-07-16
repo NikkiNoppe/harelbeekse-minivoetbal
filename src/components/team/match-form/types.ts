@@ -27,3 +27,5 @@ export interface MatchFormData {
   homePlayers: PlayerSelection[];
   awayPlayers: PlayerSelection[];
 }
+
+export type MatchFormTabType = 'league' | 'cup' | 'playoff';

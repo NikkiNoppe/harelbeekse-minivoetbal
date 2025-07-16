@@ -59,7 +59,7 @@ class SuspensionRulesService {
         .eq('setting_category', 'suspension_rules')
         .eq('setting_name', 'default_rules')
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
         console.warn('Failed to fetch suspension rules, using defaults:', error);

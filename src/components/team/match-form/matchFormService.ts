@@ -40,6 +40,9 @@ export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermission
       query = query.eq('is_cup_match', true);
     } else if (competitionType === 'league') {
       query = query.or('is_cup_match.is.null,is_cup_match.eq.false');
+    } else if (competitionType === 'playoff') {
+      // Playoff: filter op speeldag met [PLAYOFF: in de string
+      query = query.like('speeldag', '%[PLAYOFF:%');
     }
 
     const { data, error } = await query;

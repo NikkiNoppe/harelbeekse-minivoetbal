@@ -10,7 +10,8 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
   const {
     settings,
     loading,
-    updateSetting
+    updateSetting,
+    refetch
   } = useTabVisibilitySettings();
   const [localSettings, setLocalSettings] = useState<typeof settings>([]);
   const [hasChanges, setHasChanges] = useState(false);
@@ -52,6 +53,7 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
         }
       }
       setHasChanges(false);
+      await refetch(); // <-- direct settings opnieuw ophalen
       toast({
         title: "Instellingen opgeslagen",
         description: "Tab zichtbaarheid instellingen zijn succesvol bijgewerkt."

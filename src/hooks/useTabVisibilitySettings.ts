@@ -15,6 +15,16 @@ export const useTabVisibilitySettings = () => {
   const [settings, setSettings] = useState<TabVisibilitySetting[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const DEFAULT_TABS = [
+    'algemeen',
+    'competitie',
+    'playoff',
+    'beker',
+    'schorsingen',
+    'teams',
+    'reglement'
+  ];
+
   const fetchSettings = async () => {
     try {
       const { data, error } = await supabase
@@ -25,17 +35,36 @@ export const useTabVisibilitySettings = () => {
 
       if (error) throw error;
       
+      // Map bestaande settings
       const mappedSettings = (data || []).map(item => {
         const settingValue = item.setting_value as any;
         return {
           id: item.id,
           setting_name: item.setting_name,
-          is_visible: settingValue?.is_visible ?? true,
+          is_visible: item.is_active ?? true, // Gebruik is_active als bron
           requires_login: settingValue?.requires_login ?? false,
         };
       });
-      
-      setSettings(mappedSettings);
+      // Voeg ontbrekende tabs toe met default zichtbaarheid
+      const allSettings = [...mappedSettings];
+      for (const tab of DEFAULT_TABS) {
+        if (!allSettings.find(s => s.setting_name === tab)) {
+          // Insert nieuwe row in de database
+          await supabase.from('application_settings').insert({
+            setting_category: 'tab_visibility',
+            setting_name: tab,
+            setting_value: { requires_login: false },
+            is_active: true
+          });
+          allSettings.push({
+            id: -1,
+            setting_name: tab,
+            is_visible: true,
+            requires_login: false
+          });
+        }
+      }
+      setSettings(allSettings);
     } catch (error) {
       console.error('Error fetching tab settings:', error);
       // Fallback to main tabs only
@@ -65,7 +94,6 @@ export const useTabVisibilitySettings = () => {
 
       // Merge updates with current values
       const newSettingValue = {
-        is_visible: updates.is_visible ?? currentSetting.is_visible,
         requires_login: updates.requires_login ?? currentSetting.requires_login,
         updated_at: new Date().toISOString(),
       };
@@ -74,6 +102,7 @@ export const useTabVisibilitySettings = () => {
         .from('application_settings')
         .update({ 
           setting_value: newSettingValue,
+          is_active: updates.is_visible ?? currentSetting.is_visible,
           updated_at: new Date().toISOString()
         })
         .eq('setting_category', 'tab_visibility')

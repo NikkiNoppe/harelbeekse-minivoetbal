@@ -2,6 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { updateMatchForm } from "@/components/team/match-form/matchFormService";
 import { MatchFormData } from "@/components/team/match-form/types";
+import { financialService } from "@/services/financial/financialService";
+import { costSettingsService } from "@/services/financial/costSettingsService";
 
 interface MatchUpdateData {
   homeScore?: number | null;
@@ -22,6 +24,108 @@ interface ServiceResponse {
   success: boolean;
   message: string;
   data?: any;
+}
+
+// Helper: Voeg transacties toe voor veld- en scheidsrechterkosten
+async function processMatchFinancials(matchId: number, matchInfo: any, updateData: MatchUpdateData) {
+  if (!matchInfo?.home_team_id || !matchInfo?.away_team_id) return;
+  const homeTeamId = matchInfo.home_team_id;
+  const awayTeamId = matchInfo.away_team_id;
+  const matchDate = updateData.date || (matchInfo.match_date ? new Date(matchInfo.match_date).toISOString().slice(0,10) : new Date().toISOString().slice(0,10));
+
+  // Haal cost settings op
+  const matchCosts = await costSettingsService.getMatchCosts();
+  const fieldCost = matchCosts.find(c => c.name.toLowerCase().includes('veld'));
+  const refereeCost = matchCosts.find(c => c.name.toLowerCase().includes('scheids'));
+
+  // Voeg veldkosten toe (beide teams)
+  if (fieldCost) {
+    await financialService.addTransaction({
+      team_id: homeTeamId,
+      transaction_type: 'match_cost',
+      amount: fieldCost.amount,
+      description: fieldCost.name,
+      cost_setting_id: fieldCost.id,
+      penalty_type_id: null,
+      match_id: matchId,
+      transaction_date: matchDate
+    });
+    await financialService.addTransaction({
+      team_id: awayTeamId,
+      transaction_type: 'match_cost',
+      amount: fieldCost.amount,
+      description: fieldCost.name,
+      cost_setting_id: fieldCost.id,
+      penalty_type_id: null,
+      match_id: matchId,
+      transaction_date: matchDate
+    });
+  }
+  // Voeg scheidsrechterkosten toe (beide teams)
+  if (refereeCost) {
+    await financialService.addTransaction({
+      team_id: homeTeamId,
+      transaction_type: 'match_cost',
+      amount: refereeCost.amount,
+      description: refereeCost.name,
+      cost_setting_id: refereeCost.id,
+      penalty_type_id: null,
+      match_id: matchId,
+      transaction_date: matchDate
+    });
+    await financialService.addTransaction({
+      team_id: awayTeamId,
+      transaction_type: 'match_cost',
+      amount: refereeCost.amount,
+      description: refereeCost.name,
+      cost_setting_id: refereeCost.id,
+      penalty_type_id: null,
+      match_id: matchId,
+      transaction_date: matchDate
+    });
+  }
+
+  // --- Automatische boetes voor kaarten ---
+  const penalties = await costSettingsService.getPenalties();
+  // Mapping: kaarttype -> penalty cost setting (op naam)
+  const cardTypeToPenalty = {
+    yellow: penalties.find(p => p.name.toLowerCase().includes('geel')),
+    double_yellow: penalties.find(p => p.name.toLowerCase().includes('2x geel') || p.name.toLowerCase().includes('dubbel geel')),
+    red: penalties.find(p => p.name.toLowerCase().includes('rood')),
+  };
+  // Helper om boete toe te voegen
+  async function addCardPenalty(player, teamId) {
+    if (!player || !player.cardType || player.cardType === 'none' || player.cardType === '') return;
+    const penaltySetting = cardTypeToPenalty[player.cardType];
+    if (!penaltySetting) return;
+    await financialService.addTransaction({
+      team_id: teamId,
+      transaction_type: 'penalty',
+      amount: penaltySetting.amount,
+      description: penaltySetting.name + ` (${player.playerName})`,
+      cost_setting_id: penaltySetting.id,
+      penalty_type_id: null,
+      match_id: matchId,
+      transaction_date: matchDate
+    });
+  }
+  // Home team
+  if (Array.isArray(updateData.homePlayers)) {
+    for (const player of updateData.homePlayers) {
+      await addCardPenalty(player, homeTeamId);
+    }
+  }
+  // Away team
+  if (Array.isArray(updateData.awayPlayers)) {
+    for (const player of updateData.awayPlayers) {
+      await addCardPenalty(player, awayTeamId);
+    }
+  }
+}
+
+// Helper: Verwijder alle transacties voor deze wedstrijd
+async function removeMatchFinancials(matchId: number) {
+  await supabase.from('team_costs').delete().eq('match_id', matchId);
 }
 
 export const enhancedMatchService = {
@@ -86,6 +190,20 @@ export const enhancedMatchService = {
             } else {
               successMessage += ` - ${result.advanceMessage}`;
             }
+          }
+
+          // --- FINANCIALS LOGIC ---
+          // Bepaal of score wordt toegevoegd of verwijderd
+          const homeScore = updateData.homeScore;
+          const awayScore = updateData.awayScore;
+          const isCompleted = updateData.isCompleted === true;
+          const isScorePresent = homeScore !== undefined && homeScore !== null && awayScore !== undefined && awayScore !== null;
+          if (isCompleted && isScorePresent) {
+            // Voeg transacties toe
+            await processMatchFinancials(matchId, matchInfo, updateData);
+          } else if (!isCompleted || !isScorePresent) {
+            // Verwijder transacties
+            await removeMatchFinancials(matchId);
           }
 
           return {

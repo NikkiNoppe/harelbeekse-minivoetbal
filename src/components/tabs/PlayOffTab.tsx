@@ -6,8 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Trophy } from "lucide-react";
 import AutoFitText from "@/components/ui/auto-fit-text";
 import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
-import { usePlayoffData, PlayoffMatch } from "@/hooks/usePlayoffData";
-import { Team } from "@/hooks/useCompetitionData";
+import { useCompetitionStandings } from "@/hooks/useCompetitionData";
+import { usePlayoffMatches } from "@/hooks/usePlayoffData";
 
 // Skeleton loading components
 const StandingsTableSkeleton = memo(() => (
@@ -99,7 +99,7 @@ const PlayoffError = memo(({ error, onRetry }: { error: Error; onRetry: () => vo
 ));
 
 // Memoized standings section
-const PlayoffStandingsSection = memo(({ teams }: { teams: Team[] }) => (
+const PlayoffStandingsSection = memo(({ teams }: { teams: any[] }) => (
   <section>
     <Card>
       <CardContent className="p-0 overflow-x-auto">
@@ -110,7 +110,7 @@ const PlayoffStandingsSection = memo(({ teams }: { teams: Team[] }) => (
 ));
 
 // Memoized match card component
-const PlayoffMatchCard = memo(({ match }: { match: PlayoffMatch }) => (
+const PlayoffMatchCard = memo(({ match }: { match: any }) => (
   <Card className="card-hover">
     <CardHeader className="pb-2">
       <div className="flex justify-between items-start mb-1">
@@ -151,7 +151,7 @@ const PlayoffMatchCard = memo(({ match }: { match: PlayoffMatch }) => (
 ));
 
 // Memoized matches section
-const PlayoffMatchesSection = memo(({ matches }: { matches: PlayoffMatch[] }) => (
+const PlayoffMatchesSection = memo(({ matches }: { matches: any[] }) => (
   <section>
     <h2 className="text-2xl font-semibold">Uitslagen Play-Offs</h2>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
@@ -163,7 +163,7 @@ const PlayoffMatchesSection = memo(({ matches }: { matches: PlayoffMatch[] }) =>
 ));
 
 // Memoized upcoming matches section (conditionally rendered)
-const UpcomingPlayoffMatches = memo(({ matches }: { matches: PlayoffMatch[] }) => (
+const UpcomingPlayoffMatches = memo(({ matches }: { matches: any[] }) => (
   <section>
     <h2 className="text-2xl font-semibold mb-4">Aankomende Play-Off Wedstrijden</h2>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
@@ -236,9 +236,9 @@ const PlayoffContent = memo(({
   matches, 
   upcomingMatches 
 }: { 
-  teams: Team[]; 
-  matches: PlayoffMatch[]; 
-  upcomingMatches: PlayoffMatch[]; 
+  teams: any[]; 
+  matches: any[]; 
+  upcomingMatches: any[]; 
 }) => (
   <div className="space-y-8 animate-slide-up">
     <div className="flex justify-between items-center">
@@ -256,26 +256,54 @@ const PlayoffContent = memo(({
 
 // Main component
 const PlayOffTab: React.FC = () => {
-  const { teams, matches, upcomingMatches, isLoading, error, refetch } = usePlayoffData();
+  // Haal de eindstand van de reguliere competitie op (startpunt playoff)
+  const { data: standings, isLoading: standingsLoading, error: standingsError } = useCompetitionStandings();
+  // Haal alle playoff-wedstrijden op
+  const { data: playoffMatches, isLoading: matchesLoading, error: matchesError } = usePlayoffMatches();
 
-  if (isLoading) {
+  if (standingsLoading || matchesLoading) {
     return <PlayoffLoading />;
   }
-
-  if (error) {
-    return <PlayoffError error={error} onRetry={() => refetch()} />;
+  if (standingsError || matchesError) {
+    return <PlayoffError error={standingsError || matchesError} onRetry={() => window.location.reload()} />;
   }
-
-  if (!teams || teams.length === 0) {
+  if (!standings || standings.length === 0) {
     return <PlayoffEmptyState />;
   }
+  // Splits teams in top/bottom
+  const total = standings.length;
+  const topCount = Math.ceil(total / 2);
+  const bottomCount = Math.floor(total / 2);
+  const topTeams = standings.slice(0, topCount);
+  const bottomTeams = standings.slice(topCount);
+  const topTeamIds = new Set(topTeams.map(t => t.id));
+  const bottomTeamIds = new Set(bottomTeams.map(t => t.id));
+  // Filter playoff-wedstrijden per groep
+  const getTeamId = (m, type) => m[type + '_team_id'] ?? m[type + 'TeamId'];
+  const topPlayoffMatches = (playoffMatches || []).filter(m => getTeamId(m, 'home') && getTeamId(m, 'away') && topTeamIds.has(getTeamId(m, 'home')) && topTeamIds.has(getTeamId(m, 'away')));
+  const bottomPlayoffMatches = (playoffMatches || []).filter(m => getTeamId(m, 'home') && getTeamId(m, 'away') && bottomTeamIds.has(getTeamId(m, 'home')) && bottomTeamIds.has(getTeamId(m, 'away')));
 
   return (
-    <PlayoffContent 
-      teams={teams} 
-      matches={matches} 
-      upcomingMatches={upcomingMatches} 
-    />
+    <div className="space-y-8 animate-slide-up">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Play-Off Standen & Wedstrijden</h2>
+        <Badge className="badge-purple">Seizoen 2025-2026</Badge>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Top Teams */}
+        <div>
+          <h3 className="font-semibold mb-2">Top Teams</h3>
+          <PlayoffStandingsSection teams={topTeams} />
+          <PlayoffMatchesSection matches={topPlayoffMatches} />
+        </div>
+        {/* Bottom Teams */}
+        <div>
+          <h3 className="font-semibold mb-2">Bottom Teams</h3>
+          <PlayoffStandingsSection teams={bottomTeams} />
+          <PlayoffMatchesSection matches={bottomPlayoffMatches} />
+        </div>
+      </div>
+    </div>
   );
 };
 
