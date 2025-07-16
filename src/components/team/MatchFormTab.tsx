@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { FileText, Trophy, Calendar, AlertCircle } from "lucide-react";
+import { FileText, Trophy, Calendar, AlertCircle, Target } from "lucide-react";
 import { useMatchFormsData, type MatchFormsFilters } from "@/hooks/useMatchFormsData";
 import { MatchFormData, MatchFormTabType } from "./match-form/types";
 import MatchFormFilter from "./match-form/MatchFormFilter";
@@ -67,13 +67,15 @@ ErrorState.displayName = 'ErrorState';
 
 // Empty state component
 const EmptyState = memo(({ tabType, hasTeam, hasPermissions }: { 
-  tabType: 'league' | 'cup';
+  tabType: 'league' | 'cup' | 'playoff';
   hasTeam: boolean;
   hasPermissions: boolean;
 }) => (
   <div className="p-12 text-center">
     <div className="flex flex-col items-center space-y-4">
-      {tabType === 'cup' ? <Trophy className="h-12 w-12 text-muted-foreground" /> : <Calendar className="h-12 w-12 text-muted-foreground" />}
+      {tabType === 'cup' ? <Trophy className="h-12 w-12 text-muted-foreground" /> : 
+       tabType === 'playoff' ? <Target className="h-12 w-12 text-muted-foreground" /> : 
+       <Calendar className="h-12 w-12 text-muted-foreground" />}
       <div className="space-y-2">
         <h3 className="font-semibold">
           {!hasTeam && !hasPermissions 

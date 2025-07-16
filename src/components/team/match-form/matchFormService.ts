@@ -4,7 +4,7 @@ import { localDateTimeToISO, isoToLocalDateTime, getCurrentISO } from "@/lib/dat
 import { cupService } from "@/services/match";
 import { sortCupMatches, sortLeagueMatches } from "@/lib/matchSortingUtils";
 
-export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermissions: boolean = false, competitionType?: 'league' | 'cup'): Promise<MatchFormData[]> => {
+export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermissions: boolean = false, competitionType?: 'league' | 'cup' | 'playoff'): Promise<MatchFormData[]> => {
   try {
     let query = supabase
       .from("matches")
@@ -90,6 +90,8 @@ export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermission
       return sortCupMatches(matches);
     } else if (competitionType === 'league') {
       return sortLeagueMatches(matches);
+    } else if (competitionType === 'playoff') {
+      return sortLeagueMatches(matches); // Use league sorting for playoff matches
     }
 
     return matches;

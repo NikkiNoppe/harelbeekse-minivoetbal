@@ -9,65 +9,65 @@
 
 @layer base {
   :root {
-    /* Main Brand Colors */
-    --main-color-dark: #60368c;
-    --main-color-light: #ab86dd;
+    /* Main Brand Colors - HSL Format */
+    --main-color-dark: 263 52% 46%;
+    --main-color-light: 263 44% 70%;
     
-    /* Purple Color Palette */
-    --purple-50: #faf8ff;
-    --purple-100: #f5f0ff;
-    --purple-200: #e9e0ff;
-    --purple-300: #d4c0ff;
-    --purple-400: #ab86dd;
-    --purple-500: #8c5dc0;
-    --purple-600: #60368c;
-    --purple-700: #4a2a6b;
-    --purple-800: #351d4a;
-    --purple-900: #201029;
+    /* Purple Color Palette - HSL Format */
+    --purple-50: 263 100% 99%;
+    --purple-100: 263 100% 97%;
+    --purple-200: 263 100% 94%;
+    --purple-300: 263 100% 87%;
+    --purple-400: 263 44% 70%;
+    --purple-500: 263 54% 59%;
+    --purple-600: 263 52% 46%;
+    --purple-700: 263 54% 29%;
+    --purple-800: 263 54% 20%;
+    --purple-900: 263 59% 15%;
     
-    /* Shadcn Theme Variables */
-    --background: var(--purple-400);
-    --foreground: var(--purple-600);
+    /* Shadcn Theme Variables - HSL Format */
+    --background: hsl(var(--purple-100));
+    --foreground: hsl(var(--purple-900));
     --card: 255 255 255;
-    --card-foreground: var(--purple-600);
+    --card-foreground: hsl(var(--purple-900));
     --popover: 255 255 255;
-    --popover-foreground: var(--purple-600);
-    --primary: var(--purple-600);
+    --popover-foreground: hsl(var(--purple-900));
+    --primary: hsl(var(--purple-600));
     --primary-foreground: 255 255 255;
-    --secondary: var(--purple-50);
-    --secondary-foreground: var(--purple-600);
-    --muted: var(--purple-50);
-    --muted-foreground: var(--purple-600);
-    --accent: var(--purple-400);
-    --accent-foreground: var(--purple-600);
+    --secondary: hsl(var(--purple-50));
+    --secondary-foreground: hsl(var(--purple-900));
+    --muted: hsl(var(--purple-100));
+    --muted-foreground: hsl(var(--purple-600));
+    --accent: hsl(var(--purple-200));
+    --accent-foreground: hsl(var(--purple-900));
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 0 0 0 0;
-    --input: var(--purple-200);
-    --ring: var(--purple-600);
-    --radius: 0.5rem;
+    --border: hsl(var(--purple-200));
+    --input: hsl(var(--purple-50));
+    --ring: hsl(var(--purple-600));
+    --radius: 0.625rem;
   }
  
   .dark {
-    --background: var(--purple-600);
+    --background: hsl(var(--purple-900));
     --foreground: 255 255 255;
-    --card: var(--purple-700);
+    --card: hsl(var(--purple-800));
     --card-foreground: 255 255 255;
-    --popover: var(--purple-700);
+    --popover: hsl(var(--purple-800));
     --popover-foreground: 255 255 255;
-    --primary: var(--purple-400);
-    --primary-foreground: var(--purple-600);
-    --secondary: var(--purple-700);
+    --primary: hsl(var(--purple-400));
+    --primary-foreground: hsl(var(--purple-900));
+    --secondary: hsl(var(--purple-800));
     --secondary-foreground: 255 255 255;
-    --muted: var(--purple-700);
-    --muted-foreground: var(--purple-400);
-    --accent: var(--purple-400);
-    --accent-foreground: var(--purple-600);
+    --muted: hsl(var(--purple-800));
+    --muted-foreground: hsl(var(--purple-400));
+    --accent: hsl(var(--purple-600));
+    --accent-foreground: 255 255 255;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 0 0 0 0;
-    --input: var(--purple-700);
-    --ring: var(--purple-400);
+    --border: hsl(var(--purple-700));
+    --input: hsl(var(--purple-800));
+    --ring: hsl(var(--purple-400));
   }
 }
 
@@ -122,10 +122,24 @@
   button, [role="button"] {
     min-height: 44px;
     min-width: 44px;
+    touch-action: manipulation;
   }
   
   input, textarea, select {
     font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px;
+  }
+  
+  /* Improved mobile navigation */
+  .mobile-nav-item {
+    padding: 12px 16px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+  
+  .mobile-nav-item:active {
+    transform: scale(0.98);
+    background-color: hsl(var(--purple-100));
   }
 }
 
@@ -156,17 +170,17 @@
 
 /* Main headings */
 h1, h2, h3, h4, h5, h6 {
-  color: var(--purple-400);
+  color: hsl(var(--purple-800));
 }
 
 /* Body text and descriptions */
 p, .card-description, .text-muted-foreground {
-  color: var(--purple-600);
+  color: hsl(var(--purple-700));
 }
 
 /* Text on white backgrounds */
 .bg-white, .bg-card, [class*="bg-white"] {
-  color: var(--purple-600);
+  color: hsl(var(--purple-800));
 }
 
 /* Dark mode text colors */
@@ -175,11 +189,11 @@ p, .card-description, .text-muted-foreground {
 }
 
 .dark p, .dark .card-description, .dark .text-muted-foreground {
-  color: var(--purple-400);
+  color: hsl(var(--purple-300));
 }
 
 .dark .text-muted-foreground {
-  color: var(--purple-400);
+  color: hsl(var(--purple-300));
 }
 
 /* ============================================================================
@@ -401,16 +415,23 @@ button:not(.btn-white):not(.btn-dark):not(.btn-light):hover {
   color: white !important;
 }
 
+/* Enhanced input styling */
+.input-enhanced {
+  @apply bg-input border-border text-foreground placeholder:text-muted-foreground;
+  @apply focus:border-ring focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  @apply transition-all duration-200 min-h-[44px];
+}
+
 /* General form styling */
 input, textarea, select {
-  border-color: var(--purple-400);
-  background-color: #ffffff;
-  color: var(--purple-600);
+  border-color: hsl(var(--border));
+  background-color: hsl(var(--input));
+  color: hsl(var(--foreground));
 }
 
 input:focus, textarea:focus, select:focus {
-  border-color: var(--purple-400);
-  ring-color: var(--purple-400);
+  border-color: hsl(var(--ring));
+  ring-color: hsl(var(--ring));
 }
 
 /* ============================================================================

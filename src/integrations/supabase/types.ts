@@ -200,6 +200,7 @@ export type Database = {
           last_name: string
           player_id: number
           red_cards: number | null
+          suspended_matches_remaining: number
           team_id: number | null
           yellow_cards: number | null
         }
@@ -209,6 +210,7 @@ export type Database = {
           last_name: string
           player_id?: number
           red_cards?: number | null
+          suspended_matches_remaining?: number
           team_id?: number | null
           yellow_cards?: number | null
         }
@@ -218,6 +220,7 @@ export type Database = {
           last_name?: string
           player_id?: number
           red_cards?: number | null
+          suspended_matches_remaining?: number
           team_id?: number | null
           yellow_cards?: number | null
         }
