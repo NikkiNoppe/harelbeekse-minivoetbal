@@ -7,6 +7,7 @@ import { AlertCircle } from "lucide-react";
 import { BlogPost } from "@/services";
 import { formatDateShort } from "@/lib/dateUtils";
 import { useBlogPosts } from "@/hooks/useBlogPosts";
+import { MantineDemo } from "@/components/demo/MantineDemo";
 
 // Memoized sub-components for better performance
 const CompetitionInfo = memo(() => (
