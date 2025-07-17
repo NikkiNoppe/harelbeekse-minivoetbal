@@ -91,7 +91,7 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
         </DialogHeader>
 
         <div className="space-y-6">
-          <Card className="border-yellow-200 bg-yellow-50">
+          <Card className="border-orange-200 bg-orange-50">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Target className="h-4 w-4" />

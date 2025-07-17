@@ -26,11 +26,11 @@
     --purple-900: 263 59% 15%;
     
     /* Shadcn Theme Variables - HSL Format */
-    --background: hsl(var(--purple-100));
+    --background: 0 0% 100%;
     --foreground: hsl(var(--purple-900));
-    --card: 255 255 255;
+    --card: 0 0% 100%;
     --card-foreground: hsl(var(--purple-900));
-    --popover: 255 255 255;
+    --popover: 0 0% 100%;
     --popover-foreground: hsl(var(--purple-900));
     --primary: hsl(var(--purple-600));
     --primary-foreground: 255 255 255;
