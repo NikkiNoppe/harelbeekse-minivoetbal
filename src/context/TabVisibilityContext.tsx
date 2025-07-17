@@ -15,18 +15,25 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
   const { settings, loading } = useTabVisibilitySettings();
 
   const isTabVisible = (tab: TabName): boolean => {
-    // Verwijder uitzondering voor teams tab
-    // Vind de setting voor deze tab
+    // Special case for teams tab - always visible for now
+    if (tab === "teams") {
+      return true;
+    }
+    
+    // Find the setting for this tab
     const setting = settings.find(s => s.setting_name === tab);
-    // Als geen setting gevonden of niet zichtbaar, verberg de tab
+    
+    // If no setting found or not visible, hide the tab
     if (!setting || !setting.is_visible) {
       return false;
     }
-    // Als login vereist is maar user niet ingelogd, verberg de tab
+    
+    // If login is required but user is not authenticated, hide the tab
     if (setting.requires_login && !user) {
       return false;
     }
-    // Voor ingelogde gebruikers, check rol-based zichtbaarheid
+    
+    // For authenticated users, check role-based visibility
     if (user) {
       switch (tab) {
         case "playoff":
@@ -36,10 +43,11 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
         case "kaarten":
           return user.role === "admin" || user.role === "referee";
         default:
-          return true; // Alle andere tabs zijn zichtbaar voor ingelogde gebruikers als enabled in settings
+          return true; // All other tabs are visible for authenticated users if enabled in settings
       }
     }
-    // Voor niet-ingelogde gebruikers, toon tab als geen login vereist is
+    
+    // For non-authenticated users, show the tab if it doesn't require login
     return !setting.requires_login;
   };
 

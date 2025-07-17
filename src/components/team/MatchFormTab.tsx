@@ -5,9 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { FileText, Trophy, Calendar, AlertCircle, Target } from "lucide-react";
+import { FileText, Trophy, Calendar, AlertCircle } from "lucide-react";
 import { useMatchFormsData, type MatchFormsFilters } from "@/hooks/useMatchFormsData";
-import { MatchFormData, MatchFormTabType } from "./match-form/types";
+import { MatchFormData } from "./match-form/types";
 import MatchFormFilter from "./match-form/MatchFormFilter";
 import MatchFormList from "./match-form/MatchFormList";
 import MatchFormDialog from "./match-form/MatchFormDialog";
@@ -67,15 +67,13 @@ ErrorState.displayName = 'ErrorState';
 
 // Empty state component
 const EmptyState = memo(({ tabType, hasTeam, hasPermissions }: { 
-  tabType: 'league' | 'cup' | 'playoff';
+  tabType: 'league' | 'cup';
   hasTeam: boolean;
   hasPermissions: boolean;
 }) => (
   <div className="p-12 text-center">
     <div className="flex flex-col items-center space-y-4">
-      {tabType === 'cup' ? <Trophy className="h-12 w-12 text-muted-foreground" /> : 
-       tabType === 'playoff' ? <Target className="h-12 w-12 text-muted-foreground" /> : 
-       <Calendar className="h-12 w-12 text-muted-foreground" />}
+      {tabType === 'cup' ? <Trophy className="h-12 w-12 text-muted-foreground" /> : <Calendar className="h-12 w-12 text-muted-foreground" />}
       <div className="space-y-2">
         <h3 className="font-semibold">
           {!hasTeam && !hasPermissions 
@@ -107,7 +105,7 @@ const TabContent = memo(({
   onFiltersChange,
   onSelectMatch
 }: {
-  tabType: MatchFormTabType;
+  tabType: 'league' | 'cup';
   tabData: any;
   hasElevatedPermissions: boolean;
   teamName: string;
@@ -235,11 +233,6 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
     [getTabData, filters]
   );
 
-  const playoffTabData = useMemo(() => 
-    getTabData('playoff', filters), 
-    [getTabData, filters]
-  );
-
   const handleSelectMatch = (match: MatchFormData) => {
     setSelectedMatchForm(match);
     setIsDialogOpen(true);
@@ -288,7 +281,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
 
       <section>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="league" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Competitie
@@ -296,10 +289,6 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
             <TabsTrigger value="cup" className="flex items-center gap-2">
               <Trophy className="h-4 w-4" />
               Beker
-            </TabsTrigger>
-            <TabsTrigger value="playoff" className="flex items-center gap-2">
-              <Trophy className="h-4 w-4" />
-              Play-Off
             </TabsTrigger>
           </TabsList>
           
@@ -327,22 +316,6 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
               <TabContent
                 tabType="cup"
                 tabData={cupTabData}
-                hasElevatedPermissions={hasElevatedPermissions}
-                teamName={teamName}
-                user={user}
-                filters={filters}
-                onFiltersChange={setFilters}
-                onSelectMatch={handleSelectMatch}
-              />
-            )}
-          </TabsContent>
-          <TabsContent value="playoff" className="mt-6">
-            {isLoading ? (
-              <TabContentSkeleton />
-            ) : (
-              <TabContent
-                tabType="playoff"
-                tabData={playoffTabData}
                 hasElevatedPermissions={hasElevatedPermissions}
                 teamName={teamName}
                 user={user}

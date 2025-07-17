@@ -2,7 +2,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { fetchUpcomingMatches } from "@/components/team/match-form/matchFormService";
 import type { MatchFormData } from "@/components/team/match-form/types";
-import type { MatchFormTabType } from "@/components/team/match-form/types";
 
 export interface MatchFormsFilters {
   searchTerm: string;
@@ -51,23 +50,6 @@ export const useMatchFormsData = (
     refetchOnReconnect: true,
     refetchInterval: 60 * 1000, // Auto-refetch every minute for live updates
     refetchIntervalInBackground: false // Only when tab is active
-  });
-
-  // Playoff matches query
-  const playoffQuery = useQuery({
-    queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'playoff'],
-    queryFn: () => fetchUpcomingMatches(
-      hasElevatedPermissions ? 0 : teamId,
-      hasElevatedPermissions,
-      'playoff' // custom type, afhandelen in fetchUpcomingMatches
-    ),
-    staleTime: 30 * 1000,
-    gcTime: 2 * 60 * 1000,
-    retry: 3,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchInterval: 60 * 1000,
-    refetchIntervalInBackground: false
   });
 
   // Filter and sort matches based on current filters
@@ -165,12 +147,10 @@ export const useMatchFormsData = (
   };
 
   // Get current tab data with filters
-  const getTabData = (tabType: MatchFormTabType, filters: MatchFormsFilters) => {
-    let query;
-    if (tabType === 'cup') query = cupQuery;
-    else if (tabType === 'playoff') query = playoffQuery;
-    else query = leagueQuery;
+  const getTabData = (tabType: 'league' | 'cup', filters: MatchFormsFilters) => {
+    const query = tabType === 'cup' ? cupQuery : leagueQuery;
     const filteredMatches = filterAndSortMatches(query.data || [], filters);
+    
     return {
       matches: filteredMatches,
       allMatches: query.data || [],
@@ -217,7 +197,6 @@ export const useMatchFormsData = (
     // Raw data
     leagueMatches: leagueQuery.data || [],
     cupMatches: cupQuery.data || [],
-    playoffMatches: playoffQuery.data || [],
     
     // Loading states
     leagueLoading: leagueQuery.isLoading,

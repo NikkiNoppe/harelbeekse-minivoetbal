@@ -59,14 +59,14 @@ class SuspensionRulesService {
         .eq('setting_category', 'suspension_rules')
         .eq('setting_name', 'default_rules')
         .eq('is_active', true)
-        .maybeSingle();
+        .single();
 
       if (error || !data) {
         console.warn('Failed to fetch suspension rules, using defaults:', error);
         return DEFAULT_SUSPENSION_RULES;
       }
 
-      const rules = data.setting_value as unknown as SuspensionRules;
+      const rules = data.setting_value as SuspensionRules;
       
       // Validate and merge with defaults
       this.cachedRules = {

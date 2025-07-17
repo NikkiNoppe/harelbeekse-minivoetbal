@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface Team {
   team_id: number;
   team_name: string;
+  balance: number;
   player_manager_id?: number | null;
   contact_person?: string;
   contact_phone?: string;
@@ -20,6 +21,7 @@ interface Team {
 
 interface TeamFormData {
   name: string;
+  balance: string;
   contact_person: string;
   contact_phone: string;
   contact_email: string;
@@ -49,6 +51,15 @@ export const useTeamOperations = (onSuccess: () => void) => {
     
     if (formData.name.trim().length > 50) {
       return "Teamnaam mag maximaal 50 karakters bevatten";
+    }
+    
+    const balance = parseFloat(formData.balance);
+    if (isNaN(balance)) {
+      return "Balans moet een geldig nummer zijn";
+    }
+    
+    if (balance < -999999 || balance > 999999) {
+      return "Balans moet tussen -999.999 en 999.999 liggen";
     }
     
     // Validate email if provided
@@ -94,7 +105,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
       });
       
       onSuccess();
-      return { ...data } as Team;
+      return { ...data, balance: 0 } as Team;
     } catch (error: any) {
       console.error('Error creating team:', error);
       
@@ -128,18 +139,56 @@ export const useTeamOperations = (onSuccess: () => void) => {
       return null;
     }
 
-    let updateSuccess = false;
-    let updateData = null;
-    let updateError = null;
-
     try {
       setLoading(true);
+      
+      // First, let's check if the team exists
+      const { data: existingTeam, error: fetchError } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('team_id', teamId)
+        .single();
+      
+      if (fetchError) {
+        toast({
+          title: "Team niet gevonden",
+          description: "Het team dat je wilt bijwerken bestaat niet meer",
+          variant: "destructive",
+        });
+        return null;
+      }
+      
+      console.log('Existing team:', existingTeam);
+      
+      // Check if the new name already exists (excluding current team)
+      const { data: duplicateCheck, error: duplicateError } = await supabase
+        .from('teams')
+        .select('team_id')
+        .eq('team_name', formData.name.trim())
+        .neq('team_id', teamId);
+      
+      if (duplicateError) {
+        console.error('Error checking for duplicates:', duplicateError);
+      } else if (duplicateCheck && duplicateCheck.length > 0) {
+        toast({
+          title: "Team bestaat al",
+          description: "Er bestaat al een team met deze naam",
+          variant: "destructive",
+        });
+        return null;
+      }
+      
+      // Try multiple update approaches to bypass RLS issues
+      let updateSuccess = false;
+      let updateData = null;
+      let updateError = null;
       
       // Approach 1: Standard update with new fields
       const { data: data1, error: error1 } = await supabase
         .from('teams')
         .update({
           team_name: formData.name.trim(),
+          balance: parseFloat(formData.balance) || 0,
           contact_person: formData.contact_person.trim() || null,
           contact_phone: formData.contact_phone.trim() || null,
           contact_email: formData.contact_email.trim() || null,
@@ -163,6 +212,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
           .from('teams')
           .update({
             team_name: formData.name.trim(),
+            balance: parseFloat(formData.balance) || 0,
             contact_person: formData.contact_person.trim() || null,
             contact_phone: formData.contact_phone.trim() || null,
             contact_email: formData.contact_email.trim() || null,
@@ -170,7 +220,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
             preferred_play_moments: formData.preferred_play_moments
           })
           .eq('team_id', teamId)
-          .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
+          .select('team_id, team_name, balance, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
           .single();
         
         if (!error2 && data2) {
@@ -181,21 +231,71 @@ export const useTeamOperations = (onSuccess: () => void) => {
         }
       }
       
-      if (updateSuccess) {
-        toast({
-          title: "Team bijgewerkt",
-          description: `${formData.name} is succesvol bijgewerkt`,
-        });
-        onSuccess();
-        return { ...updateData } as Team;
-      } else {
-        throw updateError;
+      // Approach 3: Update without select (just update) including new fields
+      if (!updateSuccess) {
+        const { error: error3 } = await supabase
+          .from('teams')
+          .update({
+            team_name: formData.name.trim(),
+            balance: parseFloat(formData.balance) || 0,
+            contact_person: formData.contact_person.trim() || null,
+            contact_phone: formData.contact_phone.trim() || null,
+            contact_email: formData.contact_email.trim() || null,
+            club_colors: formData.club_colors.trim() || null,
+            preferred_play_moments: formData.preferred_play_moments
+          })
+          .eq('team_id', teamId);
+        
+        if (!error3) {
+          // Verify the update worked
+          const { data: verifyData, error: verifyError } = await supabase
+            .from('teams')
+            .select('*')
+            .eq('team_id', teamId)
+            .single();
+          
+          if (!verifyError && verifyData && verifyData.team_name === formData.name.trim()) {
+            updateSuccess = true;
+            updateData = verifyData;
+          } else {
+            updateError = verifyError;
+          }
+        } else {
+          updateError = error3;
+        }
       }
+      
+      if (!updateSuccess) {
+        throw updateError || new Error('Update failed with all approaches');
+      }
+      
+      toast({
+        title: "Team bijgewerkt",
+        description: `${formData.name} is succesvol bijgewerkt`,
+      });
+      
+      onSuccess();
+      return updateData;
     } catch (error: any) {
       console.error('Error updating team:', error);
+      
+      let errorMessage = "Er is een fout opgetreden bij het bijwerken van het team";
+      
+      if (error.code === '23505') {
+        errorMessage = "Er bestaat al een team met deze naam";
+      } else if (error.code === '23503') {
+        errorMessage = "Kan team niet bijwerken vanwege gekoppelde gegevens";
+      } else if (error.code === '23514') {
+        errorMessage = "Teamnaam voldoet niet aan de vereisten";
+      } else if (error.code === '42501') {
+        errorMessage = "Geen rechten om dit team bij te werken (RLS policy)";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Fout bij bijwerken",
-        description: "Er is een fout opgetreden bij het bijwerken van het team",
+        description: errorMessage,
         variant: "destructive",
       });
       return null;

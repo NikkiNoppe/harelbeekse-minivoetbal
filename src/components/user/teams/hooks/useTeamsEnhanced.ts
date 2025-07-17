@@ -6,6 +6,7 @@ import { useTeamOperations } from "./useTeamOperations";
 interface Team {
   team_id: number;
   team_name: string;
+  balance: number;
   player_manager_id?: number | null;
   contact_person?: string;
   contact_phone?: string;
@@ -21,6 +22,7 @@ interface Team {
 
 interface TeamFormData {
   name: string;
+  balance: string;
   contact_person: string;
   contact_phone: string;
   contact_email: string;
@@ -43,6 +45,7 @@ export function useTeamsEnhanced() {
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [formData, setFormData] = useState<TeamFormData>({
     name: "",
+    balance: "0",
     contact_person: "",
     contact_phone: "",
     contact_email: "",
@@ -75,6 +78,7 @@ export function useTeamsEnhanced() {
       
       setTeams((data || []).map(team => ({ 
         ...team, 
+        balance: 0,
         preferred_play_moments: team.preferred_play_moments as any
       })));
     } catch (error) {
@@ -97,6 +101,7 @@ export function useTeamsEnhanced() {
     setEditingTeam(team);
     setFormData({
       name: team.team_name,
+      balance: team.balance.toString(),
       contact_person: team.contact_person || "",
       contact_phone: team.contact_phone || "",
       contact_email: team.contact_email || "",
@@ -115,6 +120,7 @@ export function useTeamsEnhanced() {
     setEditingTeam(null);
     setFormData({
       name: "",
+      balance: "0",
       contact_person: "",
       contact_phone: "",
       contact_email: "",

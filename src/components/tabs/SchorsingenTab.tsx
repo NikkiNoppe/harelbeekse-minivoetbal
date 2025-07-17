@@ -68,7 +68,7 @@ const StatusBadge = memo(({ status }: { status: 'active' | 'pending' | 'complete
       case 'active':
         return { children: 'Actief', className: 'bg-red-100 text-red-800 hover:bg-red-200' };
       case 'pending':
-        return { children: 'In afwachting', className: 'bg-orange-100 text-orange-800 hover:bg-orange-200' };
+        return { children: 'In afwachting', className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' };
       case 'completed':
         return { children: 'Afgerond', className: 'bg-green-100 text-green-800 hover:bg-green-200' };
       default:

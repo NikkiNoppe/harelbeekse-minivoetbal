@@ -29,9 +29,9 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
         name="usernameOrEmail"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Gebruikersnaam of Email</FormLabel>
+            <FormLabel className="text-purple-dark">Gebruikersnaam of Email</FormLabel>
             <FormControl>
-              <Input placeholder="Voer gebruikersnaam of email in" className="input-enhanced" {...field} />
+              <Input placeholder="Voer gebruikersnaam of email in" className="bg-white placeholder:text-purple-200" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -42,12 +42,12 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
         name="password"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Wachtwoord</FormLabel>
+            <FormLabel className="text-purple-dark">Wachtwoord</FormLabel>
             <FormControl>
               <Input
                 type="password"
                 placeholder="Voer wachtwoord in"
-                className="input-enhanced"
+                className="bg-white placeholder:text-purple-200"
                 {...field}
               />
             </FormControl>
@@ -57,18 +57,15 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
       />
       <Button 
         type="submit" 
-        variant="purple"
-        className="w-full"
-        loading={isLoading}
+        className="btn-dark" 
         disabled={isLoading}
       >
-        Inloggen
+        {isLoading ? "Inloggen..." : "Inloggen"}
       </Button>
       
       <Button
         type="button"
-        variant="outline"
-        className="w-full"
+        className="btn-light"
         onClick={onForgotPassword}
       >
         Wachtwoord vergeten?

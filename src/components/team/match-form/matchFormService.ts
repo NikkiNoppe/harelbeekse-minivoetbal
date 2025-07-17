@@ -4,7 +4,7 @@ import { localDateTimeToISO, isoToLocalDateTime, getCurrentISO } from "@/lib/dat
 import { cupService } from "@/services/match";
 import { sortCupMatches, sortLeagueMatches } from "@/lib/matchSortingUtils";
 
-export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermissions: boolean = false, competitionType?: 'league' | 'cup' | 'playoff'): Promise<MatchFormData[]> => {
+export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermissions: boolean = false, competitionType?: 'league' | 'cup'): Promise<MatchFormData[]> => {
   try {
     let query = supabase
       .from("matches")
@@ -40,9 +40,6 @@ export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermission
       query = query.eq('is_cup_match', true);
     } else if (competitionType === 'league') {
       query = query.or('is_cup_match.is.null,is_cup_match.eq.false');
-    } else if (competitionType === 'playoff') {
-      // Playoff: filter op speeldag met [PLAYOFF: in de string
-      query = query.like('speeldag', '%[PLAYOFF:%');
     }
 
     const { data, error } = await query;
@@ -90,8 +87,6 @@ export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermission
       return sortCupMatches(matches);
     } else if (competitionType === 'league') {
       return sortLeagueMatches(matches);
-    } else if (competitionType === 'playoff') {
-      return sortLeagueMatches(matches); // Use league sorting for playoff matches
     }
 
     return matches;

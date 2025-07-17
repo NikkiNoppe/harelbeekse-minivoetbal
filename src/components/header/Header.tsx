@@ -101,7 +101,7 @@ const Header: React.FC<HeaderProps> = ({
 
               {/* Login Button */}
               {!isAuthenticated && (
-                <Button onClick={onLoginClick} variant="purple" size="sm">
+                <Button onClick={onLoginClick} variant="default" size="sm" className="bg-purple-800 hover:bg-purple-700 text-white">
                   Inloggen
                 </Button>
               )}
@@ -145,10 +145,10 @@ const Header: React.FC<HeaderProps> = ({
                       <button
                         key={item.key}
                         onClick={() => handleTabChange(item.key)}
-                        className={`mobile-nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
+                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors ${
                           activeTab === item.key
-                            ? "bg-purple-100 text-purple-800 border-l-4 border-purple-600 font-semibold shadow-sm"
-                            : "text-purple-700 hover:bg-purple-50 hover:text-purple-800"
+                            ? "bg-purple-100 text-purple-700 border-l-4 border-purple-600"
+                            : "text-purple-700 hover:bg-purple-50"
                         }`}
                       >
                         {item.icon}
@@ -163,7 +163,7 @@ const Header: React.FC<HeaderProps> = ({
                       <div className="border-t border-purple-100 my-4"></div>
                       <button
                         onClick={handleLogout}
-                        className="mobile-nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200"
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-red-600 hover:bg-red-50 transition-colors"
                       >
                         <LogOut size={18} />
                         <span className="font-medium">Uitloggen</span>
@@ -180,8 +180,7 @@ const Header: React.FC<HeaderProps> = ({
                           onLoginClick();
                           setIsSheetOpen(false);
                         }}
-                        variant="purple"
-                        className="w-full"
+                        className="w-full bg-purple-600 hover:bg-purple-700"
                       >
                         Inloggen
                       </Button>
