@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 export interface Team {
   team_id: number;
   team_name: string;
-  balance?: number; // Add missing balance property
   contact_person?: string;
   contact_phone?: string;
   contact_email?: string;

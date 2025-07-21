@@ -120,16 +120,16 @@ export const useTeamsData = () => {
       };
     }
 
-    const totalBalance = teams.reduce((sum, team) => sum + (team.balance || 0), 0);
-    const positiveBalance = teams.filter(team => (team.balance || 0) > 0).length;
-    const negativeBalance = teams.filter(team => (team.balance || 0) < 0).length;
+    const totalBalance = teams.reduce((sum, team) => sum, 0);
+    const positiveBalance = 0;
+    const negativeBalance = 0;
 
     return {
       totalTeams: teams.length,
       positiveBalance,
       negativeBalance,
       totalBalance,
-      averageBalance: totalBalance / teams.length
+      averageBalance: 0
     };
   };
 
@@ -141,10 +141,10 @@ export const useTeamsData = () => {
       switch (sortBy) {
         case 'name':
           return a.team_name.localeCompare(b.team_name);
-        case 'balance':
-          return (a.balance || 0) - (b.balance || 0);
-        case 'balance_desc':
-          return (b.balance || 0) - (a.balance || 0);
+        // case 'balance':
+        //   return (a.balance || 0) - (b.balance || 0);
+        // case 'balance_desc':
+        //   return (b.balance || 0) - (a.balance || 0);
         default:
           return 0;
       }

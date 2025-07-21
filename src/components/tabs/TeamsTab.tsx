@@ -35,9 +35,35 @@ const TeamsTab: React.FC = () => {
     </Card>
   );
 
-  const TeamCard = React.memo(({ team }: { team: any }) => {
-    const hasContactInfo = team.contact_person || team.contact_phone || team.contact_email;
+  // Mapping van kleur-omschrijving naar Tailwind utility classes
+  const colorClassMap: Record<string, string> = {
+    'lichtblauw': 'bg-sky-100 border-sky-200 text-sky-700',
+    'blauw': 'bg-blue-100 border-blue-200 text-blue-700',
+    'muntgroen': 'bg-green-100 border-green-200 text-green-700',
+    'groen': 'bg-green-100 border-green-200 text-green-700',
+    'rood': 'bg-red-100 border-red-200 text-red-700',
+    'geel': 'bg-yellow-100 border-yellow-200 text-yellow-700',
+    'paars': 'bg-purple-100 border-purple-200 text-purple-700',
+    'oranje': 'bg-orange-100 border-orange-200 text-orange-700',
+    'zwart': 'bg-gray-800 border-gray-900 text-white',
+    'wit': 'bg-gray-100 border-gray-200 text-gray-700',
+    // Voeg meer mappings toe indien nodig
+  };
 
+  function getBadgeColorClass(clubColor: string) {
+    if (!clubColor) return 'bg-gray-100 border-gray-200 text-gray-700';
+    // Zoek op basis van volledige string of deelstring
+    const key = clubColor.trim().toLowerCase();
+    // Exacte match
+    if (colorClassMap[key]) return colorClassMap[key];
+    // Zoek op basis van deelstring
+    for (const k in colorClassMap) {
+      if (key.includes(k)) return colorClassMap[k];
+    }
+    return 'bg-gray-100 border-gray-200 text-gray-700';
+  }
+
+  const TeamCard = React.memo(({ team }: { team: any }) => {
     return (
       <Card className="group hover:shadow-lg transition-all duration-200 border-l-4 border-l-purple-500 bg-gradient-to-r from-white to-purple-50 hover:border-l-purple-600">
         <CardContent className="p-4">
@@ -53,43 +79,40 @@ const TeamsTab: React.FC = () => {
                 </h3>
               </div>
               {team.club_colors && (
-                <Badge variant="outline" className="text-xs bg-purple-100 border-purple-200 text-purple-700">
+                <Badge variant="outline" className={`text-xs ${getBadgeColorClass(team.club_colors)}`}>
                   <Palette className="h-3 w-3 mr-1" />
                   {team.club_colors}
                 </Badge>
               )}
             </div>
 
-            {/* Contact Information */}
-            {hasContactInfo ? (
-              <div className="space-y-2">
-                {team.contact_person && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Users className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                    <span className="truncate">{team.contact_person}</span>
-                  </div>
-                )}
-                
-                {team.contact_phone && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="h-4 w-4 text-green-500 flex-shrink-0" />
-                    <span>{team.contact_phone}</span>
-                  </div>
-                )}
-                
-                {team.contact_email && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Mail className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                    <span className="truncate">{team.contact_email}</span>
-                  </div>
+            {/* Contact Information - always show icons */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Users className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                {team.contact_person ? (
+                  <span className="truncate">{team.contact_person}</span>
+                ) : (
+                  <span className="truncate text-gray-400"> </span>
                 )}
               </div>
-            ) : (
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <MapPin className="h-3 w-3" />
-                <span>Geen contactgegevens beschikbaar</span>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Phone className="h-4 w-4 text-green-500 flex-shrink-0" />
+                {team.contact_phone ? (
+                  <span>{team.contact_phone}</span>
+                ) : (
+                  <span className="text-gray-400"> </span>
+                )}
               </div>
-            )}
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Mail className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                {team.contact_email ? (
+                  <span className="truncate">{team.contact_email}</span>
+                ) : (
+                  <span className="truncate text-gray-400"> </span>
+                )}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

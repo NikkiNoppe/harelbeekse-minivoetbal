@@ -53,15 +53,6 @@ export const useTeamOperations = (onSuccess: () => void) => {
       return "Teamnaam mag maximaal 50 karakters bevatten";
     }
     
-    const balance = parseFloat(formData.balance);
-    if (isNaN(balance)) {
-      return "Balans moet een geldig nummer zijn";
-    }
-    
-    if (balance < -999999 || balance > 999999) {
-      return "Balans moet tussen -999.999 en 999.999 liggen";
-    }
-    
     // Validate email if provided
     if (formData.contact_email && !formData.contact_email.includes('@')) {
       return "Email adres moet een geldig formaat hebben";
@@ -105,7 +96,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
       });
       
       onSuccess();
-      return { ...data, balance: 0 } as Team;
+      return { ...data } as Team;
     } catch (error: any) {
       console.error('Error creating team:', error);
       
@@ -188,7 +179,6 @@ export const useTeamOperations = (onSuccess: () => void) => {
         .from('teams')
         .update({
           team_name: formData.name.trim(),
-          balance: parseFloat(formData.balance) || 0,
           contact_person: formData.contact_person.trim() || null,
           contact_phone: formData.contact_phone.trim() || null,
           contact_email: formData.contact_email.trim() || null,
@@ -212,7 +202,6 @@ export const useTeamOperations = (onSuccess: () => void) => {
           .from('teams')
           .update({
             team_name: formData.name.trim(),
-            balance: parseFloat(formData.balance) || 0,
             contact_person: formData.contact_person.trim() || null,
             contact_phone: formData.contact_phone.trim() || null,
             contact_email: formData.contact_email.trim() || null,
@@ -220,7 +209,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
             preferred_play_moments: formData.preferred_play_moments
           })
           .eq('team_id', teamId)
-          .select('team_id, team_name, balance, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
+          .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
           .single();
         
         if (!error2 && data2) {
@@ -237,7 +226,6 @@ export const useTeamOperations = (onSuccess: () => void) => {
           .from('teams')
           .update({
             team_name: formData.name.trim(),
-            balance: parseFloat(formData.balance) || 0,
             contact_person: formData.contact_person.trim() || null,
             contact_phone: formData.contact_phone.trim() || null,
             contact_email: formData.contact_email.trim() || null,

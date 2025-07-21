@@ -67,13 +67,12 @@ export const useFinancialData = () => {
     queryFn: async (): Promise<Team[]> => {
       const { data, error } = await supabase
         .from('teams')
-        .select('team_id, team_name, balance')
+        .select('team_id, team_name') // balance verwijderd
         .order('team_name');
       
       if (error) throw error;
       return ((data || []) as any[]).map(team => ({ 
         ...team, 
-        balance: 0,
         preferred_play_moments: team.preferred_play_moments as any 
       })) as Team[];
     },
@@ -299,9 +298,9 @@ export const useFinancialData = () => {
         case 'name':
           return a.team_name.localeCompare(b.team_name);
         case 'balance':
-          return a.balance - b.balance;
+          return aFinances.currentBalance - bFinances.currentBalance;
         case 'balance_desc':
-          return b.balance - a.balance;
+          return bFinances.currentBalance - aFinances.currentBalance;
         case 'expenses':
           const aExpenses = aFinances.fieldCosts + aFinances.refereeCosts + aFinances.fines;
           const bExpenses = bFinances.fieldCosts + bFinances.refereeCosts + bFinances.fines;

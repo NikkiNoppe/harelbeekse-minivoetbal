@@ -269,16 +269,60 @@ button.btn-white:focus {
   border-color: inherit !important;
 }
 
-/* Default button styling (non-custom buttons) */
-button:not(.btn-white):not(.btn-dark):not(.btn-light) {
-  background-color: var(--purple-400);
-  color: #ffffff;
-  border-color: var(--purple-400);
+/* === BUTTON VARIANTEN === */
+
+/* Navigatiebutton */
+.btn-nav {
+  background: #fff;
+  color: var(--main-color-dark);
+  border: 1px solid var(--main-color-dark);
+  font-weight: 500;
+  font-size: 1rem;
+  font-family: inherit;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+.btn-nav.active {
+  background: var(--purple-400);
+  color: #fff;
+  border-color: var(--main-color-dark);
+}
+.btn-nav:hover, .btn-nav:focus {
+  background: var(--main-color-dark);
+  color: #fff;
+  border-color: var(--main-color-dark);
+}
+.btn-nav.active:hover, .btn-nav.active:focus {
+  background: var(--main-color-dark);
+  color: #fff;
+  border-color: var(--main-color-dark);
 }
 
-button:not(.btn-white):not(.btn-dark):not(.btn-light):hover {
-  background-color: var(--purple-500);
-  color: #ffffff;
+/* CRUD buttons */
+.btn-crud {
+  background: var(--purple-100);
+  color: var(--main-color-dark);
+  border: 1px solid var(--purple-400);
+}
+.btn-crud:hover {
+  background: var(--purple-400);
+  color: #fff;
+}
+
+/* Standaard button */
+.btn {
+  background: var(--purple-400);
+  color: #fff;
+  border: 1px solid var(--purple-400);
+}
+.btn:hover {
+  background: var(--purple-500);
 }
 
 /* ============================================================================
