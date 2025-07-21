@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { vi } from 'vitest'
 import { teamService } from '../core/teamService'
 import { supabase } from '@/integrations/supabase/client'
 
@@ -9,7 +10,7 @@ vi.mock('@/integrations/supabase/client', () => ({
   }
 }))
 
-const mockSupabase = supabase as vi.Mocked<typeof supabase>
+const mockSupabase = supabase as any;
 
 describe('teamService', () => {
   beforeEach(() => {

@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { vi } from 'vitest'
 import { render, screen, waitFor } from '@/test/utils'
 import TeamsTab from '../TeamsTab'
 import { useTeams } from '@/hooks/useTeams'
@@ -6,7 +7,7 @@ import { useTeams } from '@/hooks/useTeams'
 // Mock the useTeams hook
 vi.mock('@/hooks/useTeams')
 
-const mockUseTeams = useTeams as vi.MockedFunction<typeof useTeams>
+const mockUseTeams = useTeams as any;
 
 describe('TeamsTab', () => {
   const mockTeams = [

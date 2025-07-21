@@ -846,7 +846,7 @@ export const competitionService = {
       const { data: playoffMatchIds, error: fetchError } = await supabase
         .from('matches')
         .select('match_id')
-        .eq('is_playoff_match', true);
+        .like('speeldag', '%[PLAYOFF:%');
 
       if (fetchError) {
         console.error('Error fetching playoff match IDs:', fetchError);
@@ -870,7 +870,7 @@ export const competitionService = {
       const { error } = await supabase
         .from('matches')
         .delete()
-        .eq('is_playoff_match', true);
+        .like('speeldag', '%[PLAYOFF:%');
 
       if (error) {
         console.error('Error deleting playoff matches:', error);
