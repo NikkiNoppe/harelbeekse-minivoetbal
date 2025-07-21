@@ -7,9 +7,9 @@ import { Label } from '../../ui/label';
 import { Alert, AlertDescription } from '../../ui/alert';
 import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 import { useToast } from "../../../hooks/use-toast";
-import { competitionService, CompetitionConfig, CompetitionFormat } from "../../../../../MINIVOETBAL.SERVICES/match/competitionService";
-import { teamService } from "../../../../../MINIVOETBAL.SERVICES/core/teamService";
-import { seasonService } from "../../../../../MINIVOETBAL.SERVICES/seasonService";
+import { competitionService, CompetitionConfig, CompetitionFormat } from "../../../../MINIVOETBAL.SERVICES/match/competitionService";
+import { teamService } from "../../../../MINIVOETBAL.SERVICES/core/teamService";
+import { seasonService } from "../../../../MINIVOETBAL.SERVICES/seasonService";
 
 const CompetitionManagementTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState("create");
