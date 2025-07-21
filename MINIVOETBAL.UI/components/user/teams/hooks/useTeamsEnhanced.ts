@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "../../../../hooks/use-toast";
-import { supabase } from "../../../MINIVOETBAL.SDK/client";
+import { supabase } from "../../../../MINIVOETBAL.SDK/client";
 import { useTeamOperations } from "./useTeamOperations";
 
 interface Team {
