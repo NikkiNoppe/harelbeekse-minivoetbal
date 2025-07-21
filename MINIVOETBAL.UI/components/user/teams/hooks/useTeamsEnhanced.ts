@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useToast } from "../../../hooks/use-toast";
+import { useToast } from "../../../../hooks/use-toast";
 import { supabase } from "../../../MINIVOETBAL.SDK/client";
 import { useTeamOperations } from "./useTeamOperations";
 
@@ -186,4 +186,4 @@ export function useTeamsEnhanced() {
     confirmDelete,
     fetchTeams: refreshData
   };
-} 
+}
