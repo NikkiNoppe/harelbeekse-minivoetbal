@@ -65,7 +65,7 @@ const Header: React.FC<HeaderProps> = ({
   const currentNavItems = isAuthenticated ? visibleAdminItems : publicNavItems;
 
   return (
-    <header className="bg-purple-900 border-b border-purple-800 shadow-sm sticky top-0 z-50">
+    <header className="bg-gradient-to-r from-purple-900 to-purple-800 border-b border-purple-700 shadow-lg sticky top-0 z-50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -73,123 +73,107 @@ const Header: React.FC<HeaderProps> = ({
             <Logo onClick={onLogoClick} />
           </div>
 
-          {/* Desktop Navigation */}
-          {!isMobile && (
-            <div className="flex items-center space-x-4">
-              {/* Admin User Menu */}
-              {isAuthenticated && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="flex items-center gap-2 text-white hover:bg-purple-800">
-                      <User size={16} />
-                      <span className="hidden sm:inline">{user?.username || user?.email}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-white border-purple-200 shadow-lg">
-                    <div className="px-3 py-2 border-b border-purple-100">
-                      <p className="text-sm font-medium text-purple-900">{user?.username || user?.email}</p>
-                      <p className="text-xs text-purple-600">{user?.role === "admin" ? "Administrator" : "Team Manager"}</p>
-                    </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="text-red-600 hover:bg-red-50">
-                      <LogOut size={16} />
-                      <span>Uitloggen</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+          {/* Hamburger Menu for all screen sizes */}
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="p-2 text-white hover:bg-white/10 transition-all duration-200 hover:scale-105"
+              >
+                <Menu size={24} className="transition-transform duration-200" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent 
+              side="right" 
+              className="w-80 bg-gradient-to-b from-white to-gray-50 border-l border-purple-200 shadow-2xl"
+            >
+              <SheetHeader className="border-b border-gray-200 pb-6 mb-6">
+                <SheetTitle className="text-2xl font-bold text-gray-900 text-left">
+                  {isAuthenticated ? "Dashboard" : "Navigatie"}
+                </SheetTitle>
+              </SheetHeader>
 
-              {/* Login Button */}
-              {!isAuthenticated && (
-                <Button onClick={onLoginClick} variant="default" size="sm" className="bg-purple-800 hover:bg-purple-700 text-white">
-                  Inloggen
-                </Button>
-              )}
-            </div>
-          )}
-
-          {/* Mobile Navigation */}
-          {isMobile && (
-            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="p-2 text-white hover:bg-purple-800">
-                  <Menu size={20} />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-80 bg-white border-l border-purple-200">
-                <SheetHeader className="border-b border-purple-100 pb-4">
-                  <SheetTitle className="text-purple-900">
-                    {isAuthenticated ? "Admin Menu" : "Navigatie"}
-                  </SheetTitle>
-                </SheetHeader>
-
-                <div className="py-4 space-y-2">
-                  {/* User Info */}
-                  {isAuthenticated && (
-                    <div className="px-3 py-3 bg-purple-50 rounded-lg mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
-                          <User size={20} className="text-white" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-purple-900">{user?.username || user?.email}</p>
-                          <p className="text-sm text-purple-600">{user?.role === "admin" ? "Administrator" : "Team Manager"}</p>
-                        </div>
+              <div className="space-y-6">
+                {/* User Info Section */}
+                {isAuthenticated && (
+                  <div className="p-4 bg-gradient-to-r from-purple-100 to-blue-100 rounded-xl shadow-sm border border-purple-200">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center shadow-md">
+                        <User size={24} className="text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900 text-sm">
+                          {user?.username || user?.email}
+                        </p>
+                        <p className="text-xs text-gray-600 bg-white/60 px-2 py-1 rounded-full inline-block mt-1">
+                          {user?.role === "admin" ? "Administrator" : "Team Manager"}
+                        </p>
                       </div>
                     </div>
-                  )}
-
-                  {/* Navigation Items */}
-                  <div className="space-y-1">
-                    {currentNavItems.map((item) => (
-                      <button
-                        key={item.key}
-                        onClick={() => handleTabChange(item.key)}
-                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors ${
-                          activeTab === item.key
-                            ? "bg-purple-100 text-purple-700 border-l-4 border-purple-600"
-                            : "text-purple-700 hover:bg-purple-50"
-                        }`}
-                      >
-                        {item.icon}
-                        <span className="font-medium">{item.label}</span>
-                      </button>
-                    ))}
                   </div>
+                )}
 
-                  {/* Logout */}
-                  {isAuthenticated && (
-                    <>
-                      <div className="border-t border-purple-100 my-4"></div>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        <LogOut size={18} />
-                        <span className="font-medium">Uitloggen</span>
-                      </button>
-                    </>
+                {/* Navigation Items */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-2 mb-3">
+                    Menu
+                  </h3>
+                  {currentNavItems.map((item) => (
+                    <button
+                      key={item.key}
+                      onClick={() => handleTabChange(item.key)}
+                      className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left transition-all duration-200 group ${
+                        activeTab === item.key
+                          ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg transform scale-[1.02]"
+                          : "text-gray-700 hover:bg-gray-100 hover:shadow-md hover:transform hover:scale-[1.01]"
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg transition-all duration-200 ${
+                        activeTab === item.key 
+                          ? "bg-white/20" 
+                          : "bg-gray-200 group-hover:bg-gray-300"
+                      }`}>
+                        {React.cloneElement(item.icon as React.ReactElement, {
+                          size: 18,
+                          className: activeTab === item.key ? "text-white" : "text-gray-600"
+                        })}
+                      </div>
+                      <span className="font-medium">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Action Buttons Section */}
+                <div className="pt-4 border-t border-gray-200 space-y-3">
+                  {/* Login Button */}
+                  {!isAuthenticated && (
+                    <Button 
+                      onClick={() => {
+                        onLoginClick();
+                        setIsSheetOpen(false);
+                      }}
+                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:transform hover:scale-[1.02]"
+                    >
+                      <User size={20} className="mr-2" />
+                      Inloggen
+                    </Button>
                   )}
 
-                  {/* Login */}
-                  {!isAuthenticated && (
-                    <>
-                      <div className="border-t border-purple-100 my-4"></div>
-                      <Button 
-                        onClick={() => {
-                          onLoginClick();
-                          setIsSheetOpen(false);
-                        }}
-                        className="w-full bg-purple-600 hover:bg-purple-700"
-                      >
-                        Inloggen
-                      </Button>
-                    </>
+                  {/* Logout Button */}
+                  {isAuthenticated && (
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-md font-medium"
+                    >
+                      <LogOut size={18} />
+                      <span>Uitloggen</span>
+                    </button>
                   )}
                 </div>
-              </SheetContent>
-            </Sheet>
-          )}
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
