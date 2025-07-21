@@ -4,8 +4,9 @@ import { Switch } from "../../ui/switch";
 import { Button } from "../../ui/button";
 import { Label } from "../../ui/label";
 import { Eye, EyeOff, Lock, Unlock, Save } from "lucide-react";
-import { useTabVisibilitySettings } from "../../../../MINIVOETBAL.SERVICES/hooks/useTabVisibilitySettings";
+import { useTabVisibilitySettings } from "../../../hooks/useTabVisibilitySettings";
 import { useToast } from '../../../hooks/use-toast';
+
 const TabVisibilitySettingsUpdated: React.FC = () => {
   const {
     settings,
@@ -144,4 +145,5 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
       </CardFooter>
     </Card>;
 };
+
 export default TabVisibilitySettingsUpdated;
