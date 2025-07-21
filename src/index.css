@@ -1,0 +1,1216 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================================
+   1. CSS VARIABLES & THEME CONFIGURATION
+   ============================================================================ */
+
+@layer base {
+  :root {
+    /* Main Brand Colors */
+    --main-color-dark: #60368c;
+    --main-color-light: #ab86dd;
+    
+    /* Purple Color Palette */
+    --purple-50: #faf8ff;
+    --purple-100: #f5f0ff;
+    --purple-200: #e9e0ff;
+    --purple-300: #d4c0ff;
+    --purple-400: #ab86dd;
+    --purple-500: #8c5dc0;
+    --purple-600: #60368c;
+    --purple-700: #4a2a6b;
+    --purple-800: #351d4a;
+    --purple-900: #201029;
+    
+    /* Shadcn Theme Variables */
+    --background: var(--purple-400);
+    --foreground: var(--purple-600);
+    --card: 255 255 255;
+    --card-foreground: var(--purple-600);
+    --popover: 255 255 255;
+    --popover-foreground: var(--purple-600);
+    --primary: var(--purple-600);
+    --primary-foreground: 255 255 255;
+    --secondary: var(--purple-50);
+    --secondary-foreground: var(--purple-600);
+    --muted: var(--purple-50);
+    --muted-foreground: var(--purple-600);
+    --accent: var(--purple-400);
+    --accent-foreground: var(--purple-600);
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 0 0 0 0;
+    --input: var(--purple-200);
+    --ring: var(--purple-600);
+    --radius: 0.5rem;
+  }
+ 
+  .dark {
+    --background: var(--purple-600);
+    --foreground: 255 255 255;
+    --card: var(--purple-700);
+    --card-foreground: 255 255 255;
+    --popover: var(--purple-700);
+    --popover-foreground: 255 255 255;
+    --primary: var(--purple-400);
+    --primary-foreground: var(--purple-600);
+    --secondary: var(--purple-700);
+    --secondary-foreground: 255 255 255;
+    --muted: var(--purple-700);
+    --muted-foreground: var(--purple-400);
+    --accent: var(--purple-400);
+    --accent-foreground: var(--purple-600);
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 0 0 0 0;
+    --input: var(--purple-700);
+    --ring: var(--purple-400);
+  }
+}
+
+/* ============================================================================
+   2. BASE STYLES & RESET
+   ============================================================================ */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* ============================================================================
+   3. MOBILE & RESPONSIVE STYLES
+   ============================================================================ */
+
+/* Scrollbar utilities */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+  }
+  
+  html, body {
+    max-width: 100%;
+    overscroll-behavior-x: none;
+  }
+  
+  .card {
+    min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  input, textarea, select {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Responsive text utilities */
+@media (max-width: 640px) {
+  .tab-text-responsive {
+    display: none;
+  }
+  
+  .tab-text-mobile {
+    display: inline;
+  }
+}
+
+@media (min-width: 641px) {
+  .tab-text-responsive {
+    display: inline;
+  }
+  
+  .tab-text-mobile {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   4. TYPOGRAPHY & TEXT COLORS
+   ============================================================================ */
+
+/* Main headings */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--purple-400);
+}
+
+/* Body text and descriptions */
+p, .card-description, .text-muted-foreground {
+  color: var(--purple-600);
+}
+
+/* Text on white backgrounds */
+.bg-white, .bg-card, [class*="bg-white"] {
+  color: var(--purple-600);
+}
+
+/* Dark mode text colors */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: #ffffff;
+}
+
+.dark p, .dark .card-description, .dark .text-muted-foreground {
+  color: var(--purple-400);
+}
+
+.dark .text-muted-foreground {
+  color: var(--purple-400);
+}
+
+/* ============================================================================
+   5. BUTTON STYLES
+   ============================================================================ */
+
+/* Primary dark button */
+.btn-dark {
+  @apply w-full bg-purple-dark text-white hover:bg-purple-light hover:text-white border border-purple-dark transition-all duration-200 font-medium rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-dark focus:ring-offset-2;
+}
+
+.btn-dark:hover {
+  background-color: var(--purple-light) !important;
+  color: var(--purple-dark) !important;
+  border-color: var(--purple-light) !important;
+}
+
+/* Secondary light button */
+.btn-light {
+  @apply w-full text-sm bg-purple-light text-white hover:bg-purple-dark hover:text-white border border-purple-light hover:border-purple-dark transition-all duration-200 font-medium rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-light focus:ring-offset-2;
+}
+
+.btn-light:hover {
+  background-color: var(--purple-dark) !important;
+  color: white !important;
+  border-color: var(--purple-dark) !important;
+}
+
+/* White outline button */
+button.btn-white {
+  width: auto;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  transition: all 0.2s ease;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff !important;
+  color: #60368c !important;
+  border: 1px solid #60368c !important;
+}
+
+button.btn-white:hover,
+button.btn-white:focus {
+  background-color: #60368c !important;
+  color: #ffffff !important;
+  border-color: #60368c !important;
+}
+
+/* Button size variants */
+.btn-sm {
+  @apply px-3 py-1.5 text-sm;
+}
+
+.btn-md {
+  @apply px-4 py-2 text-sm;
+}
+
+.btn-lg {
+  @apply px-6 py-3 text-base;
+}
+
+/* Button width variants */
+.btn-full {
+  @apply w-full;
+}
+
+.btn-auto {
+  @apply w-auto;
+}
+
+/* Disabled button states */
+.btn-dark:disabled,
+.btn-light:disabled,
+.btn-white:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.btn-dark:disabled:hover,
+.btn-light:disabled:hover,
+.btn-white:disabled:hover {
+  background-color: inherit !important;
+  color: inherit !important;
+  border-color: inherit !important;
+}
+
+/* Default button styling (non-custom buttons) */
+button:not(.btn-white):not(.btn-dark):not(.btn-light) {
+  background-color: var(--purple-400);
+  color: #ffffff;
+  border-color: var(--purple-400);
+}
+
+button:not(.btn-white):not(.btn-dark):not(.btn-light):hover {
+  background-color: var(--purple-500);
+  color: #ffffff;
+}
+
+/* ============================================================================
+   5.1. ACTION BUTTON STYLES
+   ============================================================================ */
+
+/* Action button container for edit/delete buttons */
+.action-buttons {
+  @apply flex gap-2 justify-end;
+}
+
+/* Edit action button */
+.btn-action-edit {
+  height: 2rem;
+  width: 2rem;
+  padding: 0;
+  background-color: white;
+  color: var(--purple-600);
+  border: 1px solid var(--purple-400);
+  border-radius: 0.375rem;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-action-edit:hover {
+  background-color: var(--purple-50);
+  color: var(--purple-700);
+  border-color: var(--purple-500);
+}
+
+/* Delete action button */
+.btn-action-delete {
+  height: 2rem;
+  width: 2rem;
+  padding: 0;
+  background-color: white;
+  color: #ef4444;
+  border: 1px solid var(--purple-400);
+  border-radius: 0.375rem;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-action-delete:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border-color: #f87171;
+}
+
+/* Action button icon styling */
+.btn-action-edit svg,
+.btn-action-delete svg {
+  @apply h-3 w-3;
+}
+
+/* Action button disabled states */
+.btn-action-edit:disabled,
+.btn-action-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-action-edit:disabled:hover,
+.btn-action-delete:disabled:hover {
+  background-color: white;
+  color: inherit;
+  border-color: inherit;
+}
+
+/* Action button focus states */
+.btn-action-edit:focus-visible,
+.btn-action-delete:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px white, 0 0 0 4px var(--purple-500);
+}
+
+.btn-action-edit:focus-visible {
+  box-shadow: 0 0 0 2px white, 0 0 0 4px var(--purple-500);
+}
+
+.btn-action-delete:focus-visible {
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #ef4444;
+}
+
+/* ============================================================================
+   6. FORM INPUTS & CONTROLS
+   ============================================================================ */
+
+/* Login-style input styling */
+.input-login-style {
+  @apply bg-white text-purple-dark border border-purple-dark rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-dark focus:border-purple-dark;
+}
+
+/* Login-style dropdown styling */
+.dropdown-login-style {
+  @apply w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border border-purple-dark hover:border-purple-dark rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-dark focus:border-purple-dark transition-all duration-200;
+}
+
+.dropdown-login-style:hover {
+  background-color: var(--main-color-dark) !important;
+  color: white !important;
+  border-color: var(--main-color-dark) !important;
+}
+
+.dropdown-content-login-style {
+  @apply bg-white shadow-lg z-50 border border-purple-dark rounded-md overflow-hidden;
+}
+
+.dropdown-item-login-style {
+  @apply w-full text-sm bg-white text-purple-dark hover:bg-purple-dark hover:text-white border-0 data-[highlighted]:bg-purple-dark data-[highlighted]:text-white transition-colors duration-200 cursor-pointer;
+}
+
+.dropdown-item-login-style:hover,
+.dropdown-item-login-style[data-highlighted] {
+  background-color: var(--main-color-dark) !important;
+  color: white !important;
+}
+
+/* General form styling */
+input, textarea, select {
+  border-color: var(--purple-400);
+  background-color: #ffffff;
+  color: var(--purple-600);
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--purple-400);
+  ring-color: var(--purple-400);
+}
+
+/* ============================================================================
+   7. TAB SYSTEM STYLES
+   ============================================================================ */
+
+/* Main tabs (working tabs: Algemeen, Beker, etc.) */
+.custom-tabs-list {
+  width: 100%;
+  height: 4rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.custom-tabs-list::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+.custom-tabs-container {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 0.25rem;
+  background-color: var(--purple-50);
+  border-radius: 0.75rem;
+  padding: 0.25rem;
+  border: 1px solid var(--purple-200);
+  min-width: max-content;
+}
+
+.custom-tab-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  border-radius: 0.5rem;
+  border: none;
+  background-color: white !important;
+  color: var(--purple-dark) !important;
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+}
+
+.custom-tab-trigger:hover {
+  background-color: var(--purple-100) !important;
+  color: var(--purple-dark) !important;
+}
+
+.custom-tab-trigger[data-state="active"] {
+  background-color: var(--purple-600) !important;
+  color: white !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.custom-tab-trigger:focus-visible {
+  outline: 2px solid var(--purple-600);
+  outline-offset: 2px;
+}
+
+/* Default tab styling fallbacks */
+.tabs-list {
+  background-color: var(--purple-50);
+  border-color: var(--purple-400);
+}
+
+.tabs-trigger {
+  color: var(--purple-600);
+  border-color: var(--purple-400);
+}
+
+.tabs-trigger[data-state="active"] {
+  background-color: var(--purple-400);
+  color: var(--purple-600);
+}
+
+.dark .tabs-list [data-state="active"] {
+  background-color: var(--purple-400);
+  color: var(--purple-600);
+}
+
+/* ============================================================================
+   8. CARD & COMPONENT STYLES
+   ============================================================================ */
+
+/* Card styling */
+.card, .frame, .component-frame {
+  border-color: var(--purple-400);
+}
+
+.card-header, .frame-header {
+  background-color: var(--purple-50);
+  color: var(--purple-600);
+  border-color: var(--purple-400);
+}
+
+.card-header, .card-title, .card-title.text-white {
+  color: #fff !important;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(96, 54, 140, 0.15), 0 10px 10px -5px rgba(96, 54, 140, 0.1);
+}
+
+/* ============================================================================
+   9. TABLE STYLES
+   ============================================================================ */
+
+/* Table headers */
+th, .table-header, .frame-title, .table-head {
+  color: #ffffff;
+  background-color: var(--purple-600);
+}
+
+/* Table content */
+td, .table-cell, .content-text, .column-text {
+  color: var(--purple-600);
+}
+
+/* Table styling */
+table {
+  border-color: var(--purple-400);
+}
+
+tbody tr {
+  border-color: var(--purple-400);
+}
+
+tbody tr:hover {
+  background-color: var(--purple-50);
+}
+
+/* ============================================================================
+   10. BADGE & ALERT STYLES
+   ============================================================================ */
+
+/* Badge styling */
+.badge {
+  background-color: var(--purple-400);
+  color: var(--purple-600);
+  border-color: var(--purple-400);
+}
+
+@layer components {
+  .badge-purple {
+    @apply bg-purple-400 text-white;
+  }
+  .badge-purple-white {
+    @apply bg-purple-600 text-white;
+  }
+}
+
+/* Alert components */
+.alert {
+  background-color: #ffffff;
+  color: var(--purple-600);
+  border-color: var(--purple-400);
+}
+
+.alert-description {
+  color: var(--purple-600);
+}
+
+/* ============================================================================
+   11. UTILITY CLASSES & ANIMATIONS
+   ============================================================================ */
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Separator styling */
+.separator, .divider, hr {
+  background-color: var(--purple-400);
+  border-color: var(--purple-400);
+}
+
+/* Content wrapper */
+.content-wrapper {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
+}
+
+/* Background patterns */
+.soccer-pattern {
+  background-color: var(--purple-600);
+  background-image: linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: -1px -1px;
+}
+
+/* ============================================================================
+   12. RADIX UI & THIRD-PARTY OVERRIDES
+   ============================================================================ */
+
+/* Custom border utility */
+.border-\[var\(--purple-400\)\] {
+  border-color: var(--purple-400) !important;
+}
+
+/* Radix Select "Geen speler" styling */
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:hover, 
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:focus {
+  background-color: var(--purple-200) !important;
+}
+
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\],
+[data-radix-select-item][value="no-player"] {
+  border-color: var(--purple-400) !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  box-shadow: 0 0 0 1px var(--purple-400) !important;
+  background-color: #fff !important;
+  color: var(--main-color-dark) !important;
+}
+
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:hover,
+[data-radix-select-item][value="no-player"].border-\[var\(--purple-400\)\]:focus,
+[data-radix-select-item][value="no-player"]:hover,
+[data-radix-select-item][value="no-player"]:focus {
+  border-color: var(--purple-400) !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  box-shadow: 0 0 0 2px var(--purple-400) !important;
+  background-color: var(--purple-200) !important;
+  color: var(--main-color-dark) !important;
+}
+
+/* Radix Popper content styling */
+[data-radix-popper-content-wrapper] .bg-\[var\(--purple-200\)\] {
+  background-color: var(--purple-200) !important;
+  color: var(--main-color-dark) !important;
+}
+
+[data-radix-popper-content-wrapper] .border-\[var\(--main-color-dark\)\] {
+  border-color: var(--main-color-dark) !important;
+}
+
+[data-radix-popper-content-wrapper] .shadow-lg,
+[data-radix-popper-content-wrapper] .shadow-md {
+  box-shadow: 0 8px 24px 0 rgba(96, 54, 140, 0.09), 0 1.5px 4px 0 rgba(96, 54, 140, 0.12) !important;
+}
+
+[data-radix-popper-content-wrapper] .data-\[highlighted\]\:bg-\[var\(--main-color-dark\)\] {
+  background-color: var(--main-color-dark) !important;
+  color: #fff !important;
+}
+
+/* ============================================================================
+   13. CUSTOM COLOR UTILITIES
+   ============================================================================ */
+
+.bg-\[var\(--main-color-dark\)\] {
+  background-color: var(--main-color-dark) !important;
+}
+
+.text-\[var\(--main-color-dark\)\] {
+  color: var(--main-color-dark) !important;
+}
+
+.bg-\[var\(--purple-200\)\] {
+  background-color: var(--purple-200) !important;
+}
+
+.text-\[var\(--purple-200\)\] {
+  color: var(--purple-200) !important;
+}
+
+/* ============================================================================
+   RESPONSIVE TEXT UTILITIES FOR TEAM NAMES
+   ============================================================================ */
+
+/* Base responsive text sizing for team names - using em units for better scaling */
+.text-responsive-team {
+  font-size: 0.95rem;
+  line-height: 1.2;
+  word-break: break-word;
+  hyphens: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* Container-based responsive scaling */
+@container (max-width: 200px) {
+  .text-responsive-team {
+    font-size: 0.75rem;
+  }
+}
+
+@container (max-width: 150px) {
+  .text-responsive-team {
+    font-size: 0.7rem;
+  }
+}
+
+@container (max-width: 120px) {
+  .text-responsive-team {
+    font-size: 0.65rem;
+  }
+}
+
+/* Fallback media queries for browsers without container query support */
+@media (max-width: 768px) {
+  .text-responsive-team {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .text-responsive-team {
+    font-size: 0.8rem;
+    white-space: normal;
+    line-height: 1.1;
+    max-height: 2.2em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
+
+@media (max-width: 480px) {
+  .text-responsive-team {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .text-responsive-team {
+    font-size: 0.7rem;
+  }
+}
+
+.text-responsive-card-title {
+  font-size: 1rem;
+  line-height: 1.3;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+@media (max-width: 768px) {
+  .text-responsive-card-title {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .text-responsive-card-title {
+    font-size: 0.85rem;
+  }
+}
+
+.text-responsive-small {
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+@media (max-width: 640px) {
+  .text-responsive-small {
+    font-size: 0.75rem;
+  }
+}
+
+/* Enhanced flex containers for responsive team layout with container queries */
+.team-name-container {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  container-type: inline-size;
+  container-name: team-container;
+}
+
+.team-name-text {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* For very small containers, force even smaller text */
+.team-name-container[style*="max-width"] .team-name-text,
+.team-name-container:has(.team-name-text:only-child) .team-name-text {
+  font-size: 0.75rem !important;
+}
+
+/* Match card specific team name styling */
+.match-card .team-name-container {
+  max-width: 47%;
+}
+
+.match-card .team-name-text {
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .match-card .team-name-text {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .match-card .team-name-text {
+    font-size: 0.75rem;
+    white-space: normal;
+    line-height: 1.1;
+    max-height: 2.2em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
+
+@media (max-width: 480px) {
+  .match-card .team-name-text {
+    font-size: 0.7rem;
+  }
+}
+
+/* Auto-sizing utility class for very long team names */
+.text-auto-fit {
+  font-size: 0.9rem;
+  transform-origin: left center;
+}
+
+.text-auto-fit[data-length="long"] {
+  font-size: 0.75rem;
+}
+
+.text-auto-fit[data-length="very-long"] {
+  font-size: 0.65rem;
+}
+
+.text-auto-fit[data-length="extreme"] {
+  font-size: 0.6rem;
+}
+
+/* ==========================================================================
+   MATCH CARD STYLING (herbruikbaar voor beker, competitie, enz.)
+   ==========================================================================
+*/
+.match-card {
+  background: #fff;
+  border: 1.5px solid var(--purple-400);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  color: var(--purple-600);
+  text-align: left;
+  width: 100%;
+  transition: all 0.2s;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  min-height: 140px;
+}
+.match-card:hover {
+  background: var(--purple-50);
+  border-color: var(--purple-500);
+  color: var(--purple-700);
+  box-shadow: 0 6px 24px 0 rgba(96,54,140,0.10);
+}
+.match-card .match-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.match-card .match-card-id {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--purple-600);
+}
+.match-card .match-card-status-badge {
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(96,54,140,0.07);
+  transition: background 0.2s, color 0.2s;
+}
+.match-card .match-card-teams {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--purple-600);
+  transition: color 0.2s;
+  min-height: 2.5rem;
+  flex: 1;
+}
+.match-card:hover .match-card-teams {
+  color: var(--purple-700);
+}
+.match-card .match-card-score {
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--purple-600);
+  margin-bottom: 0.5rem;
+  transition: color 0.2s;
+}
+.match-card:hover .match-card-score {
+  color: var(--purple-700);
+}
+.match-card .match-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--purple-500);
+  margin-bottom: 0.5rem;
+  transition: color 0.2s;
+}
+.match-card:hover .match-card-meta {
+  color: var(--purple-600);
+}
+.match-card .match-card-location {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: var(--purple-500);
+  margin-bottom: 0.25rem;
+  transition: color 0.2s;
+}
+.match-card:hover .match-card-location {
+  color: var(--purple-600);
+}
+.match-card .match-card-meta svg,
+.match-card .match-card-location svg {
+  display: inline;
+  vertical-align: middle;
+  margin-right: 0.15em;
+}
+
+/* ============================================================================
+   RESPONSIVE TABLE STYLES
+   ============================================================================ */
+
+/* Sticky table functionality */
+.responsive-table-container {
+  position: relative;
+  max-height: 70vh;
+  overflow: auto;
+  border-radius: 0.75rem;
+}
+
+.sticky-column {
+  position: sticky;
+  z-index: 10;
+  background-color: white !important;
+  border-right: 2px solid var(--purple-400) !important;
+  box-shadow: 2px 0 4px rgba(96, 54, 140, 0.1);
+}
+
+/* Header sticky columns have higher z-index and purple background */
+thead .sticky-column {
+  z-index: 20;
+  background-color: var(--purple-600) !important;
+  color: white !important;
+}
+
+/* Table row hover states should not affect sticky columns */
+tbody tr:hover .sticky-column {
+  background-color: white !important;
+}
+
+/* Special case for first position row */
+tbody tr.bg-green-50 .sticky-column,
+tbody tr.bg-green-50:hover .sticky-column {
+  background-color: white !important;
+}
+
+/* ============================================================================
+   COMPETITION STANDINGS TABLE STYLES
+   ============================================================================ */
+
+/* Competition standings container */
+.competitie-standings-table {
+  width: 100%;
+  min-width: 100%;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--purple-400);
+}
+
+/* Competition table headers */
+.competitie-header {
+  background-color: var(--purple-600) !important;
+  color: white !important;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  border: none;
+  position: relative;
+}
+
+.competitie-header.text-left {
+  text-align: left;
+}
+
+/* Competition sticky columns */
+.competitie-sticky-column {
+  position: sticky;
+  z-index: 15;
+  background-color: white !important;
+  border-right: 2px solid var(--purple-400) !important;
+  box-shadow: 2px 0 6px rgba(96, 54, 140, 0.12);
+}
+
+/* Header sticky columns for competition table */
+.competitie-header.competitie-sticky-column {
+  z-index: 25;
+  background-color: var(--purple-600) !important;
+  color: white !important;
+}
+
+/* Competition table rows */
+.competitie-row {
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid var(--purple-200);
+}
+
+.competitie-row:hover {
+  background-color: var(--purple-50) !important;
+}
+
+.competitie-row:hover .competitie-sticky-column {
+  background-color: var(--purple-50) !important;
+}
+
+/* Competition table cells */
+.competitie-cell {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  text-align: center;
+  color: var(--purple-600);
+  border: none;
+}
+
+.competitie-cell.text-left {
+  text-align: left;
+}
+
+.competitie-cell.font-medium {
+  font-weight: 500;
+}
+
+.competitie-cell.font-bold {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* Special styling for first position */
+.competitie-row.first-position {
+  background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+.competitie-row.first-position:hover {
+  background-color: rgba(34, 197, 94, 0.2) !important;
+}
+
+.competitie-row.first-position .competitie-sticky-column {
+  background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+/* Mobile responsive adjustments for competition table */
+@media (max-width: 768px) {
+  .competitie-header {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.75rem;
+  }
+  
+  .competitie-cell {
+    padding: 0.375rem 0.25rem;
+    font-size: 0.75rem;
+  }
+  
+  .competitie-sticky-column:first-child {
+    min-width: 50px;
+  }
+  
+  .competitie-sticky-column:nth-child(2) {
+    min-width: 120px;
+  }
+}
+
+/* Specific responsive table containers */
+.responsive-standings-table,
+.responsive-schedule-table,
+.responsive-cards-table,
+.responsive-suspensions-table {
+  width: 100%;
+  min-width: 100%;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .responsive-table-container {
+    max-height: 60vh;
+    border-radius: 0.5rem;
+  }
+  
+  .sticky-column {
+    font-size: 0.875rem;
+  }
+  
+  /* Ensure sticky columns work properly on mobile */
+  .sticky-column:first-child {
+    min-width: 60px;
+  }
+  
+  .sticky-column:nth-child(2) {
+    min-width: 140px;
+  }
+}
+
+/* Smooth scrolling for tables */
+.responsive-table-container {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Table scroll shadows */
+.responsive-table-container::before,
+.responsive-table-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  pointer-events: none;
+  z-index: 15;
+  transition: opacity 0.3s ease;
+}
+
+.responsive-table-container::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(96, 54, 140, 0.1), transparent);
+}
+
+.responsive-table-container::after {
+  right: 0;
+  background: linear-gradient(270deg, rgba(96, 54, 140, 0.1), transparent);
+}
+
+/* Enhanced table cell spacing for mobile */
+@media (max-width: 640px) {
+  .responsive-standings-table .sticky-column:first-child,
+  .responsive-schedule-table .sticky-column:first-child,
+  .responsive-cards-table .sticky-column:first-child {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .responsive-standings-table .sticky-column:nth-child(2),
+  .responsive-schedule-table .sticky-column:nth-child(2),
+  .responsive-cards-table .sticky-column:nth-child(2) {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
