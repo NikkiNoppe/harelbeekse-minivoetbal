@@ -1,11 +1,10 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '../../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../../../MINIVOETBAL.SDK/client";
+import { supabase } from "../../../../MINIVOETBAL.SDK/client";
 import { Loader2, Euro, TrendingDown, TrendingUp, List, Calendar } from "lucide-react";
 import TeamDetailModal from '../financial/TeamDetailModal';
 import CostSettingsManagementModal from '../financial/CostSettingsManagementModal';
