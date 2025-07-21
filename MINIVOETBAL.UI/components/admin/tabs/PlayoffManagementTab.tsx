@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "../../ui/alert";
 import { Badge } from "../../ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2, Users, Calendar, Target } from "lucide-react";
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../../../hooks/use-toast";
 import { competitionService, CompetitionMatch } from '../../../../MINIVOETBAL.SERVICES/match/competitionService';
 import { teamService } from '../../../../MINIVOETBAL.SERVICES/core/teamService';
 import { seasonService } from '../../../../MINIVOETBAL.SERVICES/seasonService';
@@ -594,4 +594,4 @@ const PlayoffManagementTab: React.FC = () => {
   );
 };
 
-export default PlayoffManagementTab; 
+export default PlayoffManagementTab;
