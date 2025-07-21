@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { useToast } from "../hooks/use-toast";
+import { useToast } from "../../hooks/use-toast";
 import { Trophy, Trash2, Plus, Users, AlertTriangle, Calendar, ArrowRight } from "lucide-react";
 import { cupService } from '../../../MINIVOETBAL.SERVICES/match/cupService';
 import { teamService, Team } from '../../../MINIVOETBAL.SERVICES/core/teamService';
@@ -427,4 +427,4 @@ const CupTournamentManager: React.FC = () => {
   );
 };
 
-export default CupTournamentManager; 
+export default CupTournamentManager;
