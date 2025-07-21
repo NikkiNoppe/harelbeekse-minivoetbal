@@ -65,18 +65,18 @@ const PlayersList: React.FC<PlayersListProps> = ({
                 <TableCell className="py-1">
                   <div className="flex items-center gap-1">
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => onEditPlayer(player.player_id)}
-                      className="h-7 w-7 p-0"
+                      className="h-7 w-7 p-0 bg-white text-purple-600 border-purple-400 hover:bg-purple-50"
                     >
                       <Edit2 size={15} />
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => onRemovePlayer(player.player_id)}
-                      className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-100/10"
+                      className="h-7 w-7 p-0 bg-white text-red-500 border-red-400 hover:bg-red-50"
                     >
                       <Trash2 size={15} />
                     </Button>

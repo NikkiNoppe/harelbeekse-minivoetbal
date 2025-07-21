@@ -83,7 +83,7 @@ const PlayersListUpdated: React.FC<PlayersListUpdatedProps> = ({
                       variant="outline"
                       size="sm"
                       onClick={() => onRemovePlayer(player.player_id)}
-                      className="h-7 w-7 p-0 bg-white text-red-500 border-red-400 hover:bg-red-50 hover:text-red-700"
+                      className="h-7 w-7 p-0 bg-white text-red-500 border-red-400 hover:bg-red-50"
                     >
                       <Trash2 size={15} />
                     </Button>

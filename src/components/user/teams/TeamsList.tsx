@@ -95,7 +95,7 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
                     variant="outline"
                     size="sm"
                     onClick={() => onEdit(team)}
-                    className="btn-light"
+                    className="bg-white text-purple-600 border-purple-400 hover:bg-purple-50"
                   >
                     <Edit size={14} />
                   </Button>
@@ -103,7 +103,7 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
                     variant="outline"
                     size="sm"
                     onClick={() => onDelete(team)}
-                    className="btn-light text-red-600 hover:text-red-700"
+                    className="bg-white text-red-500 border-red-400 hover:bg-red-50"
                   >
                     <Trash2 size={14} />
                   </Button>

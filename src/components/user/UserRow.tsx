@@ -38,18 +38,18 @@ const UserRow: React.FC<UserRowProps> = ({ user, teamName, onEdit, onDelete }) =
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => onEdit(user)}
-            className="text-purple-500 hover:text-purple-700 hover:bg-purple-100/10"
+            className="bg-white text-purple-600 border-purple-400 hover:bg-purple-50"
           >
             <Edit size={16} />
           </Button>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={handleDelete}
-            className="text-red-500 hover:text-red-700 hover:bg-red-100/10"
+            className="bg-white text-red-500 border-red-400 hover:bg-red-50"
           >
             <Trash2 size={16} />
           </Button>
