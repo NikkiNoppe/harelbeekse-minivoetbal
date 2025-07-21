@@ -1,0 +1,24 @@
+import { useToast } from "../../../../MINIVOETBAL.UI/hooks/use-toast";
+import { formatDateShort } from "../../../../MINIVOETBAL.UI/lib/dateUtils";
+
+export const usePlayerLockToast = (isLocked: boolean, lockDate: string | null) => {
+  const { toast } = useToast();
+
+  const showLockWarning = () => {
+    if (isLocked && lockDate) {
+      toast({
+        title: "Spelerslijst vergrendeld",
+        description: `Wijzigingen zijn niet toegestaan vanaf ${formatDateShort(lockDate)}`,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Spelerslijst vergrendeld",
+        description: "Wijzigingen zijn momenteel niet toegestaan",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return { showLockWarning };
+};

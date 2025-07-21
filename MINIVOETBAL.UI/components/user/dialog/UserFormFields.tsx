@@ -1,0 +1,135 @@
+
+import React from "react";
+import { Label } from "../../ui/label";
+import { Input } from "../../ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '../../ui/select';
+import TeamSelector from "./TeamSelector";
+import { TeamOption, UserFormData } from "../types/userDialogTypes";
+
+interface UserFormFieldsProps {
+  formData: UserFormData;
+  setFormData: React.Dispatch<React.SetStateAction<UserFormData>>;
+  teams: TeamOption[];
+  isEditing: boolean;
+  isLoading?: boolean;
+}
+
+const UserFormFields: React.FC<UserFormFieldsProps> = ({
+  formData,
+  setFormData,
+  teams,
+  isEditing,
+  isLoading = false
+}) => {
+  
+  const handleTeamSelect = (teamId: number) => {
+    const teamIdNum = typeof teamId === 'string' ? parseInt(teamId) : teamId;
+    
+    // Check if team is already selected
+    const isSelected = formData.teamIds.includes(teamIdNum);
+    
+    let newTeamIds: number[];
+    
+    if (isSelected) {
+      // Remove team if already selected
+      newTeamIds = formData.teamIds.filter(id => id !== teamIdNum);
+    } else {
+      // Add team if not selected
+      newTeamIds = [...formData.teamIds, teamIdNum];
+    }
+    
+    setFormData({ 
+      ...formData, 
+      teamIds: newTeamIds,
+      teamId: newTeamIds.length > 0 ? newTeamIds[0] : 0 // Maintain backward compatibility
+    });
+  };
+
+  return (
+    <>
+      <div className="space-y-2">
+        <Label htmlFor="username">Gebruikersnaam</Label>
+        <Input
+          id="username"
+          value={formData.username}
+          onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+          placeholder="Gebruikersnaam"
+          required
+          disabled={isLoading}
+          className="input-login-style"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="email">E-mailadres (optioneel)</Label>
+        <Input
+          id="email"
+          type="email"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          placeholder="E-mailadres (optioneel)"
+          disabled={isLoading}
+          className="input-login-style"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="password">
+          Wachtwoord {isEditing && "(leeg laten om ongewijzigd te houden)"}
+        </Label>
+        <Input
+          id="password"
+          type="password"
+          value={formData.password}
+          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          placeholder="Wachtwoord"
+          required={!isEditing}
+          disabled={isLoading}
+          className="input-login-style"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="role">Rol</Label>
+        <Select
+          value={formData.role}
+          onValueChange={(value: "admin" | "referee" | "player_manager") => {
+            setFormData({ 
+              ...formData, 
+              role: value,
+              // Reset teamIds if role is not player_manager
+              teamIds: value === "player_manager" ? formData.teamIds : []
+            });
+          }}
+          disabled={isLoading}
+        >
+          <SelectTrigger id="role" className="dropdown-login-style">
+            <SelectValue placeholder="Selecteer een rol" />
+          </SelectTrigger>
+          <SelectContent className="dropdown-content-login-style">
+            <SelectItem value="admin" className="dropdown-item-login-style">Beheerder</SelectItem>
+            <SelectItem value="player_manager" className="dropdown-item-login-style">Teamverantwoordelijke</SelectItem>
+            <SelectItem value="referee" className="dropdown-item-login-style">Scheidsrechter</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      {formData.role === "player_manager" && teams.length > 0 && (
+        <TeamSelector
+          teams={teams}
+          selectedTeamIds={formData.teamIds}
+          onTeamSelect={handleTeamSelect}
+          disabled={isLoading}
+        />
+      )}
+    </>
+  );
+};
+
+export default UserFormFields;
