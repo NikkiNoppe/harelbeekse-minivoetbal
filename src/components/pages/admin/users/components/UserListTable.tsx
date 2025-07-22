@@ -21,7 +21,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { DbUser } from "./types";
+import { DbUser } from "../userTypes";
 
 interface UserListProps {
   users: DbUser[];
@@ -41,7 +41,7 @@ interface UserListProps {
   teams: { team_id: number; team_name: string }[];
 }
 
-const UserList: React.FC<UserListProps> = ({ 
+const UserListTable: React.FC<UserListProps> = ({ 
   users, 
   loading, 
   isUpdating,
@@ -245,4 +245,4 @@ const UserList: React.FC<UserListProps> = ({
   );
 };
 
-export default UserList;
+export default UserListTable;

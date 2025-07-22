@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import TabVisibilitySettingsUpdated from "@/components/pages/admin/settings/TabVisibilitySettingsUpdated";
-import CompetitionDataSettings from "@/components/pages/admin/settings/CompetitionDataSettings";
-import { SuspensionRulesSettings } from "@/components/pages/admin/settings/SuspensionRulesSettings";
+import TabVisibilitySettingsUpdated from "@/components/pages/admin/settings/components/TabVisibilitySettingsUpdated";
+import CompetitionDataSettings from "@/components/pages/admin/settings/components/CompetitionDataSettings";
+import { SuspensionRulesSettings } from "@/components/pages/admin/settings/components/SuspensionRulesSettings";
 import { Settings } from "lucide-react";
 
 const AdminSettingsPage: React.FC = () => {

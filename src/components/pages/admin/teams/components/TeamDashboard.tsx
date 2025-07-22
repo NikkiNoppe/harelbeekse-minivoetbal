@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import PlayerPage from "@/components/pages/admin/players/PlayerPage";
 import { User, TeamData } from "@/types/auth";
-import MatchFormTab from "@/components/pages/admin/matches/MatchFormTab";
+import MatchFormTab from "@/components/pages/admin/matches/MatchesPage";
 import { teamService } from "@/services/core";
 
 interface TeamDashboardProps {

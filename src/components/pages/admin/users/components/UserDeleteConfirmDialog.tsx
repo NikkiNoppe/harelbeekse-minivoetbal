@@ -18,7 +18,7 @@ interface ConfirmDeleteDialogProps {
   isDeleting: boolean;
 }
 
-const ConfirmDeleteDialog: React.FC<ConfirmDeleteDialogProps> = ({ 
+const UserDeleteConfirmDialog: React.FC<ConfirmDeleteDialogProps> = ({ 
   open, 
   onOpenChange, 
   onConfirmDelete,
@@ -63,4 +63,4 @@ const ConfirmDeleteDialog: React.FC<ConfirmDeleteDialogProps> = ({
   );
 };
 
-export default ConfirmDeleteDialog;
+export default UserDeleteConfirmDialog;

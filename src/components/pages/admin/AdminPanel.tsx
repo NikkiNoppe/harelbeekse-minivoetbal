@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import TeamForm from "./TeamForm";
+import TeamForm from "@/components/pages/admin/teams/components/TeamForm";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, AlertTriangle } from "lucide-react";
 import { teamService, Team } from "@/services/core";
-import CupTournamentManager from "./CupTournamentManager";
+import CupTournamentManager from "@/components/pages/admin/beker/components/CupTournamentManager";
 
 // Initial users data
 const initialUsers = [

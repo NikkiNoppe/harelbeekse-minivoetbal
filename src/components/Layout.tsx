@@ -1,20 +1,21 @@
 
 import React, { useState, useEffect } from "react";
-import Header from "@/components/header/Header";
-import Footer from "@/components/footer/Footer";
+import Header from "@/components/pages/header/Header";
+import Footer from "@/components/pages/footer/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import LoginForm from "@/components/auth/LoginForm";
-import MainTabs from "@/components/pages/MainTabs";
-import PlayerPage from "@/components/pages/admin/players/PlayerPage";
-import AdminTeamPage from "@/components/pages/admin/AdminTeamPage";
-import AdminUserPage from "@/components/pages/admin/AdminUserPage";
-import AdminCompetitionPage from "@/components/pages/admin/AdminCompetitionPage";
+import MainPages from "@/components/pages/MainPages";
+import PlayersList from "@/components/pages/admin/players/components/PlayersList";
+import AdminTeamPage from "@/components/pages/admin/teams/TeamsPage";
+import AdminUserPage from "@/components/pages/admin/users/UserPage";
+import AdminCompetitionPage from "@/components/pages/admin/competition/CompetitionPage";
 import AdminPlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
-import CupTournamentManager from "@/components/admin/CupTournamentManager";
-import AdminFinancialPage from "@/components/pages/admin/AdminFinancialPage";
-import AdminSettingsPage from "@/components/pages/admin/AdminSettingsPage";
-import MatchFormTab from "@/components/pages/admin/matches/MatchFormTab";
+import CupTournamentManager from "@/components/pages/admin/beker/components/CupTournamentManager";
+import AdminFinancialPage from "@/components/pages/admin/financial/FinancialPage";
+import AdminSettingsPage from "@/components/pages/admin/settings/SettingsPage";
+import MatchFormTab from "@/components/pages/admin/matches/MatchesPage";
 import { useAuth } from "@/components/auth/AuthProvider";
+import PlayerPage from "@/components/pages/admin/players/PlayerPage";
 
 const Layout: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
@@ -53,7 +54,7 @@ const Layout: React.FC = () => {
     }
   }, [user, loginDialogOpen]);
 
-  // Main public tabs that use MainTabs component
+  // Main public tabs that use MainPages component
   const isMainTab = [
     "algemeen", "beker", "competitie", "playoff", 
     "schorsingen", "kaarten", "reglement", "teams"
@@ -62,7 +63,7 @@ const Layout: React.FC = () => {
   let content = null;
 
   if (isMainTab) {
-    content = <MainTabs activeTab={activeTab as any} setActiveTab={setActiveTab as any} />;
+    content = <MainPages activeTab={activeTab as any} setActiveTab={setActiveTab as any} />;
   } else {
     // Individual components for admin/user tabs with consistent padding
     switch (activeTab) {
@@ -130,7 +131,7 @@ const Layout: React.FC = () => {
         );
         break;
       default:
-        content = <MainTabs activeTab="algemeen" setActiveTab={setActiveTab} />;
+        content = <MainPages activeTab="algemeen" setActiveTab={setActiveTab} />;
     }
   }
 

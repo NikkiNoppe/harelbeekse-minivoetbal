@@ -10,9 +10,9 @@ import BekerPage from "./BekerPage";
 import SchorsingenPage from "./SchorsingenPage";
 import KaartenPage from "./KaartenPage";
 import ReglementPage from "./ReglementPage";
-import TeamsPage from "./admin/teams/TeamsPage";
+import PloegenPage from "./PloegenPage";
 
-interface MainTabsProps {
+interface MainPagesProps {
   activeTab: TabName;
   setActiveTab: (tab: TabName) => void;
 }
@@ -46,7 +46,7 @@ const MemoizedBekerPage = memo(BekerPage);
 const MemoizedSchorsingenPage = memo(SchorsingenPage);
 const MemoizedKaartenPage = memo(KaartenPage);
 const MemoizedReglementPage = memo(ReglementPage);
-const MemoizedTeamsPage = memo(TeamsPage);
+const MemoizedTeamsPage = memo(PloegenPage);
 
 MemoizedAlgemeenPage.displayName = 'MemoizedAlgemeenPage';
 MemoizedCompetitiePage.displayName = 'MemoizedCompetitiePage';
@@ -66,7 +66,7 @@ const TabContentWrapper = memo(({ children }: { children: React.ReactNode }) => 
 
 TabContentWrapper.displayName = 'TabContentWrapper';
 
-const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
+const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
   const { isTabVisible, loading } = useTabVisibility();
 
   // Memoize tab content components to prevent unnecessary re-renders
@@ -177,4 +177,4 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
   );
 };
 
-export default memo(MainTabs);
+export default memo(MainPages);

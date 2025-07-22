@@ -3,10 +3,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Lock } from "lucide-react";
-import PlayersList from "./PlayersList";
-import PlayerDialog from "./PlayerDialog";
-import PlayerRegulations from "./PlayerRegulations";
-import { usePlayersUpdated } from "./usePlayersUpdated";
+import PlayersList from "./components/PlayersList";
+import PlayerDialog from "./components/PlayerDialog";
+import PlayerRegulations from "./components/PlayerRegulations";
+import { usePlayersUpdated } from "./hooks/usePlayersUpdated";
 import { usePlayerListLock } from "@/components/user/players/hooks/usePlayerListLock";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { formatDateShort } from "@/lib/dateUtils";

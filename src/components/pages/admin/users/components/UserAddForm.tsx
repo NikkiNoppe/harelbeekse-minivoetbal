@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Team } from "./types";
+import { Team } from "../userTypes";
 
 interface AddUserFormProps {
   teams: Team[];
@@ -23,7 +23,7 @@ interface AddUserFormProps {
   isAdding: boolean;
 }
 
-const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser, isAdding }) => {
+const UserAddForm: React.FC<AddUserFormProps> = ({ teams, onAddUser, isAdding }) => {
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
@@ -143,4 +143,4 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ teams, onAddUser, isAdding })
   );
 };
 
-export default AddUserForm;
+export default UserAddForm;

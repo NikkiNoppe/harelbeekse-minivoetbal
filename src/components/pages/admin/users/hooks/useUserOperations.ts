@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Team } from "./types";
+import { Team } from "../userTypes";
 import { useToast } from "@/hooks/use-toast";
 import { hashPassword, generateRandomPassword } from "@/lib/passwordUtils";
 

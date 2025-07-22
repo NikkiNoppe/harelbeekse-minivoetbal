@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Euro, TrendingDown, TrendingUp, List, Calendar } from "lucide-react";
-import TeamDetailModal from "@/components/pages/admin/financial/TeamDetailModal";
-import CostSettingsManagementModal from "@/components/pages/admin/financial/CostSettingsManagementModal";
-import MonthlyReportsModal from "@/components/pages/admin/financial/MonthlyReportsModal";
+import TeamDetailModal from "@/components/pages/admin/financial/components/TeamDetailModal";
+import CostSettingsManagementModal from "@/components/pages/admin/financial/components/CostSettingsManagementModal";
+import MonthlyReportsModal from "@/components/pages/admin/financial/components/MonthlyReportsModal";
 import { costSettingsService } from "@/services/financial";
 import { financialOverviewService } from "@/services/financial/financialOverviewService";
 

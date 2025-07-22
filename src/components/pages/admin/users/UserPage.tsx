@@ -9,10 +9,10 @@ import {
   CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useUserManagement } from "../../admin/user-management/useUserManagement";
+import { useUserManagement } from "./hooks/useUserManagement";
 import UserDialog from "@/components/user/UserDialog";
-import UserList from "../../admin/user-management/UserList";
-import ConfirmDeleteDialog from "../../admin/user-management/ConfirmDeleteDialog";
+import UserListTable from "./components/UserListTable";
+import UserDeleteConfirmDialog from "./components/UserDeleteConfirmDialog";
 
 import { Plus, Edit, Save, Users } from "lucide-react";
 
@@ -103,7 +103,7 @@ const AdminUserPage: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <UserList 
+            <UserListTable 
               users={users}
               loading={loading}
               isUpdating={updatingUser}
@@ -134,7 +134,7 @@ const AdminUserPage: React.FC = () => {
       </section>
       
       {/* Confirm Delete Dialog */}
-      <ConfirmDeleteDialog 
+      <UserDeleteConfirmDialog 
         open={confirmDialogOpen}
         onOpenChange={setConfirmDialogOpen}
         onConfirmDelete={handleDeleteUser}

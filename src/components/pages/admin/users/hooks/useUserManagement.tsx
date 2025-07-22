@@ -1,8 +1,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { DbUser, Team } from "./types";
-import { useUserOperations } from "./userOperations";
+import { DbUser, Team } from "../userTypes";
+import { useUserOperations } from "./useUserOperations";
 
 // Function to generate a secure random password
 const generateRandomPassword = (length: number = 12): string => {

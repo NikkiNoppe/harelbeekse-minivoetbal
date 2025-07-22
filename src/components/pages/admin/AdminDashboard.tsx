@@ -2,16 +2,16 @@
 import React from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/components/auth/AuthProvider";
-import PlayerPage from "@/components/pages/admin/players/PlayerPage";
-import AdminSettingsPanel from "@/components/admin/AdminSettingsPanel";
-import AdminCompetitionPage from "@/components/pages/admin/AdminCompetitionPage";
-import AdminFinancialPage from "@/components/pages/admin/AdminFinancialPage";
-import AdminUserPage from "@/components/pages/admin/AdminUserPage";
-import AdminTeamPage from "@/components/pages/admin/AdminTeamPage";
-import MatchFormTab from "@/components/pages/admin/matches/MatchFormTab";
-import CupTournamentManager from "@/components/admin/CupTournamentManager";
-import AdminPlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
-import AdminSettingsPage from "@/components/pages/admin/AdminSettingsPage";
+import PlayerPage from "@/components/pages/admin/players/PlayerPage.tsx";
+import SettingsPanel from "@/components/pages/admin/settings/components/SettingsPanel";
+import CompetitionPage from "@/components/pages/admin/competition/CompetitionPage";
+import FinancialPage from "@/components/pages/admin/financial/FinancialPage";
+import UserPage from "@/components/pages/admin/users/UserPage";
+import TeamPage from "@/components/pages/admin/teams/TeamsPage";
+import MatchesPage from "@/components/pages/admin/matches/MatchesPage";
+import CupTournamentManager from "@/components/pages/admin/beker/components/CupTournamentManager";
+import PlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
+import SettingsPage from "@/components/pages/admin/settings/SettingsPage";
 
 type TabName = "match-forms" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup";
 
@@ -31,7 +31,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
           <div className="animate-fade-in">
             <TabsContent value="match-forms" className="mt-0">
-              <MatchFormTab teamId={user?.teamId || 0} teamName="Admin" />
+              <MatchesPage teamId={user?.teamId || 0} teamName="Admin" />
             </TabsContent>
             
             <TabsContent value="players" className="mt-0">
@@ -41,27 +41,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
             {isAdmin && (
               <>
                 <TabsContent value="teams" className="mt-0">
-                  <AdminTeamPage />
+                  <TeamPage />
                 </TabsContent>
                 
                 <TabsContent value="users" className="mt-0">
-                  <AdminUserPage />
+                  <UserPage />
                 </TabsContent>
                 
                 <TabsContent value="competition" className="mt-0">
-                  <AdminCompetitionPage />
+                  <CompetitionPage />
                 </TabsContent>
                 
                 <TabsContent value="playoffs" className="mt-0">
-                  <AdminPlayoffPage />
+                  <PlayoffPage />
                 </TabsContent>
                 
                 <TabsContent value="financial" className="mt-0">
-                  <AdminFinancialPage />
+                  <FinancialPage />
                 </TabsContent>
                 
                 <TabsContent value="settings" className="mt-0">
-                  <AdminSettingsPage />
+                  <SettingsPage />
                 </TabsContent>
               </>
             )}
