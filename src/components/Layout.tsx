@@ -40,7 +40,7 @@ const Layout: React.FC = () => {
   let content = null;
 
   if (isMainTab) {
-    content = <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />;
+    content = <MainTabs activeTab={activeTab as any} setActiveTab={setActiveTab as any} />;
   } else {
     // Individual components for admin/user tabs with consistent padding
     switch (activeTab) {

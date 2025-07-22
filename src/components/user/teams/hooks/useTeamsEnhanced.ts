@@ -31,6 +31,7 @@ interface TeamFormData {
     venues: number[];
     notes: string;
   };
+  balance: string; // Add balance property to match the interface from useTeamOperations
 }
 
 export function useTeamsEnhanced() {
@@ -52,7 +53,8 @@ export function useTeamsEnhanced() {
       timeslots: [],
       venues: [],
       notes: ""
-    }
+    },
+    balance: "0"
   });
 
   const refreshData = () => {
@@ -106,7 +108,8 @@ export function useTeamsEnhanced() {
         timeslots: team.preferred_play_moments?.timeslots || [],
         venues: team.preferred_play_moments?.venues || [],
         notes: team.preferred_play_moments?.notes || ""
-      }
+      },
+      balance: "0" // Default balance value
     });
     setDialogOpen(true);
   };
@@ -124,7 +127,8 @@ export function useTeamsEnhanced() {
         timeslots: [],
         venues: [],
         notes: ""
-      }
+      },
+      balance: "0"
     });
     setDialogOpen(true);
   };
