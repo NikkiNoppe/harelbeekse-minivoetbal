@@ -21,6 +21,7 @@ import {
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
+import { ZodError } from "zod";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -78,12 +79,20 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
         onOpenChange(false);
       }
     } catch (error) {
-      console.error('Password reset error:', error);
-      toast({
-        title: "Er is een fout opgetreden",
-        description: "Probeer het later opnieuw",
-        variant: "destructive",
-      });
+      if (error instanceof ZodError) {
+        toast({
+          title: "Validatie fout",
+          description: error.issues.map(e => e.message).join(", "),
+          variant: "destructive"
+        });
+      } else {
+        console.error('Password reset error:', error);
+        toast({
+          title: "Er is een fout opgetreden",
+          description: "Probeer het later opnieuw",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }

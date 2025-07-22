@@ -4,16 +4,16 @@ import Header from "@/components/header/Header";
 import Footer from "@/components/footer/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import LoginForm from "@/components/auth/LoginForm";
-import MainTabs from "@/components/tabs/MainTabs";
-import { PlayerPage } from "@/components/user/players";
-import TeamsAdminTab from "@/components/admin/tabs/TeamsTab";
-import UserManagementTab from "@/components/admin/tabs/UserManagementTab";
-import CompetitionManagementTab from "@/components/admin/tabs/CompetitionManagementTab";
-import PlayoffManagementTab from "@/components/admin/tabs/PlayoffManagementTab";
+import MainTabs from "@/components/pages/MainTabs";
+import PlayerPage from "@/components/pages/admin/players/PlayerPage";
+import AdminTeamPage from "@/components/pages/admin/AdminTeamPage";
+import AdminUserPage from "@/components/pages/admin/AdminUserPage";
+import AdminCompetitionPage from "@/components/pages/admin/AdminCompetitionPage";
+import AdminPlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
 import CupTournamentManager from "@/components/admin/CupTournamentManager";
-import FinancialPage from "@/components/admin/tabs/FinancialTabUpdated";
-import AdminSettingsPanel from "@/components/admin/AdminSettingsPanel";
-import MatchFormTab from "@/components/team/MatchFormTab";
+import AdminFinancialPage from "@/components/pages/admin/AdminFinancialPage";
+import AdminSettingsPage from "@/components/pages/admin/AdminSettingsPage";
+import MatchFormTab from "@/components/pages/admin/matches/MatchFormTab";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 const Layout: React.FC = () => {
@@ -76,28 +76,28 @@ const Layout: React.FC = () => {
       case "teams-admin":
         content = (
           <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <TeamsAdminTab />
+            <AdminTeamPage />
           </div>
         );
         break;
       case "users":
         content = (
           <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <UserManagementTab />
+            <AdminUserPage />
           </div>
         );
         break;
       case "competition":
         content = (
           <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <CompetitionManagementTab />
+            <AdminCompetitionPage />
           </div>
         );
         break;
       case "playoffs":
         content = (
           <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <PlayoffManagementTab />
+            <AdminPlayoffPage />
           </div>
         );
         break;
@@ -111,14 +111,14 @@ const Layout: React.FC = () => {
       case "financial":
         content = (
           <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <FinancialPage />
+            <AdminFinancialPage />
           </div>
         );
         break;
       case "settings":
         content = (
           <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <AdminSettingsPanel />
+            <AdminSettingsPage />
           </div>
         );
         break;
