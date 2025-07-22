@@ -1,6 +1,5 @@
 import React from "react";
-import { Accordion, AccordionItem, AccordionControl, AccordionPanel } from "@mantine/core";
-import { Container, Stack, Text } from "@mantine/core";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 const reglement = [
   {
@@ -150,20 +149,21 @@ const reglement = [
 
 function ReglementTab() {
   return (
-    <Container size="sm" py="xl">
-      <Accordion variant="separated" radius="md" defaultValue="">
+    <div className="max-w-2xl mx-auto py-8">
+      <Accordion type="single" collapsible defaultValue="">
         {reglement.map((h, i) => (
-          <AccordionItem key={h.title} value={h.title}>
-            <AccordionControl>
-              <Text size="lg" fw={600} c="grape.8">{h.title}</Text>
-            </AccordionControl>
-            <AccordionPanel>
+          <AccordionItem key={h.title} value={h.title} className="border-b border-purple-100">
+            <AccordionTrigger className="text-lg text-purple-800 font-semibold bg-purple-50 hover:bg-purple-100 px-4">
+              {h.title}
+            </AccordionTrigger>
+            <p className="h-2"></p>
+            <AccordionContent className="bg-white px-4 text-purple-900">
               {h.content}
-            </AccordionPanel>
+            </AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>
-    </Container>
+    </div>
   );
 }
 

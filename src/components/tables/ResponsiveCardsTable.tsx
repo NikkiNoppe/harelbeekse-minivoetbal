@@ -1,6 +1,7 @@
 
 import React from "react";
-import { Table, Badge } from "@mantine/core";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { AlertTriangle } from "lucide-react";
 
 interface PlayerCardSummary {
@@ -25,63 +26,82 @@ interface ResponsiveCardsTableProps {
 
 const ResponsiveCardsTable: React.FC<ResponsiveCardsTableProps> = ({ playerSummaries }) => {
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <Table striped highlightOnHover withTableBorder withColumnBorders>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th style={{ left: 0, minWidth: 120, position: 'sticky', background: '#fafafa', zIndex: 2 }}>Speler</Table.Th>
-            <Table.Th style={{ left: 120, minWidth: 120, position: 'sticky', background: '#fafafa', zIndex: 2 }}>Team</Table.Th>
-            <Table.Th style={{ textAlign: 'center', width: 96 }}>Geel</Table.Th>
-            <Table.Th style={{ textAlign: 'center', width: 96 }}>Rood</Table.Th>
-            <Table.Th style={{ textAlign: 'center', width: 80 }}>Tot</Table.Th>
-            <Table.Th style={{ textAlign: 'center', width: 96 }}>Status</Table.Th>
-            <Table.Th style={{ minWidth: 120 }}>Laatste</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
+    <div className="responsive-cards-table">
+      <Table stickyColumns={2}>
+        <TableHeader>
+          <TableRow>
+            <TableHead sticky stickyLeft={0} className="min-w-[120px]">
+              Speler
+            </TableHead>
+            <TableHead sticky stickyLeft={120} className="min-w-[120px]">
+              Team
+            </TableHead>
+            <TableHead className="text-center w-24">Geel</TableHead>
+            <TableHead className="text-center w-24">Rood</TableHead>
+            <TableHead className="text-center w-20">Tot</TableHead>
+            <TableHead className="text-center w-24">Status</TableHead>
+            <TableHead className="min-w-[120px]">Laatste</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {playerSummaries.map((summary) => (
-            <Table.Tr key={`${summary.playerId}-${summary.playerName}`}>
-              <Table.Td style={{ position: 'sticky', left: 0, background: '#fafafa', fontWeight: 500 }}>{summary.playerName}</Table.Td>
-              <Table.Td style={{ position: 'sticky', left: 120, background: '#fafafa', fontWeight: 500 }}>{summary.teamName}</Table.Td>
-              <Table.Td style={{ textAlign: 'center' }}>
+            <TableRow key={`${summary.playerId}-${summary.playerName}`}>
+              <TableCell sticky stickyLeft={0} className="font-medium min-w-[120px]">
+                {summary.playerName}
+              </TableCell>
+              <TableCell sticky stickyLeft={120} className="min-w-[120px]">
+                {summary.teamName}
+              </TableCell>
+              <TableCell className="text-center">
                 {summary.yellowCards > 0 && (
-                  <Badge color="yellow" variant="light">{summary.yellowCards}</Badge>
+                  <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                    {summary.yellowCards}
+                  </Badge>
                 )}
-              </Table.Td>
-              <Table.Td style={{ textAlign: 'center' }}>
+              </TableCell>
+              <TableCell className="text-center">
                 {summary.redCards > 0 && (
-                  <Badge color="red" variant="light">{summary.redCards}</Badge>
+                  <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">
+                    {summary.redCards}
+                  </Badge>
                 )}
-              </Table.Td>
-              <Table.Td style={{ textAlign: 'center', fontWeight: 700 }}>{summary.totalCards}</Table.Td>
-              <Table.Td style={{ textAlign: 'center' }}>
+              </TableCell>
+              <TableCell className="text-center font-bold">
+                {summary.totalCards}
+              </TableCell>
+              <TableCell className="text-center">
                 {summary.isSuspended ? (
-                  <Badge color="red" variant="filled" leftSection={<AlertTriangle size={12} style={{ marginRight: 4 }} />}>Geschorst</Badge>
+                  <Badge variant="destructive" className="flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Geschorst
+                  </Badge>
                 ) : (
-                  <Badge color="green" variant="light">Actief</Badge>
+                  <Badge variant="outline">Actief</Badge>
                 )}
-              </Table.Td>
-              <Table.Td>
+              </TableCell>
+              <TableCell>
                 {summary.cards.length > 0 && (
-                  <div style={{ fontSize: 13 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: 4, background: summary.cards[0].cardType === 'yellow' ? '#fde047' : '#f87171' }}></div>
+                  <div className="text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${summary.cards[0].cardType === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
                       <span>{summary.cards[0].matchDate}</span>
-                      <Badge color="gray" variant="light" size="xs">{summary.cards[0].uniqueNumber}</Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {summary.cards[0].uniqueNumber}
+                      </Badge>
                     </div>
                   </div>
                 )}
-              </Table.Td>
-            </Table.Tr>
+              </TableCell>
+            </TableRow>
           ))}
           {playerSummaries.length === 0 && (
-            <Table.Tr>
-              <Table.Td colSpan={7} style={{ height: 96, textAlign: 'center' }}>
+            <TableRow>
+              <TableCell colSpan={7} className="h-24 text-center">
                 Geen kaarten gevonden met de huidige filters.
-              </Table.Td>
-            </Table.Tr>
+              </TableCell>
+            </TableRow>
           )}
-        </Table.Tbody>
+        </TableBody>
       </Table>
     </div>
   );

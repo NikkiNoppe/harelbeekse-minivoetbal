@@ -1,20 +1,10 @@
 import React, { useState } from "react";
-import {
-  Card,
-  CardSection,
-  Title,
-  Text,
-  Group,
-  Badge as MantineBadge,
-  Button as MantineButton,
-  Input as MantineInput,
-  Select as MantineSelect,
-  Loader as MantineLoader,
-  SimpleGrid,
-  Stack,
-  Box
-} from "@mantine/core";
-import { Search, AlertTriangle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Search, AlertTriangle, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllCards, CardData } from "@/services/match";
 import { sortDatesDesc } from "@/lib/dateUtils";
@@ -42,8 +32,10 @@ const KaartenTab: React.FC = () => {
     queryFn: fetchAllCards
   });
 
+  // Group cards by player and calculate suspensions
   const playerCardSummaries: PlayerCardSummary[] = React.useMemo(() => {
     if (!allCards) return [];
+
     const playerGroups = allCards.reduce((acc, card) => {
       const key = `${card.playerId}-${card.playerName}`;
       if (!acc[key]) {
@@ -57,11 +49,15 @@ const KaartenTab: React.FC = () => {
       acc[key].cards.push(card);
       return acc;
     }, {} as Record<string, { playerId: number; playerName: string; teamName: string; cards: CardData[] }>);
+
     return Object.values(playerGroups).map(group => {
       const yellowCards = group.cards.filter(card => card.cardType === 'yellow').length;
       const redCards = group.cards.filter(card => card.cardType === 'red').length;
+      
+      // Calculate suspension
       let isSuspended = false;
       let suspensionReason = "";
+      
       if (redCards > 0) {
         isSuspended = true;
         suspensionReason = `${redCards} rode kaart${redCards > 1 ? 'en' : ''}`;
@@ -69,6 +65,7 @@ const KaartenTab: React.FC = () => {
         isSuspended = true;
         suspensionReason = `${yellowCards} gele kaarten`;
       }
+
       return {
         playerId: group.playerId,
         playerName: group.playerName,
@@ -83,6 +80,7 @@ const KaartenTab: React.FC = () => {
     }).sort((a, b) => b.totalCards - a.totalCards);
   }, [allCards]);
 
+  // Get unique team names for filtering
   const teamNames = [...new Set(allCards?.map(card => card.teamName) || [])];
 
   const filteredSummaries = playerCardSummaries.filter(summary => {
@@ -110,118 +108,137 @@ const KaartenTab: React.FC = () => {
   const suspendedPlayers = playerCardSummaries.filter(p => p.isSuspended).length;
 
   return (
-    <Stack gap={24}>
-      <SimpleGrid cols={{ base: 1, md: 4 }} spacing="md">
-        <Card shadow="sm" radius="md" p="md" withBorder>
-          <CardSection>
-            <Group gap={8}>
-              <Box w={12} h={12} bg="yellow.5" style={{ borderRadius: 999 }} />
-              <Box>
-                <Title order={3} size="h3">{totalYellowCards}</Title>
-                <Text size="sm" c="dimmed">Gele Kaarten</Text>
-              </Box>
-            </Group>
-          </CardSection>
+    <div className="space-y-6">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+              <div>
+                <p className="text-2xl font-bold">{totalYellowCards}</p>
+                <p className="text-sm text-muted-foreground">Gele Kaarten</p>
+              </div>
+            </div>
+          </CardContent>
         </Card>
-        <Card shadow="sm" radius="md" p="md" withBorder>
-          <CardSection>
-            <Group gap={8}>
-              <Box w={12} h={12} bg="red.6" style={{ borderRadius: 999 }} />
-              <Box>
-                <Title order={3} size="h3">{totalRedCards}</Title>
-                <Text size="sm" c="dimmed">Rode Kaarten</Text>
-              </Box>
-            </Group>
-          </CardSection>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+              <div>
+                <p className="text-2xl font-bold">{totalRedCards}</p>
+                <p className="text-sm text-muted-foreground">Rode Kaarten</p>
+              </div>
+            </div>
+          </CardContent>
         </Card>
-        <Card shadow="sm" radius="md" p="md" withBorder>
-          <CardSection>
-            <Group gap={8}>
-              <AlertTriangle size={16} color="#f59e42" />
-              <Box>
-                <Title order={3} size="h3">{suspendedPlayers}</Title>
-                <Text size="sm" c="dimmed">Geschorst</Text>
-              </Box>
-            </Group>
-          </CardSection>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <AlertTriangle className="h-4 w-4 text-orange-500 mr-2" />
+              <div>
+                <p className="text-2xl font-bold">{suspendedPlayers}</p>
+                <p className="text-sm text-muted-foreground">Geschorst</p>
+              </div>
+            </div>
+          </CardContent>
         </Card>
-        <Card shadow="sm" radius="md" p="md" withBorder>
-          <CardSection>
-            <Group gap={8}>
-              <Box w={12} h={12} bg="gray.6" style={{ borderRadius: 999 }} />
-              <Box>
-                <Title order={3} size="h3">{totalYellowCards + totalRedCards}</Title>
-                <Text size="sm" c="dimmed">Totaal Kaarten</Text>
-              </Box>
-            </Group>
-          </CardSection>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-gray-500 rounded-full mr-2"></div>
+              <div>
+                <p className="text-2xl font-bold">{totalYellowCards + totalRedCards}</p>
+                <p className="text-sm text-muted-foreground">Totaal Kaarten</p>
+              </div>
+            </div>
+          </CardContent>
         </Card>
-      </SimpleGrid>
-      <Card shadow="sm" radius="md" p="md" withBorder>
-        <CardSection>
-          <Title order={2} size="h2">Kaarten Overzicht</Title>
-          <Text size="sm" c="dimmed">Alle gele en rode kaarten uit wedstrijdformulieren</Text>
-          <SimpleGrid cols={{ base: 1, md: 4 }} spacing="md" mt={16}>
-            <Box>
-              <Text size="sm" fw={500} mb={4}>Zoeken</Text>
-              <MantineInput
-                leftSection={<Search size={16} color="var(--mantine-color-grape-6)" />}
-                placeholder="Speler of team..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.currentTarget.value)}
-              />
-            </Box>
-            <Box>
-              <Text size="sm" fw={500} mb={4}>Team</Text>
-              <MantineSelect
-                value={teamFilter}
-                onChange={setTeamFilter}
-                placeholder="Alle teams"
-                data={[{ value: "", label: "Alle teams" }, ...teamNames.map(team => ({ value: team, label: team }))]}
-              />
-            </Box>
-            <Box>
-              <Text size="sm" fw={500} mb={4}>Kaarttype</Text>
-              <MantineSelect
-                value={cardTypeFilter}
-                onChange={setCardTypeFilter}
-                placeholder="Alle kaarten"
-                data={[
-                  { value: "", label: "Alle kaarten" },
-                  { value: "yellow", label: "Gele kaarten" },
-                  { value: "red", label: "Rode kaarten" },
-                  { value: "suspended", label: "Geschorste spelers" }
-                ]}
-              />
-            </Box>
-            <Box display="flex" style={{ alignItems: 'flex-end' }}>
-              <MantineButton
+      </div>
+
+      {/* Cards Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Kaarten Overzicht</CardTitle>
+          <CardDescription>
+            Alle gele en rode kaarten uit wedstrijdformulieren
+          </CardDescription>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+            <div>
+              <Label htmlFor="search">Zoeken</Label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="Speler of team..."
+                  className="pl-8 input-login-style"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="team-filter">Team</Label>
+              <Select value={teamFilter} onValueChange={setTeamFilter}>
+                <SelectTrigger id="team-filter" className="dropdown-login-style">
+                  <SelectValue placeholder="Alle teams" />
+                </SelectTrigger>
+                <SelectContent className="dropdown-content-login-style">
+                  <SelectItem value="" className="dropdown-item-login-style">Alle teams</SelectItem>
+                  {teamNames.map((team, idx) => (
+                    <SelectItem key={idx} value={team} className="dropdown-item-login-style">{team}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="card-type-filter">Kaarttype</Label>
+              <Select value={cardTypeFilter} onValueChange={setCardTypeFilter}>
+                <SelectTrigger id="card-type-filter" className="dropdown-login-style">
+                  <SelectValue placeholder="Alle kaarten" />
+                </SelectTrigger>
+                <SelectContent className="dropdown-content-login-style">
+                  <SelectItem value="" className="dropdown-item-login-style">Alle kaarten</SelectItem>
+                  <SelectItem value="yellow" className="dropdown-item-login-style">Gele kaarten</SelectItem>
+                  <SelectItem value="red" className="dropdown-item-login-style">Rode kaarten</SelectItem>
+                  <SelectItem value="suspended" className="dropdown-item-login-style">Geschorste spelers</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-end">
+              <Button
                 variant="outline"
-                color="grape"
                 onClick={() => {
                   setSearchTerm("");
                   setTeamFilter("");
                   setCardTypeFilter("");
                 }}
-                w="100%"
               >
                 Filters wissen
-              </MantineButton>
-            </Box>
-          </SimpleGrid>
-        </CardSection>
-        <CardSection>
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
           {isLoading ? (
-            <Group justify="center" align="center" h={128}>
-              <MantineLoader size={32} color="grape" />
-              <Text ml={8}>Kaarten laden...</Text>
-            </Group>
+            <div className="flex justify-center items-center h-32">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2">Kaarten laden...</span>
+            </div>
           ) : (
             <ResponsiveCardsTable playerSummaries={filteredSummaries} />
           )}
-        </CardSection>
+        </CardContent>
       </Card>
-    </Stack>
+    </div>
   );
 };
 

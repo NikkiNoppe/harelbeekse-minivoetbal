@@ -1,53 +1,73 @@
-import React from 'react';
-import { Card, Button, Text, Title, Group } from '@mantine/core';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
 
 function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', padding: 16 }}>
-      <Card shadow="md" padding="xl" radius="md" style={{ maxWidth: 400, width: '100%' }}>
-        <Group justify="center" mb="md">
-          <div style={{ background: '#fee2e2', borderRadius: '50%', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <AlertTriangle size={24} color="#dc2626" />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <Card className="max-w-md w-full">
+        <CardHeader className="text-center">
+          <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <AlertTriangle className="h-6 w-6 text-red-600" />
           </div>
-        </Group>
-        <Title order={3} ta="center">Er is iets misgegaan</Title>
-        <Text c="dimmed" ta="center" mt="sm">
-          Er is een onverwachte fout opgetreden. Probeer de pagina te vernieuwen of ga terug naar de homepage.
-        </Text>
-        {process.env.NODE_ENV === 'development' && error && (
-          <details style={{ background: '#f3f4f6', padding: 12, borderRadius: 8, marginTop: 16, fontSize: 12 }}>
-            <summary style={{ cursor: 'pointer', fontWeight: 500, marginBottom: 8 }}>
-              Technische details (alleen in ontwikkeling)
-            </summary>
-            <pre style={{ overflow: 'auto' }}>
-              {error.message}
-              {'\n'}
-              {error.stack}
-            </pre>
-          </details>
-        )}
-        <Group mt="lg" grow>
-          <Button variant="outline" leftSection={<RefreshCw size={16} />} onClick={resetErrorBoundary}>
-            Opnieuw proberen
-          </Button>
-          <Button color="grape" leftSection={<Home size={16} />} onClick={() => (window.location.href = '/') }>
-            Homepage
-          </Button>
-        </Group>
+          <CardTitle className="text-xl text-gray-900">
+            Er is iets misgegaan
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-gray-600 text-center">
+            Er is een onverwachte fout opgetreden. Probeer de pagina te vernieuwen of ga terug naar de homepage.
+          </p>
+          {process.env.NODE_ENV === 'development' && error && (
+            <details className="bg-gray-100 p-3 rounded text-sm">
+              <summary className="cursor-pointer font-medium mb-2">
+                Technische details (alleen in ontwikkeling)
+              </summary>
+              <pre className="text-xs overflow-auto">
+                {error.message}
+                {'\n'}
+                {error.stack}
+              </pre>
+            </details>
+          )}
+          <div className="flex gap-2">
+            <Button onClick={resetErrorBoundary} className="flex-1" variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Opnieuw proberen
+            </Button>
+            <Button onClick={() => (window.location.href = '/')} className="flex-1">
+              <Home className="h-4 w-4 mr-2" />
+              Homepage
+            </Button>
+          </div>
+        </CardContent>
       </Card>
     </div>
   );
 }
 
-class ErrorBoundary extends React.Component<{ children: React.ReactNode; fallback?: React.ReactNode }, { hasError: boolean; error?: Error }> {
-  constructor(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, { hasError: boolean; error?: Error }> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Log to monitoring service in production
+    if (process.env.NODE_ENV === 'production') {
+      // TODO: Send to monitoring service like Sentry
+      // console.error('Error details:', { error, errorInfo });
+    }
   }
 
   resetErrorBoundary = () => {

@@ -1,13 +1,13 @@
 
 import React, { useState } from "react";
-import Header from "@/MINIVOETBAL.UI/header/Header";
-import Footer from "@/MINIVOETBAL.UI/footer/Footer";
-import { Modal, Title, Text } from "@mantine/core";
+import Header from "@/components/header/Header";
+import Footer from "@/components/footer/Footer";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import LoginForm from "@/components/auth/LoginForm";
 import AlgemeenTab from "@/components/tabs/AlgemeenTab";
 import BekerTab from "@/components/tabs/BekerTab";
 import CompetitieTab from "@/components/tabs/CompetitieTab";
-import PlayOffTab from "@/components/tabs/PlayoffTab";
+import PlayOffTab from "@/components/tabs/PlayOffTab";
 import SchorsingenTab from "@/components/tabs/SchorsingenTab";
 import KaartenTab from "@/components/tabs/KaartenTab";
 import ReglementTab from "@/components/tabs/ReglementTab";
@@ -109,15 +109,17 @@ const Layout: React.FC = () => {
         {content}
       </main>
       <Footer />
-      <Modal opened={loginDialogOpen} onClose={() => setLoginDialogOpen(false)}>
-        <Title order={3} className="sr-only">Inloggen</Title>
-        <Text className="sr-only">
-          Log in op je account om toegang te krijgen tot het systeem
-        </Text>
-        <div className="rounded-b-lg">
-          <LoginForm onLoginSuccess={handleLoginSuccess} />
-        </div>
-      </Modal>
+      <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
+        <DialogContent className="w-full max-w-md mx-4 sm:mx-auto bg-background text-foreground border-border rounded-lg">
+          <DialogTitle className="sr-only">Inloggen</DialogTitle>
+          <DialogDescription className="sr-only">
+            Log in op je account om toegang te krijgen tot het systeem
+          </DialogDescription>
+          <div className="rounded-b-lg">
+            <LoginForm onLoginSuccess={handleLoginSuccess} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

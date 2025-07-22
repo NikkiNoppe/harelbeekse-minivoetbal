@@ -1,6 +1,14 @@
 
 import React from "react";
-import { Modal, Card, Title, Text } from "@mantine/core";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import CompactMatchForm from "./CompactMatchForm";
 import { MatchFormData } from "./types";
@@ -32,24 +40,32 @@ const MatchFormDialog: React.FC<MatchFormDialogProps> = ({
   };
 
   return (
-    <Modal opened={open} onClose={() => onOpenChange(false)} size="xl" title={
-      <Title order={3} ta="center">
-        Wedstrijdformulier - {match.homeTeamName} vs {match.awayTeamName}
-      </Title>
-    }>
-      <Card shadow="md" radius="md" p="md" style={{ background: '#faf5ff' }}>
-        <Text size="sm" c="dimmed" ta="center" mb="md">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full max-w-5xl mx-4 bg-background text-foreground border-border rounded-lg p-0 max-h-[95vh] overflow-hidden">
+        <DialogTitle className="sr-only">
+          Wedstrijdformulier - {match.homeTeamName} vs {match.awayTeamName}
+        </DialogTitle>
+        <DialogDescription className="sr-only">
           Beheer de wedstrijdgegevens, spelers en scores voor deze wedstrijd
-        </Text>
-        <CompactMatchForm
-          match={match}
-          onComplete={handleComplete}
-          isAdmin={isAdmin}
-          isReferee={isReferee}
-          teamId={teamId}
-        />
-      </Card>
-    </Modal>
+        </DialogDescription>
+        <Card className="w-full shadow-lg border-0 rounded-lg overflow-hidden">
+          <CardHeader className="bg-purple-100 py-4">
+            <CardTitle className="text-xl sm:text-2xl text-center text-purple-light">
+              Wedstrijdformulier - {match.homeTeamName} vs {match.awayTeamName}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="bg-purple-100 p-4 sm:p-6 max-h-[80vh] overflow-y-auto">
+            <CompactMatchForm
+              match={match}
+              onComplete={handleComplete}
+              isAdmin={isAdmin}
+              isReferee={isReferee}
+              teamId={teamId}
+            />
+          </CardContent>
+        </Card>
+      </DialogContent>
+    </Dialog>
   );
 };
 
