@@ -1,130 +1,124 @@
 import React, { memo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Card,
+  CardSection,
+  Title,
+  Text,
+  Group,
+  Badge as MantineBadge,
+  Button as MantineButton,
+  Skeleton as MantineSkeleton,
+  SimpleGrid,
+  Stack,
+  Box,
+  Alert
+} from "@mantine/core";
 import { AlertCircle, Trophy } from "lucide-react";
 import AutoFitText from "@/components/ui/auto-fit-text";
 import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
 import { usePlayoffData, PlayoffMatch } from "@/hooks/usePlayoffData";
 import { Team } from "@/hooks/useCompetitionData";
 
-// Skeleton loading components
 const StandingsTableSkeleton = memo(() => (
-  <div className="space-y-4">
+  <Stack gap={8}>
     {[...Array(6)].map((_, index) => (
-      <div key={index} className="flex justify-between items-center p-3">
-        <div className="flex items-center space-x-3">
-          <Skeleton className="h-6 w-6 rounded" />
-          <Skeleton className="h-4 w-32" />
-        </div>
-        <div className="flex space-x-6">
-          <Skeleton className="h-4 w-8" />
-          <Skeleton className="h-4 w-8" />
-          <Skeleton className="h-4 w-8" />
-          <Skeleton className="h-4 w-8" />
-        </div>
-      </div>
+      <Group key={index} justify="space-between" p={8}>
+        <Group gap={12}>
+          <MantineSkeleton height={24} width={24} radius={24} />
+          <MantineSkeleton height={16} width={128} radius="sm" />
+        </Group>
+        <Group gap={24}>
+          <MantineSkeleton height={16} width={32} radius="sm" />
+          <MantineSkeleton height={16} width={32} radius="sm" />
+          <MantineSkeleton height={16} width={32} radius="sm" />
+          <MantineSkeleton height={16} width={32} radius="sm" />
+        </Group>
+      </Group>
     ))}
-  </div>
+  </Stack>
 ));
 
 const PlayoffMatchSkeleton = memo(() => (
-  <Card className="card-hover">
-    <CardHeader className="pb-2">
-      <div className="flex justify-between items-start mb-1">
-        <Skeleton className="h-6 w-20" />
-        <Skeleton className="h-4 w-16" />
-      </div>
-      <Skeleton className="h-5 w-16" />
-      <Skeleton className="h-4 w-24" />
-    </CardHeader>
-    <CardContent>
-      <div className="flex justify-between items-center py-2">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-6 w-12" />
-        <Skeleton className="h-4 w-20" />
-      </div>
-    </CardContent>
+  <Card shadow="sm" radius="md" p="md" withBorder>
+    <CardSection>
+      <Group justify="space-between" mb="xs">
+        <MantineSkeleton height={24} width={80} radius="sm" />
+        <MantineSkeleton height={16} width={64} radius="sm" />
+      </Group>
+      <MantineSkeleton height={20} width={64} radius="sm" />
+      <MantineSkeleton height={16} width={96} radius="sm" />
+    </CardSection>
+    <CardSection>
+      <Group justify="space-between" py={8}>
+        <MantineSkeleton height={16} width={80} radius="sm" />
+        <MantineSkeleton height={24} width={48} radius="sm" />
+        <MantineSkeleton height={16} width={80} radius="sm" />
+      </Group>
+    </CardSection>
   </Card>
 ));
 
 const PlayoffMatchesSkeleton = memo(({ count = 6 }: { count?: number }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
+  <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" style={{ maxWidth: 900, margin: '0 auto' }}>
     {[...Array(count)].map((_, index) => (
       <PlayoffMatchSkeleton key={index} />
     ))}
-  </div>
+  </SimpleGrid>
 ));
 
-// Loading component
 const PlayoffLoading = memo(() => (
-  <div className="space-y-8 animate-slide-up">
-    <div className="flex justify-between items-center">
-      <h2 className="text-2xl font-semibold">Eindklassement</h2>
-      <Badge className="badge-purple">Seizoen 2025-2026</Badge>
-    </div>
-
-    <section>
-      <Card>
-        <CardContent className="p-0 overflow-x-auto">
-          <StandingsTableSkeleton />
-        </CardContent>
-      </Card>
-    </section>
-
-    <section>
-      <h2 className="text-2xl font-semibold">Uitslagen Play-Offs</h2>
-      <PlayoffMatchesSkeleton count={9} />
-    </section>
-  </div>
+  <Stack gap={32}>
+    <Group justify="space-between" align="center">
+      <Title order={2} size="h2">Eindklassement</Title>
+      <MantineBadge color="grape" variant="light" size="lg">Seizoen 2025-2026</MantineBadge>
+    </Group>
+    <Card shadow="sm" radius="md" p="md" withBorder>
+      <CardSection>
+        <StandingsTableSkeleton />
+      </CardSection>
+    </Card>
+    <Title order={2} size="h2">Uitslagen Play-Offs</Title>
+    <PlayoffMatchesSkeleton count={9} />
+  </Stack>
 ));
 
-// Error component
 const PlayoffError = memo(({ error, onRetry }: { error: Error; onRetry: () => void }) => (
-  <div className="space-y-8 animate-slide-up">
-    <Card>
-      <CardContent className="py-12">
-        <div className="text-center">
-          <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
-          <h3 className="text-lg font-semibold mb-2">Fout bij laden</h3>
-          <p className="text-muted-foreground mb-4">
-            Kon playoff gegevens niet laden
-          </p>
-
-        </div>
-      </CardContent>
-    </Card>
-  </div>
+  <Alert
+    icon={<AlertCircle size={24} />}
+    title="Fout bij laden"
+    color="red"
+    radius="md"
+    withCloseButton={false}
+    style={{ textAlign: 'center', marginBottom: 16 }}
+  >
+    <Text mb={8}>Kon playoff gegevens niet laden</Text>
+    <MantineButton onClick={onRetry} color="grape" variant="filled">
+      Opnieuw proberen
+    </MantineButton>
+  </Alert>
 ));
 
-// Memoized standings section
 const PlayoffStandingsSection = memo(({ teams }: { teams: Team[] }) => (
-  <section>
-    <Card>
-      <CardContent className="p-0 overflow-x-auto">
-        <ResponsiveStandingsTable teams={teams} showPlayoff={true} />
-      </CardContent>
-    </Card>
-  </section>
+  <Card shadow="sm" radius="md" p="md" withBorder>
+    <CardSection>
+      <ResponsiveStandingsTable teams={teams} showPlayoff={true} />
+    </CardSection>
+  </Card>
 ));
 
-// Memoized match card component
 const PlayoffMatchCard = memo(({ match }: { match: PlayoffMatch }) => (
-  <Card className="card-hover">
-    <CardHeader className="pb-2">
-      <div className="flex justify-between items-start mb-1">
-        <Badge className="badge-purple">
-          {match.playoff}
-        </Badge>
-        <span className="text-sm text-muted-foreground">{match.matchday}</span>
-      </div>
-      <CardTitle className="text-lg">{match.date}</CardTitle>
-      <p className="text-sm text-muted-foreground">{match.location}</p>
-    </CardHeader>
-    <CardContent>
-      <div className="flex justify-between items-center py-2">
-        <div className="team-name-container text-left" style={{ maxWidth: '47%' }}>
+  <Card shadow="sm" radius="md" p="md" withBorder>
+    <CardSection>
+      <Group justify="space-between" mb={4}>
+        <MantineBadge color="grape" variant="light">{match.playoff}</MantineBadge>
+        <Text size="sm" c="dimmed">{match.matchday}</Text>
+      </Group>
+      <Title order={4} size="h4">{match.date}</Title>
+      <Text size="sm" c="dimmed">{match.location}</Text>
+    </CardSection>
+    <CardSection>
+      <Group justify="space-between" py={8}>
+        <Box style={{ maxWidth: '47%' }}>
           <AutoFitText 
             text={match.home}
             maxFontSize={16}
@@ -132,11 +126,11 @@ const PlayoffMatchCard = memo(({ match }: { match: PlayoffMatch }) => (
             className="font-medium"
             style={{ textAlign: 'left' }}
           />
-        </div>
-        <div className="px-3 py-1 bg-muted rounded-lg font-bold">
+        </Box>
+        <Box px={12} py={4} bg="gray.1" style={{ borderRadius: 8, fontWeight: 700 }}>
           {match.result || 'VS'}
-        </div>
-        <div className="team-name-container text-right" style={{ maxWidth: '47%' }}>
+        </Box>
+        <Box style={{ maxWidth: '47%' }}>
           <AutoFitText 
             text={match.away}
             maxFontSize={16}
@@ -144,49 +138,47 @@ const PlayoffMatchCard = memo(({ match }: { match: PlayoffMatch }) => (
             className="font-medium"
             style={{ textAlign: 'right' }}
           />
-        </div>
-      </div>
-    </CardContent>
+        </Box>
+      </Group>
+    </CardSection>
   </Card>
 ));
 
-// Memoized matches section
 const PlayoffMatchesSection = memo(({ matches }: { matches: PlayoffMatch[] }) => (
-  <section>
-    <h2 className="text-2xl font-semibold">Uitslagen Play-Offs</h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
+  <Stack gap={16}>
+    <Title order={2} size="h2">Uitslagen Play-Offs</Title>
+    <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" style={{ maxWidth: 900, margin: '0 auto' }}>
       {matches.map((match, index) => (
         <PlayoffMatchCard key={index} match={match} />
       ))}
-    </div>
-  </section>
+    </SimpleGrid>
+  </Stack>
 ));
 
-// Memoized upcoming matches section (conditionally rendered)
 const UpcomingPlayoffMatches = memo(({ matches }: { matches: PlayoffMatch[] }) => (
-  <section>
-    <h2 className="text-2xl font-semibold mb-4">Aankomende Play-Off Wedstrijden</h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
+  <Stack gap={16}>
+    <Title order={2} size="h2">Aankomende Play-Off Wedstrijden</Title>
+    <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" style={{ maxWidth: 900, margin: '0 auto' }}>
       {matches.map((match, index) => (
-        <Card key={index} className="card-hover">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-start mb-1">
-              <Badge className="badge-purple">
-                {match.playoff}
-              </Badge>
-              <span className="text-sm text-muted-foreground">{match.matchday}</span>
-            </div>
-            <CardTitle className="flex justify-between items-center text-lg">
-              <span>{match.date}</span>
-              {match.time && (
-                <span className="text-soccer-green font-medium">{match.time}</span>
-              )}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">{match.location}</p>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-between items-center py-2">
-              <div className="team-name-container text-left" style={{ maxWidth: '47%' }}>
+        <Card key={index} shadow="sm" radius="md" p="md" withBorder>
+          <CardSection>
+            <Group justify="space-between" mb={4}>
+              <MantineBadge color="grape" variant="light">{match.playoff}</MantineBadge>
+              <Text size="sm" c="dimmed">{match.matchday}</Text>
+            </Group>
+            <Title order={4} size="h4">
+              <Group justify="space-between" align="center">
+                <span>{match.date}</span>
+                {match.time && (
+                  <Text c="green" fw={500}>{match.time}</Text>
+                )}
+              </Group>
+            </Title>
+            <Text size="sm" c="dimmed">{match.location}</Text>
+          </CardSection>
+          <CardSection>
+            <Group justify="space-between" py={8}>
+              <Box style={{ maxWidth: '47%' }}>
                 <AutoFitText 
                   text={match.home}
                   maxFontSize={16}
@@ -194,9 +186,11 @@ const UpcomingPlayoffMatches = memo(({ matches }: { matches: PlayoffMatch[] }) =
                   className="font-medium"
                   style={{ textAlign: 'left' }}
                 />
-              </div>
-              <div className="px-3 py-1 bg-muted rounded-lg font-medium">VS</div>
-              <div className="team-name-container text-right" style={{ maxWidth: '47%' }}>
+              </Box>
+              <Box px={12} py={4} bg="gray.1" style={{ borderRadius: 8, fontWeight: 500 }}>
+                VS
+              </Box>
+              <Box style={{ maxWidth: '47%' }}>
                 <AutoFitText 
                   text={match.away}
                   maxFontSize={16}
@@ -204,33 +198,28 @@ const UpcomingPlayoffMatches = memo(({ matches }: { matches: PlayoffMatch[] }) =
                   className="font-medium"
                   style={{ textAlign: 'right' }}
                 />
-              </div>
-            </div>
-          </CardContent>
+              </Box>
+            </Group>
+          </CardSection>
         </Card>
       ))}
-    </div>
-  </section>
+    </SimpleGrid>
+  </Stack>
 ));
 
-// Empty state component
 const PlayoffEmptyState = memo(() => (
-  <div className="space-y-8 animate-slide-up">
-    <Card>
-      <CardContent className="py-12">
-        <div className="text-center">
-          <Trophy className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">Geen Play-Off Data</h3>
-          <p className="text-muted-foreground">
-            Er zijn momenteel geen play-off gegevens beschikbaar.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
+  <Alert
+    icon={<Trophy size={24} />}
+    title="Geen Play-Off Data"
+    color="gray"
+    radius="md"
+    withCloseButton={false}
+    style={{ textAlign: 'center', marginBottom: 16 }}
+  >
+    <Text size="sm">Er zijn momenteel geen play-off gegevens beschikbaar.</Text>
+  </Alert>
 ));
 
-// Main content component
 const PlayoffContent = memo(({ 
   teams, 
   matches, 
@@ -240,36 +229,29 @@ const PlayoffContent = memo(({
   matches: PlayoffMatch[]; 
   upcomingMatches: PlayoffMatch[]; 
 }) => (
-  <div className="space-y-8 animate-slide-up">
-    <div className="flex justify-between items-center">
-      <h2 className="text-2xl font-semibold">Eindklassement</h2>
-      <Badge className="badge-purple">Seizoen 2025-2026</Badge>
-    </div>
-
+  <Stack gap={32}>
+    <Group justify="space-between" align="center">
+      <Title order={2} size="h2">Eindklassement</Title>
+      <MantineBadge color="grape" variant="light" size="lg">Seizoen 2025-2026</MantineBadge>
+    </Group>
     <PlayoffStandingsSection teams={teams} />
-    
     {matches.length > 0 && <PlayoffMatchesSection matches={matches} />}
-    
     {upcomingMatches.length > 0 && <UpcomingPlayoffMatches matches={upcomingMatches} />}
-  </div>
+  </Stack>
 ));
 
-// Main component
 const PlayOffTab: React.FC = () => {
   const { teams, matches, upcomingMatches, isLoading, error, refetch } = usePlayoffData();
 
   if (isLoading) {
     return <PlayoffLoading />;
   }
-
   if (error) {
     return <PlayoffError error={error} onRetry={() => refetch()} />;
   }
-
   if (!teams || teams.length === 0) {
     return <PlayoffEmptyState />;
   }
-
   return (
     <PlayoffContent 
       teams={teams} 
@@ -279,7 +261,6 @@ const PlayOffTab: React.FC = () => {
   );
 };
 
-// Set display names for better debugging
 StandingsTableSkeleton.displayName = 'StandingsTableSkeleton';
 PlayoffMatchSkeleton.displayName = 'PlayoffMatchSkeleton';
 PlayoffMatchesSkeleton.displayName = 'PlayoffMatchesSkeleton';

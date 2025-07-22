@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table } from "@mantine/core";
 import { Calendar } from "lucide-react";
 
 interface MatchData {
@@ -22,58 +22,54 @@ interface ResponsiveScheduleTableProps {
 
 const ResponsiveScheduleTable: React.FC<ResponsiveScheduleTableProps> = ({ matches }) => {
   return (
-    <div className="responsive-schedule-table">
-      <Table stickyColumns={2}>
-        <TableHeader>
-          <TableRow>
-            <TableHead sticky stickyLeft={0} className="w-32">
-              Speeldag
-            </TableHead>
-            <TableHead sticky stickyLeft={128} className="min-w-[200px]">
-              Wedstrijd
-            </TableHead>
-            <TableHead className="w-24">Datum</TableHead>
-            <TableHead className="w-20">Tijd</TableHead>
-            <TableHead className="min-w-[120px]">Locatie</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+    <div style={{ overflowX: 'auto' }}>
+      <Table striped highlightOnHover withTableBorder withColumnBorders>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th style={{ left: 0, width: 128, position: 'sticky', background: '#fafafa', zIndex: 2 }}>Speeldag</Table.Th>
+            <Table.Th style={{ left: 128, minWidth: 200, position: 'sticky', background: '#fafafa', zIndex: 2 }}>Wedstrijd</Table.Th>
+            <Table.Th>Datum</Table.Th>
+            <Table.Th>Tijd</Table.Th>
+            <Table.Th>Locatie</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
           {matches.map(match => (
-            <TableRow key={match.matchId}>
-              <TableCell sticky stickyLeft={0}>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span className="text-sm">{match.matchday}</span>
+            <Table.Tr key={match.matchId}>
+              <Table.Td style={{ left: 0, position: 'sticky', background: '#fafafa' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Calendar size={16} />
+                  <span style={{ fontSize: 14 }}>{match.matchday}</span>
                 </div>
-              </TableCell>
-              <TableCell sticky stickyLeft={128} className="min-w-[200px]">
-                <div className="flex flex-col items-center gap-1">
-                  <div className="flex items-center gap-2 w-full">
-                    <span className="font-medium text-sm flex-1 text-left">{match.homeTeamName}</span>
+              </Table.Td>
+              <Table.Td style={{ left: 128, position: 'sticky', background: '#fafafa' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                    <span style={{ fontWeight: 500, fontSize: 14, flex: 1, textAlign: 'left' }}>{match.homeTeamName}</span>
                     {match.isCompleted && match.homeScore !== undefined && match.awayScore !== undefined ? (
-                      <span className="font-bold text-sm px-2">
+                      <span style={{ fontWeight: 700, fontSize: 14, padding: '0 8px' }}>
                         {match.homeScore} - {match.awayScore}
                       </span>
                     ) : (
-                      <span className="text-sm px-2">vs</span>
+                      <span style={{ fontSize: 14, padding: '0 8px' }}>vs</span>
                     )}
-                    <span className="font-medium text-sm flex-1 text-right">{match.awayTeamName}</span>
+                    <span style={{ fontWeight: 500, fontSize: 14, flex: 1, textAlign: 'right' }}>{match.awayTeamName}</span>
                   </div>
                 </div>
-              </TableCell>
-              <TableCell className="text-sm">{match.date}</TableCell>
-              <TableCell className="text-sm">{match.time}</TableCell>
-              <TableCell className="text-sm">{match.location}</TableCell>
-            </TableRow>
+              </Table.Td>
+              <Table.Td style={{ fontSize: 14 }}>{match.date}</Table.Td>
+              <Table.Td style={{ fontSize: 14 }}>{match.time}</Table.Td>
+              <Table.Td style={{ fontSize: 14 }}>{match.location}</Table.Td>
+            </Table.Tr>
           ))}
           {matches.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={5} className="h-24 text-center">
+            <Table.Tr>
+              <Table.Td colSpan={5} style={{ height: 96, textAlign: 'center' }}>
                 Geen wedstrijden gevonden met de huidige filters.
-              </TableCell>
-            </TableRow>
+              </Table.Td>
+            </Table.Tr>
           )}
-        </TableBody>
+        </Table.Tbody>
       </Table>
     </div>
   );

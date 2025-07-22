@@ -1,7 +1,13 @@
 
 import React, { memo, useMemo } from "react";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tabs as MantineTabs,
+  Skeleton as MantineSkeleton,
+  Container,
+  Stack,
+  Box,
+  Group
+} from "@mantine/core";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
 import AlgemeenTab from "./AlgemeenTab";
 import CompetitieTab from "./CompetitieTab";
@@ -17,28 +23,26 @@ interface MainTabsProps {
   setActiveTab: (tab: TabName) => void;
 }
 
-// Loading skeleton for tab content
 const TabContentSkeleton = memo(() => (
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <Skeleton className="h-8 w-48" />
-      <Skeleton className="h-10 w-24" />
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Skeleton className="h-64 w-full" />
-      <Skeleton className="h-64 w-full" />
-    </div>
-    <div className="space-y-4">
-      <Skeleton className="h-12 w-full" />
-      <Skeleton className="h-12 w-full" />
-      <Skeleton className="h-12 w-full" />
-    </div>
-  </div>
+  <Stack gap={24}>
+    <Group justify="space-between" align="center">
+      <MantineSkeleton height={32} width={192} radius="sm" />
+      <MantineSkeleton height={40} width={96} radius="sm" />
+    </Group>
+    <Stack gap={16}>
+      <MantineSkeleton height={256} width="100%" radius="sm" />
+      <MantineSkeleton height={256} width="100%" radius="sm" />
+    </Stack>
+    <Stack gap={8}>
+      <MantineSkeleton height={48} width="100%" radius="sm" />
+      <MantineSkeleton height={48} width="100%" radius="sm" />
+      <MantineSkeleton height={48} width="100%" radius="sm" />
+    </Stack>
+  </Stack>
 ));
 
 TabContentSkeleton.displayName = 'TabContentSkeleton';
 
-// Memoized tab content components
 const MemoizedAlgemeenTab = memo(AlgemeenTab);
 const MemoizedCompetitieTab = memo(CompetitieTab);
 const MemoizedPlayOffTab = memo(PlayOffTab);
@@ -57,11 +61,8 @@ MemoizedKaartenTab.displayName = 'MemoizedKaartenTab';
 MemoizedReglementTab.displayName = 'MemoizedReglementTab';
 MemoizedTeamsTab.displayName = 'MemoizedTeamsTab';
 
-// Tab content wrapper with animation
 const TabContentWrapper = memo(({ children }: { children: React.ReactNode }) => (
-  <div className="animate-fade-in">
-    {children}
-  </div>
+  <Box>{children}</Box>
 ));
 
 TabContentWrapper.displayName = 'TabContentWrapper';
@@ -69,112 +70,92 @@ TabContentWrapper.displayName = 'TabContentWrapper';
 const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
   const { isTabVisible, loading } = useTabVisibility();
 
-  // Memoize tab content components to prevent unnecessary re-renders
   const tabContents = useMemo(() => ({
     algemeen: isTabVisible("algemeen") && (
-      <TabsContent value="algemeen" className="mt-0" key="algemeen">
+      <MantineTabs.Panel value="algemeen" key="algemeen">
         <TabContentWrapper>
           <MemoizedAlgemeenTab />
         </TabContentWrapper>
-      </TabsContent>
+      </MantineTabs.Panel>
     ),
-    
     beker: isTabVisible("beker") && (
-      <TabsContent value="beker" className="mt-0" key="beker">
+      <MantineTabs.Panel value="beker" key="beker">
         <TabContentWrapper>
           <MemoizedBekerTab />
         </TabContentWrapper>
-      </TabsContent>
+      </MantineTabs.Panel>
     ),
-    
     competitie: isTabVisible("competitie") && (
-      <TabsContent value="competitie" className="mt-0" key="competitie">
+      <MantineTabs.Panel value="competitie" key="competitie">
         <TabContentWrapper>
           <MemoizedCompetitieTab />
         </TabContentWrapper>
-      </TabsContent>
+      </MantineTabs.Panel>
     ),
-    
     playoff: isTabVisible("playoff") && (
-      <TabsContent value="playoff" className="mt-0" key="playoff">
+      <MantineTabs.Panel value="playoff" key="playoff">
         <TabContentWrapper>
           <MemoizedPlayOffTab />
         </TabContentWrapper>
-      </TabsContent>
+      </MantineTabs.Panel>
     ),
-    
     reglement: isTabVisible("reglement") && (
-      <TabsContent value="reglement" className="mt-0" key="reglement">
+      <MantineTabs.Panel value="reglement" key="reglement">
         <TabContentWrapper>
           <MemoizedReglementTab />
         </TabContentWrapper>
-      </TabsContent>
+      </MantineTabs.Panel>
     ),
-    
     schorsingen: isTabVisible("schorsingen") && (
-      <TabsContent value="schorsingen" className="mt-0" key="schorsingen">
+      <MantineTabs.Panel value="schorsingen" key="schorsingen">
         <TabContentWrapper>
           <MemoizedSchorsingenTab />
         </TabContentWrapper>
-      </TabsContent>
+      </MantineTabs.Panel>
     ),
-    
     kaarten: isTabVisible("kaarten") && (
-      <TabsContent value="kaarten" className="mt-0" key="kaarten">
+      <MantineTabs.Panel value="kaarten" key="kaarten">
         <TabContentWrapper>
           <MemoizedKaartenTab />
         </TabContentWrapper>
-      </TabsContent>
+      </MantineTabs.Panel>
     ),
-    
     teams: isTabVisible("teams") && (
-      <TabsContent value="teams" className="mt-0" key="teams">
+      <MantineTabs.Panel value="teams" key="teams">
         <TabContentWrapper>
           <MemoizedTeamsTab />
         </TabContentWrapper>
-      </TabsContent>
+      </MantineTabs.Panel>
     )
   }), [isTabVisible]);
 
-  // Show loading state while fetching settings
   if (loading) {
     return (
-      <div className="w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="space-y-6">
-            <div className="flex justify-center items-center py-8">
-              <div className="text-purple-600 flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-                <span>Tabs laden...</span>
-              </div>
-            </div>
-            <TabContentSkeleton />
-          </div>
-        </div>
-      </div>
+      <Container size="xl" py="xl">
+        <Stack gap={32}>
+          <Group justify="center" align="center" py={32}>
+            <MantineSkeleton height={24} width={24} radius={24} />
+            <span style={{ color: 'var(--mantine-color-grape-6)' }}>Tabs laden...</span>
+          </Group>
+          <TabContentSkeleton />
+        </Stack>
+      </Container>
     );
   }
 
   return (
-    <div className="w-full">
-      {/* Tab Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs 
-          value={activeTab} 
-          onValueChange={(value) => setActiveTab(value as TabName)} 
-          className="w-full"
-        >
-          {tabContents.algemeen}
-          {tabContents.beker}
-          {tabContents.competitie}
-          {tabContents.playoff}
-          {tabContents.schorsingen}
-          {tabContents.teams}
-          {tabContents.kaarten}
-          {tabContents.reglement}
-        </Tabs>
-      </div>
-    </div>
+    <Container size="xl" py="xl">
+      <MantineTabs value={activeTab} onChange={setActiveTab}>
+        {tabContents.algemeen}
+        {tabContents.beker}
+        {tabContents.competitie}
+        {tabContents.playoff}
+        {tabContents.schorsingen}
+        {tabContents.teams}
+        {tabContents.kaarten}
+        {tabContents.reglement}
+      </MantineTabs>
+    </Container>
   );
 };
 

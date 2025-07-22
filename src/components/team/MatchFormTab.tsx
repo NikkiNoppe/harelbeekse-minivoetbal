@@ -1,10 +1,12 @@
 import React, { useState, memo, useMemo } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import {
+  Card,
+  Tabs as MantineTabs,
+  Skeleton as MantineSkeleton,
+  Alert as MantineAlert,
+  Button as MantineButton
+} from "@mantine/core";
 import { FileText, Trophy, Calendar, AlertCircle } from "lucide-react";
 import { useMatchFormsData, type MatchFormsFilters } from "@/hooks/useMatchFormsData";
 import { MatchFormData } from "./match-form/types";
@@ -20,31 +22,27 @@ interface MatchFormTabProps {
 // Loading skeleton components
 const TabContentSkeleton = memo(() => (
   <Card>
-    <CardHeader>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-2">
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-4 w-96" />
-        </div>
-        <Skeleton className="h-10 w-32" />
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="space-y-2">
+        <MantineSkeleton className="h-6 w-48" />
+        <MantineSkeleton className="h-4 w-96" />
       </div>
-    </CardHeader>
-    <CardContent className="p-0">
-      <div className="p-4 border-b">
-        <Skeleton className="h-10 w-full" />
-      </div>
-      <div className="space-y-3 p-4">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="flex items-center justify-between p-4 border rounded">
-            <div className="space-y-2">
-              <Skeleton className="h-5 w-48" />
-              <Skeleton className="h-4 w-32" />
-            </div>
-            <Skeleton className="h-8 w-20" />
+      <MantineSkeleton className="h-10 w-32" />
+    </div>
+    <div className="p-4 border-b">
+      <MantineSkeleton className="h-10 w-full" />
+    </div>
+    <div className="space-y-3 p-4">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="flex items-center justify-between p-4 border rounded">
+          <div className="space-y-2">
+            <MantineSkeleton className="h-5 w-48" />
+            <MantineSkeleton className="h-4 w-32" />
           </div>
-        ))}
-      </div>
-    </CardContent>
+          <MantineSkeleton className="h-8 w-20" />
+        </div>
+      ))}
+    </div>
   </Card>
 ));
 
@@ -54,13 +52,12 @@ TabContentSkeleton.displayName = 'TabContentSkeleton';
 
 // Error state component
 const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
-  <Alert variant="destructive">
+  <MantineAlert variant="destructive">
     <AlertCircle className="h-4 w-4" />
-    <AlertDescription className="flex items-center justify-between">
+    <div className="flex items-center justify-between">
       <span>Er is een fout opgetreden bij het laden van de wedstrijdformulieren.</span>
-
-    </AlertDescription>
-  </Alert>
+    </div>
+  </MantineAlert>
 ));
 
 ErrorState.displayName = 'ErrorState';
@@ -119,73 +116,69 @@ const TabContent = memo(({
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <CardTitle className="text-lg flex items-center gap-2">
-              {tabType === 'cup' ? <Trophy className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="text-lg flex items-center gap-2">
+            {tabType === 'cup' ? <Trophy className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
                              {hasElevatedPermissions 
                  ? user?.role === "admin" 
                    ? `${tabType === 'cup' ? 'Beker' : 'Competitie'}wedstrijden`
                    : `${tabType === 'cup' ? 'Beker' : 'Competitie'}wedstrijden (Scheidsrechter)`
                  : `${tabType === 'cup' ? 'Beker' : 'Competitie'}wedstrijden voor ${teamName}`
                }
-            </CardTitle>
-            <CardDescription>
-              {isEmpty && hasTeam 
-                ? `Geen ${tabType === 'cup' ? 'beker' : 'competitie'}wedstrijden gevonden.`
-                : !hasTeam && !hasElevatedPermissions
-                ? "Je account is momenteel niet gekoppeld aan een team."
-                : `${tabData.matches.length} van ${tabData.allMatches.length} wedstrijden weergegeven`
-              }
-            </CardDescription>
+          </div>
+          <div className="text-muted-foreground">
+            {isEmpty && hasTeam 
+              ? `Geen ${tabType === 'cup' ? 'beker' : 'competitie'}wedstrijden gevonden.`
+              : !hasTeam && !hasElevatedPermissions
+              ? "Je account is momenteel niet gekoppeld aan een team."
+              : `${tabData.matches.length} van ${tabData.allMatches.length} wedstrijden weergegeven`
+            }
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        {isEmpty || (!hasTeam && !hasElevatedPermissions) ? (
-          <EmptyState 
-            tabType={tabType}
-            hasTeam={hasTeam}
-            hasPermissions={hasElevatedPermissions}
-          />
-        ) : (
-          <div>
-            <div className="p-4 border-b">
-              <MatchFormFilter 
-                searchTerm={filters.searchTerm}
-                onSearchChange={(value) => onFiltersChange({ ...filters, searchTerm: value })}
-                dateFilter={filters.dateFilter}
-                onDateChange={(value) => onFiltersChange({ ...filters, dateFilter: value })}
-                matchdayFilter={filters.matchdayFilter}
-                onMatchdayChange={(value) => onFiltersChange({ ...filters, matchdayFilter: value })}
-                sortBy={filters.sortBy}
-                onSortChange={(value) => onFiltersChange({ ...filters, sortBy: value })}
-                sortOrder={filters.sortOrder}
-                onSortOrderChange={(value) => onFiltersChange({ ...filters, sortOrder: value })}
-                onClearFilters={() => onFiltersChange({
-                  searchTerm: "",
-                  dateFilter: "",
-                  matchdayFilter: "",
-                  sortBy: "date",
-                  sortOrder: "asc"
-                })}
-              />
-            </div>
-            <MatchFormList 
-              matches={tabData.matches}
-              isLoading={tabData.isLoading}
-              onSelectMatch={onSelectMatch}
+      </div>
+      {isEmpty || (!hasTeam && !hasElevatedPermissions) ? (
+        <EmptyState 
+          tabType={tabType}
+          hasTeam={hasTeam}
+          hasPermissions={hasElevatedPermissions}
+        />
+      ) : (
+        <div>
+          <div className="p-4 border-b">
+            <MatchFormFilter 
               searchTerm={filters.searchTerm}
+              onSearchChange={(value) => onFiltersChange({ ...filters, searchTerm: value })}
               dateFilter={filters.dateFilter}
+              onDateChange={(value) => onFiltersChange({ ...filters, dateFilter: value })}
               matchdayFilter={filters.matchdayFilter}
-              hasElevatedPermissions={hasElevatedPermissions}
-              userRole={user?.role}
-              teamId={user?.teamId || 0}
+              onMatchdayChange={(value) => onFiltersChange({ ...filters, matchdayFilter: value })}
+              sortBy={filters.sortBy}
+              onSortChange={(value) => onFiltersChange({ ...filters, sortBy: value })}
+              sortOrder={filters.sortOrder}
+              onSortOrderChange={(value) => onFiltersChange({ ...filters, sortOrder: value })}
+              onClearFilters={() => onFiltersChange({
+                searchTerm: "",
+                dateFilter: "",
+                matchdayFilter: "",
+                sortBy: "date",
+                sortOrder: "asc"
+              })}
             />
           </div>
-        )}
-      </CardContent>
+          <MatchFormList 
+            matches={tabData.matches}
+            isLoading={tabData.isLoading}
+            onSelectMatch={onSelectMatch}
+            searchTerm={filters.searchTerm}
+            dateFilter={filters.dateFilter}
+            matchdayFilter={filters.matchdayFilter}
+            hasElevatedPermissions={hasElevatedPermissions}
+            userRole={user?.role}
+            teamId={user?.teamId || 0}
+          />
+        </div>
+      )}
     </Card>
   );
 });
@@ -280,19 +273,19 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
 
 
       <section>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="league" className="flex items-center gap-2">
+        <MantineTabs value={activeTab} onChange={setActiveTab} className="w-full">
+          <MantineTabs.List className="grid w-full grid-cols-2">
+            <MantineTabs.Tab value="league" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Competitie
-            </TabsTrigger>
-            <TabsTrigger value="cup" className="flex items-center gap-2">
+            </MantineTabs.Tab>
+            <MantineTabs.Tab value="cup" className="flex items-center gap-2">
               <Trophy className="h-4 w-4" />
               Beker
-            </TabsTrigger>
-          </TabsList>
+            </MantineTabs.Tab>
+          </MantineTabs.List>
           
-          <TabsContent value="league" className="mt-6">
+          <MantineTabs.Panel value="league" className="mt-6">
             {isLoading ? (
               <TabContentSkeleton />
             ) : (
@@ -307,9 +300,9 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
                 onSelectMatch={handleSelectMatch}
               />
             )}
-          </TabsContent>
+          </MantineTabs.Panel>
           
-          <TabsContent value="cup" className="mt-6">
+          <MantineTabs.Panel value="cup" className="mt-6">
             {isLoading ? (
               <TabContentSkeleton />
             ) : (
@@ -324,8 +317,8 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
                 onSelectMatch={handleSelectMatch}
               />
             )}
-          </TabsContent>
-        </Tabs>
+          </MantineTabs.Panel>
+        </MantineTabs>
       </section>
       
       {selectedMatchForm && (

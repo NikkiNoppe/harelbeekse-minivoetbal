@@ -1,9 +1,7 @@
 
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { Card, Title, TextInput, PasswordInput, Button, Group, Stack, Text } from "@mantine/core";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ForgotPasswordDialog from "./ForgotPasswordDialog";
 import { useLogin } from "./hooks/useLogin";
@@ -19,10 +17,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
   onLoginSuccess
 }) => {
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
-  const {
-    login,
-    isLoading
-  } = useLogin(onLoginSuccess);
+  const { login, isLoading } = useLogin(onLoginSuccess);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -32,30 +27,49 @@ const LoginForm: React.FC<LoginFormProps> = ({
     }
   });
 
-  const onSubmit = async (data: FormValues) => {
+  const onSubmit: SubmitHandler<FormValues> = async (data) => {
     await login(data.usernameOrEmail, data.password);
   };
 
   return (
     <>
-      <Card className="w-full max-w-md mx-auto shadow-lg border-purple-light">
-        <CardHeader className="bg-purple-100 py-4">
-          <CardTitle className="text-xl sm:text-2xl text-center text-purple-light">Login</CardTitle>
-        </CardHeader>
-        <CardContent className="bg-purple-100 p-4 sm:p-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <LoginFormFields 
-                form={form} 
-                isLoading={isLoading} 
-                onForgotPassword={() => setForgotPasswordOpen(true)} 
-              />
-            </form>
-          </Form>
-        </CardContent>
+      <Card shadow="md" radius="md" p="lg" style={{ maxWidth: 400, margin: '0 auto' }}>
+        <Title order={3} ta="center" mb="md">Login</Title>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <Stack gap="md">
+            <TextInput
+              label="Gebruikersnaam of e-mail"
+              placeholder="Voer je gebruikersnaam of e-mail in"
+              {...form.register("usernameOrEmail")}
+              error={form.formState.errors.usernameOrEmail?.message}
+              disabled={isLoading}
+              required
+            />
+            <PasswordInput
+              label="Wachtwoord"
+              placeholder="Voer je wachtwoord in"
+              {...form.register("password")}
+              error={form.formState.errors.password?.message}
+              disabled={isLoading}
+              required
+            />
+            <Group justify="space-between">
+              <Button
+                variant="subtle"
+                type="button"
+                onClick={() => setForgotPasswordOpen(true)}
+                size="xs"
+              >
+                Wachtwoord vergeten?
+              </Button>
+              <Button type="submit" loading={isLoading} color="grape">
+                Inloggen
+              </Button>
+            </Group>
+          </Stack>
+        </form>
         <TestCredentialsFooter />
       </Card>
-
       <ForgotPasswordDialog 
         open={forgotPasswordOpen} 
         onOpenChange={setForgotPasswordOpen} 

@@ -23,7 +23,8 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/MINIVOETBAL.UI/*": ["./MINIVOETBAL.UI/*"]
     }
   },
   "include": ["src"]

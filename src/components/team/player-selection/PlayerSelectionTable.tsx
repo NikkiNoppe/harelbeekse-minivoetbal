@@ -1,15 +1,6 @@
 
 import React from "react";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from "@/components/ui/table";
+import { Checkbox, Table, TextInput } from "@mantine/core";
 import { UseFormReturn } from "react-hook-form";
 import { FormData } from "./types";
 
@@ -25,60 +16,54 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
   onToggleCaptain
 }) => {
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-12">Selectie</TableHead>
-            <TableHead>Speler</TableHead>
-            <TableHead className="w-24 text-center">Rugnr.</TableHead>
-            <TableHead className="w-24 text-center">Kapitein</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+    <div style={{ borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+      <Table striped highlightOnHover withTableBorder withColumnBorders>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th style={{ width: 48 }}>Selectie</Table.Th>
+            <Table.Th>Speler</Table.Th>
+            <Table.Th style={{ width: 96, textAlign: 'center' }}>Rugnr.</Table.Th>
+            <Table.Th style={{ width: 96, textAlign: 'center' }}>Kapitein</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
           {form.watch('players').map((player, index) => (
-            <TableRow key={player.playerId} className={player.selected ? "bg-muted/40" : ""}>
-              <TableCell>
+            <Table.Tr key={player.playerId} style={player.selected ? { background: '#f3f0ff' } : {}}>
+              <Table.Td>
                 <Checkbox
                   checked={player.selected}
-                  onCheckedChange={(checked) => {
-                    onTogglePlayerSelection(index, checked === true);
-                  }}
+                  onChange={(e) => onTogglePlayerSelection(index, e.currentTarget.checked)}
                 />
-              </TableCell>
-              <TableCell>{player.playerName}</TableCell>
-              <TableCell>
-                <div className="flex justify-center">
-                  <Input 
-                    type="number"
-                    min={1}
-                    max={99}
-                    disabled={!player.selected}
-                    {...form.register(`players.${index}.jerseyNumber`)}
-                    className="w-16 text-center"
-                  />
-                </div>
-              </TableCell>
-              <TableCell className="text-center">
-                <div className="flex justify-center">
-                  <Checkbox
-                    checked={player.isCaptain}
-                    disabled={!player.selected}
-                    onCheckedChange={() => onToggleCaptain(index)}
-                    className={player.isCaptain ? "border-primary" : ""}
-                  />
-                </div>
-              </TableCell>
-            </TableRow>
+              </Table.Td>
+              <Table.Td>{player.playerName}</Table.Td>
+              <Table.Td>
+                <TextInput
+                  type="number"
+                  min={1}
+                  max={99}
+                  disabled={!player.selected}
+                  {...form.register(`players.${index}.jerseyNumber`)}
+                  style={{ width: 64, textAlign: 'center', margin: '0 auto' }}
+                />
+              </Table.Td>
+              <Table.Td style={{ textAlign: 'center' }}>
+                <Checkbox
+                  checked={player.isCaptain}
+                  disabled={!player.selected}
+                  onChange={() => onToggleCaptain(index)}
+                  color={player.isCaptain ? "grape" : undefined}
+                />
+              </Table.Td>
+            </Table.Tr>
           ))}
           {form.watch('players').length === 0 && (
-            <TableRow>
-              <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+            <Table.Tr>
+              <Table.Td colSpan={4} style={{ textAlign: 'center', padding: 16, color: '#888' }}>
                 Geen spelers gevonden voor dit team.
-              </TableCell>
-            </TableRow>
+              </Table.Td>
+            </Table.Tr>
           )}
-        </TableBody>
+        </Table.Tbody>
       </Table>
     </div>
   );

@@ -1,66 +1,74 @@
 import React, { memo, useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardSection,
+  Title,
+  Text,
+  Group,
+  Badge as MantineBadge,
+  Button as MantineButton,
+  Skeleton as MantineSkeleton,
+  Input as MantineInput,
+  Select as MantineSelect,
+  Container,
+  Stack,
+  Box,
+  Alert,
+  SimpleGrid
+} from "@mantine/core";
 import { Search, AlertCircle } from "lucide-react";
 import MatchCard from "../match/components/MatchCard";
 import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
 import ResponsiveScheduleTable from "../tables/ResponsiveScheduleTable";
 import { useCompetitionData, Team, MatchData } from "@/hooks/useCompetitionData";
 
-// Skeleton loading components
 const StandingsTableSkeleton = memo(() => (
-  <div className="space-y-4">
+  <Stack gap={8}>
     {[...Array(6)].map((_, index) => (
-      <div key={index} className="flex justify-between items-center p-3">
-        <div className="flex items-center space-x-3">
-          <Skeleton className="h-6 w-6 rounded" />
-          <Skeleton className="h-4 w-32" />
-        </div>
-        <div className="flex space-x-6">
-          <Skeleton className="h-4 w-8" />
-          <Skeleton className="h-4 w-8" />
-          <Skeleton className="h-4 w-8" />
-          <Skeleton className="h-4 w-8" />
-        </div>
-      </div>
+      <Group key={index} justify="space-between" p={8}>
+        <Group gap={12}>
+          <MantineSkeleton height={24} width={24} radius={24} />
+          <MantineSkeleton height={16} width={128} radius="sm" />
+        </Group>
+        <Group gap={24}>
+          <MantineSkeleton height={16} width={32} radius="sm" />
+          <MantineSkeleton height={16} width={32} radius="sm" />
+          <MantineSkeleton height={16} width={32} radius="sm" />
+          <MantineSkeleton height={16} width={32} radius="sm" />
+        </Group>
+      </Group>
     ))}
-  </div>
+  </Stack>
 ));
 
 const MatchCardSkeleton = memo(() => (
-  <Card className="w-full">
-    <CardHeader className="pb-3">
-      <div className="flex justify-between items-start mb-2">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-4 w-16" />
-      </div>
-      <Skeleton className="h-5 w-20" />
-    </CardHeader>
-    <CardContent>
-      <div className="flex justify-between items-center py-2">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-6 w-8" />
-        <Skeleton className="h-4 w-20" />
-      </div>
-      <Skeleton className="h-3 w-24 mt-2" />
-    </CardContent>
+  <Card shadow="sm" radius="md" p="md" withBorder>
+    <CardSection>
+      <Group justify="space-between" mb="xs">
+        <MantineSkeleton height={16} width={96} radius="sm" />
+        <MantineSkeleton height={16} width={64} radius="sm" />
+      </Group>
+      <MantineSkeleton height={20} width={80} radius="sm" />
+    </CardSection>
+    <CardSection>
+      <Group justify="space-between" py={8}>
+        <MantineSkeleton height={16} width={80} radius="sm" />
+        <MantineSkeleton height={24} width={32} radius="sm" />
+        <MantineSkeleton height={16} width={80} radius="sm" />
+      </Group>
+      <MantineSkeleton height={12} width={96} mt={8} radius="sm" />
+    </CardSection>
   </Card>
 ));
 
 const MatchesGridSkeleton = memo(({ count = 4 }: { count?: number }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+  <SimpleGrid cols={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing="md">
     {[...Array(count)].map((_, index) => (
       <MatchCardSkeleton key={index} />
     ))}
-  </div>
+  </SimpleGrid>
 ));
 
-// Memoized standings section
 const StandingsSection = memo(({ 
   teams, 
   isLoading, 
@@ -73,33 +81,46 @@ const StandingsSection = memo(({
   onRetry: () => void; 
 }) => (
   <section>
-    <Card>
-      <CardContent className="bg-transparent">
+    <Card shadow="sm" radius="md" p="md" withBorder>
+      <CardSection>
+        <Title order={3} size="h3">Competitiestand</Title>
+      </CardSection>
+      <CardSection>
         {isLoading ? (
           <StandingsTableSkeleton />
         ) : error ? (
-          <div className="text-center p-4">
-            <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
-            <h3 className="text-lg font-semibold mb-2">Fout bij laden</h3>
-            <p className="text-red-500 mb-4">
-              Er is een fout opgetreden bij het laden van de competitiestand.
-            </p>
-
-          </div>
+          <Alert
+            icon={<AlertCircle size={24} />}
+            title="Fout bij laden"
+            color="red"
+            radius="md"
+            withCloseButton={false}
+            style={{ textAlign: 'center', marginBottom: 16 }}
+          >
+            <Text mb={8}>Er is een fout opgetreden bij het laden van de competitiestand.</Text>
+            <MantineButton onClick={onRetry} color="grape" variant="filled">
+              Opnieuw proberen
+            </MantineButton>
+          </Alert>
         ) : !teams || teams.length === 0 ? (
-          <div className="text-center p-8 text-muted-foreground">
-            <p className="mb-2">Nog geen competitiestand beschikbaar.</p>
-            <p className="text-sm">Standings worden automatisch bijgewerkt wanneer wedstrijden worden ingediend.</p>
-          </div>
+          <Alert
+            icon={<AlertCircle size={24} />}
+            title="Geen competitiestand"
+            color="gray"
+            radius="md"
+            withCloseButton={false}
+            style={{ textAlign: 'center', marginBottom: 16 }}
+          >
+            <Text size="sm">Nog geen competitiestand beschikbaar. Standings worden automatisch bijgewerkt wanneer wedstrijden worden ingediend.</Text>
+          </Alert>
         ) : (
           <ResponsiveStandingsTable teams={teams} />
         )}
-      </CardContent>
+      </CardSection>
     </Card>
   </section>
 ));
 
-// Memoized matches section
 const MatchesSection = memo(({ 
   title, 
   description, 
@@ -111,16 +132,16 @@ const MatchesSection = memo(({
   matches: MatchData[]; 
   isLoading: boolean; 
 }) => (
-  <Card>
-    <CardHeader className="bg-transparent">
-      <CardTitle>{title}</CardTitle>
-      <CardDescription>{description}</CardDescription>
-    </CardHeader>
-    <CardContent className="bg-transparent">
+  <Card shadow="sm" radius="md" p="md" withBorder>
+    <CardSection>
+      <Title order={4} size="h4">{title}</Title>
+      <Text size="sm" c="dimmed">{description}</Text>
+    </CardSection>
+    <CardSection>
       {isLoading ? (
         <MatchesGridSkeleton count={matches.length || 4} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing="md">
           {matches.map(match => (
             <MatchCard
               key={match.matchId}
@@ -136,13 +157,12 @@ const MatchesSection = memo(({
               badgeSlot={<div></div>}
             />
           ))}
-        </div>
+        </SimpleGrid>
       )}
-    </CardContent>
+    </CardSection>
   </Card>
 ));
 
-// Memoized filter controls
 const FilterControls = memo(({ 
   searchTerm, 
   setSearchTerm, 
@@ -164,74 +184,42 @@ const FilterControls = memo(({
   teamNames: string[];
   onClearFilters: () => void;
 }) => (
-  <div className="mb-4 space-y-4">
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3 items-end">
-      <div>
-        <Label htmlFor="matchday-filter" className="text-sm font-medium mb-2 block">
-          Filter op speeldag
-        </Label>
-        <Select value={selectedMatchday} onValueChange={setSelectedMatchday}>
-          <SelectTrigger id="matchday-filter" className="btn-white h-10">
-            <SelectValue placeholder="Alle speeldagen" />
-          </SelectTrigger>
-          <SelectContent className="dropdown-content-login-style">
-            <SelectItem value="all-matchdays" className="dropdown-item-login-style">
-              Alle speeldagen
-            </SelectItem>
-            {matchdays.map((day, idx) => (
-              <SelectItem key={idx} value={day} className="dropdown-item-login-style">
-                {day}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div>
-        <Label htmlFor="team-filter" className="text-sm font-medium mb-2 block">
-          Filter op team
-        </Label>
-        <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-          <SelectTrigger id="team-filter" className="btn-white h-10">
-            <SelectValue placeholder="Alle teams" />
-          </SelectTrigger>
-          <SelectContent className="dropdown-content-login-style">
-            <SelectItem value="all-teams" className="dropdown-item-login-style">
-              Alle teams
-            </SelectItem>
-            {teamNames.map((team, idx) => (
-              <SelectItem key={idx} value={team} className="dropdown-item-login-style">
-                {team}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div>
-        <Label htmlFor="search" className="text-sm font-medium mb-2 block">
-          Zoeken
-        </Label>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 text-purple-400 transform -translate-y-1/2 z-10" />
-          <Input
-            id="search"
-            placeholder="Zoek op team, locatie, etc."
-            className="pl-10 input-login-style"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
-    </div>
-
-    <Button className="btn-white w-full md:w-auto" onClick={onClearFilters}>
+  <Stack gap={16} mb={16}>
+    <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md">
+      <Box>
+        <Text size="sm" fw={500} mb={4}>Filter op speeldag</Text>
+        <MantineSelect
+          value={selectedMatchday}
+          onChange={setSelectedMatchday}
+          placeholder="Alle speeldagen"
+          data={[{ value: "all-matchdays", label: "Alle speeldagen" }, ...matchdays.map(day => ({ value: day, label: day }))]}
+        />
+      </Box>
+      <Box>
+        <Text size="sm" fw={500} mb={4}>Filter op team</Text>
+        <MantineSelect
+          value={selectedTeam}
+          onChange={setSelectedTeam}
+          placeholder="Alle teams"
+          data={[{ value: "all-teams", label: "Alle teams" }, ...teamNames.map(team => ({ value: team, label: team }))]}
+        />
+      </Box>
+      <Box>
+        <Text size="sm" fw={500} mb={4}>Zoeken</Text>
+        <MantineInput
+          leftSection={<Search size={16} color="var(--mantine-color-grape-6)" />}
+          placeholder="Zoek op team, locatie, etc."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.currentTarget.value)}
+        />
+      </Box>
+    </SimpleGrid>
+    <MantineButton variant="outline" color="grape" onClick={onClearFilters} w={{ base: '100%', md: 'auto' }}>
       Filters wissen
-    </Button>
-  </div>
+    </MantineButton>
+  </Stack>
 ));
 
-// Main component
 const CompetitieTab: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMatchday, setSelectedMatchday] = useState<string>("");
@@ -248,7 +236,6 @@ const CompetitieTab: React.FC = () => {
     refetchStandings
   } = useCompetitionData();
 
-  // Memoized filtered matches
   const filteredMatches = useMemo(() => {
     return matches.all.filter(match => {
       if (selectedMatchday && selectedMatchday !== "all-matchdays" && match.matchday !== selectedMatchday) {
@@ -278,58 +265,55 @@ const CompetitieTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 animate-slide-up">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Competitiestand</h2>
-        <Badge className="badge-purple">Seizoen 2025-2026</Badge>
-      </div>
-
-      <StandingsSection
-        teams={teams}
-        isLoading={standingsLoading}
-        error={standingsError}
-        onRetry={refetchStandings}
-      />
-
-      <MatchesSection
-        title="Aankomende Wedstrijden"
-        description="Wedstrijden van de komende speeldag"
-        matches={matches.upcoming}
-        isLoading={matchesLoading}
-      />
-
-      <MatchesSection
-        title="Afgelopen Wedstrijden"
-        description="Resultaten van de laatst gespeelde speeldag"
-        matches={matches.past}
-        isLoading={matchesLoading}
-      />
-
-      <Card>
-        <CardHeader className="bg-transparent">
-          <CardTitle>Speelschema</CardTitle>
-          <CardDescription>Volledig overzicht van alle wedstrijden</CardDescription>
-        </CardHeader>
-        <CardContent className="bg-transparent">
-          <FilterControls
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedMatchday={selectedMatchday}
-            setSelectedMatchday={setSelectedMatchday}
-            selectedTeam={selectedTeam}
-            setSelectedTeam={setSelectedTeam}
-            matchdays={matchdays}
-            teamNames={teamNames}
-            onClearFilters={handleClearFilters}
-          />
-          <ResponsiveScheduleTable matches={filteredMatches} />
-        </CardContent>
-      </Card>
-    </div>
+    <Container size="md" py="xl">
+      <Stack gap={32}>
+        <Group justify="space-between" align="center">
+          <Title order={2} size="h2">Competitiestand</Title>
+          <MantineBadge color="grape" variant="light" size="lg">Seizoen 2025-2026</MantineBadge>
+        </Group>
+        <StandingsSection
+          teams={teams}
+          isLoading={standingsLoading}
+          error={standingsError}
+          onRetry={refetchStandings}
+        />
+        <MatchesSection
+          title="Aankomende Wedstrijden"
+          description="Wedstrijden van de komende speeldag"
+          matches={matches.upcoming}
+          isLoading={matchesLoading}
+        />
+        <MatchesSection
+          title="Afgelopen Wedstrijden"
+          description="Resultaten van de laatst gespeelde speeldag"
+          matches={matches.past}
+          isLoading={matchesLoading}
+        />
+        <Card shadow="sm" radius="md" p="md" withBorder>
+          <CardSection>
+            <Title order={4} size="h4">Speelschema</Title>
+            <Text size="sm" c="dimmed">Volledig overzicht van alle wedstrijden</Text>
+          </CardSection>
+          <CardSection>
+            <FilterControls
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              selectedMatchday={selectedMatchday}
+              setSelectedMatchday={setSelectedMatchday}
+              selectedTeam={selectedTeam}
+              setSelectedTeam={setSelectedTeam}
+              matchdays={matchdays}
+              teamNames={teamNames}
+              onClearFilters={handleClearFilters}
+            />
+            <ResponsiveScheduleTable matches={filteredMatches} />
+          </CardSection>
+        </Card>
+      </Stack>
+    </Container>
   );
 };
 
-// Set display names for better debugging
 StandingsTableSkeleton.displayName = 'StandingsTableSkeleton';
 MatchCardSkeleton.displayName = 'MatchCardSkeleton';
 MatchesGridSkeleton.displayName = 'MatchesGridSkeleton';

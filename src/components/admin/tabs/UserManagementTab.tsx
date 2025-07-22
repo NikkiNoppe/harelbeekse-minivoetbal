@@ -1,20 +1,11 @@
 
 import React, { useState } from "react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle,
-  CardFooter
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, Title, Text, Button, Group, Stack, Divider } from "@mantine/core";
 import { useUserManagement } from "../user-management/useUserManagement";
 import UserDialog from "@/components/user/UserDialog";
 import UserList from "../user-management/UserList";
 import ConfirmDeleteDialog from "../user-management/ConfirmDeleteDialog";
-
-import { Plus, Edit, Save, Users } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 
 const UserManagementTab: React.FC = () => {
   const {
@@ -43,105 +34,70 @@ const UserManagementTab: React.FC = () => {
   } = useUserManagement();
   
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
 
-  // Handle opening add dialog
-  const handleOpenAddDialog = () => {
-    setAddDialogOpen(true);
-  };
+  const handleOpenAddDialog = () => setAddDialogOpen(true);
 
-  // Handle save for new user - return success status
   const handleSaveNewUser = async (formData: any) => {
-    console.log('Saving new user with data:', formData);
     const success = await handleAddUser({
       name: formData.username,
       email: formData.email,
-      password: formData.password, // Pass the password
+      password: formData.password,
       role: formData.role,
       teamId: formData.teamId || null,
       teamIds: formData.teamIds || []
     });
-    
-    if (success) {
-      setAddDialogOpen(false);
-    }
-    
+    if (success) setAddDialogOpen(false);
     return success;
   };
 
-  // Handle save for editing user - return success status
   const handleSaveEditUser = async (formData: any) => {
     if (editingUser) {
-      console.log('Saving edited user with data:', formData, 'for user ID:', editingUser.user_id);
       const success = await handleUpdateUser(editingUser.user_id, formData);
       return success;
     }
     return false;
   };
-  
-  return (
-    <div className="space-y-8 animate-slide-up">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Gebruikers Beheer
-        </h2>
-      </div>
 
-      <section>
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="text-lg">
-                  Beheer alle gebruikers in het systeem
-                </CardTitle>
-                <CardDescription>
-                  Voeg nieuwe gebruikers toe en beheer hun toegang tot verschillende functies.
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <UserList 
-              users={users}
-              loading={loading}
-              isUpdating={updatingUser}
-              isDeleting={deletingUser}
-              onEditUser={handleOpenEditDialog}
-              onDeleteUser={handleOpenDeleteConfirmation}
-              editMode={true}
-              searchTerm={searchTerm}
-              onSearchTermChange={handleSearchChange}
-              roleFilter={roleFilter}
-              onRoleFilterChange={handleRoleFilterChange}
-              teamFilter={teamFilter}
-              onTeamFilterChange={handleTeamFilterChange}
-              teams={teams}
-            />
-          </CardContent>
-          <CardFooter className="flex justify-end">
-            <Button
-              onClick={handleOpenAddDialog}
-              disabled={addingUser}
-              className="flex items-center gap-2"
-            >
-              <Plus size={16} />
-              Gebruiker toevoegen
-            </Button>
-          </CardFooter>
-        </Card>
-      </section>
-      
-      {/* Confirm Delete Dialog */}
+  return (
+    <Stack gap="xl">
+      <Group justify="space-between" align="center">
+        <Title order={2} fw={600} c="grape.8">
+          <Group gap={8}>
+            <Users size={20} />
+            Gebruikers Beheer
+          </Group>
+        </Title>
+        <Button leftSection={<Plus size={16} />} color="grape" onClick={handleOpenAddDialog} loading={addingUser}>
+          Gebruiker toevoegen
+        </Button>
+      </Group>
+      <Card shadow="sm" radius="md" p="md" withBorder>
+        <Title order={4} size="h4" mb="xs">Beheer alle gebruikers in het systeem</Title>
+        <Text size="sm" c="dimmed" mb="md">Voeg nieuwe gebruikers toe en beheer hun toegang tot verschillende functies.</Text>
+        <Divider mb="md" />
+        <UserList 
+          users={users}
+          loading={loading}
+          isUpdating={updatingUser}
+          isDeleting={deletingUser}
+          onEditUser={handleOpenEditDialog}
+          onDeleteUser={handleOpenDeleteConfirmation}
+          editMode={true}
+          searchTerm={searchTerm}
+          onSearchTermChange={handleSearchChange}
+          roleFilter={roleFilter}
+          onRoleFilterChange={handleRoleFilterChange}
+          teamFilter={teamFilter}
+          onTeamFilterChange={handleTeamFilterChange}
+          teams={teams}
+        />
+      </Card>
       <ConfirmDeleteDialog 
         open={confirmDialogOpen}
         onOpenChange={setConfirmDialogOpen}
         onConfirmDelete={handleDeleteUser}
         isDeleting={deletingUser}
       />
-
-      {/* Edit User Dialog */}
       {editingUser && (
         <UserDialog
           open={editDialogOpen}
@@ -160,8 +116,6 @@ const UserManagementTab: React.FC = () => {
           isLoading={updatingUser}
         />
       )}
-
-      {/* Add User Dialog */}
       <UserDialog
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
@@ -169,7 +123,7 @@ const UserManagementTab: React.FC = () => {
         teams={teams.map(team => ({ id: team.team_id, name: team.team_name }))}
         isLoading={addingUser}
       />
-    </div>
+    </Stack>
   );
 };
 

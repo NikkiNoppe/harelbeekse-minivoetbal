@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table } from "@mantine/core";
 
 interface Team {
   id: number;
@@ -23,55 +23,42 @@ const ResponsiveStandingsTable: React.FC<ResponsiveStandingsTableProps> = ({
   showPlayoff = false 
 }) => {
   return (
-    <div className="responsive-table-container">
-      <div className="competitie-standings-table">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="competitie-header competitie-sticky-column" style={{ left: 0, width: '64px' }}>
-                Pos
-              </TableHead>
-              <TableHead className="competitie-header competitie-sticky-column text-left" style={{ left: '64px', minWidth: '150px' }}>
-                Team
-              </TableHead>
-              <TableHead className="competitie-header">Wed</TableHead>
-              <TableHead className="competitie-header">W</TableHead>
-              <TableHead className="competitie-header">G</TableHead>
-              <TableHead className="competitie-header">V</TableHead>
-              <TableHead className="competitie-header">+/-</TableHead>
-              <TableHead className="competitie-header">Ptn</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {teams.map((team, index) => (
-              <TableRow 
-                key={team.id} 
-                className={`competitie-row ${index === 0 && !showPlayoff ? "first-position" : ""}`}
-              >
-                <TableCell className="competitie-cell competitie-sticky-column font-medium" style={{ left: 0 }}>
-                  {index + 1}
-                </TableCell>
-                <TableCell className="competitie-cell competitie-sticky-column font-medium text-left" style={{ left: '64px' }}>
-                  {team.name}
-                </TableCell>
-                <TableCell className="competitie-cell">{team.played}</TableCell>
-                <TableCell className="competitie-cell text-green-600 font-medium">{team.won}</TableCell>
-                <TableCell className="competitie-cell text-yellow-600 font-medium">{team.draw}</TableCell>
-                <TableCell className="competitie-cell text-red-600 font-medium">{team.lost}</TableCell>
-                <TableCell className="competitie-cell">
-                  <span className={
-                    team.goalDiff > 0 ? "text-green-600 font-medium" : 
-                    team.goalDiff < 0 ? "text-red-600 font-medium" : ""
-                  }>
-                    {team.goalDiff > 0 ? "+" : ""}{team.goalDiff}
-                  </span>
-                </TableCell>
-                <TableCell className="competitie-cell font-bold">{team.points}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+    <div style={{ overflowX: 'auto' }}>
+      <Table striped highlightOnHover withTableBorder withColumnBorders>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th style={{ left: 0, width: 64, position: 'sticky', background: '#fafafa', zIndex: 2 }}>Pos</Table.Th>
+            <Table.Th style={{ left: 64, minWidth: 150, position: 'sticky', background: '#fafafa', zIndex: 2 }}>Team</Table.Th>
+            <Table.Th>Wed</Table.Th>
+            <Table.Th>W</Table.Th>
+            <Table.Th>G</Table.Th>
+            <Table.Th>V</Table.Th>
+            <Table.Th>+/-</Table.Th>
+            <Table.Th>Ptn</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {teams.map((team, index) => (
+            <Table.Tr 
+              key={team.id} 
+              style={index === 0 && !showPlayoff ? { background: '#ede9fe' } : {}}
+            >
+              <Table.Td style={{ left: 0, position: 'sticky', background: '#fafafa', fontWeight: 500 }}>{index + 1}</Table.Td>
+              <Table.Td style={{ left: 64, position: 'sticky', background: '#fafafa', fontWeight: 500 }}>{team.name}</Table.Td>
+              <Table.Td>{team.played}</Table.Td>
+              <Table.Td style={{ color: '#16a34a', fontWeight: 500 }}>{team.won}</Table.Td>
+              <Table.Td style={{ color: '#ca8a04', fontWeight: 500 }}>{team.draw}</Table.Td>
+              <Table.Td style={{ color: '#dc2626', fontWeight: 500 }}>{team.lost}</Table.Td>
+              <Table.Td>
+                <span style={{ color: team.goalDiff > 0 ? '#16a34a' : team.goalDiff < 0 ? '#dc2626' : undefined, fontWeight: 500 }}>
+                  {team.goalDiff > 0 ? "+" : ""}{team.goalDiff}
+                </span>
+              </Table.Td>
+              <Table.Td style={{ fontWeight: 700 }}>{team.points}</Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
     </div>
   );
 };

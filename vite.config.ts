@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@/MINIVOETBAL.UI": path.resolve(__dirname, "./MINIVOETBAL.UI"),
     },
   },
 }));
