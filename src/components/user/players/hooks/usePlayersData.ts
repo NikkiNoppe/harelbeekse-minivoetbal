@@ -6,6 +6,7 @@ import { User } from "@/types/auth";
 
 export const usePlayersData = (authUser: User | null) => {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]); // alle spelers voor snelle filtering
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
@@ -32,10 +33,10 @@ export const usePlayersData = (authUser: User | null) => {
     }
   };
 
-  const fetchPlayers = async (teamId?: number) => {
-    console.log('🔄 Fetching players for team:', teamId);
+  const fetchPlayers = async () => {
+    console.log('🔄 Fetching all players with teams...');
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('players')
         .select(`
           player_id,
@@ -50,19 +51,11 @@ export const usePlayersData = (authUser: User | null) => {
         `)
         .order('last_name')
         .order('first_name');
-
-      if (teamId) {
-        query = query.eq('team_id', teamId);
-      }
-
-      const { data, error } = await query;
-
       if (error) {
         console.error('❌ Error fetching players:', error);
         return [];
       }
-
-      console.log('✅ Players fetched:', data?.length || 0, 'players for team:', teamId);
+      console.log('✅ Players fetched:', data?.length || 0, 'players');
       return data || [];
     } catch (error) {
       console.error('💥 Error in fetchPlayers:', error);
@@ -71,24 +64,21 @@ export const usePlayersData = (authUser: User | null) => {
   };
 
   const refreshPlayers = async () => {
-    console.log('🔄 REFRESH TEST - Starting refresh...');
     try {
       setLoading(true);
-      
+      const playersData = await fetchPlayers();
+      setAllPlayers(playersData);
+      // Filter direct op huidig team
       const targetTeamId = authUser?.role === "player_manager" ? authUser.teamId : selectedTeam;
-      console.log('🎯 Target team ID:', targetTeamId);
-      
-      const playersData = await fetchPlayers(targetTeamId || undefined);
-      console.log('📊 Fetched players:', playersData.length, 'players');
-      console.log('📝 First player sample:', playersData[0]);
-      
-      setPlayers(playersData);
-      console.log('✅ Players state updated');
+      if (targetTeamId) {
+        setPlayers(playersData.filter((p: any) => p.team_id === targetTeamId));
+      } else {
+        setPlayers(playersData);
+      }
     } catch (error) {
       console.error('❌ Error refreshing players:', error);
     } finally {
       setLoading(false);
-      console.log('🔄 Refresh completed');
     }
   };
 
@@ -110,14 +100,16 @@ export const usePlayersData = (authUser: User | null) => {
           console.log('📝 User team name set:', userTeam.team_name);
         }
         
-        const playersData = await fetchPlayers(authUser.teamId);
-        setPlayers(playersData);
+        const playersData = await fetchPlayers(); // Fetch all players here
+        setAllPlayers(playersData); // Store all players
+        setPlayers(playersData.filter((p: any) => p.team_id === authUser.teamId)); // Filter for the user's team
       } else if (authUser?.role === "admin" && teamsData.length > 0) {
         console.log('👑 Admin detected, selecting first team:', teamsData[0].team_id);
         setSelectedTeam(teamsData[0].team_id);
         
-        const playersData = await fetchPlayers(teamsData[0].team_id);
-        setPlayers(playersData);
+        const playersData = await fetchPlayers(); // Fetch all players here
+        setAllPlayers(playersData); // Store all players
+        setPlayers(playersData.filter((p: any) => p.team_id === teamsData[0].team_id)); // Filter for the selected team
       }
     } catch (error) {
       console.error('💥 Error initializing data:', error);
@@ -134,11 +126,16 @@ export const usePlayersData = (authUser: User | null) => {
   }, [authUser]);
 
   useEffect(() => {
-    if (selectedTeam && authUser?.role === "admin") {
-      console.log('🔄 Selected team changed for admin:', selectedTeam);
-      refreshPlayers();
+    // Filter alleen in-memory bij teamselectie
+    if (allPlayers.length > 0 && (selectedTeam || authUser?.role === "player_manager")) {
+      const targetTeamId = authUser?.role === "player_manager" ? authUser.teamId : selectedTeam;
+      if (targetTeamId) {
+        setPlayers(allPlayers.filter((p: any) => p.team_id === targetTeamId));
+      } else {
+        setPlayers(allPlayers);
+      }
     }
-  }, [selectedTeam]);
+  }, [selectedTeam, allPlayers, authUser]);
 
   return {
     players,

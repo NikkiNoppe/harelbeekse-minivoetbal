@@ -2,7 +2,7 @@
 import React from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/components/auth/AuthProvider";
-import PlayersTab from "./tabs/PlayersTab";
+import { PlayerPage } from "../players";
 import AdminSettingsPanel from "@/components/admin/AdminSettingsPanel";
 import CompetitionManagementTab from "@/components/admin/tabs/CompetitionManagementTab";
 import FinancialPage from "@/components/admin/tabs/FinancialTabUpdated";
@@ -34,7 +34,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
             </TabsContent>
             
             <TabsContent value="players" className="mt-0">
-              <PlayersTab />
+              <PlayerPage />
             </TabsContent>
             
             {isAdmin && (

@@ -5,7 +5,7 @@ import Footer from "@/components/footer/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import LoginForm from "@/components/auth/LoginForm";
 import MainTabs from "@/components/tabs/MainTabs";
-import PlayersTab from "@/components/user/tabs/PlayersTab";
+import { PlayerPage } from "@/components/user/players";
 import TeamsAdminTab from "@/components/admin/tabs/TeamsTab";
 import UserManagementTab from "@/components/admin/tabs/UserManagementTab";
 import CompetitionManagementTab from "@/components/admin/tabs/CompetitionManagementTab";
@@ -69,7 +69,7 @@ const Layout: React.FC = () => {
       case "players":
         content = (
           <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <PlayersTab />
+            <PlayerPage />
           </div>
         );
         break;

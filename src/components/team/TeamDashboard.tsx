@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import PlayersTab from "@/components/user/tabs/PlayersTab";
+import { PlayerPage } from "@/components/user/players";
 import { User, TeamData } from "@/types/auth";
 import MatchFormTab from "./MatchFormTab";
 import { teamService } from "@/services/core";
@@ -91,7 +91,7 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ user, teamData }) => {
 
         {canManagePlayers && (
           <TabsContent value="players" className="space-y-4 mt-4">
-            <PlayersTab />
+            <PlayerPage />
           </TabsContent>
         )}
       </Tabs>

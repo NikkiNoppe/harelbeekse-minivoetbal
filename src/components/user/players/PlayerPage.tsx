@@ -1,29 +1,19 @@
 import React from "react";
-import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription,
-  CardContent, 
-  CardFooter 
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Edit, Save, Plus, Lock } from "lucide-react";
-import PlayersListUpdated from "../players/PlayersListUpdated";
-import PlayerDialogUpdated from "../players/PlayerDialogUpdated";
-import EditPlayerDialogUpdated from "../players/EditPlayerDialogUpdated";
-import PlayerRegulations from "../players/PlayerRegulations";
-import PlayerListLockSettings from "@/components/admin/settings/PlayerListLockSettings";
-import { usePlayersUpdated } from "../players/usePlayersUpdated";
-import { usePlayerListLock } from "../players/hooks/usePlayerListLock";
+import { Plus, Lock } from "lucide-react";
+import PlayersListUpdated from "./PlayersListUpdated";
+import PlayerDialogUpdated from "./PlayerDialogUpdated";
+import EditPlayerDialogUpdated from "./EditPlayerDialogUpdated";
+import PlayerRegulations from "./PlayerRegulations";
+import { usePlayersUpdated } from "./usePlayersUpdated";
+import { usePlayerListLock } from "./hooks/usePlayerListLock";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { formatDateShort } from "@/lib/dateUtils";
 
-const PlayersTab: React.FC = () => {
-  // Use main AuthProvider instead of separate auth system
+const PlayerPage: React.FC = () => {
   const { user: authUser } = useAuth();
-  
   const {
     players,
     teams,
@@ -48,22 +38,10 @@ const PlayersTab: React.FC = () => {
     getFullName,
     userTeamName
   } = usePlayersUpdated();
-
   const { isLocked, lockDate, canEdit } = usePlayerListLock();
-
-  console.log('🔍 PlayersTab Auth Debug:', {
-    authUser: authUser,
-    authUserRole: authUser?.role,
-    isAdmin: authUser?.role === "admin",
-    teamsLength: teams.length,
-    selectedTeam: selectedTeam
-  });
-
-  // Get the current team name for display
   const currentTeamName = authUser?.role === "player_manager" 
     ? userTeamName 
     : teams.find(team => team.team_id === selectedTeam)?.team_name || "";
-  
   return (
     <div className="space-y-8 animate-slide-up">
       <div className="flex justify-between items-center">
@@ -74,7 +52,6 @@ const PlayersTab: React.FC = () => {
           )}
         </h2>
       </div>
-
       <section>
         <Card>
           <CardHeader>
@@ -93,8 +70,6 @@ const PlayersTab: React.FC = () => {
                   </p>
                 )}
               </div>
-              
-              {/* Team selection dropdown - only for admin users */}
               {authUser?.role === "admin" && (
                 <div className="flex flex-col gap-2">
                   <Select value={selectedTeam?.toString() || ""} onValueChange={(value) => handleTeamChange(parseInt(value))}>
@@ -147,7 +122,6 @@ const PlayersTab: React.FC = () => {
           </CardFooter>
         </Card>
       </section>
-
       <section>
         <div className="mt-6">
           <Card>
@@ -160,7 +134,6 @@ const PlayersTab: React.FC = () => {
           </Card>
         </div>
       </section>
-      
       <PlayerDialogUpdated
         open={dialogOpen}
         onOpenChange={setDialogOpen}
@@ -168,7 +141,6 @@ const PlayersTab: React.FC = () => {
         onPlayerChange={setNewPlayer}
         onSave={handleAddPlayer}
       />
-      
       <EditPlayerDialogUpdated
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
@@ -180,4 +152,4 @@ const PlayersTab: React.FC = () => {
   );
 };
 
-export default PlayersTab;
+export default PlayerPage; 
