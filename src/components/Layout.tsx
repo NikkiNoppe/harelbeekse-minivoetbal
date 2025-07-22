@@ -1,26 +1,26 @@
 
-import React, { useEffect, useState } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Home, Award, Trophy, Target, BookOpen, Ban, AlertTriangle, Calendar, Users, Shield, UserIcon, DollarSign, Settings } from "lucide-react";
-import LoginForm from "@/components/auth/LoginForm";
+import React, { useState, ReactNode } from "react";
 import Header from "@/components/header/Header";
 import Footer from "@/components/footer/Footer";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import LoginForm from "@/components/auth/LoginForm";
 import MainTabs from "@/components/tabs/MainTabs";
 import AdminDashboard from "@/components/user/AdminDashboard";
 
+// Types voor tabs
+import { TabName } from "@/context/TabVisibilityContext";
 type AdminTabName = "match-forms" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup";
 
-const Layout: React.FC = () => {
-  const { user, logout, isAuthenticated } = useAuth();
-  const { isTabVisible } = useTabVisibility();
-  const isMobile = useIsMobile();
+interface LayoutProps {
+  children?: ReactNode;
+}
+
+const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabName>("algemeen");
   const [activeAdminTab, setActiveAdminTab] = useState<AdminTabName>("match-forms");
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Simpel, vervang door echte auth indien nodig
+  const [user, setUser] = useState<any>(null); // Simpel, vervang door echte user indien nodig
 
   const handleLogoClick = () => {
     if (isAuthenticated) {
@@ -29,132 +29,40 @@ const Layout: React.FC = () => {
       setActiveTab("algemeen");
     }
   };
-  
+
   const handleLoginClick = () => {
     setLoginDialogOpen(true);
   };
-  
+
   const handleLoginSuccess = () => {
     setLoginDialogOpen(false);
+    setIsAuthenticated(true); // Simpel voorbeeld
+    setUser({ role: "admin" }); // Simpel voorbeeld
   };
 
-  // Handle tab changes from mobile navigation
+  // Handler voor tab wissel vanuit Header
   const handleTabChange = (tab: string) => {
-    console.log("Tab change requested:", tab);
-    
     if (isAuthenticated) {
-      // Admin tabs
-      if (["match-forms", "players", "teams", "users", "competition", "playoffs", "financial", "settings", "cup"].includes(tab)) {
-        setActiveAdminTab(tab as AdminTabName);
-      }
+      setActiveAdminTab(tab as AdminTabName);
     } else {
-      // Public tabs
-      if (["algemeen", "beker", "competitie", "playoff", "schorsingen", "teams", "kaarten", "reglement"].includes(tab)) {
-        setActiveTab(tab as TabName);
-      }
-    }
-  };
-
-  // Set the first visible tab as active tab when loading
-  useEffect(() => {
-    if (!isAuthenticated) {
-      const visibleTabs: TabName[] = ["algemeen", "competitie", "playoff", "beker", "schorsingen", "teams", "reglement"].filter(tab => isTabVisible(tab as TabName)) as TabName[];
-      if (visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
-        setActiveTab(visibleTabs[0]);
-      }
-    }
-  }, [isTabVisible, activeTab, isAuthenticated]);
-
-  // Desktop tabs configuration
-  const getDesktopTabs = () => {
-    if (isAuthenticated && user) {
-      const isAdmin = user.role === "admin";
-      const adminTabs = [
-        { key: "match-forms", label: "Wedstrijdformulieren", icon: <Calendar size={16} /> },
-        { key: "players", label: "Spelers", icon: <Users size={16} /> },
-        ...(isAdmin ? [
-          { key: "teams", label: "Teams", icon: <Shield size={16} /> },
-          { key: "users", label: "Gebruikers", icon: <UserIcon size={16} /> },
-          { key: "competition", label: "Competitie", icon: <Trophy size={16} /> },
-          { key: "playoffs", label: "Play-Off", icon: <Target size={16} /> },
-          { key: "cup", label: "Beker", icon: <Award size={16} /> },
-          { key: "financial", label: "Financieel", icon: <DollarSign size={16} /> },
-          { key: "settings", label: "Instellingen", icon: <Settings size={16} /> }
-        ] : [])
-      ];
-      return adminTabs;
-    } else {
-      const publicTabs = [
-        { key: "algemeen", label: "Algemeen", icon: <Home size={16} /> },
-        { key: "beker", label: "Beker", icon: <Award size={16} /> },
-        { key: "competitie", label: "Competitie", icon: <Trophy size={16} /> },
-        { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
-        { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> },
-        { key: "teams", label: "Teams", icon: <Shield size={16} /> },
-        { key: "reglement", label: "Reglement", icon: <BookOpen size={16} /> }
-      ];
-      return publicTabs.filter(tab => isTabVisible(tab.key as TabName));
+      setActiveTab(tab as TabName);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
-      {/* Header with unified navigation */}
       <Header 
         onLogoClick={handleLogoClick} 
         onLoginClick={handleLoginClick}
-        activeTab={isAuthenticated ? activeAdminTab : activeTab}
         onTabChange={handleTabChange}
+        activeTab={isAuthenticated ? activeAdminTab : activeTab}
+        isAuthenticated={isAuthenticated}
+        user={user}
       />
-
-      {/* Desktop Tabs - only show on desktop */}
-      {!isMobile && (
-        <div className="w-full bg-white border-b border-purple-200 shadow-sm">
-          <div className="max-w-7xl mx-auto">
-            <Tabs 
-              value={isAuthenticated ? activeAdminTab : activeTab} 
-              onValueChange={(value) => {
-                if (isAuthenticated) {
-                  setActiveAdminTab(value as AdminTabName);
-                } else {
-                  setActiveTab(value as TabName);
-                }
-              }} 
-              className="w-full"
-            >
-              <TabsList className="custom-tabs-list">
-                <div className="custom-tabs-container">
-                  {getDesktopTabs().map((tab) => (
-                    <TabsTrigger
-                      key={tab.key}
-                      value={tab.key}
-                      className="custom-tab-trigger"
-                    >
-                      {tab.icon}
-                      <span className="hidden sm:inline">{tab.label}</span>
-                      <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
-                    </TabsTrigger>
-                  ))}
-                </div>
-              </TabsList>
-            </Tabs>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content - full width with modern tabs */}
       <main className="flex-1 w-full bg-purple-100">
-        {isAuthenticated && user ? (
-          <AdminDashboard activeTab={activeAdminTab} setActiveTab={setActiveAdminTab} />
-        ) : (
-          <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-        )}
+        {children}
       </main>
-
-      {/* Footer */}
       <Footer />
-
-      {/* Login Dialog */}
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
         <DialogContent className="w-full max-w-md mx-4 sm:mx-auto bg-background text-foreground border-border rounded-lg">
           <DialogTitle className="sr-only">Inloggen</DialogTitle>

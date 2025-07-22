@@ -4,116 +4,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Harelbeekse minivoetbal competitie - KRC Harelbeke Competitie</title>
-    <meta name="description" content="Website voor de KRC Harelbeke Minivoetbal met alle informatie over competitie, beker, schorsingen en het reglement." />
-    <meta name="author" content="Minivoetbal Harelbeke" />
-
-    <meta property="og:title" content="Harelbeekse minivoetbal competitie - Minivoetbal Competitie" />
-    <meta property="og:description" content="Website voor de lokale voetbalcompetitie met alle informatie over competitie, beker, schorsingen en het reglement." />
+    <title>Harelbeekse Minivoetbal Competitie | KRC Harelbeke</title>
+    <meta name="description" content="Officiële website van de KRC Harelbeke Minivoetbalcompetitie. Bekijk standen, wedstrijden, schorsingen en meer." />
+    <meta name="author" content="KRC Harelbeke Minivoetbal" />
+    <meta name="robots" content="index, follow" />
+    <link rel="icon" href="/public/favicon.ico" type="image/x-icon" />
+    <link rel="apple-touch-icon" href="/public/favicon.ico" />
+    <meta property="og:title" content="Harelbeekse Minivoetbal Competitie | KRC Harelbeke" />
+    <meta property="og:description" content="Officiële website van de KRC Harelbeke Minivoetbalcompetitie. Bekijk standen, wedstrijden, schorsingen en meer." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
-    <meta name="twitter:card" content="" />
-    <meta name="twitter:site" content="" />
-    <meta name="twitter:image" content="" />
-    
-    <!-- Comprehensive Polyfills - Load before any other scripts -->
-    <script>
-      // Ensure Array is properly defined
-      if (typeof Array === 'undefined') {
-        window.Array = function() {
-          return Array.prototype.slice.call(arguments);
-        };
-        console.log('✅ Array constructor polyfill loaded');
-      }
-      
-      // Array.isArray polyfill
-      if (typeof Array.isArray === 'undefined') {
-        Array.isArray = function(arg) {
-          return Object.prototype.toString.call(arg) === '[object Array]';
-        };
-        console.log('✅ HTML Array.isArray polyfill loaded');
-      }
-      
-      // Ensure Array.prototype.slice is available
-      if (typeof Array.prototype.slice === 'undefined') {
-        Array.prototype.slice = function(begin, end) {
-          var len = this.length;
-          var start = begin || 0;
-          var stop = end || len;
-          
-          if (start < 0) start = len + start;
-          if (stop < 0) stop = len + stop;
-          
-          var result = [];
-          for (var i = start; i < stop; i++) {
-            result.push(this[i]);
-          }
-          return result;
-        };
-        console.log('✅ Array.prototype.slice polyfill loaded');
-      }
-      
-      // Object.entries polyfill
-      if (typeof Object.entries === 'undefined') {
-        Object.entries = function(obj) {
-          const ownProps = Object.keys(obj);
-          let i = ownProps.length;
-          const resArray = new Array(i);
-          while (i--) {
-            resArray[i] = [ownProps[i], obj[ownProps[i]]];
-          }
-          return resArray;
-        };
-        console.log('✅ HTML Object.entries polyfill loaded');
-      }
-      
-      // Object.keys polyfill
-      if (typeof Object.keys === 'undefined') {
-        Object.keys = function(obj) {
-          const keys = [];
-          for (const key in obj) {
-            if (obj.hasOwnProperty(key)) {
-              keys.push(key);
-            }
-          }
-          return keys;
-        };
-        console.log('✅ HTML Object.keys polyfill loaded');
-      }
-      
-      // Ensure Array.prototype methods are available
-      if (typeof Array.prototype.filter === 'undefined') {
-        Array.prototype.filter = function(callback, thisArg) {
-          var result = [];
-          for (var i = 0; i < this.length; i++) {
-            if (callback.call(thisArg, this[i], i, this)) {
-              result.push(this[i]);
-            }
-          }
-          return result;
-        };
-        console.log('✅ Array.prototype.filter polyfill loaded');
-      }
-      
-      if (typeof Array.prototype.map === 'undefined') {
-        Array.prototype.map = function(callback, thisArg) {
-          var result = [];
-          for (var i = 0; i < this.length; i++) {
-            result.push(callback.call(thisArg, this[i], i, this));
-          }
-          return result;
-        };
-        console.log('✅ Array.prototype.map polyfill loaded');
-      }
-      
-      console.log('✅ HTML Comprehensive Polyfills loaded successfully');
-    </script>
+    <meta property="og:locale" content="nl_BE" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Harelbeekse Minivoetbal Competitie | KRC Harelbeke" />
+    <meta name="twitter:description" content="Officiële website van de KRC Harelbeke Minivoetbalcompetitie." />
+    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <!-- Vite injects CSS and JS automatically -->
   </head>
-
-  <body>
-    <div id="root"></div>
-    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
+  <body class="bg-purple-100 text-gray-900 antialiased">
+    <noscript>
+      <div style="background: #f44336; color: white; padding: 1rem; text-align: center;">
+        Deze website werkt het best met JavaScript ingeschakeld.
+      </div>
+    </noscript>
+    <div id="root" role="main"></div>
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

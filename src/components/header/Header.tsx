@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -11,30 +12,49 @@ import Logo from "./Logo";
 interface HeaderProps {
   onLogoClick: () => void;
   onLoginClick: () => void;
-  tabs?: { key: string; label: string; icon: React.ReactNode }[];
-  activeTab?: string;
-  onTabChange?: (tab: string) => void;
+  onTabChange: (tab: string) => void;
+  activeTab: string;
+  isAuthenticated: boolean;
+  user: any;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   onLogoClick, 
-  onLoginClick, 
-  tabs = [], 
-  activeTab, 
-  onTabChange 
+  onLoginClick,
+  onTabChange,
+  activeTab,
+  isAuthenticated,
+  user
 }) => {
-  const { user, logout, isAuthenticated } = useAuth();
   const isMobile = useIsMobile();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const navigate = useNavigate();
 
-  const handleTabChange = (tab: string) => {
-    onTabChange?.(tab);
-    setIsSheetOpen(false);
+  // Route mapping per key (voor toekomstig onderscheid)
+  const routeMap: Record<string, string> = {
+    // Publiek
+    algemeen: '/',
+    beker: '/beker',
+    competitie: '/competitie',
+    playoff: '/playoff',
+    schorsingen: '/schorsingen',
+    teams: '/teams',
+    reglement: '/reglement',
+    kaarten: '/kaarten',
+    // Admin
+    'match-forms': '/match-forms',
+    players: '/players',
+    users: '/users',
+    competition: '/competition',
+    playoffs: '/playoffs',
+    cup: '/cup',
+    financial: '/financial',
+    settings: '/settings',
   };
 
   const handleLogout = () => {
-    logout();
     setIsSheetOpen(false);
+    // Optioneel: trigger een logout callback als je die wilt toevoegen
   };
 
   // Admin navigation items
@@ -126,7 +146,10 @@ const Header: React.FC<HeaderProps> = ({
                   {currentNavItems.map((item) => (
                     <button
                       key={item.key}
-                      onClick={() => handleTabChange(item.key)}
+                      onClick={() => {
+                        setIsSheetOpen(false);
+                        onTabChange(item.key);
+                      }}
                       className={`btn-nav w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left font-medium${activeTab === item.key ? ' active' : ''}`}
                     >
                       {React.cloneElement(item.icon as React.ReactElement, {
