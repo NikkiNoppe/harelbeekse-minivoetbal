@@ -149,8 +149,13 @@ const reglement = [
 
 function ReglementTab() {
   return (
-    <div className="max-w-2xl mx-auto py-8">
-      <Accordion type="single" collapsible defaultValue="">
+    <div className="space-y-8 animate-slide-up">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Reglement</h2>
+      </div>
+      
+      <div className="max-w-2xl mx-auto">
+        <Accordion type="single" collapsible defaultValue="">
         {reglement.map((h, i) => (
           <AccordionItem key={h.title} value={h.title} className="border-b border-purple-100">
             <AccordionTrigger className="text-lg text-purple-800 font-semibold bg-purple-50 hover:bg-purple-100 px-4">
@@ -162,7 +167,8 @@ function ReglementTab() {
             </AccordionContent>
           </AccordionItem>
         ))}
-      </Accordion>
+        </Accordion>
+      </div>
     </div>
   );
 }
