@@ -4,14 +4,7 @@ import Header from "@/components/header/Header";
 import Footer from "@/components/footer/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import LoginForm from "@/components/auth/LoginForm";
-import AlgemeenTab from "@/components/tabs/AlgemeenTab";
-import BekerTab from "@/components/tabs/BekerTab";
-import CompetitieTab from "@/components/tabs/CompetitieTab";
-import PlayOffTab from "@/components/tabs/PlayOffTab";
-import SchorsingenTab from "@/components/tabs/SchorsingenTab";
-import KaartenTab from "@/components/tabs/KaartenTab";
-import ReglementTab from "@/components/tabs/ReglementTab";
-import TeamsTab from "@/components/tabs/TeamsTab";
+import MainTabs from "@/components/tabs/MainTabs";
 import PlayersTab from "@/components/user/tabs/PlayersTab";
 import TeamsAdminTab from "@/components/admin/tabs/TeamsTab";
 import UserManagementTab from "@/components/admin/tabs/UserManagementTab";
@@ -38,61 +31,85 @@ const Layout: React.FC = () => {
     setLoginDialogOpen(false);
   };
 
+  // Main public tabs that use MainTabs component
+  const isMainTab = [
+    "algemeen", "beker", "competitie", "playoff", 
+    "schorsingen", "kaarten", "reglement", "teams"
+  ].includes(activeTab);
+
   let content = null;
-  switch (activeTab) {
-    case "algemeen":
-      content = <AlgemeenTab />;
-      break;
-    case "beker":
-      content = <BekerTab />;
-      break;
-    case "competitie":
-      content = <CompetitieTab />;
-      break;
-    case "playoff":
-      content = <PlayOffTab />;
-      break;
-    case "schorsingen":
-      content = <SchorsingenTab />;
-      break;
-    case "kaarten":
-      content = <KaartenTab />;
-      break;
-    case "reglement":
-      content = <ReglementTab />;
-      break;
-    case "teams":
-      content = <TeamsTab />;
-      break;
-    case "players":
-      content = <PlayersTab />;
-      break;
-    case "teams-admin":
-      content = <TeamsAdminTab />;
-      break;
-    case "users":
-      content = <UserManagementTab />;
-      break;
-    case "competition":
-      content = <CompetitionManagementTab />;
-      break;
-    case "playoffs":
-      content = <PlayoffManagementTab />;
-      break;
-    case "cup":
-      content = <CupTournamentManager />;
-      break;
-    case "financial":
-      content = <FinancialTabUpdated />;
-      break;
-    case "settings":
-      content = <AdminSettingsPanel />;
-      break;
-    case "match-forms":
-      content = <MatchFormTab teamId={0} teamName="Admin" />;
-      break;
-    default:
-      content = <AlgemeenTab />;
+
+  if (isMainTab) {
+    content = <MainTabs activeTab={activeTab} setActiveTab={setActiveTab} />;
+  } else {
+    // Individual components for admin/user tabs with consistent padding
+    switch (activeTab) {
+      case "players":
+        content = (
+          <div className="px-4 sm:px-6 lg:px-8 py-8">
+            <PlayersTab />
+          </div>
+        );
+        break;
+      case "teams-admin":
+        content = (
+          <div className="px-4 sm:px-6 lg:px-8 py-8">
+            <TeamsAdminTab />
+          </div>
+        );
+        break;
+      case "users":
+        content = (
+          <div className="px-4 sm:px-6 lg:px-8 py-8">
+            <UserManagementTab />
+          </div>
+        );
+        break;
+      case "competition":
+        content = (
+          <div className="px-4 sm:px-6 lg:px-8 py-8">
+            <CompetitionManagementTab />
+          </div>
+        );
+        break;
+      case "playoffs":
+        content = (
+          <div className="px-4 sm:px-6 lg:px-8 py-8">
+            <PlayoffManagementTab />
+          </div>
+        );
+        break;
+      case "cup":
+        content = (
+          <div className="px-4 sm:px-6 lg:px-8 py-8">
+            <CupTournamentManager />
+          </div>
+        );
+        break;
+      case "financial":
+        content = (
+          <div className="px-4 sm:px-6 lg:px-8 py-8">
+            <FinancialTabUpdated />
+          </div>
+        );
+        break;
+      case "settings":
+        content = (
+          <div className="px-4 sm:px-6 lg:px-8 py-8">
+            <AdminSettingsPanel />
+          </div>
+        );
+        break;
+      case "match-forms":
+        content = (
+          <div className="px-4 sm:px-6 lg:px-8 py-8">
+            <MatchFormTab teamId={0} teamName="Admin" />
+          </div>
+        );
+        break;
+      default:
+        content = <MainTabs activeTab="algemeen" setActiveTab={setActiveTab} />;
+    }
   }
 
   return (

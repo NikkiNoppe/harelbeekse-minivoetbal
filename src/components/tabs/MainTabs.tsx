@@ -139,8 +139,8 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
   // Show loading state while fetching settings
   if (loading) {
     return (
-      <div className="w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto">
           <div className="space-y-6">
             <div className="flex justify-center items-center py-8">
               <div className="text-purple-600 flex items-center space-x-2">
@@ -156,9 +156,8 @@ const MainTabs: React.FC<MainTabsProps> = ({ activeTab, setActiveTab }) => {
   }
 
   return (
-    <div className="w-full">
-      {/* Tab Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto">
         <Tabs 
           value={activeTab} 
           onValueChange={(value) => setActiveTab(value as TabName)} 
