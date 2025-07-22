@@ -65,7 +65,7 @@ const Header: React.FC<HeaderProps> = ({
   const currentNavItems = isAuthenticated ? visibleAdminItems : publicNavItems;
 
   return (
-    <header className=" hadow-lg sticky top-0 z-50 backdrop-blur-sm">
+    <header className="bg-purple-900 shadow-lg sticky top-0 z-50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -79,9 +79,9 @@ const Header: React.FC<HeaderProps> = ({
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="p-2 text-white hover:bg-white/10 transition-all duration-200 hover:scale-105"
+                className="p-2 text-white bg-purple-200 hover:bg-purple-300/80 transition-all duration-200 hover:scale-105"
               >
-                <Menu size={24} className="transition-transform duration-200" />
+                <Menu size={24} className="transition-transform duration-200 text-purple-900" />
               </Button>
             </SheetTrigger>
             <SheetContent 
