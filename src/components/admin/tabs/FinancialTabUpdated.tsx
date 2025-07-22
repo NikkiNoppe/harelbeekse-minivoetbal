@@ -33,7 +33,7 @@ interface SubmittedMatch {
   unique_number: string;
 }
 
-const FinancialTabUpdated: React.FC = () => {
+const FinancialPage: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [costListModalOpen, setCostListModalOpen] = useState(false);
@@ -88,26 +88,36 @@ const FinancialTabUpdated: React.FC = () => {
     queryFn: costSettingsService.getCostSettings
   });
 
-  // Fetch transactions for detailed calculations using the service
-  const { data: allTransactions } = useQuery({
+  // Efficient: fetch alle transacties in één query, inclusief costs.amount
+  const { data: allTransactions, isLoading: loadingTransactions } = useQuery({
     queryKey: ['all-team-transactions'],
     queryFn: async () => {
-      // Get all teams first
-      const { data: teams } = await supabase.from('teams').select('team_id');
-      if (!teams) return [];
-      
-      // Get transactions for all teams
-      const allTransactions = [];
-      for (const team of teams) {
-        const transactions = await costSettingsService.getTeamTransactions(team.team_id);
-        allTransactions.push(...transactions);
-      }
-      
-      return allTransactions;
+      const { data, error } = await supabase
+        .from('team_costs')
+        .select('*, costs(name, description, category, amount), matches(unique_number, match_date)');
+      if (error) throw error;
+      return (data || []).map(transaction => ({
+        id: transaction.id,
+        team_id: transaction.team_id,
+        amount: transaction.amount ?? (transaction.costs && typeof (transaction.costs as any).amount === 'number' ? (transaction.costs as any).amount : 0),
+        cost_setting_id: transaction.cost_setting_id,
+        match_id: transaction.match_id,
+        transaction_date: transaction.transaction_date,
+        description: transaction.costs?.description || null,
+        cost_settings: transaction.costs ? {
+          name: transaction.costs.name,
+          description: transaction.costs.description,
+          category: transaction.costs.category
+        } : undefined,
+        matches: transaction.matches ? {
+          unique_number: transaction.matches.unique_number,
+          match_date: transaction.matches.match_date
+        } : undefined
+      }));
     }
   });
 
-  // Calculate detailed financial breakdown per team using transactions
+  // Bereken per team de financiële data in-memory
   const calculateTeamFinances = (teamId: number) => {
     if (!allTransactions) return {
       startCapital: 0,
@@ -116,48 +126,14 @@ const FinancialTabUpdated: React.FC = () => {
       fines: 0,
       currentBalance: 0
     };
-    
-    const teamTransactions = allTransactions.filter(t => t.team_id === teamId);
-    
-    // Startkapitaal: alle stortingen (deposits)
-    const startCapital = teamTransactions
-      .filter(t => t.transaction_type === 'deposit')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-    
-    // Veldkosten: alle match_cost transacties met 'veld' in de naam
-    const fieldCosts = teamTransactions
-      .filter(t => t.transaction_type === 'match_cost' && 
-        (t.cost_settings?.name?.toLowerCase().includes('veld') || 
-         t.description?.toLowerCase().includes('veld')))
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-    
-    // Scheidsrechterkosten: alle match_cost transacties met 'scheids' in de naam
-    const refereeCosts = teamTransactions
-      .filter(t => t.transaction_type === 'match_cost' && 
-        (t.cost_settings?.name?.toLowerCase().includes('scheids') || 
-         t.description?.toLowerCase().includes('scheids')))
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-    
-    // Boetes: alle penalty transacties
-    const fines = teamTransactions
-      .filter(t => t.transaction_type === 'penalty')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-    
-    // Correcties: alle adjustment transacties
-    const adjustments = teamTransactions
-      .filter(t => t.transaction_type === 'adjustment')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-    
-    // Huidig saldo: startkapitaal - alle kosten + correcties
+    const teamTransactions = allTransactions.filter((t: any) => t.team_id === teamId);
+    const startCapital = teamTransactions.filter(t => t.cost_settings?.category === 'deposit').reduce((sum, t) => sum + Number(t.amount), 0);
+    const fieldCosts = teamTransactions.filter(t => t.cost_settings?.category === 'match_cost' && (t.cost_settings?.name?.toLowerCase().includes('veld') || t.cost_settings?.description?.toLowerCase().includes('veld') || (t.description?.toLowerCase() || '').includes('veld'))).reduce((sum, t) => sum + Number(t.amount), 0);
+    const refereeCosts = teamTransactions.filter(t => t.cost_settings?.category === 'match_cost' && (t.cost_settings?.name?.toLowerCase().includes('scheids') || t.cost_settings?.description?.toLowerCase().includes('scheids') || (t.description?.toLowerCase() || '').includes('scheids'))).reduce((sum, t) => sum + Number(t.amount), 0);
+    const fines = teamTransactions.filter(t => t.cost_settings?.category === 'penalty').reduce((sum, t) => sum + Number(t.amount), 0);
+    const adjustments = teamTransactions.filter(t => t.cost_settings?.category === 'adjustment' || t.cost_settings?.category === 'other').reduce((sum, t) => sum + Number(t.amount), 0);
     const currentBalance = startCapital - fieldCosts - refereeCosts - fines + adjustments;
-
-    return {
-      startCapital,
-      fieldCosts,
-      refereeCosts,
-      fines,
-      currentBalance
-    };
+    return { startCapital, fieldCosts, refereeCosts, fines, currentBalance };
   };
 
   // Format currency
@@ -173,7 +149,7 @@ const FinancialTabUpdated: React.FC = () => {
     setTeamModalOpen(true);
   };
 
-  if (loadingTeams || loadingMatches) {
+  if (loadingTeams || loadingMatches || loadingTransactions) {
     return <div className="flex items-center justify-center h-40">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>;
@@ -232,29 +208,29 @@ const FinancialTabUpdated: React.FC = () => {
             </TableHeader>
             <TableBody>
               {teams?.map(team => {
-              const finances = calculateTeamFinances(team.team_id);
-              const isNegative = finances.currentBalance < 0;
-              return <TableRow key={team.team_id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleTeamClick(team)}>
-                    <TableCell className="font-medium text-responsive-team">{team.team_name}</TableCell>
-                    <TableCell className="text-center text-green-600 font-semibold">
-                      {formatCurrency(finances.startCapital)}
-                    </TableCell>
-                    <TableCell className="text-center text-red-600">
-                      -{formatCurrency(finances.fieldCosts)}
-                    </TableCell>
-                    <TableCell className="text-center text-red-600">
-                      -{formatCurrency(finances.refereeCosts)}
-                    </TableCell>
-                    <TableCell className="text-center text-red-600">
-                      -{formatCurrency(finances.fines)}
-                    </TableCell>
-                    <TableCell className={`text-right font-semibold ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
-                      <div className="flex items-center justify-end gap-1">
-                        {isNegative ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
-                        {formatCurrency(finances.currentBalance)}
-                      </div>
-                    </TableCell>
-                  </TableRow>;
+               const finances = calculateTeamFinances(team.team_id);
+               const isNegative = finances.currentBalance < 0;
+                return <TableRow key={team.team_id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleTeamClick(team)}>
+                      <TableCell className="font-medium text-responsive-team">{team.team_name}</TableCell>
+                      <TableCell className="text-center text-green-600 font-semibold">
+                        {formatCurrency(finances.startCapital)}
+                      </TableCell>
+                      <TableCell className="text-center text-red-600">
+                        -{formatCurrency(finances.fieldCosts)}
+                      </TableCell>
+                      <TableCell className="text-center text-red-600">
+                        -{formatCurrency(finances.refereeCosts)}
+                      </TableCell>
+                      <TableCell className="text-center text-red-600">
+                        -{formatCurrency(finances.fines)}
+                      </TableCell>
+                     <TableCell className={`text-right font-semibold ${isNegative ? 'text-red-600' : 'text-green-600'}`}> 
+                       <div className="flex items-center justify-end gap-1">
+                         {isNegative ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
+                         {formatCurrency(finances.currentBalance)}
+                       </div>
+                      </TableCell>
+                    </TableRow>;
             })}
             </TableBody>
           </Table>
@@ -271,4 +247,4 @@ const FinancialTabUpdated: React.FC = () => {
   );
 };
 
-export default FinancialTabUpdated;
+export default FinancialPage;

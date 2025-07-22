@@ -5,7 +5,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import PlayersTab from "./tabs/PlayersTab";
 import AdminSettingsPanel from "@/components/admin/AdminSettingsPanel";
 import CompetitionManagementTab from "@/components/admin/tabs/CompetitionManagementTab";
-import FinancialTabUpdated from "@/components/admin/tabs/FinancialTabUpdated";
+import FinancialPage from "@/components/admin/tabs/FinancialTabUpdated";
 import UserManagementTab from "@/components/admin/tabs/UserManagementTab";
 import TeamsTab from "@/components/admin/tabs/TeamsTab";
 import MatchFormTab from "@/components/team/MatchFormTab";
@@ -60,7 +60,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 </TabsContent>
                 
                 <TabsContent value="financial" className="mt-0">
-                  <FinancialTabUpdated />
+                  <FinancialPage />
                 </TabsContent>
                 
                 <TabsContent value="settings" className="mt-0">

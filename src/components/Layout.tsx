@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "@/components/header/Header";
 import Footer from "@/components/footer/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -11,16 +11,22 @@ import UserManagementTab from "@/components/admin/tabs/UserManagementTab";
 import CompetitionManagementTab from "@/components/admin/tabs/CompetitionManagementTab";
 import PlayoffManagementTab from "@/components/admin/tabs/PlayoffManagementTab";
 import CupTournamentManager from "@/components/admin/CupTournamentManager";
-import FinancialTabUpdated from "@/components/admin/tabs/FinancialTabUpdated";
+import FinancialPage from "@/components/admin/tabs/FinancialTabUpdated";
 import AdminSettingsPanel from "@/components/admin/AdminSettingsPanel";
 import MatchFormTab from "@/components/team/MatchFormTab";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const Layout: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("algemeen");
+  const { user } = useAuth();
 
   const handleLogoClick = () => {
     setActiveTab("algemeen");
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
   };
 
   const handleLoginClick = () => {
@@ -29,7 +35,23 @@ const Layout: React.FC = () => {
 
   const handleLoginSuccess = () => {
     setLoginDialogOpen(false);
+    // Tab wordt nu gezet in useEffect hieronder
   };
+
+  // Zet juiste tab zodra user verandert na login
+  useEffect(() => {
+    if (!loginDialogOpen && user) {
+      if (user.role === "admin") {
+        setActiveTab("users");
+      } else if (user.role === "player_manager") {
+        setActiveTab("players");
+      } else if (user.role === "referee") {
+        setActiveTab("match-forms");
+      } else {
+        setActiveTab("algemeen");
+      }
+    }
+  }, [user, loginDialogOpen]);
 
   // Main public tabs that use MainTabs component
   const isMainTab = [
@@ -89,7 +111,7 @@ const Layout: React.FC = () => {
       case "financial":
         content = (
           <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <FinancialTabUpdated />
+            <FinancialPage />
           </div>
         );
         break;
@@ -117,10 +139,10 @@ const Layout: React.FC = () => {
       <Header 
         onLogoClick={handleLogoClick} 
         onLoginClick={handleLoginClick}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         activeTab={activeTab}
-        isAuthenticated={false}
-        user={null}
+        isAuthenticated={!!user}
+        user={user}
       />
       <main className="flex-1 w-full bg-purple-100 pt-6">
         {content}
