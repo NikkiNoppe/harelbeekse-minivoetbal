@@ -1,33 +1,33 @@
 
-import React, { useState, ReactNode } from "react";
+import React, { useState } from "react";
 import Header from "@/components/header/Header";
 import Footer from "@/components/footer/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import LoginForm from "@/components/auth/LoginForm";
-import MainTabs from "@/components/tabs/MainTabs";
-import AdminDashboard from "@/components/user/AdminDashboard";
+import AlgemeenTab from "@/components/tabs/AlgemeenTab";
+import BekerTab from "@/components/tabs/BekerTab";
+import CompetitieTab from "@/components/tabs/CompetitieTab";
+import PlayOffTab from "@/components/tabs/PlayOffTab";
+import SchorsingenTab from "@/components/tabs/SchorsingenTab";
+import KaartenTab from "@/components/tabs/KaartenTab";
+import ReglementTab from "@/components/tabs/ReglementTab";
+import TeamsTab from "@/components/tabs/TeamsTab";
+import PlayersTab from "@/components/user/tabs/PlayersTab";
+import TeamsAdminTab from "@/components/admin/tabs/TeamsTab";
+import UserManagementTab from "@/components/admin/tabs/UserManagementTab";
+import CompetitionManagementTab from "@/components/admin/tabs/CompetitionManagementTab";
+import PlayoffManagementTab from "@/components/admin/tabs/PlayoffManagementTab";
+import CupTournamentManager from "@/components/admin/CupTournamentManager";
+import FinancialTabUpdated from "@/components/admin/tabs/FinancialTabUpdated";
+import AdminSettingsPanel from "@/components/admin/AdminSettingsPanel";
+import MatchFormTab from "@/components/team/MatchFormTab";
 
-// Types voor tabs
-import { TabName } from "@/context/TabVisibilityContext";
-type AdminTabName = "match-forms" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup";
-
-interface LayoutProps {
-  children?: ReactNode;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabName>("algemeen");
-  const [activeAdminTab, setActiveAdminTab] = useState<AdminTabName>("match-forms");
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Simpel, vervang door echte auth indien nodig
-  const [user, setUser] = useState<any>(null); // Simpel, vervang door echte user indien nodig
+  const [activeTab, setActiveTab] = useState("algemeen");
 
   const handleLogoClick = () => {
-    if (isAuthenticated) {
-      setActiveAdminTab("match-forms");
-    } else {
-      setActiveTab("algemeen");
-    }
+    setActiveTab("algemeen");
   };
 
   const handleLoginClick = () => {
@@ -36,31 +36,77 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleLoginSuccess = () => {
     setLoginDialogOpen(false);
-    setIsAuthenticated(true); // Simpel voorbeeld
-    setUser({ role: "admin" }); // Simpel voorbeeld
   };
 
-  // Handler voor tab wissel vanuit Header
-  const handleTabChange = (tab: string) => {
-    if (isAuthenticated) {
-      setActiveAdminTab(tab as AdminTabName);
-    } else {
-      setActiveTab(tab as TabName);
-    }
-  };
+  let content = null;
+  switch (activeTab) {
+    case "algemeen":
+      content = <AlgemeenTab />;
+      break;
+    case "beker":
+      content = <BekerTab />;
+      break;
+    case "competitie":
+      content = <CompetitieTab />;
+      break;
+    case "playoff":
+      content = <PlayOffTab />;
+      break;
+    case "schorsingen":
+      content = <SchorsingenTab />;
+      break;
+    case "kaarten":
+      content = <KaartenTab />;
+      break;
+    case "reglement":
+      content = <ReglementTab />;
+      break;
+    case "teams":
+      content = <TeamsTab />;
+      break;
+    case "players":
+      content = <PlayersTab />;
+      break;
+    case "teams-admin":
+      content = <TeamsAdminTab />;
+      break;
+    case "users":
+      content = <UserManagementTab />;
+      break;
+    case "competition":
+      content = <CompetitionManagementTab />;
+      break;
+    case "playoffs":
+      content = <PlayoffManagementTab />;
+      break;
+    case "cup":
+      content = <CupTournamentManager />;
+      break;
+    case "financial":
+      content = <FinancialTabUpdated />;
+      break;
+    case "settings":
+      content = <AdminSettingsPanel />;
+      break;
+    case "match-forms":
+      content = <MatchFormTab teamId={0} teamName="Admin" />;
+      break;
+    default:
+      content = <AlgemeenTab />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
       <Header 
         onLogoClick={handleLogoClick} 
         onLoginClick={handleLoginClick}
-        onTabChange={handleTabChange}
-        activeTab={isAuthenticated ? activeAdminTab : activeTab}
-        isAuthenticated={isAuthenticated}
-        user={user}
+        onTabChange={setActiveTab}
+        activeTab={activeTab}
+        isAuthenticated={false}
+        user={null}
       />
-      <main className="flex-1 w-full bg-purple-100">
-        {children}
+      <main className="flex-1 w-full bg-purple-100 pt-6">
+        {content}
       </main>
       <Footer />
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
