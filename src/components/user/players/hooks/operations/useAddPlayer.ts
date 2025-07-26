@@ -89,10 +89,10 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
 
       console.log('✅ Database INSERT successful:', data);
       
-      // Enhanced refresh with retry logic
-      console.log('🔄 Starting refresh process...');
-      await refreshWithRetry(refreshPlayers);
-      console.log('✅ Refresh process completed');
+      // Single refresh after successful insert
+      console.log('🔄 Refreshing player data...');
+      await refreshPlayers();
+      console.log('✅ Refresh completed');
       
       toast({
         title: "Speler toegevoegd",

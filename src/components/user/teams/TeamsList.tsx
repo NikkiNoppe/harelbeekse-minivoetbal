@@ -82,72 +82,80 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
 
   return (
     <>
-      <Table className="table">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Team</TableHead>
-            <TableHead>Contactpersoon</TableHead>
-            <TableHead>Telefoon</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Clubkleuren</TableHead>
-            <TableHead>Speelmoment voorkeuren</TableHead>
-            <TableHead>Extra wensen</TableHead>
-            <TableHead className="text-center">Acties</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {teams.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-4">
-                Geen teams gevonden
-              </TableCell>
-            </TableRow>
-          ) : (
-            teams.map((team) => (
-              <TableRow key={team.team_id}>
-                <TableCell className="font-medium">{team.team_name}</TableCell>
-                <TableCell>{team.contact_person || <span className="text-gray-400">-</span>}</TableCell>
-                <TableCell>{team.contact_phone || <span className="text-gray-400">-</span>}</TableCell>
-                <TableCell>{team.contact_email || <span className="text-gray-400">-</span>}</TableCell>
-                <TableCell>
-                  {team.club_colors ? (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Palette size={12} />
-                      {team.club_colors}
-                    </Badge>
-                  ) : (
-                    <span className="text-gray-400">-</span>
-                  )}
-                </TableCell>
-                <TableCell>{formatPreferences(team.preferred_play_moments)}</TableCell>
-                <TableCell>
-                  {team.preferred_play_moments?.notes ? (
-                    <span className="text-xs text-gray-600 max-w-xs truncate" title={team.preferred_play_moments.notes}>
-                      {team.preferred_play_moments.notes}
-                    </span>
-                  ) : <span className="text-gray-400">-</span>}
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="flex items-center gap-1 justify-center">
-                    <Button
-                      onClick={() => onEdit(team)}
-                      className="btn btn--icon"
-                    >
-                      <Edit size={15} />
-                    </Button>
-                    <Button
-                      onClick={() => handleDeleteClick(team)}
-                      className="btn btn--icon btn--danger"
-                    >
-                      <Trash2 size={15} />
-                    </Button>
-                  </div>
-                </TableCell>
+      <div className="w-full overflow-x-auto">
+        <div className="min-w-[1200px]">
+          <Table className="table w-full">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[120px]">Team</TableHead>
+                <TableHead className="min-w-[120px]">Contactpersoon</TableHead>
+                <TableHead className="min-w-[120px]">Telefoon</TableHead>
+                <TableHead className="min-w-[150px]">Email</TableHead>
+                <TableHead className="min-w-[100px]">Clubkleuren</TableHead>
+                <TableHead className="min-w-[200px]">Speelmoment voorkeuren</TableHead>
+                <TableHead className="min-w-[150px]">Extra wensen</TableHead>
+                <TableHead className="text-center min-w-[120px]">Acties</TableHead>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            </TableHeader>
+            <TableBody>
+              {teams.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-4">
+                    Geen teams gevonden
+                  </TableCell>
+                </TableRow>
+              ) : (
+                teams.map((team) => (
+                  <TableRow key={team.team_id}>
+                    <TableCell className="font-medium">{team.team_name}</TableCell>
+                    <TableCell>{team.contact_person || <span className="text-gray-400">-</span>}</TableCell>
+                    <TableCell>{team.contact_phone || <span className="text-gray-400">-</span>}</TableCell>
+                    <TableCell>{team.contact_email || <span className="text-gray-400">-</span>}</TableCell>
+                    <TableCell>
+                      {team.club_colors ? (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <Palette size={12} />
+                          {team.club_colors}
+                        </Badge>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-[200px]">
+                      <div className="truncate" title={formatPreferences(team.preferred_play_moments)}>
+                        {formatPreferences(team.preferred_play_moments)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-[150px]">
+                      {team.preferred_play_moments?.notes ? (
+                        <div className="truncate" title={team.preferred_play_moments.notes}>
+                          {team.preferred_play_moments.notes}
+                        </div>
+                      ) : <span className="text-gray-400">-</span>}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center gap-1 justify-center">
+                        <Button
+                          onClick={() => onEdit(team)}
+                          className="btn btn--icon"
+                        >
+                          <Edit size={15} />
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteClick(team)}
+                          className="btn btn--icon btn--danger"
+                        >
+                          <Trash2 size={15} />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="modal">

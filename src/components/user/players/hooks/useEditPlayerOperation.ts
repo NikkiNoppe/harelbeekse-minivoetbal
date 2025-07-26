@@ -9,26 +9,18 @@ export const useEditPlayerOperation = (
   showLockWarning: () => void,
   editingPlayer: EditingPlayerData | null,
   setEditingPlayer: (player: EditingPlayerData | null) => void,
+  setEditDialogOpen: (open: boolean) => void,
   toast: any
 ) => {
   const { updatePlayer } = usePlayerCRUD(refreshPlayers);
 
   const handleSaveEditedPlayer = async () => {
-    console.log('🎯 SAVE EDIT FUNCTION CALLED');
-    console.log('📊 Edit context:', {
-      canEdit,
-      editingPlayer,
-      hasPlayer: !!editingPlayer
-    });
-
     if (!canEdit) {
-      console.log('❌ Cannot edit - locked');
       showLockWarning();
       return;
     }
 
     if (!editingPlayer) {
-      console.log('❌ No player selected');
       toast({
         title: "Geen speler geselecteerd",
         description: "Er is geen speler geselecteerd om te bewerken",
@@ -37,7 +29,6 @@ export const useEditPlayerOperation = (
       return;
     }
 
-    console.log('✅ Starting update for player:', editingPlayer.player_id);
     const success = await updatePlayer(
       editingPlayer.player_id,
       editingPlayer.firstName,
@@ -45,11 +36,9 @@ export const useEditPlayerOperation = (
       editingPlayer.birthDate
     );
 
-    console.log('📊 Update result:', success);
-
     if (success) {
       setEditingPlayer(null);
-      console.log('✅ Edit dialog closed');
+      setEditDialogOpen(false); // Close the edit dialog
     }
   };
 

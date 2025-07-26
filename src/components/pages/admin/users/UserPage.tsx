@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useUserManagement } from "./hooks/useUserManagement";
-import UserDialog from "@/components/user/UserDialog";
+import UserModal from "@/components/user/UserModal";
 import UserListTable from "./components/UserListTable";
 import UserDeleteConfirmDialog from "./components/UserDeleteConfirmDialog";
 
@@ -117,7 +117,7 @@ const AdminUserPage: React.FC = () => {
 
       {/* Edit User Dialog */}
       {editingUser && (
-        <UserDialog
+        <UserModal
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
           editingUser={{
@@ -136,7 +136,7 @@ const AdminUserPage: React.FC = () => {
       )}
 
       {/* Add User Dialog */}
-      <UserDialog
+      <UserModal
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         onSave={handleSaveNewUser}

@@ -8,15 +8,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { LoginFormValues } from "../validation/loginFormSchema";
+import { LoginFormData } from "../validation/loginFormSchema";
 
-interface LoginFormFieldsProps {
-  form: UseFormReturn<LoginFormValues>;
+interface LoginFieldsProps {
+  form: UseFormReturn<LoginFormData>;
   isLoading: boolean;
-  onForgotPassword: () => void;
 }
 
-const LoginFormFields: React.FC<LoginFormFieldsProps> = ({ form, isLoading, onForgotPassword }) => (
+const LoginFields: React.FC<LoginFieldsProps> = ({ form, isLoading }) => (
   <>
     <FormField
       control={form.control}
@@ -25,7 +24,12 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({ form, isLoading, onFo
         <FormItem>
           <FormLabel className="text-purple-dark">Gebruikersnaam of Email</FormLabel>
           <FormControl>
-            <Input placeholder="Voer gebruikersnaam of email in" className="modal__input bg-white placeholder:text-purple-200" {...field} />
+            <Input 
+              placeholder="Voer gebruikersnaam of email in" 
+              className="modal__input bg-white placeholder:text-purple-200" 
+              disabled={isLoading}
+              {...field} 
+            />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -38,7 +42,13 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({ form, isLoading, onFo
         <FormItem>
           <FormLabel className="text-purple-dark">Wachtwoord</FormLabel>
           <FormControl>
-            <Input type="password" placeholder="Voer wachtwoord in" className="modal__input bg-white placeholder:text-purple-200" {...field} />
+            <Input 
+              type="password" 
+              placeholder="Voer wachtwoord in" 
+              className="modal__input bg-white placeholder:text-purple-200" 
+              disabled={isLoading}
+              {...field} 
+            />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -47,4 +57,4 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({ form, isLoading, onFo
   </>
 );
 
-export default LoginFormFields;
+export default LoginFields;

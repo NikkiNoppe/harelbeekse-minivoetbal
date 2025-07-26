@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import PlayersList from "./components/PlayersList";
-import PlayerDialog from "./components/PlayerDialog";
+import PlayerModal from "./components/PlayerModal";
 import PlayerRegulations from "./components/PlayerRegulations";
 import { usePlayersUpdated } from "./hooks/usePlayersUpdated";
 import { usePlayerListLock } from "@/components/user/players/hooks/usePlayerListLock";
@@ -40,7 +40,15 @@ const PlayerPage: React.FC = () => {
     ? teams.find(team => team.team_id === selectedTeam)?.team_name || ""
     : userTeamName;
 
-  const handleOpenAddDialog = () => setDialogOpen(true);
+  const handleOpenAddDialog = () => {
+    // Clear any existing edit state
+    setEditingPlayer(null);
+    setEditDialogOpen(false);
+    // Clear the new player form
+    setNewPlayer({ firstName: "", lastName: "", birthDate: "" });
+    // Open the add dialog
+    setDialogOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -128,11 +136,16 @@ const PlayerPage: React.FC = () => {
         <PlayerRegulations />
       </div>
 
-      <PlayerDialog
+      <PlayerModal
         open={dialogOpen || editDialogOpen}
         onOpenChange={open => {
-          setDialogOpen(open);
-          setEditDialogOpen(open);
+          if (!open) {
+            // When closing, reset both states and clear form data
+            setDialogOpen(false);
+            setEditDialogOpen(false);
+            setEditingPlayer(null);
+            setNewPlayer({ firstName: "", lastName: "", birthDate: "" });
+          }
         }}
         newPlayer={newPlayer}
         onPlayerChange={setNewPlayer}

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Header from "@/components/pages/header/Header";
 import Footer from "@/components/pages/footer/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import LoginForm from "@/components/login/LoginForm";
+import LoginModal from "@/components/login/LoginModal";
 import MainPages from "@/components/pages/MainPages";
 import PlayersList from "@/components/pages/admin/players/components/PlayersList";
 import AdminTeamPage from "@/components/pages/admin/teams/TeamsPage";
@@ -19,11 +19,11 @@ import PlayerPage from "@/components/pages/admin/players/PlayerPage";
 
 const Layout: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("algemeen");
+  const [activeTab, setActiveTab] = useState("teams");
   const { user } = useAuth();
 
   const handleLogoClick = () => {
-    setActiveTab("algemeen");
+    setActiveTab("teams");
   };
 
   const handleTabChange = (tab: string) => {
@@ -142,14 +142,12 @@ const Layout: React.FC = () => {
       </main>
       <Footer />
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
-        <DialogContent className="w-full max-w-md mx-4 sm:mx-auto bg-background text-foreground border-border rounded-lg">
+        <DialogContent className="modal">
           <DialogTitle className="sr-only">Inloggen</DialogTitle>
           <DialogDescription className="sr-only">
             Log in op je account om toegang te krijgen tot het systeem
           </DialogDescription>
-          <div className="rounded-b-lg">
-            <LoginForm onLoginSuccess={handleLoginSuccess} />
-          </div>
+          <LoginModal onLoginSuccess={handleLoginSuccess} />
         </DialogContent>
       </Dialog>
     </div>

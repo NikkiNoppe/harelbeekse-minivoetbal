@@ -11,6 +11,7 @@ import SchorsingenPage from "./SchorsingenPage";
 import KaartenPage from "./KaartenPage";
 import ReglementPage from "./ReglementPage";
 import PloegenPage from "./PloegenPage";
+import TeamsPage from "./admin/teams/TeamsPage";
 
 interface MainPagesProps {
   activeTab: TabName;
@@ -46,7 +47,7 @@ const MemoizedBekerPage = memo(BekerPage);
 const MemoizedSchorsingenPage = memo(SchorsingenPage);
 const MemoizedKaartenPage = memo(KaartenPage);
 const MemoizedReglementPage = memo(ReglementPage);
-const MemoizedTeamsPage = memo(PloegenPage);
+const MemoizedTeamsPage = memo(TeamsPage);
 
 MemoizedAlgemeenPage.displayName = 'MemoizedAlgemeenPage';
 MemoizedCompetitiePage.displayName = 'MemoizedCompetitiePage';

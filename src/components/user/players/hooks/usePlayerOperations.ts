@@ -8,7 +8,11 @@ import { useEditPlayerOperation } from "./useEditPlayerOperation";
 import { useRemovePlayerOperation } from "./useRemovePlayerOperation";
 import { useToast } from "@/hooks/use-toast";
 
-export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers: () => Promise<void>) => {
+export const usePlayerOperations = (
+  selectedTeam: number | null, 
+  refreshPlayers: () => Promise<void>,
+  setEditDialogOpen?: (open: boolean) => void
+) => {
   const { canEdit, isLocked, lockDate } = usePlayerListLock();
   const [newPlayer, setNewPlayer] = useState<NewPlayerData>({
     firstName: "",
@@ -25,7 +29,7 @@ export const usePlayerOperations = (selectedTeam: number | null, refreshPlayers:
   );
 
   const { handleSaveEditedPlayer } = useEditPlayerOperation(
-    refreshPlayers, canEdit, showLockWarning, editingPlayer, setEditingPlayer, toast
+    refreshPlayers, canEdit, showLockWarning, editingPlayer, setEditingPlayer, setEditDialogOpen || (() => {}), toast
   );
 
   const { handleRemovePlayer } = useRemovePlayerOperation(

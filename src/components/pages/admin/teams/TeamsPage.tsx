@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useTeamsEnhanced } from "@/components/user/teams/hooks/useTeamsEnhanced";
 import TeamsList from "@/components/user/teams/TeamsList";
-import TeamDialog from "@/components/user/teams/TeamDialog";
+import TeamModal from "@/components/user/teams/TeamModal";
 import ConfirmDeleteDialog from "@/components/user/teams/ConfirmDeleteDialog";
 
 const AdminTeamPage: React.FC = () => {
@@ -27,6 +27,27 @@ const AdminTeamPage: React.FC = () => {
     confirmDelete
   } = useTeamsEnhanced();
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">
+              Team Beheer
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Beheer alle teams in de competitie
+            </p>
+          </div>
+        </div>
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Teams laden...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -36,7 +57,7 @@ const AdminTeamPage: React.FC = () => {
             Team Beheer
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Beheer alle teams in de competitie
+            Beheer alle teams in de competitie ({teams.length} teams)
           </p>
         </div>
         <div className="flex gap-2">
@@ -58,7 +79,7 @@ const AdminTeamPage: React.FC = () => {
       />
 
       {/* Team Dialog */}
-      <TeamDialog
+      <TeamModal
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         editingTeam={editingTeam}

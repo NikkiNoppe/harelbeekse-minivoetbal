@@ -7,7 +7,7 @@ import SettingsPanel from "@/components/pages/admin/settings/components/Settings
 import CompetitionPage from "@/components/pages/admin/competition/CompetitionPage";
 import FinancialPage from "@/components/pages/admin/financial/FinancialPage";
 import UserPage from "@/components/pages/admin/users/UserPage";
-import TeamPage from "@/components/pages/admin/teams/TeamsPage";
+import TeamsPage from "@/components/pages/admin/teams/TeamsPage";
 import MatchesPage from "@/components/pages/admin/matches/MatchesPage";
 import CupTournamentManager from "@/components/pages/admin/beker/components/CupTournamentManager";
 import PlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
@@ -41,7 +41,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
             {isAdmin && (
               <>
                 <TabsContent value="teams" className="mt-0">
-                  <TeamPage />
+                  <TeamsPage />
                 </TabsContent>
                 
                 <TabsContent value="users" className="mt-0">

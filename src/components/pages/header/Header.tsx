@@ -107,7 +107,7 @@ const Header: React.FC<HeaderProps> = ({
             </SheetTrigger>
             <SheetContent 
               side="right" 
-              className="popup w-80 bg-gradient-to-b from-white to-gray-50 border-l border-purple-200 shadow-2xl"
+              className="navigation-modal w-80 bg-gradient-to-b from-white to-gray-50 border-l border-purple-200 shadow-2xl"
             >
               <SheetHeader className="border-b border-gray-200 pb-6 mb-6">
                 <SheetTitle className="text-2xl font-bold text-purple-800 text-left">

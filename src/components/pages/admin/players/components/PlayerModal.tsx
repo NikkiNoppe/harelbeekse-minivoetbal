@@ -2,16 +2,12 @@ import React from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from 'lucide-react';
 
-interface PlayerDialogProps {
+interface PlayerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   newPlayer: {
@@ -49,7 +45,7 @@ const isValid = ({
   );
 };
 
-const PlayerDialog: React.FC<PlayerDialogProps> = ({
+const PlayerModal: React.FC<PlayerModalProps> = ({
   open,
   onOpenChange,
   newPlayer,
@@ -60,80 +56,75 @@ const PlayerDialog: React.FC<PlayerDialogProps> = ({
   onEditSave
 }) => {
   const allFieldsValid = isValid(editingPlayer || newPlayer);
-  const isEdit = !!editingPlayer;
+  // More explicit check for edit mode - ensure editingPlayer exists and has required fields
+  const isEdit = !!editingPlayer && editingPlayer.player_id && editingPlayer.firstName && editingPlayer.lastName && editingPlayer.birthDate;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-purple-100 border-purple-light shadow-lg relative mx-4 sm:mx-auto">
+      <DialogContent className="modal relative">
         <button
-          type="button"
-          className="btn--close"
-          aria-label="Sluiten"
           onClick={() => onOpenChange(false)}
+          className="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
         >
-          <X size={20} />
+          <X className="h-4 w-4" />
+          <span className="sr-only">Sluiten</span>
         </button>
-        <DialogHeader className="bg-purple-100">
-          <DialogTitle className="text-2xl text-purple-light">
-            {isEdit ? "Speler bewerken" : "Nieuwe speler toevoegen"}
-          </DialogTitle>
-          <DialogDescription className="text-purple-dark">
-            {isEdit ? "Wijzig de gegevens van deze speler" : "Voeg een nieuwe speler toe aan het team"}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4 bg-purple-100">
+        <div className="modal__title">
+          {isEdit ? "Speler bewerken" : "Nieuwe speler toevoegen"}
+        </div>
+
+        <form className="space-y-4">
           <div className="space-y-2">
-            <label className="text-purple-dark font-medium">Voornaam</label>
+            <label className="text-purple-dark">Voornaam</label>
             <Input
+              placeholder="Voornaam van de speler"
+              className="modal__input bg-white placeholder:text-purple-200"
               value={isEdit ? editingPlayer!.firstName : newPlayer.firstName}
               onChange={(e) => isEdit && onEditPlayerChange ? onEditPlayerChange({ ...editingPlayer!, firstName: e.target.value }) : onPlayerChange({ ...newPlayer, firstName: e.target.value })}
-              placeholder="Voornaam van de speler"
-              className="bg-white border-gray-300 text-purple-dark"
             />
           </div>
+
           <div className="space-y-2">
-            <label className="text-purple-dark font-medium">Achternaam</label>
+            <label className="text-purple-dark">Achternaam</label>
             <Input
+              placeholder="Achternaam van de speler"
+              className="modal__input bg-white placeholder:text-purple-200"
               value={isEdit ? editingPlayer!.lastName : newPlayer.lastName}
               onChange={(e) => isEdit && onEditPlayerChange ? onEditPlayerChange({ ...editingPlayer!, lastName: e.target.value }) : onPlayerChange({ ...newPlayer, lastName: e.target.value })}
-              placeholder="Achternaam van de speler"
-              className="bg-white border-gray-300 text-purple-dark"
             />
           </div>
+
           <div className="space-y-2">
-            <label className="text-purple-dark font-medium">Geboortedatum</label>
+            <label className="text-purple-dark">Geboortedatum</label>
             <Input
               type="date"
+              className="modal__input bg-white placeholder:text-purple-200"
               value={isEdit ? editingPlayer!.birthDate : newPlayer.birthDate}
               onChange={(e) => isEdit && onEditPlayerChange ? onEditPlayerChange({ ...editingPlayer!, birthDate: e.target.value }) : onPlayerChange({ ...newPlayer, birthDate: e.target.value })}
-              className="bg-white border-gray-300 text-purple-dark"
             />
           </div>
-        </div>
-        <DialogFooter className="bg-purple-100">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="border-purple-light text-purple-dark hover:bg-purple-light hover:text-white"
-          >
-            Annuleren
-          </Button>
-          <Button
-            onClick={isEdit && onEditSave ? onEditSave : onSave}
-            disabled={!allFieldsValid}
-            className={
-              allFieldsValid
-                ? "bg-purple-dark text-white"
-                : "bg-purple-light text-white"
-            }
-            type="button"
-          >
-            {isEdit ? "Opslaan" : "Speler toevoegen"}
-          </Button>
-        </DialogFooter>
+
+          <div className="modal__actions">
+            <button
+              type="button"
+              onClick={isEdit && onEditSave ? onEditSave : onSave}
+              disabled={!allFieldsValid}
+              className="btn btn--primary"
+            >
+              {isEdit ? "Opslaan" : "Speler toevoegen"}
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="btn btn--secondary"
+            >
+              Annuleren
+            </button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
 };
 
-export default PlayerDialog; 
+export default PlayerModal; 

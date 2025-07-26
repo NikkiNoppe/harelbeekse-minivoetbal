@@ -236,11 +236,72 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
   flex-direction: column;
   align-items: stretch;
   gap: 1.5rem;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
 }
+
+/* Navigation modal - rechts geplaatst, geen centering */
+.navigation-modal {
+  background: var(--purple-100);
+  border-radius: 1rem;
+  box-shadow: 0 8px 32px 0 rgba(96,54,140,0.18);
+  padding: 2rem 1.5rem;
+  width: 320px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.5rem;
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  z-index: 1000;
+  border-left: 1px solid var(--purple-200);
+}
+
+/* Ensure Radix Dialog centers the modal */
+[data-radix-dialog-content] {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+}
+
+/* Override for modal class on DialogContent */
+[data-radix-dialog-content].modal {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  background: var(--purple-100) !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 8px 32px 0 rgba(96,54,140,0.18) !important;
+  padding: 2rem 1.5rem !important;
+  max-width: 95vw !important;
+  width: 100% !important;
+  max-width: 420px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 1.5rem !important;
+  z-index: 1000 !important;
+}
+
 @media (max-width: 600px) {
   .modal, .popup {
     padding: 1.25rem 0.5rem;
     max-width: 98vw;
+  }
+  
+  .navigation-modal {
+    padding: 1.25rem 0.5rem;
+    width: 100vw;
   }
 }
 .modal__title, .popup__title {

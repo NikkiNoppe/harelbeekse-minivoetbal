@@ -20,16 +20,6 @@ export const usePlayersUpdated = () => {
   } = usePlayersData(authUser); // Pass authUser to usePlayersData
 
   const {
-    newPlayer,
-    setNewPlayer,
-    editingPlayer,
-    setEditingPlayer,
-    handleAddPlayer,
-    handleSaveEditedPlayer,
-    handleRemovePlayer
-  } = usePlayerOperations(selectedTeam, refreshPlayers);
-
-  const {
     dialogOpen,
     setDialogOpen,
     editDialogOpen,
@@ -38,6 +28,16 @@ export const usePlayersUpdated = () => {
     setEditMode,
     handleEditPlayer: handleEditPlayerDialog
   } = usePlayerDialogs();
+
+  const {
+    newPlayer,
+    setNewPlayer,
+    editingPlayer,
+    setEditingPlayer,
+    handleAddPlayer,
+    handleSaveEditedPlayer,
+    handleRemovePlayer
+  } = usePlayerOperations(selectedTeam, refreshPlayers, setEditDialogOpen);
 
   const handleTeamChangeWrapper = (teamId: number) => {
     console.log('🔄 Team change requested:', teamId);
@@ -53,6 +53,7 @@ export const usePlayersUpdated = () => {
     const success = await handleAddPlayer();
     if (success) {
       setDialogOpen(false);
+      setEditDialogOpen(false); // Also clear edit dialog state
       setNewPlayer({ firstName: "", lastName: "", birthDate: "" });
       return true;
     }

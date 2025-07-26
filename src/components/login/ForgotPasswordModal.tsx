@@ -7,8 +7,6 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -29,12 +27,12 @@ const formSchema = z.object({
 });
 type FormValues = z.infer<typeof formSchema>;
 
-interface ForgotPasswordDialogProps {
+interface ForgotPasswordModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open, onOpenChange }) => {
+const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onOpenChange }) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const form = useForm<FormValues>({
@@ -66,7 +64,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open, onOpe
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-md mx-4 bg-purple-100 text-foreground border-border rounded-lg p-0 relative">
+      <DialogContent className="modal relative">
         <button
           type="button"
           className="btn--close absolute top-3 right-3 z-10"
@@ -75,43 +73,53 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open, onOpe
         >
           <X size={20} />
         </button>
-        <div className="rounded-lg overflow-hidden">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 sm:p-6">
-              <div className="text-center mb-4">
-                <DialogTitle className="text-lg font-semibold text-purple-dark">Wachtwoord vergeten</DialogTitle>
-                <DialogDescription className="text-sm text-purple-dark mt-2">Voer je email adres in om een wachtwoord reset link te ontvangen.</DialogDescription>
-              </div>
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-purple-dark">Email adres</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="voer.email@example.com" className="bg-white placeholder:text-purple-200" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="text-xs text-purple-dark bg-purple-50 p-3 rounded">
-                <p><strong>Let op:</strong></p>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  <li>Als je account geen email heeft, wordt de beheerder op de hoogte gesteld</li>
-                  <li>Reset links zijn 1 uur geldig</li>
-                  <li>Controleer ook je spam folder</li>
-                </ul>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4">
-                <Button type="submit" className="bg-purple-dark text-white hover:bg-purple-light hover:text-white border border-purple-dark order-1 sm:order-2" disabled={isLoading}>{isLoading ? "Versturen..." : "Reset Link Versturen"}</Button>
-              </div>
-            </form>
-          </Form>
-        </div>
+        
+        <div className="modal__title">Wachtwoord vergeten</div>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-purple-dark">E-mailadres</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="Voer je e-mailadres in"
+                      className="modal__input bg-white placeholder:text-purple-200"
+                      disabled={isLoading}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="modal__actions">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="btn btn--primary"
+              >
+                {isLoading ? "Versturen..." : "Wachtwoord resetten"}
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                className="btn btn--secondary"
+                disabled={isLoading}
+              >
+                Annuleren
+              </button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
 };
 
-export default ForgotPasswordDialog;
+export default ForgotPasswordModal;

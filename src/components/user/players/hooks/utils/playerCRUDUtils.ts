@@ -37,8 +37,8 @@ export const verifyPlayerUpdate = async (playerId: number, expectedFirstName: st
 };
 
 // Enhanced refresh with retry logic
-export const refreshWithRetry = async (refreshPlayers: () => Promise<void>, maxRetries = 3, delayMs = 500) => {
-  console.log('🔄 Starting enhanced refresh with retry logic');
+export const refreshWithRetry = async (refreshPlayers: () => Promise<void>, maxRetries = 1, delayMs = 500) => {
+  console.log('🔄 Starting optimized refresh (single attempt)');
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     console.log(`🔄 Refresh attempt ${attempt}/${maxRetries}`);
