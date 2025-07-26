@@ -121,7 +121,7 @@ const TableActions = memo(<T extends { id?: number | string }>({
           {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent className="bg-purple-100 shadow-lg border-purple-200">
+      <AlertDialogContent className="bg-purple-100 shadow-lg border-purple-200 mx-4 sm:mx-auto">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-red-500" />

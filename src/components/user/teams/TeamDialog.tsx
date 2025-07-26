@@ -127,7 +127,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-purple-100 border-purple-light shadow-lg max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl bg-purple-100 border-purple-light shadow-lg max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
         <DialogHeader className="bg-purple-100">
           <DialogTitle className="text-2xl text-center text-purple-light">
             {editingTeam ? "Team bewerken" : "Nieuw team toevoegen"}

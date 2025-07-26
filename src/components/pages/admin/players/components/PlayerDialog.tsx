@@ -64,7 +64,7 @@ const PlayerDialog: React.FC<PlayerDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-purple-100 border-purple-light shadow-lg relative">
+      <DialogContent className="sm:max-w-md bg-purple-100 border-purple-light shadow-lg relative mx-4 sm:mx-auto">
         <button
           type="button"
           className="btn--close"

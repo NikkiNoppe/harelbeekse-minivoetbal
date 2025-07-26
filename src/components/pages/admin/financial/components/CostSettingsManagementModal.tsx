@@ -182,7 +182,7 @@ const CostSettingsManagementModal: React.FC<CostSettingsManagementModalProps> = 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-fit max-h-[90vh] overflow-y-auto bg-purple-100 border-purple-light">
+        <DialogContent className="max-w-fit max-h-[90vh] overflow-y-auto bg-purple-100 border-purple-light mx-4 sm:mx-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-purple-light">
               <Euro className="h-5 w-5" />
@@ -372,7 +372,7 @@ const CostSettingsManagementModal: React.FC<CostSettingsManagementModalProps> = 
       </Dialog>
 
       <AlertDialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
-        <AlertDialogContent className="bg-purple-100 border-purple-light">
+        <AlertDialogContent className="bg-purple-100 border-purple-light mx-4 sm:mx-auto">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-purple-light">
               <AlertTriangle className="h-5 w-5 text-red-500" />

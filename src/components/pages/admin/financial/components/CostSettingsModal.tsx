@@ -160,7 +160,7 @@ const CostSettingsModal: React.FC<CostSettingsModalProps> = ({ open, onOpenChang
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-purple-100 border-purple-light">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-purple-100 border-purple-light mx-4 sm:mx-auto">
         <DialogHeader className="bg-purple-100">
           <DialogTitle className="flex items-center gap-2 text-purple-light">
             <Settings className="h-5 w-5" />

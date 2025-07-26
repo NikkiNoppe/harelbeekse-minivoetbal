@@ -226,7 +226,7 @@ const VenuesSettings: React.FC = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light">
+        <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light mx-4 sm:mx-auto">
           <DialogHeader className="bg-purple-100">
             <DialogTitle className="text-xl text-center text-purple-light">
               {editingItem?.venue_id ? 'Bewerk Locatie' : 'Nieuwe Locatie'}
@@ -265,7 +265,7 @@ const VenuesSettings: React.FC = () => {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-red-50 border-red-200">
+        <DialogContent className="sm:max-w-[425px] bg-red-50 border-red-200 mx-4 sm:mx-auto">
           <DialogHeader className="bg-red-50">
             <DialogTitle className="text-xl text-center text-red-600">
               Bevestig Verwijdering

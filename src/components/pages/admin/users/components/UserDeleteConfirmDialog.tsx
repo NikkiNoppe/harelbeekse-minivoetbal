@@ -26,7 +26,7 @@ const UserDeleteConfirmDialog: React.FC<ConfirmDeleteDialogProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-purple-100 border-purple-light shadow-lg">
+      <DialogContent className="sm:max-w-md bg-purple-100 border-purple-light shadow-lg mx-4 sm:mx-auto">
         <DialogHeader className="bg-purple-100">
           <DialogTitle className="text-2xl text-purple-light">Gebruiker verwijderen</DialogTitle>
           <DialogDescription className="text-purple-dark">

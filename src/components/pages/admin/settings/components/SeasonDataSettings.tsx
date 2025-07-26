@@ -166,7 +166,7 @@ const SeasonDataSettings: React.FC = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light">
+        <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light mx-4 sm:mx-auto">
           <DialogHeader className="bg-purple-100">
             <DialogTitle className="text-xl text-center text-purple-light">
               Bewerk Seizoensdata

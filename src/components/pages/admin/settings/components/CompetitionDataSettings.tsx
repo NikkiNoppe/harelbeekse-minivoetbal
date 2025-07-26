@@ -708,7 +708,7 @@ const CompetitionDataSettings: React.FC = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light relative">
+        <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light relative mx-4 sm:mx-auto">
           <button
             type="button"
             className="btn--close"
@@ -742,7 +742,7 @@ const CompetitionDataSettings: React.FC = () => {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-red-50 border-red-200">
+        <DialogContent className="sm:max-w-[425px] bg-red-50 border-red-200 mx-4 sm:mx-auto">
           <DialogHeader className="bg-red-50">
             <DialogTitle className="text-xl text-center text-red-600">
               Bevestig Verwijdering
