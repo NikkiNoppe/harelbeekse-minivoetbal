@@ -7,57 +7,68 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Search, AlertCircle } from "lucide-react";
-import MatchCard from "../match/components/MatchCard";
+import MatchesCard from "../matches/components/MatchesCard";
 import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
 import ResponsiveScheduleTable from "../tables/ResponsiveScheduleTable";
 import { useCompetitionData, Team, MatchData } from "@/hooks/useCompetitionData";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-// Skeleton loading components
+// Uniform skeleton for standings table
 const StandingsTableSkeleton = memo(() => (
-  <div className="space-y-4">
-    {[...Array(6)].map((_, index) => (
-      <div key={index} className="flex justify-between items-center p-3">
-        <div className="flex items-center space-x-3">
-          <Skeleton className="h-6 w-6 rounded" />
-          <Skeleton className="h-4 w-32" />
-        </div>
-        <div className="flex space-x-6">
-          <Skeleton className="h-4 w-8" />
-          <Skeleton className="h-4 w-8" />
-          <Skeleton className="h-4 w-8" />
-          <Skeleton className="h-4 w-8" />
-        </div>
-      </div>
-    ))}
-  </div>
+  <Table className="table">
+    <TableHeader>
+      <TableRow className="table-header-row">
+        <TableHead className="num">Pos</TableHead>
+        <TableHead className="left">Team</TableHead>
+        <TableHead>Wed</TableHead>
+        <TableHead>W</TableHead>
+        <TableHead>G</TableHead>
+        <TableHead>V</TableHead>
+        <TableHead>+/-</TableHead>
+        <TableHead>Ptn</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {[...Array(6)].map((_, i) => (
+        <TableRow key={i}>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-32 mx-auto" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
 ));
 
-const MatchCardSkeleton = memo(() => (
-  <Card className="w-full">
-    <CardHeader className="pb-3">
-      <div className="flex justify-between items-start mb-2">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-4 w-16" />
-      </div>
-      <Skeleton className="h-5 w-20" />
-    </CardHeader>
-    <CardContent>
-      <div className="flex justify-between items-center py-2">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-6 w-8" />
-        <Skeleton className="h-4 w-20" />
-      </div>
-      <Skeleton className="h-3 w-24 mt-2" />
-    </CardContent>
-  </Card>
-));
-
-const MatchesGridSkeleton = memo(({ count = 4 }: { count?: number }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-    {[...Array(count)].map((_, index) => (
-      <MatchCardSkeleton key={index} />
-    ))}
-  </div>
+// Uniform skeleton for schedule table (voorbeeld, pas kolommen aan indien nodig)
+const ScheduleTableSkeleton = memo(() => (
+  <Table className="table">
+    <TableHeader>
+      <TableRow className="table-header-row">
+        <TableHead>Speeldag</TableHead>
+        <TableHead>Wedstrijd</TableHead>
+        <TableHead>Datum</TableHead>
+        <TableHead>Tijd</TableHead>
+        <TableHead>Locatie</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {[...Array(6)].map((_, i) => (
+        <TableRow key={i}>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-16 mx-auto" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-32 mx-auto" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-16 mx-auto" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-12 mx-auto" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-24 mx-auto" /></TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
 ));
 
 // Memoized standings section
@@ -118,11 +129,11 @@ const MatchesSection = memo(({
     </CardHeader>
     <CardContent className="bg-transparent">
       {isLoading ? (
-        <MatchesGridSkeleton count={matches.length || 4} />
+        <ScheduleTableSkeleton />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {matches.map(match => (
-            <MatchCard
+            <MatchesCard
               key={match.matchId}
               id={match.uniqueNumber || `M${match.matchId}`}
               home={match.homeTeamName}
@@ -284,12 +295,13 @@ const CompetitiePage: React.FC = () => {
         <Badge className="badge-purple">Seizoen 2025-2026</Badge>
       </div>
 
-      <StandingsSection
-        teams={teams}
-        isLoading={standingsLoading}
-        error={standingsError}
-        onRetry={refetchStandings}
-      />
+      <section>
+        <Card>
+          <CardContent className="bg-transparent">
+            <ResponsiveStandingsTable teams={teams} isLoading={standingsLoading} />
+          </CardContent>
+        </Card>
+      </section>
 
       <MatchesSection
         title="Aankomende Wedstrijden"
@@ -331,9 +343,7 @@ const CompetitiePage: React.FC = () => {
 
 // Set display names for better debugging
 StandingsTableSkeleton.displayName = 'StandingsTableSkeleton';
-MatchCardSkeleton.displayName = 'MatchCardSkeleton';
-MatchesGridSkeleton.displayName = 'MatchesGridSkeleton';
-StandingsSection.displayName = 'StandingsSection';
+ScheduleTableSkeleton.displayName = 'ScheduleTableSkeleton';
 MatchesSection.displayName = 'MatchesSection';
 FilterControls.displayName = 'FilterControls';
 

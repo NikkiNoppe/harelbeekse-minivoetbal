@@ -6,5 +6,5 @@ import PlayerDialog from "@/components/pages/players/PlayerDialog";
 import PlayerRegulations from "@/components/pages/players/PlayerRegulations";
 import { usePlayersUpdated } from "@/components/pages/players/usePlayersUpdated";
 import { usePlayerListLock } from "@/components/user/players/hooks/usePlayerListLock";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/login/AuthProvider";
 import { formatDateShort } from "@/lib/dateUtils"; 

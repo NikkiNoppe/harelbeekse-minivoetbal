@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { X } from 'lucide-react';
 
 interface PlayerDialogProps {
   open: boolean;
@@ -63,7 +64,15 @@ const PlayerDialog: React.FC<PlayerDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-purple-100 border-purple-light shadow-lg">
+      <DialogContent className="bg-purple-100 border-purple-light shadow-lg relative">
+        <button
+          type="button"
+          className="btn--close"
+          aria-label="Sluiten"
+          onClick={() => onOpenChange(false)}
+        >
+          <X size={20} />
+        </button>
         <DialogHeader className="bg-purple-100">
           <DialogTitle className="text-2xl text-purple-light">
             {isEdit ? "Speler bewerken" : "Nieuwe speler toevoegen"}

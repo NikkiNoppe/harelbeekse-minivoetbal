@@ -168,7 +168,7 @@ const AdminFinancialPage: React.FC = () => {
         <Card>
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
+              <div className="flex-1 min-w-0">
                 <CardTitle className="text-lg">
                   Teams Financieel Overzicht
                 </CardTitle>
@@ -176,17 +176,17 @@ const AdminFinancialPage: React.FC = () => {
                   Klik op een team voor details en transacties.
                 </CardDescription>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-shrink-0">
                 <button
                   onClick={() => setCostListModalOpen(true)}
-                  className="btn-white"
+                  className="btn btn--outline flex items-center gap-2"
                 >
                   <List className="h-4 w-4 mr-2" />
                   Kostenlijst
                 </button>
                 <button
                   onClick={() => setMonthlyReportsModalOpen(true)}
-                  className="btn-white"
+                  className="btn btn--outline flex items-center gap-2"
                 >
                   <Calendar className="h-4 w-4 mr-2" />
                   Maandrapport
@@ -195,7 +195,7 @@ const AdminFinancialPage: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
-            <Table>
+            <Table className="table">
             <TableHeader>
               <TableRow>
                 <TableHead>Team</TableHead>

@@ -3,7 +3,7 @@ import { usePlayersData } from "@/components/user/players/hooks/usePlayersData";
 import { usePlayerOperations } from "@/components/user/players/hooks/usePlayerOperations";
 import { usePlayerDialogs } from "@/components/user/players/hooks/usePlayerDialogs";
 import { formatDate, getFullName, handleTeamChange } from "@/components/user/players/utils/playerUtils";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/login/AuthProvider";
 
 export const usePlayersUpdated = () => {
   // Use main AuthProvider instead of separate auth

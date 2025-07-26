@@ -13,7 +13,7 @@ import type { Suspension, PlayerCard } from "@/services";
 const SuspensionsTableSkeleton = memo(() => (
   <Table>
     <TableHeader>
-      <TableRow className="bg-muted/50">
+      <TableRow className="table-header-row">
         <TableHead>Speler</TableHead>
         <TableHead>Team</TableHead>
         <TableHead>Reden</TableHead>
@@ -24,11 +24,11 @@ const SuspensionsTableSkeleton = memo(() => (
     <TableBody>
       {[...Array(5)].map((_, i) => (
         <TableRow key={i}>
-          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-          <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-20" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-32" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-6 w-16" /></TableCell>
         </TableRow>
       ))}
     </TableBody>
@@ -38,20 +38,20 @@ const SuspensionsTableSkeleton = memo(() => (
 const PlayerCardsTableSkeleton = memo(() => (
   <Table>
     <TableHeader>
-      <TableRow className="bg-muted/30">
+      <TableRow className="table-header-row">
         <TableHead>Speler</TableHead>
         <TableHead>Team</TableHead>
-        <TableHead className="text-center">Geel</TableHead>
-        <TableHead className="text-center">Rood</TableHead>
+        <TableHead>Geel</TableHead>
+        <TableHead>Rood</TableHead>
       </TableRow>
     </TableHeader>
     <TableBody>
       {[...Array(5)].map((_, i) => (
         <TableRow key={i}>
-          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-          <TableCell className="text-center"><Skeleton className="h-4 w-12 mx-auto" /></TableCell>
-          <TableCell className="text-center"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-20" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-12 mx-auto" /></TableCell>
+          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
         </TableRow>
       ))}
     </TableBody>
@@ -101,11 +101,11 @@ CardDisplay.displayName = 'CardDisplay';
 const ActiveSuspensionsTable = memo(({ suspensions }: { suspensions: Suspension[] }) => {
   const suspensionRows = useMemo(() => 
     suspensions.map((suspension, index) => (
-      <TableRow key={`${suspension.playerId}-${index}`} className="hover:bg-muted/30">
+      <TableRow key={`${suspension.playerId}-${index}`}>
         <TableCell className="font-medium">{suspension.playerName}</TableCell>
         <TableCell>{suspension.teamName}</TableCell>
         <TableCell>{suspension.reason}</TableCell>
-        <TableCell className="text-center">{suspension.matches}</TableCell>
+        <TableCell>{suspension.matches}</TableCell>
         <TableCell>
           <StatusBadge status={suspension.status} />
         </TableCell>
@@ -115,7 +115,7 @@ const ActiveSuspensionsTable = memo(({ suspensions }: { suspensions: Suspension[
   return (
     <Table>
       <TableHeader>
-        <TableRow className="bg-muted/50">
+        <TableRow className="table-header-row">
           <TableHead>Speler</TableHead>
           <TableHead>Team</TableHead>
           <TableHead>Reden</TableHead>
@@ -126,7 +126,7 @@ const ActiveSuspensionsTable = memo(({ suspensions }: { suspensions: Suspension[
       <TableBody>
         {suspensionRows.length > 0 ? suspensionRows : (
           <TableRow>
-            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+            <TableCell colSpan={5}>
               <div className="flex flex-col items-center space-y-2">
                 <Shield className="h-8 w-8 text-green-500" />
                 <span>Geen actieve schorsingen</span>
@@ -145,13 +145,13 @@ ActiveSuspensionsTable.displayName = 'ActiveSuspensionsTable';
 const PlayerCardsTable = memo(({ players }: { players: PlayerCard[] }) => {
   const playerRows = useMemo(() => 
     players.map(player => (
-      <TableRow key={player.playerId} className="hover:bg-muted/20">
+      <TableRow key={player.playerId}>
         <TableCell>{player.playerName}</TableCell>
         <TableCell>{player.teamName}</TableCell>
-        <TableCell className="text-center">
+        <TableCell>
           <CardDisplay count={player.yellowCards} color="bg-yellow-400" />
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell>
           <CardDisplay count={player.redCards} color="bg-red-500" />
         </TableCell>
       </TableRow>
@@ -160,17 +160,17 @@ const PlayerCardsTable = memo(({ players }: { players: PlayerCard[] }) => {
   return (
     <Table>
       <TableHeader>
-        <TableRow className="bg-muted/30">
+        <TableRow className="table-header-row">
           <TableHead>Speler</TableHead>
           <TableHead>Team</TableHead>
-          <TableHead className="text-center">Geel</TableHead>
-          <TableHead className="text-center">Rood</TableHead>
+          <TableHead>Geel</TableHead>
+          <TableHead>Rood</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {playerRows.length > 0 ? playerRows : (
           <TableRow>
-            <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+            <TableCell colSpan={4}>
               <div className="flex flex-col items-center space-y-2">
                 <Trophy className="h-8 w-8 text-blue-500" />
                 <span>Geen kaarten geregistreerd</span>

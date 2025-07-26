@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/login/AuthProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, User, LogOut, Settings, Shield, Users, Calendar, Trophy, Award, DollarSign, Home, BookOpen, Ban, AlertTriangle, Target } from "lucide-react";
 import Logo from "./Logo";
@@ -29,6 +29,7 @@ const Header: React.FC<HeaderProps> = ({
   const isMobile = useIsMobile();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const navigate = useNavigate();
+  const { logout } = useAuth(); // <-- voeg logout toe
 
   // Route mapping per key (voor toekomstig onderscheid)
   const routeMap: Record<string, string> = {
@@ -54,7 +55,7 @@ const Header: React.FC<HeaderProps> = ({
 
   const handleLogout = () => {
     setIsSheetOpen(false);
-    // Optioneel: trigger een logout callback als je die wilt toevoegen
+    logout(); // <-- roep de echte logout functie aan
   };
 
   // Admin navigation items
@@ -106,7 +107,7 @@ const Header: React.FC<HeaderProps> = ({
             </SheetTrigger>
             <SheetContent 
               side="right" 
-              className="w-80 bg-gradient-to-b from-white to-gray-50 border-l border-purple-200 shadow-2xl"
+              className="popup w-80 bg-gradient-to-b from-white to-gray-50 border-l border-purple-200 shadow-2xl"
             >
               <SheetHeader className="border-b border-gray-200 pb-6 mb-6">
                 <SheetTitle className="text-2xl font-bold text-purple-800 text-left">

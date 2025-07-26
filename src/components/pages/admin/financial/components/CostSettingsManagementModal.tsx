@@ -302,7 +302,7 @@ const CostSettingsManagementModal: React.FC<CostSettingsManagementModalProps> = 
               </div>
               
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="table">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-purple-dark">Naam</TableHead>

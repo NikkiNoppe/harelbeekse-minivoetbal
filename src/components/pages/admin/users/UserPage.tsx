@@ -1,20 +1,12 @@
 
 import React, { useState } from "react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle,
-  CardFooter
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useUserManagement } from "./hooks/useUserManagement";
 import UserDialog from "@/components/user/UserDialog";
 import UserListTable from "./components/UserListTable";
 import UserDeleteConfirmDialog from "./components/UserDeleteConfirmDialog";
 
-import { Plus, Edit, Save, Users } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 
 const AdminUserPage: React.FC = () => {
   const {
@@ -80,58 +72,40 @@ const AdminUserPage: React.FC = () => {
   };
   
   return (
-    <div className="space-y-8 animate-slide-up">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Gebruikers Beheer
-        </h2>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-bold">Gebruikers Beheer</h1>
+        <p className="text-gray-600 dark:text-gray-400">Beheer alle gebruikers in het systeem</p>
       </div>
 
-      <section>
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="text-lg">
-                  Beheer alle gebruikers in het systeem
-                </CardTitle>
-                <CardDescription>
-                  Voeg nieuwe gebruikers toe en beheer hun toegang tot verschillende functies.
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <UserListTable 
-              users={users}
-              loading={loading}
-              isUpdating={updatingUser}
-              isDeleting={deletingUser}
-              onEditUser={handleOpenEditDialog}
-              onDeleteUser={handleOpenDeleteConfirmation}
-              editMode={true}
-              searchTerm={searchTerm}
-              onSearchTermChange={handleSearchChange}
-              roleFilter={roleFilter}
-              onRoleFilterChange={handleRoleFilterChange}
-              teamFilter={teamFilter}
-              onTeamFilterChange={handleTeamFilterChange}
-              teams={teams}
-            />
-          </CardContent>
-          <CardFooter className="flex justify-end">
-            <Button
-              onClick={handleOpenAddDialog}
-              disabled={addingUser}
-              className="flex items-center gap-2"
-            >
-              <Plus size={16} />
-              Gebruiker toevoegen
-            </Button>
-          </CardFooter>
-        </Card>
-      </section>
+      {/* Users List */}
+      <UserListTable 
+        users={users}
+        loading={loading}
+        isUpdating={updatingUser}
+        isDeleting={deletingUser}
+        onEditUser={handleOpenEditDialog}
+        onDeleteUser={handleOpenDeleteConfirmation}
+        editMode={true}
+        searchTerm={searchTerm}
+        onSearchTermChange={handleSearchChange}
+        roleFilter={roleFilter}
+        onRoleFilterChange={handleRoleFilterChange}
+        teamFilter={teamFilter}
+        onTeamFilterChange={handleTeamFilterChange}
+        teams={teams}
+        addUserButton={
+          <Button
+            onClick={handleOpenAddDialog}
+            disabled={addingUser}
+            className="btn btn--outline flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Gebruiker toevoegen
+          </Button>
+        }
+      />
       
       {/* Confirm Delete Dialog */}
       <UserDeleteConfirmDialog 

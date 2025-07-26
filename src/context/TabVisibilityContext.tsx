@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext } from 'react';
-import { useAuth } from '@/components/auth/AuthProvider';
+import { useAuth } from '@/components/login/AuthProvider';
 import { useTabVisibilitySettings } from '@/hooks/useTabVisibilitySettings';
 
 interface TabVisibilityContextProps {

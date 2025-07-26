@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Header from "@/components/pages/header/Header";
 import Footer from "@/components/pages/footer/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import LoginForm from "@/components/auth/LoginForm";
+import LoginForm from "@/components/login/LoginForm";
 import MainPages from "@/components/pages/MainPages";
 import PlayersList from "@/components/pages/admin/players/components/PlayersList";
 import AdminTeamPage from "@/components/pages/admin/teams/TeamsPage";
@@ -14,7 +14,7 @@ import CupTournamentManager from "@/components/pages/admin/beker/components/CupT
 import AdminFinancialPage from "@/components/pages/admin/financial/FinancialPage";
 import AdminSettingsPage from "@/components/pages/admin/settings/SettingsPage";
 import MatchFormTab from "@/components/pages/admin/matches/MatchesPage";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/login/AuthProvider";
 import PlayerPage from "@/components/pages/admin/players/PlayerPage";
 
 const Layout: React.FC = () => {
@@ -42,15 +42,7 @@ const Layout: React.FC = () => {
   // Zet juiste tab zodra user verandert na login
   useEffect(() => {
     if (!loginDialogOpen && user) {
-      if (user.role === "admin") {
-        setActiveTab("users");
-      } else if (user.role === "player_manager") {
-        setActiveTab("players");
-      } else if (user.role === "referee") {
-        setActiveTab("match-forms");
-      } else {
-        setActiveTab("algemeen");
-      }
+      setActiveTab("match-forms");
     }
   }, [user, loginDialogOpen]);
 
@@ -74,7 +66,7 @@ const Layout: React.FC = () => {
           </div>
         );
         break;
-      case "teams-admin":
+      case "teams":
         content = (
           <div className="px-4 sm:px-6 lg:px-8 py-8">
             <AdminTeamPage />

@@ -1,5 +1,5 @@
 import React, { useState, memo, useMemo } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/login/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,10 +7,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FileText, Trophy, Calendar, AlertCircle } from "lucide-react";
 import { useMatchFormsData, type MatchFormsFilters } from "@/hooks/useMatchFormsData";
-import { MatchFormData } from "@/components/team/match-form/types";
-import MatchFormFilter from "@/components/team/match-form/MatchFormFilter";
-import MatchFormList from "@/components/team/match-form/MatchFormList";
-import MatchFormDialog from "@/components/team/match-form/MatchFormDialog";
+import { MatchFormData } from "./types/matchesFormTypes";
+import MatchesFormFilter from "./MatchesFormFilter";
+import MatchesFormList from "./MatchesFormList";
+import MatchesFormDialog from "./MatchesFormDialog";
 
 interface MatchFormTabProps {
   teamId: number;
@@ -152,7 +152,7 @@ const TabContent = memo(({
         ) : (
           <div>
             <div className="p-4 border-b">
-              <MatchFormFilter 
+              <MatchesFormFilter 
                 searchTerm={filters.searchTerm}
                 onSearchChange={(value) => onFiltersChange({ ...filters, searchTerm: value })}
                 dateFilter={filters.dateFilter}
@@ -172,7 +172,7 @@ const TabContent = memo(({
                 })}
               />
             </div>
-            <MatchFormList 
+            <MatchesFormList 
               matches={tabData.matches}
               isLoading={tabData.isLoading}
               onSelectMatch={onSelectMatch}
@@ -329,7 +329,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
       </section>
       
       {selectedMatchForm && (
-        <MatchFormDialog
+        <MatchesFormDialog
           open={isDialogOpen}
           onOpenChange={(open) => {
             setIsDialogOpen(open);

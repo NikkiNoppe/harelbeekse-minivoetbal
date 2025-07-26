@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Trophy, Award, AlertCircle } from "lucide-react";
-import CupMatchCard from "../match/components/CupMatchCard";
+import MatchesCupCard from "../matches/components/MatchesCupCard";
 import { useCupData, CupMatchDisplay } from "@/hooks/useCupData";
 
 // Skeleton loading components
@@ -67,7 +67,7 @@ const TournamentRound = memo(({
         {matches.length > 0 ? (
           <div className={`grid ${gridCols} gap-4`}>
             {matches.map(match => (
-              <CupMatchCard
+              <MatchesCupCard
                 key={match.id}
                 id={match.id}
                 home={match.home}
@@ -217,7 +217,7 @@ const TournamentContent = memo(({ bracketData }: { bracketData: NonNullable<Retu
         <CardContent>
           {bracketData.final ? (
             <div className="max-w-md mx-auto">
-              <CupMatchCard
+              <MatchesCupCard
                 id={bracketData.final.id}
                 home={bracketData.final.home}
                 away={bracketData.final.away}

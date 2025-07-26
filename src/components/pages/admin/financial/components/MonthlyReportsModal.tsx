@@ -199,7 +199,7 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
                 <CardTitle className="text-purple-light">Scheidsrechter Betalingen</CardTitle>
               </CardHeader>
               <CardContent className="bg-white">
-                <Table>
+                <Table className="table">
                   <TableHeader>
                     <TableRow className="bg-purple-100">
                       <TableHead className="text-purple-dark">Scheidsrechter</TableHead>
@@ -232,7 +232,7 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
                 </CardTitle>
               </CardHeader>
               <CardContent className="bg-white">
-                <Table>
+                <Table className="table">
                   <TableHeader>
                     <TableRow className="bg-purple-100">
                       <TableHead className="text-purple-dark">
@@ -267,7 +267,7 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
                 </CardTitle>
               </CardHeader>
               <CardContent className="bg-white">
-                <Table>
+                <Table className="table">
                   <TableHeader>
                     <TableRow className="bg-purple-100">
                       <TableHead className="text-purple-dark">
@@ -300,7 +300,7 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
                 </CardTitle>
               </CardHeader>
               <CardContent className="bg-white">
-                <Table>
+                <Table className="table">
                   <TableHeader>
                     <TableRow className="bg-purple-100">
                       <TableHead className="text-purple-dark">

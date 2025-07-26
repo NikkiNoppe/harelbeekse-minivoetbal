@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { 
   Table, 
   TableBody, 
@@ -21,6 +21,16 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { DbUser } from "../userTypes";
 
 interface UserListProps {
@@ -39,6 +49,7 @@ interface UserListProps {
   teamFilter: string;
   onTeamFilterChange: (teamId: string) => void;
   teams: { team_id: number; team_name: string }[];
+  addUserButton?: React.ReactNode;
 }
 
 const UserListTable: React.FC<UserListProps> = ({ 
@@ -56,191 +67,241 @@ const UserListTable: React.FC<UserListProps> = ({
   onRoleFilterChange,
   teamFilter,
   onTeamFilterChange,
-  teams
+  teams,
+  addUserButton
 }) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<DbUser | null>(null);
+
+  const handleDeleteClick = (user: DbUser) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (userToDelete && onDeleteUser) {
+      onDeleteUser(userToDelete.user_id);
+    }
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+  };
+
   return (
     <div className="space-y-4">
       {/* Search and Filter Section */}
-      <div className="mb-4 space-y-3 md:space-y-0 md:grid md:grid-cols-3 md:gap-4">
-        {/* Search by name */}
-        <SearchInput
-          placeholder="Zoeken op naam..."
-          value={searchTerm}
-          onChange={onSearchTermChange}
-        />
+      <div className="mb-4 flex flex-col md:flex-row md:items-end md:gap-4">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          {/* Search by name */}
+          <SearchInput
+            placeholder="Zoeken op naam..."
+            value={searchTerm}
+            onChange={onSearchTermChange}
+          />
 
-        {/* Filter by role */}
-        <Select
-          value={roleFilter}
-          onValueChange={onRoleFilterChange}
-        >
-          <SelectTrigger className="dropdown-login-style">
-            <SelectValue placeholder="Alle rollen" />
-          </SelectTrigger>
-          <SelectContent className="dropdown-content-login-style">
-            <SelectItem value="all" className="dropdown-item-login-style">Alle rollen</SelectItem>
-            <SelectItem value="admin" className="dropdown-item-login-style">Administrator</SelectItem>
-            <SelectItem value="player_manager" className="dropdown-item-login-style">Teamverantwoordelijke</SelectItem>
-            <SelectItem value="referee" className="dropdown-item-login-style">Scheidsrechter</SelectItem>
-          </SelectContent>
-        </Select>
+          {/* Filter by role */}
+          <Select
+            value={roleFilter}
+            onValueChange={onRoleFilterChange}
+          >
+            <SelectTrigger className="dropdown-login-style">
+              <SelectValue placeholder="Alle rollen" />
+            </SelectTrigger>
+            <SelectContent className="dropdown-content-login-style">
+              <SelectItem value="all" className="dropdown-item-login-style">Alle rollen</SelectItem>
+              <SelectItem value="admin" className="dropdown-item-login-style">Administrator</SelectItem>
+              <SelectItem value="player_manager" className="dropdown-item-login-style">Teamverantwoordelijke</SelectItem>
+              <SelectItem value="referee" className="dropdown-item-login-style">Scheidsrechter</SelectItem>
+            </SelectContent>
+          </Select>
 
-        {/* Filter by team */}
-        <Select
-          value={teamFilter}
-          onValueChange={onTeamFilterChange}
-          disabled={teams.length === 0}
-        >
-          <SelectTrigger className="dropdown-login-style">
-            <SelectValue placeholder="Alle teams" />
-          </SelectTrigger>
-          <SelectContent className="dropdown-content-login-style">
-            <SelectItem value="all" className="dropdown-item-login-style">Alle teams</SelectItem>
-            {teams.map((team) => (
-              <SelectItem key={team.team_id} value={team.team_id.toString()} className="dropdown-item-login-style">
-                {team.team_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {/* Filter by team */}
+          <Select
+            value={teamFilter}
+            onValueChange={onTeamFilterChange}
+            disabled={teams.length === 0}
+          >
+            <SelectTrigger className="dropdown-login-style">
+              <SelectValue placeholder="Alle teams" />
+            </SelectTrigger>
+            <SelectContent className="dropdown-content-login-style">
+              <SelectItem value="all" className="dropdown-item-login-style">Alle teams</SelectItem>
+              {teams.map((team) => (
+                <SelectItem key={team.team_id} value={team.team_id.toString()} className="dropdown-item-login-style">
+                  {team.team_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {addUserButton && (
+          <div className="mt-3 md:mt-0 md:ml-4 flex-shrink-0 flex items-end">{addUserButton}</div>
+        )}
       </div>
 
       {/* User Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Naam</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Rol</TableHead>
-              <TableHead>Teams</TableHead>
-              {editMode && <TableHead className="text-right w-24">Acties</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              // Loading skeleton
-              Array.from({ length: 5 }).map((_, index) => (
-                <TableRow key={`skeleton-${index}`}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-4 w-4 rounded-full" />
-                      <Skeleton className="h-4 w-32" />
-                    </div>
-                  </TableCell>
-                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                  {editMode && (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Skeleton className="h-8 w-8 rounded-md" />
-                        <Skeleton className="h-8 w-8 rounded-md" />
-                      </div>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))
-            ) : users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={editMode ? 5 : 4} className="text-center py-6">
-                  Geen gebruikers gevonden
+      <Table className="table">
+        <TableHeader>
+          <TableRow className="table-header-row">
+            <TableHead>Naam</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Rol</TableHead>
+            <TableHead>Teams</TableHead>
+            {editMode && <TableHead className="text-right w-24">Acties</TableHead>}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            // Loading skeleton
+            Array.from({ length: 5 }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`}>
+                <TableCell className="table-skeleton-cell">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4 rounded-full" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
                 </TableCell>
-              </TableRow>
-            ) : (
-              users.map(user => (
-                <TableRow key={user.user_id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      {user.username}
+                <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-40" /></TableCell>
+                <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-28" /></TableCell>
+                {editMode && (
+                  <TableCell className="text-right table-skeleton-cell">
+                    <div className="flex justify-end gap-1">
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                      <Skeleton className="h-8 w-8 rounded-md" />
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {user.email || "-"}
-                  </TableCell>
-                  <TableCell>
-                    {user.role === "admin" && "Administrator"}
-                    {user.role === "player_manager" && "Teamverantwoordelijke"}
-                    {user.role === "referee" && "Scheidsrechter"}
-                  </TableCell>
-                  <TableCell>
-                    {user.teams && user.teams.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {user.teams.length <= 2 ? (
-                          // Show all teams if 2 or fewer
-                          user.teams.map(team => (
-                            <Badge key={team.team_id} variant="outline" className="bg-slate-50">
-                              {team.team_name}
-                            </Badge>
-                          ))
-                        ) : (
-                          // Show first team and count for more than 2
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="flex items-center gap-1">
-                                  <Badge variant="outline" className="bg-slate-50">
-                                    {user.teams[0].team_name}
-                                  </Badge>
-                                  <Badge variant="secondary">
-                                    +{user.teams.length - 1}
-                                  </Badge>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <div className="space-y-1">
-                                  {user.teams.map(team => (
-                                    <div key={team.team_id}>{team.team_name}</div>
-                                  ))}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                      </div>
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
-                  {editMode && (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onEditUser?.(user)}
-                          className="h-8 w-8 p-0 bg-white text-purple-600 border-purple-400 hover:bg-purple-50"
-                          disabled={isUpdating || isDeleting}
-                        >
-                          {isUpdating ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Edit className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onDeleteUser?.(user.user_id)}
-                          className="h-8 w-8 p-0 bg-white text-red-500 border-red-400 hover:bg-red-50 hover:text-red-700"
-                          disabled={isUpdating || isDeleting}
-                        >
-                          {isDeleting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </TableCell>
+                )}
+              </TableRow>
+            ))
+          ) : users.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={editMode ? 5 : 4} className="text-center py-6">
+                Geen gebruikers gevonden
+              </TableCell>
+            </TableRow>
+          ) : (
+            users.map(user => (
+              <TableRow key={user.user_id}>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {user.username}
+                  </div>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {user.email || "-"}
+                </TableCell>
+                <TableCell>
+                  {user.role === "admin" && "Administrator"}
+                  {user.role === "player_manager" && "Teamverantwoordelijke"}
+                  {user.role === "referee" && "Scheidsrechter"}
+                </TableCell>
+                <TableCell>
+                  {user.teams && user.teams.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {user.teams.length <= 2 ? (
+                        // Show all teams if 2 or fewer
+                        user.teams.map(team => (
+                          <Badge key={team.team_id} variant="outline" className="bg-slate-50">
+                            {team.team_name}
+                          </Badge>
+                        ))
+                      ) : (
+                        // Show first team and count for more than 2
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1">
+                                <Badge variant="outline" className="bg-slate-50">
+                                  {user.teams[0].team_name}
+                                </Badge>
+                                <Badge variant="secondary">
+                                  +{user.teams.length - 1}
+                                </Badge>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <div className="space-y-1">
+                                {user.teams.map(team => (
+                                  <div key={team.team_id}>{team.team_name}</div>
+                                ))}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                  ) : (
+                    "-"
                   )}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                </TableCell>
+                {editMode && (
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        onClick={() => onEditUser?.(user)}
+                        className="btn btn--icon"
+                        disabled={isUpdating || isDeleting}
+                      >
+                        {isUpdating ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Edit className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        onClick={() => handleDeleteClick(user)}
+                        className="btn btn--icon btn--danger"
+                        disabled={isUpdating || isDeleting}
+                      >
+                        {isDeleting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="modal">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="modal__title">
+              Gebruiker verwijderen
+            </AlertDialogTitle>
+            <div>
+              Weet je zeker dat je de gebruiker "{userToDelete?.username}" wilt verwijderen? 
+              Deze actie kan niet ongedaan worden gemaakt.
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="modal__actions">
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="btn btn--danger flex-1"
+            >
+              Verwijderen
+            </AlertDialogAction>
+            <AlertDialogCancel 
+              onClick={handleCancelDelete}
+              className="btn btn--secondary flex-1"
+            >
+              Annuleren
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

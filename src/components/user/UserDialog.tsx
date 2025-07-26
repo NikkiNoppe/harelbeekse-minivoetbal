@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import UserFormFields from "./dialog/UserFormFields";
 import { UserDialogProps, UserFormData } from "./types/userDialogTypes";
+import { X } from 'lucide-react';
 
 const UserDialog: React.FC<UserDialogProps> = ({
   open,
@@ -86,7 +87,15 @@ const UserDialog: React.FC<UserDialogProps> = ({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-purple-100 border-purple-light shadow-lg">
+      <DialogContent className="sm:max-w-md bg-purple-100 border-purple-light shadow-lg relative">
+        <button
+          type="button"
+          className="btn--close"
+          aria-label="Sluiten"
+          onClick={() => onOpenChange(false)}
+        >
+          <X size={20} />
+        </button>
         <DialogHeader className="bg-purple-100">
           <DialogTitle className="text-2xl text-purple-light">
             {editingUser ? "Gebruiker bewerken" : "Nieuwe gebruiker toevoegen"}

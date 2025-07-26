@@ -32,7 +32,7 @@ const AdminTeamPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-2xl font-bold">
             Team Beheer
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
@@ -42,7 +42,7 @@ const AdminTeamPage: React.FC = () => {
         <div className="flex gap-2">
           <Button
             onClick={handleAddNew}
-            className="flex items-center gap-2"
+            className="btn btn--outline flex items-center gap-2"
           >
             <Plus size={16} />
             Nieuw Team
@@ -51,15 +51,11 @@ const AdminTeamPage: React.FC = () => {
       </div>
 
       {/* Teams List */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="p-6">
-          <TeamsList
-            teams={teams}
-            onEdit={handleEditTeam}
-            onDelete={confirmDelete}
-          />
-        </div>
-      </div>
+      <TeamsList
+        teams={teams}
+        onEdit={handleEditTeam}
+        onDelete={confirmDelete}
+      />
 
       {/* Team Dialog */}
       <TeamDialog

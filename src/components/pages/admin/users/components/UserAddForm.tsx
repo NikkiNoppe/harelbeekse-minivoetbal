@@ -50,7 +50,7 @@ const UserAddForm: React.FC<AddUserFormProps> = ({ teams, onAddUser, isAdding })
             value={newUser.name}
             onChange={(e) => setNewUser({...newUser, name: e.target.value})}
             disabled={isAdding}
-            className="input-login-style"
+            className="input-purple"
           />
         </div>
         
@@ -63,7 +63,7 @@ const UserAddForm: React.FC<AddUserFormProps> = ({ teams, onAddUser, isAdding })
             value={newUser.email}
             onChange={(e) => setNewUser({...newUser, email: e.target.value})}
             disabled={isAdding}
-            className="input-login-style"
+            className="input-purple"
           />
         </div>
       </div>

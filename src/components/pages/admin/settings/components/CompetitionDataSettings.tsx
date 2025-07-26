@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings, Edit, Trash2, Trophy, Building, Clock, Calendar } from "lucide-react";
+import { Settings, Edit, Trash2, Trophy, Building, Clock, Calendar, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { seasonService, type SeasonData } from "@/services";
 
@@ -708,7 +708,15 @@ const CompetitionDataSettings: React.FC = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light">
+        <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light relative">
+          <button
+            type="button"
+            className="btn--close"
+            aria-label="Sluiten"
+            onClick={() => setIsEditDialogOpen(false)}
+          >
+            <X size={20} />
+          </button>
           <DialogHeader className="bg-purple-100">
             <DialogTitle className="text-xl text-center text-purple-light">
               {editType === 'format' && 'Bewerk Formaat'}
