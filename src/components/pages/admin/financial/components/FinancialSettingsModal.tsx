@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { financialService } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
-import { Settings } from "lucide-react";
+import { Settings, X } from "lucide-react";
 
 interface FinancialSettingsModalProps {
   open: boolean;
@@ -69,42 +69,52 @@ const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({ open, o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="sm:max-w-md bg-purple-100 border-purple-light shadow-lg relative mx-4 sm:mx-auto">
+        <button
+          type="button"
+          className="btn--close"
+          aria-label="Sluiten"
+          onClick={() => onOpenChange(false)}
+        >
+          <X size={20} />
+        </button>
+        <DialogHeader className="bg-purple-100">
+          <DialogTitle className="text-2xl text-purple-light flex items-center gap-2">
             <Settings className="h-5 w-5" />
             Financiële Instellingen
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 bg-purple-100">
           <div>
-            <Label>Veldkosten per wedstrijd (€)</Label>
+            <Label className="text-purple-dark font-medium">Veldkosten per wedstrijd (€)</Label>
             <Input
               type="number"
               step="0.01"
               value={formData.field_cost_per_match}
               onChange={(e) => setFormData({...formData, field_cost_per_match: e.target.value})}
               placeholder="5.00"
+              className="bg-white border-gray-300 text-purple-dark"
             />
           </div>
 
           <div>
-            <Label>Scheidsrechterkosten per wedstrijd (€)</Label>
+            <Label className="text-purple-dark font-medium">Scheidsrechterkosten per wedstrijd (€)</Label>
             <Input
               type="number"
               step="0.01"
               value={formData.referee_cost_per_match}
               onChange={(e) => setFormData({...formData, referee_cost_per_match: e.target.value})}
               placeholder="6.00"
+              className="bg-white border-gray-300 text-purple-dark"
             />
           </div>
 
-          <div className="flex gap-2 pt-4">
-            <Button onClick={handleSave} disabled={isLoading}>
+          <div className="flex gap-2 pt-4 bg-purple-100">
+            <Button onClick={handleSave} disabled={isLoading} className="bg-purple-dark text-white hover:bg-purple-light">
               Opslaan
             </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="border-purple-light text-purple-dark hover:bg-purple-light hover:text-white">
               Annuleren
             </Button>
           </div>

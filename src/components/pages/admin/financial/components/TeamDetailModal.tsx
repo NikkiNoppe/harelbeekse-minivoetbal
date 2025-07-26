@@ -285,9 +285,17 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-white">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-purple-100 border-purple-light shadow-lg relative mx-4 sm:mx-auto">
+        <button
+          type="button"
+          className="btn--close"
+          aria-label="Sluiten"
+          onClick={() => onOpenChange(false)}
+        >
+          <X size={20} />
+        </button>
+        <DialogHeader className="bg-purple-100">
+          <DialogTitle className="text-2xl text-purple-light flex items-center gap-2">
             <Euro className="h-5 w-5" />
             {team.team_name} - Financieel Detail
           </DialogTitle>

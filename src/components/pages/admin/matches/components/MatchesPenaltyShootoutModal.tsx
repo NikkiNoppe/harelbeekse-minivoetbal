@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Target } from "lucide-react";
+import { Trophy, Target, X } from "lucide-react";
 
 interface PenaltyShootoutModalProps {
   open: boolean;
@@ -79,30 +79,38 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-md mx-4 bg-background text-foreground border-border rounded-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
+      <DialogContent className="sm:max-w-md bg-purple-100 border-purple-light shadow-lg relative mx-4 sm:mx-auto">
+        <button
+          type="button"
+          className="btn--close"
+          aria-label="Sluiten"
+          onClick={() => onOpenChange(false)}
+        >
+          <X size={20} />
+        </button>
+        <DialogHeader className="bg-purple-100">
+          <DialogTitle className="text-2xl text-purple-light flex items-center gap-2">
             <Target className="h-5 w-5" />
             Penalty Shootout
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-purple-dark">
             De wedstrijd staat gelijk na reguliere speeltijd. In bekercompetitie moet er een winnaar zijn - bepaal deze via penalty's.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <Card className="border-yellow-200 bg-yellow-50">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
+        <div className="space-y-6 bg-purple-100">
+          <Card className="border-purple-light bg-purple-50">
+            <CardHeader className="pb-3 bg-purple-100">
+              <CardTitle className="text-lg flex items-center gap-2 text-purple-light">
                 <Target className="h-4 w-4" />
                 Penalty Scores
               </CardTitle>
-              <p className="text-sm text-gray-600">Vul het aantal gescoorde penalty's in voor elk team</p>
+              <p className="text-sm text-purple-dark">Vul het aantal gescoorde penalty's in voor elk team</p>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 bg-white">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="home-penalties" className="text-sm font-medium">
+                  <Label htmlFor="home-penalties" className="text-sm font-medium text-purple-dark">
                     {homeTeamName}
                   </Label>
                   <Input
@@ -112,11 +120,11 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
                     value={homePenalties}
                     onChange={(e) => setHomePenalties(e.target.value)}
                     placeholder="0"
-                    className="text-center text-lg"
+                    className="text-center text-lg bg-white border-gray-300 text-purple-dark"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="away-penalties" className="text-sm font-medium">
+                  <Label htmlFor="away-penalties" className="text-sm font-medium text-purple-dark">
                     {awayTeamName}
                   </Label>
                   <Input
@@ -126,13 +134,13 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
                     value={awayPenalties}
                     onChange={(e) => setAwayPenalties(e.target.value)}
                     placeholder="0"
-                    className="text-center text-lg"
+                    className="text-center text-lg bg-white border-gray-300 text-purple-dark"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="penalty-notes" className="text-sm font-medium">
+                <Label htmlFor="penalty-notes" className="text-sm font-medium text-purple-dark">
                   Extra notities (optioneel)
                 </Label>
                 <Textarea
@@ -141,6 +149,7 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
                   onChange={(e) => setPenaltyNotes(e.target.value)}
                   placeholder="Bijv: Gemiste penalty's, bijzonderheden..."
                   rows={3}
+                  className="bg-white border-gray-300 text-purple-dark"
                 />
               </div>
 
@@ -152,17 +161,17 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
             </CardContent>
           </Card>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 bg-purple-100">
             <Button 
               onClick={handleCancel} 
               variant="outline" 
-              className="flex-1"
+              className="flex-1 border-purple-light text-purple-dark hover:bg-purple-light hover:text-white"
             >
               Annuleren
             </Button>
             <Button 
               onClick={handleSubmit} 
-              className="flex-1 bg-green-600 hover:bg-green-700"
+              className="flex-1 bg-purple-dark text-white hover:bg-purple-light"
             >
               Winnaar Bepalen
             </Button>

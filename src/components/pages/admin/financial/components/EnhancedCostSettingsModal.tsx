@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Settings, Edit, Trash2, Plus, AlertTriangle, Info } from "lucide-react";
+import { Settings, Edit, Trash2, Plus, AlertTriangle, Info, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { enhancedCostSettingsService } from "@/services/financial";
@@ -227,13 +227,21 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-purple-100 border-purple-light shadow-lg relative mx-4 sm:mx-auto">
+          <button
+            type="button"
+            className="btn--close"
+            aria-label="Sluiten"
+            onClick={() => onOpenChange(false)}
+          >
+            <X size={20} />
+          </button>
+          <DialogHeader className="bg-purple-100">
+            <DialogTitle className="text-2xl text-purple-light flex items-center gap-2">
               <Settings className="h-5 w-5" />
               Uitgebreide Kostenbeheer
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-purple-dark">
               Beheer alle kostentarieven en boetes. Wijzigingen worden automatisch toegepast op alle gerelateerde transacties.
             </DialogDescription>
           </DialogHeader>

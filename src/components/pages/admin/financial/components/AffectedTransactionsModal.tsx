@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Info } from "lucide-react";
+import { AlertTriangle, Info, X } from "lucide-react";
 import { enhancedCostSettingsService, type TeamTransaction } from "@/services/financial";
 
 interface AffectedTransactionsModalProps {
@@ -90,13 +90,21 @@ const AffectedTransactionsModal: React.FC<AffectedTransactionsModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-purple-100 border-purple-light shadow-lg relative mx-4 sm:mx-auto">
+        <button
+          type="button"
+          className="btn--close"
+          aria-label="Sluiten"
+          onClick={() => onOpenChange(false)}
+        >
+          <X size={20} />
+        </button>
+        <DialogHeader className="bg-purple-100">
+          <DialogTitle className="text-2xl text-purple-light flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
             Getroffen Transacties
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-purple-dark">
             Overzicht van transacties die automatisch zijn aangepast na wijziging van "{costSettingName}"
           </DialogDescription>
         </DialogHeader>

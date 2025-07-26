@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { monthlyReportsService } from "@/services/financial";
-import { Calendar, Download, Euro } from "lucide-react";
+import { Calendar, Download, Euro, X } from "lucide-react";
 
 interface MonthlyReportsModalProps {
   open: boolean;
@@ -78,9 +78,17 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto bg-white text-foreground border-purple-light">
-        <DialogHeader className="bg-purple-100 py-4 -m-4 sm:-m-6 mb-4 sm:mb-6 px-4 sm:px-6">
-          <DialogTitle className="flex items-center gap-2 text-purple-light">
+      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto bg-purple-100 border-purple-light shadow-lg relative mx-4 sm:mx-auto">
+        <button
+          type="button"
+          className="btn--close"
+          aria-label="Sluiten"
+          onClick={() => onOpenChange(false)}
+        >
+          <X size={20} />
+        </button>
+        <DialogHeader className="bg-purple-100">
+          <DialogTitle className="text-2xl text-purple-light flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             Seizoen Kostenrapportage
           </DialogTitle>
