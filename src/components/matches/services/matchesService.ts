@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { MatchesResult, PastMatch, MatchFormData } from "./types";
+import { MatchesResult, PastMatch, MatchFormData } from "../types";
 import { updateMatchData, MatchUpdateData } from "./matchUpdateService";
 import { formatDateShort, formatTimeForDisplay, getCurrentDate } from "@/lib/dateUtils";
 

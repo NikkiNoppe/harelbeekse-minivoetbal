@@ -1,10 +1,10 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import PlayersList from "@/components/pages/players/PlayersList";
-import PlayerDialog from "@/components/pages/players/PlayerDialog";
-import PlayerRegulations from "@/components/pages/players/PlayerRegulations";
-import { usePlayersUpdated } from "@/components/pages/players/usePlayersUpdated";
+import PlayersList from "@/components/pages/admin/players/components/PlayersList";
+import PlayerDialog from "@/components/pages/admin/players/components/PlayerDialog";
+import PlayerRegulations from "@/components/pages/admin/players/components/PlayerRegulations";
+import { usePlayersUpdated } from "@/components/pages/admin/players/hooks/usePlayersUpdated";
 import { usePlayerListLock } from "@/components/user/players/hooks/usePlayerListLock";
 import { useAuth } from "@/components/login/AuthProvider";
 import { formatDateShort } from "@/lib/dateUtils"; 

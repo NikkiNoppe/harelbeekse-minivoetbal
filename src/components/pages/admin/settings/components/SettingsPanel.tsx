@@ -2,13 +2,13 @@
 import React, { useState } from "react";
 import { Settings, Trophy, Building, Clock, Calendar } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import TabVisibilitySettingsUpdated from "@/components/pages/admin/settings/TabVisibilitySettingsUpdated";
-import PlayerListLockSettings from "@/components/pages/admin/settings/PlayerListLockSettings";
-import CompetitionDataSettings from "@/components/pages/admin/settings/CompetitionDataSettings";
-import VenuesSettings from "@/components/pages/admin/settings/VenuesSettings";
-import TimeslotsSettings from "@/components/pages/admin/settings/TimeslotsSettings";
-import VacationsSettings from "@/components/pages/admin/settings/VacationsSettings";
-import SeasonDataSettings from "@/components/pages/admin/settings/SeasonDataSettings";
+import TabVisibilitySettingsUpdated from "@/components/pages/admin/settings/components/TabVisibilitySettingsUpdated";
+import PlayerListLockSettings from "@/components/pages/admin/settings/components/PlayerListLockSettings";
+import CompetitionDataSettings from "@/components/pages/admin/settings/components/CompetitionDataSettings";
+import VenuesSettings from "@/components/pages/admin/settings/components/VenuesSettings";
+import TimeslotsSettings from "@/components/pages/admin/settings/components/TimeslotsSettings";
+import VacationsSettings from "@/components/pages/admin/settings/components/VacationsSettings";
+import SeasonDataSettings from "@/components/pages/admin/settings/components/SeasonDataSettings";
 
 const AdminSettingsPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState("tab-visibility");

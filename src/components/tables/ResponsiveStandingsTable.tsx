@@ -17,6 +17,7 @@ interface Team {
 interface ResponsiveStandingsTableProps {
   teams?: Team[];
   isLoading?: boolean;
+  showPlayoff?: boolean;
 }
 
 const ResponsiveStandingsTable: React.FC<ResponsiveStandingsTableProps> = ({ teams, isLoading }) => {
