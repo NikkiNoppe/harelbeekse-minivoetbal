@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
@@ -35,20 +35,53 @@ const PlayerPage: React.FC = () => {
     userTeamName
   } = usePlayersUpdated();
   const { isLocked, lockDate, canEdit } = usePlayerListLock();
-  const isAdmin = authUser?.role === "admin";
-  const currentTeamName = isAdmin 
-    ? teams.find(team => team.team_id === selectedTeam)?.team_name || ""
-    : userTeamName;
+  
+  // Memoized values to prevent unnecessary re-renders
+  const isAdmin = useMemo(() => authUser?.role === "admin", [authUser?.role]);
+  const currentTeamName = useMemo(() => 
+    isAdmin 
+      ? teams.find(team => team.team_id === selectedTeam)?.team_name || ""
+      : userTeamName
+  , [isAdmin, teams, selectedTeam, userTeamName]);
 
-  const handleOpenAddDialog = () => {
-    // Clear any existing edit state
+  const hasTeams = useMemo(() => teams.length > 0, [teams.length]);
+  const showLockMessage = useMemo(() => isLocked && !isAdmin, [isLocked, isAdmin]);
+  const showAddButton = useMemo(() => canEdit, [canEdit]);
+  const modalOpen = useMemo(() => dialogOpen || editDialogOpen, [dialogOpen, editDialogOpen]);
+
+  // Memoized handlers to prevent unnecessary re-renders
+  const handleOpenAddDialog = useCallback(() => {
     setEditingPlayer(null);
     setEditDialogOpen(false);
-    // Clear the new player form
     setNewPlayer({ firstName: "", lastName: "", birthDate: "" });
-    // Open the add dialog
     setDialogOpen(true);
-  };
+  }, [setEditingPlayer, setEditDialogOpen, setNewPlayer, setDialogOpen]);
+
+  const handleModalClose = useCallback((open: boolean) => {
+    if (!open) {
+      setDialogOpen(false);
+      setEditDialogOpen(false);
+      setEditingPlayer(null);
+      setNewPlayer({ firstName: "", lastName: "", birthDate: "" });
+    }
+  }, [setDialogOpen, setEditDialogOpen, setEditingPlayer, setNewPlayer]);
+
+  const handleTeamSelectChange = useCallback((value: string) => {
+    handleTeamChange(parseInt(value));
+  }, [handleTeamChange]);
+
+  // Memoized team options to prevent unnecessary re-renders
+  const teamOptions = useMemo(() => 
+    teams.map(team => (
+      <SelectItem 
+        key={team.team_id} 
+        value={team.team_id.toString()} 
+        className="dropdown-item-login-style"
+      >
+        {team.team_name}
+      </SelectItem>
+    ))
+  , [teams]);
 
   return (
     <div className="space-y-6">
@@ -58,7 +91,7 @@ const PlayerPage: React.FC = () => {
           <h1 className="text-2xl font-bold">
             Spelerslijst
           </h1>
-          {isLocked && !isAdmin && (
+          {showLockMessage && (
             <p className="text-sm text-red-600 mt-1">
               Spelerslijst vergrendeld vanaf {formatDateShort(lockDate)}
             </p>
@@ -72,30 +105,22 @@ const PlayerPage: React.FC = () => {
           <div className="flex flex-col gap-2">
             <Select 
               value={selectedTeam?.toString() || ""} 
-              onValueChange={(value) => handleTeamChange(parseInt(value))}
+              onValueChange={handleTeamSelectChange}
             >
               <SelectTrigger className="dropdown-login-style min-w-[200px]">
                 <SelectValue placeholder="Selecteer team" />
               </SelectTrigger>
               <SelectContent className="dropdown-content-login-style">
-                {teams.map(team => (
-                  <SelectItem 
-                    key={team.team_id} 
-                    value={team.team_id.toString()} 
-                    className="dropdown-item-login-style"
-                  >
-                    {team.team_name}
-                  </SelectItem>
-                ))}
+                {teamOptions}
               </SelectContent>
             </Select>
-            {teams.length === 0 && (
+            {!hasTeams && (
               <span className="text-sm text-red-500 text-center">
                 Geen teams gevonden
               </span>
             )}
           </div>
-          {canEdit && (
+          {showAddButton && (
             <Button
               onClick={handleOpenAddDialog}
               className="btn btn--outline flex items-center gap-2"
@@ -107,7 +132,7 @@ const PlayerPage: React.FC = () => {
         </div>
       ) : (
         /* Add Button for non-admin users */
-        canEdit && (
+        showAddButton && (
           <div className="flex justify-end">
             <Button
               onClick={handleOpenAddDialog}
@@ -137,16 +162,8 @@ const PlayerPage: React.FC = () => {
       </div>
 
       <PlayerModal
-        open={dialogOpen || editDialogOpen}
-        onOpenChange={open => {
-          if (!open) {
-            // When closing, reset both states and clear form data
-            setDialogOpen(false);
-            setEditDialogOpen(false);
-            setEditingPlayer(null);
-            setNewPlayer({ firstName: "", lastName: "", birthDate: "" });
-          }
-        }}
+        open={modalOpen}
+        onOpenChange={handleModalClose}
         newPlayer={newPlayer}
         onPlayerChange={setNewPlayer}
         onSave={handleAddPlayer}

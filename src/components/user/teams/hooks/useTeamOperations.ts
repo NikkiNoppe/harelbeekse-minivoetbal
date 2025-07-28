@@ -149,8 +149,6 @@ export const useTeamOperations = (onSuccess: () => void) => {
         return null;
       }
       
-      console.log('Existing team:', existingTeam);
-      
       // Check if the new name already exists (excluding current team)
       const { data: duplicateCheck, error: duplicateError } = await supabase
         .from('teams')

@@ -134,7 +134,21 @@ export function useTeamsEnhanced() {
   };
 
   const handleFormChange = (field: keyof TeamFormData, value: any) => {
-    setFormData({...formData, [field]: value});
+    if (field === 'preferred_play_moments') {
+      // Use a more stable approach to prevent infinite loops
+      setFormData(prevData => ({
+        ...prevData,
+        preferred_play_moments: {
+          days: prevData.preferred_play_moments?.days || [],
+          timeslots: prevData.preferred_play_moments?.timeslots || [],
+          venues: prevData.preferred_play_moments?.venues || [],
+          notes: prevData.preferred_play_moments?.notes || "",
+          ...value
+        }
+      }));
+    } else {
+      setFormData(prevData => ({...prevData, [field]: value}));
+    }
   };
 
   const handleSaveTeam = async () => {

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import { usePlayersData } from "@/components/user/players/hooks/usePlayersData";
 import { usePlayerOperations } from "@/components/user/players/hooks/usePlayerOperations";
 import { usePlayerDialogs } from "@/components/user/players/hooks/usePlayerDialogs";
@@ -17,7 +17,7 @@ export const usePlayersUpdated = () => {
     setSelectedTeam,
     refreshPlayers,
     userTeamName
-  } = usePlayersData(authUser); // Pass authUser to usePlayersData
+  } = usePlayersData(authUser);
 
   const {
     dialogOpen,
@@ -39,27 +39,37 @@ export const usePlayersUpdated = () => {
     handleRemovePlayer
   } = usePlayerOperations(selectedTeam, refreshPlayers, setEditDialogOpen);
 
-  const handleTeamChangeWrapper = (teamId: number) => {
+  // Memoized handlers to prevent unnecessary re-renders
+  const handleTeamChangeWrapper = useCallback((teamId: number) => {
     console.log('🔄 Team change requested:', teamId);
     handleTeamChange(teamId, setSelectedTeam, setEditMode);
-  };
+  }, [setSelectedTeam, setEditMode]);
 
-  const handleEditPlayer = (playerId: number) => {
+  const handleEditPlayer = useCallback((playerId: number) => {
     handleEditPlayerDialog(playerId, players, setEditingPlayer);
-  };
+  }, [handleEditPlayerDialog, players, setEditingPlayer]);
 
-  // Corrected: will return Promise<boolean> and only close dialog on success
-  const handleAddPlayerAndMaybeCloseDialog = async (): Promise<boolean> => {
+  // Memoized add player handler with dialog management
+  const handleAddPlayerAndMaybeCloseDialog = useCallback(async (): Promise<boolean> => {
     const success = await handleAddPlayer();
     if (success) {
       setDialogOpen(false);
-      setEditDialogOpen(false); // Also clear edit dialog state
+      setEditDialogOpen(false);
       setNewPlayer({ firstName: "", lastName: "", birthDate: "" });
       return true;
     }
-    // If failure, keep dialog open and do not clear input
     return false;
-  };
+  }, [handleAddPlayer, setDialogOpen, setEditDialogOpen, setNewPlayer]);
+
+  // Memoized utility functions
+  const memoizedFormatDate = useCallback(formatDate, []);
+  const memoizedGetFullName = useCallback(getFullName, []);
+
+  // Memoized state setters to prevent unnecessary re-renders
+  const memoizedSetDialogOpen = useCallback(setDialogOpen, [setDialogOpen]);
+  const memoizedSetEditDialogOpen = useCallback(setEditDialogOpen, [setEditDialogOpen]);
+  const memoizedSetNewPlayer = useCallback(setNewPlayer, [setNewPlayer]);
+  const memoizedSetEditingPlayer = useCallback(setEditingPlayer, [setEditingPlayer]);
 
   return {
     players,
@@ -73,16 +83,16 @@ export const usePlayersUpdated = () => {
     editingPlayer,
     setEditMode,
     handleTeamChange: handleTeamChangeWrapper,
-    setDialogOpen,
-    setEditDialogOpen,
-    setNewPlayer,
-    setEditingPlayer,
-    handleAddPlayer: handleAddPlayerAndMaybeCloseDialog, // returns Promise<boolean>
+    setDialogOpen: memoizedSetDialogOpen,
+    setEditDialogOpen: memoizedSetEditDialogOpen,
+    setNewPlayer: memoizedSetNewPlayer,
+    setEditingPlayer: memoizedSetEditingPlayer,
+    handleAddPlayer: handleAddPlayerAndMaybeCloseDialog,
     handleEditPlayer,
     handleSaveEditedPlayer,
     handleRemovePlayer,
-    formatDate,
-    getFullName,
+    formatDate: memoizedFormatDate,
+    getFullName: memoizedGetFullName,
     userTeamName
   };
 };
