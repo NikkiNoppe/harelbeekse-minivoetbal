@@ -14,7 +14,7 @@ interface Team {
   preferred_play_moments?: {
     days?: string[];
     timeslots?: string[];
-    venues?: number[];
+    venues?: string[]; // Changed from number[] to string[]
     notes?: string;
   };
 }
@@ -29,7 +29,7 @@ interface TeamFormData {
   preferred_play_moments: {
     days: string[];
     timeslots: string[];
-    venues: number[];
+    venues: string[]; // Changed from number[] to string[]
     notes: string;
   };
 }

@@ -120,6 +120,10 @@ const UserModal: React.FC<UserModalProps> = ({
           <X size={20} />
         </button>
         
+        <DialogDescription className="sr-only">
+          {editingUser ? "Bewerk de gegevens van de gebruiker" : "Voeg een nieuwe gebruiker toe"}
+        </DialogDescription>
+        
         <div className="modal__title">
           {editingUser ? "Gebruiker bewerken" : "Nieuwe gebruiker toevoegen"}
         </div>

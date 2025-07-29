@@ -2,6 +2,7 @@ import React from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +70,9 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
           <X className="h-4 w-4" />
           <span className="sr-only">Sluiten</span>
         </button>
+        <DialogDescription className="sr-only">
+          {isEdit ? "Bewerk de gegevens van de speler" : "Voeg een nieuwe speler toe aan het team"}
+        </DialogDescription>
         <div className="modal__title">
           {isEdit ? "Speler bewerken" : "Nieuwe speler toevoegen"}
         </div>
