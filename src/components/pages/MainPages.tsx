@@ -48,6 +48,7 @@ const MemoizedSchorsingenPage = memo(SchorsingenPage);
 const MemoizedKaartenPage = memo(KaartenPage);
 const MemoizedReglementPage = memo(ReglementPage);
 const MemoizedTeamsPage = memo(TeamsPage);
+const MemoizedPloegenPage = memo(PloegenPage);
 
 MemoizedAlgemeenPage.displayName = 'MemoizedAlgemeenPage';
 MemoizedCompetitiePage.displayName = 'MemoizedCompetitiePage';
@@ -57,6 +58,7 @@ MemoizedSchorsingenPage.displayName = 'MemoizedSchorsingenPage';
 MemoizedKaartenPage.displayName = 'MemoizedKaartenPage';
 MemoizedReglementPage.displayName = 'MemoizedReglementPage';
 MemoizedTeamsPage.displayName = 'MemoizedTeamsPage';
+MemoizedPloegenPage.displayName = 'MemoizedPloegenPage';
 
 // Tab content wrapper with animation
 const TabContentWrapper = memo(({ children }: { children: React.ReactNode }) => (
@@ -131,7 +133,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
     teams: isTabVisible("teams") && (
       <TabsContent value="teams" className="mt-0" key="teams">
         <TabContentWrapper>
-          <MemoizedTeamsPage />
+          <MemoizedPloegenPage />
         </TabContentWrapper>
       </TabsContent>
     )

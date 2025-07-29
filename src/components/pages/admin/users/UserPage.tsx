@@ -21,6 +21,7 @@ const AdminUserPage: React.FC = () => {
     editingUser,
     confirmDialogOpen,
     setConfirmDialogOpen,
+    userToDelete,
     searchTerm,
     roleFilter,
     teamFilter,
@@ -113,6 +114,7 @@ const AdminUserPage: React.FC = () => {
         onOpenChange={setConfirmDialogOpen}
         onConfirmDelete={handleDeleteUser}
         isDeleting={deletingUser}
+        user={userToDelete}
       />
 
       {/* Edit User Dialog */}

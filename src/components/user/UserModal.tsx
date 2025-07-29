@@ -1,18 +1,15 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import UserFormFields from "./dialog/UserFormFields";
-import { UserDialogProps, UserFormData } from "./types/userDialogTypes";
-import { X } from 'lucide-react';
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 interface TeamOption {
   id: number;
@@ -36,179 +33,283 @@ interface UserModalProps {
   isLoading?: boolean;
 }
 
+interface FormData {
+  username: string;
+  email: string;
+  password: string;
+  role: "admin" | "referee" | "player_manager";
+  selectedTeamId: number | null;
+}
+
 const UserModal: React.FC<UserModalProps> = ({
   open,
   onOpenChange,
   editingUser,
   onSave,
   teams,
-  isLoading
+  isLoading = false
 }) => {
-  const [formData, setFormData] = useState<UserFormData>({
+  const [formData, setFormData] = useState<FormData>({
     username: "",
     email: "",
     password: "",
     role: "player_manager",
-    teamId: 0,
-    teamIds: []
+    selectedTeamId: null
   });
-  
-  // Set form data when editingUser changes
-  useEffect(() => {
+
+  // Memoized initial form data to prevent unnecessary recalculations
+  const initialFormData = useMemo((): FormData | null => {
+    if (!open) return null;
+    
     if (editingUser) {
-      console.log('Setting form data for editing user:', editingUser);
-      // Get team IDs from the teams array if available, otherwise use teamId
-      const teamIds = editingUser.teams && editingUser.teams.length > 0 
-        ? editingUser.teams.map(team => team.team_id) 
-        : (editingUser.teamId ? [editingUser.teamId] : []);
-      
-      setFormData({
+      const currentTeamId = editingUser.teams && editingUser.teams.length > 0 
+        ? editingUser.teams[0].team_id 
+        : editingUser.teamId || null;
+
+      return {
         username: editingUser.username,
         email: editingUser.email || "",
         password: "",
         role: editingUser.role,
-        teamId: editingUser.teamId || 0,
-        teamIds: teamIds
-      });
+        selectedTeamId: currentTeamId
+      };
     } else {
-      // Reset form for new user
-      setFormData({
+      return {
         username: "",
         email: "",
         password: "",
         role: "player_manager",
-        teamId: teams.length > 0 ? teams[0].id : 0,
-        teamIds: []
-      });
+        selectedTeamId: teams.length > 0 ? teams[0].id : null
+      };
     }
-  }, [editingUser, teams, open]);
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Submitting form data:', formData);
-    
-    try {
-      const success = await onSave(formData);
+  }, [open, editingUser, teams]);
+
+  // Optimized useEffect with memoized dependency
+  useEffect(() => {
+    if (initialFormData) {
+      setFormData(initialFormData);
+    }
+  }, [initialFormData]);
+
+  // Memoized input change handler
+  const handleInputChange = useCallback((field: keyof FormData, value: string | number | null) => {
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
       
-      // Only close dialog and reset form if save was successful
+      // Auto-clear team when role changes to admin/referee
+      if (field === 'role' && (value === 'admin' || value === 'referee')) {
+        newData.selectedTeamId = null;
+      }
+      
+      return newData;
+    });
+  }, []);
+
+  // Memoized submit handler
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.username.trim()) {
+      console.error('Username is required');
+      return;
+    }
+
+    // Validate admin/referee roles don't have team assignments
+    if ((formData.role === 'admin' || formData.role === 'referee') && formData.selectedTeamId) {
+      alert('Administrators en scheidsrechters kunnen geen team hebben toegewezen.');
+      return;
+    }
+
+    try {
+      const submitData = {
+        username: formData.username.trim(),
+        email: formData.email.trim() || undefined,
+        password: formData.password,
+        role: formData.role,
+        teamId: (formData.role === 'player_manager' && formData.selectedTeamId) ? formData.selectedTeamId : null,
+        teamIds: (formData.role === 'player_manager' && formData.selectedTeamId) ? [formData.selectedTeamId] : []
+      };
+
+      const success = await onSave(submitData);
+      
       if (success) {
         onOpenChange(false);
-        // Reset form data
-        setFormData({
-          username: "",
-          email: "",
-          password: "",
-          role: "player_manager",
-          teamId: teams.length > 0 ? teams[0].id : 0,
-          teamIds: []
-        });
       }
     } catch (error) {
       console.error('Error saving user:', error);
     }
-  };
-  
+  }, [formData, onSave, onOpenChange]);
+
+  // Memoized cancel handler
+  const handleCancel = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+
+  // Memoized computed values
+  const isTeamSelectionDisabled = useMemo(() => 
+    formData.role === "admin" || formData.role === "referee", 
+    [formData.role]
+  );
+
+  const modalTitle = useMemo(() => 
+    editingUser ? "Gebruiker bewerken" : "Nieuwe gebruiker toevoegen",
+    [editingUser]
+  );
+
+  const modalDescription = useMemo(() => 
+    editingUser ? "Bewerk de gegevens van de gebruiker" : "Voeg een nieuwe gebruiker toe",
+    [editingUser]
+  );
+
+  const submitButtonText = useMemo(() => 
+    isLoading ? "Bezig..." : (editingUser ? "Bijwerken" : "Toevoegen"),
+    [isLoading, editingUser]
+  );
+
+  const passwordLabel = useMemo(() => 
+    editingUser ? "Nieuw wachtwoord (leeg laten om niet te wijzigen)" : "Wachtwoord *",
+    [editingUser]
+  );
+
+  const passwordPlaceholder = useMemo(() => 
+    editingUser ? "Nieuw wachtwoord (optioneel)" : "Voer wachtwoord in",
+    [editingUser]
+  );
+
+  const isPasswordRequired = useMemo(() => !editingUser, [editingUser]);
+
+  // Memoized team options
+  const teamOptions = useMemo(() => 
+    teams.map((team) => (
+      <option key={team.id} value={team.id}>
+        {team.name}
+      </option>
+    )),
+    [teams]
+  );
+
+  // Memoized team selection value
+  const teamSelectionValue = useMemo(() => 
+    isTeamSelectionDisabled ? "" : (formData.selectedTeamId || ""),
+    [isTeamSelectionDisabled, formData.selectedTeamId]
+  );
+
+  // Memoized team selection className
+  const teamSelectionClassName = useMemo(() => 
+    `modal__input ${isTeamSelectionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`,
+    [isTeamSelectionDisabled]
+  );
+
+  // Memoized team label
+  const teamLabel = useMemo(() => (
+    <>
+      Team {isTeamSelectionDisabled && <span className="text-orange-600 text-sm">(niet beschikbaar voor deze rol)</span>}
+    </>
+  ), [isTeamSelectionDisabled]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="modal relative">
-        <button
-          type="button"
-          className="btn--close absolute top-3 right-3 z-10"
-          aria-label="Sluiten"
-          onClick={() => onOpenChange(false)}
-        >
-          <X size={20} />
-        </button>
+      <DialogContent className="modal">
+        <DialogHeader>
+          <DialogTitle className="modal__title">
+            {modalTitle}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            {modalDescription}
+          </DialogDescription>
+        </DialogHeader>
         
-        <DialogDescription className="sr-only">
-          {editingUser ? "Bewerk de gegevens van de gebruiker" : "Voeg een nieuwe gebruiker toe"}
-        </DialogDescription>
-        
-        <div className="modal__title">
-          {editingUser ? "Gebruiker bewerken" : "Nieuwe gebruiker toevoegen"}
-        </div>
-        
-        <form className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Username */}
           <div className="space-y-2">
-            <label className="text-purple-dark">Gebruikersnaam</label>
+            <label className="text-purple-dark font-medium">Gebruikersnaam *</label>
             <Input
               placeholder="Voer gebruikersnaam in"
-              className="modal__input bg-white placeholder:text-purple-200"
+              className="modal__input"
               value={formData.username}
-              onChange={(e) => setFormData({...formData, username: e.target.value})}
+              onChange={(e) => handleInputChange('username', e.target.value)}
               disabled={isLoading}
+              required
             />
           </div>
           
+          {/* Email */}
           <div className="space-y-2">
-            <label className="text-purple-dark">Volledige naam</label>
-            <Input
-              placeholder="Voer volledige naam in"
-              className="modal__input bg-white placeholder:text-purple-200"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              disabled={isLoading}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label className="text-purple-dark">E-mail (optioneel)</label>
+            <label className="text-purple-dark font-medium">E-mail (optioneel)</label>
             <Input
               type="email"
               placeholder="E-mailadres (optioneel)"
-              className="modal__input bg-white placeholder:text-purple-200"
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              className="modal__input"
+              value={formData.email}
+              onChange={(e) => handleInputChange('email', e.target.value)}
               disabled={isLoading}
             />
           </div>
           
+          {/* Password */}
           <div className="space-y-2">
-            <label className="text-purple-dark">Rol</label>
-            <select
-              className="modal__input bg-white placeholder:text-purple-200"
-              value={formData.role}
-              onChange={(e) => setFormData({...formData, role: e.target.value as "admin" | "referee" | "player_manager"})}
+            <label className="text-purple-dark font-medium">
+              {passwordLabel}
+            </label>
+            <Input
+              type="password"
+              placeholder={passwordPlaceholder}
+              className="modal__input"
+              value={formData.password}
+              onChange={(e) => handleInputChange('password', e.target.value)}
               disabled={isLoading}
+              required={isPasswordRequired}
+            />
+          </div>
+          
+          {/* Role */}
+          <div className="space-y-2">
+            <label className="text-purple-dark font-medium">Rol *</label>
+            <select
+              className="modal__input"
+              value={formData.role}
+              onChange={(e) => handleInputChange('role', e.target.value as "admin" | "referee" | "player_manager")}
+              disabled={isLoading}
+              required
             >
-              <option value="player_manager">Speler Manager</option>
+              <option value="player_manager">Teamverantwoordelijke</option>
               <option value="admin">Administrator</option>
               <option value="referee">Scheidsrechter</option>
             </select>
           </div>
           
+          {/* Team Selection */}
           <div className="space-y-2">
-            <label className="text-purple-dark">Team</label>
+            <label className="text-purple-dark font-medium">
+              {teamLabel}
+            </label>
             <select
-              className="modal__input bg-white placeholder:text-purple-200"
-              value={formData.teamId}
-              onChange={(e) => setFormData({...formData, teamId: parseInt(e.target.value) || 0})}
-              disabled={isLoading}
+              className={teamSelectionClassName}
+              value={teamSelectionValue}
+              onChange={(e) => handleInputChange('selectedTeamId', e.target.value ? parseInt(e.target.value) : null)}
+              disabled={isLoading || isTeamSelectionDisabled}
             >
               <option value="">Geen team</option>
-              {teams.map((team) => (
-                <option key={team.id} value={team.id}>
-                  {team.name}
-                </option>
-              ))}
+              {teamOptions}
             </select>
           </div>
           
+          {/* Actions */}
           <div className="modal__actions">
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="btn btn--secondary"
-              disabled={isLoading}
-            >
-              Annuleren
-            </button>
             <button
               type="submit"
               disabled={isLoading}
               className="btn btn--primary"
             >
-              {editingUser ? "Bijwerken" : "Toevoegen"}
+              {submitButtonText}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="btn btn--secondary"
+              disabled={isLoading}
+            >
+              Annuleren
             </button>
           </div>
         </form>

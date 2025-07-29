@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/components/login/AuthProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, User, LogOut, Settings, Shield, Users, Calendar, Trophy, Award, DollarSign, Home, BookOpen, Ban, AlertTriangle, Target } from "lucide-react";
@@ -63,7 +63,7 @@ const Header: React.FC<HeaderProps> = ({
     { key: "match-forms", label: "Wedstrijdformulieren", icon: <Calendar size={16} />, adminOnly: false },
     { key: "players", label: "Spelers", icon: <Users size={16} />, adminOnly: false },
     { key: "teams", label: "Teams", icon: <Shield size={16} />, adminOnly: true },
-    { key: "users", label: "Gebruikers", icon: <User size={16} />, adminOnly: true },
+    { key: "users", label: "Gebruikers", icon: <User size={16} />, adminOnly: false },
     { key: "competition", label: "Competitie", icon: <Trophy size={16} />, adminOnly: true },
     { key: "cup", label: "Beker", icon: <Award size={16} />, adminOnly: true },
     { key: "financial", label: "Financieel", icon: <DollarSign size={16} />, adminOnly: true },
@@ -78,6 +78,7 @@ const Header: React.FC<HeaderProps> = ({
     { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
     { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> },
     { key: "teams", label: "Teams", icon: <Shield size={16} /> },
+    { key: "users", label: "Gebruikers", icon: <User size={16} /> },
     { key: "reglement", label: "Reglement", icon: <BookOpen size={16} /> }
   ];
 
@@ -113,6 +114,9 @@ const Header: React.FC<HeaderProps> = ({
                 <SheetTitle className="text-2xl font-bold text-purple-800 text-left">
                   {isAuthenticated ? "Dashboard" : "Navigatie"}
                 </SheetTitle>
+                <SheetDescription className="sr-only">
+                  {isAuthenticated ? "Beheer je dashboard en navigeer door de applicatie" : "Navigeer door de verschillende secties van de website"}
+                </SheetDescription>
               </SheetHeader>
 
               <div className="space-y-6">

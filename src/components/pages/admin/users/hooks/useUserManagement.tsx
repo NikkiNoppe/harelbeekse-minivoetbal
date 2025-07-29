@@ -25,7 +25,7 @@ export const useUserManagement = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<DbUser | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<number | null>(null);
+  const [userToDelete, setUserToDelete] = useState<DbUser | null>(null);
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -170,7 +170,8 @@ export const useUserManagement = () => {
 
   // Handle opening the delete confirmation dialog
   const handleOpenDeleteConfirmation = (userId: number) => {
-    setUserToDelete(userId);
+    const user = users.find(u => u.user_id === userId);
+    setUserToDelete(user || null);
     setConfirmDialogOpen(true);
   };
 
@@ -178,7 +179,7 @@ export const useUserManagement = () => {
   const handleDeleteUser = async () => {
     if (userToDelete) {
       setDeletingUser(true);
-      const success = await deleteUser(userToDelete);
+      const success = await deleteUser(userToDelete.user_id);
       setDeletingUser(false);
       if (success) {
         setConfirmDialogOpen(false);
@@ -199,6 +200,7 @@ export const useUserManagement = () => {
     editingUser,
     confirmDialogOpen,
     setConfirmDialogOpen,
+    userToDelete,
     searchTerm,
     roleFilter,
     teamFilter,

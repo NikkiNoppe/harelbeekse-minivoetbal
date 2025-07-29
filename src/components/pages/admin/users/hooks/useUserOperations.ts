@@ -8,7 +8,7 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
   const { toast } = useToast();
 
   const addUser = async (newUser: {
-    name: string;
+    username: string;
     email: string | undefined;
     password: string; // Add password parameter
     role: "admin" | "referee" | "player_manager";
@@ -16,10 +16,10 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
     teamIds?: number[];
   }) => {
     // Validate form
-    if (!newUser.name) {
+    if (!newUser.username) {
       toast({
         title: "Fout",
-        description: "Naam is verplicht",
+        description: "Gebruikersnaam is verplicht",
         variant: "destructive"
       });
       return false;
@@ -52,7 +52,7 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
       const { data, error } = await supabase
         .from('users')
         .insert({
-          username: newUser.name,
+          username: newUser.username,
           email: newUser.email || null,
           password: hashedPassword, // Store hashed password
           role: newUser.role
@@ -93,20 +93,20 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
           
           toast({
             title: "Gebruiker toegevoegd",
-            description: `${newUser.name} is toegevoegd als teamverantwoordelijke voor ${teamNames}.`,
+            description: `${newUser.username} is toegevoegd als teamverantwoordelijke voor ${teamNames}.`,
             duration: 15000
           });
         } else {
           toast({
             title: "Gebruiker toegevoegd",
-            description: `${newUser.name} is toegevoegd zonder teamkoppeling.`,
+            description: `${newUser.username} is toegevoegd zonder teamkoppeling.`,
             duration: 15000
           });
         }
       } else {
         toast({
           title: "Gebruiker toegevoegd",
-          description: `${newUser.name} is toegevoegd als ${newUser.role}.`,
+          description: `${newUser.username} is toegevoegd als ${newUser.role}.`,
           duration: 15000
         });
       }
@@ -192,18 +192,19 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
 
           toast({
             title: "Gebruiker bijgewerkt",
-            description: `${formData.username} is bijgewerkt als teamverantwoordelijke voor ${teamNames}`,
+            description: `${formData.username || 'Gebruiker'} is bijgewerkt als teamverantwoordelijke voor ${teamNames}`,
           });
         } else {
           toast({
             title: "Gebruiker bijgewerkt",
-            description: `${formData.username} is bijgewerkt zonder teamkoppeling`,
+            description: `${formData.username || 'Gebruiker'} is bijgewerkt zonder teamkoppeling`,
           });
         }
       } else {
+        // For non-player_manager roles, ensure no team assignments
         toast({
           title: "Gebruiker bijgewerkt",
-          description: `${formData.username} is bijgewerkt als ${formData.role}`,
+          description: `${formData.username || 'Gebruiker'} is bijgewerkt als ${formData.role}`,
         });
       }
 

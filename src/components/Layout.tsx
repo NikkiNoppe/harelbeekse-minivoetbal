@@ -19,11 +19,11 @@ import PlayerPage from "@/components/pages/admin/players/PlayerPage";
 
 const Layout: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("teams");
+  const [activeTab, setActiveTab] = useState("users");
   const { user } = useAuth();
 
   const handleLogoClick = () => {
-    setActiveTab("teams");
+    setActiveTab("users");
   };
 
   const handleTabChange = (tab: string) => {

@@ -94,8 +94,9 @@ const UserListTable: React.FC<UserListProps> = ({
   return (
     <div className="space-y-4">
       {/* Search and Filter Section */}
-      <div className="mb-4 flex flex-col md:flex-row md:items-end md:gap-4">
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+      <div className="space-y-4">
+        {/* Mobile: Stacked layout */}
+        <div className="block md:hidden space-y-3">
           {/* Search by name */}
           <SearchInput
             placeholder="Zoeken op naam..."
@@ -108,7 +109,7 @@ const UserListTable: React.FC<UserListProps> = ({
             value={roleFilter}
             onValueChange={onRoleFilterChange}
           >
-            <SelectTrigger className="dropdown-login-style">
+            <SelectTrigger className="dropdown-login-style w-full">
               <SelectValue placeholder="Alle rollen" />
             </SelectTrigger>
             <SelectContent className="dropdown-content-login-style">
@@ -125,7 +126,7 @@ const UserListTable: React.FC<UserListProps> = ({
             onValueChange={onTeamFilterChange}
             disabled={teams.length === 0}
           >
-            <SelectTrigger className="dropdown-login-style">
+            <SelectTrigger className="dropdown-login-style w-full">
               <SelectValue placeholder="Alle teams" />
             </SelectTrigger>
             <SelectContent className="dropdown-content-login-style">
@@ -137,10 +138,68 @@ const UserListTable: React.FC<UserListProps> = ({
               ))}
             </SelectContent>
           </Select>
+
+          {/* Add User Button - Mobile */}
+          {addUserButton && (
+            <div className="pt-2">
+              {addUserButton}
+            </div>
+          )}
         </div>
-        {addUserButton && (
-          <div className="mt-3 md:mt-0 md:ml-4 flex-shrink-0 flex items-end">{addUserButton}</div>
-        )}
+
+        {/* Desktop: Grid layout */}
+        <div className="hidden md:flex md:items-end md:gap-4">
+          <div className="flex-1 grid grid-cols-3 gap-4">
+            {/* Search by name */}
+            <SearchInput
+              placeholder="Zoeken op naam..."
+              value={searchTerm}
+              onChange={onSearchTermChange}
+            />
+
+            {/* Filter by role */}
+            <Select
+              value={roleFilter}
+              onValueChange={onRoleFilterChange}
+            >
+              <SelectTrigger className="dropdown-login-style">
+                <SelectValue placeholder="Alle rollen" />
+              </SelectTrigger>
+              <SelectContent className="dropdown-content-login-style">
+                <SelectItem value="all" className="dropdown-item-login-style">Alle rollen</SelectItem>
+                <SelectItem value="admin" className="dropdown-item-login-style">Administrator</SelectItem>
+                <SelectItem value="player_manager" className="dropdown-item-login-style">Teamverantwoordelijke</SelectItem>
+                <SelectItem value="referee" className="dropdown-item-login-style">Scheidsrechter</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Filter by team */}
+            <Select
+              value={teamFilter}
+              onValueChange={onTeamFilterChange}
+              disabled={teams.length === 0}
+            >
+              <SelectTrigger className="dropdown-login-style">
+                <SelectValue placeholder="Alle teams" />
+              </SelectTrigger>
+              <SelectContent className="dropdown-content-login-style">
+                <SelectItem value="all" className="dropdown-item-login-style">Alle teams</SelectItem>
+                {teams.map((team) => (
+                  <SelectItem key={team.team_id} value={team.team_id.toString()} className="dropdown-item-login-style">
+                    {team.team_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Add User Button - Desktop */}
+          {addUserButton && (
+            <div className="flex-shrink-0">
+              {addUserButton}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* User Table */}
