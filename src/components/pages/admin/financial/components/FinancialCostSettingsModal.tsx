@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,12 +13,12 @@ import { costSettingsService } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
 import { Settings, Plus, Edit, Trash2, Euro } from "lucide-react";
 
-interface CostSettingsModalProps {
+interface FinancialCostSettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const CostSettingsModal: React.FC<CostSettingsModalProps> = ({ open, onOpenChange }) => {
+const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProps> = ({ open, onOpenChange }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -160,22 +160,25 @@ const CostSettingsModal: React.FC<CostSettingsModalProps> = ({ open, onOpenChang
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-purple-100 border-purple-light mx-4 sm:mx-auto">
-        <DialogHeader className="bg-purple-100">
-          <DialogTitle className="flex items-center gap-2 text-purple-light">
+      <DialogContent className="modal max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="modal__title flex items-center gap-2">
             <Settings className="h-5 w-5" />
             Kostentarieven Beheer
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Beheer alle kosten en boetes in het systeem
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 bg-purple-100 p-4">
+        <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <p className="text-sm text-purple-dark">
+            <p className="text-sm text-gray-600">
               Beheer alle kosten en boetes in het systeem
             </p>
             <Button 
               onClick={() => setShowAddForm(!showAddForm)}
-              className="flex items-center gap-2 btn-dark"
+              className="btn btn--primary"
             >
               <Plus className="h-4 w-4" />
               {showAddForm ? 'Annuleren' : 'Nieuw Tarief'}
@@ -183,31 +186,31 @@ const CostSettingsModal: React.FC<CostSettingsModalProps> = ({ open, onOpenChang
           </div>
 
           {showAddForm && (
-            <div className="bg-purple-50 rounded-lg p-4 border border-purple-light">
-              <h3 className="text-lg font-semibold mb-4 text-purple-light">
+            <div className="bg-gray-50 rounded-lg p-4 border">
+              <h3 className="text-lg font-semibold mb-4">
                 {editingItem ? 'Tarief Bewerken' : 'Nieuw Tarief Toevoegen'}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-purple-dark">Naam *</Label>
+                  <Label>Naam *</Label>
                   <Input
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     placeholder="Naam van het tarief"
-                    className="bg-white placeholder:text-purple-200"
+                    className="modal__input"
                   />
                 </div>
 
                 <div>
-                  <Label className="text-purple-dark">Categorie *</Label>
+                  <Label>Categorie *</Label>
                   <Select 
                     value={formData.category} 
                     onValueChange={(value: any) => setFormData({...formData, category: value})}
                   >
-                    <SelectTrigger className="bg-white">
+                    <SelectTrigger className="modal__input">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-white">
+                    <SelectContent>
                       <SelectItem value="match_cost">Wedstrijdkosten</SelectItem>
                       <SelectItem value="penalty">Boete</SelectItem>
                       <SelectItem value="other">Overig</SelectItem>
@@ -216,34 +219,34 @@ const CostSettingsModal: React.FC<CostSettingsModalProps> = ({ open, onOpenChang
                 </div>
 
                 <div>
-                  <Label className="text-purple-dark">Bedrag (€) *</Label>
+                  <Label>Bedrag (€) *</Label>
                   <Input
                     type="number"
                     step="0.01"
                     value={formData.amount}
                     onChange={(e) => setFormData({...formData, amount: e.target.value})}
                     placeholder="0.00"
-                    className="bg-white placeholder:text-purple-200"
+                    className="modal__input"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label className="text-purple-dark">Beschrijving</Label>
+                  <Label>Beschrijving</Label>
                   <Textarea
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                     placeholder="Optionele beschrijving..."
                     rows={2}
-                    className="bg-white placeholder:text-purple-200"
+                    className="modal__input"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-2 mt-4">
-                <Button onClick={handleSave} className="btn-dark">
+              <div className="modal__actions mt-4">
+                <Button onClick={handleSave} className="btn btn--primary">
                   {editingItem ? 'Bijwerken' : 'Toevoegen'}
                 </Button>
-                <Button onClick={resetForm} className="btn-light">
+                <Button onClick={resetForm} className="btn btn--secondary">
                   Annuleren
                 </Button>
               </div>
@@ -258,51 +261,53 @@ const CostSettingsModal: React.FC<CostSettingsModalProps> = ({ open, onOpenChang
                 {getCategoryLabel(category)}
               </h3>
               
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Naam</TableHead>
-                    <TableHead>Beschrijving</TableHead>
-                    <TableHead className="text-right">Bedrag</TableHead>
-                    <TableHead className="text-center">Acties</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {settings.map((setting) => (
-                    <TableRow key={setting.id}>
-                      <TableCell className="font-medium">{setting.name}</TableCell>
-                      <TableCell className="text-gray-600">
-                        {setting.description || '-'}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(setting.amount)}
-                      </TableCell>
-                      <TableCell className="flex gap-2 justify-end">
-                        <Button
-                          className="btn-white"
-                          size="sm"
-                          onClick={() => handleEdit(setting)}
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          className="btn-white"
-                          size="sm"
-                          onClick={() => handleDelete(setting.id)}
-                        >
-                          <Trash2 className="h-3 w-3 text-red-500" />
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table className="table min-w-full">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Naam</TableHead>
+                      <TableHead>Beschrijving</TableHead>
+                      <TableHead className="text-right">Bedrag</TableHead>
+                      <TableHead className="text-center">Acties</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {settings.map((setting) => (
+                      <TableRow key={setting.id}>
+                        <TableCell className="font-medium">{setting.name}</TableCell>
+                        <TableCell className="text-gray-600">
+                          {setting.description || '-'}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {formatCurrency(setting.amount)}
+                        </TableCell>
+                        <TableCell className="flex gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(setting)}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(setting.id)}
+                          >
+                            <Trash2 className="h-3 w-3 text-red-500" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           ))}
 
           {isLoading && (
             <div className="flex items-center justify-center h-40">
-              <p>Kostentarieven laden...</p>
+              <p className="text-gray-500">Kostentarieven laden...</p>
             </div>
           )}
         </div>
@@ -311,4 +316,4 @@ const CostSettingsModal: React.FC<CostSettingsModalProps> = ({ open, onOpenChang
   );
 };
 
-export default CostSettingsModal;
+export default FinancialCostSettingsModal;

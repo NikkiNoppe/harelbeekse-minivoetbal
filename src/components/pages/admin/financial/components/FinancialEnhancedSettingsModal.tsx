@@ -13,14 +13,14 @@ import { Settings, Edit, Trash2, Plus, AlertTriangle, Info, X } from "lucide-rea
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { enhancedCostSettingsService } from "@/services/financial";
-import AffectedTransactionsModal from "./AffectedTransactionsModal";
+import FinancialAffectedTransactionsModal from "./FinancialAffectedTransactionsModal";
 
-interface EnhancedCostSettingsModalProps {
+interface FinancialEnhancedSettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ open, onOpenChange }) => {
+const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsModalProps> = ({ open, onOpenChange }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -227,21 +227,13 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-purple-100 border-purple-light shadow-lg relative mx-4 sm:mx-auto">
-          <button
-            type="button"
-            className="btn--close"
-            aria-label="Sluiten"
-            onClick={() => onOpenChange(false)}
-          >
-            <X size={20} />
-          </button>
-          <DialogHeader className="bg-purple-100">
-            <DialogTitle className="text-2xl text-purple-light flex items-center gap-2">
+        <DialogContent className="modal max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="modal__title flex items-center gap-2">
               <Settings className="h-5 w-5" />
               Uitgebreide Kostenbeheer
             </DialogTitle>
-            <DialogDescription className="text-purple-dark">
+            <DialogDescription className="sr-only">
               Beheer alle kostentarieven en boetes. Wijzigingen worden automatisch toegepast op alle gerelateerde transacties.
             </DialogDescription>
           </DialogHeader>
@@ -282,6 +274,7 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder="Bijv. Veldkosten per wedstrijd"
+                        className="modal__input"
                       />
                     </div>
                     <div>
@@ -293,6 +286,7 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
                         value={formData.amount}
                         onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                         placeholder="0.00"
+                        className="modal__input"
                       />
                     </div>
                   </div>
@@ -302,16 +296,17 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Optionele beschrijving"
+                      placeholder="Optionele beschrijving..."
+                      className="modal__input"
                     />
                   </div>
                   <div>
                     <Label htmlFor="category">Categorie</Label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={(value) => setFormData({ ...formData, category: value as any })}
+                    <Select 
+                      value={formData.category} 
+                      onValueChange={(value: any) => setFormData({...formData, category: value})}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="modal__input">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -323,95 +318,84 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex gap-2">
-                    <Button onClick={handleSave}>
+                  <DialogFooter>
+                    <Button onClick={handleSave} className="btn btn--primary">
                       {editingItem ? 'Bijwerken' : 'Toevoegen'}
                     </Button>
-                    <Button variant="outline" onClick={resetForm}>
+                    <Button onClick={resetForm} className="btn btn--secondary">
                       Annuleren
                     </Button>
-                  </div>
+                  </DialogFooter>
                 </CardContent>
               </Card>
             )}
 
-            {/* Settings List */}
-            {!showAddForm && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">Huidige Kostentarieven</h3>
-                  <Button onClick={() => setShowAddForm(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nieuw Tarief
-                  </Button>
-                </div>
-
-                {isLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-                    <p className="mt-2 text-sm text-gray-600">Laden van kostentarieven...</p>
+            {/* Settings by Category */}
+            {Object.entries(groupedSettings).map(([category, settings]) => (
+              <Card key={category}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Badge className={getCategoryColor(category)}>
+                      {getCategoryLabel(category)}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table className="table min-w-full">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Naam</TableHead>
+                          <TableHead>Beschrijving</TableHead>
+                          <TableHead className="text-right">Bedrag</TableHead>
+                          <TableHead className="text-center">Acties</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {settings.map((setting) => (
+                          <TableRow key={setting.id}>
+                            <TableCell className="font-medium">{setting.name}</TableCell>
+                            <TableCell className="text-gray-600">
+                              {setting.description || '-'}
+                            </TableCell>
+                            <TableCell className="text-right font-semibold">
+                              {formatCurrency(setting.amount)}
+                            </TableCell>
+                            <TableCell className="flex gap-2 justify-end">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEdit(setting)}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDelete(setting.id)}
+                              >
+                                <Trash2 className="h-3 w-3 text-red-500" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
-                ) : (
-                  Object.entries(groupedSettings).map(([category, settings]) => (
-                    <Card key={category}>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Badge className={getCategoryColor(category)}>
-                            {getCategoryLabel(category)}
-                          </Badge>
-                          <span className="text-sm text-gray-500">
-                            ({settings.length} tarief{settings.length !== 1 ? 'en' : ''})
-                          </span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Naam</TableHead>
-                              <TableHead>Beschrijving</TableHead>
-                              <TableHead>Bedrag</TableHead>
-                              <TableHead>Acties</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {settings.map((setting) => (
-                              <TableRow key={setting.id}>
-                                <TableCell className="font-medium">{setting.name}</TableCell>
-                                <TableCell>{setting.description || '-'}</TableCell>
-                                <TableCell className="font-mono">
-                                  {formatCurrency(setting.amount)}
-                                </TableCell>
-                                <TableCell className="action-buttons">
-                                  <Button
-                                    className="btn-action-edit"
-                                    onClick={() => handleEdit(setting)}
-                                  >
-                                    <Edit />
-                                  </Button>
-                                  <Button
-                                    className="btn-action-delete"
-                                    onClick={() => handleDelete(setting.id)}
-                                  >
-                                    <Trash2 />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
+                </CardContent>
+              </Card>
+            ))}
+
+            {isLoading && (
+              <div className="flex items-center justify-center h-40">
+                <p className="text-gray-500">Kostentarieven laden...</p>
               </div>
             )}
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Affected Transactions Modal */}
-      <AffectedTransactionsModal
+      <FinancialAffectedTransactionsModal
         open={showAffectedTransactions}
         onOpenChange={setShowAffectedTransactions}
         costSettingId={affectedTransactionsData.costSettingId}
@@ -423,4 +407,4 @@ const EnhancedCostSettingsModal: React.FC<EnhancedCostSettingsModalProps> = ({ o
   );
 };
 
-export default EnhancedCostSettingsModal;
+export default FinancialEnhancedSettingsModal;

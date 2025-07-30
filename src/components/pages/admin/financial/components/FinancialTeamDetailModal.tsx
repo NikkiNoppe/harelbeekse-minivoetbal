@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { costSettingsService } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2, X, Check } from "lucide-react";
+import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2, Check, X } from "lucide-react";
 import { formatDateShort, getCurrentDate } from "@/lib/dateUtils";
 
 interface Team {
@@ -18,13 +18,13 @@ interface Team {
   team_name: string;
 }
 
-interface TeamDetailModalProps {
+interface FinancialTeamDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   team: Team | null;
 }
 
-const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, team }) => {
+const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ open, onOpenChange, team }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showAddTransaction, setShowAddTransaction] = useState(false);
@@ -285,20 +285,15 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-purple-100 border-purple-light shadow-lg relative mx-4 sm:mx-auto">
-        <button
-          type="button"
-          className="btn--close"
-          aria-label="Sluiten"
-          onClick={() => onOpenChange(false)}
-        >
-          <X size={20} />
-        </button>
-        <DialogHeader className="bg-purple-100">
-          <DialogTitle className="text-2xl text-purple-light flex items-center gap-2">
+      <DialogContent className="modal max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="modal__title flex items-center gap-2">
             <Euro className="h-5 w-5" />
             {team.team_name} - Financieel Detail
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Financieel overzicht en transacties voor {team.team_name}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -338,8 +333,8 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
                       value={transactionForm.type} 
                       onValueChange={(value: any) => setTransactionForm({...transactionForm, type: value})}
                     >
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="modal__input">
+                        <SelectValue placeholder="Selecteer type" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="deposit">Storting</SelectItem>
@@ -357,6 +352,7 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
                       value={transactionForm.amount}
                       onChange={(e) => setTransactionForm({...transactionForm, amount: e.target.value})}
                       placeholder="0.00"
+                      className="modal__input"
                     />
                     {transactionForm.cost_setting_id && (
                       <p className="text-xs text-gray-500 mt-1">
@@ -371,6 +367,7 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
                       type="date"
                       value={transactionForm.transaction_date}
                       onChange={(e) => setTransactionForm({...transactionForm, transaction_date: e.target.value})}
+                      className="modal__input"
                     />
                   </div>
 
@@ -388,7 +385,7 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
                           });
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="modal__input">
                           <SelectValue placeholder="Selecteer boete type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -409,17 +406,19 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
                       onChange={(e) => setTransactionForm({...transactionForm, description: e.target.value})}
                       placeholder="Optionele beschrijving..."
                       rows={2}
+                      className="modal__input"
                     />
                   </div>
                 </div>
 
-                <div className="flex gap-2 mt-4">
-                  <Button onClick={handleAddTransaction}>
+                <div className="modal__actions mt-4">
+                  <Button onClick={handleAddTransaction} className="btn btn--primary">
                     Transactie Toevoegen
                   </Button>
                   <Button 
                     variant="outline" 
                     onClick={() => setShowAddTransaction(false)}
+                    className="btn btn--secondary"
                   >
                     Annuleren
                   </Button>
@@ -428,140 +427,142 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
             )}
 
             {/* Transactions Table */}
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Datum</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Beschrijving</TableHead>
-                  <TableHead className="text-right">Bedrag</TableHead>
-                  <TableHead className="text-center">Acties</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loadingTransactions ? (
+            <div className="overflow-x-auto">
+              <Table className="table min-w-full">
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center">Laden...</TableCell>
+                    <TableHead className="w-32 lg:w-40">Datum</TableHead>
+                    <TableHead className="w-32 lg:w-40">Type</TableHead>
+                    <TableHead className="min-w-48 lg:min-w-64">Beschrijving</TableHead>
+                    <TableHead className="text-right w-32 lg:w-40">Bedrag</TableHead>
+                    <TableHead className="text-center w-24 lg:w-32">Acties</TableHead>
                   </TableRow>
-                ) : transactions?.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-gray-500">
-                      Geen transacties gevonden
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  transactions?.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      {editingTransaction === transaction.id ? (
-                        // Edit Mode
-                        <>
-                          <TableCell>
-                            <Input
-                              type="date"
-                              value={editForm.transaction_date}
-                              onChange={(e) => setEditForm({...editForm, transaction_date: e.target.value})}
-                              className="w-32"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getTransactionColor(transaction.transaction_type)}>
-                              <div className="flex items-center gap-1">
-                                {getTransactionIcon(transaction.transaction_type)}
-                                {getTransactionLabel(transaction.transaction_type)}
-                              </div>
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              value={editForm.description}
-                              onChange={(e) => setEditForm({...editForm, description: e.target.value})}
-                              placeholder="Beschrijving"
-                              className="w-full"
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={editForm.amount}
-                              onChange={(e) => setEditForm({...editForm, amount: e.target.value})}
-                              className="w-24 text-right"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex gap-1 justify-center">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleUpdateTransaction}
-                                className="text-green-600 hover:text-green-800 hover:bg-green-50"
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleCancelEdit}
-                                className="text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </>
-                      ) : (
-                        // View Mode
-                        <>
-                          <TableCell>
-                            {formatDateShort(transaction.transaction_date)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getTransactionColor(transaction.transaction_type)}>
-                              <div className="flex items-center gap-1">
-                                {getTransactionIcon(transaction.transaction_type)}
-                                {getTransactionLabel(transaction.transaction_type)}
-                              </div>
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {transaction.description || 
-                             transaction.cost_settings?.name || 
-                             transaction.matches?.unique_number || 
-                             '-'}
-                          </TableCell>
-                          <TableCell className={`text-right font-semibold ${
-                            transaction.transaction_type === 'deposit' ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {transaction.transaction_type === 'deposit' ? '+' : '-'}
-                            {formatCurrency(Math.abs(transaction.amount))}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex gap-1 justify-center">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditTransaction(transaction)}
-                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteTransaction(transaction.id)}
-                                className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </>
-                      )}
+                </TableHeader>
+                <TableBody>
+                  {loadingTransactions ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center">Laden...</TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : transactions?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-gray-500">
+                        Geen transacties gevonden
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    transactions?.map((transaction) => (
+                      <TableRow key={transaction.id}>
+                        {editingTransaction === transaction.id ? (
+                          // Edit Mode
+                          <>
+                            <TableCell>
+                              <Input
+                                type="date"
+                                value={editForm.transaction_date}
+                                onChange={(e) => setEditForm({...editForm, transaction_date: e.target.value})}
+                                className="modal__input w-full"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getTransactionColor(transaction.transaction_type)}>
+                                <div className="flex items-center gap-1">
+                                  {getTransactionIcon(transaction.transaction_type)}
+                                  {getTransactionLabel(transaction.transaction_type)}
+                                </div>
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={editForm.description}
+                                onChange={(e) => setEditForm({...editForm, description: e.target.value})}
+                                placeholder="Beschrijving"
+                                className="modal__input w-full"
+                              />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={editForm.amount}
+                                onChange={(e) => setEditForm({...editForm, amount: e.target.value})}
+                                className="modal__input w-full text-right"
+                              />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex gap-1 justify-center">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleUpdateTransaction}
+                                  className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleCancelEdit}
+                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </>
+                        ) : (
+                          // View Mode
+                          <>
+                            <TableCell>
+                              {formatDateShort(transaction.transaction_date)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getTransactionColor(transaction.transaction_type)}>
+                                <div className="flex items-center gap-1">
+                                  {getTransactionIcon(transaction.transaction_type)}
+                                  {getTransactionLabel(transaction.transaction_type)}
+                                </div>
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {transaction.description || 
+                               transaction.cost_settings?.name || 
+                               transaction.matches?.unique_number || 
+                               '-'}
+                            </TableCell>
+                            <TableCell className={`text-right font-semibold ${
+                              transaction.transaction_type === 'deposit' ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {transaction.transaction_type === 'deposit' ? '+' : '-'}
+                              {formatCurrency(Math.abs(transaction.amount))}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex gap-1 justify-center">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditTransaction(transaction)}
+                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteTransaction(transaction.id)}
+                                  className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </>
+                        )}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
       </DialogContent>
@@ -569,4 +570,4 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ open, onOpenChange, t
   );
 };
 
-export default TeamDetailModal;
+export default FinancialTeamDetailModal;

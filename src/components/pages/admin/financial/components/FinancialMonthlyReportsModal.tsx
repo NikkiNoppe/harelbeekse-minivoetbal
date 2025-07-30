@@ -8,12 +8,12 @@ import { useQuery } from "@tanstack/react-query";
 import { monthlyReportsService } from "@/services/financial";
 import { Calendar, Download, Euro, X } from "lucide-react";
 
-interface MonthlyReportsModalProps {
+interface FinancialMonthlyReportsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenChange }) => {
+const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> = ({ open, onOpenChange }) => {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
   // Determine current season: if we're in Aug-Dec, it's currentYear/currentYear+1, else (currentYear-1)/currentYear
@@ -78,26 +78,18 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto bg-purple-100 border-purple-light shadow-lg relative mx-4 sm:mx-auto">
-        <button
-          type="button"
-          className="btn--close"
-          aria-label="Sluiten"
-          onClick={() => onOpenChange(false)}
-        >
-          <X size={20} />
-        </button>
-        <DialogHeader className="bg-purple-100">
-          <DialogTitle className="text-2xl text-purple-light flex items-center gap-2">
+      <DialogContent className="modal max-w-6xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="modal__title flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             Seizoen Kostenrapportage
           </DialogTitle>
-          <DialogDescription className="text-purple-dark">
+          <DialogDescription className="sr-only">
             Bekijk seizoen/maandelijkse kosten, scheidsrechterbetalingen en boetes voor teams
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 bg-white p-4">
+        <div className="space-y-6">
           {/* Filters */}
           <div className="flex gap-4 items-end">
             <div>
@@ -384,4 +376,4 @@ const MonthlyReportsModal: React.FC<MonthlyReportsModalProps> = ({ open, onOpenC
   );
 };
 
-export default MonthlyReportsModal;
+export default FinancialMonthlyReportsModal;

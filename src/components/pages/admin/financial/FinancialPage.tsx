@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Euro, TrendingDown, TrendingUp, List, Calendar } from "lucide-react";
-import TeamDetailModal from "@/components/pages/admin/financial/components/TeamDetailModal";
-import CostSettingsManagementModal from "@/components/pages/admin/financial/components/CostSettingsManagementModal";
-import MonthlyReportsModal from "@/components/pages/admin/financial/components/MonthlyReportsModal";
+import FinancialTeamDetailModal from "@/components/pages/admin/financial/components/FinancialTeamDetailModal";
+import FinancialSettingsModal from "@/components/pages/admin/financial/components/FinancialSettingsModal";
+import FinancialMonthlyReportsModal from "@/components/pages/admin/financial/components/FinancialMonthlyReportsModal";
 import { costSettingsService } from "@/services/financial";
 import { financialOverviewService } from "@/services/financial/financialOverviewService";
 
@@ -238,11 +238,11 @@ const AdminFinancialPage: React.FC = () => {
         </Card>
       </section>
 
-      <TeamDetailModal open={teamModalOpen} onOpenChange={setTeamModalOpen} team={selectedTeam} />
+      <FinancialTeamDetailModal open={teamModalOpen} onOpenChange={setTeamModalOpen} team={selectedTeam} />
 
-      <CostSettingsManagementModal open={costListModalOpen} onOpenChange={setCostListModalOpen} />
+      <FinancialSettingsModal open={costListModalOpen} onOpenChange={setCostListModalOpen} />
 
-      <MonthlyReportsModal open={monthlyReportsModalOpen} onOpenChange={setMonthlyReportsModalOpen} />
+      <FinancialMonthlyReportsModal open={monthlyReportsModalOpen} onOpenChange={setMonthlyReportsModalOpen} />
     </div>
   );
 };

@@ -1,12 +1,12 @@
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Info, X } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 import { enhancedCostSettingsService, type TeamTransaction } from "@/services/financial";
 
-interface AffectedTransactionsModalProps {
+interface FinancialAffectedTransactionsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   costSettingId: number;
@@ -15,7 +15,7 @@ interface AffectedTransactionsModalProps {
   newAmount: number;
 }
 
-const AffectedTransactionsModal: React.FC<AffectedTransactionsModalProps> = ({
+const FinancialAffectedTransactionsModal: React.FC<FinancialAffectedTransactionsModalProps> = ({
   open,
   onOpenChange,
   costSettingId,
@@ -30,9 +30,10 @@ const AffectedTransactionsModal: React.FC<AffectedTransactionsModalProps> = ({
     if (open && costSettingId) {
       loadAffectedTransactions();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, costSettingId]);
 
-  const loadAffectedTransactions = async () => {
+  const loadAffectedTransactions = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await enhancedCostSettingsService.getAffectedTransactions(costSettingId);
@@ -42,69 +43,51 @@ const AffectedTransactionsModal: React.FC<AffectedTransactionsModalProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [costSettingId]);
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = useMemo(() => (amount: number) => {
     return new Intl.NumberFormat('nl-NL', {
       style: 'currency',
       currency: 'EUR'
     }).format(amount);
-  };
+  }, []);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useMemo(() => (dateString: string) => {
     return new Date(dateString).toLocaleDateString('nl-NL');
-  };
+  }, []);
 
-  const getTransactionTypeLabel = (type: string) => {
+  const getTransactionTypeLabel = useMemo(() => (type: string) => {
     switch (type) {
-      case 'match_cost':
-        return 'Wedstrijdkosten';
-      case 'penalty':
-        return 'Boete';
-      case 'deposit':
-        return 'Storting';
-      case 'adjustment':
-        return 'Aanpassing';
-      default:
-        return type;
+      case 'match_cost': return 'Wedstrijdkosten';
+      case 'penalty': return 'Boete';
+      case 'deposit': return 'Storting';
+      case 'adjustment': return 'Aanpassing';
+      default: return type;
     }
-  };
+  }, []);
 
-  const getTransactionTypeColor = (type: string) => {
+  const getTransactionTypeColor = useMemo(() => (type: string) => {
     switch (type) {
-      case 'match_cost':
-        return 'bg-blue-100 text-blue-800';
-      case 'penalty':
-        return 'bg-red-100 text-red-800';
-      case 'deposit':
-        return 'bg-green-100 text-green-800';
-      case 'adjustment':
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 'match_cost': return 'bg-blue-100 text-blue-800';
+      case 'penalty': return 'bg-red-100 text-red-800';
+      case 'deposit': return 'bg-green-100 text-green-800';
+      case 'adjustment': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
-  };
+  }, []);
 
-  const totalImpact = transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  const totalImpact = useMemo(() => transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0), [transactions]);
   const amountDifference = newAmount - oldAmount;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-purple-100 border-purple-light shadow-lg relative mx-4 sm:mx-auto">
-        <button
-          type="button"
-          className="btn--close"
-          aria-label="Sluiten"
-          onClick={() => onOpenChange(false)}
-        >
-          <X size={20} />
-        </button>
-        <DialogHeader className="bg-purple-100">
-          <DialogTitle className="text-2xl text-purple-light flex items-center gap-2">
+      <DialogContent className="modal max-w-3xl w-full max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="modal__title flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
             Getroffen Transacties
           </DialogTitle>
-          <DialogDescription className="text-purple-dark">
+          <DialogDescription className="sr-only">
             Overzicht van transacties die automatisch zijn aangepast na wijziging van "{costSettingName}"
           </DialogDescription>
         </DialogHeader>
@@ -114,10 +97,10 @@ const AffectedTransactionsModal: React.FC<AffectedTransactionsModalProps> = ({
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              <strong>Wijziging:</strong> {formatCurrency(oldAmount)} → {formatCurrency(newAmount)} 
+              <strong>Wijziging:</strong> {formatCurrency(oldAmount)} → {formatCurrency(newAmount)}
               ({amountDifference > 0 ? '+' : ''}{formatCurrency(amountDifference)})
               <br />
-              <strong>Getroffen transacties:</strong> {transactions.length} 
+              <strong>Getroffen transacties:</strong> {transactions.length}
               <br />
               <strong>Totaal impact:</strong> {formatCurrency(totalImpact)}
             </AlertDescription>
@@ -130,8 +113,8 @@ const AffectedTransactionsModal: React.FC<AffectedTransactionsModalProps> = ({
               <p className="mt-2 text-sm text-gray-600">Laden van getroffen transacties...</p>
             </div>
           ) : transactions.length > 0 ? (
-            <div className="border rounded-lg">
-              <Table>
+            <div className="border rounded-lg overflow-x-auto">
+              <Table className="table min-w-full">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Team</TableHead>
@@ -182,7 +165,7 @@ const AffectedTransactionsModal: React.FC<AffectedTransactionsModalProps> = ({
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Let op:</strong> Deze wijzigingen hebben invloed op de team balances. 
+                <strong>Let op:</strong> Deze wijzigingen hebben invloed op de team balances.
                 Alle getroffen teams hebben automatisch een aangepaste balans gekregen.
               </AlertDescription>
             </Alert>
@@ -193,4 +176,4 @@ const AffectedTransactionsModal: React.FC<AffectedTransactionsModalProps> = ({
   );
 };
 
-export default AffectedTransactionsModal; 
+export default FinancialAffectedTransactionsModal; 
