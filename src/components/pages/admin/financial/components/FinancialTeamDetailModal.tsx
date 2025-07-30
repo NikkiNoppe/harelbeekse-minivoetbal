@@ -376,16 +376,28 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                   <div>
                     <Label>Type Transactie</Label>
                     <Select 
-                      value={transactionForm.type} 
-                      onValueChange={(value: any) => setTransactionForm({...transactionForm, type: value})}
+                      value={transactionForm.cost_setting_id} 
+                      onValueChange={(value) => {
+                        const selectedCost = costSettings?.find(cs => cs.id.toString() === value);
+                        setTransactionForm({
+                          ...transactionForm, 
+                          cost_setting_id: value,
+                          amount: selectedCost?.amount?.toString() || '',
+                          description: selectedCost?.name || '',
+                          type: selectedCost?.category === 'deposit' ? 'deposit' : 
+                                selectedCost?.category === 'penalty' ? 'penalty' : 'adjustment'
+                        });
+                      }}
                     >
                       <SelectTrigger className="modal__input">
-                        <SelectValue placeholder="Selecteer type" />
+                        <SelectValue placeholder="Selecteer transactie type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="deposit">Storting</SelectItem>
-                        <SelectItem value="penalty">Boete</SelectItem>
-                        <SelectItem value="adjustment">Correctie</SelectItem>
+                        {costSettings?.map((cost) => (
+                          <SelectItem key={cost.id} value={cost.id.toString()}>
+                            {cost.name} - €{cost.amount}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -417,33 +429,6 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                     />
                   </div>
 
-                  {(transactionForm.type === 'penalty') && (
-                    <div>
-                      <Label>Boete Type</Label>
-                      <Select 
-                        value={transactionForm.cost_setting_id} 
-                        onValueChange={(value) => {
-                          const selectedCostSetting = costSettings?.find(cs => cs.id.toString() === value);
-                          setTransactionForm({
-                            ...transactionForm, 
-                            cost_setting_id: value,
-                            amount: selectedCostSetting ? selectedCostSetting.amount.toString() : transactionForm.amount
-                          });
-                        }}
-                      >
-                        <SelectTrigger className="modal__input">
-                          <SelectValue placeholder="Selecteer boete type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {costSettings?.filter(cs => cs.category === 'penalty').map(cs => (
-                            <SelectItem key={cs.id} value={cs.id.toString()}>
-                              {cs.name} - {formatCurrency(cs.amount)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
 
                   <div className="md:col-span-2">
                     <Label>Beschrijving</Label>

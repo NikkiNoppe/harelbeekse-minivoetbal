@@ -32,7 +32,7 @@ interface Team {
   preferred_play_moments?: {
     days?: string[];
     timeslots?: string[];
-    venues?: number[];
+    venues?: string[];
     notes?: string;
   };
 }
