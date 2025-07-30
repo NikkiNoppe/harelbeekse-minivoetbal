@@ -125,7 +125,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
               </Select>
             </div>
 
-            <Button className="btn-light flex items-center gap-2">
+            <Button className="btn btn--secondary flex items-center gap-2">
               <Download className="h-4 w-4" />
               Export
             </Button>

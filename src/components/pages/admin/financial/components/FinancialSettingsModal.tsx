@@ -196,8 +196,7 @@ const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                 </h3>
                 <Button 
                   onClick={() => showAddForm ? resetForm() : setShowAddForm(true)}
-                  variant="outline"
-                  className="flex items-center gap-2"
+                  className="btn btn--secondary flex items-center gap-2"
                   disabled={isSubmitting}
                 >
                   <Plus className="h-4 w-4" />
@@ -274,7 +273,6 @@ const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                     </Button>
                     <Button 
                       onClick={resetForm}
-                      variant="outline"
                       className="btn btn--secondary"
                       disabled={isSubmitting}
                     >
@@ -337,19 +335,17 @@ const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                           </TableCell>
                           <TableCell className="flex gap-2 justify-center">
                             <Button
-                              variant="ghost"
                               size="sm"
                               onClick={() => handleEdit(setting)}
-                              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                              className="btn btn--outline"
                               disabled={isSubmitting}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button
-                              variant="ghost"
                               size="sm"
                               onClick={() => setDeletingItem(setting)}
-                              className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                              className="btn btn--danger"
                               disabled={isSubmitting}
                             >
                               <Trash2 className="h-4 w-4" />

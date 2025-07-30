@@ -185,58 +185,76 @@ export const costSettingsService = {
 
   async addTransaction(transaction: Omit<TeamTransaction, 'id' | 'created_at'>): Promise<{ success: boolean; message: string }> {
     try {
-      // For deposits, use the fixed "Storting" entry
+      console.log('Adding transaction:', transaction);
+      
+      // For deposits, create a simple cost entry and link it
       if (transaction.transaction_type === 'deposit') {
-        // Get the fixed deposit cost entry
-        const { data: depositCost, error: costError } = await supabase
+        // Create a deposit cost entry if it doesn't exist
+        let depositCostId: number;
+        
+        const { data: existingDeposit } = await supabase
           .from('costs')
           .select('id')
           .eq('name', 'Storting')
           .eq('category', 'deposit')
           .single();
 
-        if (costError) throw costError;
+        if (existingDeposit) {
+          depositCostId = existingDeposit.id;
+        } else {
+          // Create deposit cost entry
+          const { data: newDeposit, error: costError } = await supabase
+            .from('costs')
+            .insert([{
+              name: 'Storting',
+              description: 'Storting van geld',
+              amount: 0, // Will be overridden by individual amount
+              category: 'deposit',
+              is_active: true
+            }])
+            .select('id')
+            .single();
 
-        // Link it to the team with the individual amount
+          if (costError) throw costError;
+          depositCostId = newDeposit.id;
+        }
+
+        // Link to team with individual amount
         const { error: linkError } = await supabase
           .from('team_costs')
           .insert([{
             team_id: transaction.team_id,
-            cost_setting_id: depositCost.id,
-            amount: transaction.amount, // Store individual amount
+            cost_setting_id: depositCostId,
+            amount: transaction.amount,
             transaction_date: transaction.transaction_date
           }]);
 
         if (linkError) throw linkError;
-        
         return { success: true, message: 'Storting succesvol toegevoegd' };
       }
 
-      // For penalties with cost_setting_id, use individual amount if provided
+      // For penalties with cost_setting_id
       if (transaction.transaction_type === 'penalty' && transaction.cost_setting_id) {
-        // Link to existing cost setting with individual amount
-        const { error: linkError } = await supabase
+        const { error } = await supabase
           .from('team_costs')
           .insert([{
             team_id: transaction.team_id,
             cost_setting_id: transaction.cost_setting_id,
-            amount: transaction.amount, // Store individual amount
-            transaction_date: transaction.transaction_date,
-            match_id: transaction.match_id
+            amount: transaction.amount,
+            transaction_date: transaction.transaction_date
           }]);
 
-        if (linkError) throw linkError;
-        
+        if (error) throw error;
         return { success: true, message: 'Boete succesvol toegevoegd' };
       }
 
-      // For penalties without cost_setting_id, create a new cost entry
-      if (transaction.transaction_type === 'penalty' && !transaction.cost_setting_id) {
-        // First, create the penalty cost entry
+      // For penalties without cost_setting_id, create new cost entry
+      if (transaction.transaction_type === 'penalty') {
         const { data: costData, error: costError } = await supabase
           .from('costs')
           .insert([{
             name: transaction.description || `Boete ${new Date(transaction.transaction_date).toLocaleDateString('nl-NL')}`,
+            description: transaction.description || 'Boete',
             amount: transaction.amount,
             category: 'penalty',
             is_active: true
@@ -246,45 +264,71 @@ export const costSettingsService = {
 
         if (costError) throw costError;
 
-        // Then, link it to the team
         const { error: linkError } = await supabase
           .from('team_costs')
           .insert([{
             team_id: transaction.team_id,
             cost_setting_id: costData.id,
-            amount: transaction.amount, // Store individual amount
-            transaction_date: transaction.transaction_date,
-            match_id: transaction.match_id
+            amount: transaction.amount,
+            transaction_date: transaction.transaction_date
           }]);
 
         if (linkError) throw linkError;
-        
         return { success: true, message: 'Boete succesvol toegevoegd' };
       }
 
-      // For other transaction types with cost_setting_id, use individual amount
+      // For adjustments, create new cost entry
+      if (transaction.transaction_type === 'adjustment') {
+        const { data: costData, error: costError } = await supabase
+          .from('costs')
+          .insert([{
+            name: transaction.description || `Correctie ${new Date(transaction.transaction_date).toLocaleDateString('nl-NL')}`,
+            description: transaction.description || 'Correctie',
+            amount: transaction.amount,
+            category: 'other',
+            is_active: true
+          }])
+          .select('id')
+          .single();
+
+        if (costError) throw costError;
+
+        const { error: linkError } = await supabase
+          .from('team_costs')
+          .insert([{
+            team_id: transaction.team_id,
+            cost_setting_id: costData.id,
+            amount: transaction.amount,
+            transaction_date: transaction.transaction_date
+          }]);
+
+        if (linkError) throw linkError;
+        return { success: true, message: 'Correctie succesvol toegevoegd' };
+      }
+
+      // For other transaction types with cost_setting_id
       if (transaction.cost_setting_id) {
         const { error } = await supabase
           .from('team_costs')
           .insert([{
             team_id: transaction.team_id,
             cost_setting_id: transaction.cost_setting_id,
-            amount: transaction.amount, // Store individual amount
-            transaction_date: transaction.transaction_date,
-            match_id: transaction.match_id
+            amount: transaction.amount,
+            transaction_date: transaction.transaction_date
           }]);
 
         if (error) throw error;
         return { success: true, message: 'Transactie succesvol toegevoegd' };
       }
 
-      // For other transaction types without cost_setting_id, create new cost entry
+      // For other transaction types without cost_setting_id
       const { data: costData, error: costError } = await supabase
         .from('costs')
         .insert([{
           name: transaction.description || `Transactie ${new Date(transaction.transaction_date).toLocaleDateString('nl-NL')}`,
+          description: transaction.description || 'Transactie',
           amount: transaction.amount,
-          category: transaction.transaction_type === 'adjustment' ? 'other' : 'penalty',
+          category: 'other',
           is_active: true
         }])
         .select('id')
@@ -297,9 +341,8 @@ export const costSettingsService = {
         .insert([{
           team_id: transaction.team_id,
           cost_setting_id: costData.id,
-          amount: transaction.amount, // Store individual amount
-          transaction_date: transaction.transaction_date,
-          match_id: transaction.match_id
+          amount: transaction.amount,
+          transaction_date: transaction.transaction_date
         }]);
 
       if (linkError) throw linkError;

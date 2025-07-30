@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +42,7 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
     cost_setting_id: '',
     transaction_date: getCurrentDate()
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: transactions, isLoading: loadingTransactions } = useQuery({
     queryKey: ['team-transactions', team?.team_id],
@@ -111,6 +112,25 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
   };
 
   const financialBreakdown = calculateFinancialBreakdown();
+
+  const resetTransactionForm = () => {
+    setTransactionForm({
+      type: 'deposit' as 'deposit' | 'penalty' | 'adjustment',
+      amount: '',
+      description: '',
+      cost_setting_id: '',
+      transaction_date: getCurrentDate()
+    });
+  };
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!open) {
+      setShowAddTransaction(false);
+      setEditingTransaction(null);
+      resetTransactionForm();
+    }
+  }, [open]);
 
   const handleDeleteTransaction = async (transactionId: number) => {
     if (!team) return;
@@ -187,47 +207,74 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
   };
 
   const handleAddTransaction = async () => {
-    if (!team || !transactionForm.amount) {
+    if (!team) {
       toast({
         title: "Fout",
-        description: "Vul alle verplichte velden in",
+        description: "Team niet gevonden",
         variant: "destructive"
       });
       return;
     }
 
-    const result = await costSettingsService.addTransaction({
-      team_id: team.team_id,
-      transaction_type: transactionForm.type,
-      amount: parseFloat(transactionForm.amount),
-      description: transactionForm.description || null,
-      cost_setting_id: transactionForm.cost_setting_id ? parseInt(transactionForm.cost_setting_id) : null,
-      penalty_type_id: null,
-      match_id: null,
-      transaction_date: transactionForm.transaction_date
-    });
-
-    if (result.success) {
-      toast({
-        title: "Succesvol",
-        description: result.message
-      });
-      queryClient.invalidateQueries({ queryKey: ['team-transactions', team.team_id] });
-      queryClient.invalidateQueries({ queryKey: ['teams-financial'] });
-      setShowAddTransaction(false);
-      setTransactionForm({
-        type: 'deposit',
-        amount: '',
-        description: '',
-        cost_setting_id: '',
-        transaction_date: getCurrentDate()
-      });
-    } else {
+    if (!transactionForm.amount || parseFloat(transactionForm.amount) <= 0) {
       toast({
         title: "Fout",
-        description: result.message,
+        description: "Vul een geldig bedrag in",
         variant: "destructive"
       });
+      return;
+    }
+
+    if (!transactionForm.transaction_date) {
+      toast({
+        title: "Fout",
+        description: "Vul een datum in",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      console.log('Submitting transaction:', transactionForm);
+      
+      const result = await costSettingsService.addTransaction({
+        team_id: team.team_id,
+        transaction_type: transactionForm.type,
+        amount: parseFloat(transactionForm.amount),
+        description: transactionForm.description || null,
+        cost_setting_id: transactionForm.cost_setting_id ? parseInt(transactionForm.cost_setting_id) : null,
+        penalty_type_id: null,
+        match_id: null,
+        transaction_date: transactionForm.transaction_date
+      });
+
+      if (result.success) {
+        toast({
+          title: "Succesvol",
+          description: result.message
+        });
+        queryClient.invalidateQueries({ queryKey: ['team-transactions', team.team_id] });
+        queryClient.invalidateQueries({ queryKey: ['teams-financial'] });
+        setShowAddTransaction(false);
+        resetTransactionForm();
+      } else {
+        toast({
+          title: "Fout",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het toevoegen van de transactie",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -316,8 +363,7 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
               <h3 className="text-lg font-semibold">Transacties</h3>
               <Button 
                 onClick={() => setShowAddTransaction(!showAddTransaction)}
-                variant="outline"
-                className="flex items-center gap-2"
+                className="btn btn--secondary flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
                 Nieuwe Transactie
@@ -412,13 +458,20 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                 </div>
 
                 <div className="modal__actions mt-4">
-                  <Button onClick={handleAddTransaction} className="btn btn--primary">
-                    Transactie Toevoegen
+                  <Button 
+                    onClick={handleAddTransaction} 
+                    className="btn btn--primary"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Bezig...' : 'Transactie Toevoegen'}
                   </Button>
                   <Button 
-                    variant="outline" 
-                    onClick={() => setShowAddTransaction(false)}
+                    onClick={() => {
+                      setShowAddTransaction(false);
+                      resetTransactionForm();
+                    }}
                     className="btn btn--secondary"
+                    disabled={isSubmitting}
                   >
                     Annuleren
                   </Button>
@@ -491,18 +544,16 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                             <TableCell className="text-center">
                               <div className="flex gap-1 justify-center">
                                 <Button
-                                  variant="ghost"
                                   size="sm"
                                   onClick={handleUpdateTransaction}
-                                  className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                                  className="btn btn--primary"
                                 >
                                   <Check className="h-4 w-4" />
                                 </Button>
                                 <Button
-                                  variant="ghost"
                                   size="sm"
                                   onClick={handleCancelEdit}
-                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                                  className="btn btn--secondary"
                                 >
                                   <X className="h-4 w-4" />
                                 </Button>
@@ -538,18 +589,16 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                             <TableCell className="text-center">
                               <div className="flex gap-1 justify-center">
                                 <Button
-                                  variant="ghost"
                                   size="sm"
                                   onClick={() => handleEditTransaction(transaction)}
-                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                  className="btn btn--outline"
                                 >
                                   <Edit2 className="h-4 w-4" />
                                 </Button>
                                 <Button
-                                  variant="ghost"
                                   size="sm"
                                   onClick={() => handleDeleteTransaction(transaction.id)}
-                                  className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                  className="btn btn--danger"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>

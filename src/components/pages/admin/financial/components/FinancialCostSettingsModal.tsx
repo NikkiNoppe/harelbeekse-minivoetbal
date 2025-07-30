@@ -283,18 +283,18 @@ const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProps> = ({
                         </TableCell>
                         <TableCell className="flex gap-2 justify-end">
                           <Button
-                            variant="outline"
                             size="sm"
                             onClick={() => handleEdit(setting)}
+                            className="btn btn--outline"
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
                           <Button
-                            variant="outline"
                             size="sm"
                             onClick={() => handleDelete(setting.id)}
+                            className="btn btn--danger"
                           >
-                            <Trash2 className="h-3 w-3 text-red-500" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </TableCell>
                       </TableRow>
