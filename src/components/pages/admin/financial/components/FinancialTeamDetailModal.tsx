@@ -389,13 +389,17 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                         });
                       }}
                     >
-                      <SelectTrigger className="modal__input">
+                      <SelectTrigger className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                         <SelectValue placeholder="Selecteer transactie type" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-50 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
                         {costSettings?.map((cost) => (
-                          <SelectItem key={cost.id} value={cost.id.toString()}>
-                            {cost.name} - €{cost.amount}
+                          <SelectItem 
+                            key={cost.id} 
+                            value={cost.id.toString()}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-900"
+                          >
+                            {cost.name} - €{cost.amount || '0'}
                           </SelectItem>
                         ))}
                       </SelectContent>
