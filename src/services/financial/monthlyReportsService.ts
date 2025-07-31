@@ -56,8 +56,8 @@ const getSeasonFromYear = (year: number): SeasonData => {
 };
 
 const getSeasonDates = (seasonData: SeasonData) => {
-  // Season runs from August to June
-  const startDate = new Date(seasonData.startYear, 7, 1); // August 1st
+  // Season runs from July to June
+  const startDate = new Date(seasonData.startYear, 6, 1); // July 1st (month is 0-indexed)
   const endDate = new Date(seasonData.endYear, 5, 30); // June 30th
   return { startDate, endDate };
 };
@@ -65,8 +65,8 @@ const getSeasonDates = (seasonData: SeasonData) => {
 const getSeasonFromDate = (date: Date): string => {
   const year = date.getFullYear();
   const month = date.getMonth(); // 0-indexed
-  // If month is August (7) or later, it's the start of a new season
-  if (month >= 7) {
+  // If month is July (6) or later, it's the start of a new season
+  if (month >= 6) {
     return `${year}/${year + 1}`;
   } else {
     return `${year - 1}/${year}`;
@@ -74,14 +74,19 @@ const getSeasonFromDate = (date: Date): string => {
 };
 
 export const monthlyReportsService = {
-  async getSeasonReport(seasonYear: number, month?: number): Promise<MonthlyReport> {
+  async getSeasonReport(seasonYear: number, month?: number, year?: number): Promise<MonthlyReport> {
     try {
       const seasonData = getSeasonFromYear(seasonYear);
       const { startDate, endDate } = getSeasonDates(seasonData);
       
-      // Adjust date range if month is specified
-      const filterStartDate = month ? new Date(seasonYear, month - 1, 1) : startDate;
-      const filterEndDate = month ? new Date(seasonYear, month, 0, 23, 59, 59) : endDate;
+      // Adjust date range if month is specified  
+      let filterStartDate = startDate;
+      let filterEndDate = endDate;
+      
+      if (month && year) {
+        filterStartDate = new Date(year, month - 1, 1);
+        filterEndDate = new Date(year, month, 0, 23, 59, 59);
+      }
 
       // Fetch all transactions with related data using explicit type casting
       const { data: transactions, error } = await (supabase as any)
@@ -139,7 +144,7 @@ export const monthlyReportsService = {
         const date = new Date(transaction.matches.match_date);
         const season = getSeasonFromDate(date);
         const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        const monthName = month ? 
+        const monthName = (month && year) ? 
           date.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' }) :
           `Seizoen ${season}`;
 
@@ -149,7 +154,7 @@ export const monthlyReportsService = {
                              transaction.costs?.description?.toLowerCase().includes('scheidsrechter');
 
         if (isFieldCost) {
-          const key = month ? monthKey : 'season-total';
+          const key = (month && year) ? monthKey : 'season-total';
           if (!fieldCostsByMonth[key]) {
             fieldCostsByMonth[key] = {
               month: monthName,
@@ -164,7 +169,7 @@ export const monthlyReportsService = {
 
         if (isRefereeCost) {
           const referee = transaction.matches?.referee || 'Onbekend';
-          const refereeKey = month ? `${monthKey}-${referee}` : `season-${referee}`;
+          const refereeKey = (month && year) ? `${monthKey}-${referee}` : `season-${referee}`;
           
           if (!refereeCostsByMonth[refereeKey]) {
             refereeCostsByMonth[refereeKey] = {
@@ -185,11 +190,11 @@ export const monthlyReportsService = {
         const date = new Date(transaction.transaction_date);
         const season = getSeasonFromDate(date);
         const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        const monthName = month ? 
+        const monthName = (month && year) ? 
           date.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' }) :
           `Seizoen ${season}`;
 
-        const key = month ? monthKey : 'season-total';
+        const key = (month && year) ? monthKey : 'season-total';
         if (!finesByMonth[key]) {
           finesByMonth[key] = {
             month: monthName,
@@ -207,11 +212,11 @@ export const monthlyReportsService = {
         const date = new Date(match.match_date);
         const season = getSeasonFromDate(date);
         const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        const monthName = month ? 
+        const monthName = (month && year) ? 
           date.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' }) :
           `Seizoen ${season}`;
 
-        const key = month ? monthKey : 'season-total';
+        const key = (month && year) ? monthKey : 'season-total';
         if (!matchStatsByMonth[key]) {
           matchStatsByMonth[key] = {
             month: monthName,

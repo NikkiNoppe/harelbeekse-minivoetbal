@@ -27,7 +27,23 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
     queryFn: async () => {
       console.log('Fetching season report for:', { selectedSeasonYear, selectedMonth });
       try {
-        const result = await monthlyReportsService.getSeasonReport(selectedSeasonYear, selectedMonth || undefined);
+        // Convert selectedMonth back to actual month and year for API
+        let actualMonth = undefined;
+        let actualYear = selectedSeasonYear;
+        
+        if (selectedMonth !== null) {
+          if (selectedMonth <= 12) {
+            // July-December of start year
+            actualMonth = selectedMonth;
+            actualYear = selectedSeasonYear;
+          } else {
+            // January-June of end year
+            actualMonth = selectedMonth - 12;
+            actualYear = selectedSeasonYear + 1;
+          }
+        }
+        
+        const result = await monthlyReportsService.getSeasonReport(selectedSeasonYear, actualMonth, actualYear);
         console.log('Season report data:', result);
         return result;
       } catch (err) {
@@ -61,20 +77,40 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
       label: `${seasonYear}/${seasonYear + 1}`
     };
   });
-  const months = [
-    { value: 1, label: 'Januari' },
-    { value: 2, label: 'Februari' },
-    { value: 3, label: 'Maart' },
-    { value: 4, label: 'April' },
-    { value: 5, label: 'Mei' },
-    { value: 6, label: 'Juni' },
-    { value: 7, label: 'Juli' },
-    { value: 8, label: 'Augustus' },
-    { value: 9, label: 'September' },
-    { value: 10, label: 'Oktober' },
-    { value: 11, label: 'November' },
-    { value: 12, label: 'December' }
-  ];
+  
+  // Generate season months based on season year (July to June)
+  const getSeasonMonths = (seasonYear: number) => {
+    const months = [];
+    // July to December of season start year
+    for (let month = 7; month <= 12; month++) {
+      months.push({
+        value: month,
+        label: `${getMonthName(month)} ${seasonYear}`,
+        year: seasonYear,
+        month: month
+      });
+    }
+    // January to June of season end year
+    for (let month = 1; month <= 6; month++) {
+      months.push({
+        value: month + 12, // Offset to make unique values
+        label: `${getMonthName(month)} ${seasonYear + 1}`,
+        year: seasonYear + 1,
+        month: month
+      });
+    }
+    return months;
+  };
+  
+  const getMonthName = (month: number) => {
+    const monthNames = [
+      'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
+      'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'
+    ];
+    return monthNames[month - 1];
+  };
+  
+  const seasonMonths = getSeasonMonths(selectedSeasonYear);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -98,7 +134,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
                 <SelectTrigger className="w-40 dropdown-login-style">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="dropdown-content-login-style">
+                <SelectContent className="dropdown-content-login-style z-[1002]">
                   {seasons.map(season => (
                     <SelectItem key={season.year} value={season.year.toString()} className="dropdown-item-login-style">
                       {season.label}
@@ -114,9 +150,9 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
                 <SelectTrigger className="w-40 dropdown-login-style">
                   <SelectValue placeholder="Alle maanden" />
                 </SelectTrigger>
-                <SelectContent className="dropdown-content-login-style">
+                <SelectContent className="dropdown-content-login-style z-[1002]">
                   <SelectItem value="all" className="dropdown-item-login-style">Alle maanden</SelectItem>
-                  {months.map(month => (
+                  {seasonMonths.map(month => (
                     <SelectItem key={month.value} value={month.value.toString()} className="dropdown-item-login-style">
                       {month.label}
                     </SelectItem>
@@ -351,7 +387,9 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
             <Card className="border-purple-light">
               <CardContent className="text-center py-8 bg-white">
                 <p className="text-purple-dark">
-                  Geen wedstrijdgegevens gevonden voor {selectedMonth ? months.find(m => m.value === selectedMonth)?.label + ' ' : 'seizoen '}{selectedSeasonYear}/{selectedSeasonYear + 1}
+                  Geen wedstrijdgegevens gevonden voor {selectedMonth ? 
+                    seasonMonths.find(m => m.value === selectedMonth)?.label : 
+                    `seizoen ${selectedSeasonYear}/${selectedSeasonYear + 1}`}
                 </p>
               </CardContent>
             </Card>
