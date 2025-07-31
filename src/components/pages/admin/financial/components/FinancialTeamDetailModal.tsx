@@ -317,7 +317,7 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-80 max-h-96 overflow-y-auto z-50 bg-white border border-gray-200 shadow-lg">
+                  <DropdownMenuContent className="w-80 max-h-96 overflow-y-auto z-[60] bg-white border border-gray-200 shadow-xl" style={{ zIndex: 1001 }}>
                     {loadingCostSettings ? (
                       <div className="p-4 text-center text-gray-500">
                         Kosten laden...
