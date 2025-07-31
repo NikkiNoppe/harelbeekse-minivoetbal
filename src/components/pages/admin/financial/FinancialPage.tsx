@@ -199,35 +199,37 @@ const AdminFinancialPage: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Team</TableHead>
-                <TableHead className="text-center">Start Kapitaal</TableHead>
-                <TableHead className="text-center">Veld</TableHead>
-                <TableHead className="text-center">Scheids</TableHead>
-                <TableHead className="text-center">Boetes</TableHead>
-                <TableHead className="text-right">Huidig Saldo</TableHead>
+                <TableHead className="text-center hidden sm:table-cell">Start Kapitaal</TableHead>
+                <TableHead className="text-center hidden md:table-cell">Veld</TableHead>
+                <TableHead className="text-center hidden md:table-cell">Scheids</TableHead>
+                <TableHead className="text-center hidden lg:table-cell">Boetes</TableHead>
+                <TableHead className="text-right">Saldo</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {teams?.map(team => {
                const finances = calculateTeamFinances(team.team_id);
                const isNegative = finances.currentBalance < 0;
-                return <TableRow key={team.team_id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleTeamClick(team)}>
-                      <TableCell className="font-medium text-responsive-team">{team.team_name}</TableCell>
-                      <TableCell className="text-center text-green-600 font-semibold">
+                 return <TableRow key={team.team_id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleTeamClick(team)}>
+                      <TableCell className="font-medium">
+                        <div className="truncate max-w-[120px] sm:max-w-none">{team.team_name}</div>
+                      </TableCell>
+                      <TableCell className="text-center text-green-600 font-semibold hidden sm:table-cell">
                         {formatCurrency(finances.startCapital)}
                       </TableCell>
-                      <TableCell className="text-center text-red-600">
+                      <TableCell className="text-center text-red-600 hidden md:table-cell">
                         -{formatCurrency(finances.fieldCosts)}
                       </TableCell>
-                      <TableCell className="text-center text-red-600">
+                      <TableCell className="text-center text-red-600 hidden md:table-cell">
                         -{formatCurrency(finances.refereeCosts)}
                       </TableCell>
-                      <TableCell className="text-center text-red-600">
+                      <TableCell className="text-center text-red-600 hidden lg:table-cell">
                         -{formatCurrency(finances.fines)}
                       </TableCell>
                      <TableCell className={`text-right font-semibold ${isNegative ? 'text-red-600' : 'text-green-600'}`}> 
                        <div className="flex items-center justify-end gap-1">
                          {isNegative ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
-                         {formatCurrency(finances.currentBalance)}
+                         <span className="truncate">{formatCurrency(finances.currentBalance)}</span>
                        </div>
                       </TableCell>
                     </TableRow>;

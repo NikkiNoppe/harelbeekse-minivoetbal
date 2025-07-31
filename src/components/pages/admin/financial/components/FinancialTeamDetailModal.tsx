@@ -122,6 +122,14 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
     setIsSubmitting(true);
 
     try {
+      console.log('Adding transaction:', {
+        team_id: team.team_id,
+        transaction_type: selectedCost.category,
+        amount: amount,
+        description: description,
+        cost_setting_id: selectedCost.id
+      });
+
       const result = await costSettingsService.addTransaction({
         team_id: team.team_id,
         transaction_type: selectedCost.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment',
@@ -133,6 +141,8 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
         transaction_date: getCurrentDate()
       });
 
+      console.log('Transaction result:', result);
+
       if (result.success) {
         toast({
           title: "Succes",
@@ -143,8 +153,13 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
         setShowAddTransaction(false);
         setSelectedCost(null);
         setCustomAmount('');
+        
+        // Refresh both team transactions and overview
         queryClient.invalidateQueries({ queryKey: ['team-transactions', team.team_id] });
+        queryClient.invalidateQueries({ queryKey: ['all-team-transactions'] });
+        queryClient.invalidateQueries({ queryKey: ['teams-financial'] });
       } else {
+        console.error('Transaction failed:', result.message);
         toast({
           title: "Fout",
           description: result.message,
@@ -302,7 +317,7 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-80 max-h-96 overflow-y-auto">
+                  <DropdownMenuContent className="w-80 max-h-96 overflow-y-auto z-50 bg-white border border-gray-200 shadow-lg">
                     {loadingCostSettings ? (
                       <div className="p-4 text-center text-gray-500">
                         Kosten laden...
