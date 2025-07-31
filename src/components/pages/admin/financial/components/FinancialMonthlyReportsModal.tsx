@@ -17,10 +17,17 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
   // Determine current season: if we're in Aug-Dec, it's currentYear/currentYear+1, else (currentYear-1)/currentYear
-  const currentSeasonYear = currentMonth >= 7 ? currentYear : currentYear - 1;
+  const currentSeasonYear = currentMonth >= 6 ? currentYear : currentYear - 1;
   
   const [selectedSeasonYear, setSelectedSeasonYear] = useState(currentSeasonYear);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+
+  // Fetch available seasons from actual transaction data
+  const { data: availableSeasons } = useQuery({
+    queryKey: ['available-seasons'],
+    queryFn: monthlyReportsService.getAvailableSeasons,
+    enabled: open
+  });
 
   const { data: report, isLoading, error } = useQuery({
     queryKey: ['season-report', selectedSeasonYear, selectedMonth],
@@ -51,7 +58,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
         throw err;
       }
     },
-    enabled: open,
+    enabled: open && !!availableSeasons && availableSeasons.length > 0,
     retry: 2,
     staleTime: 5 * 60 * 1000 // 5 minutes
   });
@@ -59,7 +66,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
   const { data: seasonRefereePayments } = useQuery({
     queryKey: ['season-referee-payments', selectedSeasonYear],
     queryFn: () => monthlyReportsService.getSeasonRefereePayments(selectedSeasonYear),
-    enabled: open
+    enabled: open && !!availableSeasons && availableSeasons.length > 0
   });
 
   const formatCurrency = (amount: number) => {
@@ -69,14 +76,26 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
     }).format(amount);
   };
 
-  // Generate seasons for the dropdown (last 5 seasons)
-  const seasons = Array.from({ length: 5 }, (_, i) => {
-    const seasonYear = currentSeasonYear - i;
-    return {
-      year: seasonYear,
-      label: `${seasonYear}/${seasonYear + 1}`
-    };
-  });
+  // Use available seasons from database or fallback to current season
+  const seasons = availableSeasons && availableSeasons.length > 0 
+    ? availableSeasons.map(season => ({
+        year: season.startYear,
+        label: season.season
+      }))
+    : [{
+        year: currentSeasonYear,
+        label: `${currentSeasonYear}/${currentSeasonYear + 1}`
+      }];
+
+  // Update selected season if it's not available in the fetched seasons
+  React.useEffect(() => {
+    if (availableSeasons && availableSeasons.length > 0) {
+      const isCurrentSeasonAvailable = availableSeasons.some(s => s.startYear === selectedSeasonYear);
+      if (!isCurrentSeasonAvailable) {
+        setSelectedSeasonYear(availableSeasons[0].startYear);
+      }
+    }
+  }, [availableSeasons, selectedSeasonYear]);
   
   // Generate season months based on season year (July to June)
   const getSeasonMonths = (seasonYear: number) => {
@@ -126,49 +145,59 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Filters */}
-          <div className="flex gap-4 items-end">
-            <div>
-              <label className="text-sm font-medium mb-2 block text-purple-dark">Seizoen</label>
-              <Select value={selectedSeasonYear.toString()} onValueChange={(value) => setSelectedSeasonYear(parseInt(value))}>
-                <SelectTrigger className="w-40 dropdown-login-style">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="dropdown-content-login-style z-[1002]">
-                  {seasons.map(season => (
-                    <SelectItem key={season.year} value={season.year.toString()} className="dropdown-item-login-style">
-                      {season.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Show message if no seasons available */}
+          {(!availableSeasons || availableSeasons.length === 0) && !isLoading && (
+            <div className="text-center py-8">
+              <p className="text-purple-dark">Geen seizoenen met kostengegevens gevonden.</p>
+              <p className="text-sm text-purple-dark opacity-70">Voeg eerst kosten toe om rapporten te kunnen genereren.</p>
             </div>
+          )}
 
-            <div>
-              <label className="text-sm font-medium mb-2 block text-purple-dark">Maand (optioneel)</label>
-              <Select value={selectedMonth?.toString() || "all"} onValueChange={(value) => setSelectedMonth(value === "all" ? null : parseInt(value))}>
-                <SelectTrigger className="w-40 dropdown-login-style">
-                  <SelectValue placeholder="Alle maanden" />
-                </SelectTrigger>
-                <SelectContent className="dropdown-content-login-style z-[1002]">
-                  <SelectItem value="all" className="dropdown-item-login-style">Alle maanden</SelectItem>
-                  {seasonMonths.map(month => (
-                    <SelectItem key={month.value} value={month.value.toString()} className="dropdown-item-login-style">
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Filters - only show if seasons are available */}
+          {availableSeasons && availableSeasons.length > 0 && (
+            <div className="flex gap-4 items-end">
+              <div>
+                <label className="text-sm font-medium mb-2 block text-purple-dark">Seizoen</label>
+                <Select value={selectedSeasonYear.toString()} onValueChange={(value) => setSelectedSeasonYear(parseInt(value))}>
+                  <SelectTrigger className="w-40 dropdown-login-style">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="dropdown-content-login-style z-[1002]">
+                    {seasons.map(season => (
+                      <SelectItem key={season.year} value={season.year.toString()} className="dropdown-item-login-style">
+                        {season.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block text-purple-dark">Maand (optioneel)</label>
+                <Select value={selectedMonth?.toString() || "all"} onValueChange={(value) => setSelectedMonth(value === "all" ? null : parseInt(value))}>
+                  <SelectTrigger className="w-40 dropdown-login-style">
+                    <SelectValue placeholder="Alle maanden" />
+                  </SelectTrigger>
+                  <SelectContent className="dropdown-content-login-style z-[1002]">
+                    <SelectItem value="all" className="dropdown-item-login-style">Alle maanden</SelectItem>
+                    {seasonMonths.map(month => (
+                      <SelectItem key={month.value} value={month.value.toString()} className="dropdown-item-login-style">
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button className="btn btn--secondary flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
             </div>
+          )}
 
-            <Button className="btn btn--secondary flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
-          </div>
-
-          {/* Summary Cards */}
-          {report && (
+          {/* Summary Cards - only show if data available */}
+          {report && availableSeasons && availableSeasons.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="border-purple-light">
                 <CardHeader className="bg-purple-100">
@@ -228,8 +257,8 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
             </div>
           )}
 
-          {/* Scheidsrechter Betalingen */}
-          {report && report.refereeCosts.length > 0 && (
+          {/* Scheidsrechter Betalingen - only show if data available */}
+          {report && report.refereeCosts.length > 0 && availableSeasons && availableSeasons.length > 0 && (
             <Card className="border-purple-light">
               <CardHeader className="bg-purple-100">
                 <CardTitle className="text-purple-light">Scheidsrechter Betalingen</CardTitle>
@@ -382,8 +411,8 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
             </div>
           )}
 
-          {/* Show message when no data */}
-          {report && !isLoading && !error && report.totalMatches === 0 && (
+          {/* Show message when no data but seasons are available */}
+          {report && !isLoading && !error && report.totalMatches === 0 && availableSeasons && availableSeasons.length > 0 && (
             <Card className="border-purple-light">
               <CardContent className="text-center py-8 bg-white">
                 <p className="text-purple-dark">
@@ -395,8 +424,8 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
             </Card>
           )}
 
-          {/* Empty state when no referee costs */}
-          {report && !isLoading && !error && report.refereeCosts.length === 0 && report.totalMatches > 0 && (
+          {/* Empty state when no referee costs but seasons are available */}
+          {report && !isLoading && !error && report.refereeCosts.length === 0 && report.totalMatches > 0 && availableSeasons && availableSeasons.length > 0 && (
             <Card className="border-purple-light">
               <CardHeader className="bg-purple-100">
                 <CardTitle className="text-purple-light">Scheidsrechter Betalingen</CardTitle>
