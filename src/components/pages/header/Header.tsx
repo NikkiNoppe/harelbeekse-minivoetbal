@@ -78,7 +78,6 @@ const Header: React.FC<HeaderProps> = ({
     { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
     { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> },
     { key: "teams", label: "Teams", icon: <Shield size={16} /> },
-    { key: "users", label: "Gebruikers", icon: <User size={16} /> },
     { key: "reglement", label: "Reglement", icon: <BookOpen size={16} /> }
   ];
 

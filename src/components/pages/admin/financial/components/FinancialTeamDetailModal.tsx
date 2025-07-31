@@ -6,13 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { costSettingsService } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2 } from "lucide-react";
+import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2, ChevronDown } from "lucide-react";
 import { formatDateShort, getCurrentDate } from "@/lib/dateUtils";
 import TransactionEditModal from "./TransactionEditModal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Team {
   team_id: number;
@@ -28,165 +33,117 @@ interface FinancialTeamDetailModalProps {
 const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ open, onOpenChange, team }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // State for transaction actions
   const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [selectedCost, setSelectedCost] = useState<any>(null);
+  const [customAmount, setCustomAmount] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // State for edit modal
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
-  const [transactionForm, setTransactionForm] = useState({
-    type: 'deposit' as 'deposit' | 'penalty' | 'adjustment',
-    amount: '',
-    description: '',
-    cost_setting_id: '',
-    transaction_date: getCurrentDate()
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch data
   const { data: transactions, isLoading: loadingTransactions } = useQuery({
     queryKey: ['team-transactions', team?.team_id],
     queryFn: () => team ? costSettingsService.getTeamTransactions(team.team_id) : Promise.resolve([]),
-    enabled: !!team
+    enabled: !!team && open
   });
 
-  const { data: costSettings } = useQuery({
+  const { data: costSettings, isLoading: loadingCostSettings } = useQuery({
     queryKey: ['cost-settings'],
-    queryFn: costSettingsService.getCostSettings
+    queryFn: costSettingsService.getCostSettings,
+    enabled: open
   });
 
-  // Calculate financial breakdown
-  const calculateFinancialBreakdown = () => {
-    if (!transactions) return {
-      startCapital: 0,
-      fieldCosts: 0,
-      refereeCosts: 0,
-      penalties: 0,
-      otherCosts: 0,
-      adjustments: 0,
-      currentBalance: 0
-    };
-
-    const startCapital = transactions
-      .filter(t => t.transaction_type === 'deposit')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-
-    const fieldCosts = transactions
-      .filter(t => t.transaction_type === 'match_cost' && 
-        (t.cost_settings?.name?.toLowerCase().includes('veld') || 
-         t.description?.toLowerCase().includes('veld')))
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-
-    const refereeCosts = transactions
-      .filter(t => t.transaction_type === 'match_cost' && 
-        (t.cost_settings?.name?.toLowerCase().includes('scheids') || 
-         t.description?.toLowerCase().includes('scheids')))
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-
-    const penalties = transactions
-      .filter(t => t.transaction_type === 'penalty')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-
-    const otherCosts = transactions
-      .filter(t => t.transaction_type === 'match_cost' && 
-        !t.cost_settings?.name?.toLowerCase().includes('veld') &&
-        !t.cost_settings?.name?.toLowerCase().includes('scheids'))
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-
-    const adjustments = transactions
-      .filter(t => t.transaction_type === 'adjustment')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-
-    // Huidig saldo: startkapitaal - alle kosten + correcties
-    const currentBalance = startCapital - fieldCosts - refereeCosts - penalties + adjustments;
-
-    return {
-      startCapital,
-      fieldCosts,
-      refereeCosts,
-      penalties,
-      otherCosts,
-      adjustments,
-      currentBalance
-    };
+  // Calculate current balance
+  const calculateCurrentBalance = () => {
+    if (!transactions) return 0;
+    
+    return transactions.reduce((balance, transaction) => {
+      const amount = Math.abs(transaction.amount);
+      if (transaction.transaction_type === 'deposit') {
+        return balance + amount;
+      } else {
+        return balance - amount;
+      }
+    }, 0);
   };
 
-  const financialBreakdown = calculateFinancialBreakdown();
-
-  const resetTransactionForm = () => {
-    setTransactionForm({
-      type: 'deposit' as 'deposit' | 'penalty' | 'adjustment',
-      amount: '',
-      description: '',
-      cost_setting_id: '',
-      transaction_date: getCurrentDate()
-    });
-  };
+  const currentBalance = calculateCurrentBalance();
 
   // Reset form when modal closes
   useEffect(() => {
     if (!open) {
       setShowAddTransaction(false);
+      setSelectedCost(null);
+      setCustomAmount('');
       setEditModalOpen(false);
       setSelectedTransaction(null);
-      resetTransactionForm();
     }
   }, [open]);
 
-  const handleEditTransaction = (transaction: any) => {
-    setSelectedTransaction(transaction);
-    setEditModalOpen(true);
+  // Handle cost selection from dropdown
+  const handleCostSelection = (cost: any) => {
+    setSelectedCost(cost);
+    setCustomAmount('');
+    setShowAddTransaction(true);
   };
 
+  // Handle transaction submission
   const handleAddTransaction = async () => {
-    if (!team) {
+    if (!team || !selectedCost) {
       toast({
         title: "Fout",
-        description: "Team niet gevonden",
+        description: "Team of kosten niet gevonden",
         variant: "destructive"
       });
       return;
     }
 
-    if (!transactionForm.amount || parseFloat(transactionForm.amount) <= 0) {
-      toast({
-        title: "Fout",
-        description: "Vul een geldig bedrag in",
-        variant: "destructive"
-      });
-      return;
-    }
+    let amount = selectedCost.amount;
+    let description = selectedCost.name;
 
-    if (!transactionForm.transaction_date) {
-      toast({
-        title: "Fout",
-        description: "Vul een datum in",
-        variant: "destructive"
-      });
-      return;
+    // For deposits, use custom amount if provided
+    if (selectedCost.category === 'deposit') {
+      if (!customAmount || parseFloat(customAmount) <= 0) {
+        toast({
+          title: "Fout",
+          description: "Vul een geldig bedrag in voor de storting",
+          variant: "destructive"
+        });
+        return;
+      }
+      amount = parseFloat(customAmount);
+      description = `Storting: €${amount.toFixed(2)}`;
     }
 
     setIsSubmitting(true);
 
     try {
-      console.log('Submitting transaction:', transactionForm);
-      
       const result = await costSettingsService.addTransaction({
         team_id: team.team_id,
-        transaction_type: transactionForm.type,
-        amount: parseFloat(transactionForm.amount),
-        description: transactionForm.description || null,
-        cost_setting_id: transactionForm.cost_setting_id ? parseInt(transactionForm.cost_setting_id) : null,
+        transaction_type: selectedCost.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment',
+        amount: amount,
+        description: description,
+        cost_setting_id: selectedCost.id,
         penalty_type_id: null,
         match_id: null,
-        transaction_date: transactionForm.transaction_date
+        transaction_date: getCurrentDate()
       });
 
       if (result.success) {
         toast({
-          title: "Succesvol",
-          description: result.message
+          title: "Succes",
+          description: `${description} toegevoegd voor ${team.team_name}`,
         });
-        queryClient.invalidateQueries({ queryKey: ['team-transactions', team.team_id] });
-        queryClient.invalidateQueries({ queryKey: ['teams-financial'] });
+        
+        // Reset form and refresh data
         setShowAddTransaction(false);
-        resetTransactionForm();
+        setSelectedCost(null);
+        setCustomAmount('');
+        queryClient.invalidateQueries({ queryKey: ['team-transactions', team.team_id] });
       } else {
         toast({
           title: "Fout",
@@ -206,6 +163,50 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
     }
   };
 
+  // Handle edit transaction
+  const handleEditTransaction = (transaction: any) => {
+    setSelectedTransaction(transaction);
+    setEditModalOpen(true);
+  };
+
+  // Handle delete transaction
+  const handleDeleteTransaction = async (transaction: any) => {
+    if (!team) return;
+
+    const confirmed = window.confirm("Weet je zeker dat je deze transactie wilt verwijderen?");
+    if (!confirmed) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const result = await costSettingsService.deleteTransaction(transaction.id);
+
+      if (result.success) {
+        toast({
+          title: "Succes",
+          description: result.message
+        });
+        queryClient.invalidateQueries({ queryKey: ['team-transactions', team.team_id] });
+      } else {
+        toast({
+          title: "Fout",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het verwijderen van de transactie",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Utility functions
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nl-NL', {
       style: 'currency',
@@ -216,11 +217,11 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'deposit':
-        return <TrendingUp className="h-4 w-4 text-green-600" />;
+        return <TrendingUp className="h-4 w-4" />;
       case 'penalty':
+        return <TrendingDown className="h-4 w-4" />;
       case 'match_cost':
-      case 'adjustment':
-        return <TrendingDown className="h-4 w-4 text-red-600" />;
+        return <Euro className="h-4 w-4" />;
       default:
         return <Euro className="h-4 w-4" />;
     }
@@ -273,126 +274,132 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Team Balance Summary */}
+            {/* 1. Current Balance */}
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold">Huidig Saldo</h3>
                   <p className="text-sm text-gray-600">Team: {team.team_name}</p>
                 </div>
-                <div className={`text-2xl font-bold ${financialBreakdown.currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(financialBreakdown.currentBalance)}
+                <div className={`text-2xl font-bold ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(currentBalance)}
                 </div>
               </div>
             </div>
 
-            {/* Add Transaction Section */}
+            {/* 2. Action with Dropdown */}
             <div className="border rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Transacties</h3>
-                <Button 
-                  onClick={() => setShowAddTransaction(!showAddTransaction)}
-                  className="btn btn--secondary flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Nieuwe Transactie
-                </Button>
+                <h3 className="text-lg font-semibold">Transactie Toevoegen</h3>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      className="btn btn--secondary flex items-center gap-2"
+                      disabled={loadingCostSettings || !costSettings || costSettings.length === 0}
+                    >
+                      <Plus className="h-4 w-4" />
+                      {loadingCostSettings ? 'Laden...' : 'Kosten Selecteren'}
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-80 max-h-96 overflow-y-auto">
+                    {loadingCostSettings ? (
+                      <div className="p-4 text-center text-gray-500">
+                        Kosten laden...
+                      </div>
+                    ) : costSettings && costSettings.length > 0 ? (
+                      costSettings.map((cost) => (
+                        <DropdownMenuItem
+                          key={cost.id}
+                          onClick={() => handleCostSelection(cost)}
+                          className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50"
+                        >
+                          <div className="flex-1">
+                            <div className="font-medium">{cost.name}</div>
+                            <div className="text-sm text-gray-500">{cost.description}</div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {cost.category === 'match_cost' ? 'Wedstrijd' : 
+                               cost.category === 'penalty' ? 'Boete' : 
+                               cost.category === 'deposit' ? 'Storting' : 'Overig'}
+                            </Badge>
+                            <span className="font-semibold text-green-600">
+                              {cost.category === 'deposit' ? 'Handmatig' : `€${cost.amount}`}
+                            </span>
+                          </div>
+                        </DropdownMenuItem>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        Geen kosten gevonden
+                      </div>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
-              {showAddTransaction && (
-                <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Transaction Form */}
+              {showAddTransaction && selectedCost && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="space-y-4">
                     <div>
-                      <Label>Type Transactie</Label>
-                      <Select 
-                        value={transactionForm.cost_setting_id} 
-                        onValueChange={(value) => {
-                          const selectedCost = costSettings?.find(cs => cs.id.toString() === value);
-                          setTransactionForm({
-                            ...transactionForm, 
-                            cost_setting_id: value,
-                            amount: selectedCost?.amount?.toString() || '',
-                            description: selectedCost?.name || '',
-                            type: selectedCost?.category === 'deposit' ? 'deposit' : 
-                                  selectedCost?.category === 'penalty' ? 'penalty' : 'adjustment'
-                          });
-                        }}
+                      <Label>Geselecteerde Kosten</Label>
+                      <div className="p-3 bg-white rounded border">
+                        <div className="font-medium">{selectedCost.name}</div>
+                        <div className="text-sm text-gray-500">{selectedCost.description}</div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          Categorie: {selectedCost.category === 'match_cost' ? 'Wedstrijd' : 
+                                     selectedCost.category === 'penalty' ? 'Boete' : 
+                                     selectedCost.category === 'deposit' ? 'Storting' : 'Overig'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {selectedCost.category === 'deposit' && (
+                      <div>
+                        <Label htmlFor="custom-amount">Bedrag (€)</Label>
+                        <Input
+                          id="custom-amount"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={customAmount}
+                          onChange={(e) => setCustomAmount(e.target.value)}
+                          placeholder="Voer bedrag in..."
+                          className="modal__input"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={handleAddTransaction}
+                        className="btn btn--primary"
+                        disabled={isSubmitting || (selectedCost.category === 'deposit' && (!customAmount || parseFloat(customAmount) <= 0))}
                       >
-                        <SelectTrigger className="modal__input">
-                          <SelectValue placeholder="Selecteer transactie type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {costSettings?.map((cost) => (
-                            <SelectItem key={cost.id} value={cost.id.toString()}>
-                              {cost.name} - €{cost.amount || '0'}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        {isSubmitting ? 'Bezig...' : 'Transactie Toevoegen'}
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          setShowAddTransaction(false);
+                          setSelectedCost(null);
+                          setCustomAmount('');
+                        }}
+                        className="btn btn--secondary"
+                        disabled={isSubmitting}
+                      >
+                        Annuleren
+                      </Button>
                     </div>
-
-                    <div>
-                      <Label>Bedrag (€)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={transactionForm.amount}
-                        onChange={(e) => setTransactionForm({...transactionForm, amount: e.target.value})}
-                        placeholder="0.00"
-                        className="modal__input"
-                      />
-                      {transactionForm.cost_setting_id && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Bedrag kan aangepast worden indien nodig
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label>Datum</Label>
-                      <Input
-                        type="date"
-                        value={transactionForm.transaction_date}
-                        onChange={(e) => setTransactionForm({...transactionForm, transaction_date: e.target.value})}
-                        className="modal__input"
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <Label>Beschrijving</Label>
-                      <Textarea
-                        value={transactionForm.description}
-                        onChange={(e) => setTransactionForm({...transactionForm, description: e.target.value})}
-                        placeholder="Optionele beschrijving..."
-                        rows={2}
-                        className="modal__input"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="modal__actions mt-4">
-                    <Button 
-                      onClick={handleAddTransaction} 
-                      className="btn btn--primary"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? 'Bezig...' : 'Transactie Toevoegen'}
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        setShowAddTransaction(false);
-                        resetTransactionForm();
-                      }}
-                      className="btn btn--secondary"
-                      disabled={isSubmitting}
-                    >
-                      Annuleren
-                    </Button>
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* Transactions Table */}
+            {/* 3. Transaction History */}
+            <div className="border rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-4">Transactie Geschiedenis</h3>
               <div className="overflow-x-auto">
                 <Table className="table min-w-full">
                   <TableHeader>
@@ -447,8 +454,17 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                                 size="sm"
                                 onClick={() => handleEditTransaction(transaction)}
                                 className="btn btn--outline"
+                                disabled={isSubmitting}
                               >
                                 <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleDeleteTransaction(transaction)}
+                                className="btn btn--outline text-red-600 hover:text-red-700 hover:bg-red-50"
+                                disabled={isSubmitting}
+                              >
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
