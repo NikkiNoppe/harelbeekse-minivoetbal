@@ -113,10 +113,7 @@ export const costSettingsService = {
     try {
       const { error } = await supabase
         .from('costs')
-        .update({
-          ...setting,
-          updated_at: new Date().toISOString()
-        })
+        .update(setting)
         .eq('id', id);
 
       if (error) throw error;
