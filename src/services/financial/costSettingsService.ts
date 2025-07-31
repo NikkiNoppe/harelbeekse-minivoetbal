@@ -300,18 +300,22 @@ export const costSettingsService = {
     transactionId: number, 
     updates: {
       amount?: number;
-      description?: string;
       transaction_date?: string;
       cost_setting_id?: number;
     }
   ): Promise<{ success: boolean; message: string }> {
     try {
+      console.log('Updating transaction:', transactionId, updates);
+      
       const { error } = await supabase
         .from('team_costs')
         .update(updates)
         .eq('id', transactionId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
       return { success: true, message: 'Transactie succesvol bijgewerkt' };
     } catch (error) {
       console.error('Error updating transaction:', error);

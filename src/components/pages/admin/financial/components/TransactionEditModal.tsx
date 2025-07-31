@@ -102,7 +102,6 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
     try {
       const result = await costSettingsService.updateTransaction(transaction.id, {
         amount: parseFloat(formData.amount),
-        description: formData.description || null,
         transaction_date: formData.transaction_date,
         cost_setting_id: formData.cost_setting_id ? parseInt(formData.cost_setting_id) : null
       });
@@ -134,43 +133,6 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
     }
   };
 
-  const handleDelete = async () => {
-    if (!transaction) return;
-
-    const confirmed = window.confirm("Weet je zeker dat je deze transactie wilt verwijderen?");
-    if (!confirmed) return;
-
-    setIsSubmitting(true);
-
-    try {
-      const result = await costSettingsService.deleteTransaction(transaction.id);
-
-      if (result.success) {
-        toast({
-          title: "Succesvol",
-          description: result.message
-        });
-        queryClient.invalidateQueries({ queryKey: ['team-transactions', teamId] });
-        queryClient.invalidateQueries({ queryKey: ['teams-financial'] });
-        onOpenChange(false);
-      } else {
-        toast({
-          title: "Fout",
-          description: result.message,
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error deleting transaction:', error);
-      toast({
-        title: "Fout",
-        description: "Er is een fout opgetreden bij het verwijderen van de transactie",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   if (!transaction) return null;
 
@@ -182,7 +144,7 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             Transactie Bewerken
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Bewerk of verwijder deze transactie
+            Bewerk deze transactie
           </DialogDescription>
         </DialogHeader>
 
@@ -255,13 +217,6 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Bezig...' : 'Opslaan'}
-          </Button>
-          <Button 
-            onClick={handleDelete} 
-            className="btn btn--danger"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Bezig...' : 'Verwijderen'}
           </Button>
           <Button 
             onClick={() => onOpenChange(false)} 
