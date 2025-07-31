@@ -184,8 +184,7 @@ export const enhancedCostSettingsService = {
       }
 
       const updateData = {
-        ...setting,
-        updated_at: new Date().toISOString()
+        ...setting
       };
 
       // First, try to update without the trigger to avoid audit log issues
