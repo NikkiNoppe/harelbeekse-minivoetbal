@@ -1,6 +1,6 @@
 
 import { useToast } from "@/hooks/use-toast";
-import { updateMatchForm, lockMatchForm } from "../MatchesFormService";
+import { updateMatchForm, lockMatchForm } from "../services/matchesFormService";
 import { MatchFormData } from "../types";
 import { PlayerSelection } from "../components/types";
 import { useMatchFormValidation } from "./useMatchFormValidation";

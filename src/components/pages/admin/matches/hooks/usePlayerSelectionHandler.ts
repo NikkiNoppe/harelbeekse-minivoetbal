@@ -1,5 +1,5 @@
 
-import { PlayerSelection, MatchFormData } from "../types/MatchesFormTypes";
+import { PlayerSelection, MatchFormData } from "../types";
 import { useMatchFormValidation } from "./useMatchFormValidation";
 import { playerService } from "@/services/core";
 

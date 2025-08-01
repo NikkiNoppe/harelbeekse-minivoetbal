@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FileText, Trophy, Calendar, AlertCircle } from "lucide-react";
 import { useMatchFormsData, type MatchFormsFilters } from "@/hooks/useMatchFormsData";
-import { MatchFormData } from "./types/MatchesFormTypes";
+import { MatchFormData } from "./types";
 import MatchesFormFilter from "./MatchesFormFilter";
 import MatchesFormList from "./MatchesFormList";
 import MatchesFormModal from "./MatchesFormModal";

@@ -5,7 +5,7 @@ import MatchesRefereeNotesSection from "./components/MatchesRefereeNotesSection"
 import MatchesFormActions from "./components/MatchesFormActions";
 import { MatchesRefereePenaltySection } from "./components/MatchesRefereePenaltySection";
 import MatchesPenaltyShootoutModal from "./components/MatchesPenaltyShootoutModal";
-import { MatchFormData, PlayerSelection } from "./types/MatchesFormTypes";
+import { MatchFormData, PlayerSelection } from "./types";
 import { useMatchFormState } from "./hooks/useMatchFormState";
 import { useEnhancedMatchFormSubmission } from "./hooks/useEnhancedMatchFormSubmission";
 

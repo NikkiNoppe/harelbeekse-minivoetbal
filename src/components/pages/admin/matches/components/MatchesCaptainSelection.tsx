@@ -2,7 +2,7 @@
 import React, { useMemo, useCallback } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { PlayerSelection } from "../types/MatchesFormTypes";
+import { PlayerSelection } from "../types";
 
 interface MatchesCaptainSelectionProps {
   selections: PlayerSelection[];

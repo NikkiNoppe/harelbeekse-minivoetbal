@@ -16,11 +16,18 @@ export async function fetchMatches(): Promise<MatchesResult> {
         match_id,
         unique_number,
         match_date,
+        home_team_id,
+        away_team_id,
         home_score,
         away_score,
         is_submitted,
+        is_locked,
         location,
         referee,
+        referee_notes,
+        speeldag,
+        home_players,
+        away_players,
         home_team:teams!home_team_id(team_id, team_name),
         away_team:teams!away_team_id(team_id, team_name)
       `)
@@ -57,13 +64,24 @@ export async function fetchMatches(): Promise<MatchesResult> {
       } else {
         // This is an upcoming match
         upcoming.push({
-          id: match.match_id,
+          matchId: match.match_id,
+          uniqueNumber: match.unique_number || '',
           date: dateStr,
           time: timeStr,
-          homeTeam: homeTeam?.team_name || 'Onbekend',
-          awayTeam: awayTeam?.team_name || 'Onbekend',
+          homeTeamId: homeTeam?.team_id || 0,
+          homeTeamName: homeTeam?.team_name || 'Onbekend',
+          awayTeamId: awayTeam?.team_id || 0,
+          awayTeamName: awayTeam?.team_name || 'Onbekend',
           location: match.location || 'Sporthal',
-          uniqueNumber: match.unique_number
+          matchday: (match as any).speeldag || '',
+          isCompleted: !!match.is_submitted,
+          isLocked: !!(match as any).is_locked,
+          homeScore: match.home_score,
+          awayScore: match.away_score,
+          referee: match.referee,
+          refereeNotes: (match as any).referee_notes,
+          homePlayers: (match as any).home_players || [],
+          awayPlayers: (match as any).away_players || []
         });
       }
     });

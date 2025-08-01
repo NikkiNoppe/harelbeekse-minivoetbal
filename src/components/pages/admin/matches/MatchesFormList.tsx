@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import MatchesCard from "./components/MatchesCard";
 import { Lock, CheckCircle, Clock } from "lucide-react";
-import { MatchFormData } from "./types/MatchesFormTypes";
+import { MatchFormData } from "./types";
 import { 
   sortMatchesByDateAndTime, 
   getCupRoundName, 

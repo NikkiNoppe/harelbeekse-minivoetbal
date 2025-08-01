@@ -3,7 +3,7 @@ import React, { useMemo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MatchesCardIcon from "./MatchesCardIcon";
-import { PlayerSelection } from "../types/MatchesFormTypes";
+import { PlayerSelection } from "../types";
 import { TeamPlayer } from "./useTeamPlayers";
 
 interface PlayerSelectionTableProps {
