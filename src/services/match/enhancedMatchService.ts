@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
-import { updateMatchForm } from "../../components/pages/admin/matches/services/MatchesFormService";
-import { MatchFormData } from "../../components/pages/admin/matches/types/MatchesFormTypes";
+import { updateMatchForm } from "@/components/pages/admin/matches/services/MatchesFormService";
+import { MatchFormData } from "@/components/pages/admin/matches/types/MatchesFormTypes";
 
 interface MatchUpdateData {
   homeScore?: number | null;
