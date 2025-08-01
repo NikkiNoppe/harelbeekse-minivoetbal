@@ -1,61 +1,48 @@
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Save, Lock } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
 
-interface MatchFormActionsProps {
+interface MatchesFormActionsProps {
   onSubmit: () => void;
   isSubmitting: boolean;
-  canEdit: boolean;
-  isReferee: boolean;
-  isTeamManager: boolean;
+  canActuallyEdit: boolean;
   isAdmin: boolean;
-  isLocked?: boolean;
 }
 
-export const MatchFormActions: React.FC<MatchFormActionsProps> = ({
+const MatchesFormActions: React.FC<MatchesFormActionsProps> = ({
   onSubmit,
   isSubmitting,
-  canEdit,
-  isReferee,
-  isTeamManager,
+  canActuallyEdit,
   isAdmin,
-  isLocked = false
 }) => {
-  // Admin can always edit, even if locked
-  const canActuallyEdit = canEdit || isAdmin;
-  
-  // Determine button text based on role and admin status
-  const getButtonText = () => {
-    if (isAdmin) {
-      return "Opslaan";
-    }
-    if (isReferee) {
-      return "Bevestigen & Vergrendelen";
-    }
-    if (isTeamManager) {
-      return "Spelers opslaan";
-    }
+  // Memoize the submit button text to prevent unnecessary re-renders
+  const submitButtonText = useMemo(() => {
+    if (isSubmitting) return "Bezig...";
     return "Opslaan";
-  };
+  }, [isSubmitting]);
 
-  const getButtonIcon = () => {
-    if (isAdmin || isReferee) {
-      return isLocked ? <Save className="h-4 w-4" /> : <Lock className="h-4 w-4" />;
-    }
-    return <Save className="h-4 w-4" />;
-  };
+  // Memoize the submit button disabled state
+  const isSubmitDisabled = useMemo(() => {
+    return isSubmitting || (!canActuallyEdit && !isAdmin);
+  }, [isSubmitting, canActuallyEdit, isAdmin]);
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-end gap-4 mt-6">
       <Button
         onClick={onSubmit}
-        disabled={isSubmitting || (!canActuallyEdit && !isAdmin)}
-        className="flex items-center gap-2 px-8 bg-white text-purple-dark border-purple-dark hover:bg-purple-dark hover:text-white"
+        disabled={isSubmitDisabled}
+        className="btn btn--primary flex items-center gap-2 px-8"
       >
-        {getButtonIcon()}
-        {getButtonText()}
+        {isSubmitting ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Save className="h-4 w-4" />
+        )}
+        {submitButtonText}
       </Button>
     </div>
   );
 };
+
+export default React.memo(MatchesFormActions);

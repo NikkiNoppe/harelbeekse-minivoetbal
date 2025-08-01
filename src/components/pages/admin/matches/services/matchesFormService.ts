@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { MatchFormData } from "../types/matchesFormTypes";
+import { MatchFormData } from "../types/MatchesFormTypes";
 import { localDateTimeToISO, isoToLocalDateTime, getCurrentISO } from "@/lib/dateUtils";
 import { cupService } from "@/services/match";
 import { sortCupMatches, sortLeagueMatches } from "@/lib/matchSortingUtils";

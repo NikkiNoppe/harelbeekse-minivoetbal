@@ -1,64 +1,76 @@
 
-import React from "react";
-import { Label } from "@/components/ui/label";
+import React, { useMemo, useCallback } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlayerSelection } from "../types";
-import { TeamPlayer } from "./useTeamPlayers";
+import { Label } from "@/components/ui/label";
+import { PlayerSelection } from "../types/MatchesFormTypes";
 
-interface CaptainSelectionProps {
+interface MatchesCaptainSelectionProps {
   selections: PlayerSelection[];
-  players: TeamPlayer[] | undefined;
+  onCaptainChange: (playerId: number | null) => void;
   canEdit: boolean;
-  onChange: (playerId: string) => void;
 }
 
-const CaptainSelection: React.FC<CaptainSelectionProps> = ({
+const MatchesCaptainSelection: React.FC<MatchesCaptainSelectionProps> = ({
   selections,
-  players,
+  onCaptainChange,
   canEdit,
-  onChange,
 }) => {
-  if (!canEdit) return null;
+  // Memoize available players (those with playerId)
+  const availablePlayers = useMemo(() => {
+    return selections.filter(selection => selection.playerId !== null);
+  }, [selections]);
 
-  // Only allow captain selection for selected players
-  const selectedPlayers = selections.filter((sel) => sel.playerId !== null);
-  const currentCaptain = selections.find((sel) => sel.isCaptain)?.playerId?.toString() || "no-captain";
+  // Memoize current captain
+  const currentCaptain = useMemo(() => {
+    return selections.find(selection => selection.isCaptain);
+  }, [selections]);
 
-  const handleCaptainChange = (value: string) => {
-    console.log('Captain selection changed:', value);
-    onChange(value);
-  };
+  // Memoize captain change handler
+  const handleCaptainChange = useCallback((value: string) => {
+    if (value === "no-captain") {
+      onCaptainChange(null);
+    } else {
+      onCaptainChange(parseInt(value));
+    }
+  }, [onCaptainChange]);
+
+  // Memoize the component to prevent unnecessary re-renders
+  const captainValue = useMemo(() => {
+    return currentCaptain?.playerId?.toString() || "no-captain";
+  }, [currentCaptain]);
+
+  if (availablePlayers.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="mt-2 mb-2">
-      <Label className="text-sm font-medium">Kapitein</Label>
+    <div className="space-y-2">
+      <Label htmlFor="captain-select">Aanvoerder</Label>
       <Select
-        value={currentCaptain}
+        value={captainValue}
         onValueChange={handleCaptainChange}
+        disabled={!canEdit}
       >
         <SelectTrigger className="w-[180px] mt-1 dropdown-login-style">
-          <SelectValue placeholder="Selecteer kapitein" />
+          <SelectValue placeholder="Selecteer aanvoerder" />
         </SelectTrigger>
         <SelectContent className="dropdown-content-login-style">
-          <SelectItem value="no-captain" className="dropdown-item-login-style">Geen kapitein</SelectItem>
-          {selectedPlayers.map((sel) => {
-            let name = sel.playerName;
-            const dbPlayer = players && typeof Array.isArray === 'function' && Array.isArray(players)
-              ? players.find((p) => p.player_id === sel.playerId)
-              : undefined;
-            if (dbPlayer) {
-              name = `${dbPlayer.first_name} ${dbPlayer.last_name}`;
-            }
-            return (
-              <SelectItem key={sel.playerId!} value={sel.playerId?.toString() || "no-captain"} className="dropdown-item-login-style">
-                {name}
-              </SelectItem>
-            );
-          })}
+          <SelectItem value="no-captain" className="dropdown-item-login-style">
+            Geen aanvoerder
+          </SelectItem>
+          {availablePlayers.map((selection) => (
+            <SelectItem
+              key={selection.playerId}
+              value={selection.playerId!.toString()}
+              className="dropdown-item-login-style"
+            >
+              {selection.playerName}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>
   );
 };
 
-export default CaptainSelection;
+export default React.memo(MatchesCaptainSelection);

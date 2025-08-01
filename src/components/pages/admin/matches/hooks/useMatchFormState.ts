@@ -1,6 +1,6 @@
 
 import { useState, useMemo } from "react";
-import { MatchFormData, PlayerSelection } from "../types/matchesFormTypes";
+import { MatchFormData, PlayerSelection } from "../types/MatchesFormTypes";
 
 export const useMatchFormState = (match: MatchFormData) => {
   const [homeScore, setHomeScore] = useState(match.homeScore?.toString() || "");

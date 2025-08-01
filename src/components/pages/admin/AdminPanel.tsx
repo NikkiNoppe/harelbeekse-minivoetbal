@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, AlertTriangle } from "lucide-react";
 import { teamService, Team } from "@/services/core";
-import CupTournamentManager from "@/components/pages/admin/beker/components/CupTournamentManager";
+import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
 
 // Initial users data
 const initialUsers = [
@@ -382,7 +382,7 @@ const AdminPanel: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="cup" className="space-y-4 mt-4">
-          <CupTournamentManager />
+          <BekerPage />
         </TabsContent>
       </Tabs>
       

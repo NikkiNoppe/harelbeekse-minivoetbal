@@ -9,7 +9,7 @@ import FinancialPage from "@/components/pages/admin/financial/FinancialPage";
 import UserPage from "@/components/pages/admin/users/UserPage";
 import TeamsPage from "@/components/pages/admin/teams/TeamsPage";
 import MatchesPage from "@/components/pages/admin/matches/MatchesPage";
-import CupTournamentManager from "@/components/pages/admin/beker/components/CupTournamentManager";
+import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
 import PlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
 import SettingsPage from "@/components/pages/admin/settings/SettingsPage";
 
@@ -31,7 +31,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
           <div className="animate-fade-in">
             <TabsContent value="match-forms" className="mt-0">
-              <MatchesPage teamId={user?.teamId || 0} teamName="Admin" />
+              <MatchesPage teamId={0} teamName="Admin" />
             </TabsContent>
             
             <TabsContent value="players" className="mt-0">

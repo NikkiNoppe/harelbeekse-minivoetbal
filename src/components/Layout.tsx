@@ -10,7 +10,7 @@ import AdminTeamPage from "@/components/pages/admin/teams/TeamsPage";
 import AdminUserPage from "@/components/pages/admin/users/UserPage";
 import AdminCompetitionPage from "@/components/pages/admin/competition/CompetitionPage";
 import AdminPlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
-import CupTournamentManager from "@/components/pages/admin/beker/components/CupTournamentManager";
+import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
 import AdminFinancialPage from "@/components/pages/admin/financial/FinancialPage";
 import AdminSettingsPage from "@/components/pages/admin/settings/SettingsPage";
 import MatchFormTab from "@/components/pages/admin/matches/MatchesPage";
@@ -23,7 +23,7 @@ const Layout: React.FC = () => {
   const { user } = useAuth();
 
   const handleLogoClick = () => {
-    setActiveTab("financial");
+    setActiveTab("match-forms");
   };
 
   const handleTabChange = (tab: string) => {
@@ -97,7 +97,7 @@ const Layout: React.FC = () => {
       case "cup":
         content = (
           <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <CupTournamentManager />
+            <BekerPage />
           </div>
         );
         break;

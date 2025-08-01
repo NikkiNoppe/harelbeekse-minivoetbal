@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,6 +17,82 @@ interface MatchDataSectionProps {
   canEdit: boolean;
   canEditMatchData: boolean;
 }
+
+// Memoized input field component
+const MatchInputField = React.memo<{
+  id: string;
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+}>(({ id, label, type = "text", value, onChange, disabled = false, placeholder }) => (
+  <div className="space-y-2">
+    <Label htmlFor={id}>{label}</Label>
+    <Input
+      id={id}
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+      placeholder={placeholder}
+      className="input-login-style"
+    />
+  </div>
+));
+
+// Memoized referee selector component
+const RefereeSelector = React.memo<{
+  referees: Referee[];
+  selectedReferee: string;
+  onRefereeChange: (value: string) => void;
+  loading: boolean;
+  disabled: boolean;
+}>(({ referees, selectedReferee, onRefereeChange, loading, disabled }) => (
+  <div className="space-y-2">
+    <Label htmlFor="match-referee">Scheidsrechter</Label>
+    <Select
+      value={selectedReferee}
+      onValueChange={onRefereeChange}
+      disabled={disabled || loading}
+    >
+      <SelectTrigger className="dropdown-login-style">
+        <SelectValue placeholder={loading ? "Laden..." : "Selecteer scheidsrechter"} />
+      </SelectTrigger>
+      <SelectContent className="dropdown-content-login-style">
+        {referees.map((referee) => (
+          <SelectItem key={referee.user_id} value={referee.username} className="dropdown-item-login-style">
+            {referee.username}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+));
+
+// Memoized score input component
+const ScoreInput = React.memo<{
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled: boolean;
+}>(({ id, label, value, onChange, disabled }) => (
+  <div className="space-y-2">
+    <Label htmlFor={id}>{label}</Label>
+    <Input
+      id={id}
+      type="number"
+      min="0"
+      max="99"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+      className="input-login-style text-center"
+    />
+  </div>
+));
 
 export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
   match,
@@ -50,6 +126,26 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
     loadReferees();
   }, []);
 
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleDateChange = useCallback((value: string) => {
+    onMatchDataChange?.("date", value);
+  }, [onMatchDataChange]);
+
+  const handleTimeChange = useCallback((value: string) => {
+    onMatchDataChange?.("time", value);
+  }, [onMatchDataChange]);
+
+  const handleLocationChange = useCallback((value: string) => {
+    onMatchDataChange?.("location", value);
+  }, [onMatchDataChange]);
+
+  const handleMatchdayChange = useCallback((value: string) => {
+    onMatchDataChange?.("matchday", value);
+  }, [onMatchDataChange]);
+
+  // Memoize the component to prevent unnecessary re-renders
+  const memoizedReferees = useMemo(() => referees, [referees]);
+
   return (
     <div className="space-y-4">
       <h3 className="text-2xl text-center text-purple-light">
@@ -60,131 +156,79 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
       <div className="space-y-4">
         {/* First row: Date, Time */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="match-date">Datum</Label>
-            <Input
-              id="match-date"
-              type="date"
-              value={match.date}
-              onChange={(e) => onMatchDataChange?.("date", e.target.value)}
-              disabled={!canEditMatchData}
-              className="input-login-style"
-            />
-          </div>
+          <MatchInputField
+            id="match-date"
+            label="Datum"
+            type="date"
+            value={match.date}
+            onChange={handleDateChange}
+            disabled={!canEditMatchData}
+          />
           
-          <div className="space-y-2">
-            <Label htmlFor="match-time">Tijd</Label>
-            <Input
-              id="match-time"
-              type="time"
-              value={match.time}
-              onChange={(e) => onMatchDataChange?.("time", e.target.value)}
-              disabled={!canEditMatchData}
-              className="input-login-style"
-            />
-          </div>
+          <MatchInputField
+            id="match-time"
+            label="Tijd"
+            type="time"
+            value={match.time}
+            onChange={handleTimeChange}
+            disabled={!canEditMatchData}
+          />
         </div>
 
         {/* Second row: Location, Matchday, Referee */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="match-location">Locatie</Label>
-            <Input
-              id="match-location"
-              value={match.location}
-              onChange={(e) => onMatchDataChange?.("location", e.target.value)}
-              disabled={!canEditMatchData}
-              placeholder="Wedstrijdlocatie"
-              className="input-login-style"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="match-matchday">Speeldag</Label>
-            <Input
-              id="match-matchday"
-              value={match.matchday}
-              onChange={(e) => onMatchDataChange?.("matchday", e.target.value)}
-              disabled={!canEditMatchData}
-              placeholder="bijv. 11"
-              className="input-login-style text-center"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="match-referee">Scheidsrechter</Label>
-            <Select
-              value={selectedReferee}
-              onValueChange={onRefereeChange}
-              disabled={!canEdit || !canEditMatchData}
-            >
-              <SelectTrigger className="dropdown-login-style text-right">
-                <SelectValue placeholder="Selecteer scheidsrechter" />
-              </SelectTrigger>
-              <SelectContent className="dropdown-content-login-style">
-                {loadingReferees ? (
-                  <SelectItem value="loading" disabled className="dropdown-item-login-style">
-                    Laden...
-                  </SelectItem>
-                ) : referees.length === 0 ? (
-                  <SelectItem value="no-referees" disabled className="dropdown-item-login-style">
-                    Geen scheidsrechters beschikbaar
-                  </SelectItem>
-                ) : (
-                  referees.map((referee) => (
-                    <SelectItem
-                      key={referee.user_id}
-                      value={referee.username}
-                      className="dropdown-item-login-style"
-                    >
-                      {referee.username}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+          <MatchInputField
+            id="match-location"
+            label="Locatie"
+            value={match.location}
+            onChange={handleLocationChange}
+            disabled={!canEditMatchData}
+            placeholder="Wedstrijdlocatie"
+          />
+          
+          <MatchInputField
+            id="match-matchday"
+            label="Speeldag"
+            value={match.matchday || ""}
+            onChange={handleMatchdayChange}
+            disabled={!canEditMatchData}
+            placeholder="Speeldag"
+          />
+          
+          <RefereeSelector
+            referees={memoizedReferees}
+            selectedReferee={selectedReferee}
+            onRefereeChange={onRefereeChange}
+            loading={loadingReferees}
+            disabled={!canEdit}
+          />
         </div>
       </div>
 
-      {/* Score Input */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-        <div className="space-y-2">
-          <Label htmlFor="homeScore" className="font-semibold">{match.homeTeamName}</Label>
-          <Input
-            id="homeScore"
-            type="number"
-            min="0"
+      {/* Score Section */}
+      <div className="space-y-4">
+        <h4 className="text-lg font-semibold text-center text-purple-light">
+          📊 Score
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ScoreInput
+            id="home-score"
+            label={`${match.homeTeamName} Score`}
             value={homeScore}
-            onChange={(e) => {
-              onHomeScoreChange(e.target.value);
-            }}
-            disabled={!canEdit || !canEditMatchData}
-            className="text-center text-lg font-bold input-login-style"
+            onChange={onHomeScoreChange}
+            disabled={!canEdit}
           />
-        </div>
-        
-        <div className="flex justify-center items-center">
-          <span className="text-3xl font-bold text-[var(--main-color-dark)]">-</span>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="awayScore" className="font-semibold">{match.awayTeamName}</Label>
-          <Input
-            id="awayScore"
-            type="number"
-            min="0"
+          <ScoreInput
+            id="away-score"
+            label={`${match.awayTeamName} Score`}
             value={awayScore}
-            onChange={(e) => {
-              onAwayScoreChange(e.target.value);
-            }}
-            disabled={!canEdit || !canEditMatchData}
-            className="text-center text-lg font-bold input-login-style"
+            onChange={onAwayScoreChange}
+            disabled={!canEdit}
           />
         </div>
       </div>
-
-
     </div>
   );
 };
+
+export default React.memo(MatchDataSection);

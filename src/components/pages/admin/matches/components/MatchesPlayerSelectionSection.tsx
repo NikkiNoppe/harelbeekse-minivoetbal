@@ -2,7 +2,7 @@ import React, { useMemo, useCallback } from "react";
 import MatchesPlayerSelectionTable from "./MatchesPlayerSelectionTable";
 import MatchesCaptainSelection from "./MatchesCaptainSelection";
 import { useTeamPlayers } from "./useTeamPlayers";
-import { PlayerSelection, MatchFormData } from "../types/matchesFormTypes";
+import { PlayerSelection, MatchFormData } from "../types/MatchesFormTypes";
 
 interface PlayerSelectionSectionProps {
   match: MatchFormData;
@@ -29,14 +29,24 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   teamId,
   isTeamManager,
 }) => {
-  // Live team player data
+  // Live team player data using optimized hook
   const homeTeamId = match.homeTeamId;
   const awayTeamId = match.awayTeamId;
-  const { data: homePlayers, isLoading: loadingHome, error: errorHome } = useTeamPlayers(homeTeamId);
-  const { data: awayPlayers, isLoading: loadingAway, error: errorAway } = useTeamPlayers(awayTeamId);
+  
+  const { 
+    players: homePlayers, 
+    loading: loadingHome, 
+    error: errorHome 
+  } = useTeamPlayers(homeTeamId);
+  
+  const { 
+    players: awayPlayers, 
+    loading: loadingAway, 
+    error: errorAway 
+  } = useTeamPlayers(awayTeamId);
 
-  // Helper: prevent duplicate selection
-  const getSelectedPlayerIds = useMemo(() => (selections: PlayerSelection[]) =>
+  // Helper: prevent duplicate selection - memoized for performance
+  const getSelectedPlayerIds = useCallback((selections: PlayerSelection[]) =>
     selections.map((sel) => sel.playerId).filter((id): id is number => id !== null), []);
 
   // Captain logic with better logging
@@ -51,54 +61,64 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
     });
   }, [homeTeamSelections, awayTeamSelections, onPlayerSelection]);
 
+  // Memoize selected player IDs for performance
+  const homeSelectedPlayerIds = useMemo(() => 
+    getSelectedPlayerIds(homeTeamSelections), [homeTeamSelections, getSelectedPlayerIds]);
+  
+  const awaySelectedPlayerIds = useMemo(() => 
+    getSelectedPlayerIds(awayTeamSelections), [awayTeamSelections, getSelectedPlayerIds]);
+
   return (
     <div className="space-y-4">
       <h3 className="text-2xl text-center text-purple-light">Spelers</h3>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <MatchesPlayerSelectionTable
-              teamLabel={`${match.homeTeamName} (Thuis)`}
-              selections={homeTeamSelections}
-              players={homePlayers}
-              loading={loadingHome}
-              error={errorHome}
-              selectedPlayerIds={getSelectedPlayerIds(homeTeamSelections)}
-              onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, true)}
-              onCardChange={onCardChange}
-              playerCards={playerCards}
-              canEdit={canEdit}
-              showRefereeFields={showRefereeFields}
-            />
-            <MatchesCaptainSelection
-              selections={homeTeamSelections}
-              players={homePlayers}
-              canEdit={canEdit}
-              onChange={(val) => handleCaptainChange(val, true)}
-            />
-          </div>
-          <div>
-            <MatchesPlayerSelectionTable
-              teamLabel={`${match.awayTeamName} (Uit)`}
-              selections={awayTeamSelections}
-              players={awayPlayers}
-              loading={loadingAway}
-              error={errorAway}
-              selectedPlayerIds={getSelectedPlayerIds(awayTeamSelections)}
-              onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, false)}
-              onCardChange={onCardChange}
-              playerCards={playerCards}
-              canEdit={canEdit}
-              showRefereeFields={showRefereeFields}
-            />
-            <MatchesCaptainSelection
-              selections={awayTeamSelections}
-              players={awayPlayers}
-              canEdit={canEdit}
-              onChange={(val) => handleCaptainChange(val, false)}
-            />
-          </div>
+        {/* Home Team */}
+        <div>
+          <MatchesPlayerSelectionTable
+            teamLabel={`${match.homeTeamName} (Thuis)`}
+            selections={homeTeamSelections}
+            players={homePlayers}
+            loading={loadingHome}
+            error={errorHome}
+            selectedPlayerIds={homeSelectedPlayerIds}
+            onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, true)}
+            onCardChange={onCardChange}
+            playerCards={playerCards}
+            canEdit={canEdit}
+            showRefereeFields={showRefereeFields}
+          />
+          <MatchesCaptainSelection
+            selections={homeTeamSelections}
+            onCaptainChange={(playerId) => handleCaptainChange(playerId?.toString() || "no-captain", true)}
+            canEdit={canEdit}
+          />
         </div>
+        
+        {/* Away Team */}
+        <div>
+          <MatchesPlayerSelectionTable
+            teamLabel={`${match.awayTeamName} (Uit)`}
+            selections={awayTeamSelections}
+            players={awayPlayers}
+            loading={loadingAway}
+            error={errorAway}
+            selectedPlayerIds={awaySelectedPlayerIds}
+            onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, false)}
+            onCardChange={onCardChange}
+            playerCards={playerCards}
+            canEdit={canEdit}
+            showRefereeFields={showRefereeFields}
+          />
+          <MatchesCaptainSelection
+            selections={awayTeamSelections}
+            onCaptainChange={(playerId) => handleCaptainChange(playerId?.toString() || "no-captain", false)}
+            canEdit={canEdit}
+          />
+        </div>
+      </div>
     </div>
   );
 };
+
+export default React.memo(PlayerSelectionSection);

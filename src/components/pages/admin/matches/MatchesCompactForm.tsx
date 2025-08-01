@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import { MatchDataSection } from "./components/MatchesDataSection";
 import { PlayerSelectionSection } from "./components/MatchesPlayerSelectionSection";
-import { RefereeNotesSection } from "./components/MatchesRefereeNotesSection";
-import { MatchFormActions } from "./components/MatchesFormActions";
+import MatchesRefereeNotesSection from "./components/MatchesRefereeNotesSection";
+import MatchesFormActions from "./components/MatchesFormActions";
 import { MatchesRefereePenaltySection } from "./components/MatchesRefereePenaltySection";
 import MatchesPenaltyShootoutModal from "./components/MatchesPenaltyShootoutModal";
-import { MatchFormData, PlayerSelection } from "./types/matchesFormTypes";
+import { MatchFormData, PlayerSelection } from "./types/MatchesFormTypes";
 import { useMatchFormState } from "./hooks/useMatchFormState";
 import { useEnhancedMatchFormSubmission } from "./hooks/useEnhancedMatchFormSubmission";
 
@@ -46,35 +46,38 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   } = useMatchFormState(match);
 
   const { submitMatchForm, lockMatch } = useEnhancedMatchFormSubmission();
-  const userRole = isAdmin ? "admin" : isReferee ? "referee" : "player_manager";
   const [showPenaltyModal, setShowPenaltyModal] = React.useState(false);
   const [pendingSubmission, setPendingSubmission] = React.useState<MatchFormData | null>(null);
+
+  const userRole = isAdmin ? "admin" : isReferee ? "referee" : "player_manager";
   const canEdit = !match.isLocked || isAdmin;
   const showRefereeFields = isReferee || isAdmin;
   const isCupMatch = match.matchday?.includes('🏆');
 
-  const handleCardChange = React.useCallback((playerId: number, cardType: string) => {
+  const handleCardChange = useCallback((playerId: number, cardType: string) => {
     setPlayerCards(prev => ({
       ...prev,
       [playerId]: cardType === "none" ? "" : cardType
     }));
   }, [setPlayerCards]);
 
-  const handlePlayerSelection = React.useCallback((
+  const updatePlayerSelection = useCallback((
+    selections: PlayerSelection[],
+    setSelections: React.Dispatch<React.SetStateAction<PlayerSelection[]>>,
     index: number,
     field: keyof PlayerSelection,
-    value: any,
-    isHomeTeam: boolean
+    value: any
   ) => {
-    const setSelections = isHomeTeam ? setHomeTeamSelections : setAwayTeamSelections;
     setSelections(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
+      
       if (field === "isCaptain" && value === true) {
         updated.forEach((sel, idx) => {
           if (idx !== index) updated[idx].isCaptain = false;
         });
       }
+      
       if (field === "playerId" && value === null) {
         updated[index].playerName = "";
         updated[index].jerseyNumber = "";
@@ -89,38 +92,44 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       }
       return updated;
     });
-  }, [setHomeTeamSelections, setAwayTeamSelections, setPlayerCards]);
+  }, [setPlayerCards]);
 
-  const handleSubmit = React.useCallback(async () => {
+  const handlePlayerSelection = useCallback((
+    index: number,
+    field: keyof PlayerSelection,
+    value: any,
+    isHomeTeam: boolean
+  ) => {
+    const setSelections = isHomeTeam ? setHomeTeamSelections : setAwayTeamSelections;
+    const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
+    updatePlayerSelection(selections, setSelections, index, field, value);
+  }, [homeTeamSelections, awayTeamSelections, setHomeTeamSelections, setAwayTeamSelections, updatePlayerSelection]);
+
+  const createUpdatedMatch = useCallback((homeScore: number | null, awayScore: number | null) => ({
+    ...match,
+    homeScore,
+    awayScore,
+    referee: selectedReferee,
+    refereeNotes,
+    isCompleted: true,
+    homePlayers: getHomeTeamSelectionsWithCards(),
+    awayPlayers: getAwayTeamSelectionsWithCards()
+  }), [match, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards]);
+
+  const handleSubmit = useCallback(async () => {
     const parsedHomeScore = homeScore !== "" ? parseInt(homeScore) : null;
     const parsedAwayScore = awayScore !== "" ? parseInt(awayScore) : null;
+    
     if (isCupMatch && parsedHomeScore !== null && parsedAwayScore !== null && parsedHomeScore === parsedAwayScore) {
-      const updatedMatch: MatchFormData = {
-        ...match,
-        homeScore: parsedHomeScore,
-        awayScore: parsedAwayScore,
-        referee: selectedReferee,
-        refereeNotes: refereeNotes,
-        isCompleted: true,
-        homePlayers: getHomeTeamSelectionsWithCards(),
-        awayPlayers: getAwayTeamSelectionsWithCards()
-      };
+      const updatedMatch = createUpdatedMatch(parsedHomeScore, parsedAwayScore);
       setPendingSubmission(updatedMatch);
       setShowPenaltyModal(true);
       return;
     }
+    
     setIsSubmitting(true);
     try {
-      const updatedMatch: MatchFormData = {
-        ...match,
-        homeScore: parsedHomeScore,
-        awayScore: parsedAwayScore,
-        referee: selectedReferee,
-        refereeNotes: refereeNotes,
-        isCompleted: true,
-        homePlayers: getHomeTeamSelectionsWithCards(),
-        awayPlayers: getAwayTeamSelectionsWithCards()
-      };
+      const updatedMatch = createUpdatedMatch(parsedHomeScore, parsedAwayScore);
       const result = await submitMatchForm(updatedMatch, isAdmin, userRole);
       if (result.success) {
         if (isReferee && !match.isLocked) {
@@ -133,10 +142,11 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [homeScore, awayScore, isCupMatch, match, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards, submitMatchForm, isAdmin, userRole, isReferee, lockMatch, onComplete, setIsSubmitting]);
+  }, [homeScore, awayScore, isCupMatch, createUpdatedMatch, submitMatchForm, isAdmin, userRole, isReferee, lockMatch, match, onComplete, setIsSubmitting]);
 
-  const handlePenaltyResult = React.useCallback(async (winner: 'home' | 'away', homePenalties: number, awayPenalties: number, notes: string) => {
+  const handlePenaltyResult = useCallback(async (winner: 'home' | 'away', homePenalties: number, awayPenalties: number, notes: string) => {
     if (!pendingSubmission) return;
+    
     setIsSubmitting(true);
     try {
       const updatedHomeScore = winner === 'home' ? (pendingSubmission.homeScore || 0) + 1 : pendingSubmission.homeScore;
@@ -162,6 +172,20 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     }
   }, [pendingSubmission, isAdmin, userRole, isReferee, match, submitMatchForm, lockMatch, onComplete, setIsSubmitting]);
 
+  const refereeFields = useMemo(() => showRefereeFields && (
+    <>
+      <MatchesRefereeNotesSection
+        notes={refereeNotes}
+        onNotesChange={setRefereeNotes}
+        canEdit={canEdit}
+      />
+      <MatchesRefereePenaltySection
+        match={match}
+        canEdit={canEdit}
+      />
+    </>
+  ), [showRefereeFields, refereeNotes, setRefereeNotes, canEdit, match]);
+
   return (
     <div className="space-y-6">
       <MatchDataSection
@@ -175,6 +199,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         canEdit={canEdit}
         canEditMatchData={showRefereeFields}
       />
+      
       <PlayerSelectionSection
         match={match}
         homeTeamSelections={homeTeamSelections}
@@ -187,28 +212,16 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         teamId={teamId}
         isTeamManager={!isAdmin && !isReferee}
       />
-      {showRefereeFields && (
-        <>
-          <RefereeNotesSection
-            refereeNotes={refereeNotes}
-            onRefereeNotesChange={setRefereeNotes}
-            canEdit={canEdit}
-          />
-          <MatchesRefereePenaltySection
-            match={match}
-            canEdit={canEdit}
-          />
-        </>
-      )}
-      <MatchFormActions
+      
+      {refereeFields}
+      
+      <MatchesFormActions
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
-        canEdit={canEdit}
-        isReferee={isReferee}
-        isTeamManager={!isAdmin && !isReferee}
+        canActuallyEdit={canEdit}
         isAdmin={isAdmin}
-        isLocked={match.isLocked}
       />
+      
       <MatchesPenaltyShootoutModal
         open={showPenaltyModal}
         onOpenChange={setShowPenaltyModal}
