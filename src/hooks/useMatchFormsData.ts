@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { fetchUpcomingMatches } from "@/components/pages/admin/matches/services/MatchesFormService";
-import type { MatchFormData } from "@/components/pages/admin/matches/types/MatchesFormTypes";
+import { fetchUpcomingMatches } from "../components/pages/admin/matches/services/MatchesFormService";
+import type { MatchFormData } from "../components/pages/admin/matches/types/MatchesFormTypes";
 
 export interface MatchFormsFilters {
   searchTerm: string;

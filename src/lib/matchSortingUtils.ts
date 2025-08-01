@@ -1,4 +1,4 @@
-import { MatchFormData } from "@/components/pages/admin/matches/types/MatchesFormTypes";
+import { MatchFormData } from "../components/pages/admin/matches/types/MatchesFormTypes";
 
 /**
  * Generic function to sort matches by date and time
