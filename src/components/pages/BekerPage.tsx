@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Trophy, Award, AlertCircle } from "lucide-react";
-import MatchesCupCard from "../matches/components/MatchesCupCard";
+import MatchesCupCard from "./admin/matches/components/MatchesCupCard";
 import { useCupData, CupMatchDisplay } from "@/hooks/useCupData";
 
 // Skeleton loading components

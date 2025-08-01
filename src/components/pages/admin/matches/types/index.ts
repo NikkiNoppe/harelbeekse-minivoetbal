@@ -1,28 +1,31 @@
-export interface PlayerSelection {
-  playerId: number | null;
-  playerName: string;
-  jerseyNumber: string;
-  isCaptain: boolean;
-  cardType?: string;
-}
-
+// Match types for the different components
 export interface MatchFormData {
-  matchId: number;
-  uniqueNumber: string;
+  id?: number;
   date: string;
   time: string;
-  homeTeamId: number;
-  homeTeamName: string;
-  awayTeamId: number;
-  awayTeamName: string;
+  homeTeam: string;
+  awayTeam: string;
   location: string;
-  matchday: string;
-  isCompleted: boolean;
-  isLocked: boolean;
   homeScore?: number | null;
   awayScore?: number | null;
   referee?: string;
-  refereeNotes?: string;
-  homePlayers: PlayerSelection[];
-  awayPlayers: PlayerSelection[];
+  notes?: string;
+  uniqueNumber?: string;
+}
+
+export interface PastMatch {
+  id: number;
+  date: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+  location: string;
+  referee: string;
+  uniqueNumber?: string;
+}
+
+export interface MatchesResult {
+  past: PastMatch[];
+  upcoming: MatchFormData[];
 }

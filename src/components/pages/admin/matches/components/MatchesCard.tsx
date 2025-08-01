@@ -1,7 +1,7 @@
 import React from "react";
 import { Clock, MapPin, CheckCircle } from "lucide-react";
 import AutoFitText from "@/components/ui/auto-fit-text";
-import "../../../../src/index.css";
+
 
 export type MatchCardStatus = 'completed' | 'upcoming' | 'pending';
 

@@ -1,5 +1,5 @@
 import React, { useState, memo, useMemo, useCallback } from "react";
-import { useAuth } from "@/components/login/AuthProvider";
+import { useAuth } from "@/components/pages/login/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";

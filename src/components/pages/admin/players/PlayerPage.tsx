@@ -7,7 +7,7 @@ import PlayerModal from "./components/PlayerModal";
 import PlayerRegulations from "./components/PlayerRegulations";
 import { usePlayersUpdated } from "./hooks/usePlayersUpdated";
 import { usePlayerListLock } from "@/components/user/players/hooks/usePlayerListLock";
-import { useAuth } from "@/components/login/AuthProvider";
+import { useAuth } from "@/components/pages/login/AuthProvider";
 import { formatDateShort } from "@/lib/dateUtils";
 
 const PlayerPage: React.FC = () => {

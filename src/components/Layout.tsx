@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Header from "@/components/pages/header/Header";
 import Footer from "@/components/pages/footer/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import LoginModal from "@/components/login/LoginModal";
+import LoginModal from "@/components/pages/login/LoginModal";
 import MainPages from "@/components/pages/MainPages";
 import PlayersList from "@/components/pages/admin/players/components/PlayersList";
 import AdminTeamPage from "@/components/pages/admin/teams/TeamsPage";
@@ -14,7 +14,7 @@ import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
 import AdminFinancialPage from "@/components/pages/admin/financial/FinancialPage";
 import AdminSettingsPage from "@/components/pages/admin/settings/SettingsPage";
 import MatchFormTab from "@/components/pages/admin/matches/MatchesPage";
-import { useAuth } from "@/components/login/AuthProvider";
+import { useAuth } from "@/components/pages/login/AuthProvider";
 import PlayerPage from "@/components/pages/admin/players/PlayerPage";
 
 const Layout: React.FC = () => {

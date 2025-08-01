@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import MatchesCard from "@/components/matches/components/MatchesCard";
+import MatchesCard from "./components/MatchesCard";
 import { Lock, CheckCircle, Clock } from "lucide-react";
 import { MatchFormData } from "./types/MatchesFormTypes";
 import { 

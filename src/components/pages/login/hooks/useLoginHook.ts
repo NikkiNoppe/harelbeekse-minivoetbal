@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/types/auth";
-import { useAuth } from "@/components/login/AuthProvider";
+import { useAuth } from "../AuthProvider";
 
 export const useLoginHook = (onLoginSuccess: () => void) => {
   const { toast } = useToast();

@@ -5,6 +5,6 @@ import PlayersList from "@/components/pages/admin/players/components/PlayersList
 import PlayerRegulations from "@/components/pages/admin/players/components/PlayerRegulations";
 import { usePlayersUpdated } from "@/components/pages/admin/players/hooks/usePlayersUpdated";
 import { usePlayerListLock } from "@/components/user/players/hooks/usePlayerListLock";
-import { useAuth } from "@/components/login/AuthProvider";
+import { useAuth } from "@/components/pages/login/AuthProvider";
 import { formatDateShort } from "@/lib/dateUtils";
 import PlayerModal from "@/components/pages/admin/players/components/PlayerModal";
