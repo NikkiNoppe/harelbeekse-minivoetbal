@@ -5,17 +5,8 @@ import Footer from "@/components/pages/footer/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import LoginModal from "@/components/pages/login/LoginModal";
 import MainPages from "@/components/pages/MainPages";
-import PlayersList from "@/components/pages/admin/players/components/PlayersList";
-import AdminTeamPage from "@/components/pages/admin/teams/TeamsPage";
-import AdminUserPage from "@/components/pages/admin/users/UserPage";
-import AdminCompetitionPage from "@/components/pages/admin/competition/CompetitionPage";
-import AdminPlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
-import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
-import AdminFinancialPage from "@/components/pages/admin/financial/FinancialPage";
-import AdminSettingsPage from "@/components/pages/admin/settings/SettingsPage";
-import MatchFormTab from "@/components/pages/admin/matches/MatchesPage";
+import AdminDashboard from "@/components/pages/admin/AdminDashboard";
 import { useAuth } from "@/components/pages/login/AuthProvider";
-import PlayerPage from "@/components/pages/admin/players/PlayerPage";
 
 const Layout: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
@@ -52,95 +43,38 @@ const Layout: React.FC = () => {
     "schorsingen", "kaarten", "reglement", "teams"
   ].includes(activeTab);
 
+  // Check if it's an admin tab
+  const isAdminTab = [
+    "match-forms", "players", "teams", "users", "competition", 
+    "playoffs", "cup", "financial", "settings", "speelformat"
+  ].includes(activeTab);
+
   let content = null;
 
   if (isMainTab) {
     content = <MainPages activeTab={activeTab as any} setActiveTab={setActiveTab as any} />;
+  } else if (isAdminTab) {
+    content = <AdminDashboard activeTab={activeTab as any} setActiveTab={setActiveTab as any} />;
   } else {
-    // Individual components for admin/user tabs with consistent padding
-    switch (activeTab) {
-      case "players":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <PlayerPage />
-          </div>
-        );
-        break;
-      case "teams":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <AdminTeamPage />
-          </div>
-        );
-        break;
-      case "users":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <AdminUserPage />
-          </div>
-        );
-        break;
-      case "competition":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <AdminCompetitionPage />
-          </div>
-        );
-        break;
-      case "playoffs":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <AdminPlayoffPage />
-          </div>
-        );
-        break;
-      case "cup":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <BekerPage />
-          </div>
-        );
-        break;
-      case "financial":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <AdminFinancialPage />
-          </div>
-        );
-        break;
-      case "settings":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <AdminSettingsPage />
-          </div>
-        );
-        break;
-      case "match-forms":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <MatchFormTab teamId={0} teamName="Admin" />
-          </div>
-        );
-        break;
-      default:
-        content = <MainPages activeTab="algemeen" setActiveTab={setActiveTab} />;
-    }
+    content = <MainPages activeTab="algemeen" setActiveTab={setActiveTab} />;
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
-      <Header 
-        onLogoClick={handleLogoClick} 
-        onLoginClick={handleLoginClick}
-        onTabChange={handleTabChange}
-        activeTab={activeTab}
-        isAuthenticated={!!user}
-        user={user}
-      />
-      <main className="flex-1 w-full bg-purple-100 pt-6">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      {!isAdminTab && (
+        <Header 
+          onLogoClick={handleLogoClick} 
+          onLoginClick={handleLoginClick}
+          onTabChange={handleTabChange}
+          activeTab={activeTab}
+          isAuthenticated={!!user}
+          user={user}
+        />
+      )}
+      <main className={`flex-1 w-full ${isAdminTab ? '' : 'bg-purple-100 pt-6'}`}>
         {content}
       </main>
-      <Footer />
+      {!isAdminTab && <Footer />}
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
         <DialogContent className="modal">
           <DialogTitle className="sr-only">Inloggen</DialogTitle>
