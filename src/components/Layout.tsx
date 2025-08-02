@@ -5,17 +5,8 @@ import Footer from "@/components/pages/footer/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import LoginModal from "@/components/pages/login/LoginModal";
 import MainPages from "@/components/pages/MainPages";
-import PlayersList from "@/components/pages/admin/players/components/PlayersList";
-import AdminTeamPage from "@/components/pages/admin/teams/TeamsPage";
-import AdminUserPage from "@/components/pages/admin/users/UserPage";
-import AdminCompetitionPage from "@/components/pages/admin/competition/CompetitionPage";
-import AdminPlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
-import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
-import AdminFinancialPage from "@/components/pages/admin/financial/FinancialPage";
-import AdminSettingsPage from "@/components/pages/admin/settings/SettingsPage";
-import MatchFormTab from "@/components/pages/admin/matches/MatchesPage";
+import { AdminDashboardLayout } from "@/components/pages/admin/AdminDashboardLayout";
 import { useAuth } from "@/components/pages/login/AuthProvider";
-import PlayerPage from "@/components/pages/admin/players/PlayerPage";
 
 const Layout: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
@@ -46,87 +37,45 @@ const Layout: React.FC = () => {
     }
   }, [user, loginDialogOpen]);
 
+  // Admin sections die sidebar gebruiken
+  const adminTabs = [
+    "match-forms", "players", "teams", "users", 
+    "competition", "playoffs", "cup", "financial", "settings"
+  ];
+  
   // Main public tabs that use MainPages component
-  const isMainTab = [
+  const publicTabs = [
     "algemeen", "beker", "competitie", "playoff", 
     "schorsingen", "kaarten", "reglement", "teams"
-  ].includes(activeTab);
+  ];
 
-  let content = null;
+  const isAdminSection = user && adminTabs.includes(activeTab);
+  const isPublicSection = publicTabs.includes(activeTab);
 
-  if (isMainTab) {
-    content = <MainPages activeTab={activeTab as any} setActiveTab={setActiveTab as any} />;
-  } else {
-    // Individual components for admin/user tabs with consistent padding
-    switch (activeTab) {
-      case "players":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <PlayerPage />
-          </div>
-        );
-        break;
-      case "teams":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <AdminTeamPage />
-          </div>
-        );
-        break;
-      case "users":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <AdminUserPage />
-          </div>
-        );
-        break;
-      case "competition":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <AdminCompetitionPage />
-          </div>
-        );
-        break;
-      case "playoffs":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <AdminPlayoffPage />
-          </div>
-        );
-        break;
-      case "cup":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <BekerPage />
-          </div>
-        );
-        break;
-      case "financial":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <AdminFinancialPage />
-          </div>
-        );
-        break;
-      case "settings":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <AdminSettingsPage />
-          </div>
-        );
-        break;
-      case "match-forms":
-        content = (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <MatchFormTab teamId={0} teamName="Admin" />
-          </div>
-        );
-        break;
-      default:
-        content = <MainPages activeTab="algemeen" setActiveTab={setActiveTab} />;
-    }
+  // Voorwaardelijke rendering: Sidebar voor admin, Header voor publiek
+  if (isAdminSection) {
+    return (
+      <>
+        <AdminDashboardLayout 
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onLogoClick={handleLogoClick}
+          onLoginClick={handleLoginClick}
+        />
+        <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
+          <DialogContent className="modal">
+            <DialogTitle className="sr-only">Inloggen</DialogTitle>
+            <DialogDescription className="sr-only">
+              Log in op je account om toegang te krijgen tot het systeem
+            </DialogDescription>
+            <LoginModal onLoginSuccess={handleLoginSuccess} />
+          </DialogContent>
+        </Dialog>
+      </>
+    );
   }
 
+  // Publieke layout met Header hamburgermenu
   return (
     <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
       <Header 
@@ -138,7 +87,11 @@ const Layout: React.FC = () => {
         user={user}
       />
       <main className="flex-1 w-full bg-purple-100 pt-6">
-        {content}
+        {isPublicSection ? (
+          <MainPages activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
+        ) : (
+          <MainPages activeTab="algemeen" setActiveTab={setActiveTab} />
+        )}
       </main>
       <Footer />
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
