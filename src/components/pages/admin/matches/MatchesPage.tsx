@@ -277,39 +277,25 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
 
       <section>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit mb-6">
-            <button
-              onClick={() => setActiveTab("league")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                activeTab === "league"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Calendar className="h-4 w-4 mr-2 inline" />
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="league" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
               Competitie
-            </button>
-            <button
-              onClick={() => setActiveTab("cup")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                activeTab === "cup"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Trophy className="h-4 w-4 mr-2 inline" />
+            </TabsTrigger>
+            <TabsTrigger value="cup" className="flex items-center gap-2">
+              <Trophy className="h-4 w-4" />
               Beker
-            </button>
-          </div>
+            </TabsTrigger>
+          </TabsList>
           
-          <div className="mt-6">
-            {activeTab === "league" && (
-              isLoading ? (
+          {tabConfigs.map(({ value, data, type }) => (
+            <TabsContent key={value} value={value} className="mt-6">
+              {isLoading ? (
                 <TabContentSkeleton />
               ) : (
                 <TabContent
-                  tabType="league"
-                  tabData={leagueTabData}
+                  tabType={type}
+                  tabData={data}
                   hasElevatedPermissions={hasElevatedPermissions}
                   teamName={teamName}
                   user={user}
@@ -317,25 +303,9 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
                   onFiltersChange={setFilters}
                   onSelectMatch={handleSelectMatch}
                 />
-              )
-            )}
-            {activeTab === "cup" && (
-              isLoading ? (
-                <TabContentSkeleton />
-              ) : (
-                <TabContent
-                  tabType="cup"
-                  tabData={cupTabData}
-                  hasElevatedPermissions={hasElevatedPermissions}
-                  teamName={teamName}
-                  user={user}
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  onSelectMatch={handleSelectMatch}
-                />
-              )
-            )}
-          </div>
+              )}
+            </TabsContent>
+          ))}
         </Tabs>
       </section>
       
