@@ -52,6 +52,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                   <CompetitionPage />
                 </TabsContent>
                 
+                <TabsContent value="cup" className="mt-0">
+                  <BekerPage />
+                </TabsContent>
+                
                 <TabsContent value="playoffs" className="mt-0">
                   <PlayoffPage />
                 </TabsContent>
