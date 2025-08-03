@@ -11,16 +11,20 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
-  // Wedstrijdformulieren groep (uitklapbaar) - alleen voor admin
-  const wedstrijdformulierenItems = [
+  // Speelformaten groep (uitklapbaar) - alleen voor admin
+  const speelformatenItems = [
     { key: "competition", label: "Competitie", icon: Trophy },
     { key: "cup", label: "Beker", icon: Award },
     { key: "playoffs", label: "Play-Offs", icon: Target },
   ];
 
+  // Wedstrijdformulieren groep
+  const wedstrijdformulierenItems = [
+    { key: "match-forms", label: "Wedstrijdformulieren", icon: Calendar, adminOnly: false },
+  ];
+
   // Beheer groep
   const beheerItems = [
-    { key: "match-forms", label: "Wedstrijdformulieren", icon: Calendar, adminOnly: false },
     { key: "players", label: "Spelers", icon: Users, adminOnly: false },
     { key: "teams", label: "Teams", icon: Shield, adminOnly: true },
     { key: "users", label: "Gebruikers", icon: User, adminOnly: true },
@@ -68,8 +72,11 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1">
-        {/* Wedstrijdformulieren groep - alleen voor admin */}
-        {isAdmin && renderGroup("Wedstrijdformulieren", wedstrijdformulierenItems)}
+        {/* Speelformaten groep - alleen voor admin */}
+        {isAdmin && renderGroup("Speelformaten", speelformatenItems)}
+
+        {/* Wedstrijdformulieren groep */}
+        {renderGroup("Wedstrijdformulieren", wedstrijdformulierenItems.filter(item => !item.adminOnly || isAdmin))}
 
         {/* Beheer groep */}
         {renderGroup("Beheer", beheerItems.filter(item => !item.adminOnly || isAdmin))}
