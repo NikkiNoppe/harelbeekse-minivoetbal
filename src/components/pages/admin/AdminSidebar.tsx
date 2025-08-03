@@ -11,8 +11,8 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
-  // Speelformat groep (uitklapbaar) - alleen voor admin
-  const speelformatItems = [
+  // Wedstrijdformulieren groep (uitklapbaar) - alleen voor admin
+  const wedstrijdformulierenItems = [
     { key: "competition", label: "Competitie", icon: Trophy },
     { key: "cup", label: "Beker", icon: Award },
     { key: "playoffs", label: "Play-Offs", icon: Target },
@@ -68,8 +68,8 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1">
-        {/* Speelformat groep - alleen voor admin */}
-        {isAdmin && renderGroup("Speelformat", speelformatItems)}
+        {/* Wedstrijdformulieren groep - alleen voor admin */}
+        {isAdmin && renderGroup("Wedstrijdformulieren", wedstrijdformulierenItems)}
 
         {/* Beheer groep */}
         {renderGroup("Beheer", beheerItems.filter(item => !item.adminOnly || isAdmin))}
