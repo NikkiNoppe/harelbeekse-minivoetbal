@@ -22,22 +22,29 @@ export function AdminDashboardLayout({
   const { user } = useAuth();
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex flex-col w-full bg-purple-100">
-        {/* Header compacter voor admin */}
-        <Header 
-          onLogoClick={onLogoClick} 
-          onLoginClick={onLoginClick}
-          onTabChange={setActiveTab}
-          activeTab={activeTab}
-          isAuthenticated={!!user}
-          user={user}
-        />
-        
-        <div className="flex flex-1 w-full">
-          <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+    <div className="min-h-screen flex flex-col bg-purple-100">
+      {/* Header - always visible at top */}
+      <Header 
+        onLogoClick={onLogoClick} 
+        onLoginClick={onLoginClick}
+        onTabChange={setActiveTab}
+        activeTab={activeTab}
+        isAuthenticated={!!user}
+        user={user}
+      />
+      
+      {/* Main content area - fills available space between header and footer */}
+      <div className="flex flex-1">
+        <SidebarProvider>
+          {/* Sidebar container - will adapt to content height */}
+          <div className="w-64 flex-shrink-0 bg-gradient-to-b from-white to-gray-50 border-r border-purple-200 shadow-lg">
+            <div className="p-2 h-full">
+              <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+            </div>
+          </div>
           
-          <main className="flex-1 bg-purple-100">
+          {/* Main content area */}
+          <main className="flex-1 bg-purple-100 overflow-auto">
             {/* Sidebar trigger voor toggle functionaliteit */}
             <div className="p-4">
               <SidebarTrigger className="mb-4" />
@@ -48,10 +55,11 @@ export function AdminDashboardLayout({
               setActiveTab={setActiveTab as any} 
             />
           </main>
-        </div>
-        
-        <Footer />
+        </SidebarProvider>
       </div>
-    </SidebarProvider>
+      
+      {/* Footer - always visible at bottom */}
+      <Footer />
+    </div>
   );
 }

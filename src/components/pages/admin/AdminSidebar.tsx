@@ -1,17 +1,6 @@
 import React from "react";
 import { Calendar, Trophy, Award, Target, Users, Shield, User, DollarSign, Settings } from "lucide-react";
 import { useAuth } from "@/components/pages/login/AuthProvider";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from "@/components/ui/sidebar";
 
 interface AdminSidebarProps {
   activeTab: string;
@@ -19,10 +8,8 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
-  const { state } = useSidebar();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  const collapsed = state === "collapsed";
 
   // Speelformat groep (uitklapbaar) - alleen voor admin
   const speelformatItems = [
@@ -56,82 +43,43 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
       : "bg-white text-purple-600 border-purple-400 hover:bg-purple-100 hover:text-purple-700";
 
   const renderMenuItem = (item: any) => (
-    <SidebarMenuItem key={item.key}>
-      <SidebarMenuButton asChild>
-        <button 
-          onClick={() => onTabChange(item.key)}
-          className={`w-full flex items-center justify-start gap-3 px-4 py-3 rounded-xl text-left font-medium border transition-all duration-200 ${getNavClasses(item.key)}`}
-        >
-          <item.icon className="h-4 w-4 flex-shrink-0" />
-          {!collapsed && <span className="text-sm">{item.label}</span>}
-        </button>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
+    <div key={item.key} className="mb-0.5">
+      <button 
+        onClick={() => onTabChange(item.key)}
+        className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left font-medium border transition-all duration-200 ${getNavClasses(item.key)}`}
+      >
+        <item.icon className="h-4 w-4 flex-shrink-0" />
+        <span className="text-sm">{item.label}</span>
+      </button>
+    </div>
+  );
+
+  const renderGroup = (title: string, items: any[]) => (
+    <div className="mb-3">
+      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1.5">
+        {title}
+      </h3>
+      <div className="space-y-0.5">
+        {items.map(renderMenuItem)}
+      </div>
+    </div>
   );
 
   return (
-    <Sidebar
-      collapsible="icon"
-      className="bg-gradient-to-b from-white to-gray-50 border-r border-purple-200 shadow-lg"
-    >
-      <SidebarContent className="bg-transparent p-4">
+    <div className="flex flex-col h-full">
+      <div className="flex-1">
         {/* Speelformat groep - alleen voor admin */}
-        {isAdmin && (
-          <SidebarGroup className="mb-6">
-            <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-3">
-              Speelformat
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-2">
-                {speelformatItems.map(renderMenuItem)}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {isAdmin && renderGroup("Speelformat", speelformatItems)}
 
         {/* Beheer groep */}
-        <SidebarGroup className="mb-6">
-          <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-3">
-            Beheer
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-2">
-              {beheerItems
-                .filter(item => !item.adminOnly || isAdmin)
-                .map(renderMenuItem)
-              }
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {renderGroup("Beheer", beheerItems.filter(item => !item.adminOnly || isAdmin))}
 
         {/* Financieel groep - alleen voor admin */}
-        {isAdmin && (
-          <SidebarGroup className="mb-6">
-            <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-3">
-              Financieel
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-2">
-                {financieelItems.map(renderMenuItem)}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {isAdmin && renderGroup("Financieel", financieelItems)}
 
         {/* Systeem groep - alleen voor admin */}
-        {isAdmin && (
-          <SidebarGroup className="mb-6">
-            <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-3">
-              Systeem
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-2">
-                {systeemItems.map(renderMenuItem)}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-      </SidebarContent>
-    </Sidebar>
+        {isAdmin && renderGroup("Systeem", systeemItems)}
+      </div>
+    </div>
   );
 }
