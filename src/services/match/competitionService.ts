@@ -237,37 +237,91 @@ export const competitionService = {
     return Math.ceil(totalMatches / matchesPerWeek);
   },
 
-  // Genereer alle wedstrijden voor reguliere competitie (1 ronde per team)
+  // Genereer alle wedstrijden voor reguliere competitie met round-robin algoritme
   generateRegularSeasonMatches(teams: number[], rounds: number): Array<{ home: number; away: number; round: number }> {
     const matches: Array<{ home: number; away: number; round: number }> = [];
     const n = teams.length;
     
-    // Voor reguliere competitie: elke ploeg speelt 1x tegen elke andere ploeg
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        matches.push({ home: teams[i], away: teams[j], round: 1 });
-      }
+    // Voor een correct round-robin schema met 16 teams = 15 speeldagen
+    // Gebruik round-robin algoritme waarbij elke speeldag elk team exact 1x speelt
+    for (let round = 1; round <= rounds; round++) {
+      const roundMatches = this.generateRoundRobinMatches(teams);
+      roundMatches.forEach(match => {
+        matches.push({ ...match, round });
+      });
     }
     
     return matches;
   },
 
-  // Verdeel wedstrijden over speelweken met verbeterde efficiëntie
+  // Round-robin algoritme: genereer 15 speeldagen waarin elk team exact 1x per speeldag speelt
+  generateRoundRobinMatches(teams: number[]): Array<{ home: number; away: number; matchday: number }> {
+    const matches: Array<{ home: number; away: number; matchday: number }> = [];
+    const n = teams.length;
+    
+    if (n % 2 !== 0) {
+      throw new Error('Round-robin vereist een even aantal teams');
+    }
+    
+    // Voor 16 teams = 15 speeldagen (n-1)
+    const numMatchdays = n - 1;
+    
+    for (let matchday = 0; matchday < numMatchdays; matchday++) {
+      const matchdayMatches: Array<{ home: number; away: number; matchday: number }> = [];
+      
+      // Voor elke speeldag, genereer n/2 wedstrijden
+      for (let i = 0; i < n / 2; i++) {
+        let home, away;
+        
+        if (i === 0) {
+          // Eerste positie blijft altijd vast (team 0)
+          home = teams[0];
+          away = teams[n - 1 - matchday];
+        } else {
+          // Bereken roterende posities
+          const homePos = (i + matchday) % (n - 1);
+          const awayPos = (n - 1 - i + matchday) % (n - 1);
+          home = teams[homePos + 1]; // +1 omdat teams[0] vast staat
+          away = teams[awayPos + 1];
+        }
+        
+        // Voeg wedstrijd toe
+        matchdayMatches.push({
+          home,
+          away,
+          matchday: matchday + 1
+        });
+      }
+      
+      // Valideer dat elk team exact 1x voorkomt op deze speeldag
+      const teamsInMatchday = new Set<number>();
+      matchdayMatches.forEach(match => {
+        teamsInMatchday.add(match.home);
+        teamsInMatchday.add(match.away);
+      });
+      
+      if (teamsInMatchday.size !== n) {
+        console.error(`⚠️ Speeldag ${matchday + 1}: ${teamsInMatchday.size} teams in plaats van ${n}`);
+        console.error(`Teams in speeldag:`, Array.from(teamsInMatchday).sort((a, b) => a - b));
+        console.error(`Ontbrekende teams:`, teams.filter(t => !teamsInMatchday.has(t)));
+      }
+      
+      matches.push(...matchdayMatches);
+    }
+    
+    return matches;
+  },
+
+  // Verbeterde distributie met correct round-robin algoritme
   async distributeMatchesOverWeeks(
-    matches: Array<{ home: number; away: number; round: number }>,
+    matches: Array<{ home: number; away: number; round: number; matchday?: number }>,
     playingWeeks: string[]
   ): Promise<Array<{ match: { home: number; away: number; round: number }; week: number; slot: number }>> {
     const distributedMatches: Array<{ match: { home: number; away: number; round: number }; week: number; slot: number }> = [];
     const matchesPerWeek = 7; // 7 speelmomenten per week
     const totalMatches = matches.length;
-    const totalWeeks = Math.ceil(totalMatches / matchesPerWeek);
     
-    console.log(`📊 Distributie info: ${totalMatches} wedstrijden, ${totalWeeks} weken nodig, ${playingWeeks.length} weken beschikbaar`);
-    
-    // Controleer of we genoeg weken hebben
-    if (playingWeeks.length < totalWeeks) {
-      throw new Error(`Niet genoeg speelweken beschikbaar. Nodig: ${totalWeeks}, Beschikbaar: ${playingWeeks.length}. Voeg meer speelweken toe of verminder het aantal teams/rondes.`);
-    }
+    console.log(`📊 Distributie info: ${totalMatches} wedstrijden, ${playingWeeks.length} weken beschikbaar`);
     
     // Track teams per week om conflicten te voorkomen
     const teamsPerWeek: Map<number, Set<number>> = new Map();
@@ -279,158 +333,123 @@ export const competitionService = {
       slotsPerWeek.set(week, 0);
     }
     
-    // Bereken aantal speeldagen (16 teams = 8 wedstrijden per speeldag)
-    const matchesPerMatchday = 8; // 16 teams / 2 = 8 wedstrijden per speeldag
-    const totalMatchdays = Math.ceil(totalMatches / matchesPerMatchday);
+    // Groepeer wedstrijden per speeldag (van round-robin algoritme)
+    const matchesByMatchday = new Map<number, Array<{ home: number; away: number; round: number }>>();
     
-    console.log(`🏆 Competitie structuur: ${totalMatchdays} speeldagen, ${matchesPerMatchday} wedstrijden per speeldag`);
+    matches.forEach((match, index) => {
+      // Gebruik de matchday van het round-robin algoritme, of bereken het
+      const matchday = match.matchday || Math.floor(index / 8) + 1;
+      if (!matchesByMatchday.has(matchday)) {
+        matchesByMatchday.set(matchday, []);
+      }
+      matchesByMatchday.get(matchday)!.push(match);
+    });
     
-    // Verdeel wedstrijden per speeldag over weken met efficiënte vulling
+    console.log(`🏆 Competitie structuur: ${matchesByMatchday.size} speeldagen`);
+    
+    // Verdeel elke speeldag over beschikbare weken, respecting team conflicts
     let currentWeek = 0;
     
-    for (let matchday = 0; matchday < totalMatchdays; matchday++) {
-      const startMatchIndex = matchday * matchesPerMatchday;
-      const endMatchIndex = Math.min(startMatchIndex + matchesPerMatchday, totalMatches);
-      const matchdayMatches = matches.slice(startMatchIndex, endMatchIndex);
+    // Sort matchdays to process them in order
+    const sortedMatchdays = Array.from(matchesByMatchday.keys()).sort((a, b) => a - b);
+    
+    for (const matchday of sortedMatchdays) {
+      const matchdayMatches = matchesByMatchday.get(matchday)!;
+      console.log(`📅 Speeldag ${matchday}: ${matchdayMatches.length} wedstrijden`);
       
-      console.log(`📅 Speeldag ${matchday + 1}: ${matchdayMatches.length} wedstrijden, start in week ${currentWeek + 1}`);
+      // Valideer dat elk team exact 1x voorkomt op deze speeldag
+      const teamsInMatchday = new Set<number>();
+      matchdayMatches.forEach(match => {
+        teamsInMatchday.add(match.home);
+        teamsInMatchday.add(match.away);
+      });
       
-      // Probeer eerst zoveel mogelijk wedstrijden van deze speeldag in de huidige week te plaatsen
-      const matchesForCurrentWeek: Array<{ match: any; week: number; slot: number }> = [];
-      const matchesForNextWeek: Array<{ match: any; week: number; slot: number }> = [];
+      const expectedTeams = 16; // Voor 16 teams
+      if (teamsInMatchday.size !== expectedTeams) {
+        console.error(`⚠️ VALIDATIE FOUT - Speeldag ${matchday}: ${teamsInMatchday.size} teams in plaats van ${expectedTeams}`);
+        console.error(`Teams in speeldag:`, Array.from(teamsInMatchday).sort((a, b) => a - b));
+        
+        const allTeams = new Set<number>();
+        matches.forEach(match => {
+          allTeams.add(match.home);
+          allTeams.add(match.away);
+        });
+        const missingTeams = Array.from(allTeams).filter(t => !teamsInMatchday.has(t));
+        console.error(`Ontbrekende teams:`, missingTeams.sort((a, b) => a - b));
+        
+        throw new Error(`Speeldag ${matchday} validatie gefaald: ${teamsInMatchday.size}/${expectedTeams} teams. Ontbrekende teams: ${missingTeams.join(', ')}`);
+      }
+      
+      // Probeer alle wedstrijden van deze speeldag te plaatsen
+      const placedMatches: Array<{ match: any; week: number; slot: number }> = [];
       
       for (const match of matchdayMatches) {
         let placed = false;
         
-        // Probeer eerst in de huidige week
-        const currentWeekTeams = teamsPerWeek.get(currentWeek)!;
-        const currentWeekSlots = slotsPerWeek.get(currentWeek)!;
-        
-        if (currentWeekSlots < matchesPerWeek && 
-            !currentWeekTeams.has(match.home) && 
-            !currentWeekTeams.has(match.away)) {
+        // Probeer in alle beschikbare weken (start bij huidige week)
+        for (let weekIndex = currentWeek; weekIndex < playingWeeks.length && !placed; weekIndex++) {
+          const weekTeams = teamsPerWeek.get(weekIndex)!;
+          const slotsUsed = slotsPerWeek.get(weekIndex)!;
           
-          // Voeg teams toe aan huidige week
-          currentWeekTeams.add(match.home);
-          currentWeekTeams.add(match.away);
-          teamsPerWeek.set(currentWeek, currentWeekTeams);
-          
-          // Update slots gebruikt
-          slotsPerWeek.set(currentWeek, currentWeekSlots + 1);
-          
-          // Plaats wedstrijd in huidige week
-          matchesForCurrentWeek.push({
-            match,
-            week: currentWeek,
-            slot: currentWeekSlots
-          });
-          
-          placed = true;
-          console.log(`  ✅ Geplaatst in week ${currentWeek + 1}, slot ${currentWeekSlots + 1}: Team ${match.home} vs Team ${match.away}`);
-        }
-        
-        // Als niet in huidige week, probeer in volgende week
-        if (!placed) {
-          const nextWeek = currentWeek + 1;
-          if (nextWeek < playingWeeks.length) {
-            const nextWeekTeams = teamsPerWeek.get(nextWeek)!;
-            const nextWeekSlots = slotsPerWeek.get(nextWeek)!;
+          // Check of deze week geschikt is
+          if (slotsUsed < matchesPerWeek && 
+              !weekTeams.has(match.home) && 
+              !weekTeams.has(match.away)) {
             
-            if (nextWeekSlots < matchesPerWeek && 
-                !nextWeekTeams.has(match.home) && 
-                !nextWeekTeams.has(match.away)) {
-              
-              // Voeg teams toe aan volgende week
-              nextWeekTeams.add(match.home);
-              nextWeekTeams.add(match.away);
-              teamsPerWeek.set(nextWeek, nextWeekTeams);
-              
-              // Update slots gebruikt
-              slotsPerWeek.set(nextWeek, nextWeekSlots + 1);
-              
-              // Plaats wedstrijd in volgende week
-              matchesForNextWeek.push({
-                match,
-                week: nextWeek,
-                slot: nextWeekSlots
-              });
-              
-              placed = true;
-              console.log(`  ✅ Doorgeschoven naar week ${nextWeek + 1}, slot ${nextWeekSlots + 1}: Team ${match.home} vs Team ${match.away}`);
-            }
+            // Plaats wedstrijd in deze week
+            weekTeams.add(match.home);
+            weekTeams.add(match.away);
+            teamsPerWeek.set(weekIndex, weekTeams);
+            slotsPerWeek.set(weekIndex, slotsUsed + 1);
+            
+            placedMatches.push({
+              match,
+              week: weekIndex,
+              slot: slotsUsed
+            });
+            
+            placed = true;
+            console.log(`  ✅ Geplaatst: Week ${weekIndex + 1}, Slot ${slotsUsed + 1}: Team ${match.home} vs Team ${match.away}`);
           }
         }
         
-        // Als nog steeds niet geplaatst, probeer alle andere weken
-        if (!placed) {
-          for (let weekIndex = 0; weekIndex < playingWeeks.length; weekIndex++) {
-            if (weekIndex === currentWeek || weekIndex === currentWeek + 1) continue; // Skip al geprobeerde weken
-            
-            const weekTeams = teamsPerWeek.get(weekIndex)!;
-            const slotsUsed = slotsPerWeek.get(weekIndex)!;
-            
-            if (slotsUsed < matchesPerWeek && 
-                !weekTeams.has(match.home) && 
-                !weekTeams.has(match.away)) {
-              
-              // Voeg teams toe aan deze week
-              weekTeams.add(match.home);
-              weekTeams.add(match.away);
-              teamsPerWeek.set(weekIndex, weekTeams);
-              
-              // Update slots gebruikt
-              slotsPerWeek.set(weekIndex, slotsUsed + 1);
-              
-              // Plaats wedstrijd
-              distributedMatches.push({
-                match,
-                week: weekIndex,
-                slot: slotsUsed
-              });
-              
-              placed = true;
-              console.log(`  ✅ Geplaatst in week ${weekIndex + 1}, slot ${slotsUsed + 1}: Team ${match.home} vs Team ${match.away}`);
-              break;
-            }
-          }
-        }
-        
-        // Als we nog steeds geen plek kunnen vinden, gooi een fout
         if (!placed) {
           const weekUsage = Array.from(slotsPerWeek.entries()).map(([week, slots]) => 
-            `Week ${week}: ${slots}/7 slots gebruikt`
+            `Week ${week + 1}: ${slots}/7 slots`
           ).join(', ');
           
           throw new Error(
-            `Kan wedstrijd van speeldag ${matchday + 1} (${match.home} vs ${match.away}) niet plaatsen zonder team conflict. ` +
+            `Kan wedstrijd van speeldag ${matchday} (Team ${match.home} vs Team ${match.away}) niet plaatsen. ` +
             `Alle weken zijn bezet of hebben team conflicten. ` +
             `Week gebruik: ${weekUsage}`
           );
         }
       }
       
-      // Voeg alle wedstrijden toe aan de distributed matches
-      distributedMatches.push(...matchesForCurrentWeek, ...matchesForNextWeek);
+      // Voeg alle geplaatste wedstrijden toe
+      distributedMatches.push(...placedMatches);
       
-      // Ga naar de volgende week voor de volgende speeldag
-      currentWeek += 2; // Elke speeldag neemt 2 weken in beslag
+      // Update currentWeek naar de eerste week met ruimte voor de volgende speeldag
+      while (currentWeek < playingWeeks.length && (slotsPerWeek.get(currentWeek) || 0) >= matchesPerWeek) {
+        currentWeek++;
+      }
     }
     
-    console.log(`✅ Wedstrijden verdeeld over ${totalWeeks} weken zonder team conflicten`);
+    console.log(`✅ Alle ${distributedMatches.length} wedstrijden succesvol verdeeld over weken`);
     
-    // Sorteer wedstrijden chronologisch op week en slot
+    // Sorteer wedstrijden chronologisch
     const sortedMatches = [...distributedMatches].sort((a, b) => {
-      if (a.week < b.week) return -1;
-      if (a.week > b.week) return 1;
+      if (a.week !== b.week) return a.week - b.week;
       return a.slot - b.slot;
     });
     
-    // Log chronologische verdeling
-    console.log('📅 Chronologische wedstrijd verdeling:');
-    for (const match of sortedMatches) {
-      const weekDate = playingWeeks[match.week];
-      console.log(`  Week ${match.week + 1} (${weekDate}): Slot ${match.slot + 1} - Team ${match.match.home} vs Team ${match.match.away}`);
-    }
+    // Log verdeling
+    console.log('📅 Chronologische verdeling:');
+    sortedMatches.forEach(({ match, week, slot }) => {
+      const weekDate = playingWeeks[week];
+      const matchday = Math.floor(sortedMatches.findIndex(m => m === sortedMatches.find(sm => sm.match === match)) / 8) + 1;
+      console.log(`  Week ${week + 1} (${weekDate}): Slot ${slot + 1} - Speeldag ${matchday} - Team ${match.home} vs Team ${match.away}`);
+    });
     
     return sortedMatches;
   },
@@ -655,14 +674,14 @@ export const competitionService = {
         // Format match datum met tijd
         const matchDateTime = `${matchDate}T${timeslot?.start_time || '19:00'}:00+02:00`;
         
-        // Bereken speeldag op basis van match index (8 wedstrijden per speeldag)
-        const matchday = Math.floor((matchCounter - 1) / 8) + 1;
+        // Gebruik de correcte speeldag van het round-robin algoritme
+        const matchday = match.matchday || Math.floor((matchCounter - 1) / 8) + 1;
         
-        console.log(`🎯 Reguliere wedstrijd ${matchCounter}: Week ${week + 1}, Speeldag ${matchday}, ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${slot + 1}, ${venue}`);
+        console.log(`🎯 Reguliere wedstrijd ${matchCounter}: Week ${week + 1}, Speeldag ${matchday}, ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${slot + 1}, ${venue} (Team ${match.home} vs Team ${match.away})`);
         
         regularSeasonMatches.push(this.createMatchObject(
           `REG-${matchCounter}`,
-          `Speeldag ${matchday}`, // Gebruik berekende speeldag nummer
+          `Speeldag ${matchday}`, // Gebruik correct speeldag nummer van round-robin
           match.home,
           match.away,
           matchDateTime,
