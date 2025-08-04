@@ -263,31 +263,44 @@ export const competitionService = {
       throw new Error('Round-robin vereist een even aantal teams');
     }
     
-    // Circle Method: Team 1 staat vast, andere teams roteren
+    console.log(`🏆 Genereer round-robin voor ${n} teams: [${teams.join(', ')}]`);
+    
+    // Circle Method implementatie voor round-robin
     // Voor 16 teams = 15 speeldagen (n-1)
     const numMatchdays = n - 1;
-    const fixedTeam = teams[0]; // Team 1 staat altijd vast
-    const rotatingTeams = teams.slice(1); // Teams 2-16 roteren
     
     for (let matchday = 0; matchday < numMatchdays; matchday++) {
       const matchdayMatches: Array<{ home: number; away: number; matchday: number }> = [];
       
-      // Eerste wedstrijd: vast team tegen het tegenovergestelde team in de cirkel
-      const opponentIndex = (numMatchdays - 1 - matchday) % rotatingTeams.length;
-      matchdayMatches.push({
-        home: fixedTeam,
-        away: rotatingTeams[opponentIndex],
-        matchday: matchday + 1
-      });
+      // Creëer een rotatie array voor deze speeldag
+      // Team aan index 0 blijft vast, anderen roteren
+      const roundTeams = [...teams];
       
-      // Overige wedstrijden: match teams uit de cirkel
-      for (let i = 1; i < n / 2; i++) {
-        const homeIndex = (i - 1 + matchday) % rotatingTeams.length;
-        const awayIndex = (rotatingTeams.length - i + matchday) % rotatingTeams.length;
+      // Roteer alle teams behalve de eerste voor deze speeldag
+      if (matchday > 0) {
+        const fixed = roundTeams[0];
+        const rotating = roundTeams.slice(1);
+        
+        // Roteer de array 'matchday' posities naar rechts
+        for (let r = 0; r < matchday; r++) {
+          const last = rotating.pop()!;
+          rotating.unshift(last);
+        }
+        
+        roundTeams[0] = fixed;
+        for (let i = 1; i < roundTeams.length; i++) {
+          roundTeams[i] = rotating[i - 1];
+        }
+      }
+      
+      // Genereer wedstrijden voor deze speeldag: match team i met team (n-1-i)
+      for (let i = 0; i < n / 2; i++) {
+        const home = roundTeams[i];
+        const away = roundTeams[n - 1 - i];
         
         matchdayMatches.push({
-          home: rotatingTeams[homeIndex],
-          away: rotatingTeams[awayIndex],
+          home,
+          away,
           matchday: matchday + 1
         });
       }
@@ -301,10 +314,21 @@ export const competitionService = {
       
       if (teamsInMatchday.size !== n) {
         const missingTeams = teams.filter(t => !teamsInMatchday.has(t));
+        const duplicateTeams = matchdayMatches.flatMap(m => [m.home, m.away])
+          .filter((team, index, arr) => arr.indexOf(team) !== index);
+        
+        console.error(`❌ Speeldag ${matchday + 1}: ${teamsInMatchday.size}/${n} teams`);
+        console.error(`Teams in speeldag:`, Array.from(teamsInMatchday).sort((a, b) => a - b));
+        console.error(`Ontbrekende teams:`, missingTeams);
+        console.error(`Dubbele teams:`, duplicateTeams);
+        console.error(`Wedstrijden:`, matchdayMatches);
+        
         throw new Error(`Speeldag ${matchday + 1} validatie gefaald: ${teamsInMatchday.size}/${n} teams. Ontbrekende teams: ${missingTeams.join(', ')}`);
       }
       
       console.log(`✅ Speeldag ${matchday + 1}: Alle ${n} teams ingepland (${matchdayMatches.length} wedstrijden)`);
+      console.log(`   Wedstrijden: ${matchdayMatches.map(m => `${m.home}-${m.away}`).join(', ')}`);
+      
       matches.push(...matchdayMatches);
     }
     
