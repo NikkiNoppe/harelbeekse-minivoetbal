@@ -491,41 +491,47 @@ const CompetitionDataSettings: React.FC = () => {
                   <Trophy className="h-5 w-5" />
                   Competitie Formaten
                 </h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Naam</TableHead>
-                      <TableHead>Beschrijving</TableHead>
-                      <TableHead>Playoffs</TableHead>
-                      <TableHead>Rondes</TableHead>
-                      <TableHead>Acties</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {formats.map((format) => (
-                      <TableRow key={format.id}>
-                        <TableCell className="font-medium">{format.name}</TableCell>
-                        <TableCell>{format.description}</TableCell>
-                        <TableCell>{format.has_playoffs ? 'Ja' : 'Nee'}</TableCell>
-                        <TableCell>{format.regular_rounds}</TableCell>
-                        <TableCell className="action-buttons">
-                          <Button
-                            className="btn-action-edit"
-                            onClick={() => handleEdit(format, 'format')}
-                          >
-                            <Edit />
-                          </Button>
-                          <Button
-                            className="btn-action-delete"
-                            onClick={() => handleDelete(format, 'format')}
-                          >
-                            <Trash2 />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="w-full overflow-x-auto">
+                  <div className="min-w-[800px]">
+                    <Table className="table w-full">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[200px]">Naam</TableHead>
+                          <TableHead className="min-w-[250px]">Beschrijving</TableHead>
+                          <TableHead className="min-w-[100px]">Playoffs</TableHead>
+                          <TableHead className="min-w-[100px]">Rondes</TableHead>
+                          <TableHead className="text-center min-w-[120px]">Acties</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {formats.map((format) => (
+                          <TableRow key={format.id}>
+                            <TableCell className="font-medium">{format.name}</TableCell>
+                            <TableCell>{format.description}</TableCell>
+                            <TableCell>{format.has_playoffs ? 'Ja' : 'Nee'}</TableCell>
+                            <TableCell>{format.regular_rounds}</TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex justify-center gap-1">
+                                <Button
+                                  className="btn btn--icon"
+                                  onClick={() => handleEdit(format, 'format')}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  className="btn btn--icon btn--danger"
+                                  onClick={() => handleDelete(format, 'format')}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               </div>
 
               {/* Locaties */}
@@ -534,37 +540,43 @@ const CompetitionDataSettings: React.FC = () => {
                   <Building className="h-5 w-5" />
                   Sportzalen
                 </h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Naam</TableHead>
-                      <TableHead>Adres</TableHead>
-                      <TableHead>Acties</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {venues.map((venue) => (
-                      <TableRow key={venue.venue_id}>
-                        <TableCell className="font-medium">{venue.name}</TableCell>
-                        <TableCell>{venue.address}</TableCell>
-                        <TableCell className="action-buttons">
-                          <Button
-                            className="btn-action-edit"
-                            onClick={() => handleEdit(venue, 'venue')}
-                          >
-                            <Edit />
-                          </Button>
-                          <Button
-                            className="btn-action-delete"
-                            onClick={() => handleDelete(venue, 'venue')}
-                          >
-                            <Trash2 />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="w-full overflow-x-auto">
+                  <div className="min-w-[600px]">
+                    <Table className="table w-full">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[200px]">Naam</TableHead>
+                          <TableHead className="min-w-[300px]">Adres</TableHead>
+                          <TableHead className="text-center min-w-[120px]">Acties</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {venues.map((venue) => (
+                          <TableRow key={venue.venue_id}>
+                            <TableCell className="font-medium">{venue.name}</TableCell>
+                            <TableCell>{venue.address}</TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex justify-center gap-1">
+                                <Button
+                                  className="btn btn--icon"
+                                  onClick={() => handleEdit(venue, 'venue')}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  className="btn btn--icon btn--danger"
+                                  onClick={() => handleDelete(venue, 'venue')}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               </div>
 
               {/* Tijdslots */}
@@ -573,44 +585,50 @@ const CompetitionDataSettings: React.FC = () => {
                   <Clock className="h-5 w-5" />
                   Tijdslots per Locatie
                 </h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Locatie</TableHead>
-                      <TableHead>Dag</TableHead>
-                      <TableHead>Starttijd</TableHead>
-                      <TableHead>Eindtijd</TableHead>
-                      <TableHead>Acties</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {timeslots.map((slot) => {
-                      const venue = venues.find(v => v.venue_id === slot.venue_id);
-                      return (
-                        <TableRow key={slot.timeslot_id}>
-                          <TableCell className="font-medium">{venue?.name}</TableCell>
-                          <TableCell>{dayNames[slot.day_of_week] || `Dag ${slot.day_of_week}`}</TableCell>
-                          <TableCell>{formatTime(slot.start_time)}</TableCell>
-                          <TableCell>{formatTime(slot.end_time)}</TableCell>
-                          <TableCell className="action-buttons">
-                            <Button
-                              className="btn-action-edit"
-                              onClick={() => handleEdit(slot, 'timeslot')}
-                            >
-                              <Edit />
-                            </Button>
-                            <Button
-                              className="btn-action-delete"
-                              onClick={() => handleDelete(slot, 'timeslot')}
-                            >
-                              <Trash2 />
-                            </Button>
-                          </TableCell>
+                <div className="w-full overflow-x-auto">
+                  <div className="min-w-[700px]">
+                    <Table className="table w-full">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[200px]">Locatie</TableHead>
+                          <TableHead className="min-w-[150px]">Dag</TableHead>
+                          <TableHead className="min-w-[100px]">Starttijd</TableHead>
+                          <TableHead className="min-w-[100px]">Eindtijd</TableHead>
+                          <TableHead className="text-center min-w-[120px]">Acties</TableHead>
                         </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {timeslots.map((slot) => {
+                          const venue = venues.find(v => v.venue_id === slot.venue_id);
+                          return (
+                            <TableRow key={slot.timeslot_id}>
+                              <TableCell className="font-medium">{venue?.name}</TableCell>
+                              <TableCell>{dayNames[slot.day_of_week] || `Dag ${slot.day_of_week}`}</TableCell>
+                              <TableCell>{formatTime(slot.start_time)}</TableCell>
+                              <TableCell>{formatTime(slot.end_time)}</TableCell>
+                                                        <TableCell className="text-center">
+                            <div className="flex justify-center gap-1">
+                              <Button
+                                className="btn btn--icon"
+                                onClick={() => handleEdit(slot, 'timeslot')}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                className="btn btn--icon btn--danger"
+                                onClick={() => handleDelete(slot, 'timeslot')}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               </div>
 
               {/* Vakanties */}
@@ -619,49 +637,55 @@ const CompetitionDataSettings: React.FC = () => {
                   <Calendar className="h-5 w-5" />
                   Vakantieperiodes
                 </h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Naam</TableHead>
-                      <TableHead>Startdatum</TableHead>
-                      <TableHead>Einddatum</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Acties</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {vacations.map((vacation) => (
-                      <TableRow key={vacation.id}>
-                        <TableCell className="font-medium">{vacation.name}</TableCell>
-                        <TableCell>{new Date(vacation.start_date).toLocaleDateString('nl-NL')}</TableCell>
-                        <TableCell>{new Date(vacation.end_date).toLocaleDateString('nl-NL')}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            vacation.is_active 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {vacation.is_active ? 'Actief' : 'Inactief'}
-                          </span>
+                <div className="w-full overflow-x-auto">
+                  <div className="min-w-[800px]">
+                    <Table className="table w-full">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[200px]">Naam</TableHead>
+                          <TableHead className="min-w-[150px]">Startdatum</TableHead>
+                          <TableHead className="min-w-[150px]">Einddatum</TableHead>
+                          <TableHead className="min-w-[120px]">Status</TableHead>
+                          <TableHead className="text-center min-w-[120px]">Acties</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {vacations.map((vacation) => (
+                          <TableRow key={vacation.id}>
+                            <TableCell className="font-medium">{vacation.name}</TableCell>
+                            <TableCell>{new Date(vacation.start_date).toLocaleDateString('nl-NL')}</TableCell>
+                            <TableCell>{new Date(vacation.end_date).toLocaleDateString('nl-NL')}</TableCell>
+                            <TableCell>
+                              <span className={`px-2 py-1 rounded-full text-xs ${
+                                vacation.is_active 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {vacation.is_active ? 'Actief' : 'Inactief'}
+                              </span>
+                            </TableCell>
+                                                    <TableCell className="text-center">
+                          <div className="flex justify-center gap-1">
+                            <Button
+                              className="btn btn--icon"
+                              onClick={() => handleEdit(vacation, 'vacation')}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              className="btn btn--icon btn--danger"
+                              onClick={() => handleDelete(vacation, 'vacation')}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
-                        <TableCell className="action-buttons">
-                          <Button
-                            className="btn-action-edit"
-                            onClick={() => handleEdit(vacation, 'vacation')}
-                          >
-                            <Edit />
-                          </Button>
-                          <Button
-                            className="btn-action-delete"
-                            onClick={() => handleDelete(vacation, 'vacation')}
-                          >
-                            <Trash2 />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               </div>
 
               {/* Seizoensdata */}
@@ -678,10 +702,10 @@ const CompetitionDataSettings: React.FC = () => {
                         <p className="text-sm text-gray-600">{new Date(seasonData.season_start_date).toLocaleDateString('nl-NL')}</p>
                       </div>
                       <Button
-                        className="btn-action-edit"
+                        className="btn btn--icon"
                         onClick={() => handleEdit(seasonData, 'season')}
                       >
-                        <Edit />
+                        <Edit className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -692,10 +716,10 @@ const CompetitionDataSettings: React.FC = () => {
                         <p className="text-sm text-gray-600">{new Date(seasonData.season_end_date).toLocaleDateString('nl-NL')}</p>
                       </div>
                       <Button
-                        className="btn-action-edit"
+                        className="btn btn--icon"
                         onClick={() => handleEdit(seasonData, 'season')}
                       >
-                        <Edit />
+                        <Edit className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -708,7 +732,7 @@ const CompetitionDataSettings: React.FC = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light relative mx-4 sm:mx-auto">
+        <DialogContent className="modal">
           <button
             type="button"
             className="btn--close"
@@ -729,12 +753,12 @@ const CompetitionDataSettings: React.FC = () => {
           <div className="py-4 bg-purple-100 p-4 sm:p-6">
             {renderEditForm()}
           </div>
-          <DialogFooter className="bg-purple-100 p-4">
-            <Button className="btn-light" onClick={handleCancel}>
-              Annuleren
-            </Button>
-            <Button className="btn-dark" onClick={handleSave} disabled={isLoading}>
+          <DialogFooter className="modal__actions">
+            <Button className="btn btn--primary" onClick={handleSave} disabled={isLoading}>
               {isLoading ? 'Opslaan...' : 'Opslaan'}
+            </Button>
+            <Button className="btn btn--secondary" onClick={handleCancel}>
+              Annuleren
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -742,7 +766,7 @@ const CompetitionDataSettings: React.FC = () => {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-red-50 border-red-200 mx-4 sm:mx-auto">
+        <DialogContent className="modal">
           <DialogHeader className="bg-red-50">
             <DialogTitle className="text-xl text-center text-red-600">
               Bevestig Verwijdering
@@ -751,12 +775,12 @@ const CompetitionDataSettings: React.FC = () => {
               Weet je zeker dat je dit item wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="bg-red-50 p-4">
-            <Button className="btn-light" onClick={handleDeleteCancel}>
-              Annuleren
-            </Button>
-            <Button className="btn-red-600 hover:bg-red-700" onClick={handleDeleteConfirm} disabled={isLoading}>
+          <DialogFooter className="modal__actions">
+            <Button className="btn btn--danger" onClick={handleDeleteConfirm} disabled={isLoading}>
               {isLoading ? 'Verwijderen...' : 'Verwijderen'}
+            </Button>
+            <Button className="btn btn--secondary" onClick={handleDeleteCancel}>
+              Annuleren
             </Button>
           </DialogFooter>
         </DialogContent>

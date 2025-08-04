@@ -201,19 +201,21 @@ const VenuesSettings: React.FC = () => {
                     <TableRow key={venue.venue_id}>
                       <TableCell className="font-medium">{venue.name}</TableCell>
                       <TableCell>{venue.address}</TableCell>
-                      <TableCell className="action-buttons">
-                        <Button
-                          className="btn-action-edit"
-                          onClick={() => handleEdit(venue)}
-                        >
-                          <Edit />
-                        </Button>
-                        <Button
-                          className="btn-action-delete"
-                          onClick={() => handleDelete(venue)}
-                        >
-                          <Trash2 />
-                        </Button>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center gap-1">
+                          <Button
+                            className="btn btn--icon"
+                            onClick={() => handleEdit(venue)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            className="btn btn--icon btn--danger"
+                            onClick={() => handleDelete(venue)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -226,7 +228,7 @@ const VenuesSettings: React.FC = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light mx-4 sm:mx-auto">
+        <DialogContent className="modal">
           <DialogHeader className="bg-purple-100">
             <DialogTitle className="text-xl text-center text-purple-light">
               {editingItem?.venue_id ? 'Bewerk Locatie' : 'Nieuwe Locatie'}
@@ -252,12 +254,12 @@ const VenuesSettings: React.FC = () => {
               </div>
             </div>
           </div>
-          <DialogFooter className="bg-purple-100 p-4">
-            <Button className="btn-light" onClick={handleCancel}>
-              Annuleren
-            </Button>
-            <Button className="btn-dark" onClick={handleSave} disabled={isLoading}>
+          <DialogFooter className="modal__actions">
+            <Button className="btn btn--primary" onClick={handleSave} disabled={isLoading}>
               {isLoading ? 'Opslaan...' : 'Opslaan'}
+            </Button>
+            <Button className="btn btn--secondary" onClick={handleCancel}>
+              Annuleren
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -265,7 +267,7 @@ const VenuesSettings: React.FC = () => {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-red-50 border-red-200 mx-4 sm:mx-auto">
+        <DialogContent className="modal">
           <DialogHeader className="bg-red-50">
             <DialogTitle className="text-xl text-center text-red-600">
               Bevestig Verwijdering
@@ -274,12 +276,12 @@ const VenuesSettings: React.FC = () => {
               Weet je zeker dat je deze locatie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="bg-red-50 p-4">
-            <Button className="btn-light" onClick={handleDeleteCancel}>
-              Annuleren
-            </Button>
-            <Button className="bg-red-600 hover:bg-red-700" onClick={handleDeleteConfirm} disabled={isLoading}>
+          <DialogFooter className="modal__actions">
+            <Button className="btn btn--danger" onClick={handleDeleteConfirm} disabled={isLoading}>
               {isLoading ? 'Verwijderen...' : 'Verwijderen'}
+            </Button>
+            <Button className="btn btn--secondary" onClick={handleDeleteCancel}>
+              Annuleren
             </Button>
           </DialogFooter>
         </DialogContent>

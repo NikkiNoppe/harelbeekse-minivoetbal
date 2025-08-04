@@ -98,6 +98,8 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+
 .btn--primary {
   background: var(--purple-400);
   color: #fff;
@@ -726,6 +728,46 @@ tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-
 .responsive-table-container::before, .responsive-table-container::after { content: ''; position: absolute; top: 0; bottom: 0; width: 10px; pointer-events: none; z-index: 15; transition: opacity 0.3s; }
 .responsive-table-container::before { left: 0; background: linear-gradient(90deg,rgba(96,54,140,0.1),transparent); }
 .responsive-table-container::after { right: 0; background: linear-gradient(270deg,rgba(96,54,140,0.1),transparent); }
+
+/* Horizontale scroll voor admin tabellen */
+.admin-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.admin-table-scroll .table {
+  min-width: 1200px;
+  width: 100%;
+}
+
+.admin-table-scroll .table th {
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+.admin-table-scroll .table td {
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+/* Specifieke kolommen kunnen hun eigen min-width hebben */
+.admin-table-scroll .table th.min-w-150 { min-width: 150px; }
+.admin-table-scroll .table td.min-w-150 { min-width: 150px; }
+.admin-table-scroll .table th.min-w-200 { min-width: 200px; }
+.admin-table-scroll .table td.min-w-200 { min-width: 200px; }
+.admin-table-scroll .table th.min-w-250 { min-width: 250px; }
+.admin-table-scroll .table td.min-w-250 { min-width: 250px; }
+
+/* Kolommen die tekst kunnen afkappen */
+.admin-table-scroll .table td.truncate-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
 @media (max-width: 768px) {
   .responsive-table-container { max-height: 60vh; border-radius: 0.5rem; }
   .sticky-column { font-size: 0.875rem; }

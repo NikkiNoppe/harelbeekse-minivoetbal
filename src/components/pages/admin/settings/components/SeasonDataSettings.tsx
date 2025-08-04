@@ -166,7 +166,7 @@ const SeasonDataSettings: React.FC = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light mx-4 sm:mx-auto">
+        <DialogContent className="modal">
           <DialogHeader className="bg-purple-100">
             <DialogTitle className="text-xl text-center text-purple-light">
               Bewerk Seizoensdata
@@ -202,12 +202,12 @@ const SeasonDataSettings: React.FC = () => {
               )}
             </div>
           </div>
-          <DialogFooter className="bg-purple-100 p-4">
-            <Button className="btn-light" onClick={handleCancel}>
-              Annuleren
-            </Button>
-            <Button className="btn-dark" onClick={handleSave} disabled={isLoading || !hasChanges || !isValid}>
+          <DialogFooter className="modal__actions">
+            <Button className="btn btn--primary" onClick={handleSave} disabled={isLoading || !hasChanges || !isValid}>
               {isLoading ? 'Opslaan...' : 'Opslaan'}
+            </Button>
+            <Button className="btn btn--secondary" onClick={handleCancel}>
+              Annuleren
             </Button>
           </DialogFooter>
         </DialogContent>

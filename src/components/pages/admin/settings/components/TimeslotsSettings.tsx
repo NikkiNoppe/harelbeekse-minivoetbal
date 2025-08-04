@@ -248,19 +248,21 @@ const TimeslotsSettings: React.FC = () => {
                       {timeslot.start_time} - {timeslot.end_time}
                     </TableCell>
                     <TableCell>{timeslot.priority || 'N/A'}</TableCell>
-                    <TableCell className="action-buttons">
-                      <Button
-                        className="btn-action-edit"
-                        onClick={() => handleEdit(timeslot)}
-                      >
-                        <Edit />
-                      </Button>
-                      <Button
-                        className="btn-action-delete"
-                        onClick={() => handleDelete(timeslot)}
-                      >
-                        <Trash2 />
-                      </Button>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center gap-1">
+                        <Button
+                          className="btn btn--icon"
+                          onClick={() => handleEdit(timeslot)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          className="btn btn--icon btn--danger"
+                          onClick={() => handleDelete(timeslot)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -272,7 +274,7 @@ const TimeslotsSettings: React.FC = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-purple-100 border-purple-light mx-4 sm:mx-auto">
+        <DialogContent className="modal">
           <DialogHeader className="bg-purple-100">
             <DialogTitle className="text-xl text-center text-purple-light">
               {editingItem?.timeslot_id ? 'Bewerk Tijdslot' : 'Nieuwe Tijdslot'}
@@ -351,12 +353,12 @@ const TimeslotsSettings: React.FC = () => {
               </div>
             </div>
           </div>
-          <DialogFooter className="bg-purple-100 p-4">
-            <Button className="btn-light" onClick={handleCancel}>
-              Annuleren
-            </Button>
-            <Button className="btn-dark" onClick={handleSave} disabled={isLoading}>
+          <DialogFooter className="modal__actions">
+            <Button className="btn btn--primary" onClick={handleSave} disabled={isLoading}>
               {isLoading ? 'Opslaan...' : 'Opslaan'}
+            </Button>
+            <Button className="btn btn--secondary" onClick={handleCancel}>
+              Annuleren
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -364,7 +366,7 @@ const TimeslotsSettings: React.FC = () => {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-red-50 border-red-200 mx-4 sm:mx-auto">
+        <DialogContent className="modal">
           <DialogHeader className="bg-red-50">
             <DialogTitle className="text-xl text-center text-red-600">
               Bevestig Verwijdering
@@ -373,12 +375,12 @@ const TimeslotsSettings: React.FC = () => {
               Weet je zeker dat je deze tijdslot wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="bg-red-50 p-4">
-            <Button className="btn-light" onClick={handleDeleteCancel}>
-              Annuleren
-            </Button>
-            <Button className="btn-delete" onClick={handleDeleteConfirm} disabled={isLoading}>
+          <DialogFooter className="modal__actions">
+            <Button className="btn btn--danger" onClick={handleDeleteConfirm} disabled={isLoading}>
               {isLoading ? 'Verwijderen...' : 'Verwijderen'}
+            </Button>
+            <Button className="btn btn--secondary" onClick={handleDeleteCancel}>
+              Annuleren
             </Button>
           </DialogFooter>
         </DialogContent>
