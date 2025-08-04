@@ -254,7 +254,7 @@ export const competitionService = {
     return matches;
   },
 
-  // Round-robin algoritme: genereer 15 speeldagen waarin elk team exact 1x per speeldag speelt
+  // Round-robin algoritme: Circle Method voor 16 teams, 15 speeldagen
   generateRoundRobinMatches(teams: number[]): Array<{ home: number; away: number; matchday: number }> {
     const matches: Array<{ home: number; away: number; matchday: number }> = [];
     const n = teams.length;
@@ -263,32 +263,31 @@ export const competitionService = {
       throw new Error('Round-robin vereist een even aantal teams');
     }
     
+    // Circle Method: Team 1 staat vast, andere teams roteren
     // Voor 16 teams = 15 speeldagen (n-1)
     const numMatchdays = n - 1;
+    const fixedTeam = teams[0]; // Team 1 staat altijd vast
+    const rotatingTeams = teams.slice(1); // Teams 2-16 roteren
     
     for (let matchday = 0; matchday < numMatchdays; matchday++) {
       const matchdayMatches: Array<{ home: number; away: number; matchday: number }> = [];
       
-      // Voor elke speeldag, genereer n/2 wedstrijden
-      for (let i = 0; i < n / 2; i++) {
-        let home, away;
+      // Eerste wedstrijd: vast team tegen het tegenovergestelde team in de cirkel
+      const opponentIndex = (numMatchdays - 1 - matchday) % rotatingTeams.length;
+      matchdayMatches.push({
+        home: fixedTeam,
+        away: rotatingTeams[opponentIndex],
+        matchday: matchday + 1
+      });
+      
+      // Overige wedstrijden: match teams uit de cirkel
+      for (let i = 1; i < n / 2; i++) {
+        const homeIndex = (i - 1 + matchday) % rotatingTeams.length;
+        const awayIndex = (rotatingTeams.length - i + matchday) % rotatingTeams.length;
         
-        if (i === 0) {
-          // Eerste positie blijft altijd vast (team 0)
-          home = teams[0];
-          away = teams[n - 1 - matchday];
-        } else {
-          // Bereken roterende posities
-          const homePos = (i + matchday) % (n - 1);
-          const awayPos = (n - 1 - i + matchday) % (n - 1);
-          home = teams[homePos + 1]; // +1 omdat teams[0] vast staat
-          away = teams[awayPos + 1];
-        }
-        
-        // Voeg wedstrijd toe
         matchdayMatches.push({
-          home,
-          away,
+          home: rotatingTeams[homeIndex],
+          away: rotatingTeams[awayIndex],
           matchday: matchday + 1
         });
       }
@@ -301,11 +300,11 @@ export const competitionService = {
       });
       
       if (teamsInMatchday.size !== n) {
-        console.error(`⚠️ Speeldag ${matchday + 1}: ${teamsInMatchday.size} teams in plaats van ${n}`);
-        console.error(`Teams in speeldag:`, Array.from(teamsInMatchday).sort((a, b) => a - b));
-        console.error(`Ontbrekende teams:`, teams.filter(t => !teamsInMatchday.has(t)));
+        const missingTeams = teams.filter(t => !teamsInMatchday.has(t));
+        throw new Error(`Speeldag ${matchday + 1} validatie gefaald: ${teamsInMatchday.size}/${n} teams. Ontbrekende teams: ${missingTeams.join(', ')}`);
       }
       
+      console.log(`✅ Speeldag ${matchday + 1}: Alle ${n} teams ingepland (${matchdayMatches.length} wedstrijden)`);
       matches.push(...matchdayMatches);
     }
     
