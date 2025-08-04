@@ -703,7 +703,7 @@ export const competitionService = {
         console.log(`🎯 Reguliere wedstrijd ${matchCounter}: Week ${week + 1}, Speeldag ${matchday}, ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${slot + 1}, ${venue} (Team ${match.home} vs Team ${match.away})`);
         
         regularSeasonMatches.push(this.createMatchObject(
-          `REG-${matchCounter}`,
+          `REG-${matchCounter}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
           `Speeldag ${matchday}`, // Gebruik correct speeldag nummer van round-robin
           match.home,
           match.away,

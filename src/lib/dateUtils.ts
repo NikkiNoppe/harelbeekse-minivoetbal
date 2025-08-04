@@ -6,13 +6,16 @@ const BELGIAN_LOCALE = 'nl-BE';
 const DATE_FORMAT = 'en-CA'; // YYYY-MM-DD
 const TIME_FORMAT = 'en-GB'; // HH:MM
 
-/** Converts local date and time strings to ISO string for DB storage */
+/** Converts local date and time strings to ISO string for DB storage with fixed timezone */
 export function localDateTimeToISO(dateStr: string, timeStr: string): string {
   try {
     const [year, month, day] = dateStr.split('-').map(Number);
     const [hours, minutes] = timeStr.split(':').map(Number);
     if (!year || !month || !day || hours === undefined || minutes === undefined) throw new Error('Invalid date or time format');
-    const date = new Date(year, month - 1, day, hours, minutes);
+    
+    // Maak een UTC datum/tijd om timezone shifts te vermijden
+    // Dit zorgt ervoor dat 18:30 altijd 18:30 blijft, ongeacht winteruur/zomertijd
+    const date = new Date(Date.UTC(year, month - 1, day, hours, minutes));
     if (isNaN(date.getTime())) throw new Error('Invalid date/time combination');
     return date.toISOString();
   } catch (error) {
@@ -21,13 +24,19 @@ export function localDateTimeToISO(dateStr: string, timeStr: string): string {
   }
 }
 
-/** Converts ISO string from DB to local date and time strings */
+/** Converts ISO string from DB to local date and time strings with fixed timezone */
 export function isoToLocalDateTime(isoString: string): { date: string; time: string } {
   try {
     const date = new Date(isoString);
     if (isNaN(date.getTime())) throw new Error('Invalid ISO string');
-    const dateStr = date.toLocaleDateString(DATE_FORMAT);
-    const timeStr = date.toLocaleTimeString(TIME_FORMAT, { hour: '2-digit', minute: '2-digit', hour12: false });
+    
+    // Gebruik UTC om consistente tijden te behouden
+    const dateStr = date.getUTCFullYear() + '-' + 
+                   String(date.getUTCMonth() + 1).padStart(2, '0') + '-' + 
+                   String(date.getUTCDate()).padStart(2, '0');
+    const timeStr = String(date.getUTCHours()).padStart(2, '0') + ':' + 
+                   String(date.getUTCMinutes()).padStart(2, '0');
+    
     return { date: dateStr, time: timeStr };
   } catch (error) {
     console.error('Error converting ISO to local datetime:', error);
