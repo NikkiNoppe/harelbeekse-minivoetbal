@@ -79,7 +79,7 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-purple-100 border-purple-light shadow-lg relative mx-4 sm:mx-auto">
+      <DialogContent className="sm:max-w-2xl max-w-[95vw] min-h-[500px] bg-background border shadow-xl relative mx-4 sm:mx-auto z-[1003] animate-in slide-in-from-bottom-4 duration-300">
         <button
           type="button"
           className="btn--close"
@@ -88,29 +88,29 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
         >
           <X size={20} />
         </button>
-        <DialogHeader className="bg-purple-100">
-          <DialogTitle className="text-2xl text-purple-light flex items-center gap-2">
-            <Target className="h-5 w-5" />
+        <DialogHeader className="pb-6">
+          <DialogTitle className="text-2xl font-bold text-foreground flex items-center gap-3">
+            <Target className="h-6 w-6 text-primary" />
             Penalty Shootout
           </DialogTitle>
-          <DialogDescription className="text-purple-dark">
+          <DialogDescription className="text-muted-foreground text-base mt-2">
             De wedstrijd staat gelijk na reguliere speeltijd. In bekercompetitie moet er een winnaar zijn - bepaal deze via penalty's.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 bg-purple-100">
-          <Card className="border-purple-light bg-purple-50">
-            <CardHeader className="pb-3 bg-purple-100">
-              <CardTitle className="text-lg flex items-center gap-2 text-purple-light">
-                <Target className="h-4 w-4" />
+        <div className="space-y-8 px-2">
+          <Card className="border-2 shadow-md">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl flex items-center gap-3 text-foreground">
+                <Target className="h-5 w-5 text-primary" />
                 Penalty Scores
               </CardTitle>
-              <p className="text-sm text-purple-dark">Vul het aantal gescoorde penalty's in voor elk team</p>
+              <p className="text-muted-foreground">Vul het aantal gescoorde penalty's in voor elk team</p>
             </CardHeader>
-            <CardContent className="space-y-4 bg-white">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="home-penalties" className="text-sm font-medium text-purple-dark">
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="home-penalties" className="text-base font-semibold text-foreground">
                     {homeTeamName}
                   </Label>
                   <Input
@@ -120,11 +120,11 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
                     value={homePenalties}
                     onChange={(e) => setHomePenalties(e.target.value)}
                     placeholder="0"
-                    className="text-center text-lg bg-white border-gray-300 text-purple-dark"
+                    className="text-center text-2xl h-14 font-bold border-2 focus:ring-2 focus:ring-primary"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="away-penalties" className="text-sm font-medium text-purple-dark">
+                <div className="space-y-3">
+                  <Label htmlFor="away-penalties" className="text-base font-semibold text-foreground">
                     {awayTeamName}
                   </Label>
                   <Input
@@ -134,13 +134,13 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
                     value={awayPenalties}
                     onChange={(e) => setAwayPenalties(e.target.value)}
                     placeholder="0"
-                    className="text-center text-lg bg-white border-gray-300 text-purple-dark"
+                    className="text-center text-2xl h-14 font-bold border-2 focus:ring-2 focus:ring-primary"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="penalty-notes" className="text-sm font-medium text-purple-dark">
+              <div className="space-y-3">
+                <Label htmlFor="penalty-notes" className="text-base font-semibold text-foreground">
                   Extra notities (optioneel)
                 </Label>
                 <Textarea
@@ -148,30 +148,30 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
                   value={penaltyNotes}
                   onChange={(e) => setPenaltyNotes(e.target.value)}
                   placeholder="Bijv: Gemiste penalty's, bijzonderheden..."
-                  rows={3}
-                  className="bg-white border-gray-300 text-purple-dark"
+                  rows={4}
+                  className="border-2 focus:ring-2 focus:ring-primary resize-none"
                 />
               </div>
 
               {error && (
-                <div className="text-red-600 text-sm bg-red-50 p-2 rounded border border-red-200">
+                <div className="text-destructive text-sm bg-destructive/10 p-3 rounded-md border border-destructive/20 font-medium">
                   {error}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <div className="flex gap-3 bg-purple-100">
+          <div className="flex gap-4 pt-4">
             <Button 
               onClick={handleCancel} 
               variant="outline" 
-              className="flex-1 border-purple-light text-purple-dark hover:bg-purple-light hover:text-white"
+              className="flex-1 h-12 text-base font-medium"
             >
               Annuleren
             </Button>
             <Button 
               onClick={handleSubmit} 
-              className="flex-1 bg-purple-dark text-white hover:bg-purple-light"
+              className="flex-1 h-12 text-base font-medium"
             >
               Winnaar Bepalen
             </Button>
