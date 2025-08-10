@@ -1,6 +1,5 @@
 import React from "react";
 import { Calendar, SortAsc, SortDesc, X } from "lucide-react";
-import { getCurrentDate } from "@/lib/dateUtils";
 import FilterInput from "@/components/ui/filter-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,7 +30,7 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
   onSortOrderChange,
   onClearFilters
 }) => {
-  const today = getCurrentDate();
+  const ALL_TEAMS_VALUE = 'ALL_TEAMS';
   const hasActiveFilters = dateFilter || teamFilter || sortBy !== 'date';
 
   // Helper function to format date for display
@@ -66,12 +65,12 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
         />
 
         <div className="flex gap-2">
-          <Select value={teamFilter} onValueChange={onTeamChange}>
+          <Select value={teamFilter || ALL_TEAMS_VALUE} onValueChange={(v) => onTeamChange(v === ALL_TEAMS_VALUE ? '' : v)}>
             <SelectTrigger className="flex-1">
               <SelectValue placeholder="Filter op team" />
             </SelectTrigger>
-            <SelectContent className="z-[1000]">
-              <SelectItem value="">Alle teams</SelectItem>
+            <SelectContent className="z-[1100] bg-popover">
+              <SelectItem value="ALL_TEAMS">Alle teams</SelectItem>
               {teamOptions.map((team) => (
                 <SelectItem key={team} value={team}>{team}</SelectItem>
               ))}
@@ -84,7 +83,7 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
             <SelectTrigger className="flex-1">
               <SelectValue placeholder="Sorteer op..." />
             </SelectTrigger>
-            <SelectContent className="z-[1000]">
+            <SelectContent className="z-[1100] bg-popover">
               <SelectItem value="date">Datum</SelectItem>
               <SelectItem value="matchday">Speeldag</SelectItem>
               <SelectItem value="week">Speelweek</SelectItem>
