@@ -7,6 +7,7 @@ export interface MatchFormsFilters {
   searchTerm: string;
   dateFilter: string;
   matchdayFilter: string;
+  teamFilter: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
 }
@@ -72,7 +73,11 @@ export const useMatchFormsData = (
       const matchesMatchday = !filters.matchdayFilter || 
         match.matchday.toLowerCase().includes(filters.matchdayFilter.toLowerCase());
 
-      return matchesSearch && matchesDate && matchesMatchday;
+      const matchesTeam = !filters.teamFilter ||
+        match.homeTeamName.toLowerCase() === filters.teamFilter.toLowerCase() ||
+        match.awayTeamName.toLowerCase() === filters.teamFilter.toLowerCase();
+
+      return matchesSearch && matchesDate && matchesMatchday && matchesTeam;
     });
 
     // Sort matches

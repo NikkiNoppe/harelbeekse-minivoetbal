@@ -127,6 +127,15 @@ const TabContent = memo(({
     ? "Je account is momenteel niet gekoppeld aan een team."
     : `${tabData.matches.length} van ${tabData.allMatches.length} wedstrijden weergegeven`;
 
+  const teamOptions = useMemo(() => {
+    const set = new Set<string>();
+    (tabData.allMatches || []).forEach((m: MatchFormData) => {
+      if (m.homeTeamName) set.add(m.homeTeamName);
+      if (m.awayTeamName) set.add(m.awayTeamName);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [tabData.allMatches]);
+
   return (
     <Card>
       <CardHeader>
@@ -151,12 +160,11 @@ const TabContent = memo(({
           <div>
             <div className="p-4 border-b">
               <MatchesFormFilter 
-                searchTerm={filters.searchTerm}
-                onSearchChange={(value) => onFiltersChange({ ...filters, searchTerm: value })}
                 dateFilter={filters.dateFilter}
                 onDateChange={(value) => onFiltersChange({ ...filters, dateFilter: value })}
-                matchdayFilter={filters.matchdayFilter}
-                onMatchdayChange={(value) => onFiltersChange({ ...filters, matchdayFilter: value })}
+                teamFilter={filters.teamFilter}
+                onTeamChange={(value) => onFiltersChange({ ...filters, teamFilter: value })}
+                teamOptions={teamOptions}
                 sortBy={filters.sortBy}
                 onSortChange={(value) => onFiltersChange({ ...filters, sortBy: value })}
                 sortOrder={filters.sortOrder}
@@ -165,6 +173,7 @@ const TabContent = memo(({
                   searchTerm: "",
                   dateFilter: "",
                   matchdayFilter: "",
+                  teamFilter: "",
                   sortBy: "date",
                   sortOrder: "asc"
                 })}
@@ -201,6 +210,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
     searchTerm: "",
     dateFilter: "",
     matchdayFilter: "",
+    teamFilter: "",
     sortBy: "date",
     sortOrder: "asc"
   });

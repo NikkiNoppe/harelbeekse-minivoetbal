@@ -1,19 +1,17 @@
 import React from "react";
-import { Calendar, Trophy, Filter, SortAsc, SortDesc, X } from "lucide-react";
+import { Calendar, SortAsc, SortDesc, X } from "lucide-react";
 import { getCurrentDate } from "@/lib/dateUtils";
-import SearchInput from "@/components/ui/search-input";
 import FilterInput from "@/components/ui/filter-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
 interface MatchFormFilterProps {
-  searchTerm: string;
-  onSearchChange: (value: string) => void;
   dateFilter: string;
   onDateChange: (value: string) => void;
-  matchdayFilter: string;
-  onMatchdayChange: (value: string) => void;
+  teamFilter: string;
+  onTeamChange: (value: string) => void;
+  teamOptions: string[];
   sortBy: string;
   onSortChange: (value: string) => void;
   sortOrder: 'asc' | 'desc';
@@ -22,12 +20,11 @@ interface MatchFormFilterProps {
 }
 
 const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
-  searchTerm,
-  onSearchChange,
   dateFilter,
   onDateChange,
-  matchdayFilter,
-  onMatchdayChange,
+  teamFilter,
+  onTeamChange,
+  teamOptions,
   sortBy,
   onSortChange,
   sortOrder,
@@ -35,7 +32,7 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
   onClearFilters
 }) => {
   const today = getCurrentDate();
-  const hasActiveFilters = searchTerm || dateFilter || matchdayFilter || sortBy !== 'date';
+  const hasActiveFilters = dateFilter || teamFilter || sortBy !== 'date';
 
   // Helper function to format date for display
   const formatDateForDisplay = (dateString: string): string => {
@@ -59,13 +56,7 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
   return (
     <div className="space-y-4">
       {/* Main Filter Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <SearchInput
-          placeholder="Zoek op speeldag of team..."
-          value={searchTerm}
-          onChange={onSearchChange}
-        />
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <FilterInput
           type="date"
           placeholder="Filter op datum"
@@ -74,20 +65,26 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
           icon={Calendar}
         />
 
-        <FilterInput
-          type="text"
-          placeholder="Filter op speeldag"
-          value={matchdayFilter}
-          onChange={onMatchdayChange}
-          icon={Trophy}
-        />
+        <div className="flex gap-2">
+          <Select value={teamFilter} onValueChange={onTeamChange}>
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="Filter op team" />
+            </SelectTrigger>
+            <SelectContent className="z-[1000]">
+              <SelectItem value="">Alle teams</SelectItem>
+              {teamOptions.map((team) => (
+                <SelectItem key={team} value={team}>{team}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="flex gap-2">
           <Select value={sortBy} onValueChange={onSortChange}>
             <SelectTrigger className="flex-1">
               <SelectValue placeholder="Sorteer op..." />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[1000]">
               <SelectItem value="date">Datum</SelectItem>
               <SelectItem value="matchday">Speeldag</SelectItem>
               <SelectItem value="week">Speelweek</SelectItem>
@@ -112,20 +109,6 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-muted-foreground">Actieve filters:</span>
           
-          {searchTerm && (
-            <Badge variant="secondary" className="gap-1">
-              Zoek: "{searchTerm}"
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto p-0 ml-1"
-                onClick={() => onSearchChange("")}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
-          
           {dateFilter && (
             <Badge variant="secondary" className="gap-1">
               Datum: {formatDateForDisplay(dateFilter)}
@@ -139,15 +122,15 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
               </Button>
             </Badge>
           )}
-          
-          {matchdayFilter && (
+
+          {teamFilter && (
             <Badge variant="secondary" className="gap-1">
-              Speeldag: "{matchdayFilter}"
+              Team: {teamFilter}
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-auto p-0 ml-1"
-                onClick={() => onMatchdayChange("")}
+                onClick={() => onTeamChange("")}
               >
                 <X className="h-3 w-3" />
               </Button>
