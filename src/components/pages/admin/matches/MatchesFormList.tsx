@@ -16,10 +16,12 @@ interface MatchFormListProps {
   searchTerm: string;
   dateFilter: string;
   matchdayFilter: string;
+  sortBy?: string;
   hasElevatedPermissions?: boolean;
   userRole?: string;
   teamId?: number;
 }
+
 
 const getMatchStatus = (match: MatchFormData) => {
   const hasValidScore = (score: number | null | undefined): boolean => 
@@ -49,6 +51,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   searchTerm,
   dateFilter,
   matchdayFilter,
+  sortBy,
   hasElevatedPermissions = false,
   userRole,
   teamId
@@ -69,30 +72,81 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   );
 
   const groupedMatches = useMemo(() => {
-    const groupBy = (matches: MatchFormData[]) => {
-      if (isCupMatchList) {
-        return matches.reduce((groups, match) => {
-          const roundName = getCupRoundName(match.uniqueNumber);
-          if (!groups[roundName]) groups[roundName] = [];
-          groups[roundName].push(match);
-          return groups;
-        }, {} as Record<string, MatchFormData[]>);
-      } else {
-        return matches.reduce((groups, match) => {
-          const matchday = match.matchday || "Geen speeldag";
-          if (!groups[matchday]) groups[matchday] = [];
-          groups[matchday].push(match);
-          return groups;
-        }, {} as Record<string, MatchFormData[]>);
-      }
-    };
+    const useWeekGrouping = !isCupMatchList && sortBy === 'week';
 
-    const grouped = groupBy(filteredMatches);
+    const grouped = filteredMatches.reduce((groups, match) => {
+      if (isCupMatchList) {
+        const roundName = getCupRoundName(match.uniqueNumber);
+        if (!groups[roundName]) groups[roundName] = [];
+        groups[roundName].push(match);
+        return groups;
+      }
+
+      if (useWeekGrouping) {
+        const getISOWeekInfo = (dateStr: string) => {
+          const d = new Date(dateStr);
+          d.setHours(0, 0, 0, 0);
+          d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+          const yearStart = new Date(d.getFullYear(), 0, 1);
+          const week = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+          const year = d.getFullYear();
+          return { year, week };
+        };
+
+        const { year, week } = getISOWeekInfo(match.date);
+        const key = `${year}-W${String(week).padStart(2, '0')}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(match);
+        return groups;
+      }
+
+      const matchday = match.matchday || "Geen speeldag";
+      if (!groups[matchday]) groups[matchday] = [];
+      groups[matchday].push(match);
+      return groups;
+    }, {} as Record<string, MatchFormData[]>);
+
+    // Sort matches within each group
     const sortedGroups = sortMatchesWithinGroups(grouped, isCupMatchList);
-    const sortedGroupKeys = sortGroupKeys(Object.keys(sortedGroups), isCupMatchList);
-    
-    return { sortedGroups, sortedGroupKeys };
-  }, [filteredMatches, isCupMatchList]);
+
+    // Determine group key order
+    let sortedGroupKeys: string[] = [];
+    if (useWeekGrouping) {
+      sortedGroupKeys = Object.keys(sortedGroups).sort((a, b) => {
+        const [ya, wa] = a.split('-W');
+        const [yb, wb] = b.split('-W');
+        const yearA = parseInt(ya, 10) || 0;
+        const yearB = parseInt(yb, 10) || 0;
+        const weekA = parseInt(wa, 10) || 0;
+        const weekB = parseInt(wb, 10) || 0;
+        return yearA !== yearB ? yearA - yearB : weekA - weekB;
+      });
+    } else {
+      sortedGroupKeys = sortGroupKeys(Object.keys(sortedGroups), isCupMatchList);
+    }
+
+    // Build display labels
+    const groupLabels: Record<string, string> = {};
+    if (useWeekGrouping) {
+      const fmt = (d: Date) => `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      sortedGroupKeys.forEach((key) => {
+        const [_, wStr] = key.split('-W');
+        const weekNum = parseInt(wStr, 10) || 0;
+        const dates = sortedGroups[key].map(m => new Date(m.date)).sort((a, b) => a.getTime() - b.getTime());
+        const minD = dates[0];
+        const maxD = dates[dates.length - 1];
+        if (minD && maxD) {
+          groupLabels[key] = minD.getTime() === maxD.getTime()
+            ? `Speelweek ${weekNum} (${fmt(minD)})`
+            : `Speelweek ${weekNum} (${fmt(minD)} — ${fmt(maxD)})`;
+        } else {
+          groupLabels[key] = `Speelweek ${weekNum}`;
+        }
+      });
+    }
+
+    return { sortedGroups, sortedGroupKeys, groupLabels };
+  }, [filteredMatches, isCupMatchList, sortBy]);
 
   const getGridClassName = (groupKey: string) => {
     if (!isCupMatchList) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
@@ -148,7 +202,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
       {groupedMatches.sortedGroupKeys.map(groupKey => (
         <div key={groupKey}>
           <div className="flex items-center gap-2 mb-3 text-base text-purple-dark font-semibold pl-2">
-            {groupKey}
+            {groupedMatches.groupLabels?.[groupKey] ?? groupKey}
           </div>
           
           <div className={`grid gap-4 ${getGridClassName(groupKey)}`}>

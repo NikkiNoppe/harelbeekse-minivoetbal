@@ -177,6 +177,7 @@ const TabContent = memo(({
               searchTerm={filters.searchTerm}
               dateFilter={filters.dateFilter}
               matchdayFilter={filters.matchdayFilter}
+              sortBy={filters.sortBy}
               hasElevatedPermissions={hasElevatedPermissions}
               userRole={user?.role}
               teamId={user?.teamId || 0}
