@@ -33,7 +33,7 @@ const Layout: React.FC = () => {
   // Zet juiste tab zodra user verandert na login
   useEffect(() => {
     if (!loginDialogOpen && user) {
-      setActiveTab("match-forms");
+      setActiveTab("players");
     }
   }, [user, loginDialogOpen]);
 
