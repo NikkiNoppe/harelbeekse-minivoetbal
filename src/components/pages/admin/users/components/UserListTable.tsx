@@ -204,14 +204,14 @@ const UserListTable: React.FC<UserListProps> = ({
 
       {/* User Table */}
       <div className="w-full overflow-x-auto">
-        <div className="min-w-[1200px]">
+        <div className="min-w-0 lg:min-w-[1100px]">
           <Table className="table w-full">
             <TableHeader>
               <TableRow className="table-header-row">
                 <TableHead className="min-w-[200px]">Naam</TableHead>
                 <TableHead className="min-w-[250px]">Email</TableHead>
-                <TableHead className="min-w-[150px]">Rol</TableHead>
-                <TableHead className="min-w-[300px]">Teams</TableHead>
+                <TableHead className="hidden md:table-cell min-w-[150px]">Rol</TableHead>
+                <TableHead className="hidden lg:table-cell min-w-[300px]">Teams</TableHead>
                 {editMode && <TableHead className="text-center min-w-[120px]">Acties</TableHead>}
               </TableRow>
             </TableHeader>
@@ -229,10 +229,10 @@ const UserListTable: React.FC<UserListProps> = ({
                     <TableCell className="table-skeleton-cell">
                       <Skeleton className="h-4 w-40" />
                     </TableCell>
-                    <TableCell className="table-skeleton-cell">
+                    <TableCell className="table-skeleton-cell hidden md:table-cell">
                       <Skeleton className="h-4 w-24" />
                     </TableCell>
-                    <TableCell className="table-skeleton-cell">
+                    <TableCell className="table-skeleton-cell hidden lg:table-cell">
                       <Skeleton className="h-4 w-28" />
                     </TableCell>
                     {editMode && (
@@ -257,18 +257,20 @@ const UserListTable: React.FC<UserListProps> = ({
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4" />
-                        {user.username}
+                        <span className="truncate max-w-[140px] sm:max-w-[200px]">{user.username}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {user.email || "-"}
+                      <div className="truncate max-w-[160px] sm:max-w-[240px]" title={user.email || ""}>
+                        {user.email || "-"}
+                      </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {user.role === "admin" && "Administrator"}
                       {user.role === "player_manager" && "Teamverantwoordelijke"}
                       {user.role === "referee" && "Scheidsrechter"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       {user.teams && user.teams.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {user.teams.length <= 2 ? (
