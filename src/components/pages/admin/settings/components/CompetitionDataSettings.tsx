@@ -254,6 +254,49 @@ const CompetitionDataSettings: React.FC = () => {
     return time;
   };
 
+  const handleCreate = (type: string) => {
+    setEditType(type);
+    let newItem: any = {};
+    switch (type) {
+      case 'format':
+        newItem = {
+          id: Date.now(),
+          name: '',
+          description: '',
+          has_playoffs: false,
+          regular_rounds: 1,
+        };
+        break;
+      case 'venue':
+        newItem = {
+          venue_id: Date.now(),
+          name: '',
+          address: '',
+        };
+        break;
+      case 'timeslot':
+        newItem = {
+          timeslot_id: Date.now(),
+          venue_id: venues[0]?.venue_id ?? (venues.length ? venues[0].venue_id : undefined),
+          day_of_week: 1,
+          start_time: '19:00',
+          end_time: '20:00',
+        };
+        break;
+      case 'vacation':
+        newItem = {
+          id: Date.now(),
+          name: '',
+          start_date: seasonData.season_start_date || '',
+          end_date: seasonData.season_end_date || '',
+          is_active: true,
+        };
+        break;
+    }
+    setEditingItem(newItem);
+    setIsEditDialogOpen(true);
+  };
+
   const renderEditForm = () => {
     if (!editingItem) return null;
 
@@ -487,10 +530,15 @@ const CompetitionDataSettings: React.FC = () => {
             <div className="space-y-6">
               {/* Formaten */}
               <div>
-                <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-                  <Trophy className="h-5 w-5" />
-                  Competitie Formaten
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Trophy className="h-5 w-5" />
+                    Competitie Formaten
+                  </h3>
+                  <Button className="btn btn--primary" onClick={() => handleCreate('format')}>
+                    Toevoegen
+                  </Button>
+                </div>
                 <div className="w-full overflow-x-auto">
                   <div className="min-w-[800px]">
                     <Table className="table w-full">
@@ -536,10 +584,15 @@ const CompetitionDataSettings: React.FC = () => {
 
               {/* Locaties */}
               <div>
-                <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-                  <Building className="h-5 w-5" />
-                  Sportzalen
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Building className="h-5 w-5" />
+                    Sportzalen
+                  </h3>
+                  <Button className="btn btn--primary" onClick={() => handleCreate('venue')}>
+                    Toevoegen
+                  </Button>
+                </div>
                 <div className="w-full overflow-x-auto">
                   <div className="min-w-[600px]">
                     <Table className="table w-full">
@@ -581,10 +634,15 @@ const CompetitionDataSettings: React.FC = () => {
 
               {/* Tijdslots */}
               <div>
-                <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-                  <Clock className="h-5 w-5" />
-                  Tijdslots per Locatie
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Tijdslots per Locatie
+                  </h3>
+                  <Button className="btn btn--primary" onClick={() => handleCreate('timeslot')}>
+                    Toevoegen
+                  </Button>
+                </div>
                 <div className="w-full overflow-x-auto">
                   <div className="min-w-[700px]">
                     <Table className="table w-full">
@@ -633,10 +691,15 @@ const CompetitionDataSettings: React.FC = () => {
 
               {/* Vakanties */}
               <div>
-                <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-                  <Calendar className="h-5 w-5" />
-                  Vakantieperiodes
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Vakantieperiodes
+                  </h3>
+                  <Button className="btn btn--primary" onClick={() => handleCreate('vacation')}>
+                    Toevoegen
+                  </Button>
+                </div>
                 <div className="w-full overflow-x-auto">
                   <div className="min-w-[800px]">
                     <Table className="table w-full">
