@@ -12,6 +12,8 @@ import MatchesPage from "@/components/pages/admin/matches/MatchesPage";
 import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
 import PlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
 import SettingsPage from "@/components/pages/admin/settings/SettingsPage";
+import NotAvailable from "@/components/common/NotAvailable";
+import { useTabVisibility } from "@/context/TabVisibilityContext";
 
 type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup";
 
@@ -23,6 +25,11 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab }) => {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const { isTabVisible } = useTabVisibility();
+
+  const canSeeLeagueForms = isTabVisible("admin_match_forms_league");
+  const canSeeCupForms = isTabVisible("admin_match_forms_cup");
+  const canSeeAnyForms = canSeeLeagueForms || canSeeCupForms;
 
   return (
     <div className="w-full">
@@ -31,15 +38,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
           <div className="animate-fade-in">
             <TabsContent value="match-forms" className="mt-0">
-              <MatchesPage teamId={0} teamName="Admin" />
+              {canSeeAnyForms ? (
+                <MatchesPage teamId={0} teamName="Admin" />
+              ) : (
+                <NotAvailable />
+              )}
             </TabsContent>
             
             <TabsContent value="match-forms-league" className="mt-0">
-              <MatchesPage teamId={0} teamName="Admin" initialTab="league" />
+              {canSeeLeagueForms ? (
+                <MatchesPage teamId={0} teamName="Admin" initialTab="league" />
+              ) : (
+                <NotAvailable />
+              )}
             </TabsContent>
             
             <TabsContent value="match-forms-cup" className="mt-0">
-              <MatchesPage teamId={0} teamName="Admin" initialTab="cup" />
+              {canSeeCupForms ? (
+                <MatchesPage teamId={0} teamName="Admin" initialTab="cup" />
+              ) : (
+                <NotAvailable />
+              )}
             </TabsContent>
             
             <TabsContent value="players" className="mt-0">

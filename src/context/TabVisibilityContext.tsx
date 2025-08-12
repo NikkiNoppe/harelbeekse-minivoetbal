@@ -15,12 +15,28 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
   const { settings, loading } = useTabVisibilitySettings();
 
   const isTabVisible = (tab: TabName): boolean => {
-    // Special case for teams tab - always visible for now
+    // Teams tab - always visible for now
     if (tab === "teams") {
       return true;
     }
-    
-    // Find the setting for this tab
+
+    // Admin match forms: admins always have access
+    const isAdminMatchForms =
+      tab === 'admin_match_forms_league' ||
+      tab === 'admin_match_forms_cup' ||
+      tab === 'admin_match_forms_playoffs';
+
+    if (isAdminMatchForms) {
+      // Require login for any admin section logic
+      if (!user) return false;
+      if (user.role === 'admin') return true;
+
+      // For non-admin authenticated users, respect the visibility toggle
+      const adminSetting = settings.find(s => s.setting_name === tab);
+      return !!adminSetting?.is_visible;
+    }
+
+    // Find the setting for public tabs
     const setting = settings.find(s => s.setting_name === tab);
     
     // If no setting found or not visible, hide the tab
@@ -63,4 +79,15 @@ export const useTabVisibility = () => {
   return context;
 };
 
-export type TabName = "algemeen" | "competitie" | "playoff" | "beker" | "schorsingen" | "kaarten" | "reglement" | "teams";
+export type TabName =
+  | "algemeen"
+  | "competitie"
+  | "playoff"
+  | "beker"
+  | "schorsingen"
+  | "kaarten"
+  | "reglement"
+  | "teams"
+  | "admin_match_forms_league"
+  | "admin_match_forms_cup"
+  | "admin_match_forms_playoffs";
