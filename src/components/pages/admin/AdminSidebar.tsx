@@ -1,6 +1,7 @@
 import React from "react";
 import { Calendar, Trophy, Award, Target, Users, Shield, User, DollarSign, Settings } from "lucide-react";
 import { useAuth } from "@/components/pages/login/AuthProvider";
+import { useSidebar } from "@/components/ui/sidebar";
 
 interface AdminSidebarProps {
   activeTab: string;
@@ -10,7 +11,8 @@ interface AdminSidebarProps {
 export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
   // Speelformaten groep (uitklapbaar) - alleen voor admin
   const speelformatenItems = [
     { key: "competition", label: "Competitie", icon: Trophy },
@@ -50,19 +52,21 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
     <div key={item.key} className="mb-0.5">
       <button 
         onClick={() => onTabChange(item.key)}
-        className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-left font-medium border transition-all duration-200 ${getNavClasses(item.key)}`}
+        className={`w-full flex items-center ${collapsed ? "justify-center px-2" : "justify-start gap-2 px-3"} py-2 rounded-lg text-left font-medium border transition-all duration-200 ${getNavClasses(item.key)}`}
       >
         <item.icon className="h-4 w-4 flex-shrink-0" />
-        <span className="text-sm">{item.label}</span>
+        {!collapsed && <span className="text-sm">{item.label}</span>}
       </button>
     </div>
   );
 
   const renderGroup = (title: string, items: any[]) => (
     <div className="mb-3">
-      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1.5">
-        {title}
-      </h3>
+      {!collapsed && (
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1.5">
+          {title}
+        </h3>
+      )}
       <div className="space-y-0.5">
         {items.map(renderMenuItem)}
       </div>
@@ -70,7 +74,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className={`${collapsed ? "w-14" : "w-64"} flex flex-col h-full`}>
       <div className="flex-1">
         {/* Speelformaten groep - alleen voor admin */}
         {isAdmin && renderGroup("Speelformaten", speelformatenItems)}
