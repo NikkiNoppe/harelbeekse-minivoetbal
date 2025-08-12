@@ -22,7 +22,9 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
 
   // Wedstrijdformulieren groep
   const wedstrijdformulierenItems = [
-    { key: "match-forms", label: "Wedstrijdformulieren", icon: Calendar, adminOnly: false },
+    { key: "match-forms-league", label: "Competitie", icon: Trophy, adminOnly: false },
+    { key: "match-forms-cup", label: "Beker", icon: Award, adminOnly: false },
+    { key: "playoffs", label: "Play-Offs", icon: Target, adminOnly: true },
   ];
 
   // Beheer groep

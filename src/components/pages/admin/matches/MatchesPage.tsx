@@ -14,6 +14,7 @@ import MatchesFormModal from "./MatchesFormModal";
 interface MatchFormTabProps {
   teamId: number;
   teamName: string;
+  initialTab?: 'league' | 'cup';
 }
 
 const TabContentSkeleton = memo(() => (
@@ -200,11 +201,11 @@ const TabContent = memo(({
 
 TabContent.displayName = 'TabContent';
 
-const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
+const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTab }) => {
   const { user } = useAuth();
   const [selectedMatchForm, setSelectedMatchForm] = useState<MatchFormData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("league");
+  const [activeTab, setActiveTab] = useState(initialTab ?? "league");
   
   const [filters, setFilters] = useState<MatchFormsFilters>({
     searchTerm: "",
@@ -287,7 +288,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName }) => {
       </div>
 
       <section>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "league" | "cup")} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="league" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />

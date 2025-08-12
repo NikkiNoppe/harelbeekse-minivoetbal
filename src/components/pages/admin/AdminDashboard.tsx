@@ -13,7 +13,7 @@ import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
 import PlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
 import SettingsPage from "@/components/pages/admin/settings/SettingsPage";
 
-type TabName = "match-forms" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup";
+type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup";
 
 interface AdminDashboardProps {
   activeTab: TabName;
@@ -32,6 +32,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
           <div className="animate-fade-in">
             <TabsContent value="match-forms" className="mt-0">
               <MatchesPage teamId={0} teamName="Admin" />
+            </TabsContent>
+            
+            <TabsContent value="match-forms-league" className="mt-0">
+              <MatchesPage teamId={0} teamName="Admin" initialTab="league" />
+            </TabsContent>
+            
+            <TabsContent value="match-forms-cup" className="mt-0">
+              <MatchesPage teamId={0} teamName="Admin" initialTab="cup" />
             </TabsContent>
             
             <TabsContent value="players" className="mt-0">

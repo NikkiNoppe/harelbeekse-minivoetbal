@@ -39,7 +39,7 @@ const Layout: React.FC = () => {
 
   // Admin sections die sidebar gebruiken
   const adminTabs = [
-    "match-forms", "players", "teams", "users", 
+    "match-forms", "match-forms-league", "match-forms-cup", "players", "teams", "users", 
     "competition", "playoffs", "cup", "financial", "settings"
   ];
   
