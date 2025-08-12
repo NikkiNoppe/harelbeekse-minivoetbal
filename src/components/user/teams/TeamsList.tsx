@@ -93,14 +93,14 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
                 <TableHead className="min-w-[150px]">Email</TableHead>
                 <TableHead className="min-w-[100px]">Clubkleuren</TableHead>
                 <TableHead className="min-w-[200px]">Speelmoment voorkeuren</TableHead>
-                <TableHead className="min-w-[150px]">Extra wensen</TableHead>
+                
                 <TableHead className="text-center min-w-[120px]">Acties</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {teams.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-4">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-4">
                     Geen teams gevonden
                   </TableCell>
                 </TableRow>
@@ -125,13 +125,6 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
                       <div className="truncate" title={formatPreferences(team.preferred_play_moments)}>
                         {formatPreferences(team.preferred_play_moments)}
                       </div>
-                    </TableCell>
-                    <TableCell className="max-w-[150px]">
-                      {team.preferred_play_moments?.notes ? (
-                        <div className="truncate" title={team.preferred_play_moments.notes}>
-                          {team.preferred_play_moments.notes}
-                        </div>
-                      ) : <span className="text-gray-400">-</span>}
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center gap-1 justify-center">
