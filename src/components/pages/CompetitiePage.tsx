@@ -1,6 +1,6 @@
 import React, { memo, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,6 +12,8 @@ import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
 import ResponsiveScheduleTable from "../tables/ResponsiveScheduleTable";
 import { useCompetitionData, Team, MatchData } from "@/hooks/useCompetitionData";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import MatchFilterPanel, { MatchFilterState } from "@/components/common/MatchFilterPanel";
+import { format } from "date-fns";
 
 // Uniform skeleton for standings table
 const StandingsTableSkeleton = memo(() => (
@@ -244,9 +246,12 @@ const FilterControls = memo(({
 
 // Main component
 const CompetitiePage: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedMatchday, setSelectedMatchday] = useState<string>("");
-  const [selectedTeam, setSelectedTeam] = useState<string>("");
+  const [filterState, setFilterState] = useState<MatchFilterState>({
+    search: "",
+    selectedTeams: [],
+    selectedDate: null,
+    selectedMatchday: null,
+  });
 
   const {
     teams,
