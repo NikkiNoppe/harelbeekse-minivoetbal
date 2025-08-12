@@ -44,7 +44,7 @@ const AdminUserPage: React.FC = () => {
   const handleSaveNewUser = async (formData: any) => {
     console.log('Saving new user with data:', formData);
     const success = await handleAddUser({
-      name: formData.username,
+      username: formData.username,
       email: formData.email,
       password: formData.password, // Pass the password
       role: formData.role,

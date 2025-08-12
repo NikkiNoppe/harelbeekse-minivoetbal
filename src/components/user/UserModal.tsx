@@ -258,6 +258,7 @@ const UserModal: React.FC<UserModalProps> = ({
               value={formData.password}
               onChange={(e) => handleInputChange('password', e.target.value)}
               disabled={isLoading}
+              minLength={6}
               required={isPasswordRequired}
             />
           </div>
