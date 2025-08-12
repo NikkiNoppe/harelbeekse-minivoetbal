@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/types/auth";
-import { hashPassword } from "@/lib/passwordUtils";
+
 
 interface Team {
   team_id: number;
@@ -95,10 +95,12 @@ export const saveUser = async (formData: any, editingUser: User | null): Promise
         email: formData.email || null
       };
       
-      // Hash password if provided
       if (formData.password?.trim()) {
-        const hashedPassword = await hashPassword(formData.password);
-        updateData.password = hashedPassword;
+        const { error: pwdError } = await supabase.rpc('update_user_password', {
+          user_id_param: editingUser.id,
+          new_password: formData.password
+        });
+        if (pwdError) throw pwdError;
       }
       
       const { error: userError } = await supabase
@@ -125,18 +127,13 @@ export const saveUser = async (formData: any, editingUser: User | null): Promise
           });
       }
     } else {
-      // Add new user directly in users table with hashed password
-      const hashedPassword = await hashPassword(formData.password);
       const { data: newUser, error: createError } = await supabase
-        .from('users')
-        .insert({
-          username: formData.username,
-          email: formData.email || null,
-          password: hashedPassword, // Store hashed password
-          role: formData.role
-        })
-        .select()
-        .single();
+        .rpc('create_user_with_hashed_password', {
+          username_param: formData.username,
+          email_param: formData.email || null,
+          password_param: formData.password,
+          role_param: formData.role
+        });
 
       if (createError) throw createError;
 

@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Team } from "../userTypes";
 import { useToast } from "@/hooks/use-toast";
-import { hashPassword, generateRandomPassword } from "@/lib/passwordUtils";
+
 
 export const useUserOperations = (teams: Team[], refreshData: () => Promise<void>) => {
   const { toast } = useToast();
@@ -45,20 +45,13 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
     }
     
     try {
-      // Hash the provided password
-      const hashedPassword = await hashPassword(newUser.password);
-      
-      // Create user directly in users table with hashed password
-      const { data, error } = await supabase
-        .from('users')
-        .insert({
-          username: newUser.username,
-          email: newUser.email || null,
-          password: hashedPassword, // Store hashed password
-          role: newUser.role
-        })
-        .select()
-        .single();
+      // Create user via RPC which hashes password server-side (bcrypt)
+      const { data, error } = await supabase.rpc('create_user_with_hashed_password', {
+        username_param: newUser.username,
+        email_param: newUser.email || null,
+        password_param: newUser.password,
+        role_param: newUser.role
+      });
       
       if (error) {
         throw error;
@@ -143,9 +136,13 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
       };
       
       if (formData.password?.trim()) {
-        // Hash the password before storing
-        const hashedPassword = await hashPassword(formData.password);
-        updateData.password = hashedPassword;
+        const { error: pwdError } = await supabase.rpc('update_user_password', {
+          user_id_param: userId,
+          new_password: formData.password
+        });
+        if (pwdError) {
+          throw pwdError;
+        }
       }
       
       const { error: userError } = await supabase
