@@ -1,11 +1,11 @@
-import React, { memo } from "react";
+import React, { memo, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Trophy, Award, AlertCircle } from "lucide-react";
 import MatchesCupCard from "./admin/matches/components/MatchesCupCard";
 import { useCupData, CupMatchDisplay } from "@/hooks/useCupData";
-
+import MatchFilterPanel, { MatchFilterState } from "@/components/common/MatchFilterPanel";
 // Skeleton loading components
 const MatchCardSkeleton = memo(() => (
   <Card className="w-full">
@@ -246,6 +246,58 @@ const TournamentContent = memo(({ bracketData }: { bracketData: NonNullable<Retu
 const BekerPage: React.FC = () => {
   const { isLoading, error, bracketData, hasData, refetch } = useCupData();
 
+  const [filterState, setFilterState] = useState<MatchFilterState>({
+    search: "",
+    selectedTeams: [],
+    selectedDate: null,
+  });
+
+  const teamNames = useMemo(() => {
+    if (!bracketData) return [] as string[];
+    const all = [
+      ...(bracketData.eighthfinals || []),
+      ...(bracketData.quarterfinals || []),
+      ...(bracketData.semifinals || []),
+      ...(bracketData.final ? [bracketData.final] : []),
+    ] as CupMatchDisplay[];
+    const names = new Set<string>();
+    all.forEach((m) => {
+      if (m.home && m.home !== "TBD") names.add(m.home);
+      if (m.away && m.away !== "TBD") names.add(m.away);
+    });
+    return Array.from(names).sort((a, b) => a.localeCompare(b, "nl"));
+  }, [bracketData]);
+
+  const filterMatches = (list: CupMatchDisplay[]) => {
+    const search = (filterState.search || "").toLowerCase();
+    const teamsSel = filterState.selectedTeams || [];
+    const selectedDate = filterState.selectedDate;
+    return list.filter((m) => {
+      if (teamsSel.length > 0 && !teamsSel.includes(m.home) && !teamsSel.includes(m.away)) return false;
+      if (selectedDate) {
+        try {
+          const dayStr = selectedDate.toLocaleDateString("nl-BE");
+          if (m.date && !String(m.date).includes(dayStr)) return false;
+        } catch {}
+      }
+      if (search) {
+        const hay = `${m.home} ${m.away} ${m.location ?? ""} ${m.nextMatch ?? ""}`.toLowerCase();
+        if (!hay.includes(search)) return false;
+      }
+      return true;
+    });
+  };
+
+  const filteredBracket = useMemo(() => {
+    if (!bracketData) return null;
+    return {
+      eighthfinals: filterMatches(bracketData.eighthfinals || []),
+      quarterfinals: filterMatches(bracketData.quarterfinals || []),
+      semifinals: filterMatches(bracketData.semifinals || []),
+      final: bracketData.final ? filterMatches([bracketData.final])[0] || null : null,
+    };
+  }, [bracketData, filterState]);
+
   if (isLoading) {
     return <TournamentLoading />;
   }
@@ -254,11 +306,16 @@ const BekerPage: React.FC = () => {
     return <TournamentError error={error} onRetry={() => refetch()} />;
   }
 
-  if (!hasData) {
+  if (!hasData || !filteredBracket) {
     return <TournamentEmpty />;
   }
 
-  return <TournamentContent bracketData={bracketData!} />;
+  return (
+    <div className="space-y-8 animate-slide-up">
+      <MatchFilterPanel teamNames={teamNames} onChange={setFilterState} title="Toernooikalender" description="Filter met datum, teams en zoekterm" />
+      <TournamentContent bracketData={filteredBracket} />
+    </div>
+  );
 };
 
 // Set display names for better debugging

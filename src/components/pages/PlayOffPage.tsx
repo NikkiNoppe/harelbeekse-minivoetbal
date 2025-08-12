@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import AutoFitText from "@/components/ui/auto-fit-text";
 import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
 import { usePlayoffData, PlayoffMatch } from "@/hooks/usePlayoffData";
 import { Team } from "@/hooks/useCompetitionData";
-
+import MatchFilterPanel, { MatchFilterState } from "@/components/common/MatchFilterPanel";
 // Skeleton loading components
 const StandingsTableSkeleton = memo(() => (
   <div className="space-y-4">
@@ -258,6 +258,44 @@ const PlayoffContent = memo(({
 const PlayOffPage: React.FC = () => {
   const { teams, matches, upcomingMatches, isLoading, error, refetch } = usePlayoffData();
 
+  const [filterState, setFilterState] = useState<MatchFilterState>({
+    search: "",
+    selectedTeams: [],
+    selectedDate: null,
+  });
+
+  const teamNames = useMemo(() => {
+    const names = new Set<string>();
+    [...matches, ...upcomingMatches].forEach((m) => {
+      if (m.home) names.add(m.home);
+      if (m.away) names.add(m.away);
+    });
+    return Array.from(names).sort((a, b) => a.localeCompare(b, "nl"));
+  }, [matches, upcomingMatches]);
+
+  const filterMatches = (list: PlayoffMatch[]) => {
+    const search = (filterState.search || "").toLowerCase();
+    const teamsSel = filterState.selectedTeams || [];
+    const selectedDate = filterState.selectedDate;
+    return list.filter((m) => {
+      if (teamsSel.length > 0 && !teamsSel.includes(m.home) && !teamsSel.includes(m.away)) return false;
+      if (selectedDate) {
+        try {
+          const dayStr = selectedDate.toLocaleDateString("nl-BE");
+          if (m.date && !String(m.date).includes(dayStr)) return false;
+        } catch {}
+      }
+      if (search) {
+        const hay = `${m.home} ${m.away} ${m.location ?? ""} ${m.playoff ?? ""} ${m.matchday ?? ""}`.toLowerCase();
+        if (!hay.includes(search)) return false;
+      }
+      return true;
+    });
+  };
+
+  const filteredMatches = useMemo(() => filterMatches(matches), [matches, filterState]);
+  const filteredUpcoming = useMemo(() => filterMatches(upcomingMatches), [upcomingMatches, filterState]);
+
   if (isLoading) {
     return <PlayoffLoading />;
   }
@@ -271,11 +309,14 @@ const PlayOffPage: React.FC = () => {
   }
 
   return (
-    <PlayoffContent 
-      teams={teams} 
-      matches={matches} 
-      upcomingMatches={upcomingMatches} 
-    />
+    <div className="space-y-8 animate-slide-up">
+      <MatchFilterPanel teamNames={teamNames} onChange={setFilterState} title="Play-Offs Filters" description="Filter met datum, teams en zoekterm" />
+      <PlayoffContent 
+        teams={teams} 
+        matches={filteredMatches} 
+        upcomingMatches={filteredUpcoming} 
+      />
+    </div>
   );
 };
 
