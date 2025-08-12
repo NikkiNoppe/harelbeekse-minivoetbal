@@ -927,5 +927,157 @@ export const competitionService = {
         message: `Fout bij verwijderen playoff wedstrijden: ${error instanceof Error ? error.message : 'Onbekende fout'}` 
       };
     }
+  },
+
+  // Genereer beschikbare speelweken voor playoffs (zonder weekbehoefte-berekening)
+  async generatePlayoffWeeks(start_date: string, end_date: string): Promise<string[]> {
+    const seasonData = await seasonService.getSeasonData();
+    const vacations = seasonData.vacation_periods || [];
+    const { cupDates } = await this.checkExistingCupMatches();
+
+    const startDate = new Date(start_date);
+    const endDate = new Date(end_date);
+    const weeks: string[] = [];
+
+    let currentDate = new Date(startDate);
+    currentDate.setDate(currentDate.getDate() - currentDate.getDay() + 1); // maandag
+
+    while (currentDate <= endDate) {
+      const weekStart = new Date(currentDate);
+      const weekDateStr = weekStart.toISOString().split('T')[0];
+
+      const isVacation = vacations.some((vacation: any) => {
+        if (!vacation.is_active) return false;
+        const vacStart = new Date(vacation.start_date);
+        const vacEnd = new Date(vacation.end_date);
+        return weekStart >= vacStart && weekStart <= vacEnd;
+      });
+
+      const hasCupConflict = cupDates?.some(cupDate => {
+        const cupWeekStart = new Date(cupDate);
+        cupWeekStart.setDate(cupWeekStart.getDate() - cupWeekStart.getDay() + 1);
+        return cupWeekStart.getTime() === weekStart.getTime();
+      });
+
+      if (!isVacation && !hasCupConflict) {
+        weeks.push(weekDateStr);
+      }
+
+      currentDate.setDate(currentDate.getDate() + 7);
+    }
+
+    return weeks;
+  },
+
+  // Genereer rondes voor playoffs met configurable aantal rondes
+  generatePlayoffRoundMatchesCustom(teams: number[], roundType: string, rounds: number): Array<{ home: number; away: number; round: string }> {
+    const matches: Array<{ home: number; away: number; round: string }> = [];
+    for (let round = 1; round <= rounds; round++) {
+      for (let i = 0; i < teams.length; i++) {
+        for (let j = i + 1; j < teams.length; j++) {
+          if (round % 2 === 1) {
+            matches.push({ home: teams[i], away: teams[j], round: `${roundType}_r${round}` });
+          } else {
+            matches.push({ home: teams[j], away: teams[i], round: `${roundType}_r${round}` });
+          }
+        }
+      }
+    }
+    return matches;
+  },
+
+  // Genereer en sla playoff wedstrijden op volgens 7 slots/week, met venue/tijd
+  async generateAndSavePlayoffs(
+    topTeams: number[],
+    bottomTeams: number[],
+    rounds: number,
+    start_date: string,
+    end_date: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const seasonValidation = await this.validateSeasonData();
+      if (!seasonValidation.isValid) {
+        return { success: false, message: seasonValidation.message! };
+      }
+
+      const playingWeeks = await this.generatePlayoffWeeks(start_date, end_date);
+      if (playingWeeks.length === 0) {
+        return { success: false, message: "Geen beschikbare speelweken binnen de geselecteerde periode." };
+      }
+
+      const topMatches = this.generatePlayoffRoundMatchesCustom(topTeams, 'top_playoff', rounds);
+      const bottomMatches = this.generatePlayoffRoundMatchesCustom(bottomTeams, 'bottom_playoff', rounds);
+
+      // Interleave top/bottom
+      const allMatches: Array<{ home: number; away: number; round: string }> = [];
+      const maxLen = Math.max(topMatches.length, bottomMatches.length);
+      for (let i = 0; i < maxLen; i++) {
+        if (i < topMatches.length) allMatches.push(topMatches[i]);
+        if (i < bottomMatches.length) allMatches.push(bottomMatches[i]);
+      }
+
+      // Distributie met 7 slots/week, geen team 2x per week
+      const matchesPerWeek = 7;
+      const teamsPerWeek: Map<number, Set<number>> = new Map();
+      const slotsPerWeek: Map<number, number> = new Map();
+      for (let w = 0; w < playingWeeks.length; w++) {
+        teamsPerWeek.set(w, new Set());
+        slotsPerWeek.set(w, 0);
+      }
+
+      const placed: Array<{ match: { home: number; away: number; round: string }; week: number; slot: number }> = [];
+
+      for (const m of allMatches) {
+        let placedMatch = false;
+        for (let w = 0; w < playingWeeks.length && !placedMatch; w++) {
+          const weekTeams = teamsPerWeek.get(w)!;
+          const slotsUsed = slotsPerWeek.get(w)!;
+          if (slotsUsed < matchesPerWeek && !weekTeams.has(m.home) && !weekTeams.has(m.away)) {
+            weekTeams.add(m.home); weekTeams.add(m.away);
+            teamsPerWeek.set(w, weekTeams);
+            slotsPerWeek.set(w, slotsUsed + 1);
+            placed.push({ match: m, week: w, slot: slotsUsed });
+            placedMatch = true;
+          }
+        }
+        if (!placedMatch) {
+          return { success: false, message: "Onvoldoende weken/slots om alle playoff wedstrijden in te plannen." };
+        }
+      }
+
+      // Maak DB records
+      const matchInserts: any[] = [];
+      let counter = 1;
+      for (const { match, week, slot } of placed) {
+        const { venue, timeslot } = await priorityOrderService.getMatchDetails(slot, 7);
+        const baseDate = playingWeeks[week];
+        const isMonday = timeslot?.day_of_week === 1;
+        const matchDate = isMonday ? baseDate : this.addDaysToDate(baseDate, 1);
+        const matchDateTime = `${matchDate}T${timeslot?.start_time || '19:00'}:00+02:00`;
+
+        matchInserts.push(this.createMatchObject(
+          `PO-${counter}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          `Playoff`,
+          match.home,
+          match.away,
+          matchDateTime,
+          venue,
+          true,
+          match.round
+        ));
+        counter++;
+      }
+
+      const { error } = await supabase.from('matches').insert(matchInserts);
+      if (error) {
+        console.error('Fout bij opslaan playoff wedstrijden:', error);
+        return { success: false, message: `Fout bij opslaan: ${error.message}` };
+      }
+
+      return { success: true, message: `${matchInserts.length} playoff wedstrijden succesvol aangemaakt.` };
+    } catch (e) {
+      console.error('Fout bij genereren playoffs:', e);
+      return { success: false, message: e instanceof Error ? e.message : 'Onbekende fout' };
+    }
   }
-}; 
+};
