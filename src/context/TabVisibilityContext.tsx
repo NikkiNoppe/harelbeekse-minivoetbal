@@ -36,9 +36,6 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     // For authenticated users, check role-based visibility
     if (user) {
       switch (tab) {
-        case "playoff":
-        case "beker":
-          return user.role === "admin";
         case "schorsingen":
         case "kaarten":
           return user.role === "admin" || user.role === "referee";

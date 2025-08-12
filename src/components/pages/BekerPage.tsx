@@ -1,5 +1,6 @@
 import React, { memo, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Trophy, Award, AlertCircle } from "lucide-react";
@@ -276,8 +277,8 @@ const BekerPage: React.FC = () => {
       if (teamsSel.length > 0 && !teamsSel.includes(m.home) && !teamsSel.includes(m.away)) return false;
       if (selectedDate) {
         try {
-          const dayStr = selectedDate.toLocaleDateString("nl-BE");
-          if (m.date && !String(m.date).includes(dayStr)) return false;
+          const dayStr = selectedDate.toLocaleDateString('nl-NL');
+          if (m.date && m.date !== dayStr) return false;
         } catch {}
       }
       if (search) {

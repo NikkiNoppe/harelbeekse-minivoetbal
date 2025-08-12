@@ -281,8 +281,8 @@ const PlayOffPage: React.FC = () => {
       if (teamsSel.length > 0 && !teamsSel.includes(m.home) && !teamsSel.includes(m.away)) return false;
       if (selectedDate) {
         try {
-          const dayStr = selectedDate.toLocaleDateString("nl-BE");
-          if (m.date && !String(m.date).includes(dayStr)) return false;
+          const dayStr = selectedDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
+          if (m.date && m.date !== dayStr) return false;
         } catch {}
       }
       if (search) {
@@ -308,9 +308,20 @@ const PlayOffPage: React.FC = () => {
     return <PlayoffEmptyState />;
   }
 
+  const filterSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (filterState.selectedTeams.length) parts.push(`${filterState.selectedTeams.length} teams`);
+    if (filterState.selectedDate) parts.push(`datum ${filterState.selectedDate.toLocaleDateString('nl-NL')}`);
+    if (filterState.search) parts.push(`“${filterState.search}”`);
+    return parts.length ? `— filters: ${parts.join(', ')}` : '';
+  }, [filterState]);
+
   return (
     <div className="space-y-8 animate-slide-up">
       <MatchFilterPanel teamNames={teamNames} onChange={setFilterState} title="Play-Offs Filters" description="Filter met datum, teams en zoekterm" />
+      <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+        <div>{filteredMatches.length} uitslagen — {filteredUpcoming.length} aankomende {filterSummary}</div>
+      </div>
       <PlayoffContent 
         teams={teams} 
         matches={filteredMatches} 

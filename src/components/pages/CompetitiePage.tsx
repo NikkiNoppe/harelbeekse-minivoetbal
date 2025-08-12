@@ -9,6 +9,7 @@ import ResponsiveScheduleTable from "../tables/ResponsiveScheduleTable";
 import { useCompetitionData, Team, MatchData } from "@/hooks/useCompetitionData";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import MatchFilterPanel, { MatchFilterState } from "@/components/common/MatchFilterPanel";
+import { format } from "date-fns";
 
 // Uniform skeleton for standings table
 const StandingsTableSkeleton = memo(() => (
@@ -185,8 +186,8 @@ const CompetitiePage: React.FC = () => {
       if (teamsSel.length > 0 && !teamsSel.includes(match.homeTeamName) && !teamsSel.includes(match.awayTeamName)) return false;
       if (selectedDate) {
         try {
-          const dayStr = selectedDate.toLocaleDateString("nl-BE");
-          if (match.date && !String(match.date).includes(dayStr)) return false;
+          const dayStr = format(selectedDate, "yyyy-MM-dd");
+          if (match.date !== dayStr) return false;
         } catch {}
       }
       if (search) {
@@ -196,6 +197,14 @@ const CompetitiePage: React.FC = () => {
       return true;
     });
   }, [matches.all, filterState]);
+  const filterSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (filterState.selectedTeams.length) parts.push(`${filterState.selectedTeams.length} teams`);
+    if (filterState.selectedDate) parts.push(`datum ${format(filterState.selectedDate, 'dd-MM-yyyy')}`);
+    if (filterState.selectedMatchday) parts.push(`speeldag ${filterState.selectedMatchday}`);
+    if (filterState.search) parts.push(`“${filterState.search}”`);
+    return parts.length ? `— filters: ${parts.join(', ')}` : '';
+  }, [filterState]);
 
   return (
     <div className="space-y-8 animate-slide-up">
@@ -240,6 +249,9 @@ const CompetitiePage: React.FC = () => {
             title="Filters"
             description="Filter op datum, teams, speeldag en zoekterm"
           />
+          <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+            <div>{filteredMatches.length} resultaten {filterSummary}</div>
+          </div>
           <ResponsiveScheduleTable matches={filteredMatches} />
         </CardContent>
       </Card>
