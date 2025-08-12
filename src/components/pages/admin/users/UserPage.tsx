@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { useUserManagement } from "./hooks/useUserManagement";
 import UserModal from "@/components/user/UserModal";
 import UserListTable from "./components/UserListTable";
-import UserDeleteConfirmDialog from "./components/UserDeleteConfirmDialog";
 
-import { Plus, Users } from "lucide-react";
+
+import { Plus } from "lucide-react";
 
 const AdminUserPage: React.FC = () => {
   const {
@@ -19,9 +19,6 @@ const AdminUserPage: React.FC = () => {
     editDialogOpen,
     setEditDialogOpen,
     editingUser,
-    confirmDialogOpen,
-    setConfirmDialogOpen,
-    userToDelete,
     searchTerm,
     roleFilter,
     teamFilter,
@@ -31,7 +28,7 @@ const AdminUserPage: React.FC = () => {
     handleAddUser,
     handleOpenEditDialog,
     handleUpdateUser,
-    handleOpenDeleteConfirmation,
+    
     handleDeleteUser,
   } = useUserManagement();
   
@@ -87,7 +84,7 @@ const AdminUserPage: React.FC = () => {
         isUpdating={updatingUser}
         isDeleting={deletingUser}
         onEditUser={handleOpenEditDialog}
-        onDeleteUser={handleOpenDeleteConfirmation}
+        onDeleteUser={handleDeleteUser}
         editMode={true}
         searchTerm={searchTerm}
         onSearchTermChange={handleSearchChange}
@@ -108,14 +105,6 @@ const AdminUserPage: React.FC = () => {
         }
       />
       
-      {/* Confirm Delete Dialog */}
-      <UserDeleteConfirmDialog 
-        open={confirmDialogOpen}
-        onOpenChange={setConfirmDialogOpen}
-        onConfirmDelete={handleDeleteUser}
-        isDeleting={deletingUser}
-        user={userToDelete}
-      />
 
       {/* Edit User Dialog */}
       {editingUser && (
