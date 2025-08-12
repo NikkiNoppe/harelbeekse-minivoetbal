@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { competitionService, CompetitionConfig, CompetitionFormat } from "@/services/match/competitionService";
 import { teamService } from "@/services/core/teamService";
 import { seasonService } from "@/services/seasonService";
-
+import AdminTeamSelector from "@/components/pages/admin/common/components/AdminTeamSelector";
 const AdminCompetitionPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("create");
   const [loading, setLoading] = useState(false);
@@ -237,42 +237,14 @@ const AdminCompetitionPage: React.FC = () => {
                 </div>
 
                 {/* Team Selection */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label>Selecteer Teams ({selectedTeams.length} geselecteerd)</Label>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedTeams(teams.map(team => team.team_id))}
-                        disabled={selectedTeams.length === teams.length}
-                      >
-                        Selecteer alle teams
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedTeams([])}
-                        disabled={selectedTeams.length === 0}
-                      >
-                        Deselecteer alle teams
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-60 overflow-y-auto">
-                    {teams.map((team) => (
-                      <Button
-                        key={team.team_id}
-                        variant={selectedTeams.includes(team.team_id) ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handleTeamToggle(team.team_id)}
-                        className="justify-start"
-                      >
-                        {team.team_name}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+                <AdminTeamSelector
+                  label={`Selecteer Teams`}
+                  teams={teams}
+                  selectedIds={selectedTeams}
+                  onToggle={handleTeamToggle}
+                  onSelectAll={() => setSelectedTeams(teams.map(t => t.team_id))}
+                  onClearAll={() => setSelectedTeams([])}
+                />
 
                 {/* Planning Information */}
                 {selectedFormat && selectedTeams.length > 0 && startDate && endDate && (

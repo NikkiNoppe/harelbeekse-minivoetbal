@@ -13,7 +13,7 @@ import { competitionService, CompetitionMatch } from "@/services/match/competiti
 import { teamService } from "@/services/core/teamService";
 import { seasonService } from "@/services/seasonService";
 import { supabase } from "@/integrations/supabase/client";
-
+import AdminTeamSelector from "@/components/pages/admin/common/components/AdminTeamSelector";
 interface TeamStanding {
   team_id: number;
   team_name: string;
@@ -497,6 +497,38 @@ const AdminPlayoffPage: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                {/* Unified Team Selection */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm">Selecteer Top Teams</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <AdminTeamSelector
+                        teams={teams}
+                        selectedIds={selectedTopTeams}
+                        onToggle={(id) => handleTeamToggle(id, true)}
+                        onSelectAll={() => setSelectedTopTeams(standings.slice(0, playoffConfig.topTeams).map(t => t.team_id))}
+                        onClearAll={() => setSelectedTopTeams([])}
+                      />
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm">Selecteer Bottom Teams</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <AdminTeamSelector
+                        teams={teams}
+                        selectedIds={selectedBottomTeams}
+                        onToggle={(id) => handleTeamToggle(id, false)}
+                        onSelectAll={() => setSelectedBottomTeams(standings.slice(-playoffConfig.bottomTeams).map(t => t.team_id))}
+                        onClearAll={() => setSelectedBottomTeams([])}
+                      />
+                    </CardContent>
+                  </Card>
                 </div>
 
                 {/* Selection Summary */}

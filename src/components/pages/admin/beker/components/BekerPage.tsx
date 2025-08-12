@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import BekerDateSelector from "./BekerDateSelector";
 import { teamService, Team } from "@/services/core";
-
+import AdminTeamSelector from "@/components/pages/admin/common/components/AdminTeamSelector";
 const BekerPage: React.FC = () => {
   const { toast } = useToast();
   const [showDateSelector, setShowDateSelector] = useState(false);
@@ -16,9 +16,6 @@ const BekerPage: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Memoize teams data to prevent unnecessary re-renders
-  const memoizedTeams = useMemo(() => teams, [teams]);
 
   // Load teams from database on component mount
   useEffect(() => {
@@ -124,21 +121,6 @@ const BekerPage: React.FC = () => {
     [selectedTeams.length]
   );
 
-  // Memoize teams by division (using team_name for now since division might not be available)
-  const teamsByDivision = useMemo(() => {
-    // Group teams by first letter of team name as a simple division
-    const grouped = memoizedTeams.reduce((acc, team) => {
-      const division = `Divisie ${team.team_name.charAt(0).toUpperCase()}`;
-      if (!acc[division]) {
-        acc[division] = [];
-      }
-      acc[division].push(team);
-      return acc;
-    }, {} as Record<string, Team[]>);
-    
-    return Object.entries(grouped);
-  }, [memoizedTeams]);
-
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -174,30 +156,13 @@ const BekerPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {teamsByDivision.map(([division, divisionTeams]) => (
-                <div key={division} className="space-y-2">
-                  <h3 className="font-semibold text-purple-light">{division}</h3>
-                  <div className="grid grid-cols-1 gap-2">
-                    {divisionTeams.map((team) => (
-                      <div key={team.team_id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`team-${team.team_id}`}
-                          checked={selectedTeams.includes(team.team_id)}
-                          onCheckedChange={() => handleTeamSelection(team.team_id)}
-                        />
-                        <label
-                          htmlFor={`team-${team.team_id}`}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          {team.team_name}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <AdminTeamSelector
+              teams={teams}
+              selectedIds={selectedTeams}
+              onToggle={handleTeamSelection}
+              onSelectAll={() => setSelectedTeams(teams.map(t => t.team_id))}
+              onClearAll={() => setSelectedTeams([])}
+            />
           </CardContent>
         </Card>
 
