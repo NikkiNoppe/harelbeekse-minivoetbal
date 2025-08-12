@@ -1,19 +1,14 @@
 import React, { memo, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Search, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import MatchesCard from "./admin/matches/components/MatchesCard";
 import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
 import ResponsiveScheduleTable from "../tables/ResponsiveScheduleTable";
 import { useCompetitionData, Team, MatchData } from "@/hooks/useCompetitionData";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import MatchFilterPanel, { MatchFilterState } from "@/components/common/MatchFilterPanel";
-import { format } from "date-fns";
 
 // Uniform skeleton for standings table
 const StandingsTableSkeleton = memo(() => (
@@ -266,32 +261,27 @@ const CompetitiePage: React.FC = () => {
 
   // Memoized filtered matches
   const filteredMatches = useMemo(() => {
-    return matches.all.filter(match => {
-      if (selectedMatchday && selectedMatchday !== "all-matchdays" && match.matchday !== selectedMatchday) {
-        return false;
+    const md = filterState.selectedMatchday || null;
+    const teamsSel = filterState.selectedTeams || [];
+    const search = (filterState.search || "").toLowerCase();
+    const selectedDate = filterState.selectedDate;
+
+    return matches.all.filter((match) => {
+      if (md && match.matchday !== md) return false;
+      if (teamsSel.length > 0 && !teamsSel.includes(match.homeTeamName) && !teamsSel.includes(match.awayTeamName)) return false;
+      if (selectedDate) {
+        try {
+          const dayStr = selectedDate.toLocaleDateString("nl-BE");
+          if (match.date && !String(match.date).includes(dayStr)) return false;
+        } catch {}
       }
-      if (selectedTeam && selectedTeam !== "all-teams" && 
-          match.homeTeamName !== selectedTeam && match.awayTeamName !== selectedTeam) {
-        return false;
-      }
-      if (searchTerm) {
-        const lowerSearchTerm = searchTerm.toLowerCase();
-        return (
-          match.homeTeamName.toLowerCase().includes(lowerSearchTerm) ||
-          match.awayTeamName.toLowerCase().includes(lowerSearchTerm) ||
-          match.matchday.toLowerCase().includes(lowerSearchTerm) ||
-          (match.uniqueNumber && match.uniqueNumber.toLowerCase().includes(lowerSearchTerm))
-        );
+      if (search) {
+        const hay = `${match.homeTeamName} ${match.awayTeamName} ${match.matchday} ${match.uniqueNumber ?? ""}`.toLowerCase();
+        if (!hay.includes(search)) return false;
       }
       return true;
     });
-  }, [matches.all, selectedMatchday, selectedTeam, searchTerm]);
-
-  const handleClearFilters = () => {
-    setSearchTerm("");
-    setSelectedMatchday("");
-    setSelectedTeam("");
-  };
+  }, [matches.all, filterState]);
 
   return (
     <div className="space-y-8 animate-slide-up">
@@ -328,16 +318,13 @@ const CompetitiePage: React.FC = () => {
           <CardDescription>Volledig overzicht van alle wedstrijden</CardDescription>
         </CardHeader>
         <CardContent className="bg-transparent">
-          <FilterControls
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedMatchday={selectedMatchday}
-            setSelectedMatchday={setSelectedMatchday}
-            selectedTeam={selectedTeam}
-            setSelectedTeam={setSelectedTeam}
-            matchdays={matchdays}
+          <MatchFilterPanel
             teamNames={teamNames}
-            onClearFilters={handleClearFilters}
+            showMatchday={true}
+            matchdays={matchdays}
+            onChange={setFilterState}
+            title="Filters"
+            description="Filter op datum, teams, speeldag en zoekterm"
           />
           <ResponsiveScheduleTable matches={filteredMatches} />
         </CardContent>
@@ -350,6 +337,6 @@ const CompetitiePage: React.FC = () => {
 StandingsTableSkeleton.displayName = 'StandingsTableSkeleton';
 ScheduleTableSkeleton.displayName = 'ScheduleTableSkeleton';
 MatchesSection.displayName = 'MatchesSection';
-FilterControls.displayName = 'FilterControls';
+
 
 export default CompetitiePage; 
