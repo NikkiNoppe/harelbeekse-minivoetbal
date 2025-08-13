@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -13,8 +12,6 @@ interface PenaltyItem {
   id?: number;
   costSettingId: number;
   teamId: number;
-  amount?: number;
-  description?: string;
 }
 
 interface RefereePenaltySectionProps {
@@ -27,20 +24,17 @@ const PenaltyItemComponent = React.memo<{
   penalty: PenaltyItem;
   index: number;
   availablePenalties: any[];
+  teamOptions: { id: number; name: string }[];
   onUpdate: (index: number, field: keyof PenaltyItem, value: any) => void;
   onRemove: (index: number) => void;
   canEdit: boolean;
-}>(({ penalty, index, availablePenalties, onUpdate, onRemove, canEdit }) => {
+}>(({ penalty, index, availablePenalties, teamOptions, onUpdate, onRemove, canEdit }) => {
+  const handleTeamChange = useCallback((value: string) => {
+    onUpdate(index, 'teamId', parseInt(value));
+  }, [index, onUpdate]);
+
   const handleCostSettingChange = useCallback((value: string) => {
     onUpdate(index, 'costSettingId', parseInt(value));
-  }, [index, onUpdate]);
-
-  const handleAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdate(index, 'amount', parseFloat(e.target.value) || 0);
-  }, [index, onUpdate]);
-
-  const handleDescriptionChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdate(index, 'description', e.target.value);
   }, [index, onUpdate]);
 
   const handleRemove = useCallback(() => {
@@ -48,7 +42,31 @@ const PenaltyItemComponent = React.memo<{
   }, [index, onRemove]);
 
   return (
-    <div className="flex items-center gap-4 p-4 border rounded-lg bg-gray-50">
+    <div className="flex flex-col md:flex-row md:items-center gap-4 p-4 border rounded-lg bg-gray-50">
+      <div className="flex-1">
+        <Label htmlFor={`penalty-team-${index}`}>Team</Label>
+        <Select
+          value={penalty.teamId.toString()}
+          onValueChange={handleTeamChange}
+          disabled={!canEdit}
+        >
+          <SelectTrigger className="dropdown-login-style">
+            <SelectValue placeholder="Selecteer team" />
+          </SelectTrigger>
+          <SelectContent className="dropdown-content-login-style">
+            {teamOptions.map((team) => (
+              <SelectItem
+                key={team.id}
+                value={team.id.toString()}
+                className="dropdown-item-login-style"
+              >
+                {team.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="flex-1">
         <Label htmlFor={`penalty-cost-${index}`}>Type Boete</Label>
         <Select
@@ -72,33 +90,7 @@ const PenaltyItemComponent = React.memo<{
           </SelectContent>
         </Select>
       </div>
-      
-      <div className="flex-1">
-        <Label htmlFor={`penalty-amount-${index}`}>Bedrag (€)</Label>
-        <Input
-          id={`penalty-amount-${index}`}
-          type="number"
-          step="0.01"
-          min="0"
-          value={penalty.amount || 0}
-          onChange={handleAmountChange}
-          disabled={!canEdit}
-          className="input-login-style"
-        />
-      </div>
-      
-      <div className="flex-1">
-        <Label htmlFor={`penalty-description-${index}`}>Beschrijving</Label>
-        <Input
-          id={`penalty-description-${index}`}
-          value={penalty.description || ""}
-          onChange={handleDescriptionChange}
-          disabled={!canEdit}
-          placeholder="Optionele beschrijving"
-          className="input-login-style"
-        />
-      </div>
-      
+
       {canEdit && (
         <Button
           onClick={handleRemove}
@@ -122,6 +114,10 @@ export const MatchesRefereePenaltySection: React.FC<RefereePenaltySectionProps> 
   // Memoize expensive computations
   const memoizedAvailablePenalties = useMemo(() => availablePenalties, [availablePenalties]);
   const memoizedPenalties = useMemo(() => penalties, [penalties]);
+  const teamOptions = useMemo(() => ([
+    { id: props.match.homeTeamId, name: props.match.homeTeamName },
+    { id: props.match.awayTeamId, name: props.match.awayTeamName },
+  ]), [props.match.homeTeamId, props.match.homeTeamName, props.match.awayTeamId, props.match.awayTeamName]);
 
   useEffect(() => {
     loadAvailablePenalties();
@@ -146,8 +142,6 @@ export const MatchesRefereePenaltySection: React.FC<RefereePenaltySectionProps> 
     setPenalties(prev => [...prev, {
       costSettingId: 0,
       teamId: props.match.homeTeamId,
-      amount: 0,
-      description: ''
     }]);
   }, [props.match.homeTeamId]);
 
@@ -175,7 +169,7 @@ export const MatchesRefereePenaltySection: React.FC<RefereePenaltySectionProps> 
             await financialService.addTransaction({
               team_id: penalty.teamId,
               amount: costSetting.amount,
-              description: penalty.description || costSetting.name,
+              description: null,
               transaction_type: 'penalty',
               transaction_date: currentDate,
               match_id: props.match.matchId,
@@ -238,6 +232,7 @@ export const MatchesRefereePenaltySection: React.FC<RefereePenaltySectionProps> 
               penalty={penalty}
               index={index}
               availablePenalties={memoizedAvailablePenalties}
+              teamOptions={teamOptions}
               onUpdate={updatePenalty}
               onRemove={removePenalty}
               canEdit={props.canEdit}

@@ -225,7 +225,8 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
   return (
     <div>
       <TeamHeader teamLabel={teamLabel} />
-      <div className="rounded-md border bg-white pb-2">
+      {/* Desktop/tablet view */}
+      <div className="hidden md:block rounded-md border bg-white pb-2">
         <table className="table min-w-full">
           <thead>
             <tr className="table-head">
@@ -259,6 +260,96 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile view - stacked cards */}
+      <div className="md:hidden space-y-2">
+        {selections.length === 0 && (
+          <div className="text-center py-3 text-muted-foreground">
+            Geen spelers geselecteerd voor dit team.
+          </div>
+        )}
+        {selections.map((selection, index) => (
+          <div key={`${selection.playerId}-${index}`} className="rounded-md border bg-white p-2">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-muted-foreground">#{index + 1}</span>
+              {showRefereeFields && (
+                canEdit && selection.playerId ? (
+                  <Select
+                    value={memoizedPlayerCards[selection.playerId] || "none"}
+                    onValueChange={(value) => {
+                      if (selection.playerId) onCardChange(selection.playerId, value);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-10 p-0 justify-center dropdown-login-style">
+                      <span className="sr-only">Kaart</span>
+                      <MatchesCardIcon type={(memoizedPlayerCards[selection.playerId!] as any) || "none"} />
+                    </SelectTrigger>
+                    <SelectContent className="dropdown-content-login-style">
+                      <SelectItem value="none" className="dropdown-item-login-style">-</SelectItem>
+                      <SelectItem value="yellow" className="dropdown-item-login-style">Geel</SelectItem>
+                      <SelectItem value="double_yellow" className="dropdown-item-login-style">2x Geel</SelectItem>
+                      <SelectItem value="red" className="dropdown-item-login-style">Rood</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  showRefereeFields && <MatchesCardIcon type={(memoizedPlayerCards[selection.playerId!] as any) || "none"} />
+                )
+              )}
+            </div>
+
+            <div className="space-y-2">
+              {canEdit ? (
+                <Select
+                  value={selection.playerId?.toString() || "no-player"}
+                  onValueChange={(value) => onPlayerSelection(index, 'playerId', value === "no-player" ? null : parseInt(value), false)}
+                  disabled={!canEdit}
+                >
+                  <SelectTrigger className="dropdown-login-style w-full h-9">
+                    <SelectValue placeholder="Selecteer speler" />
+                  </SelectTrigger>
+                  <SelectContent className="dropdown-content-login-style">
+                    <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
+                    {memoizedPlayers && Array.isArray(memoizedPlayers) && memoizedPlayers.map((player) => {
+                      const playerIdNum = player.player_id;
+                      const alreadySelected = memoizedSelectedPlayerIds.includes(playerIdNum) && selection.playerId !== playerIdNum;
+                      return (
+                        <SelectItem key={playerIdNum} value={playerIdNum.toString()} disabled={alreadySelected} className="dropdown-item-login-style">
+                          {player.first_name} {player.last_name}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="text-sm">
+                  {selection.playerName || "-"}
+                  {selection.isCaptain && (
+                    <span className="ml-2 text-xs bg-[var(--purple-200)] px-1 py-0.5 rounded font-semibold">(K)</span>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Rugnr</span>
+                {canEdit ? (
+                  <Input
+                    id={`m-jersey-${index}`}
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={selection.jerseyNumber || ""}
+                    onChange={(e) => onPlayerSelection(index, 'jerseyNumber', e.target.value, false)}
+                    disabled={!selection.playerId}
+                    className="w-16 text-center text-xs py-1 px-1 input-login-style"
+                  />
+                ) : (
+                  <span className="text-xs">{selection.jerseyNumber && `#${selection.jerseyNumber}`}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
