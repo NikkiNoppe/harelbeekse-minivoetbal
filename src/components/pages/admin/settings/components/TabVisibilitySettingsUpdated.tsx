@@ -158,12 +158,6 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
               Beheer welke tabs zichtbaar zijn voor gebruikers. Admin wedstrijdformulieren kun je hieronder apart verbergen.
             </CardDescription>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={saveSettings} disabled={!hasChanges || saving}>
-              <Save className="mr-2 h-4 w-4" />
-              {saving ? "Opslaan..." : "Instellingen opslaan"}
-            </Button>
-          </div>
         </div>
       </CardHeader>
 
@@ -193,11 +187,35 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
         </div>
       </CardContent>
 
-      <CardFooter className="flex justify-end gap-2">
-        <Button onClick={saveSettings} disabled={!hasChanges || saving}>
-          <Save className="mr-2 h-4 w-4" />
-          {saving ? "Opslaan..." : "Opslaan"}
-        </Button>
+      <CardFooter className="flex justify-between items-center">
+        <div className="text-sm text-muted-foreground">
+          {hasChanges && "Je hebt niet-opgeslagen wijzigingen"}
+        </div>
+        <div className="flex gap-2">
+          {hasChanges && (
+            <Button 
+              variant="outline" 
+              onClick={discardChanges}
+              disabled={saving}
+              className="border-gray-300 hover:bg-gray-50"
+            >
+              Wijzigingen annuleren
+            </Button>
+          )}
+          <Button 
+            onClick={saveSettings} 
+            disabled={!hasChanges || saving}
+            variant={hasChanges ? "default" : "secondary"}
+            className={`transition-all duration-200 ${
+              hasChanges 
+                ? "bg-green-600 hover:bg-green-700 text-white shadow-md" 
+                : "bg-gray-100 text-gray-500"
+            }`}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {saving ? "Opslaan..." : "Instellingen opslaan"}
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );
