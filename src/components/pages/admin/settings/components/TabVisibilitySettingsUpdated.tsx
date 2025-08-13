@@ -159,8 +159,8 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button onClick={saveSettings} disabled={!hasChanges || saving} className="flex items-center gap-2">
-              <Save className="h-4 w-4" />
+            <Button onClick={saveSettings} disabled={!hasChanges || saving}>
+              <Save className="mr-2 h-4 w-4" />
               {saving ? "Opslaan..." : "Instellingen opslaan"}
             </Button>
           </div>
@@ -194,8 +194,8 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
       </CardContent>
 
       <CardFooter className="flex justify-end gap-2">
-        <Button onClick={saveSettings} disabled={!hasChanges || saving} className="flex items-center gap-2">
-          <Save className="h-4 w-4" />
+        <Button onClick={saveSettings} disabled={!hasChanges || saving}>
+          <Save className="mr-2 h-4 w-4" />
           {saving ? "Opslaan..." : "Opslaan"}
         </Button>
       </CardFooter>
