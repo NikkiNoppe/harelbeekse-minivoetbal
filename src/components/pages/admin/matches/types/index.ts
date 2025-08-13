@@ -1,4 +1,5 @@
-export * from './MatchesFormTypes';
+export * from './matchesFormTypes';
+import { MatchFormData } from './matchesFormTypes';
 
 // Additional types for compatibility
 export interface PastMatch {
