@@ -40,7 +40,7 @@ const MatchFormDialog: React.FC<MatchFormDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="modal max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="modal w-[95vw] max-w-7xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="modal__title flex items-center gap-2">
             Wedstrijdformulier - {match.homeTeamName} vs {match.awayTeamName}
