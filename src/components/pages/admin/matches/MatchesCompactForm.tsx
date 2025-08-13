@@ -174,13 +174,13 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
 
   const refereeFields = useMemo(() => showRefereeFields && (
     <>
+      <MatchesRefereePenaltySection
+        match={match}
+        canEdit={canEdit}
+      />
       <MatchesRefereeNotesSection
         notes={refereeNotes}
         onNotesChange={setRefereeNotes}
-        canEdit={canEdit}
-      />
-      <MatchesRefereePenaltySection
-        match={match}
         canEdit={canEdit}
       />
     </>

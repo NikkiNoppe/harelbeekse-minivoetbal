@@ -124,7 +124,7 @@ const PlayerRow = React.memo<{
             <SelectTrigger className="dropdown-login-style min-w-[120px]">
               <SelectValue placeholder="Selecteer speler" />
             </SelectTrigger>
-            <SelectContent className="dropdown-content-login-style">
+            <SelectContent className="dropdown-content-login-style z-50">
               <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
               {players && Array.isArray(players) &&
                 players.map((player) => {
@@ -180,7 +180,7 @@ const PlayerRow = React.memo<{
                 <span className="sr-only">Kaart</span>
                 <MatchesCardIcon type={playerCards[selection.playerId] as any || "none"} />
               </SelectTrigger>
-              <SelectContent className="dropdown-content-login-style">
+              <SelectContent className="dropdown-content-login-style z-50">
                 <SelectItem value="none" className="dropdown-item-login-style">-</SelectItem>
                 <CardOption value="yellow" label="Geel" iconType="yellow" />
                 <CardOption value="double_yellow" label="2x Geel" iconType="double_yellow" />
@@ -285,7 +285,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                       <span className="sr-only">Kaart</span>
                       <MatchesCardIcon type={(memoizedPlayerCards[selection.playerId!] as any) || "none"} />
                     </SelectTrigger>
-                    <SelectContent className="dropdown-content-login-style">
+                    <SelectContent className="dropdown-content-login-style z-50">
                       <SelectItem value="none" className="dropdown-item-login-style">-</SelectItem>
                       <SelectItem value="yellow" className="dropdown-item-login-style">Geel</SelectItem>
                       <SelectItem value="double_yellow" className="dropdown-item-login-style">2x Geel</SelectItem>
@@ -308,7 +308,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                   <SelectTrigger className="dropdown-login-style w-full h-9">
                     <SelectValue placeholder="Selecteer speler" />
                   </SelectTrigger>
-                  <SelectContent className="dropdown-content-login-style">
+                  <SelectContent className="dropdown-content-login-style z-50">
                     <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
                     {memoizedPlayers && Array.isArray(memoizedPlayers) && memoizedPlayers.map((player) => {
                       const playerIdNum = player.player_id;

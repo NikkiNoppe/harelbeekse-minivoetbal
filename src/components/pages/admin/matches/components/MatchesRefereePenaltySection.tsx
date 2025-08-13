@@ -53,7 +53,7 @@ const PenaltyItemComponent = React.memo<{
           <SelectTrigger className="dropdown-login-style">
             <SelectValue placeholder="Selecteer team" />
           </SelectTrigger>
-          <SelectContent className="dropdown-content-login-style">
+          <SelectContent className="dropdown-content-login-style z-50">
             {teamOptions.map((team) => (
               <SelectItem
                 key={team.id}
@@ -77,7 +77,7 @@ const PenaltyItemComponent = React.memo<{
           <SelectTrigger className="dropdown-login-style">
             <SelectValue placeholder="Selecteer boete type" />
           </SelectTrigger>
-          <SelectContent className="dropdown-content-login-style">
+          <SelectContent className="dropdown-content-login-style z-50">
             {availablePenalties.map((costSetting) => (
               <SelectItem
                 key={costSetting.id}
