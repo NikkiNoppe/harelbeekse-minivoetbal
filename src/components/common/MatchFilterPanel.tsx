@@ -13,6 +13,7 @@ export interface MatchFilterState {
   search: string;
   selectedTeams: string[];
   selectedDate: Date | null;
+  selectedWeek: Date | null;
   selectedMatchday?: string | null;
 }
 
@@ -35,12 +36,13 @@ const MatchFilterPanel: React.FC<MatchFilterPanelProps> = ({
 }) => {
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedWeek, setSelectedWeek] = useState<Date | null>(null);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [selectedMatchday, setSelectedMatchday] = useState<string | null>(null);
 
   useEffect(() => {
-    onChange({ search, selectedTeams, selectedDate, selectedMatchday });
-  }, [search, selectedTeams, selectedDate, selectedMatchday, onChange]);
+    onChange({ search, selectedTeams, selectedDate, selectedWeek, selectedMatchday });
+  }, [search, selectedTeams, selectedDate, selectedWeek, selectedMatchday, onChange]);
 
   const allSelected = selectedTeams.length === teamNames.length && teamNames.length > 0;
   const noneSelected = selectedTeams.length === 0;
@@ -58,6 +60,7 @@ const MatchFilterPanel: React.FC<MatchFilterPanelProps> = ({
   const clearFilters = () => {
     setSearch("");
     setSelectedDate(null);
+    setSelectedWeek(null);
     setSelectedTeams([]);
     setSelectedMatchday(null);
   };
@@ -70,21 +73,41 @@ const MatchFilterPanel: React.FC<MatchFilterPanelProps> = ({
       </CardHeader>
       <CardContent className="bg-transparent">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Kalender */}
+          {/* Kalender en Week Filter */}
           <div>
-            <Label className="mb-2 block">Kalender</Label>
-            <div className="rounded-md border">
-              <Calendar
-                mode="single"
-                selected={selectedDate ?? undefined}
-                onSelect={(d) => setSelectedDate(d ?? null)}
-                initialFocus
-                className="p-3 pointer-events-auto"
-              />
-            </div>
-            <div className="mt-3 flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setSelectedDate(null)}>
+            <Label className="mb-2 block">Datum & Week Filters</Label>
+            
+            {/* Specifieke Datum */}
+            <div className="mb-4">
+              <Label className="text-sm text-muted-foreground mb-2 block">Specifieke Datum</Label>
+              <div className="rounded-md border">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate ?? undefined}
+                  onSelect={(d) => setSelectedDate(d ?? null)}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </div>
+              <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => setSelectedDate(null)}>
                 Datum wissen
+              </Button>
+            </div>
+
+            {/* Week Filter */}
+            <div>
+              <Label className="text-sm text-muted-foreground mb-2 block">Week Filter</Label>
+              <div className="rounded-md border">
+                <Calendar
+                  mode="single"
+                  selected={selectedWeek ?? undefined}
+                  onSelect={(d) => setSelectedWeek(d ?? null)}
+                  className="p-3 pointer-events-auto"
+                  weekStartsOn={1}
+                />
+              </div>
+              <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => setSelectedWeek(null)}>
+                Week wissen
               </Button>
             </div>
           </div>

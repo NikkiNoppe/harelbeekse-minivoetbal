@@ -262,6 +262,7 @@ const PlayOffPage: React.FC = () => {
     search: "",
     selectedTeams: [],
     selectedDate: null,
+    selectedWeek: null,
   });
 
   const teamNames = useMemo(() => {

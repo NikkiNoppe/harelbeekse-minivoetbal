@@ -160,6 +160,7 @@ const CompetitiePage: React.FC = () => {
     search: "",
     selectedTeams: [],
     selectedDate: null,
+    selectedWeek: null,
     selectedMatchday: null,
   });
 
@@ -180,16 +181,33 @@ const CompetitiePage: React.FC = () => {
     const teamsSel = filterState.selectedTeams || [];
     const search = (filterState.search || "").toLowerCase();
     const selectedDate = filterState.selectedDate;
+    const selectedWeek = filterState.selectedWeek;
 
     return matches.all.filter((match) => {
       if (md && match.matchday !== md) return false;
       if (teamsSel.length > 0 && !teamsSel.includes(match.homeTeamName) && !teamsSel.includes(match.awayTeamName)) return false;
+      
+      // Date filter
       if (selectedDate) {
         try {
           const dayStr = format(selectedDate, "yyyy-MM-dd");
           if (match.date !== dayStr) return false;
         } catch {}
       }
+      
+      // Week filter
+      if (selectedWeek) {
+        try {
+          const matchDate = new Date(match.date);
+          const weekStart = new Date(selectedWeek);
+          weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Start of week (Monday)
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekEnd.getDate() + 6); // End of week (Sunday)
+          
+          if (matchDate < weekStart || matchDate > weekEnd) return false;
+        } catch {}
+      }
+      
       if (search) {
         const hay = `${match.homeTeamName} ${match.awayTeamName} ${match.matchday} ${match.uniqueNumber ?? ""}`.toLowerCase();
         if (!hay.includes(search)) return false;
