@@ -21,7 +21,6 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
 
-  // Memoize the fetch function to prevent unnecessary re-renders
   const fetchPlayers = useCallback(async () => {
     if (!teamId) {
       setPlayers(undefined);
@@ -53,12 +52,10 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
     }
   }, [teamId]);
 
-  // Memoize the refetch function
   const refetch = useCallback(async () => {
     await fetchPlayers();
   }, [fetchPlayers]);
 
-  // Memoize the players data to prevent unnecessary re-renders
   const memoizedPlayers = useMemo(() => players, [players]);
 
   useEffect(() => {
@@ -74,3 +71,5 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
 };
 
 export default useTeamPlayers;
+
+

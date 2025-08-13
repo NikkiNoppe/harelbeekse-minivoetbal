@@ -148,7 +148,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     return { sortedGroups, sortedGroupKeys, groupLabels };
   }, [filteredMatches, isCupMatchList, sortBy]);
 
-  const getGridClassName = (groupKey: string) => {
+const getGridClassName = (groupKey: string) => {
     if (!isCupMatchList) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
     
     switch (groupKey) {
@@ -233,4 +233,4 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   );
 };
 
-export default MatchFormList;
+export default React.memo(MatchFormList);

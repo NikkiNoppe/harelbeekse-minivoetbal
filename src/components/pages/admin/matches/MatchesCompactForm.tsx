@@ -49,10 +49,10 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   const [showPenaltyModal, setShowPenaltyModal] = React.useState(false);
   const [pendingSubmission, setPendingSubmission] = React.useState<MatchFormData | null>(null);
 
-  const userRole = isAdmin ? "admin" : isReferee ? "referee" : "player_manager";
-  const canEdit = !match.isLocked || isAdmin;
-  const showRefereeFields = isReferee || isAdmin;
-  const isCupMatch = match.matchday?.includes('🏆');
+  const userRole = useMemo(() => (isAdmin ? "admin" : isReferee ? "referee" : "player_manager"), [isAdmin, isReferee]);
+  const canEdit = useMemo(() => !match.isLocked || isAdmin, [match.isLocked, isAdmin]);
+  const showRefereeFields = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
+  const isCupMatch = useMemo(() => match.matchday?.includes('🏆'), [match.matchday]);
 
   const handleCardChange = useCallback((playerId: number, cardType: string) => {
     setPlayerCards(prev => ({

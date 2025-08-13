@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback } from "react";
 import MatchesPlayerSelectionTable from "./MatchesPlayerSelectionTable";
 import MatchesCaptainSelection from "./MatchesCaptainSelection";
-import { useTeamPlayers } from "./useTeamPlayers";
+import { useTeamPlayers } from "../hooks/useTeamPlayers";
 import { PlayerSelection, MatchFormData } from "../types";
 
 interface PlayerSelectionSectionProps {

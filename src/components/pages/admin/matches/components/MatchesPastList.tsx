@@ -10,7 +10,7 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { PastMatch } from '../types/matchesTypes';
+import type { PastMatch } from "../types";
 
 interface PastMatchesListProps {
   matches: PastMatch[];

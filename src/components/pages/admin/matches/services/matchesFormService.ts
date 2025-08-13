@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { MatchFormData } from "../types";
-import { localDateTimeToISO, isoToLocalDateTime, getCurrentISO } from "@/lib/dateUtils";
+import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { cupService } from "@/services/match";
 import { sortCupMatches, sortLeagueMatches } from "@/lib/matchSortingUtils";
 
@@ -129,8 +129,8 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
         referee_notes: matchData.refereeNotes,
         is_submitted: matchData.isCompleted,
         is_locked: matchData.isLocked,
-        home_players: matchData.homePlayers as any, // Cast to any to satisfy Json type
-        away_players: matchData.awayPlayers as any // Cast to any to satisfy Json type
+        home_players: matchData.homePlayers as any,
+        away_players: matchData.awayPlayers as any
       })
       .eq('match_id', matchData.matchId);
 

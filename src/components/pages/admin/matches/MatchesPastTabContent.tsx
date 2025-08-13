@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Search, ListFilter } from "lucide-react";
 import { MatchesFormMessage } from "./components/MatchesFormMessage";
 import { MatchesPastList } from "./components/MatchesPastList";
-import { PastMatch } from "./types/matchesTypes";
+import type { PastMatch } from "./types";
 
 interface PastMatchesTabContentProps {
   isLoading: boolean;

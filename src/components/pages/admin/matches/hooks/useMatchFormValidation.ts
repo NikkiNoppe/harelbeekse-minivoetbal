@@ -1,6 +1,6 @@
 
 import { useToast } from "@/hooks/use-toast";
-import { PlayerSelection } from "../components/types";
+import { PlayerSelection } from "../types";
 
 export const useMatchFormValidation = () => {
   const { toast } = useToast();
