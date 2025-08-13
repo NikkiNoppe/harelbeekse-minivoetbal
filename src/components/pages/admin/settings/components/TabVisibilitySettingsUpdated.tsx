@@ -159,12 +159,6 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={discardChanges} disabled={!hasChanges || saving}>
-              Wijzigingen ongedaan maken
-            </Button>
-            <Button variant="secondary" onClick={resetToDefaults} disabled={saving}>
-              Standaardwaarden
-            </Button>
             <Button onClick={saveSettings} disabled={!hasChanges || saving} className="flex items-center gap-2">
               <Save className="h-4 w-4" />
               {saving ? "Opslaan..." : "Instellingen opslaan"}
@@ -200,12 +194,6 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
       </CardContent>
 
       <CardFooter className="flex justify-end gap-2">
-        <Button variant="outline" onClick={discardChanges} disabled={!hasChanges || saving}>
-          Annuleren
-        </Button>
-        <Button variant="secondary" onClick={resetToDefaults} disabled={saving}>
-          Standaard
-        </Button>
         <Button onClick={saveSettings} disabled={!hasChanges || saving} className="flex items-center gap-2">
           <Save className="h-4 w-4" />
           {saving ? "Opslaan..." : "Opslaan"}
