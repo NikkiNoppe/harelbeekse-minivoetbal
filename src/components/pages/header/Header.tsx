@@ -8,6 +8,7 @@ import { useAuth } from "@/components/pages/login/AuthProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, User, LogOut, Settings, Shield, Users, Calendar, Trophy, Award, DollarSign, Home, BookOpen, Ban, AlertTriangle, Target } from "lucide-react";
 import Logo from "./Logo";
+import { useTabVisibility } from "@/context/TabVisibilityContext";
 
 interface HeaderProps {
   onLogoClick: () => void;
@@ -30,6 +31,7 @@ const Header: React.FC<HeaderProps> = ({
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const navigate = useNavigate();
   const { logout } = useAuth(); // <-- voeg logout toe
+  const { isTabVisible } = useTabVisibility();
 
   // Route mapping per key (voor toekomstig onderscheid)
   const routeMap: Record<string, string> = {
@@ -82,7 +84,24 @@ const Header: React.FC<HeaderProps> = ({
   ];
 
   const isAdmin = user?.role === "admin";
-  const visibleAdminItems = adminNavItems.filter(item => !item.adminOnly || isAdmin);
+  
+  // Filter admin items based on visibility settings and admin permissions
+  const visibleAdminItems = adminNavItems.filter(item => {
+    if (item.adminOnly && !isAdmin) return false;
+    
+    // Check tab visibility for specific items
+    switch (item.key) {
+      case 'match-forms':
+        return isTabVisible('match-forms');
+      case 'competition':
+        return isTabVisible('competition');
+      case 'cup':
+        return isTabVisible('cup');
+      default:
+        return true;
+    }
+  });
+  
   const currentNavItems = isAuthenticated ? visibleAdminItems : publicNavItems;
 
   return (

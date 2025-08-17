@@ -4,7 +4,7 @@ import { useAuth } from '@/components/pages/login/AuthProvider';
 import { useTabVisibilitySettings } from '@/hooks/useTabVisibilitySettings';
 
 interface TabVisibilityContextProps {
-  isTabVisible: (tab: TabName) => boolean;
+  isTabVisible: (tab: TabName | string) => boolean;
   loading: boolean;
 }
 
@@ -14,7 +14,20 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
   const { user } = useAuth();
   const { settings, loading } = useTabVisibilitySettings();
 
-  const isTabVisible = (tab: TabName): boolean => {
+  const isTabVisible = (tab: TabName | string): boolean => {
+    // Map admin tabs to their public equivalents for tab visibility checks
+    const adminToPublicMapping: Record<string, string> = {
+      'competition': 'competitie',
+      'cup': 'beker', 
+      'playoffs': 'playoff',
+      'match-forms': 'admin_match_forms_league', // Check league forms as primary
+      'match-forms-league': 'admin_match_forms_league',
+      'match-forms-cup': 'admin_match_forms_cup',
+    };
+
+    // Use mapped tab name if it exists, otherwise use original
+    const mappedTab = adminToPublicMapping[tab] || tab;
+
     // Teams tab - always visible for now
     if (tab === "teams") {
       return true;
@@ -22,9 +35,9 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Admin match forms: admins always have access
     const isAdminMatchForms =
-      tab === 'admin_match_forms_league' ||
-      tab === 'admin_match_forms_cup' ||
-      tab === 'admin_match_forms_playoffs';
+      mappedTab === 'admin_match_forms_league' ||
+      mappedTab === 'admin_match_forms_cup' ||
+      mappedTab === 'admin_match_forms_playoffs';
 
     if (isAdminMatchForms) {
       // Require login for any admin section logic
@@ -32,12 +45,25 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       if (user.role === 'admin') return true;
 
       // For non-admin authenticated users, respect the visibility toggle
-      const adminSetting = settings.find(s => s.setting_name === tab);
+      const adminSetting = settings.find(s => s.setting_name === mappedTab);
       return !!adminSetting?.is_visible;
     }
 
+    // Special case for match-forms - check if any admin match forms are visible
+    if (tab === 'match-forms') {
+      if (!user) return false;
+      if (user.role === 'admin') return true;
+      
+      // Check if any admin match forms are visible
+      const leagueSetting = settings.find(s => s.setting_name === 'admin_match_forms_league');
+      const cupSetting = settings.find(s => s.setting_name === 'admin_match_forms_cup');
+      const playoffsSetting = settings.find(s => s.setting_name === 'admin_match_forms_playoffs');
+      
+      return !!(leagueSetting?.is_visible || cupSetting?.is_visible || playoffsSetting?.is_visible);
+    }
+
     // Find the setting for public tabs
-    const setting = settings.find(s => s.setting_name === tab);
+    const setting = settings.find(s => s.setting_name === mappedTab);
     
     // If no setting found or not visible, hide the tab
     if (!setting || !setting.is_visible) {
@@ -51,7 +77,7 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     
     // For authenticated users, check role-based visibility
     if (user) {
-      switch (tab) {
+      switch (mappedTab) {
         case "schorsingen":
         case "kaarten":
           return user.role === "admin" || user.role === "referee";

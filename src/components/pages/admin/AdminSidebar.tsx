@@ -2,6 +2,7 @@ import React from "react";
 import { Calendar, Trophy, Award, Target, Users, Shield, User, DollarSign, Settings } from "lucide-react";
 import { useAuth } from "@/components/pages/login/AuthProvider";
 import { useSidebar } from "@/components/ui/sidebar";
+import { useTabVisibility } from "@/context/TabVisibilityContext";
 
 interface AdminSidebarProps {
   activeTab: string;
@@ -13,6 +14,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const isAdmin = user?.role === "admin";
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const { isTabVisible } = useTabVisibility();
   // Speelformaten groep (uitklapbaar) - alleen voor admin
   const speelformatenItems = [
     { key: "competition", label: "Competitie", icon: Trophy },
@@ -62,36 +64,65 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
     </div>
   );
 
-  const renderGroup = (title: string, items: any[]) => (
-    <div className="mb-3">
-      {!collapsed && (
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1.5">
-          {title}
-        </h3>
-      )}
-      <div className="space-y-0.5">
-        {items.map(renderMenuItem)}
+  const renderGroup = (title: string, items: any[]) => {
+    // Don't render empty groups
+    if (items.length === 0) return null;
+    
+    return (
+      <div className="mb-3">
+        {!collapsed && (
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1.5">
+            {title}
+          </h3>
+        )}
+        <div className="space-y-0.5">
+          {items.map(renderMenuItem)}
+        </div>
       </div>
-    </div>
+    );
+  };
+
+  // Filter items based on tab visibility and admin permissions
+  const visibleSpeelformatenItems = speelformatenItems.filter(item => 
+    isAdmin && isTabVisible(item.key)
+  );
+
+  const visibleWedstrijdformulierenItems = wedstrijdformulierenItems.filter(item => 
+    (!item.adminOnly || isAdmin) && 
+    (item.key === 'match-forms-league' ? isTabVisible('admin_match_forms_league') : 
+     item.key === 'match-forms-cup' ? isTabVisible('admin_match_forms_cup') : 
+     item.key === 'playoffs' ? isTabVisible('admin_match_forms_playoffs') : true)
+  );
+
+  const visibleBeheerItems = beheerItems.filter(item => 
+    (!item.adminOnly || isAdmin)
+  );
+
+  const visibleFinancieelItems = financieelItems.filter(item => 
+    (!item.adminOnly || isAdmin)
+  );
+
+  const visibleSysteemItems = systeemItems.filter(item => 
+    (!item.adminOnly || isAdmin)
   );
 
   return (
     <div className={`${collapsed ? "w-14" : "w-64"} flex flex-col h-full`}>
       <div className="flex-1">
-        {/* Speelformaten groep - alleen voor admin */}
-        {isAdmin && renderGroup("Speelformaten", speelformatenItems)}
+        {/* Speelformaten groep - filtered by tab visibility */}
+        {renderGroup("Speelformaten", visibleSpeelformatenItems)}
 
-        {/* Wedstrijdformulieren groep */}
-        {renderGroup("Wedstrijdformulieren", wedstrijdformulierenItems.filter(item => !item.adminOnly || isAdmin))}
+        {/* Wedstrijdformulieren groep - filtered by tab visibility */}
+        {renderGroup("Wedstrijdformulieren", visibleWedstrijdformulierenItems)}
 
         {/* Beheer groep */}
-        {renderGroup("Beheer", beheerItems.filter(item => !item.adminOnly || isAdmin))}
+        {renderGroup("Beheer", visibleBeheerItems)}
 
-        {/* Financieel groep - alleen voor admin */}
-        {isAdmin && renderGroup("Financieel", financieelItems)}
+        {/* Financieel groep */}
+        {renderGroup("Financieel", visibleFinancieelItems)}
 
-        {/* Systeem groep - alleen voor admin */}
-        {isAdmin && renderGroup("Systeem", systeemItems)}
+        {/* Systeem groep */}
+        {renderGroup("Systeem", visibleSysteemItems)}
       </div>
     </div>
   );
