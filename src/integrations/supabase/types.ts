@@ -534,6 +534,10 @@ export type Database = {
         Args: { p_amount: number; p_deposit_name: string; p_team_id: number }
         Returns: number
       }
+      apply_suspension_after_match: {
+        Args: { match_id_param: number }
+        Returns: undefined
+      }
       calculate_team_balance: {
         Args: { team_id_param: number }
         Returns: number
@@ -619,6 +623,10 @@ export type Database = {
       }
       is_player_list_locked: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_player_suspended: {
+        Args: { match_date_param: string; player_id_param: number }
         Returns: boolean
       }
       log_cost_setting_change: {

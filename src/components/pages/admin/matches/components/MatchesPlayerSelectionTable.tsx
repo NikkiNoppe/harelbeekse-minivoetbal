@@ -92,6 +92,33 @@ const PlayerRow = React.memo<{
   onPlayerSelection, 
   onCardChange 
 }) => {
+  const [suspendedPlayers, setSuspendedPlayers] = React.useState<number[]>([]);
+
+  React.useEffect(() => {
+    const checkSuspensions = async () => {
+      if (!players?.length) return;
+      
+      const currentDate = new Date();
+      const suspended: number[] = [];
+      
+      // Import suspensionService dynamically to avoid circular imports
+      const { suspensionService } = await import('@/services');
+      
+      for (const player of players) {
+        const isEligible = await suspensionService.checkPlayerEligibility(player.player_id, currentDate);
+        if (!isEligible) {
+          suspended.push(player.player_id);
+        }
+      }
+      
+      setSuspendedPlayers(suspended);
+    };
+    
+    checkSuspensions();
+  }, [players]);
+
+  const isPlayerSuspended = (playerId: number) => suspendedPlayers.includes(playerId);
+
   const handlePlayerChange = useCallback((value: string) => {
     onPlayerSelection(index, 'playerId', value === "no-player" ? null : parseInt(value), false);
   }, [index, onPlayerSelection]);
@@ -127,19 +154,20 @@ const PlayerRow = React.memo<{
             <SelectContent className="dropdown-content-login-style z-50">
               <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
               {players && Array.isArray(players) &&
-                players.map((player) => {
-                  const playerIdNum = player.player_id;
-                  const alreadySelected = selectedPlayerIds.includes(playerIdNum) && selection.playerId !== playerIdNum;
-                  
-                  return (
-                    <PlayerOption
-                      key={playerIdNum}
-                      player={player}
-                      isSelected={selection.playerId === playerIdNum}
-                      isDisabled={alreadySelected}
-                    />
-                  );
-                })}
+                 players.map((player) => {
+                   const playerIdNum = player.player_id;
+                   const alreadySelected = selectedPlayerIds.includes(playerIdNum) && selection.playerId !== playerIdNum;
+                   const suspended = isPlayerSuspended(playerIdNum);
+                   
+                   return (
+                     <PlayerOption
+                       key={playerIdNum}
+                       player={player}
+                       isSelected={selection.playerId === playerIdNum}
+                       isDisabled={alreadySelected || suspended}
+                     />
+                   );
+                 })}
             </SelectContent>
           </Select>
         ) : (
