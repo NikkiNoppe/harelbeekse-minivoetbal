@@ -19,7 +19,7 @@ export const adminSupabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_
 export const checkRLSStatus = async () => {
   try {
     const { data, error } = await adminSupabase
-      .from('teams')
+      .from('teams_public')
       .select('team_id, team_name')
       .limit(1);
     

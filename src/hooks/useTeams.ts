@@ -31,36 +31,24 @@ export const useTeams = () => {
   return useQuery({
     queryKey: teamQueryKeys.lists(),
     queryFn: async () => {
-      // First try with all columns
-      let { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
+      // Use public view for basic team information
+      const { data, error } = await supabase
+        .from('teams_public')
+        .select('team_id, team_name')
         .order('team_name');
 
-      // If contact columns don't exist, fall back to basic columns
-      if (error && error.message.includes('does not exist')) {
-        const { data: basicData, error: basicError } = await supabase
-          .from('teams')
-          .select('team_id, team_name')
-          .order('team_name');
+      if (error) throw error;
 
-        if (basicError) throw basicError;
-
-        // Map basic data to Team interface
-        data = (basicData || []).map((team: any) => ({
-          team_id: team.team_id,
-          team_name: team.team_name,
-          contact_person: undefined,
-          contact_phone: undefined,
-          contact_email: undefined,
-          club_colors: undefined,
-          preferred_play_moments: undefined
-        }));
-      } else if (error) {
-        throw error;
-      }
-
-      return (data || []) as Team[];
+      // Map public view data to Team interface
+      return (data || []).map((team: any) => ({
+        team_id: team.team_id,
+        team_name: team.team_name,
+        contact_person: undefined,
+        contact_phone: undefined,
+        contact_email: undefined,
+        club_colors: undefined,
+        preferred_play_moments: undefined
+      })) as Team[];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -71,36 +59,25 @@ export const useTeam = (teamId: number) => {
   return useQuery({
     queryKey: teamQueryKeys.detail(teamId),
     queryFn: async () => {
-      // First try with all columns
-      let { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
+      // Use public view for basic team information
+      const { data: teamData, error } = await supabase
+        .from('teams_public')
+        .select('team_id, team_name')
         .eq('team_id', teamId)
         .single();
 
-      // If contact columns don't exist, fall back to basic columns
-      if (error && error.message.includes('does not exist')) {
-        const { data: basicData, error: basicError } = await supabase
-          .from('teams')
-          .select('team_id, team_name')
-          .eq('team_id', teamId)
-          .single();
+      if (error) throw error;
 
-        if (basicError) throw basicError;
-
-        // Map basic data to Team interface
-        data = basicData ? {
-          team_id: basicData.team_id,
-          team_name: basicData.team_name,
-          contact_person: undefined,
-          contact_phone: undefined,
-          contact_email: undefined,
-          club_colors: undefined,
-          preferred_play_moments: undefined
-        } : null;
-      } else if (error) {
-        throw error;
-      }
+      // Map public view data to Team interface
+      const data = teamData ? {
+        team_id: teamData.team_id,
+        team_name: teamData.team_name,
+        contact_person: undefined,
+        contact_phone: undefined,
+        contact_email: undefined,
+        club_colors: undefined,
+        preferred_play_moments: undefined
+      } : null;
 
       return data as Team;
     },
