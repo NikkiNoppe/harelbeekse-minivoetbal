@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -192,6 +192,36 @@ export type Database = {
             referencedColumns: ["team_id"]
           },
         ]
+      }
+      password_reset_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: number
+          requested_email: string
+          token: string
+          used_at: string | null
+          user_id: number
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: never
+          requested_email: string
+          token: string
+          used_at?: string | null
+          user_id: number
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: never
+          requested_email?: string
+          token?: string
+          used_at?: string | null
+          user_id?: number
+        }
+        Relationships: []
       }
       players: {
         Row: {
@@ -384,16 +414,16 @@ export type Database = {
     Functions: {
       add_team_cost: {
         Args: {
-          p_team_id: number
-          p_cost_name: string
           p_amount: number
           p_category?: string
+          p_cost_name: string
           p_match_id?: number
+          p_team_id: number
         }
         Returns: number
       }
       add_team_deposit: {
-        Args: { p_team_id: number; p_deposit_name: string; p_amount: number }
+        Args: { p_amount: number; p_deposit_name: string; p_team_id: number }
         Returns: number
       }
       calculate_team_balance: {
@@ -414,10 +444,10 @@ export type Database = {
       }
       create_user_with_hashed_password: {
         Args: {
-          username_param: string
           email_param: string
           password_param: string
           role_param?: Database["public"]["Enums"]["user_role"]
+          username_param: string
         }
         Returns: {
           email: string | null
@@ -438,36 +468,36 @@ export type Database = {
       get_match_statistics: {
         Args: { match_id_param: number }
         Returns: {
-          total_players: number
-          home_players_count: number
           away_players_count: number
           cards_count: number
+          home_players_count: number
+          total_players: number
         }[]
       }
       insert_transaction_with_auto_data: {
         Args:
           | {
-              p_team_id: number
-              p_cost_setting_id: number
               p_amount: number
+              p_cost_setting_id: number
               p_date?: string
               p_match_id?: number
               p_notes?: string
+              p_team_id: number
             }
           | {
-              p_team_id: number
-              p_cost_setting_id?: number
-              p_transaction_type?: string
-              p_amount?: number
-              p_description?: string
-              p_match_id?: number
-            }
-          | {
-              p_team_id: number
-              p_transaction_type: string
               p_amount: number
               p_description?: string
               p_match_id?: number
+              p_team_id: number
+              p_transaction_type: string
+            }
+          | {
+              p_amount?: number
+              p_cost_setting_id?: number
+              p_description?: string
+              p_match_id?: number
+              p_team_id: number
+              p_transaction_type?: string
             }
         Returns: number
       }
@@ -486,11 +516,15 @@ export type Database = {
       log_cost_setting_change: {
         Args: {
           p_cost_setting_id: number
-          p_old_amount: number
           p_new_amount: number
+          p_old_amount: number
           p_user_id?: number
         }
         Returns: undefined
+      }
+      reset_password_with_token: {
+        Args: { p_new_password: string; p_token: string }
+        Returns: Json
       }
       update_competition_standings: {
         Args: Record<PropertyKey, never>
@@ -509,37 +543,37 @@ export type Database = {
         Returns: undefined
       }
       update_user_password: {
-        Args: { user_id_param: number; new_password: string }
+        Args: { new_password: string; user_id_param: number }
         Returns: boolean
       }
       validate_player_data: {
         Args:
           | {
+              p_birth_date: string
+              p_exclude_player_id?: number
               p_first_name: string
               p_last_name: string
-              p_birth_date: string
               p_team_id: number
-              p_exclude_player_id?: number
             }
           | { p_name: string; p_team_id?: number }
         Returns: boolean
       }
       verify_user_password: {
-        Args: { input_username_or_email: string; input_password: string }
+        Args: { input_password: string; input_username_or_email: string }
         Returns: {
-          user_id: number
-          username: string
           email: string
           role: Database["public"]["Enums"]["user_role"]
+          user_id: number
+          username: string
         }[]
       }
       verify_user_password_flexible: {
-        Args: { input_username_or_email: string; input_password: string }
+        Args: { input_password: string; input_username_or_email: string }
         Returns: {
-          user_id: number
-          username: string
           email: string
           role: Database["public"]["Enums"]["user_role"]
+          user_id: number
+          username: string
         }[]
       }
     }
