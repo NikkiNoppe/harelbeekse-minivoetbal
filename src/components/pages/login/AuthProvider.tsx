@@ -33,14 +33,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Initialize auth state from localStorage on mount
   useEffect(() => {
-    // Simulate loading check
-    const timer = setTimeout(() => {
+    try {
+      const storedAuth = localStorage.getItem('auth_data');
+      if (storedAuth) {
+        const authData = JSON.parse(storedAuth);
+        if (authData.user && authData.expires > Date.now()) {
+          setUser(authData.user);
+          setIsAuthenticated(true);
+        } else {
+          localStorage.removeItem('auth_data');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading auth state:', error);
+      localStorage.removeItem('auth_data');
+    } finally {
       setLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
+    }
   }, []);
+
+  // Persist auth state to localStorage
+  const persistAuthState = (userData: User | null) => {
+    if (userData) {
+      const authData = {
+        user: userData,
+        expires: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+      };
+      localStorage.setItem('auth_data', JSON.stringify(authData));
+    } else {
+      localStorage.removeItem('auth_data');
+    }
+  };
 
   // Use the corrected verify_user_password function
   const login = async (username: string, password: string): Promise<boolean> => {
@@ -82,6 +107,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log('✅ Setting authenticated user:', loggedInUser);
         setUser(loggedInUser);
         setIsAuthenticated(true);
+        persistAuthState(loggedInUser);
         return true;
       }
 
@@ -103,6 +129,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log('👋 Logging out user');
     setUser(null);
     setIsAuthenticated(false);
+    persistAuthState(null);
   };
 
   const value: AuthContextType = {
