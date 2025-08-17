@@ -729,6 +729,12 @@ tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-
 .responsive-table-container::before { left: 0; background: linear-gradient(90deg,rgba(96,54,140,0.1),transparent); }
 .responsive-table-container::after { right: 0; background: linear-gradient(270deg,rgba(96,54,140,0.1),transparent); }
 
+/* Ensure schedule table can scroll horizontally on small screens */
+.responsive-schedule-table { min-width: 720px; }
+@media (max-width: 640px) {
+  .responsive-schedule-table { min-width: 600px; }
+}
+
 /* Horizontale scroll voor admin tabellen */
 .admin-table-scroll {
   width: 100%;

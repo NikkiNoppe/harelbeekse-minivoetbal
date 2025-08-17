@@ -1,14 +1,15 @@
 import React, { memo, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Trophy } from "lucide-react";
 import AutoFitText from "@/components/ui/auto-fit-text";
 import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
+import ResponsiveScheduleTable from "../tables/ResponsiveScheduleTable";
 import { usePlayoffData, PlayoffMatch } from "@/hooks/usePlayoffData";
 import { Team } from "@/hooks/useCompetitionData";
-import MatchFilterPanel, { MatchFilterState } from "@/components/common/MatchFilterPanel";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 // Skeleton loading components
 const StandingsTableSkeleton = memo(() => (
   <div className="space-y-4">
@@ -150,17 +151,7 @@ const PlayoffMatchCard = memo(({ match }: { match: PlayoffMatch }) => (
   </Card>
 ));
 
-// Memoized matches section
-const PlayoffMatchesSection = memo(({ matches }: { matches: PlayoffMatch[] }) => (
-  <section>
-    <h2 className="text-2xl font-semibold">Uitslagen Play-Offs</h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto px-4">
-      {matches.map((match, index) => (
-        <PlayoffMatchCard key={index} match={match} />
-      ))}
-    </div>
-  </section>
-));
+
 
 // Memoized upcoming matches section (conditionally rendered)
 const UpcomingPlayoffMatches = memo(({ matches }: { matches: PlayoffMatch[] }) => (
@@ -248,8 +239,6 @@ const PlayoffContent = memo(({
 
     <PlayoffStandingsSection teams={teams} />
     
-    {matches.length > 0 && <PlayoffMatchesSection matches={matches} />}
-    
     {upcomingMatches.length > 0 && <UpcomingPlayoffMatches matches={upcomingMatches} />}
   </div>
 ));
@@ -258,44 +247,47 @@ const PlayoffContent = memo(({
 const PlayOffPage: React.FC = () => {
   const { teams, matches, upcomingMatches, isLoading, error, refetch } = usePlayoffData();
 
-  const [filterState, setFilterState] = useState<MatchFilterState>({
-    search: "",
-    selectedTeams: [],
-    selectedDate: null,
-    selectedWeek: null,
-  });
+  const [selectedRound, setSelectedRound] = useState<string | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+
+  // Convert PlayoffMatch to schedule table format
+  const allMatches = useMemo(() => {
+    const combined = [...matches, ...upcomingMatches];
+    return combined.map((match, index) => ({
+      matchId: index,
+      matchday: match.playoff || '',
+      date: match.date || '',
+      time: match.time || '',
+      homeTeamName: match.home,
+      awayTeamName: match.away,
+      homeScore: match.result ? parseInt(match.result.split('-')[0]) : undefined,
+      awayScore: match.result ? parseInt(match.result.split('-')[1]) : undefined,
+      location: match.location || '',
+      isCompleted: !!match.result
+    }));
+  }, [matches, upcomingMatches]);
+
+  const rounds = useMemo(() => {
+    const uniqueRounds = [...new Set(allMatches.map(m => m.matchday))];
+    return uniqueRounds.filter(Boolean).sort();
+  }, [allMatches]);
 
   const teamNames = useMemo(() => {
     const names = new Set<string>();
-    [...matches, ...upcomingMatches].forEach((m) => {
-      if (m.home) names.add(m.home);
-      if (m.away) names.add(m.away);
+    allMatches.forEach(m => {
+      if (m.homeTeamName) names.add(m.homeTeamName);
+      if (m.awayTeamName) names.add(m.awayTeamName);
     });
-    return Array.from(names).sort((a, b) => a.localeCompare(b, "nl"));
-  }, [matches, upcomingMatches]);
+    return Array.from(names).sort((a, b) => a.localeCompare(b, 'nl'));
+  }, [allMatches]);
 
-  const filterMatches = (list: PlayoffMatch[]) => {
-    const search = (filterState.search || "").toLowerCase();
-    const teamsSel = filterState.selectedTeams || [];
-    const selectedDate = filterState.selectedDate;
-    return list.filter((m) => {
-      if (teamsSel.length > 0 && !teamsSel.includes(m.home) && !teamsSel.includes(m.away)) return false;
-      if (selectedDate) {
-        try {
-          const dayStr = selectedDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
-          if (m.date && m.date !== dayStr) return false;
-        } catch {}
-      }
-      if (search) {
-        const hay = `${m.home} ${m.away} ${m.location ?? ""} ${m.playoff ?? ""} ${m.matchday ?? ""}`.toLowerCase();
-        if (!hay.includes(search)) return false;
-      }
+  const filteredMatches = useMemo(() => {
+    return allMatches.filter((m) => {
+      if (selectedRound && m.matchday !== selectedRound) return false;
+      if (selectedTeam && m.homeTeamName !== selectedTeam && m.awayTeamName !== selectedTeam) return false;
       return true;
     });
-  };
-
-  const filteredMatches = useMemo(() => filterMatches(matches), [matches, filterState]);
-  const filteredUpcoming = useMemo(() => filterMatches(upcomingMatches), [upcomingMatches, filterState]);
+  }, [allMatches, selectedRound, selectedTeam]);
 
   if (isLoading) {
     return <PlayoffLoading />;
@@ -309,25 +301,53 @@ const PlayOffPage: React.FC = () => {
     return <PlayoffEmptyState />;
   }
 
-  const filterSummary = useMemo(() => {
-    const parts: string[] = [];
-    if (filterState.selectedTeams.length) parts.push(`${filterState.selectedTeams.length} teams`);
-    if (filterState.selectedDate) parts.push(`datum ${filterState.selectedDate.toLocaleDateString('nl-NL')}`);
-    if (filterState.search) parts.push(`“${filterState.search}”`);
-    return parts.length ? `— filters: ${parts.join(', ')}` : '';
-  }, [filterState]);
-
   return (
-    <div className="space-y-8 animate-slide-up">
-      <MatchFilterPanel teamNames={teamNames} onChange={setFilterState} title="Play-Offs Filters" description="Filter met datum, teams en zoekterm" />
-      <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-        <div>{filteredMatches.length} uitslagen — {filteredUpcoming.length} aankomende {filterSummary}</div>
-      </div>
+    <div className="space-y-8">
       <PlayoffContent 
         teams={teams} 
-        matches={filteredMatches} 
-        upcomingMatches={filteredUpcoming} 
+        matches={matches} 
+        upcomingMatches={upcomingMatches} 
       />
+      
+      <Card>
+        <CardHeader className="bg-transparent">
+          <CardTitle>Speelschema</CardTitle>
+          <CardDescription>Volledig overzicht van alle play-off wedstrijden</CardDescription>
+        </CardHeader>
+        <CardContent className="bg-transparent">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <Label className="mb-2 block">Ronde</Label>
+              <Select value={selectedRound ?? "all"} onValueChange={(v) => setSelectedRound(v === "all" ? null : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Alle rondes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle rondes</SelectItem>
+                  {rounds.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="mb-2 block">Team</Label>
+              <Select value={selectedTeam ?? "all"} onValueChange={(v) => setSelectedTeam(v === "all" ? null : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Alle teams" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle teams</SelectItem>
+                  {teamNames.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <ResponsiveScheduleTable matches={filteredMatches} />
+        </CardContent>
+      </Card>
     </div>
   );
 };
@@ -340,7 +360,6 @@ PlayoffLoading.displayName = 'PlayoffLoading';
 PlayoffError.displayName = 'PlayoffError';
 PlayoffStandingsSection.displayName = 'PlayoffStandingsSection';
 PlayoffMatchCard.displayName = 'PlayoffMatchCard';
-PlayoffMatchesSection.displayName = 'PlayoffMatchesSection';
 UpcomingPlayoffMatches.displayName = 'UpcomingPlayoffMatches';
 PlayoffEmptyState.displayName = 'PlayoffEmptyState';
 PlayoffContent.displayName = 'PlayoffContent';

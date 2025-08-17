@@ -1,4 +1,4 @@
-import React, { memo, useState, useMemo } from "react";
+import React, { memo, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +8,10 @@ import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
 import ResponsiveScheduleTable from "../tables/ResponsiveScheduleTable";
 import { useCompetitionData, Team, MatchData } from "@/hooks/useCompetitionData";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import MatchFilterPanel, { MatchFilterState } from "@/components/common/MatchFilterPanel";
-import { format } from "date-fns";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+ 
+
 
 // Uniform skeleton for standings table
 const StandingsTableSkeleton = memo(() => (
@@ -151,19 +153,8 @@ const MatchesSection = memo(({
   </Card>
 ));
 
-// Filters worden afgehandeld via de gedeelde MatchFilterPanel-component.
-
-
 // Main component
 const CompetitiePage: React.FC = () => {
-  const [filterState, setFilterState] = useState<MatchFilterState>({
-    search: "",
-    selectedTeams: [],
-    selectedDate: null,
-    selectedWeek: null,
-    selectedMatchday: null,
-  });
-
   const {
     teams,
     matches,
@@ -171,64 +162,28 @@ const CompetitiePage: React.FC = () => {
     teamNames,
     standingsLoading,
     matchesLoading,
-    standingsError,
-    refetchStandings
   } = useCompetitionData();
 
-  // Memoized filtered matches
-  const filteredMatches = useMemo(() => {
-    const md = filterState.selectedMatchday || null;
-    const teamsSel = filterState.selectedTeams || [];
-    const search = (filterState.search || "").toLowerCase();
-    const selectedDate = filterState.selectedDate;
-    const selectedWeek = filterState.selectedWeek;
+  const [selectedMatchday, setSelectedMatchday] = useState<string | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
 
-    return matches.all.filter((match) => {
-      if (md && match.matchday !== md) return false;
-      if (teamsSel.length > 0 && !teamsSel.includes(match.homeTeamName) && !teamsSel.includes(match.awayTeamName)) return false;
-      
-      // Date filter
-      if (selectedDate) {
-        try {
-          const dayStr = format(selectedDate, "yyyy-MM-dd");
-          if (match.date !== dayStr) return false;
-        } catch {}
-      }
-      
-      // Week filter
-      if (selectedWeek) {
-        try {
-          const matchDate = new Date(match.date);
-          const weekStart = new Date(selectedWeek);
-          weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Start of week (Monday)
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekEnd.getDate() + 6); // End of week (Sunday)
-          
-          if (matchDate < weekStart || matchDate > weekEnd) return false;
-        } catch {}
-      }
-      
-      if (search) {
-        const hay = `${match.homeTeamName} ${match.awayTeamName} ${match.matchday} ${match.uniqueNumber ?? ""}`.toLowerCase();
-        if (!hay.includes(search)) return false;
-      }
+  const filteredMatches = useMemo(() => {
+    const filtered = matches.all.filter((m) => {
+      if (selectedMatchday && m.matchday !== selectedMatchday) return false;
+      if (selectedTeam && m.homeTeamName !== selectedTeam && m.awayTeamName !== selectedTeam) return false;
       return true;
     });
-  }, [matches.all, filterState]);
-  const filterSummary = useMemo(() => {
-    const parts: string[] = [];
-    if (filterState.selectedTeams.length) parts.push(`${filterState.selectedTeams.length} teams`);
-    if (filterState.selectedDate) parts.push(`datum ${format(filterState.selectedDate, 'dd-MM-yyyy')}`);
-    if (filterState.selectedMatchday) parts.push(`speeldag ${filterState.selectedMatchday}`);
-    if (filterState.search) parts.push(`“${filterState.search}”`);
-    return parts.length ? `— filters: ${parts.join(', ')}` : '';
-  }, [filterState]);
+    return filtered.sort((a, b) => {
+      const aKey = `${a.date}T${a.time}`;
+      const bKey = `${b.date}T${b.time}`;
+      return aKey.localeCompare(bKey);
+    });
+  }, [matches.all, selectedMatchday, selectedTeam]);
 
   return (
     <div className="space-y-8 animate-slide-up">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Competitiestand</h2>
-        <Badge className="badge-purple">Seizoen 2025-2026</Badge>
+        <h2 className="text-2xl font-semibold">Competitiestand 2025/2026</h2>
       </div>
 
       <section>
@@ -239,19 +194,7 @@ const CompetitiePage: React.FC = () => {
         </Card>
       </section>
 
-      <MatchesSection
-        title="Aankomende Wedstrijden"
-        description="Wedstrijden van de komende speeldag"
-        matches={matches.upcoming}
-        isLoading={matchesLoading}
-      />
 
-      <MatchesSection
-        title="Afgelopen Wedstrijden"
-        description="Resultaten van de laatst gespeelde speeldag"
-        matches={matches.past}
-        isLoading={matchesLoading}
-      />
 
       <Card>
         <CardHeader className="bg-transparent">
@@ -259,16 +202,35 @@ const CompetitiePage: React.FC = () => {
           <CardDescription>Volledig overzicht van alle wedstrijden</CardDescription>
         </CardHeader>
         <CardContent className="bg-transparent">
-          <MatchFilterPanel
-            teamNames={teamNames}
-            showMatchday={true}
-            matchdays={matchdays}
-            onChange={setFilterState}
-            title="Filters"
-            description="Filter op datum, teams, speeldag en zoekterm"
-          />
-          <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-            <div>{filteredMatches.length} resultaten {filterSummary}</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <Label className="mb-2 block">Speeldag</Label>
+              <Select value={selectedMatchday ?? "all"} onValueChange={(v) => setSelectedMatchday(v === "all" ? null : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Alle speeldagen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle speeldagen</SelectItem>
+                  {matchdays.map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="mb-2 block">Team</Label>
+              <Select value={selectedTeam ?? "all"} onValueChange={(v) => setSelectedTeam(v === "all" ? null : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Alle teams" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle teams</SelectItem>
+                  {teamNames.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <ResponsiveScheduleTable matches={filteredMatches} />
         </CardContent>
