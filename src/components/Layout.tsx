@@ -40,13 +40,13 @@ const Layout: React.FC = () => {
   // Admin sections die sidebar gebruiken
   const adminTabs = [
     "match-forms", "match-forms-league", "match-forms-cup", "players", "teams", "users", 
-    "competition", "playoffs", "cup", "financial", "settings"
+    "competition", "playoffs", "cup", "financial", "settings", "schorsingen"
   ];
   
   // Main public tabs that use MainPages component
   const publicTabs = [
     "algemeen", "beker", "competitie", "playoff", 
-    "schorsingen", "kaarten", "reglement", "teams"
+    "kaarten", "reglement", "teams"
   ];
 
   const isAdminSection = user && adminTabs.includes(activeTab);

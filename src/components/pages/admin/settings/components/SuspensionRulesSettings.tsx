@@ -146,6 +146,13 @@ export const SuspensionRulesSettings: React.FC = () => {
           Schorsingsregels
           <div className="flex gap-2">
             <Button
+              onClick={() => window.location.hash = '#schorsingen'}
+              variant="ghost"
+              size="sm"
+            >
+              Beheer Schorsingen
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               onClick={loadRules}

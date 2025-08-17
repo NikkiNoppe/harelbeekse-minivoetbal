@@ -177,6 +177,13 @@ const AdminSuspensionsPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Schorsingen Beheer</h1>
         <div className="flex gap-2">
+          <Button 
+            onClick={() => window.location.hash = '#settings'}
+            variant="ghost" 
+            size="sm"
+          >
+            Schorsingsregels
+          </Button>
           <Button onClick={handleRefresh} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
             Vernieuwen
