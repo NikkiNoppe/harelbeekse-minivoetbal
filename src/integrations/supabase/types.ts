@@ -526,6 +526,10 @@ export type Database = {
         Args: { p_new_password: string; p_token: string }
         Returns: Json
       }
+      set_config: {
+        Args: { parameter: string; value: string }
+        Returns: undefined
+      }
       update_competition_standings: {
         Args: Record<PropertyKey, never>
         Returns: undefined

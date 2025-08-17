@@ -42,23 +42,46 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Initialize auth state from localStorage on mount
   useEffect(() => {
-    try {
-      const storedAuth = localStorage.getItem('auth_data');
-      if (storedAuth) {
-        const authData = JSON.parse(storedAuth);
-        if (authData.user && authData.expires > Date.now()) {
-          setUser(authData.user);
-          setIsAuthenticated(true);
-        } else {
-          localStorage.removeItem('auth_data');
+    const initializeAuth = async () => {
+      try {
+        const storedAuth = localStorage.getItem('auth_data');
+        if (storedAuth) {
+          const authData = JSON.parse(storedAuth);
+          if (authData.user && authData.expires > Date.now()) {
+            setUser(authData.user);
+            setIsAuthenticated(true);
+            
+            // Restore database context for RLS policies
+            try {
+              await supabase.rpc('set_config', {
+                parameter: 'app.current_user_role',
+                value: authData.user.role
+              });
+              console.log('✅ Restored user role in database context:', authData.user.role);
+              
+              if (authData.user.teamId) {
+                await supabase.rpc('set_config', {
+                  parameter: 'app.current_user_team_ids',
+                  value: authData.user.teamId.toString()
+                });
+                console.log('✅ Restored team IDs in database context:', authData.user.teamId);
+              }
+            } catch (contextError) {
+              console.log('⚠️ Could not restore database context on page load:', contextError);
+            }
+          } else {
+            localStorage.removeItem('auth_data');
+          }
         }
+      } catch (error) {
+        console.error('Error loading auth state:', error);
+        localStorage.removeItem('auth_data');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading auth state:', error);
-      localStorage.removeItem('auth_data');
-    } finally {
-      setLoading(false);
-    }
+    };
+    
+    initializeAuth();
   }, []);
 
   // Persist auth state to localStorage
@@ -95,10 +118,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const userData = data[0];
         console.log('✅ Login successful for user:', userData.username);
         
+        // Set user role in database context for RLS policies
+        try {
+          await supabase.rpc('set_config', {
+            parameter: 'app.current_user_role',
+            value: userData.role
+          });
+          console.log('✅ User role set in database context:', userData.role);
+        } catch (contextError) {
+          console.log('⚠️ Could not set user role in database context:', contextError);
+        }
+        
         // Try to fetch teamId but don't let it block login
         const teamId = await fetchTeamIdForUser(userData.user_id);
         if (teamId) {
           console.log('👥 Found teamId:', teamId);
+          
+          // Set team IDs in database context for RLS policies
+          try {
+            await supabase.rpc('set_config', {
+              parameter: 'app.current_user_team_ids',
+              value: teamId.toString()
+            });
+            console.log('✅ Team IDs set in database context:', teamId);
+          } catch (contextError) {
+            console.log('⚠️ Could not set team IDs in database context:', contextError);
+          }
         } else {
           console.log('👥 No teamId found or access denied');
         }
