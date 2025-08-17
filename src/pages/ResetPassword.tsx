@@ -154,17 +154,15 @@ const ResetPassword = () => {
               <div className="flex gap-3 pt-4">
                 <Button 
                   type="submit" 
-                  variant="default"
                   disabled={isLoading}
-                  className="flex-1"
+                  className="flex-1 btn btn--primary"
                 >
                   {isLoading ? "Resetten..." : "Wachtwoord resetten"}
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
                   onClick={() => navigate("/")}
-                  className="flex-1"
+                  className="flex-1 btn btn--secondary"
                 >
                   Annuleren
                 </Button>
