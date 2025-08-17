@@ -150,8 +150,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(
       JSON.stringify({ 
-        message: "Als dit email adres bestaat, zal je een reset link ontvangen.",
-        token: resetToken // Remove this in production
+        message: "Als dit email adres bestaat, zal je een reset link ontvangen."
       }),
       {
         status: 200,

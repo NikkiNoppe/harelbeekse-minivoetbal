@@ -17,10 +17,12 @@ export const useLoginHook = (onLoginSuccess: () => void) => {
         input_username_or_email: usernameOrEmail,
         input_password: password
       });
+      
       if (error) {
-        toast({ title: "Login mislukt", description: `Database fout: ${error.message}`, variant: "destructive" });
+        toast({ title: "Login mislukt", description: "Er is een fout opgetreden bij het inloggen", variant: "destructive" });
         return;
       }
+      
       if (result && Array.isArray(result) && result.length > 0) {
         const dbUser = result[0];
         const user: User = {
@@ -30,6 +32,7 @@ export const useLoginHook = (onLoginSuccess: () => void) => {
           role: dbUser.role,
           email: dbUser.email || ''
         };
+        
         const loginSuccess = await authLogin(usernameOrEmail, password);
         if (loginSuccess) {
           toast({ title: "Ingelogd!", description: `Welkom ${user.username}` });

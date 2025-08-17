@@ -70,30 +70,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Use the corrected verify_user_password function
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      console.log('🔐 AuthProvider login called with username:', username);
-      
       // Use the corrected verify_user_password function
       const { data, error } = await supabase.rpc('verify_user_password', {
         input_username_or_email: username,
         input_password: password
       });
 
-      console.log('🔍 AuthProvider verification result:', data);
-      console.log('❌ AuthProvider verification error:', error);
-
       if (error) {
-        console.error('💥 AuthProvider login error:', error);
         return false;
       }
 
       // Check if data is an array and has results
       if (data && typeof Array.isArray === 'function' && Array.isArray(data) && data.length > 0) {
         const userData = data[0];
-        console.log('👤 AuthProvider user data:', userData);
         
         // Fetch possible teamId mapping
         const teamId = await fetchTeamIdForUser(userData.user_id);
-        console.log('🏀 Fetched teamId:', teamId);
 
         const loggedInUser: User = {
           id: userData.user_id,
@@ -104,17 +96,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           ...(teamId !== undefined ? { teamId } : {})
         };
 
-        console.log('✅ Setting authenticated user:', loggedInUser);
         setUser(loggedInUser);
         setIsAuthenticated(true);
         persistAuthState(loggedInUser);
         return true;
       }
 
-      console.log('❌ AuthProvider: No valid user data returned');
       return false;
     } catch (error) {
-      console.error('💀 AuthProvider login error:', error);
+      console.error('Login error:', error);
       return false;
     }
   };
@@ -126,7 +116,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const logout = () => {
-    console.log('👋 Logging out user');
     setUser(null);
     setIsAuthenticated(false);
     persistAuthState(null);
