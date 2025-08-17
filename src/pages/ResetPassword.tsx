@@ -152,6 +152,13 @@ const ResetPassword = () => {
               />
               
               <div className="flex gap-3 pt-4">
+                <Button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="flex-1"
+                >
+                  {isLoading ? "Resetten..." : "Wachtwoord resetten"}
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
@@ -159,13 +166,6 @@ const ResetPassword = () => {
                   className="flex-1"
                 >
                   Annuleren
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={isLoading}
-                  className="flex-1"
-                >
-                  {isLoading ? "Resetten..." : "Wachtwoord resetten"}
                 </Button>
               </div>
             </form>
