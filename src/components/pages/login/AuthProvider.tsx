@@ -10,22 +10,29 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Add: fetch teamId for the user
+// Add: fetch teamId for the user (with error handling)
 async function fetchTeamIdForUser(userId: number): Promise<number | undefined> {
-  const { data, error } = await supabase
-    .from("team_users")
-    .select("team_id")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) {
-    console.error("Failed to fetch teamId for user", error);
+  try {
+    const { data, error } = await supabase
+      .from("team_users")
+      .select("team_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    
+    if (error) {
+      console.warn("Could not fetch teamId for user (likely due to RLS):", error.message);
+      return undefined;
+    }
+    
+    // Return the team_id if found and a number
+    if (data && typeof data.team_id === "number") {
+      return data.team_id;
+    }
+    return undefined;
+  } catch (error) {
+    console.warn("Error fetching teamId for user:", error);
     return undefined;
   }
-  // Return the team_id if found and a number
-  if (data && typeof data.team_id === "number") {
-    return data.team_id;
-  }
-  return undefined;
 }
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -67,32 +74,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Use the corrected verify_user_password function
+  // Single login function that handles everything
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      // Use the corrected verify_user_password function
+      console.log('🔐 Attempting login for:', username);
+      
+      // Use the verify_user_password function
       const { data, error } = await supabase.rpc('verify_user_password', {
         input_username_or_email: username,
         input_password: password
       });
 
       if (error) {
+        console.error('Login RPC error:', error);
         return false;
       }
 
       // Check if data is an array and has results
-      if (data && typeof Array.isArray === 'function' && Array.isArray(data) && data.length > 0) {
+      if (data && Array.isArray(data) && data.length > 0) {
         const userData = data[0];
+        console.log('✅ Login successful for user:', userData.username);
         
-        // Fetch possible teamId mapping
+        // Try to fetch teamId but don't let it block login
         const teamId = await fetchTeamIdForUser(userData.user_id);
+        if (teamId) {
+          console.log('👥 Found teamId:', teamId);
+        } else {
+          console.log('👥 No teamId found or access denied');
+        }
 
         const loggedInUser: User = {
           id: userData.user_id,
           username: userData.username,
           password: '', // Don't store password
           role: userData.role,
-          email: userData.email,
+          email: userData.email || '',
           ...(teamId !== undefined ? { teamId } : {})
         };
 
@@ -102,20 +118,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return true;
       }
 
+      console.log('❌ Login failed: Invalid credentials');
       return false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
       return false;
     }
   };
 
-  // If not logged in via login function (e.g., page refresh), try to hydrate from storage
-  useEffect(() => {
-    // Optionally, you can enhance to hydrate session for persistent login
-    // Not implemented now for simplicity
-  }, []);
-
   const logout = () => {
+    console.log('🚪 Logging out user');
     setUser(null);
     setIsAuthenticated(false);
     persistAuthState(null);

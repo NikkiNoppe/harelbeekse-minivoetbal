@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/pages/login/AuthProvider';
@@ -14,48 +15,40 @@ export const RLSTestComponent: React.FC = () => {
     setLoading(true);
     try {
       console.log('🧪 Running RLS tests...');
+      console.log('👤 Current user from context:', user);
       
-      // Test 1: Check current user role
+      // Test 1: Check current user role (should work with custom auth)
       const { data: roleData, error: roleError } = await supabase.rpc('get_current_user_role' as any);
       console.log('👤 Current user role:', roleData, roleError);
 
-      // Test 2: Check if user is admin
+      // Test 2: Check if user is admin (should work with custom auth)
       const { data: adminData, error: adminError } = await supabase.rpc('is_current_user_admin' as any);
       console.log('👑 Is admin:', adminData, adminError);
 
-      // Test 3: Get user's team IDs
+      // Test 3: Get user's team IDs (should work with custom auth)
       const { data: teamData, error: teamError } = await supabase.rpc('get_current_user_team_ids' as any);
       console.log('🏀 User team IDs:', teamData, teamError);
 
-      // Test 4: Try to read players (should work for everyone)
+      // Test 4: Try to read team_users (should work for admins now)
+      const { data: teamUsersData, error: teamUsersError } = await supabase
+        .from('team_users')
+        .select('user_id, team_id')
+        .limit(5);
+      console.log('📊 Team users read test:', teamUsersData?.length || 0, 'records', teamUsersError);
+
+      // Test 5: Try to read players (should work for everyone)
       const { data: playersData, error: playersError } = await supabase
         .from('players')
         .select('player_id, first_name, last_name, team_id')
         .limit(5);
       console.log('📊 Players read test:', playersData?.length || 0, 'players', playersError);
 
-      // Test 5: Try to update a player (should work for admin/team manager)
-      let updateData: any = null;
-      let updateError: any = null;
-      
-      if (playersData && playersData.length > 0) {
-        const testPlayer = playersData[0];
-        const updateResult = await supabase
-          .from('players')
-          .update({ first_name: testPlayer.first_name }) // No change, just test
-          .eq('player_id', testPlayer.player_id)
-          .select();
-        updateData = updateResult.data;
-        updateError = updateResult.error;
-        console.log('✏️ Update test:', updateData?.length || 0, 'updated', updateError);
-      }
-
       setTestResults({
         role: { data: roleData, error: roleError },
         isAdmin: { data: adminData, error: adminError },
         teamIds: { data: teamData, error: teamError },
-        playersRead: { data: playersData?.length || 0, error: playersError },
-        updateTest: { data: updateData?.length || 0, error: updateError }
+        teamUsersRead: { data: teamUsersData?.length || 0, error: teamUsersError },
+        playersRead: { data: playersData?.length || 0, error: playersError }
       });
 
     } catch (error) {
@@ -117,16 +110,16 @@ export const RLSTestComponent: React.FC = () => {
                 </div>
                 
                 <div className="flex justify-between">
-                  <span>Players Read:</span>
-                  <Badge variant={testResults.playersRead.error ? "destructive" : "default"}>
-                    {testResults.playersRead.error ? "Error" : `${testResults.playersRead.data} players`}
+                  <span>Team Users Read:</span>
+                  <Badge variant={testResults.teamUsersRead.error ? "destructive" : "default"}>
+                    {testResults.teamUsersRead.error ? "Error" : `${testResults.teamUsersRead.data} records`}
                   </Badge>
                 </div>
                 
                 <div className="flex justify-between">
-                  <span>Update Test:</span>
-                  <Badge variant={testResults.updateTest.error ? "destructive" : "default"}>
-                    {testResults.updateTest.error ? "Error" : `${testResults.updateTest.data} updated`}
+                  <span>Players Read:</span>
+                  <Badge variant={testResults.playersRead.error ? "destructive" : "default"}>
+                    {testResults.playersRead.error ? "Error" : `${testResults.playersRead.data} players`}
                   </Badge>
                 </div>
               </div>
