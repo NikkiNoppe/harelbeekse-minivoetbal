@@ -1,10 +1,11 @@
 import React from "react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, Sidebar } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import AdminDashboard from "./AdminDashboard";
 import Footer from "@/components/pages/footer/Footer";
 import Header from "@/components/pages/header/Header";
 import { useAuth } from "@/components/pages/login/AuthProvider";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AdminDashboardLayoutProps {
   activeTab: string;
@@ -20,6 +21,7 @@ export function AdminDashboardLayout({
   onLoginClick 
 }: AdminDashboardLayoutProps) {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   return (
     <div className="min-h-screen flex flex-col bg-purple-100">
@@ -35,13 +37,18 @@ export function AdminDashboardLayout({
       
       {/* Main content area - fills available space between header and footer */}
       <div className="flex flex-1 w-full">
-        <SidebarProvider>
+        <SidebarProvider 
+          defaultOpen={!isMobile}
+        >
           {/* Sidebar container - will adapt to content height */}
-          <div className="flex-shrink-0 bg-var-purple-100 border-r border-purple-200 shadow-xl">
+          <Sidebar 
+            collapsible={isMobile ? "icon" : "offcanvas"}
+            className="flex-shrink-0 bg-var-purple-100 border-r border-purple-200 shadow-xl"
+          >
             <div className="p-2 h-full">
               <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
             </div>
-          </div>
+          </Sidebar>
           
           {/* Main content area */}
           <main className="flex-1 bg-purple-100 overflow-auto">

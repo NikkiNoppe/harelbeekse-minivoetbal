@@ -101,7 +101,7 @@ const PlayerPage: React.FC = () => {
 
       {/* Team Selector and Add Button for Admin */}
       {isAdmin ? (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex flex-col gap-2">
             <Select 
               value={selectedTeam?.toString() || ""} 
@@ -123,10 +123,11 @@ const PlayerPage: React.FC = () => {
           {showAddButton && (
             <Button
               onClick={handleOpenAddDialog}
-              className="btn btn--outline flex items-center gap-2"
+              className="btn btn--outline flex items-center justify-center gap-2 whitespace-nowrap min-h-[44px] px-4"
             >
               <Plus size={16} />
-              Speler toevoegen
+              <span className="hidden sm:inline">Speler toevoegen</span>
+              <span className="sm:hidden">Toevoegen</span>
             </Button>
           )}
         </div>
@@ -136,10 +137,11 @@ const PlayerPage: React.FC = () => {
           <div className="flex justify-end">
             <Button
               onClick={handleOpenAddDialog}
-              className="btn btn--outline flex items-center gap-2"
+              className="btn btn--outline flex items-center justify-center gap-2 whitespace-nowrap min-h-[44px] px-4"
             >
               <Plus size={16} />
-              Speler toevoegen
+              <span className="hidden sm:inline">Speler toevoegen</span>
+              <span className="sm:hidden">Toevoegen</span>
             </Button>
           </div>
         )

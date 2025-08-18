@@ -72,14 +72,16 @@ const PlayersList: React.FC<PlayersListProps> = ({
 
   return (
     <>
-      <Table className="table">
+      <div className="w-full overflow-x-auto">
+        <div className="min-w-[600px]">
+          <Table className="table w-full">
         <TableHeader>
           <TableRow>
-            <TableHead className="num"></TableHead>
-            <TableHead>Voornaam</TableHead>
-            <TableHead>Achternaam</TableHead>
-            <TableHead className="center">Geboortedatum</TableHead>
-            {editMode && <TableHead className="center">Acties</TableHead>}
+            <TableHead className="num min-w-[60px]">#</TableHead>
+            <TableHead className="min-w-[120px]">Voornaam</TableHead>
+            <TableHead className="min-w-[120px]">Achternaam</TableHead>
+            <TableHead className="center min-w-[120px]">Geboortedatum</TableHead>
+            {editMode && <TableHead className="center min-w-[120px]">Acties</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -119,6 +121,8 @@ const PlayersList: React.FC<PlayersListProps> = ({
           }
         </TableBody>
       </Table>
+        </div>
+      </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="modal">
