@@ -30,6 +30,7 @@ export const fetchUpcomingMatches = async (
         home_players,
         away_players,
         is_cup_match,
+        is_playoff_match,
         teams_home:teams!home_team_id ( team_name ),
         teams_away:teams!away_team_id ( team_name )
       `)
@@ -51,20 +52,14 @@ export const fetchUpcomingMatches = async (
     if (!allMatches) return [];
 
     // Filter by competition type in JavaScript
-    const isPossiblePlayoff = (row: any) =>
-      typeof row.speeldag === 'string' && /play[- ]?off|finale|halve/i.test(row.speeldag);
-
     let filteredMatches = allMatches as any[];
     if (competitionType === 'cup') {
       filteredMatches = allMatches.filter((row: any) => row.is_cup_match === true);
     } else if (competitionType === 'playoff') {
-      filteredMatches = allMatches.filter((row: any) =>
-        (row as any).is_playoff_match === true || isPossiblePlayoff(row)
-      );
+      filteredMatches = allMatches.filter((row: any) => row.is_playoff_match === true);
     } else if (competitionType === 'league') {
       filteredMatches = allMatches.filter((row: any) =>
-        row.is_cup_match !== true &&
-        !((row as any).is_playoff_match === true || isPossiblePlayoff(row))
+        row.is_cup_match !== true && row.is_playoff_match !== true
       );
     }
 
@@ -73,11 +68,9 @@ export const fetchUpcomingMatches = async (
       
       // Use speeldag for matchday display, with special handling for cup and playoff matches
       let matchdayDisplay = row.speeldag || "Te bepalen";
-      const isPlayoff = (row as any).is_playoff_match === true || isPossiblePlayoff(row);
+      const isPlayoff = (row as any).is_playoff_match === true;
       const isCup = row.is_cup_match === true;
-      if (isPlayoff) {
-        matchdayDisplay = `🏆 ${matchdayDisplay}`;
-      } else if (isCup) {
+      if (isCup) {
         matchdayDisplay = `🏆 ${matchdayDisplay}`;
       }
 

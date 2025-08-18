@@ -30,7 +30,9 @@ export const useTabVisibilitySettings = () => {
         return {
           id: item.id,
           setting_name: item.setting_name,
-          is_visible: settingValue?.is_visible ?? true,
+          // Use is_active as the source of truth for visibility
+          is_visible: item.is_active ?? true,
+          // Keep requires_login from JSON value
           requires_login: settingValue?.requires_login ?? false,
         };
       });
@@ -63,19 +65,20 @@ export const useTabVisibilitySettings = () => {
       const currentSetting = settings.find(s => s.setting_name === settingName);
       if (!currentSetting) throw new Error('Setting not found');
 
-      // Merge updates with current values
-      const newSettingValue = {
-        is_visible: updates.is_visible ?? currentSetting.is_visible,
-        requires_login: updates.requires_login ?? currentSetting.requires_login,
-        updated_at: new Date().toISOString(),
-      };
+      const nowIso = new Date().toISOString();
+
+      // Build update payload: use is_active for visibility; optionally update requires_login inside JSONB
+      const updatePayload: any = { updated_at: nowIso };
+      if (typeof updates.is_visible === 'boolean') {
+        updatePayload.is_active = updates.is_visible;
+      }
+      if (typeof updates.requires_login === 'boolean') {
+        updatePayload.setting_value = { requires_login: updates.requires_login, updated_at: nowIso } as any;
+      }
 
       const { error } = await supabase
         .from('application_settings')
-        .update({ 
-          setting_value: newSettingValue,
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('setting_category', 'tab_visibility')
         .eq('setting_name', settingName);
 
@@ -84,7 +87,11 @@ export const useTabVisibilitySettings = () => {
       setSettings(prev => 
         prev.map(setting => 
           setting.setting_name === settingName 
-            ? { ...setting, ...updates }
+            ? { 
+                ...setting, 
+                is_visible: updates.is_visible ?? setting.is_visible,
+                requires_login: updates.requires_login ?? setting.requires_login
+              }
             : setting
         )
       );

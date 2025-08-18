@@ -22,13 +22,9 @@ const PlayerRegulations: React.FC = () => {
           <AlertDescription className="text-purple-dark space-y-3 ml-6">
             <p className="leading-relaxed"><strong className="text-purple-dark">Maximum spelers:</strong> Elk team mag maximaal 20 spelers hebben per seizoen.</p>
             <p className="leading-relaxed"><strong className="text-purple-dark">Teamwijzigingen:</strong> Spelers kunnen niet van team wisselen tijdens het lopende seizoen.</p>
-            <p className="leading-relaxed"><strong className="text-purple-dark">Spelersgegevens:</strong> Alle spelers moeten een geldige geboortedatum hebben voor leeftijdsverificatie.</p>
+            <p className="leading-relaxed"><strong className="text-purple-dark">Inschrijving:</strong> Je kan spelers inschrijven tot en met 31 augustus.</p>
           </AlertDescription>
         </Alert>
-        
-        <div className="text-sm text-purple-dark mt-6 p-4 bg-purple-50 rounded-md">
-          <p className="text-purple-dark leading-relaxed">Voor vragen over het spelersreglement, neem contact op met de competitieleiding.</p>
-        </div>
       </CardContent>
     </Card>
   );

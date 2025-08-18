@@ -9,6 +9,7 @@ import PlayOffPage from "./PlayOffPage";
 import BekerPage from "./BekerPage";
 
 import KaartenPage from "./KaartenPage";
+import SchorsingenPage from "./SchorsingenPage";
 import ReglementPage from "./ReglementPage";
 import PloegenPage from "./PloegenPage";
 import TeamsPage from "./admin/teams/TeamsPage";
@@ -46,6 +47,7 @@ const MemoizedPlayOffPage = memo(PlayOffPage);
 const MemoizedBekerPage = memo(BekerPage);
 
 const MemoizedKaartenPage = memo(KaartenPage);
+const MemoizedSchorsingenPage = memo(SchorsingenPage);
 const MemoizedReglementPage = memo(ReglementPage);
 const MemoizedTeamsPage = memo(TeamsPage);
 const MemoizedPloegenPage = memo(PloegenPage);
@@ -56,6 +58,7 @@ MemoizedPlayOffPage.displayName = 'MemoizedPlayOffPage';
 MemoizedBekerPage.displayName = 'MemoizedBekerPage';
 
 MemoizedKaartenPage.displayName = 'MemoizedKaartenPage';
+MemoizedSchorsingenPage.displayName = 'MemoizedSchorsingenPage';
 MemoizedReglementPage.displayName = 'MemoizedReglementPage';
 MemoizedTeamsPage.displayName = 'MemoizedTeamsPage';
 MemoizedPloegenPage.displayName = 'MemoizedPloegenPage';
@@ -123,6 +126,14 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
       </TabsContent>
     ),
     
+    schorsingen: isTabVisible("schorsingen") && (
+      <TabsContent value="schorsingen" className="mt-0" key="schorsingen">
+        <TabContentWrapper>
+          <MemoizedSchorsingenPage />
+        </TabContentWrapper>
+      </TabsContent>
+    ),
+    
     teams: isTabVisible("teams") && (
       <TabsContent value="teams" className="mt-0" key="teams">
         <TabContentWrapper>
@@ -165,6 +176,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
           {tabContents.playoff}
           {tabContents.teams}
           {tabContents.kaarten}
+          {tabContents.schorsingen}
           {tabContents.reglement}
         </Tabs>
       </div>

@@ -78,6 +78,7 @@ const Header: React.FC<HeaderProps> = ({
     { key: "competitie", label: "Competitie", icon: <Trophy size={16} /> },
     { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
     { key: "teams", label: "Teams", icon: <Shield size={16} /> },
+    { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> },
     { key: "reglement", label: "Reglement", icon: <BookOpen size={16} /> }
   ];
 
@@ -100,7 +101,10 @@ const Header: React.FC<HeaderProps> = ({
     }
   });
   
-  const currentNavItems = isAuthenticated ? visibleAdminItems : publicNavItems;
+  // Filter public items based on tab visibility settings
+  const visiblePublicItems = publicNavItems.filter(item => isTabVisible(item.key));
+
+  const currentNavItems = isAuthenticated ? visibleAdminItems : visiblePublicItems;
 
   return (
     <header className="bg-purple-900 shadow-lg sticky top-0 z-50 backdrop-blur-sm">

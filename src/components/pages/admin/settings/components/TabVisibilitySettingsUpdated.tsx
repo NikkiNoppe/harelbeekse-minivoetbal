@@ -36,7 +36,8 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
     [localSettings]
   );
 
-  const handleVisibilityChange = (settingName: string, isVisible: boolean) => {
+  const handleVisibilityChange = async (settingName: string, isVisible: boolean) => {
+    // Optimistic UI update
     setLocalSettings(prev =>
       prev.map(setting =>
         setting.setting_name === settingName
@@ -44,7 +45,10 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
           : setting
       )
     );
-    setHasChanges(true);
+    // Persist immediately
+    await updateSetting(settingName, { is_visible: isVisible });
+    // No pending changes after direct save
+    setHasChanges(false);
   };
 
   const saveSettings = async () => {
@@ -129,7 +133,7 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
   }
 
   const renderRow = (setting: (typeof settings)[number]) => (
-    <div key={setting.setting_name} className="border rounded-lg p-4 space-y-3 bg-card">
+    <div key={setting.setting_name} className="border border-purple-200 rounded-lg p-4 space-y-3 bg-transparent">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {setting.is_visible ? <Eye className="h-4 w-4 text-green-500" /> : <EyeOff className="h-4 w-4 text-red-500" />}
@@ -187,35 +191,17 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
         </div>
       </CardContent>
 
-      <CardFooter className="flex justify-between items-center">
-        <div className="text-sm text-muted-foreground">
-          {hasChanges && "Je hebt niet-opgeslagen wijzigingen"}
-        </div>
-        <div className="flex gap-2">
-          {hasChanges && (
-            <Button 
-              variant="outline" 
-              onClick={discardChanges}
-              disabled={saving}
-              className="border-gray-300 hover:bg-gray-50"
-            >
-              Wijzigingen annuleren
-            </Button>
-          )}
+      <CardFooter className="flex justify-end items-center">
+        {hasChanges && (
           <Button 
-            onClick={saveSettings} 
-            disabled={!hasChanges || saving}
-            variant={hasChanges ? "default" : "secondary"}
-            className={`transition-all duration-200 ${
-              hasChanges 
-                ? "bg-green-600 hover:bg-green-700 text-white shadow-md" 
-                : "bg-gray-100 text-gray-500"
-            }`}
+            variant="outline" 
+            onClick={discardChanges}
+            disabled={saving}
+            className="border-gray-300 hover:bg-gray-50"
           >
-            <Save className="mr-2 h-4 w-4" />
-            {saving ? "Opslaan..." : "Instellingen opslaan"}
+            Wijzigingen annuleren
           </Button>
-        </div>
+        )}
       </CardFooter>
     </Card>
   );

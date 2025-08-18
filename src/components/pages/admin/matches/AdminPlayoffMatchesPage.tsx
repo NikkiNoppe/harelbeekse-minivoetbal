@@ -2,12 +2,13 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useAuth } from "@/components/pages/login/AuthProvider";
 import { useMatchFormsData, MatchFormsFilters } from "@/hooks/useMatchFormsData";
 import { MatchFormData } from "./types";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Target, AlertCircle, Inbox } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import MatchesFormFilter from "./MatchesFormFilter";
+import MatchesFormList from "./MatchesFormList";
 import MatchesFormModal from "./MatchesFormModal";
 
 // Simple components for loading, error, and empty states
@@ -100,6 +101,17 @@ const AdminPlayoffMatchesPage: React.FC = () => {
     return <EmptyState message="Geen team toegewezen" />;
   }
 
+  const hasElevatedPermissions = isAdmin || isReferee;
+
+  const teamOptions = useMemo(() => {
+    const set = new Set<string>();
+    (playoffData.allMatches || []).forEach((m: MatchFormData) => {
+      if (m.homeTeamName) set.add(m.homeTeamName);
+      if (m.awayTeamName) set.add(m.awayTeamName);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [playoffData.allMatches]);
+
   return (
     <div className="space-y-6 animate-slide-up">
       <div className="flex items-center justify-between">
@@ -114,58 +126,103 @@ const AdminPlayoffMatchesPage: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="playoffs" className="w-full">
-        <TabsList className="grid w-full grid-cols-1">
-          <TabsTrigger value="playoffs" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Playoffs
-            <Badge variant="secondary" className="ml-2">
-              {matchFormsData.statistics.totalPlayoffMatches}
-            </Badge>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="playoffs" className="space-y-4">
-          {playoffData.matches.length === 0 ? (
-            <EmptyState message="Geen playoff wedstrijden beschikbaar" />
-          ) : (
-            <div className="space-y-4">
-              {playoffData.matches.map((match) => (
-                <div
-                  key={match.matchId}
-                  className="p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => handleMatchSelect(match)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold">
-                        {match.homeTeamName} vs {match.awayTeamName}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {match.date} - {match.time} | {match.location}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {match.matchday}
-                      </p>
+      <section>
+        {playoffData.isLoading ? (
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-4 w-96" />
+                </div>
+                <Skeleton className="h-10 w-32" />
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="p-4 border-b">
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-3 p-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 border rounded">
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-48" />
+                      <Skeleton className="h-4 w-32" />
                     </div>
-                    <div className="text-right">
-                      {match.isCompleted ? (
-                        <div className="text-lg font-bold">
-                          {match.homeScore} - {match.awayScore}
-                        </div>
-                      ) : (
-                        <Badge variant="outline">Te spelen</Badge>
-                      )}
+                    <Skeleton className="h-8 w-20" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Playoffwedstrijden
+                  </CardTitle>
+                  <CardDescription>
+                    {playoffData.matches.length} van {playoffData.allMatches.length} wedstrijden weergegeven
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {(!teamId && !hasElevatedPermissions) || playoffData.matches.length === 0 ? (
+                <div className="p-12 text-center">
+                  <div className="flex flex-col items-center space-y-4">
+                    <Inbox className="h-12 w-12 text-muted-foreground" />
+                    <div className="space-y-2">
+                      <h3 className="font-semibold">Geen playoffwedstrijden</h3>
+                      <p className="text-muted-foreground">Er zijn momenteel geen playoffwedstrijden beschikbaar.</p>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+              ) : (
+                <div>
+                  <div className="p-4 border-b">
+                    <MatchesFormFilter
+                      dateFilter={filters.dateFilter}
+                      onDateChange={(value) => handleFilterChange({ dateFilter: value })}
+                      teamFilter={filters.teamFilter}
+                      onTeamChange={(value) => handleFilterChange({ teamFilter: value })}
+                      teamOptions={teamOptions}
+                      sortBy={filters.sortBy}
+                      onSortChange={(value) => handleFilterChange({ sortBy: value })}
+                      sortOrder={filters.sortOrder}
+                      onSortOrderChange={(value) => handleFilterChange({ sortOrder: value })}
+                      onClearFilters={() => handleFilterChange({
+                        searchTerm: "",
+                        dateFilter: "",
+                        matchdayFilter: "",
+                        teamFilter: "",
+                        sortBy: "date",
+                        sortOrder: "asc"
+                      } as MatchFormsFilters)}
+                    />
+                  </div>
+                  <MatchesFormList
+                    matches={playoffData.matches}
+                    isLoading={playoffData.isLoading}
+                    onSelectMatch={handleMatchSelect}
+                    searchTerm={filters.searchTerm}
+                    dateFilter={filters.dateFilter}
+                    matchdayFilter={filters.matchdayFilter}
+                    sortBy={filters.sortBy}
+                    hasElevatedPermissions={hasElevatedPermissions}
+                    userRole={user?.role}
+                    teamId={teamId}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </section>
 
-      {/* Match Form Modal */}
       {selectedMatch && (
         <MatchesFormModal
           open={isModalOpen}
