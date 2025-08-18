@@ -31,6 +31,8 @@ interface UserModalProps {
   onSave: (formData: any) => Promise<boolean>;
   teams: TeamOption[];
   isLoading?: boolean;
+  passwordEmailNote?: string;
+  onPasswordEmailNoteChange?: (value: string) => void;
 }
 
 interface FormData {
@@ -47,7 +49,9 @@ const UserModal: React.FC<UserModalProps> = ({
   editingUser,
   onSave,
   teams,
-  isLoading = false
+  isLoading = false,
+  passwordEmailNote,
+  onPasswordEmailNoteChange
 }) => {
   const [formData, setFormData] = useState<FormData>({
     username: "",
@@ -294,6 +298,20 @@ const UserModal: React.FC<UserModalProps> = ({
               {teamOptions}
             </select>
           </div>
+
+          {/* Password email note (appears in welcome email) */}
+          {!editingUser && (
+            <div className="space-y-2">
+              <label className="text-purple-dark font-medium">Wachtwoord: </label>
+              <Input
+                placeholder="standaardwachtwoord"
+                className="modal__input"
+                value={passwordEmailNote ?? ''}
+                onChange={(e) => onPasswordEmailNoteChange?.(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+          )}
           
           {/* Actions */}
           <div className="modal__actions">

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useUserManagement } from "./hooks/useUserManagement";
 import UserModal from "@/components/user/UserModal";
@@ -34,6 +34,13 @@ const AdminUserPage: React.FC = () => {
   
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [passwordEmailNote, setPasswordEmailNote] = useState("");
+
+  // Memoize team options to avoid re-creating arrays each render (prevents modal resets)
+  const teamOptions = useMemo(
+    () => teams.map(team => ({ id: team.team_id, name: team.team_name })),
+    [teams]
+  );
 
   // Handle opening add dialog
   const handleOpenAddDialog = () => {
@@ -49,7 +56,8 @@ const AdminUserPage: React.FC = () => {
       password: formData.password, // Pass the password
       role: formData.role,
       teamId: formData.teamId || null,
-      teamIds: formData.teamIds || []
+      teamIds: formData.teamIds || [],
+      passwordNote: passwordEmailNote || undefined
     });
     
     if (success) {
@@ -121,7 +129,7 @@ const AdminUserPage: React.FC = () => {
             teams: editingUser.teams
           }}
           onSave={handleSaveEditUser}
-          teams={teams.map(team => ({ id: team.team_id, name: team.team_name }))}
+          teams={teamOptions}
           isLoading={updatingUser}
         />
       )}
@@ -131,8 +139,10 @@ const AdminUserPage: React.FC = () => {
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         onSave={handleSaveNewUser}
-        teams={teams.map(team => ({ id: team.team_id, name: team.team_name }))}
+        teams={teamOptions}
         isLoading={addingUser}
+        passwordEmailNote={passwordEmailNote}
+        onPasswordEmailNoteChange={setPasswordEmailNote}
       />
     </div>
   );

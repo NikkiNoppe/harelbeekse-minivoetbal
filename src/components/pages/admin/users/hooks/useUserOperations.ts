@@ -71,6 +71,8 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
               email: newUser.email,
               username: newUser.username,
               loginUrl: origin,
+              plainPassword: newUser.password,
+              passwordNote: (newUser as any).passwordNote || undefined
             }
           });
         } catch (e) {

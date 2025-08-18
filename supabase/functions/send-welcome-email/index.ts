@@ -21,6 +21,8 @@ interface WelcomeEmailRequest {
   email: string;
   username?: string | null;
   loginUrl?: string | null;
+  passwordNote?: string | null;
+  plainPassword?: string | null;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -29,7 +31,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, username, loginUrl }: WelcomeEmailRequest = await req.json();
+    const { email, username, loginUrl, passwordNote, plainPassword }: WelcomeEmailRequest = await req.json();
 
     if (!email) {
       return new Response(JSON.stringify({ error: "Email is required" }), {
@@ -52,20 +54,18 @@ const handler = async (req: Request): Promise<Response> => {
           <p style="color: #374151;">Je account voor <strong>Harelbeekse Minivoetbal</strong> werd succesvol aangemaakt. Hieronder vind je je inloggegevens:</p>
           <p style="color: #374151;">
             <strong>Gebruikersnaam:</strong> ${username || 'Team123'}<br>
-            <strong>Wachtwoord:</strong> (dit werd je apart bezorgd)
+            <strong>Wachtwoord:</strong> ${plainPassword ? String(plainPassword) : '(niet meegeleverd)'}
           </p>
           <p style="color: #374151;">Je kan steeds je wachtwoord wijzigen via de optie <em>"Wachtwoord vergeten"</em> op de loginpagina.</p>
           <a href="${targetLoginUrl}"
              style="background-color: #7c3aed; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 16px 0; font-weight: 600;">
              Inloggen
           </a>
-          <p style="color: #374151; margin-top: 16px;">
+          <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 8px; margin-top: 16px;">
+            <p style="color: #374151; margin-top: 16px;">
             Bij het inloggen kan je alvast de voorziene spelers aansluiten.<br>
             We voorzien tegen het einde van deze week dat het speelschema online komt, waarbij je je spelersselecties kan invullen.
           </p>
-          <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 8px; margin-top: 16px;">
-            <p style="color: #581c87; font-size: 12px; margin: 0;">
-            </p>
           </div>
         </div>
       `,
