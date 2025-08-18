@@ -138,6 +138,7 @@ export type Database = {
           home_team_id: number | null
           is_cup_match: boolean | null
           is_locked: boolean | null
+          is_playoff_match: boolean | null
           is_submitted: boolean | null
           location: string | null
           match_date: string
@@ -156,6 +157,7 @@ export type Database = {
           home_team_id?: number | null
           is_cup_match?: boolean | null
           is_locked?: boolean | null
+          is_playoff_match?: boolean | null
           is_submitted?: boolean | null
           location?: string | null
           match_date: string
@@ -174,6 +176,7 @@ export type Database = {
           home_team_id?: number | null
           is_cup_match?: boolean | null
           is_locked?: boolean | null
+          is_playoff_match?: boolean | null
           is_submitted?: boolean | null
           location?: string | null
           match_date?: string
