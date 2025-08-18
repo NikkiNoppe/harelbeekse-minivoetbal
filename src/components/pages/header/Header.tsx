@@ -104,7 +104,8 @@ const Header: React.FC<HeaderProps> = ({
   // Filter public items based on tab visibility settings
   const visiblePublicItems = publicNavItems.filter(item => isTabVisible(item.key));
 
-  const currentNavItems = isAuthenticated ? visibleAdminItems : visiblePublicItems;
+  // Always show public navigation in the navbar (visibility-controlled), even when authenticated
+  const currentNavItems = visiblePublicItems;
 
   return (
     <header className="bg-purple-900 shadow-lg sticky top-0 z-50 backdrop-blur-sm">
@@ -142,7 +143,14 @@ const Header: React.FC<HeaderProps> = ({
               <div className="space-y-6">
                 {/* User Info Section */}
                 {isAuthenticated && (
-                  <div className="p-4 bg-purple-200 rounded-xl shadow-sm border border-purple-200">
+                  <button
+                    type="button"
+                    className="w-full p-4 bg-purple-200 rounded-xl shadow-sm border border-purple-200 text-left"
+                    onClick={() => {
+                      setIsSheetOpen(false);
+                      onTabChange('players');
+                    }}
+                  >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-purple-800 rounded-full flex items-center justify-center shadow-md">
                         <User size={24} className="text-white" />
@@ -151,16 +159,12 @@ const Header: React.FC<HeaderProps> = ({
                         <p className="font-semibold text-purple-900 text-sm">
                           {user?.username || user?.email}
                         </p>
-                        <p className="text-xs text-gray-600 bg-white/60 px-2 py-1 rounded-full inline-block mt-1">
-                          {user?.role === "admin"
-                            ? "Administrator"
-                            : user?.role === "referee"
-                              ? "Scheidsrechter"
-                              : "Team Manager"}
-                        </p>
+                        <span className="text-xs text-purple-900 bg-white/80 px-2 py-1 rounded-full inline-block mt-1">
+                          {user?.teamName ? user.teamName : 'Team Manager'}
+                        </span>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 )}
 
                 {/* Navigation Items */}

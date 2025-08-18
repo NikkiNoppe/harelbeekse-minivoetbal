@@ -47,11 +47,7 @@ const AdminSuspensionsPage: React.FC = () => {
   // Fetch data
   const { playerCards, suspensions, isLoading, handleRefresh } = useSuspensionsData();
 
-  // Zorg dat kaarten/schorsingen actueel zijn bij openen van de pagina
-  useEffect(() => {
-    handleRefresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Niet meer automatisch vernieuwen bij openen; data wordt via queries opgehaald.
   
   // Kaarten uit wedstrijdformulieren (alle gele/rode kaarten)
   const { data: allCards, isLoading: isCardsLoading } = useQuery({

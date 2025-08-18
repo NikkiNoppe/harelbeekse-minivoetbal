@@ -37,7 +37,7 @@ export function AdminDashboardLayout({
       <div className="flex flex-1 w-full">
         <SidebarProvider>
           {/* Sidebar container - will adapt to content height */}
-          <div className="flex-shrink-0 bg-gradient-to-b from-white to-gray-50 border-r border-purple-200 shadow-lg">
+          <div className="flex-shrink-0 bg-var-purple-100 border-r border-purple-200 shadow-xl">
             <div className="p-2 h-full">
               <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
             </div>

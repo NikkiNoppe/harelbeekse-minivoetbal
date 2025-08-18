@@ -202,6 +202,7 @@ const PlayerListLockSettings: React.FC = () => {
         <Button 
           onClick={saveSettings} 
           disabled={saving}
+          className="btn btn--primary"
         >
           {saving ? "Opslaan..." : "Opslaan"}
         </Button>

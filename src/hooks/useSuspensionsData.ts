@@ -52,10 +52,7 @@ export const useSuspensionsData = () => {
       await suspensionService.refreshPlayerCards();
       queryClient.invalidateQueries({ queryKey: ['playerCards'] });
       queryClient.invalidateQueries({ queryKey: ['suspensions'] });
-      toast({
-        title: "Vernieuwd",
-        description: "Kaarten en schorsingen zijn bijgewerkt."
-      });
+      // Geen toast meer bij automatisch ophalen; enkel bij expliciete user-actie kun je hier alsnog een toast tonen
     } catch (error) {
       toast({
         title: "Fout",

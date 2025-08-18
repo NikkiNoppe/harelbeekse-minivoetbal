@@ -19,7 +19,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const speelformatenItems = [
     { key: "competition", label: "Competitie", icon: Trophy },
     { key: "cup", label: "Beker", icon: Award },
-    { key: "playoffs", label: "Playoff Genereren", icon: Target },
+    { key: "playoffs", label: "Playoff", icon: Target },
   ];
 
   // Wedstrijdformulieren groep
@@ -48,16 +48,12 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   ];
 
   const isActive = (key: string) => activeTab === key;
-  const getNavClasses = (key: string) =>
-    isActive(key) 
-      ? "bg-purple-400 text-white font-medium border-purple-600" 
-      : "bg-white text-purple-600 border-purple-400 hover:bg-purple-100 hover:text-purple-700";
 
   const renderMenuItem = (item: any) => (
-    <div key={item.key} className="mb-0.5">
-      <button 
+    <div key={item.key} className="mb-1">
+      <button
         onClick={() => onTabChange(item.key)}
-        className={`w-full flex items-center ${collapsed ? "justify-center px-2" : "justify-start gap-2 px-3"} py-2 rounded-lg text-left font-medium border transition-all duration-200 ${getNavClasses(item.key)}`}
+        className={`btn-nav w-full flex items-center ${collapsed ? 'justify-center p-2' : 'justify-start gap-2 px-4 py-3'} ${isActive(item.key) ? ' active' : ''} bg-transparent text-white`}
       >
         <item.icon className="h-4 w-4 flex-shrink-0" />
         {!collapsed && <span className="text-sm">{item.label}</span>}
@@ -84,16 +80,11 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   };
 
   // Filter items based on tab visibility and admin permissions
-  const visibleSpeelformatenItems = speelformatenItems.filter(item => 
-    isAdmin && isTabVisible(item.key)
-  );
+  // Speelformaten zijn pure beheertabs: voor admins altijd zichtbaar, onafhankelijk van publieke tab-zichtbaarheid
+  const visibleSpeelformatenItems = speelformatenItems.filter(() => isAdmin);
 
-  const visibleWedstrijdformulierenItems = wedstrijdformulierenItems.filter(item => 
-    (!item.adminOnly || isAdmin) && 
-    (item.key === 'match-forms-league' ? isTabVisible('admin_match_forms_league') : 
-     item.key === 'match-forms-cup' ? isTabVisible('admin_match_forms_cup') : 
-     item.key === 'match-forms-playoffs' ? isTabVisible('admin_match_forms_playoffs') : true)
-  );
+  // Wedstrijdformulieren alleen zichtbaar voor admins
+  const visibleWedstrijdformulierenItems = isAdmin ? wedstrijdformulierenItems : [];
 
   const visibleBeheerItems = beheerItems.filter(item => 
     (!item.adminOnly || isAdmin)
@@ -108,17 +99,17 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   );
 
   return (
-    <div className={`${collapsed ? "w-14" : "w-64"} flex flex-col h-full`}>
+    <div className={`${collapsed ? "w-14" : "w-64"} flex flex-col h-full bg-var-purple-100`}>
       {/* Header bovenaan: "admin" en "Administrator" */}
       <div className="mb-3">
         {collapsed ? (
           <div className="flex items-center justify-center">
-            <Shield className="h-4 w-4 text-purple-600" />
+            <Shield className="h-4 w-4 text-var-main-color-dark" />
           </div>
         ) : (
           <div className="px-1">
-            <div className="text-[10px] uppercase tracking-wider text-gray-500">admin</div>
-            <div className="text-base font-semibold text-purple-700">Administrator</div>
+            <div className="text-[10px] uppercase tracking-wider text-var-main-color-dark">admin</div>
+            <div className="text-base font-semibold text-var-main-color-dark">Administrator</div>
           </div>
         )}
       </div>
@@ -143,7 +134,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
         <div className="mt-2">
           <button
             onClick={logout}
-            className={`w-full flex items-center ${collapsed ? "justify-center px-2" : "justify-start gap-2 px-3"} py-2 rounded-lg text-left font-medium border transition-all duration-200 bg-white text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700`}
+            className={`btn-nav active w-full flex items-center ${collapsed ? 'justify-center p-2' : 'justify-start gap-2 px-4 py-3'}`}
           >
             <LogOut className="h-4 w-4 flex-shrink-0" />
             {!collapsed && <span className="text-sm">Uitloggen</span>}

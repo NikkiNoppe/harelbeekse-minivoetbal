@@ -29,10 +29,7 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     // Use mapped tab name if it exists, otherwise use original
     const mappedTab = adminToPublicMapping[tab] || tab;
 
-    // Teams tab - always visible for now
-    if (tab === "teams") {
-      return true;
-    }
+    // Teams: respect visibility settings (no longer always visible)
 
     // Admin match forms: admins always have access
     const isAdminMatchForms =

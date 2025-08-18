@@ -1,5 +1,6 @@
 import React from "react";
 import TabVisibilitySettingsUpdated from "@/components/pages/admin/settings/components/TabVisibilitySettingsUpdated";
+import PlayerListLockSettings from "@/components/pages/admin/settings/components/PlayerListLockSettings";
 import CompetitionDataSettings from "@/components/pages/admin/settings/components/CompetitionDataSettings";
 import { Settings } from "lucide-react";
 
@@ -16,6 +17,7 @@ const AdminSettingsPage: React.FC = () => {
       <section className="space-y-8">
         <TabVisibilitySettingsUpdated />
         <CompetitionDataSettings />
+        <PlayerListLockSettings />
       </section>
     </div>
   );

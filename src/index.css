@@ -676,8 +676,10 @@ tbody tr:hover { background: var(--purple-50); }
 ============================================================================ */
 .bg-var-main-color-dark { background: var(--main-color-dark) !important; }
 .text-var-main-color-dark { color: var(--main-color-dark) !important; }
+.bg-var-purple-100 { background: var(--purple-100) !important; }
 .bg-var-purple-200 { background: var(--purple-200) !important; }
 .text-var-purple-200 { color: var(--purple-200) !important; }
+.text-var-purple-600 { color: var(--purple-600) !important; }
 
 /* ============================================================================
    14. RESPONSIVE TEAM TEXT & MATCH CARDS
