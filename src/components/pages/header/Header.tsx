@@ -40,7 +40,6 @@ const Header: React.FC<HeaderProps> = ({
     beker: '/beker',
     competitie: '/competitie',
     playoff: '/playoff',
-    schorsingen: '/schorsingen',
     teams: '/teams',
     reglement: '/reglement',
     kaarten: '/kaarten',
@@ -78,7 +77,6 @@ const Header: React.FC<HeaderProps> = ({
     { key: "beker", label: "Beker", icon: <Award size={16} /> },
     { key: "competitie", label: "Competitie", icon: <Trophy size={16} /> },
     { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
-    { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> },
     { key: "teams", label: "Teams", icon: <Shield size={16} /> },
     { key: "reglement", label: "Reglement", icon: <BookOpen size={16} /> }
   ];

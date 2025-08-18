@@ -31,24 +31,15 @@ export const useTeams = () => {
   return useQuery({
     queryKey: teamQueryKeys.lists(),
     queryFn: async () => {
-      // Use public view for basic team information
+      // Use full teams table for complete team information (public access)
       const { data, error } = await supabase
-        .from('teams_public')
-        .select('team_id, team_name')
+        .from('teams')
+        .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
         .order('team_name');
 
       if (error) throw error;
 
-      // Map public view data to Team interface
-      return (data || []).map((team: any) => ({
-        team_id: team.team_id,
-        team_name: team.team_name,
-        contact_person: undefined,
-        contact_phone: undefined,
-        contact_email: undefined,
-        club_colors: undefined,
-        preferred_play_moments: undefined
-      })) as Team[];
+      return (data || []) as Team[];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

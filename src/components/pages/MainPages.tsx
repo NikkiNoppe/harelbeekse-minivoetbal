@@ -7,7 +7,7 @@ import AlgemeenPage from "./AlgemeenPage";
 import CompetitiePage from "./CompetitiePage";
 import PlayOffPage from "./PlayOffPage";
 import BekerPage from "./BekerPage";
-import SchorsingenPage from "./SchorsingenPage";
+
 import KaartenPage from "./KaartenPage";
 import ReglementPage from "./ReglementPage";
 import PloegenPage from "./PloegenPage";
@@ -44,7 +44,7 @@ const MemoizedAlgemeenPage = memo(AlgemeenPage);
 const MemoizedCompetitiePage = memo(CompetitiePage);
 const MemoizedPlayOffPage = memo(PlayOffPage);
 const MemoizedBekerPage = memo(BekerPage);
-const MemoizedSchorsingenPage = memo(SchorsingenPage);
+
 const MemoizedKaartenPage = memo(KaartenPage);
 const MemoizedReglementPage = memo(ReglementPage);
 const MemoizedTeamsPage = memo(TeamsPage);
@@ -54,7 +54,7 @@ MemoizedAlgemeenPage.displayName = 'MemoizedAlgemeenPage';
 MemoizedCompetitiePage.displayName = 'MemoizedCompetitiePage';
 MemoizedPlayOffPage.displayName = 'MemoizedPlayOffPage';
 MemoizedBekerPage.displayName = 'MemoizedBekerPage';
-MemoizedSchorsingenPage.displayName = 'MemoizedSchorsingenPage';
+
 MemoizedKaartenPage.displayName = 'MemoizedKaartenPage';
 MemoizedReglementPage.displayName = 'MemoizedReglementPage';
 MemoizedTeamsPage.displayName = 'MemoizedTeamsPage';
@@ -114,13 +114,6 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
       </TabsContent>
     ),
     
-    schorsingen: isTabVisible("schorsingen") && (
-      <TabsContent value="schorsingen" className="mt-0" key="schorsingen">
-        <TabContentWrapper>
-          <MemoizedSchorsingenPage />
-        </TabContentWrapper>
-      </TabsContent>
-    ),
     
     kaarten: isTabVisible("kaarten") && (
       <TabsContent value="kaarten" className="mt-0" key="kaarten">
@@ -170,7 +163,6 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
           {tabContents.beker}
           {tabContents.competitie}
           {tabContents.playoff}
-          {tabContents.schorsingen}
           {tabContents.teams}
           {tabContents.kaarten}
           {tabContents.reglement}
