@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 // Tabs UI removed (sidebar controls type)
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FileText, Trophy, Calendar, AlertCircle } from "lucide-react";
+import { FileText, Trophy, Calendar, AlertCircle, Target } from "lucide-react";
 import { useMatchFormsData, type MatchFormsFilters } from "@/hooks/useMatchFormsData";
 import { MatchFormData } from "./types";
 import MatchesFormFilter from "./MatchesFormFilter";
@@ -14,7 +14,7 @@ import MatchesFormModal from "./MatchesFormModal";
 interface MatchFormTabProps {
   teamId: number;
   teamName: string;
-  initialTab?: 'league' | 'cup';
+  initialTab?: 'league' | 'cup' | 'playoff';
 }
 
 const TabContentSkeleton = memo(() => (
@@ -61,13 +61,16 @@ const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
 ErrorState.displayName = 'ErrorState';
 
 const EmptyState = memo(({ tabType, hasTeam, hasPermissions }: { 
-  tabType: 'league' | 'cup';
+  tabType: 'league' | 'cup' | 'playoff';
   hasTeam: boolean;
   hasPermissions: boolean;
 }) => {
   const isCup = tabType === 'cup';
-  const icon = isCup ? <Trophy className="h-12 w-12 text-muted-foreground" /> : <Calendar className="h-12 w-12 text-muted-foreground" />;
-  const typeName = isCup ? 'beker' : 'competitie';
+  const isPlayoff = tabType === 'playoff';
+  const icon = isCup ? <Trophy className="h-12 w-12 text-muted-foreground" /> : 
+               isPlayoff ? <Target className="h-12 w-12 text-muted-foreground" /> : 
+               <Calendar className="h-12 w-12 text-muted-foreground" />;
+  const typeName = isCup ? 'beker' : isPlayoff ? 'playoff' : 'competitie';
   
   const title = !hasTeam && !hasPermissions 
     ? "Geen team gekoppeld"
@@ -102,7 +105,7 @@ const TabContent = memo(({
   onFiltersChange,
   onSelectMatch
 }: {
-  tabType: 'league' | 'cup';
+  tabType: 'league' | 'cup' | 'playoff';
   tabData: any;
   hasElevatedPermissions: boolean;
   teamName: string;
@@ -114,7 +117,8 @@ const TabContent = memo(({
   const hasTeam = !!user?.teamId;
   const isEmpty = !tabData.isLoading && tabData.matches.length === 0;
   const isCup = tabType === 'cup';
-  const typeName = isCup ? 'Beker' : 'Competitie';
+  const isPlayoff = tabType === 'playoff';
+  const typeName = isCup ? 'Beker' : isPlayoff ? 'Playoff' : 'Competitie';
   
   const title = hasElevatedPermissions 
     ? user?.role === "admin" 
@@ -143,7 +147,9 @@ const TabContent = memo(({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-lg flex items-center gap-2">
-              {isCup ? <Trophy className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
+              {isCup ? <Trophy className="h-4 w-4" /> : 
+               isPlayoff ? <Target className="h-4 w-4" /> : 
+               <Calendar className="h-4 w-4" />}
               {title}
             </CardTitle>
             <CardDescription>{description}</CardDescription>
@@ -223,6 +229,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
   const {
     leagueMatches,
     cupMatches,
+    playoffMatches,
     isLoading,
     hasError,
     getTabData,
@@ -237,6 +244,11 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
   
   const cupTabData = useMemo(() => 
     getTabData('cup', filters), 
+    [getTabData, filters]
+  );
+
+  const playoffTabData = useMemo(() => 
+    getTabData('playoff', filters), 
     [getTabData, filters]
   );
 
@@ -259,8 +271,8 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
     refetchAll();
   }, [refetchAll]);
 
-  const currentType = (activeTab === "cup" ? "cup" : "league") as "league" | "cup";
-  const currentData = currentType === "cup" ? cupTabData : leagueTabData;
+  const currentType = (activeTab === "cup" ? "cup" : activeTab === "playoff" ? "playoff" : "league") as "league" | "cup" | "playoff";
+  const currentData = currentType === "cup" ? cupTabData : currentType === "playoff" ? playoffTabData : leagueTabData;
 
   if (hasError) {
     return (
