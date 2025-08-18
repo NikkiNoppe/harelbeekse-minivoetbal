@@ -61,6 +61,23 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
         throw new Error('No user data returned from creation');
       }
       
+      // Send welcome email if email provided
+      if (newUser.email && newUser.email.includes('@')) {
+        try {
+          // Use Supabase Edge Functions invoke for portability (local/dev/prod)
+          const origin = window.location.origin;
+          await supabase.functions.invoke('send-welcome-email', {
+            body: {
+              email: newUser.email,
+              username: newUser.username,
+              loginUrl: origin,
+            }
+          });
+        } catch (e) {
+          console.warn('Kon welkomstmail niet verzenden:', e);
+        }
+      }
+
       // Add team assignments for player_manager role
       if (data && newUser.role === "player_manager") {
         const teamIds = newUser.teamIds || (newUser.teamId ? [newUser.teamId] : []);
@@ -222,24 +239,31 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
 
   const deleteUser = async (userId: number) => {
     try {
-      // Remove team user relationships
-      const { error: teamUserError } = await supabase
-        .from('team_users')
-        .delete()
-        .eq('user_id', userId);
-      
-      if (teamUserError) {
-        throw teamUserError;
-      }
-      
-      // Delete user from users table
-      const { error: userError } = await supabase
-        .from('users')
-        .delete()
-        .eq('user_id', userId);
-      
-      if (userError) {
-        throw userError;
+      // Try Edge Function first
+      try {
+        const { data: delResp, error: delErr } = await supabase.functions.invoke('delete-user', {
+          body: { userId }
+        });
+        if (delErr || (delResp && delResp.error)) {
+          throw new Error(delErr?.message || delResp?.error || 'Deletion failed');
+        }
+      } catch (edgeErr) {
+        console.warn('Edge function delete-user unavailable, falling back to direct deletes:', edgeErr);
+        // Fallback: perform direct deletes (order matters)
+        const { error: teamUserError } = await supabase
+          .from('team_users')
+          .delete()
+          .eq('user_id', userId);
+        if (teamUserError) throw teamUserError;
+
+        // Best-effort cleanup of reset tokens (may not exist)
+        await supabase.from('password_reset_tokens').delete().eq('user_id', userId);
+
+        const { error: userError } = await supabase
+          .from('users')
+          .delete()
+          .eq('user_id', userId);
+        if (userError) throw userError;
       }
       
       toast({

@@ -123,22 +123,22 @@ const handler = async (req: Request): Promise<Response> => {
       subject: "Wachtwoord Reset",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #22c55e;">Wachtwoord Reset</h2>
-          <p>Hallo ${user.username || 'gebruiker'},</p>
-          <p>Je hebt een wachtwoord reset aangevraagd voor je Voetbal Arena account.</p>
-          <p>Klik op de onderstaande link om je wachtwoord te resetten:</p>
-          <a href="${resetUrl}" style="background-color: #22c55e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 16px 0;">
-            Wachtwoord Resetten
+          <h2 style="color: #7c3aed; margin: 0 0 8px;">Wachtwoord Reset</h2>
+          <p style="color: #111827;">Hallo ${user.username || 'gebruiker'},</p>
+          <p style="color: #374151;">Je hebt een wachtwoord reset aangevraagd voor je Harelbeekse Minivoetbal account.</p>
+          <p style="color: #374151;">Klik op de onderstaande knop om je wachtwoord te resetten:</p>
+          <a href="${resetUrl}" style="background-color: #7c3aed; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 16px 0; font-weight: 600;">
+            Wachtwoord resetten
           </a>
-          <p style="color: #666; font-size: 14px;">
-            Deze link is 1 uur geldig. Als je dit niet hebt aangevraagd, kun je deze email negeren.
+          <p style="color: #6b7280; font-size: 14px;">
+            Deze link is 1 uur geldig. Als je dit niet hebt aangevraagd, kun je deze e-mail negeren.
           </p>
-          <p style="color: #666; font-size: 14px;">
-            Als de knop niet werkt, kopieer en plak deze link in je browser:<br>
-            <span style="word-break: break-all;">${resetUrl}</span>
+          <p style="color: #6b7280; font-size: 14px;">
+            Werkt de knop niet? Kopieer en plak deze link in je browser:<br>
+            <span style="word-break: break-all; color: #6b21a8;">${resetUrl}</span>
           </p>
-          <div style="background-color: #f0f9ff; border: 1px solid #0ea5e9; padding: 12px; border-radius: 6px; margin-top: 16px;">
-            <p style="color: #0c4a6e; font-size: 12px; margin: 0;">
+          <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 8px; margin-top: 16px;">
+            <p style="color: #581c87; font-size: 12px; margin: 0;">
               <strong>Veiligheidstip:</strong> Deze link kan maar één keer gebruikt worden en wordt automatisch ongeldig na 1 uur.
             </p>
           </div>
@@ -180,12 +180,12 @@ async function sendAdminNotification(user: User, requestedEmail: string): Promis
       subject: "Wachtwoord Reset Verzoek - Gebruiker zonder Email",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #dc2626;">Wachtwoord Reset Verzoek</h2>
-          <p><strong>⚠️ BELANGRIJK:</strong> Een gebruiker heeft een wachtwoord reset aangevraagd maar heeft geen email adres gekoppeld aan zijn account.</p>
+          <h2 style="color: #7c3aed; margin: 0 0 8px;">Wachtwoord Reset Verzoek</h2>
+          <p style="color: #4b5563;"><strong>⚠️ Belangrijk:</strong> Een gebruiker heeft een wachtwoord reset aangevraagd maar heeft geen e-mailadres gekoppeld aan zijn account.</p>
           
-          <div style="background-color: #fef2f2; border: 1px solid #fecaca; padding: 16px; border-radius: 6px; margin: 16px 0;">
-            <h3 style="color: #dc2626; margin-top: 0;">Gebruiker Details:</h3>
-            <ul style="margin: 8px 0; padding-left: 20px;">
+          <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 16px; border-radius: 8px; margin: 16px 0;">
+            <h3 style="color: #6d28d9; margin-top: 0;">Gebruiker details</h3>
+            <ul style="margin: 8px 0; padding-left: 20px; color: #374151;">
               <li><strong>Gebruikersnaam:</strong> ${user.username}</li>
               <li><strong>User ID:</strong> ${user.user_id}</li>
               <li><strong>Email in account:</strong> ${user.email || 'Geen email'}</li>
@@ -194,15 +194,15 @@ async function sendAdminNotification(user: User, requestedEmail: string): Promis
             </ul>
           </div>
           
-          <p><strong>Actie vereist:</strong></p>
-          <ol style="margin: 8px 0; padding-left: 20px;">
+          <p style="color: #374151;"><strong>Actie vereist:</strong></p>
+          <ol style="margin: 8px 0; padding-left: 20px; color: #374151;">
             <li>Controleer of de gebruiker legitiem is</li>
-            <li>Voeg een email adres toe aan het account indien nodig</li>
-            <li>Reset het wachtwoord handmatig of stuur een nieuwe reset link</li>
+            <li>Voeg een e-mailadres toe aan het account indien nodig</li>
+            <li>Reset het wachtwoord handmatig of stuur een nieuwe resetlink</li>
           </ol>
           
-          <p style="color: #666; font-size: 14px;">
-            Dit is een automatische melding van het wachtwoord reset systeem.
+          <p style="color: #6b7280; font-size: 14px;">
+            Dit is een automatische melding van het wachtwoordresetsysteem.
           </p>
         </div>
       `,

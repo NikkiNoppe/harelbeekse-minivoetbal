@@ -28,8 +28,8 @@ const AdminUserPage: React.FC = () => {
     handleAddUser,
     handleOpenEditDialog,
     handleUpdateUser,
-    
     handleDeleteUser,
+    handleDeleteUserById,
   } = useUserManagement();
   
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -84,7 +84,7 @@ const AdminUserPage: React.FC = () => {
         isUpdating={updatingUser}
         isDeleting={deletingUser}
         onEditUser={handleOpenEditDialog}
-        onDeleteUser={handleDeleteUser}
+        onDeleteUser={handleDeleteUserById}
         editMode={true}
         searchTerm={searchTerm}
         onSearchTermChange={handleSearchChange}

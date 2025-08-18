@@ -175,17 +175,24 @@ export const useUserManagement = () => {
     setConfirmDialogOpen(true);
   };
 
-  // Handle deleting a user
+  // Handle deleting a user from confirm dialog (uses stored userToDelete)
   const handleDeleteUser = async () => {
-    if (userToDelete) {
-      setDeletingUser(true);
-      const success = await deleteUser(userToDelete.user_id);
-      setDeletingUser(false);
-      if (success) {
-        setConfirmDialogOpen(false);
-        setUserToDelete(null);
-      }
+    if (!userToDelete) return;
+    setDeletingUser(true);
+    const success = await deleteUser(userToDelete.user_id);
+    setDeletingUser(false);
+    if (success) {
+      setConfirmDialogOpen(false);
+      setUserToDelete(null);
     }
+  };
+
+  // Direct delete by id (for components that handle their own confirm UI)
+  const handleDeleteUserById = async (userId: number) => {
+    setDeletingUser(true);
+    const success = await deleteUser(userId);
+    setDeletingUser(false);
+    return success;
   };
 
   return {
@@ -212,5 +219,6 @@ export const useUserManagement = () => {
     handleUpdateUser,
     handleOpenDeleteConfirmation,
     handleDeleteUser,
+    handleDeleteUserById,
   };
 };

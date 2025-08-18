@@ -211,7 +211,7 @@ const UserListTable: React.FC<UserListProps> = ({
                 <TableHead className="min-w-[200px]">Naam</TableHead>
                 <TableHead className="min-w-[250px]">Email</TableHead>
                 <TableHead className="hidden md:table-cell min-w-[150px]">Rol</TableHead>
-                <TableHead className="hidden lg:table-cell min-w-[300px]">Teams</TableHead>
+                <TableHead className="hidden lg:table-cell min-w-[300px] text-center">Teams</TableHead>
                 {editMode && <TableHead className="text-center min-w-[120px]">Acties</TableHead>}
               </TableRow>
             </TableHeader>
@@ -270,9 +270,9 @@ const UserListTable: React.FC<UserListProps> = ({
                       {user.role === "player_manager" && "Teamverantwoordelijke"}
                       {user.role === "referee" && "Scheidsrechter"}
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell">
+                    <TableCell className="hidden lg:table-cell text-center">
                       {user.teams && user.teams.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1 justify-center">
                           {user.teams.length <= 2 ? (
                             // Show all teams if 2 or fewer
                             user.teams.map(team => (
