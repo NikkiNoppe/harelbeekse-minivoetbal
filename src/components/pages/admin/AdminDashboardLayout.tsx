@@ -43,11 +43,10 @@ export function AdminDashboardLayout({
           {/* Sidebar container - will adapt to content height */}
           <Sidebar 
             collapsible={isMobile ? "offcanvas" : "icon"}
-            className="flex-shrink-0 bg-var-purple-100 border-r border-purple-200 shadow-xl"
+            className="flex-shrink-0 border-r border-purple-200 shadow-xl"
+            style={{ background: 'var(--purple-100)' }}
           >
-            <div className="p-2 h-full">
-              <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
-            </div>
+            <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
           </Sidebar>
           
           {/* Main content area */}

@@ -3,6 +3,7 @@ import { Calendar, Trophy, Award, Target, Users, Shield, User, DollarSign, Setti
 import { useAuth } from "@/components/pages/login/AuthProvider";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AdminSidebarProps {
   activeTab: string;
@@ -15,6 +16,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { isTabVisible } = useTabVisibility();
+  const isMobile = useIsMobile();
   // Speelformaten groep (uitklapbaar) - alleen voor admin
   const speelformatenItems = [
     { key: "competition", label: "Competitie", icon: Trophy },
@@ -99,17 +101,20 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   );
 
   return (
-    <div className={`${collapsed ? "w-14" : "w-64"} flex flex-col h-full bg-var-purple-100`}>
+    <div 
+      className={`${collapsed ? "w-14" : "w-64"} flex flex-col h-full ${isMobile ? 'px-4 py-6' : 'p-3'}`}
+      style={{ background: 'var(--purple-100)' }}
+    >
       {/* Header bovenaan: "admin" en "Administrator" */}
-      <div className="mb-3">
+      <div className="mb-6">
         {collapsed ? (
           <div className="flex items-center justify-center">
-            <Shield className="h-4 w-4 text-var-main-color-dark" />
+            <Shield className="h-4 w-4" style={{ color: 'var(--main-color-dark)' }} />
           </div>
         ) : (
-          <div className="px-1">
-            <div className="text-[10px] uppercase tracking-wider text-var-main-color-dark">admin</div>
-            <div className="text-base font-semibold text-var-main-color-dark">Administrator</div>
+          <div className={`${isMobile ? 'px-2' : 'px-1'}`}>
+            <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--main-color-dark)' }}>admin</div>
+            <div className="text-base font-semibold" style={{ color: 'var(--main-color-dark)' }}>Administrator</div>
           </div>
         )}
       </div>
