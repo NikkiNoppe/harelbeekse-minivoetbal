@@ -23,6 +23,7 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       'match-forms': 'admin_match_forms_league', // Check league forms as primary
       'match-forms-league': 'admin_match_forms_league',
       'match-forms-cup': 'admin_match_forms_cup',
+      'match-forms-playoffs': 'admin_match_forms_playoffs',
     };
 
     // Use mapped tab name if it exists, otherwise use original
@@ -65,8 +66,13 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     // Find the setting for public tabs
     const setting = settings.find(s => s.setting_name === mappedTab);
     
-    // If no setting found or not visible, hide the tab
-    if (!setting || !setting.is_visible) {
+    // If no setting found, hide the tab by default (unless it's a fallback tab)
+    if (!setting) {
+      return false;
+    }
+    
+    // Check visibility from setting_value
+    if (!setting.is_visible) {
       return false;
     }
     
