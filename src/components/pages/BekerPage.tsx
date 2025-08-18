@@ -5,8 +5,7 @@ import { Trophy, Award, AlertCircle } from "lucide-react";
 import MatchesCupCard from "./admin/matches/components/MatchesCupCard";
 import { useCupData, CupMatchDisplay } from "@/hooks/useCupData";
 // Skeleton loading components
-const MatchCardSkeleton = memo(() => (
-  <Card className="w-full">
+const MatchCardSkeleton = memo(() => <Card className="w-full">
     <CardHeader className="pb-3">
       <div className="flex justify-between items-start mb-2">
         <Skeleton className="h-4 w-24" />
@@ -22,108 +21,62 @@ const MatchCardSkeleton = memo(() => (
       </div>
       <Skeleton className="h-3 w-24 mt-2" />
     </CardContent>
-  </Card>
-));
-
-const TournamentRoundSkeleton = memo(({ title, cardCount }: { title: string; cardCount: number }) => (
-  <section>
+  </Card>);
+const TournamentRoundSkeleton = memo(({
+  title,
+  cardCount
+}: {
+  title: string;
+  cardCount: number;
+}) => <section>
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {[...Array(cardCount)].map((_, index) => (
-            <MatchCardSkeleton key={index} />
-          ))}
+          {[...Array(cardCount)].map((_, index) => <MatchCardSkeleton key={index} />)}
         </div>
       </CardContent>
     </Card>
-  </section>
-));
+  </section>);
 
 // Reusable tournament round component
-const TournamentRound = memo(({ 
-  title, 
-  matches, 
-  emptyMessage, 
+const TournamentRound = memo(({
+  title,
+  matches,
+  emptyMessage,
   gridCols = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
-  roundName 
+  roundName
 }: {
   title: string;
   matches: CupMatchDisplay[];
   emptyMessage: string;
   gridCols?: string;
   roundName: string;
-}) => (
-  <section>
+}) => <section>
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        {matches.length > 0 ? (
-          <div className={`grid ${gridCols} gap-4`}>
-            {matches.map(match => (
-              <MatchesCupCard
-                key={match.id}
-                id={match.id}
-                home={match.home}
-                away={match.away}
-                homeScore={match.homeScore}
-                awayScore={match.awayScore}
-                date={match.date}
-                time={match.time}
-                location={match.location}
-                nextMatch={match.nextMatch}
-                tournamentRound={roundName}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-muted-foreground py-8">{emptyMessage}</p>
-        )}
+        {matches.length > 0 ? <div className={`grid ${gridCols} gap-4`}>
+            {matches.map(match => <MatchesCupCard key={match.id} id={match.id} home={match.home} away={match.away} homeScore={match.homeScore} awayScore={match.awayScore} date={match.date} time={match.time} location={match.location} nextMatch={match.nextMatch} tournamentRound={roundName} />)}
+          </div> : <p className="text-center text-muted-foreground py-8">{emptyMessage}</p>}
       </CardContent>
     </Card>
-  </section>
-));
+  </section>);
 
 // Tournament info component
-const TournamentInfo = memo(() => (
-  <section>
+const TournamentInfo = memo(() => <section>
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Toernooiinformatie</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <h4 className="font-medium flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-primary" />
-              Finaleinfo
-            </h4>
-            <div className="space-y-2 text-sm">
-              <div><strong>Datum:</strong> ...</div>
-              <div><strong>Locatie:</strong> De Dageraad Harelbeke</div>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <h4 className="font-medium">Toernooiformat</h4>
-            <div className="space-y-2 text-sm">
-              <div>• Knock-out systeem</div>
-              <div>• Geen verlenging</div>
-              <div>• Direct naar strafschoppen</div>
-            </div>
-          </div>
-        </div>
-      </CardContent>
+      
+      
     </Card>
-  </section>
-));
+  </section>);
 
 // Loading component
-const TournamentLoading = memo(() => (
-  <div className="space-y-8 animate-slide-up">
+const TournamentLoading = memo(() => <div className="space-y-8 animate-slide-up">
     <div className="flex justify-between items-center">
       <h2 className="text-2xl font-semibold flex items-center gap-2">
         <Award className="h-5 w-5" />
@@ -134,12 +87,16 @@ const TournamentLoading = memo(() => (
     <TournamentRoundSkeleton title="Kwart Finales" cardCount={4} />
     <TournamentRoundSkeleton title="Halve Finales" cardCount={2} />
     <TournamentRoundSkeleton title="Finale" cardCount={1} />
-  </div>
-));
+  </div>);
 
 // Error component
-const TournamentError = memo(({ error, onRetry }: { error: Error; onRetry: () => void }) => (
-  <div className="space-y-8 animate-slide-up">
+const TournamentError = memo(({
+  error,
+  onRetry
+}: {
+  error: Error;
+  onRetry: () => void;
+}) => <div className="space-y-8 animate-slide-up">
     <Card>
       <CardContent className="py-12">
         <div className="text-center">
@@ -152,12 +109,10 @@ const TournamentError = memo(({ error, onRetry }: { error: Error; onRetry: () =>
         </div>
       </CardContent>
     </Card>
-  </div>
-));
+  </div>);
 
 // Empty state component
-const TournamentEmpty = memo(() => (
-  <div className="space-y-8 animate-slide-up">
+const TournamentEmpty = memo(() => <div className="space-y-8 animate-slide-up">
     <Card>
       <CardContent className="py-12">
         <div className="text-center">
@@ -169,12 +124,14 @@ const TournamentEmpty = memo(() => (
         </div>
       </CardContent>
     </Card>
-  </div>
-));
+  </div>);
 
 // Tournament content component
-const TournamentContent = memo(({ bracketData }: { bracketData: NonNullable<ReturnType<typeof useCupData>['bracketData']> }) => (
-  <div className="space-y-8 animate-slide-up">
+const TournamentContent = memo(({
+  bracketData
+}: {
+  bracketData: NonNullable<ReturnType<typeof useCupData>['bracketData']>;
+}) => <div className="space-y-8 animate-slide-up">
     <div className="flex justify-between items-center">
       <h2 className="text-2xl font-semibold flex items-center gap-2">
         <Award className="h-5 w-5" />
@@ -182,27 +139,11 @@ const TournamentContent = memo(({ bracketData }: { bracketData: NonNullable<Retu
       </h2>
     </div>
 
-    <TournamentRound
-      title="Achtste Finales"
-      matches={bracketData.eighthfinals}
-      emptyMessage="Geen achtste finales beschikbaar"
-      roundName="Achtste Finale"
-    />
+    <TournamentRound title="Achtste Finales" matches={bracketData.eighthfinals} emptyMessage="Geen achtste finales beschikbaar" roundName="Achtste Finale" />
 
-    <TournamentRound
-      title="Kwart Finales"
-      matches={bracketData.quarterfinals}
-      emptyMessage="Geen kwart finales beschikbaar"
-      roundName="Kwart Finale"
-    />
+    <TournamentRound title="Kwart Finales" matches={bracketData.quarterfinals} emptyMessage="Geen kwart finales beschikbaar" roundName="Kwart Finale" />
 
-    <TournamentRound
-      title="Halve Finales"
-      matches={bracketData.semifinals}
-      emptyMessage="Geen halve finales beschikbaar"
-      gridCols="grid-cols-1 md:grid-cols-2"
-      roundName="Halve Finale"
-    />
+    <TournamentRound title="Halve Finales" matches={bracketData.semifinals} emptyMessage="Geen halve finales beschikbaar" gridCols="grid-cols-1 md:grid-cols-2" roundName="Halve Finale" />
 
     <section>
       <Card>
@@ -213,54 +154,39 @@ const TournamentContent = memo(({ bracketData }: { bracketData: NonNullable<Retu
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {bracketData.final ? (
-            <div className="max-w-md mx-auto">
-              <MatchesCupCard
-                id={bracketData.final.id}
-                home={bracketData.final.home}
-                away={bracketData.final.away}
-                homeScore={bracketData.final.homeScore}
-                awayScore={bracketData.final.awayScore}
-                date={bracketData.final.date}
-                time={bracketData.final.time}
-                location={bracketData.final.location}
-                tournamentRound="Finale"
-              />
-            </div>
-          ) : (
-            <p className="text-center text-muted-foreground py-8">
+          {bracketData.final ? <div className="max-w-md mx-auto">
+              <MatchesCupCard id={bracketData.final.id} home={bracketData.final.home} away={bracketData.final.away} homeScore={bracketData.final.homeScore} awayScore={bracketData.final.awayScore} date={bracketData.final.date} time={bracketData.final.time} location={bracketData.final.location} tournamentRound="Finale" />
+            </div> : <p className="text-center text-muted-foreground py-8">
               Finale nog niet beschikbaar
-            </p>
-          )}
+            </p>}
         </CardContent>
       </Card>
     </section>
 
     <TournamentInfo />
-  </div>
-));
+  </div>);
 
 // Main component
 const BekerPage: React.FC = () => {
-  const { isLoading, error, bracketData, hasData, refetch } = useCupData();
-
+  const {
+    isLoading,
+    error,
+    bracketData,
+    hasData,
+    refetch
+  } = useCupData();
   if (isLoading) {
     return <TournamentLoading />;
   }
-
   if (error) {
     return <TournamentError error={error} onRetry={() => refetch()} />;
   }
-
   if (!hasData || !bracketData) {
     return <TournamentEmpty />;
   }
-
-  return (
-    <div className="space-y-8 animate-slide-up">
+  return <div className="space-y-8 animate-slide-up">
       <TournamentContent bracketData={bracketData} />
-    </div>
-  );
+    </div>;
 };
 
 // Set display names for better debugging
@@ -272,5 +198,4 @@ TournamentLoading.displayName = 'TournamentLoading';
 TournamentError.displayName = 'TournamentError';
 TournamentEmpty.displayName = 'TournamentEmpty';
 TournamentContent.displayName = 'TournamentContent';
-
-export default memo(BekerPage); 
+export default memo(BekerPage);
