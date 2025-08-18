@@ -10,6 +10,7 @@ export const fetchUpcomingMatches = async (
   competitionType?: 'league' | 'cup' | 'playoff'
 ): Promise<MatchFormData[]> => {
   try {
+    // Create base query
     let query = supabase
       .from("matches")
       .select(`
@@ -35,32 +36,34 @@ export const fetchUpcomingMatches = async (
       `)
       .order("match_date", { ascending: true });
 
-    // Filter by team if not elevated permissions
+    // Apply team filter first if needed
     if (!hasElevatedPermissions && teamId > 0) {
       query = query.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
     }
 
-    // Filter by competition type if specified
-    if (competitionType === 'cup') {
-      query = query.eq('is_cup_match', true);
-    } else if (competitionType === 'playoff') {
-      query = query.eq('is_playoff_match', true);
-    } else if (competitionType === 'league') {
-      // Default league matches (not cup, not playoff)
-      query = query.or('is_cup_match.is.null,is_cup_match.eq.false')
-                   .or('is_playoff_match.is.null,is_playoff_match.eq.false');
-    }
-
-    const { data, error } = await query;
+    // Execute query and filter competition type in JavaScript to avoid TypeScript issues
+    const { data: allMatches, error } = await query;
 
     if (error) {
       console.error("[fetchUpcomingMatches] Error:", error);
       throw error;
     }
 
-    if (!data) return [];
+    if (!allMatches) return [];
 
-    const matches: MatchFormData[] = data.map((row: any) => {
+    // Filter by competition type in JavaScript
+    let filteredMatches = allMatches;
+    if (competitionType === 'cup') {
+      filteredMatches = allMatches.filter(match => match.is_cup_match === true);
+    } else if (competitionType === 'playoff') {
+      filteredMatches = allMatches.filter(match => match.is_playoff_match === true);
+    } else if (competitionType === 'league') {
+      filteredMatches = allMatches.filter(match => 
+        match.is_cup_match !== true && match.is_playoff_match !== true
+      );
+    }
+
+    const matches: MatchFormData[] = filteredMatches.map((row: any) => {
       const { date, time } = isoToLocalDateTime(row.match_date);
       
       // Use speeldag for matchday display, with special handling for cup and playoff matches
@@ -88,8 +91,8 @@ export const fetchUpcomingMatches = async (
         awayScore: row.away_score ?? undefined,
         referee: row.referee,
         refereeNotes: row.referee_notes,
-        homePlayers: row.home_players && typeof Array.isArray === 'function' && Array.isArray(row.home_players) ? row.home_players : [],
-        awayPlayers: row.away_players && typeof Array.isArray === 'function' && Array.isArray(row.away_players) ? row.away_players : []
+        homePlayers: row.home_players && Array.isArray(row.home_players) ? row.home_players : [],
+        awayPlayers: row.away_players && Array.isArray(row.away_players) ? row.away_players : []
       };
     });
 
