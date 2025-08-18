@@ -7,7 +7,7 @@ import { sortCupMatches, sortLeagueMatches } from "@/lib/matchSortingUtils";
 export const fetchUpcomingMatches = async (
   teamId: number,
   hasElevatedPermissions: boolean = false,
-  competitionType?: 'league' | 'cup'
+  competitionType?: 'league' | 'cup' | 'playoff'
 ): Promise<MatchFormData[]> => {
   try {
     let query = supabase
@@ -26,9 +26,10 @@ export const fetchUpcomingMatches = async (
         referee_notes,
         is_submitted,
         is_locked,
-                home_players,
+        home_players,
         away_players,
         is_cup_match,
+        is_playoff_match,
         teams_home:teams!home_team_id ( team_name ),
         teams_away:teams!away_team_id ( team_name )
       `)
@@ -42,8 +43,12 @@ export const fetchUpcomingMatches = async (
     // Filter by competition type if specified
     if (competitionType === 'cup') {
       query = query.eq('is_cup_match', true);
+    } else if (competitionType === 'playoff') {
+      query = query.eq('is_playoff_match', true);
     } else if (competitionType === 'league') {
-      query = query.or('is_cup_match.is.null,is_cup_match.eq.false');
+      // Default league matches (not cup, not playoff)
+      query = query.or('is_cup_match.is.null,is_cup_match.eq.false')
+                   .or('is_playoff_match.is.null,is_playoff_match.eq.false');
     }
 
     const { data, error } = await query;
@@ -58,9 +63,11 @@ export const fetchUpcomingMatches = async (
     const matches: MatchFormData[] = data.map((row: any) => {
       const { date, time } = isoToLocalDateTime(row.match_date);
       
-      // Use speeldag for matchday display, with special handling for cup matches
+      // Use speeldag for matchday display, with special handling for cup and playoff matches
       let matchdayDisplay = row.speeldag || "Te bepalen";
-      if (row.is_cup_match) {
+      if (row.is_playoff_match) {
+        matchdayDisplay = `🏆 ${matchdayDisplay}`;
+      } else if (row.is_cup_match) {
         matchdayDisplay = `🏆 ${matchdayDisplay}`;
       }
 

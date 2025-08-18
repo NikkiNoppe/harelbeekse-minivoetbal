@@ -53,6 +53,23 @@ export const useMatchFormsData = (
     refetchIntervalInBackground: false // Only when tab is active
   });
 
+  // Playoff matches query - INSTANT UPDATES for time-sensitive data  
+  const playoffQuery = useQuery({
+    queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'playoff'],
+    queryFn: () => fetchUpcomingMatches(
+      hasElevatedPermissions ? 0 : teamId, 
+      hasElevatedPermissions, 
+      'playoff'
+    ),
+    staleTime: 30 * 1000, // 30 seconds - VERY short for instant updates
+    gcTime: 2 * 60 * 1000, // 2 minutes cache  
+    retry: 3,
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    refetchOnReconnect: true,
+    refetchInterval: 60 * 1000, // Auto-refetch every minute for live updates
+    refetchIntervalInBackground: false // Only when tab is active
+  });
+
 
   // Filter and sort matches based on current filters
   const filterAndSortMatches = (matches: MatchFormData[], filters: MatchFormsFilters) => {
@@ -153,8 +170,9 @@ export const useMatchFormsData = (
   };
 
   // Get current tab data with filters
-  const getTabData = (tabType: 'league' | 'cup', filters: MatchFormsFilters) => {
-    const query = tabType === 'cup' ? cupQuery : leagueQuery;
+  const getTabData = (tabType: 'league' | 'cup' | 'playoff', filters: MatchFormsFilters) => {
+    const query = tabType === 'cup' ? cupQuery : 
+                  tabType === 'playoff' ? playoffQuery : leagueQuery;
     const filteredMatches = filterAndSortMatches(query.data || [], filters);
     
     return {
@@ -173,7 +191,8 @@ export const useMatchFormsData = (
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['teamMatches'] }),
         leagueQuery.refetch(),
-        cupQuery.refetch()
+        cupQuery.refetch(),
+        playoffQuery.refetch()
       ]);
 
       toast({
@@ -193,29 +212,34 @@ export const useMatchFormsData = (
   const statistics = {
     totalLeagueMatches: leagueQuery.data?.length || 0,
     totalCupMatches: cupQuery.data?.length || 0,
+    totalPlayoffMatches: playoffQuery.data?.length || 0,
     
     submittedLeague: leagueQuery.data?.filter(m => m.isCompleted).length || 0,
     submittedCup: cupQuery.data?.filter(m => m.isCompleted).length || 0,
+    submittedPlayoff: playoffQuery.data?.filter(m => m.isCompleted).length || 0,
     
     pendingLeague: leagueQuery.data?.filter(m => !m.isCompleted).length || 0,
-    pendingCup: cupQuery.data?.filter(m => !m.isCompleted).length || 0
+    pendingCup: cupQuery.data?.filter(m => !m.isCompleted).length || 0,
+    pendingPlayoff: playoffQuery.data?.filter(m => !m.isCompleted).length || 0
   };
 
   return {
     // Raw data
     leagueMatches: leagueQuery.data || [],
     cupMatches: cupQuery.data || [],
-    
+    playoffMatches: playoffQuery.data || [],
     
     // Loading states
     leagueLoading: leagueQuery.isLoading,
     cupLoading: cupQuery.isLoading,
-    isLoading: leagueQuery.isLoading || cupQuery.isLoading,
+    playoffLoading: playoffQuery.isLoading,
+    isLoading: leagueQuery.isLoading || cupQuery.isLoading || playoffQuery.isLoading,
     
     // Error states
     leagueError: leagueQuery.error,
     cupError: cupQuery.error,
-    hasError: !!leagueQuery.error || !!cupQuery.error,
+    playoffError: playoffQuery.error,
+    hasError: !!leagueQuery.error || !!cupQuery.error || !!playoffQuery.error,
     
     // Statistics
     statistics,
@@ -228,6 +252,7 @@ export const useMatchFormsData = (
     // Direct query methods for manual control
     refetchLeague: leagueQuery.refetch,
     refetchCup: cupQuery.refetch,
-    refetchAll: () => Promise.all([leagueQuery.refetch(), cupQuery.refetch()])
+    refetchPlayoff: playoffQuery.refetch,
+    refetchAll: () => Promise.all([leagueQuery.refetch(), cupQuery.refetch(), playoffQuery.refetch()])
   };
 }; 

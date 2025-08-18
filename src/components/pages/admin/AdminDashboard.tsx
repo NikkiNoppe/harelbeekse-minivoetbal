@@ -16,8 +16,9 @@ import NotAvailable from "@/components/common/NotAvailable";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 
 import AdminSuspensionsPage from "@/components/pages/admin/suspensions/AdminSuspensionsPage";
+import AdminPlayoffMatchesPage from "@/components/pages/admin/matches/AdminPlayoffMatchesPage";
 
-type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup" | "suspensions";
+type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "match-forms-playoffs" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup" | "suspensions";
 
 interface AdminDashboardProps {
   activeTab: TabName;
@@ -58,6 +59,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
             <TabsContent value="match-forms-cup" className="mt-0">
               {canSeeCupForms ? (
                 <MatchesPage teamId={0} teamName="Admin" initialTab="cup" />
+              ) : (
+                <NotAvailable />
+              )}
+            </TabsContent>
+            
+            <TabsContent value="match-forms-playoffs" className="mt-0">
+              {isAdmin && isTabVisible('admin_match_forms_playoffs') ? (
+                <AdminPlayoffMatchesPage />
               ) : (
                 <NotAvailable />
               )}

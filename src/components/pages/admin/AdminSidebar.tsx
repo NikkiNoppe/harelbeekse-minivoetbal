@@ -19,14 +19,14 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const speelformatenItems = [
     { key: "competition", label: "Competitie", icon: Trophy },
     { key: "cup", label: "Beker", icon: Award },
-    { key: "playoffs", label: "Play-Offs", icon: Target },
+    { key: "playoffs", label: "Playoff Genereren", icon: Target },
   ];
 
   // Wedstrijdformulieren groep
   const wedstrijdformulierenItems = [
     { key: "match-forms-league", label: "Competitie", icon: Trophy, adminOnly: false },
     { key: "match-forms-cup", label: "Beker", icon: Award, adminOnly: false },
-    { key: "playoffs", label: "Play-Offs", icon: Target, adminOnly: true },
+    { key: "match-forms-playoffs", label: "Playoff Wedstrijden", icon: Target, adminOnly: true },
   ];
 
   // Beheer groep
@@ -92,7 +92,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
     (!item.adminOnly || isAdmin) && 
     (item.key === 'match-forms-league' ? isTabVisible('admin_match_forms_league') : 
      item.key === 'match-forms-cup' ? isTabVisible('admin_match_forms_cup') : 
-     item.key === 'playoffs' ? isTabVisible('admin_match_forms_playoffs') : true)
+     item.key === 'match-forms-playoffs' ? isTabVisible('admin_match_forms_playoffs') : true)
   );
 
   const visibleBeheerItems = beheerItems.filter(item => 
