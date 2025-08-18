@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/pages/login/AuthProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, User, LogOut, Settings, Shield, Users, Calendar, Trophy, Award, DollarSign, Home, BookOpen, Ban, AlertTriangle, Target } from "lucide-react";
@@ -111,8 +112,12 @@ const Header: React.FC<HeaderProps> = ({
     <header className="bg-purple-900 shadow-lg sticky top-0 z-50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center">
+          {/* Logo and Sidebar Trigger */}
+          <div className="flex items-center gap-3">
+            {/* Sidebar Trigger - only show when authenticated (admin dashboard) */}
+            {isAuthenticated && (
+              <SidebarTrigger className="p-2 text-white hover:bg-purple-800 rounded-md transition-colors" />
+            )}
             <Logo onClick={onLogoClick} />
           </div>
 
