@@ -4,7 +4,11 @@ import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { cupService } from "@/services/match";
 import { sortCupMatches, sortLeagueMatches } from "@/lib/matchSortingUtils";
 
-export const fetchUpcomingMatches = async (teamId: number, hasElevatedPermissions: boolean = false, competitionType?: 'league' | 'cup'): Promise<MatchFormData[]> => {
+export const fetchUpcomingMatches = async (
+  teamId: number,
+  hasElevatedPermissions: boolean = false,
+  competitionType?: 'league' | 'cup'
+): Promise<MatchFormData[]> => {
   try {
     let query = supabase
       .from("matches")

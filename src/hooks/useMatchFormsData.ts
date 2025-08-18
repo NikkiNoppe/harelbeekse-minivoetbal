@@ -53,6 +53,7 @@ export const useMatchFormsData = (
     refetchIntervalInBackground: false // Only when tab is active
   });
 
+
   // Filter and sort matches based on current filters
   const filterAndSortMatches = (matches: MatchFormData[], filters: MatchFormsFilters) => {
     if (!matches) return [];
@@ -192,8 +193,10 @@ export const useMatchFormsData = (
   const statistics = {
     totalLeagueMatches: leagueQuery.data?.length || 0,
     totalCupMatches: cupQuery.data?.length || 0,
+    
     submittedLeague: leagueQuery.data?.filter(m => m.isCompleted).length || 0,
     submittedCup: cupQuery.data?.filter(m => m.isCompleted).length || 0,
+    
     pendingLeague: leagueQuery.data?.filter(m => !m.isCompleted).length || 0,
     pendingCup: cupQuery.data?.filter(m => !m.isCompleted).length || 0
   };
@@ -202,6 +205,7 @@ export const useMatchFormsData = (
     // Raw data
     leagueMatches: leagueQuery.data || [],
     cupMatches: cupQuery.data || [],
+    
     
     // Loading states
     leagueLoading: leagueQuery.isLoading,

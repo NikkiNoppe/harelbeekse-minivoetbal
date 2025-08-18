@@ -117,51 +117,66 @@ export const fetchAllCards = async (): Promise<CardData[]> => {
       teams_home:teams!home_team_id ( team_name ),
       teams_away:teams!away_team_id ( team_name )
     `)
-    .not("home_players", "is", null)
-    .not("away_players", "is", null);
+    .or('home_players.not.is.null,away_players.not.is.null');
 
   if (error || !data) {
     console.error("[fetchAllCards] Error:", error);
     return [];
   }
 
+  const normalizeCardType = (raw: any): 'yellow' | 'red' | 'double_yellow' | 'none' => {
+    const value = (typeof raw === 'string' ? raw : '').toLowerCase();
+    if (value === 'yellow' || value === 'geel') return 'yellow';
+    if (value === 'red' || value === 'rood') return 'red';
+    if (value === 'double_yellow' || value === '2x geel' || value === 'double-yellow') return 'double_yellow';
+    return 'none';
+  };
+
+  const extractPlayerId = (p: any): number | undefined => p?.playerId ?? p?.player_id ?? p?.id;
+  const extractPlayerName = (p: any): string | undefined => p?.playerName ?? p?.name ?? (p?.firstName && p?.lastName ? `${p.firstName} ${p.lastName}` : undefined);
+
   const cards: CardData[] = [];
 
   for (const row of data as any[]) {
     const matchDate = row.match_date ? new Date(row.match_date).toISOString().slice(0, 10) : "";
-    
-    // Extract cards from home players
-    if (row.home_players && typeof Array.isArray === 'function' && Array.isArray(row.home_players)) {
-      for (const player of row.home_players) {
-        if (player.cardType && player.cardType !== 'none' && player.playerId && player.playerName) {
-          cards.push({
-            playerId: player.playerId,
-            playerName: player.playerName,
-            teamName: row.teams_home?.team_name || "Onbekend",
-            cardType: player.cardType === 'yellow' ? 'yellow' : 'red',
-            matchId: row.match_id,
-            matchDate,
-            uniqueNumber: row.unique_number || ""
-          });
+
+    const pushCard = (teamName: string, player: any, cardType: 'yellow' | 'red') => {
+      const playerId = extractPlayerId(player);
+      const playerName = extractPlayerName(player);
+      if (!playerId || !playerName) return;
+      cards.push({
+        playerId,
+        playerName,
+        teamName: teamName || 'Onbekend',
+        cardType,
+        matchId: row.match_id,
+        matchDate,
+        uniqueNumber: row.unique_number || ""
+      });
+    };
+
+    const handlePlayers = (players: any[], teamName: string) => {
+      for (const player of players) {
+        const rawCard = player?.cardType ?? player?.card ?? player?.card_type ?? player?.kaart;
+        const normalized = normalizeCardType(rawCard);
+        if (normalized === 'yellow') pushCard(teamName, player, 'yellow');
+        else if (normalized === 'red') pushCard(teamName, player, 'red');
+        else if (normalized === 'double_yellow') {
+          // Represent double yellow as both a yellow and a red entry
+          pushCard(teamName, player, 'yellow');
+          pushCard(teamName, player, 'red');
         }
       }
+    };
+
+    // Extract cards from home players
+    if (row.home_players && Array.isArray(row.home_players)) {
+      handlePlayers(row.home_players, row.teams_home?.team_name || 'Onbekend');
     }
 
     // Extract cards from away players
-    if (row.away_players && typeof Array.isArray === 'function' && Array.isArray(row.away_players)) {
-      for (const player of row.away_players) {
-        if (player.cardType && player.cardType !== 'none' && player.playerId && player.playerName) {
-          cards.push({
-            playerId: player.playerId,
-            playerName: player.playerName,
-            teamName: row.teams_away?.team_name || "Onbekend",
-            cardType: player.cardType === 'yellow' ? 'yellow' : 'red',
-            matchId: row.match_id,
-            matchDate,
-            uniqueNumber: row.unique_number || ""
-          });
-        }
-      }
+    if (row.away_players && Array.isArray(row.away_players)) {
+      handlePlayers(row.away_players, row.teams_away?.team_name || 'Onbekend');
     }
   }
 

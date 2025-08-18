@@ -1,5 +1,5 @@
 import React from "react";
-import { Calendar, Trophy, Award, Target, Users, Shield, User, DollarSign, Settings } from "lucide-react";
+import { Calendar, Trophy, Award, Target, Users, Shield, User, DollarSign, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/components/pages/login/AuthProvider";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
@@ -10,7 +10,7 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const isAdmin = user?.role === "admin";
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -109,6 +109,20 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
 
   return (
     <div className={`${collapsed ? "w-14" : "w-64"} flex flex-col h-full`}>
+      {/* Header bovenaan: "admin" en "Administrator" */}
+      <div className="mb-3">
+        {collapsed ? (
+          <div className="flex items-center justify-center">
+            <Shield className="h-4 w-4 text-purple-600" />
+          </div>
+        ) : (
+          <div className="px-1">
+            <div className="text-[10px] uppercase tracking-wider text-gray-500">admin</div>
+            <div className="text-base font-semibold text-purple-700">Administrator</div>
+          </div>
+        )}
+      </div>
+
       <div className="flex-1">
         {/* Speelformaten groep - filtered by tab visibility */}
         {renderGroup("Speelformaten", visibleSpeelformatenItems)}
@@ -124,6 +138,17 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
 
         {/* Systeem groep */}
         {renderGroup("Systeem", visibleSysteemItems)}
+
+        {/* Uitloggen knop direct onder Systeem/Instellingen */}
+        <div className="mt-2">
+          <button
+            onClick={logout}
+            className={`w-full flex items-center ${collapsed ? "justify-center px-2" : "justify-start gap-2 px-3"} py-2 rounded-lg text-left font-medium border transition-all duration-200 bg-white text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700`}
+          >
+            <LogOut className="h-4 w-4 flex-shrink-0" />
+            {!collapsed && <span className="text-sm">Uitloggen</span>}
+          </button>
+        </div>
       </div>
     </div>
   );

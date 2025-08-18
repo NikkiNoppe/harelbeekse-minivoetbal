@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,11 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Edit, Trash2, RefreshCw, Users, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, RefreshCw, Users, AlertTriangle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { suspensionService } from '@/services';
 import { useSuspensionsData } from '@/hooks/useSuspensionsData';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllCards, type CardData } from '@/services/match';
+import ResponsiveCardsTable from '@/components/tables/ResponsiveCardsTable';
 
 interface ManualSuspension {
   id: number;
@@ -44,6 +46,49 @@ const AdminSuspensionsPage: React.FC = () => {
 
   // Fetch data
   const { playerCards, suspensions, isLoading, handleRefresh } = useSuspensionsData();
+
+  // Zorg dat kaarten/schorsingen actueel zijn bij openen van de pagina
+  useEffect(() => {
+    handleRefresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
+  // Kaarten uit wedstrijdformulieren (alle gele/rode kaarten)
+  const { data: allCards, isLoading: isCardsLoading } = useQuery({
+    queryKey: ['allCardsAdmin'],
+    queryFn: fetchAllCards
+  });
+  
+  // Groepeer kaarten per speler
+  const playerCardSummaries = React.useMemo(() => {
+    if (!allCards) return [] as Array<{
+      playerId: number; playerName: string; teamName: string; yellowCards: number; redCards: number; totalCards: number; isSuspended: boolean; suspensionReason?: string; cards: CardData[];
+    }>;
+    const groups = allCards.reduce((acc, card) => {
+      const key = `${card.playerId}-${card.playerName}`;
+      if (!acc[key]) {
+        acc[key] = { playerId: card.playerId, playerName: card.playerName, teamName: card.teamName, cards: [] as CardData[] };
+      }
+      acc[key].cards.push(card);
+      return acc;
+    }, {} as Record<string, { playerId: number; playerName: string; teamName: string; cards: CardData[] }>);
+    return Object.values(groups).map(group => {
+      const yellowCards = group.cards.filter(c => c.cardType === 'yellow').length;
+      const redCards = group.cards.filter(c => c.cardType === 'red').length;
+      const totalCards = yellowCards + redCards;
+      const isSuspended = false; // We tonen enkel wie kaarten heeft; status niet verplicht
+      return {
+        playerId: group.playerId,
+        playerName: group.playerName,
+        teamName: group.teamName,
+        yellowCards,
+        redCards,
+        totalCards,
+        isSuspended,
+        cards: group.cards,
+      };
+    }).sort((a, b) => b.totalCards - a.totalCards);
+  }, [allCards]);
   
   const manualSuspensionsQuery = useQuery({
     queryKey: ['manualSuspensions'],
@@ -190,7 +235,7 @@ const AdminSuspensionsPage: React.FC = () => {
           </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="btn btn--primary">
                 <Plus className="h-4 w-4 mr-2" />
                 Schorsing Toevoegen
               </Button>
@@ -259,113 +304,113 @@ const AdminSuspensionsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Actief Geschorst</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{suspendedPlayers.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Spelers met resterende schorsing
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Handmatige Schorsingen</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeSuspensions.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Door admin toegevoegde schorsingen
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gele Kaarten</CardTitle>
-            <div className="h-4 w-4 bg-yellow-500 rounded" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {playerCards?.reduce((sum, p) => sum + p.yellowCards, 0) || 0}
+      {/* Lijst van spelers die kaarten hebben (uit wedstrijdformulieren) */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Spelers met Kaarten (wedstrijdformulieren)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isCardsLoading ? (
+            <div className="flex items-center justify-center h-24 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" /> Laden...
             </div>
-            <p className="text-xs text-muted-foreground">
-              Totaal aantal gele kaarten
-            </p>
-          </CardContent>
-        </Card>
+          ) : (
+            <ResponsiveCardsTable playerSummaries={playerCardSummaries} />
+          )}
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Rode Kaarten</CardTitle>
-            <div className="h-4 w-4 bg-red-500 rounded" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {playerCards?.reduce((sum, p) => sum + p.redCards, 0) || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Totaal aantal rode kaarten
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Actieve Schorsingen - gecombineerd overzicht (automatisch + handmatig) */}
+      {(() => {
+        const activeManual = manualSuspensions.filter(s => s.isActive);
+        const getPlayerDetails = (playerId: number) => {
+          const match = playersQuery.data?.find(p => p.playerId === playerId);
+          return {
+            playerName: match ? match.playerName : `Speler ${playerId}`,
+            teamName: match ? match.teamName : 'Onbekend Team'
+          };
+        };
+        const unified = [
+          ...suspendedPlayers.map(p => ({
+            key: `auto-${p.playerId}`,
+            playerId: p.playerId,
+            playerName: p.playerName,
+            teamName: p.teamName,
+            type: 'Automatisch',
+            reason: 'Kaarten/systeemregel',
+            remaining: p.suspendedMatches,
+            matches: p.suspendedMatches
+          })),
+          ...activeManual.map(s => {
+            const details = getPlayerDetails(s.playerId);
+            return {
+              key: `manual-${s.id}`,
+              playerId: s.playerId,
+              playerName: details.playerName,
+              teamName: details.teamName,
+              type: 'Handmatig',
+              reason: s.reason,
+              remaining: s.matches,
+              matches: s.matches
+            };
+          })
+        ].sort((a, b) => a.playerName.localeCompare(b.playerName));
 
-      {/* Currently Suspended Players */}
-      {suspendedPlayers.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Momenteel Geschorste Spelers</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Speler</TableHead>
-                  <TableHead>Team</TableHead>
-                  <TableHead>Gele Kaarten</TableHead>
-                  <TableHead>Rode Kaarten</TableHead>
-                  <TableHead>Resterende Wedstrijden</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {suspendedPlayers.map(player => (
-                  <TableRow key={player.playerId}>
-                    <TableCell className="font-medium">{player.playerName}</TableCell>
-                    <TableCell>{player.teamName}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                        {player.yellowCards}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                        {player.redCards}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="destructive">
-                        {player.suspendedMatches} wedstrijd{player.suspendedMatches !== 1 ? 'en' : ''}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="destructive">Geschorst</Badge>
-                    </TableCell>
+        if (unified.length === 0) {
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Actieve Schorsingen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">Geen actieve schorsingen</div>
+              </CardContent>
+            </Card>
+          );
+        }
+
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Actieve Schorsingen</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Speler</TableHead>
+                    <TableHead>Team</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Reden</TableHead>
+                    <TableHead>Resterend</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+                </TableHeader>
+                <TableBody>
+                  {unified.map(item => (
+                    <TableRow key={item.key}>
+                      <TableCell className="font-medium">{item.playerName}</TableCell>
+                      <TableCell>{item.teamName}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={item.type === 'Automatisch' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
+                          {item.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{item.reason}</TableCell>
+                      <TableCell>
+                        <Badge variant="destructive">{item.remaining} wedstrijd{item.remaining !== 1 ? 'en' : ''}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="destructive">Actief</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Manual Suspensions Table */}
       <Card>

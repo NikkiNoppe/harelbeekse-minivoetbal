@@ -1,7 +1,7 @@
 import React, { useState, memo, useMemo, useCallback } from "react";
 import { useAuth } from "@/components/pages/login/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Tabs UI removed (sidebar controls type)
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FileText, Trophy, Calendar, AlertCircle } from "lucide-react";
@@ -259,10 +259,8 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
     refetchAll();
   }, [refetchAll]);
 
-  const tabConfigs = useMemo(() => [
-    { value: "league", data: leagueTabData, type: "league" as const },
-    { value: "cup", data: cupTabData, type: "cup" as const }
-  ], [leagueTabData, cupTabData]);
+  const currentType = (activeTab === "cup" ? "cup" : "league") as "league" | "cup";
+  const currentData = currentType === "cup" ? cupTabData : leagueTabData;
 
   if (hasError) {
     return (
@@ -288,37 +286,20 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
       </div>
 
       <section>
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "league" | "cup")} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="league" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Competitie
-            </TabsTrigger>
-            <TabsTrigger value="cup" className="flex items-center gap-2">
-              <Trophy className="h-4 w-4" />
-              Beker
-            </TabsTrigger>
-          </TabsList>
-          
-          {tabConfigs.map(({ value, data, type }) => (
-            <TabsContent key={value} value={value} className="mt-6">
-              {isLoading ? (
-                <TabContentSkeleton />
-              ) : (
-                <TabContent
-                  tabType={type}
-                  tabData={data}
-                  hasElevatedPermissions={hasElevatedPermissions}
-                  teamName={teamName}
-                  user={user}
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  onSelectMatch={handleSelectMatch}
-                />
-              )}
-            </TabsContent>
-          ))}
-        </Tabs>
+        {isLoading ? (
+          <TabContentSkeleton />
+        ) : (
+          <TabContent
+            tabType={currentType}
+            tabData={currentData}
+            hasElevatedPermissions={hasElevatedPermissions}
+            teamName={teamName}
+            user={user}
+            filters={filters}
+            onFiltersChange={setFilters}
+            onSelectMatch={handleSelectMatch}
+          />
+        )}
       </section>
       
       {selectedMatchForm && (
