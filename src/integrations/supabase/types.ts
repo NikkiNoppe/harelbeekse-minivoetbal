@@ -505,14 +505,26 @@ export type Database = {
       }
       teams_public: {
         Row: {
+          club_colors: string | null
+          contact_email: string | null
+          contact_person: string | null
+          contact_phone: string | null
           team_id: number | null
           team_name: string | null
         }
         Insert: {
+          club_colors?: string | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
           team_id?: number | null
           team_name?: string | null
         }
         Update: {
+          club_colors?: string | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
           team_id?: number | null
           team_name?: string | null
         }
