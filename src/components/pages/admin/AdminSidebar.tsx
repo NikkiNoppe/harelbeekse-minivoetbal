@@ -119,7 +119,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
         )}
       </div>
 
-      <div className="flex-1">
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
         {/* Speelformaten groep - filtered by tab visibility */}
         {renderGroup("Speelformaten", visibleSpeelformatenItems)}
 
@@ -136,7 +136,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
         {renderGroup("Systeem", visibleSysteemItems)}
 
         {/* Uitloggen knop direct onder Systeem/Instellingen */}
-        <div className="mt-2">
+        <div className="mt-2 pb-4">
           <button
             onClick={logout}
             className={`btn-nav active w-full flex items-center ${collapsed ? 'justify-center p-2' : 'justify-start gap-2 px-4 py-3'}`}
