@@ -27,7 +27,7 @@ export function AdminDashboardLayout({
     <SidebarProvider 
       defaultOpen={!isMobile}
     >
-      <div className="min-h-screen flex flex-col bg-purple-100 w-full">
+      <div className="flex flex-col bg-purple-100 w-full">
         {/* Header - always visible at top */}
         <Header 
           onLogoClick={onLogoClick} 
@@ -43,6 +43,7 @@ export function AdminDashboardLayout({
           {/* Sidebar container - will adapt to content height */}
           <Sidebar 
             collapsible={isMobile ? "offcanvas" : "icon"}
+            position={isMobile ? "fixed" : "flow"}
             className="flex-shrink-0 border-r border-purple-200 shadow-xl"
             style={{ background: 'var(--purple-100)' }}
           >
@@ -50,7 +51,7 @@ export function AdminDashboardLayout({
           </Sidebar>
           
           {/* Main content area */}
-          <main className="flex-1 bg-purple-100 overflow-auto">
+          <main className="flex-1 bg-purple-100">
             <AdminDashboard 
               activeTab={activeTab as any} 
               setActiveTab={setActiveTab as any} 

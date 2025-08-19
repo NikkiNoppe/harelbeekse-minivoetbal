@@ -47,6 +47,11 @@
   body {@apply bg-background text-foreground; font-feature-settings: "rlig" 1, "calt" 1;}
 }
 
+/* Sticky footer support */
+.footer-fixed { position: fixed; left: 0; right: 0; bottom: 0; width: 100%; z-index: 40; }
+.main-with-footer-padding { padding-bottom: 7rem; }
+@media (min-width: 640px) { .main-with-footer-padding { padding-bottom: 8rem; } }
+
 /* ============================================================================
    3. RESPONSIVE & MOBILE
 ============================================================================ */

@@ -160,6 +160,7 @@ const Sidebar = React.forwardRef<
     side?: "left" | "right"
     variant?: "sidebar" | "floating" | "inset"
     collapsible?: "offcanvas" | "icon" | "none"
+    position?: "fixed" | "flow"
   }
 >(
   (
@@ -167,6 +168,7 @@ const Sidebar = React.forwardRef<
       side = "left",
       variant = "sidebar",
       collapsible = "offcanvas",
+      position = "fixed",
       className,
       children,
       ...props
@@ -210,6 +212,36 @@ const Sidebar = React.forwardRef<
       )
     }
 
+    // Desktop
+    if (position === "flow") {
+      // Sidebar participates in normal layout flow so it ends where the content ends.
+      return (
+        <div
+          ref={ref}
+          className={cn("hidden md:flex text-sidebar-foreground", className)}
+          data-state={state}
+          data-collapsible={state === "collapsed" ? collapsible : ""}
+          data-variant={variant}
+          data-side={side}
+          {...props}
+        >
+          <div
+            data-sidebar="sidebar"
+            className={cn(
+              "flex h-full flex-col bg-sidebar",
+              state === "collapsed" && collapsible === "icon"
+                ? "w-[--sidebar-width-icon]"
+                : "w-[--sidebar-width]",
+              variant === "floating" && "rounded-lg border border-sidebar-border shadow"
+            )}
+          >
+            {children}
+          </div>
+        </div>
+      )
+    }
+
+    // Desktop fixed (original behavior)
     return (
       <div
         ref={ref}

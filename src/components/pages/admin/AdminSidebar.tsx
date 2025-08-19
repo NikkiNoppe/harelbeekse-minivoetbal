@@ -119,7 +119,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-hide">
+      <div className="flex-1">
         {/* Speelformaten groep - filtered by tab visibility */}
         {renderGroup("Speelformaten", visibleSpeelformatenItems)}
 
