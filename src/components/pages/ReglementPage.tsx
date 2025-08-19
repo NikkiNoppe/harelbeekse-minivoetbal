@@ -97,12 +97,12 @@ const reglement = [
     content: (
       <div className="space-y-3">
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'></span><span className='block flex-1 text-justify'></span></p>
-        <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>5.1</span><span className='block flex-1 text-justify'>Gele kaart (boete: €): Speler mag verder spelen.</span></p>
-        <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>5.2</span><span className='block flex-1 text-justify'>Rode kaart (boete: €): onmiddellijke uitsluiting ZONDER vervanging.</span></p>
+        <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>5.1</span><span className='block flex-1 text-justify'>Gele kaart (boete: €5,00): Speler mag verder spelen.</span></p>
+        <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>5.2</span><span className='block flex-1 text-justify'>Rode kaart (boete: €10,00): onmiddellijke uitsluiting ZONDER vervanging.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>5.3</span><span className='block flex-1 text-justify'>Schorsingen na gele kaarten:<br />- 2 gele kaarten: 1 wedstrijd schorsing<br />- 4 gele kaarten: 2 opeenvolgende wedstrijden<br />- 6 gele kaarten: 3 opeenvolgende wedstrijden</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>5.4</span><span className='block flex-1 text-justify'>Schorsingen na rode kaart:<br />- Minimum schorsing: 1 wedstrijden schorsing<br />- Minnelijke schikking mogelijk, als de sportcomité dit beslist.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>5.5</span><span className='block flex-1 text-justify'>Het sportcomité kan spelers oproepen. Bij negeren oproeping: minimum 10 wedstrijden schorsing.</span></p>
-        <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>5.6</span><span className='block flex-1 text-justify'>Forfait heeft een uitslag van 10-0 (boete: €): bij afwezigheid, minder dan 4 spelers, of weigering zaal verlaten. Verwittigd forfait (1 dag vooraf) heeft lagere boete.</span></p>
+        <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>5.6</span><span className='block flex-1 text-justify'>Forfait heeft een uitslag van 10-0 (boete: €25,00): bij afwezigheid, minder dan 4 spelers, of weigering zaal verlaten. Verwittigd forfait (1 dag vooraf) heeft lagere boete.(boete: €15,00)</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>5.7</span><span className='block flex-1 text-justify'>Beroep moet per mail worden ingediend binnen 7 werkdagen na een beslissing.</span></p>
       </div>
     )
