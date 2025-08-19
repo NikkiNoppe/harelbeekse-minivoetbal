@@ -38,14 +38,51 @@ export const bekerService = {
     return date.toISOString().split('T')[0];
   },
 
+  // Allow manual assignment (byes) when odd number of teams: admin can prefill next-round slots
+  async assignTeamToMatch(uniqueNumber: string, asHome: boolean, teamId: number): Promise<{ success: boolean; message: string }> {
+    try {
+      const { data: match, error: findError } = await supabase
+        .from('matches')
+        .select('match_id, home_team_id, away_team_id')
+        .eq('unique_number', uniqueNumber)
+        .eq('is_cup_match', true)
+        .single();
+
+      if (findError || !match) {
+        return { success: false, message: 'Wedstrijd niet gevonden.' };
+      }
+
+      const updateData: any = {};
+      if (asHome) {
+        updateData.home_team_id = teamId;
+      } else {
+        updateData.away_team_id = teamId;
+      }
+
+      const { error: updateError } = await supabase
+        .from('matches')
+        .update(updateData)
+        .eq('match_id', match.match_id);
+
+      if (updateError) throw updateError;
+
+      return { success: true, message: 'Team succesvol toegewezen aan wedstrijd.' };
+    } catch (error) {
+      return { success: false, message: `Fout bij toewijzen team: ${error instanceof Error ? error.message : 'Onbekende fout'}` };
+    }
+  },
+
   // Helper functions for validation
   validateCupTournamentInput(teams: number[], selectedDates: string[]): { isValid: boolean; message?: string } {
-    if (teams.length !== 16) {
-      return { isValid: false, message: "Een bekertoernooi vereist exact 16 teams" };
+    if (teams.length < 2) {
+      return { isValid: false, message: "Selecteer minstens 2 teams" };
     }
 
-    if (selectedDates.length !== 5) {
-      return { isValid: false, message: "Er moeten exact 5 speelweken geselecteerd zijn" };
+    // 16 teams uses 5 weeks (1/8 in 2 weken, QF, SF, Finale)
+    // Minder dan 16 teams: 4 weken (1/8 gecondenseerd in 1 week; QF, SF, Finale)
+    const requiredWeeks = teams.length === 16 ? 5 : 4;
+    if (selectedDates.length !== requiredWeeks) {
+      return { isValid: false, message: `Selecteer exact ${requiredWeeks} speelweken voor ${teams.length} team(s)` };
     }
 
     return { isValid: true };
@@ -145,11 +182,13 @@ export const bekerService = {
 
   async createEightFinals(shuffledTeams: number[], playingWeeks: string[], opts?: { teamPreferences?: Map<number, TeamPreferencesNormalized>; venues?: any[] }): Promise<any[]> {
     const cupMatches = [];
-    
-    for (let i = 0; i < 8; i++) {
+    // Create only as many matches as there are pairs
+    const numberOfPairs = Math.floor(shuffledTeams.length / 2);
+    for (let i = 0; i < numberOfPairs; i++) {
       const homeTeamIndex = i * 2;
       const awayTeamIndex = i * 2 + 1;
-      const weekIndex = i < 4 ? 0 : 1; // First 4 matches in week 0, last 4 in week 1
+      // If we only have 4 weeks (reduced schedule), play all 1/8 in week 0; otherwise split over week 0 and 1
+      const weekIndex = playingWeeks.length === 5 ? (i < 4 ? 0 : 1) : 0;
       const matchIndexInWeek = i % 4; // 0-3 for each week (4 matches per week)
 
       // Kies beste slot (0..3) op basis van teamvoorkeuren (indien beschikbaar)
@@ -198,14 +237,15 @@ export const bekerService = {
 
   async createQuarterFinals(playingWeeks: string[]): Promise<any[]> {
     const cupMatches = [];
-    
+    // Use week 3 for a 5-week schedule, otherwise week 2 (indexing from 0)
+    const baseWeekIndex = playingWeeks.length === 5 ? 2 : 1;
     for (let i = 0; i < 4; i++) {
       // Get the optimal timeslot for this match (using all 7 priority slots)
       const optimalSlotIndex = i; // 0-3 for the 4 best slots
       const { venue, timeslot } = await priorityOrderService.getMatchDetails(optimalSlotIndex, 4);
       
       // Determine the correct date based on the selected slot's day_of_week
-      const baseDate = playingWeeks[2];
+      const baseDate = playingWeeks[baseWeekIndex];
       const isMonday = timeslot?.day_of_week === 1;
       const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
       
@@ -229,14 +269,15 @@ export const bekerService = {
 
   async createSemiFinals(playingWeeks: string[]): Promise<any[]> {
     const cupMatches = [];
-    
+    // Use week 4 for a 5-week schedule, otherwise week 3 (indexing from 0)
+    const baseWeekIndex = playingWeeks.length === 5 ? 3 : 2;
     for (let i = 0; i < 2; i++) {
       // Get the optimal timeslot for this match (using all 7 priority slots)
       const optimalSlotIndex = i; // 0-1 for the 2 best slots
       const { venue, timeslot } = await priorityOrderService.getMatchDetails(optimalSlotIndex, 2);
       
       // Determine the correct date based on the selected slot's day_of_week
-      const baseDate = playingWeeks[3];
+      const baseDate = playingWeeks[baseWeekIndex];
       const isMonday = timeslot?.day_of_week === 1;
       const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
       
@@ -264,7 +305,9 @@ export const bekerService = {
     const { venue: finalVenue, timeslot: finalTimeslot } = await priorityOrderService.getMatchDetails(optimalSlotIndex, 1);
     
     // Determine the correct date based on the selected slot's day_of_week
-    const baseDate = playingWeeks[4];
+    // Use last week index (4 for 5-week schedule, 3 for 4-week schedule)
+    const baseWeekIndex = playingWeeks.length === 5 ? 4 : 3;
+    const baseDate = playingWeeks[baseWeekIndex];
     const isMonday = finalTimeslot?.day_of_week === 1;
     const finalDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
     
@@ -343,22 +386,22 @@ export const bekerService = {
       // Create all cup matches
       const cupMatches = [];
 
-      // Create 8e finales (8 matches) - split over 2 weeks (4 per week) with priority slots in order
+      // Create 8e finales - number of matches depends on available teams; split over 2 weeks for 5-week schedule or condensed into week 1 for 4-week schedule
       console.log('🏆 Creating 1/8 finales with optimal timeslot distribution...');
       const eightFinals = await bekerService.createEightFinals(shuffledTeams, playingWeeks, { teamPreferences, venues });
       cupMatches.push(...eightFinals);
 
-      // Create kwartfinales (4 matches) - week 3 with optimal timeslots
+      // Create kwartfinales (4 matches) - dynamic week index based on schedule length
       console.log('🏆 Creating kwartfinales with optimal timeslot distribution...');
       const quarterFinals = await bekerService.createQuarterFinals(playingWeeks);
       cupMatches.push(...quarterFinals);
 
-      // Create halve finales (2 matches) - week 4 with optimal timeslots
+      // Create halve finales (2 matches) - dynamic week index based on schedule length
       console.log('🏆 Creating halve finales with optimal timeslot distribution...');
       const semiFinals = await bekerService.createSemiFinals(playingWeeks);
       cupMatches.push(...semiFinals);
 
-      // Create finale (1 match) - week 5 with optimal timeslot
+      // Create finale (1 match) - dynamic week index based on schedule length
       console.log('🏆 Creating finale with optimal timeslot...');
       const final = await bekerService.createFinal(playingWeeks);
       cupMatches.push(...final);
@@ -371,9 +414,11 @@ export const bekerService = {
       if (error) throw error;
 
       console.log('✅ Cup tournament created successfully with optimal timeslot distribution');
+      const isFullBracket = teams.length === 16;
+      const weeksUsed = selectedDates.length;
       return { 
         success: true, 
-        message: `Bekertoernooi succesvol aangemaakt! 8 wedstrijden verdeeld over 2 weken met optimale speelmomenten. Gebruikt ${venues.length} venue(s), ${timeslots.length} tijdslot(s) en ${vacations.length} vakantieperiode(s) uit de database.` 
+        message: `Bekertoernooi succesvol aangemaakt! Schema over ${weeksUsed} week(en) (${isFullBracket ? 'volledige 16-teams bracket' : 'geconsolideerd schema voor minder teams'}). Gebruikt ${venues.length} venue(s), ${timeslots.length} tijdslot(s) en ${vacations.length} vakantieperiode(s) uit de database.` 
       };
 
     } catch (error) {

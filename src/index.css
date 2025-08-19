@@ -113,6 +113,7 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
 .btn--primary:hover, .btn--primary:focus {
   background: var(--purple-500);
   border-color: var(--purple-500);
+  color: var(--main-color-dark);
 }
 .btn--secondary {
   background: var(--purple-200);
