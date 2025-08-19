@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { seasonService } from "@/services/seasonService";
 import { priorityOrderService } from "@/services/priorityOrderService";
+import { teamService } from "@/services/core/teamService";
+import { normalizeTeamsPreferences, scoreTeamForDetails, TeamPreferencesNormalized } from "@/services/core/teamPreferencesService";
 
 export interface CupMatch {
   match_id: number;
@@ -29,7 +31,7 @@ export interface TournamentBracket {
   finale: any;
 }
 
-export const cupService = {
+export const bekerService = {
   addDaysToDate(dateStr: string, days: number): string {
     const date = new Date(dateStr);
     date.setDate(date.getDate() + days);
@@ -141,7 +143,7 @@ export const cupService = {
     };
   },
 
-  async createEightFinals(shuffledTeams: number[], playingWeeks: string[]): Promise<any[]> {
+  async createEightFinals(shuffledTeams: number[], playingWeeks: string[], opts?: { teamPreferences?: Map<number, TeamPreferencesNormalized>; venues?: any[] }): Promise<any[]> {
     const cupMatches = [];
     
     for (let i = 0; i < 8; i++) {
@@ -149,22 +151,39 @@ export const cupService = {
       const awayTeamIndex = i * 2 + 1;
       const weekIndex = i < 4 ? 0 : 1; // First 4 matches in week 0, last 4 in week 1
       const matchIndexInWeek = i % 4; // 0-3 for each week (4 matches per week)
-      
-      // Get the optimal timeslot for this match (using priority slots in order)
-      const optimalSlotIndex = matchIndexInWeek; // 0-3 for the 4 best slots per week
-      const { venue, timeslot } = await priorityOrderService.getMatchDetails(optimalSlotIndex, 4); // 4 matches per week
+
+      // Kies beste slot (0..3) op basis van teamvoorkeuren (indien beschikbaar)
+      let bestSlot = matchIndexInWeek;
+      let bestScore = -1;
+      for (let s = 0; s < 4; s++) {
+        const { venue, timeslot } = await priorityOrderService.getMatchDetails(s, 4);
+        let combined = 0;
+        if (opts?.teamPreferences && opts?.venues) {
+          const homeId = shuffledTeams[homeTeamIndex];
+          const awayId = shuffledTeams[awayTeamIndex];
+          const h = scoreTeamForDetails(opts.teamPreferences.get(homeId), timeslot, venue, opts.venues);
+          const a = scoreTeamForDetails(opts.teamPreferences.get(awayId), timeslot, venue, opts.venues);
+          combined = h.score + a.score;
+        }
+        if (combined > bestScore) {
+          bestScore = combined;
+          bestSlot = s;
+        }
+      }
+
+      const { venue, timeslot } = await priorityOrderService.getMatchDetails(bestSlot, 4); // 4 matches per week
       
       // Determine the correct date based on the selected slot's day_of_week
       const baseDate = playingWeeks[weekIndex];
       const isMonday = timeslot?.day_of_week === 1;
-      const matchDate = isMonday ? baseDate : cupService.addDaysToDate(baseDate, 1);
+      const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
       
       // Format the match date with the selected time
       const matchDateTime = `${matchDate}T${timeslot?.start_time || '19:00'}:00+02:00`;
       
-      console.log(`🎯 Match ${i + 1}: Week ${weekIndex + 1}, ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${optimalSlotIndex + 1} (Priority ${timeslot?.priority || 'N/A'}), Venue: ${venue}`);
+      console.log(`🎯 Match ${i + 1}: Week ${weekIndex + 1}, ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${bestSlot + 1} (Priority ${timeslot?.priority || 'N/A'}), Venue: ${venue}, prefScore=${bestScore}`);
       
-      cupMatches.push(cupService.createMatchObject(
+      cupMatches.push(bekerService.createMatchObject(
         `1/8-${i + 1}`,
         `1/8 Finale ${i + 1}`,
         shuffledTeams[homeTeamIndex],
@@ -188,14 +207,14 @@ export const cupService = {
       // Determine the correct date based on the selected slot's day_of_week
       const baseDate = playingWeeks[2];
       const isMonday = timeslot?.day_of_week === 1;
-      const matchDate = isMonday ? baseDate : cupService.addDaysToDate(baseDate, 1);
+      const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
       
       // Format the match date with the selected time
       const matchDateTime = `${matchDate}T${timeslot?.start_time || '19:00'}:00+02:00`;
       
       console.log(`🎯 Kwartfinale ${i + 1}: ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${optimalSlotIndex + 1} (Priority ${timeslot?.priority || 'N/A'}), Venue: ${venue}`);
       
-      cupMatches.push(cupService.createMatchObject(
+      cupMatches.push(bekerService.createMatchObject(
         `QF-${i + 1}`,
         `Kwartfinale ${i + 1}`,
         null,
@@ -219,14 +238,14 @@ export const cupService = {
       // Determine the correct date based on the selected slot's day_of_week
       const baseDate = playingWeeks[3];
       const isMonday = timeslot?.day_of_week === 1;
-      const matchDate = isMonday ? baseDate : cupService.addDaysToDate(baseDate, 1);
+      const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
       
       // Format the match date with the selected time
       const matchDateTime = `${matchDate}T${timeslot?.start_time || '19:00'}:00+02:00`;
       
       console.log(`🎯 Halve finale ${i + 1}: ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${optimalSlotIndex + 1} (Priority ${timeslot?.priority || 'N/A'}), Venue: ${venue}`);
       
-      cupMatches.push(cupService.createMatchObject(
+      cupMatches.push(bekerService.createMatchObject(
         `SF-${i + 1}`,
         `Halve Finale ${i + 1}`,
         null,
@@ -247,14 +266,14 @@ export const cupService = {
     // Determine the correct date based on the selected slot's day_of_week
     const baseDate = playingWeeks[4];
     const isMonday = finalTimeslot?.day_of_week === 1;
-    const finalDate = isMonday ? baseDate : cupService.addDaysToDate(baseDate, 1);
+    const finalDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
     
     // Format the match date with the selected time
     const finalMatchDateTime = `${finalDate}T${finalTimeslot?.start_time || '19:00'}:00+02:00`;
     
     console.log(`🎯 Finale: ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${optimalSlotIndex + 1} (Priority ${finalTimeslot?.priority || 'N/A'}), Venue: ${finalVenue}`);
     
-    return [cupService.createMatchObject(
+    return [bekerService.createMatchObject(
       'FINAL',
       'Finale',
       null,
@@ -266,7 +285,7 @@ export const cupService = {
 
   async createCupTournament(teams: number[], selectedDates: string[]): Promise<{ success: boolean; message: string }> {
     // Validate input
-    const inputValidation = cupService.validateCupTournamentInput(teams, selectedDates);
+    const inputValidation = bekerService.validateCupTournamentInput(teams, selectedDates);
     if (!inputValidation.isValid) {
       return { success: false, message: inputValidation.message! };
     }
@@ -275,14 +294,14 @@ export const cupService = {
       console.log('🏆 Starting cup tournament creation...');
       
       // Check if cup matches already exist
-      const existingCheck = await cupService.checkExistingCupTournament();
+      const existingCheck = await bekerService.checkExistingCupTournament();
       if (existingCheck.exists) {
         return { success: false, message: existingCheck.message! };
       }
 
       // Load and validate season data
       console.log('📋 Loading competition data from database...');
-      const seasonValidation = await cupService.validateSeasonData();
+      const seasonValidation = await bekerService.validateSeasonData();
       if (!seasonValidation.isValid) {
         return { success: false, message: seasonValidation.message! };
       }
@@ -294,7 +313,7 @@ export const cupService = {
       console.log('🏖️ Vacation periods:', vacations.length);
       
       // Validate vacation conflicts
-      const vacationValidation = cupService.validateVacationConflicts(selectedDates, vacations);
+      const vacationValidation = bekerService.validateVacationConflicts(selectedDates, vacations);
       if (!vacationValidation.isValid) {
         return { success: false, message: vacationValidation.message! };
       }
@@ -303,7 +322,7 @@ export const cupService = {
       const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
 
       // Convert selected dates to playing weeks (Mondays)
-      const playingWeeks = cupService.convertToPlayingWeeks(selectedDates);
+      const playingWeeks = bekerService.convertToPlayingWeeks(selectedDates);
       console.log('📅 Original dates:', selectedDates);
       console.log('📅 Converted to playing weeks (Mondays):', playingWeeks);
 
@@ -316,27 +335,32 @@ export const cupService = {
       // Show the priority order for information
       await priorityOrderService.showPriorityOrder();
 
+      // Teamvoorkeuren inladen voor de 1/8 finales (enkel ronde met bekende teams)
+      const allTeamsData = await teamService.getAllTeams();
+      const selectedTeamsSet = new Set(teams);
+      const teamPreferences = normalizeTeamsPreferences(allTeamsData.filter(t => selectedTeamsSet.has(t.team_id)));
+
       // Create all cup matches
       const cupMatches = [];
 
       // Create 8e finales (8 matches) - split over 2 weeks (4 per week) with priority slots in order
       console.log('🏆 Creating 1/8 finales with optimal timeslot distribution...');
-      const eightFinals = await cupService.createEightFinals(shuffledTeams, playingWeeks);
+      const eightFinals = await bekerService.createEightFinals(shuffledTeams, playingWeeks, { teamPreferences, venues });
       cupMatches.push(...eightFinals);
 
       // Create kwartfinales (4 matches) - week 3 with optimal timeslots
       console.log('🏆 Creating kwartfinales with optimal timeslot distribution...');
-      const quarterFinals = await cupService.createQuarterFinals(playingWeeks);
+      const quarterFinals = await bekerService.createQuarterFinals(playingWeeks);
       cupMatches.push(...quarterFinals);
 
       // Create halve finales (2 matches) - week 4 with optimal timeslots
       console.log('🏆 Creating halve finales with optimal timeslot distribution...');
-      const semiFinals = await cupService.createSemiFinals(playingWeeks);
+      const semiFinals = await bekerService.createSemiFinals(playingWeeks);
       cupMatches.push(...semiFinals);
 
       // Create finale (1 match) - week 5 with optimal timeslot
       console.log('🏆 Creating finale with optimal timeslot...');
-      const final = await cupService.createFinal(playingWeeks);
+      const final = await bekerService.createFinal(playingWeeks);
       cupMatches.push(...final);
 
       // Insert all matches
@@ -408,7 +432,7 @@ export const cupService = {
       referee_notes: match.referee_notes
     }));
 
-    return cupService.groupMatchesByRound(matches);
+    return bekerService.groupMatchesByRound(matches);
   },
 
   groupMatchesByRound(matches: any[]): TournamentBracket {
@@ -581,7 +605,7 @@ export const cupService = {
 
   // Helper functions for winner advancement
   getNextMatchUniqueNumber(currentUniqueNumber: string): string | null {
-    const matchNumber = cupService.extractMatchNumber(currentUniqueNumber);
+    const matchNumber = bekerService.extractMatchNumber(currentUniqueNumber);
     
     if (currentUniqueNumber.startsWith('1/8-')) {
       return `QF-${Math.ceil(matchNumber / 2)}`;
@@ -599,12 +623,12 @@ export const cupService = {
       console.log(`🏆 Advancing winner (Team ${winnerTeamId}) to ${nextRound}...`);
       
       // Get current match details
-      const currentMatch = await cupService.getCupMatchById(matchId);
+      const currentMatch = await bekerService.getCupMatchById(matchId);
       if (!currentMatch) {
         return { success: false, message: "Wedstrijd niet gevonden." };
       }
 
-      const nextMatchUniqueNumber = cupService.getNextMatchUniqueNumber(currentMatch.unique_number!);
+      const nextMatchUniqueNumber = bekerService.getNextMatchUniqueNumber(currentMatch.unique_number!);
       if (!nextMatchUniqueNumber) {
         return { success: false, message: "Geen volgende ronde gevonden." };
       }
@@ -622,7 +646,7 @@ export const cupService = {
       }
 
       // Determine if winner should be home or away team
-      const shouldBeHome = cupService.shouldBeHomeTeam(currentMatch.unique_number!, cupService.extractMatchNumber(currentMatch.unique_number!));
+      const shouldBeHome = bekerService.shouldBeHomeTeam(currentMatch.unique_number!, bekerService.extractMatchNumber(currentMatch.unique_number!));
       
       const updateData: any = {};
       if (shouldBeHome) {
@@ -655,7 +679,7 @@ export const cupService = {
       console.log(`🤖 Auto-advancing winner for match ${matchId}...`);
       
       // Get current match details
-      const currentMatch = await cupService.getCupMatchById(matchId);
+      const currentMatch = await bekerService.getCupMatchById(matchId);
       if (!currentMatch) {
         return { success: false, message: "Wedstrijd niet gevonden." };
       }
@@ -676,13 +700,13 @@ export const cupService = {
       }
 
       // Get next round
-      const nextRound = cupService.getNextRound(currentMatch.unique_number!);
+      const nextRound = bekerService.getNextRound(currentMatch.unique_number!);
       if (!nextRound) {
         return { success: false, message: "Geen volgende ronde gevonden." };
       }
 
       // Advance winner
-      return await cupService.advanceWinner(matchId, winnerTeamId, nextRound);
+      return await bekerService.advanceWinner(matchId, winnerTeamId, nextRound);
     } catch (error) {
       console.error('Error auto-advancing winner:', error);
       return { 
@@ -696,7 +720,7 @@ export const cupService = {
     try {
       console.log(`🔄 Updating advancement for ${currentMatchUniqueNumber} with new winner ${newWinnerTeamId}...`);
       
-      const nextMatchUniqueNumber = cupService.getNextMatchUniqueNumber(currentMatchUniqueNumber);
+      const nextMatchUniqueNumber = bekerService.getNextMatchUniqueNumber(currentMatchUniqueNumber);
       if (!nextMatchUniqueNumber) {
         return { success: false, message: "Geen volgende wedstrijd gevonden." };
       }
@@ -714,7 +738,7 @@ export const cupService = {
       }
 
       // Determine if winner should be home or away team
-      const shouldBeHome = cupService.shouldBeHomeTeam(currentMatchUniqueNumber, cupService.extractMatchNumber(currentMatchUniqueNumber));
+      const shouldBeHome = bekerService.shouldBeHomeTeam(currentMatchUniqueNumber, bekerService.extractMatchNumber(currentMatchUniqueNumber));
       
       const updateData: any = {};
       if (shouldBeHome) {
@@ -746,13 +770,13 @@ export const cupService = {
     try {
       console.log(`🔄 Checking for cascade updates for match ${matchId}...`);
       
-      const currentMatch = await cupService.getCupMatchById(matchId);
+      const currentMatch = await bekerService.getCupMatchById(matchId);
       if (!currentMatch) {
         return { success: false, message: "Wedstrijd niet gevonden." };
       }
 
       // Check if this match affects later rounds
-      const nextMatchUniqueNumber = cupService.getNextMatchUniqueNumber(currentMatch.unique_number!);
+      const nextMatchUniqueNumber = bekerService.getNextMatchUniqueNumber(currentMatch.unique_number!);
       if (!nextMatchUniqueNumber) {
         return { success: true, message: "Geen cascade updates nodig." };
       }
@@ -792,7 +816,7 @@ export const cupService = {
     try {
       console.log(`🗑️ Clearing advancement for ${currentMatchUniqueNumber}...`);
       
-      const nextMatchUniqueNumber = cupService.getNextMatchUniqueNumber(currentMatchUniqueNumber);
+      const nextMatchUniqueNumber = bekerService.getNextMatchUniqueNumber(currentMatchUniqueNumber);
       if (!nextMatchUniqueNumber) {
         return { success: false, message: "Geen volgende wedstrijd gevonden." };
       }

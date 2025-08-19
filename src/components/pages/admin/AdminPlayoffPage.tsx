@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Loader2, Trophy, AlertCircle, Trash2, Users, Calendar, Target } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { competitionService, CompetitionMatch } from "@/services/match/competitionService";
+import { playoffService } from "@/services/match/playoffService";
 import { teamService } from "@/services/core/teamService";
 import { seasonService } from "@/services/seasonService";
 
@@ -172,7 +173,7 @@ const AdminPlayoffPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const result = await competitionService.generateAndSavePlayoffs(
+      const result = await playoffService.generateAndSavePlayoffs(
         selectedTopTeams,
         selectedBottomTeams,
         playoffConfig.rounds,
@@ -216,7 +217,7 @@ const AdminPlayoffPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const result = await competitionService.deletePlayoffMatches();
+      const result = await playoffService.deletePlayoffMatches();
       
       if (result.success) {
         toast({

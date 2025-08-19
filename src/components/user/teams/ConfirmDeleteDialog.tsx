@@ -9,7 +9,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
 
 interface Team {
   team_id: number;
@@ -33,23 +32,23 @@ const ConfirmDeleteDialog: React.FC<ConfirmDeleteDialogProps> = ({
 }) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="modal">
         <AlertDialogHeader>
-          <AlertDialogTitle>Team verwijderen</AlertDialogTitle>
-          <AlertDialogDescription>
-            Weet je zeker dat je het team <strong>"{team?.team_name}"</strong> wilt verwijderen?
-            <br /><br />
-            Deze actie kan niet ongedaan worden gemaakt. Het team en alle gerelateerde gegevens zullen permanent worden verwijderd.
-          </AlertDialogDescription>
+          <AlertDialogTitle className="modal__title">Team verwijderen</AlertDialogTitle>
+          <div className="text-center">
+            Weet je zeker dat je <strong>{team?.team_name}</strong> wilt verwijderen?
+            <br />
+            Deze actie kan niet ongedaan worden gemaakt.
+          </div>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>
+        <AlertDialogFooter className="modal__actions">
+          <AlertDialogCancel disabled={loading} className="btn btn--secondary flex-1">
             Annuleren
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             disabled={loading}
-            className="bg-red-600 hover:bg-red-700"
+            className="btn btn--danger flex-1"
           >
             {loading ? "Verwijderen..." : "Verwijderen"}
           </AlertDialogAction>

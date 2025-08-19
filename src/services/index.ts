@@ -21,7 +21,7 @@ export { monthlyReportsService, type MonthlyReport } from './financial/monthlyRe
 export { matchService } from './match/matchService';
 export { enhancedMatchService } from './match/enhancedMatchService';
 export { fetchCompetitionMatches, fetchAllCards, type MatchData, type CardData } from './match/matchDataService';
-export { cupService, type CupMatch } from './match/cupService';
+export { bekerService as cupService, type CupMatch } from './match/cupService';
 
 // Individual services that don't fit in categories
 export { fetchBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost, type BlogPost } from './blogService';

@@ -66,7 +66,7 @@ function AdminTeamSelector<T extends { team_id: number; team_name: string }>(
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              className="justify-between"
+              className="justify-between w-auto max-w-full bg-white"
               disabled={disabled}
             >
               {selectedCount > 0
@@ -97,29 +97,42 @@ function AdminTeamSelector<T extends { team_id: number; team_name: string }>(
               <CommandList>
                 <CommandGroup>
                   <ScrollArea className="h-72">
-                    {teams.map(team => (
-                      <CommandItem
-                        key={team.team_id}
-                        onSelect={() => onToggle(team.team_id)}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={selectedIds.includes(team.team_id)}
-                          onCheckedChange={() => onToggle(team.team_id)}
-                          id={`admin-team-${team.team_id}`}
-                          className="mr-2"
-                        />
-                        <Label htmlFor={`admin-team-${team.team_id}`} className="flex-grow cursor-pointer">
-                          {team.team_name}
-                        </Label>
-                        <Check
+                    {teams.map(team => {
+                      const isSelected = selectedIds.includes(team.team_id);
+                      return (
+                        <CommandItem
+                          key={team.team_id}
+                          onSelect={() => onToggle(team.team_id)}
+                          onClick={() => onToggle(team.team_id)}
                           className={cn(
-                            "ml-auto h-4 w-4",
-                            selectedIds.includes(team.team_id) ? "opacity-100" : "opacity-0"
+                            "flex items-center gap-2 cursor-pointer",
+                            isSelected && "bg-purple-50 hover:bg-purple-100"
                           )}
-                        />
-                      </CommandItem>
-                    ))}
+                          aria-selected={isSelected}
+                        >
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => onToggle(team.team_id)}
+                            id={`admin-team-${team.team_id}`}
+                            className="mr-2 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600 data-[state=checked]:text-white focus:ring-purple-600"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <Label 
+                            htmlFor={`admin-team-${team.team_id}`} 
+                            className="flex-grow cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {team.team_name}
+                          </Label>
+                          <Check
+                            className={cn(
+                              "ml-auto h-4 w-4",
+                              isSelected ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                        </CommandItem>
+                      );
+                    })}
                   </ScrollArea>
                 </CommandGroup>
               </CommandList>

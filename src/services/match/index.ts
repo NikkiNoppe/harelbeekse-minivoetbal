@@ -2,4 +2,4 @@
 export { matchService } from './matchService';
 export { enhancedMatchService } from './enhancedMatchService';
 export { fetchCompetitionMatches, fetchAllCards, type MatchData, type CardData } from './matchDataService';
-export { cupService, type CupMatch } from './cupService'; 
+export { bekerService as cupService, type CupMatch } from './cupService'; 

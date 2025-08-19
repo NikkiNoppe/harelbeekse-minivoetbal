@@ -2,7 +2,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { seasonService } from "@/services/seasonService";
 import { priorityOrderService } from "@/services/priorityOrderService";
 import { teamService } from "@/services/core/teamService";
-import { cupService } from "./cupService";
+import { normalizeTeamsPreferences, scoreTeamForDetails, TeamPreferencesNormalized } from "@/services/core/teamPreferencesService";
+import { playoffService } from "@/services/match/playoffService";
+import { bekerService as cupService } from "./cupService";
 
 export interface CompetitionMatch {
   match_id: number;
@@ -99,6 +101,7 @@ export const competitionService = {
     const timeslots = seasonData.venue_timeslots || [];
     const vacations = seasonData.vacation_periods || [];
     const formats = seasonData.competition_formats || [];
+    const day_names = seasonData.day_names || [];
     
     if (venues.length === 0) {
       return { isValid: false, message: "Geen venues beschikbaar in de database. Configureer eerst de competitiedata." };
@@ -112,7 +115,7 @@ export const competitionService = {
       return { isValid: false, message: "Geen competitieformaten beschikbaar in de database. Configureer eerst de competitiedata." };
     }
 
-    return { isValid: true, data: { venues, timeslots, vacations, formats } };
+    return { isValid: true, data: { venues, timeslots, vacations, formats, day_names } };
   },
 
   // Genereer automatisch speelweken gebaseerd op seizoen data
@@ -265,44 +268,28 @@ export const competitionService = {
     
     console.log(`🏆 Genereer round-robin voor ${n} teams: [${teams.join(', ')}]`);
     
-    // Circle Method implementatie voor round-robin
-    // Voor 16 teams = 15 speeldagen (n-1)
+    // Circle Method implementatie voor round-robin (O(n^2) -> O(n^2) maar zonder per-speeldag array-rotaties)
+    // Voor n teams = n-1 speeldagen
     const numMatchdays = n - 1;
-    
     for (let matchday = 0; matchday < numMatchdays; matchday++) {
       const matchdayMatches: Array<{ home: number; away: number; matchday: number }> = [];
-      
-      // Creëer een rotatie array voor deze speeldag
-      // Team aan index 0 blijft vast, anderen roteren
-      const roundTeams = [...teams];
-      
-      // Roteer alle teams behalve de eerste voor deze speeldag
-      if (matchday > 0) {
-        const fixed = roundTeams[0];
-        const rotating = roundTeams.slice(1);
-        
-        // Roteer de array 'matchday' posities naar rechts
-        for (let r = 0; r < matchday; r++) {
-          const last = rotating.pop()!;
-          rotating.unshift(last);
-        }
-        
-        roundTeams[0] = fixed;
-        for (let i = 1; i < roundTeams.length; i++) {
-          roundTeams[i] = rotating[i - 1];
-        }
-      }
-      
-      // Genereer wedstrijden voor deze speeldag: match team i met team (n-1-i)
+      // Index 0 is vast; overige n-1 roteren
       for (let i = 0; i < n / 2; i++) {
-        const home = roundTeams[i];
-        const away = roundTeams[n - 1 - i];
-        
-        matchdayMatches.push({
-          home,
-          away,
-          matchday: matchday + 1
-        });
+        let home: number;
+        let away: number;
+        if (i === 0) {
+          // Ploeg 0 tegen een roterende tegenstander
+          const rotatingIndex = (n - 1 - matchday) % (n - 1);
+          home = teams[0];
+          away = teams[1 + rotatingIndex];
+        } else {
+          // Twee roterende ploegen tegen elkaar
+          const leftIndex = (matchday + (i - 1)) % (n - 1);
+          const rightIndex = (n - 2 - matchday - (i - 1) + (n - 1)) % (n - 1);
+          home = teams[1 + leftIndex];
+          away = teams[1 + rightIndex];
+        }
+        matchdayMatches.push({ home, away, matchday: matchday + 1 });
       }
       
       // Valideer dat elk team exact 1x voorkomt op deze speeldag
@@ -338,13 +325,24 @@ export const competitionService = {
   // Verbeterde distributie met correct round-robin algoritme
   async distributeMatchesOverWeeks(
     matches: Array<{ home: number; away: number; round: number; matchday?: number }>,
-    playingWeeks: string[]
+    playingWeeks: string[],
+    options?: {
+      teamPreferences?: Map<number, TeamPreferencesNormalized>;
+      venues?: any[];
+      dayNames?: string[];
+    }
   ): Promise<Array<{ match: { home: number; away: number; round: number }; week: number; slot: number }>> {
     const distributedMatches: Array<{ match: { home: number; away: number; round: number }; week: number; slot: number }> = [];
     const matchesPerWeek = 7; // 7 speelmomenten per week
     const totalMatches = matches.length;
     
     console.log(`📊 Distributie info: ${totalMatches} wedstrijden, ${playingWeeks.length} weken beschikbaar`);
+    
+    // Bepaal totaal aantal unieke teams en afgeleide wedstrijden per speeldag (helft van teams, afgerond naar beneden)
+    const allTeamsSet = new Set<number>();
+    matches.forEach((m) => { allTeamsSet.add(m.home); allTeamsSet.add(m.away); });
+    const totalTeamsCount = allTeamsSet.size;
+    const matchesPerMatchday = Math.max(1, Math.floor(totalTeamsCount / 2));
     
     // Track teams per week om conflicten te voorkomen
     const teamsPerWeek: Map<number, Set<number>> = new Map();
@@ -360,8 +358,8 @@ export const competitionService = {
     const matchesByMatchday = new Map<number, Array<{ home: number; away: number; round: number }>>();
     
     matches.forEach((match, index) => {
-      // Gebruik de matchday van het round-robin algoritme, of bereken het
-      const matchday = match.matchday || Math.floor(index / 8) + 1;
+      // Gebruik de matchday van het round-robin algoritme, of bereken het dynamisch
+      const matchday = match.matchday || Math.floor(index / matchesPerMatchday) + 1;
       if (!matchesByMatchday.has(matchday)) {
         matchesByMatchday.set(matchday, []);
       }
@@ -370,6 +368,16 @@ export const competitionService = {
     
     console.log(`🏆 Competitie structuur: ${matchesByMatchday.size} speeldagen`);
     
+    // Helper: score volgens opgegeven regels per team
+    const scoreTeamForSlot = async (
+      teamId: number,
+      slotIndex: number
+    ): Promise<{ score: number; matched: number; provided: number }> => {
+      const prefs = options?.teamPreferences?.get(teamId);
+      const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7);
+      return scoreTeamForDetails(prefs, timeslot, venue, options?.venues || []);
+    };
+
     // Verdeel elke speeldag over beschikbare weken, respecting team conflicts
     let currentWeek = 0;
     
@@ -387,20 +395,23 @@ export const competitionService = {
         teamsInMatchday.add(match.away);
       });
       
-      const expectedTeams = 16; // Voor 16 teams
-      if (teamsInMatchday.size !== expectedTeams) {
-        console.error(`⚠️ VALIDATIE FOUT - Speeldag ${matchday}: ${teamsInMatchday.size} teams in plaats van ${expectedTeams}`);
-        console.error(`Teams in speeldag:`, Array.from(teamsInMatchday).sort((a, b) => a - b));
-        
-        const allTeams = new Set<number>();
-        matches.forEach(match => {
-          allTeams.add(match.home);
-          allTeams.add(match.away);
-        });
-        const missingTeams = Array.from(allTeams).filter(t => !teamsInMatchday.has(t));
-        console.error(`Ontbrekende teams:`, missingTeams.sort((a, b) => a - b));
-        
-        throw new Error(`Speeldag ${matchday} validatie gefaald: ${teamsInMatchday.size}/${expectedTeams} teams. Ontbrekende teams: ${missingTeams.join(', ')}`);
+      // Verwacht: bij even aantal teams spelen alle teams; bij oneven aantal teams is er 1 bye (dus -1)
+      const expectedTeamsThisMatchday = totalTeamsCount % 2 === 0 ? totalTeamsCount : totalTeamsCount - 1;
+      if (teamsInMatchday.size !== expectedTeamsThisMatchday) {
+        const teamsList = Array.from(teamsInMatchday).sort((a, b) => a - b);
+        const missingTeams = Array.from(allTeamsSet).filter(t => !teamsInMatchday.has(t)).sort((a, b) => a - b);
+        if (totalTeamsCount % 2 === 1) {
+          // Oneven: 1 bye toegestaan → enkel waarschuwing
+          console.warn(`⚠️ VALIDATIE WAARSCHUWING - Speeldag ${matchday}: ${teamsInMatchday.size}/${expectedTeamsThisMatchday} teams (bye toegestaan).`);
+          console.warn(`Teams in speeldag:`, teamsList);
+          if (missingTeams.length > 0) console.warn(`Ontbrekende teams (bye):`, missingTeams);
+        } else {
+          // Even: dit hoort exact te kloppen → error
+          console.error(`❌ VALIDATIE FOUT - Speeldag ${matchday}: ${teamsInMatchday.size}/${expectedTeamsThisMatchday} teams.`);
+          console.error(`Teams in speeldag:`, teamsList);
+          console.error(`Ontbrekende teams:`, missingTeams);
+          throw new Error(`Speeldag ${matchday} validatie gefaald: ${teamsInMatchday.size}/${expectedTeamsThisMatchday} teams. Ontbrekende teams: ${missingTeams.join(', ')}`);
+        }
       }
       
       // Probeer alle wedstrijden van deze speeldag te plaatsen
@@ -409,31 +420,43 @@ export const competitionService = {
       for (const match of matchdayMatches) {
         let placed = false;
         
-        // Probeer in alle beschikbare weken (start bij huidige week)
-        for (let weekIndex = currentWeek; weekIndex < playingWeeks.length && !placed; weekIndex++) {
+        // Kies de beste week op basis van voorkeur-score voor het eerstvolgende slot in die week
+        let bestWeek: number | null = null;
+        let bestSlotForWeek: number = 0;
+        let bestScore = -1;
+
+        for (let weekIndex = currentWeek; weekIndex < playingWeeks.length; weekIndex++) {
           const weekTeams = teamsPerWeek.get(weekIndex)!;
           const slotsUsed = slotsPerWeek.get(weekIndex)!;
-          
-          // Check of deze week geschikt is
-          if (slotsUsed < matchesPerWeek && 
-              !weekTeams.has(match.home) && 
-              !weekTeams.has(match.away)) {
-            
-            // Plaats wedstrijd in deze week
-            weekTeams.add(match.home);
-            weekTeams.add(match.away);
-            teamsPerWeek.set(weekIndex, weekTeams);
-            slotsPerWeek.set(weekIndex, slotsUsed + 1);
-            
-            placedMatches.push({
-              match,
-              week: weekIndex,
-              slot: slotsUsed
-            });
-            
-            placed = true;
-            console.log(`  ✅ Geplaatst: Week ${weekIndex + 1}, Slot ${slotsUsed + 1}: Team ${match.home} vs Team ${match.away}`);
+          if (slotsUsed >= matchesPerWeek) continue;
+          if (weekTeams.has(match.home) || weekTeams.has(match.away)) continue;
+
+          const slotIndex = slotsUsed; // behoud sequentiële slotvulling
+          // Bereken combined score voor deze week/slot
+          let combined = 0;
+          if (options?.teamPreferences) {
+            const homeRes = await scoreTeamForSlot(match.home, slotIndex);
+            const awayRes = await scoreTeamForSlot(match.away, slotIndex);
+            combined = homeRes.score + awayRes.score;
           }
+
+          if (combined > bestScore) {
+            bestScore = combined;
+            bestWeek = weekIndex;
+            bestSlotForWeek = slotIndex;
+          }
+          // Bij gelijke score houden we de eerste (vroegste) week aan -> geen extra code nodig
+        }
+
+        if (bestWeek !== null) {
+          const weekTeams = teamsPerWeek.get(bestWeek)!;
+          weekTeams.add(match.home);
+          weekTeams.add(match.away);
+          teamsPerWeek.set(bestWeek, weekTeams);
+          slotsPerWeek.set(bestWeek, bestSlotForWeek + 1);
+          placedMatches.push({ match, week: bestWeek, slot: bestSlotForWeek });
+          placed = true;
+          console.log(`  ✅ Geplaatst: Week ${bestWeek + 1}, Slot ${bestSlotForWeek + 1}: Team ${match.home} vs Team ${match.away} (score ${bestScore})`);
         }
         
         if (!placed) {
@@ -468,10 +491,10 @@ export const competitionService = {
     
     // Log verdeling
     console.log('📅 Chronologische verdeling:');
-    sortedMatches.forEach(({ match, week, slot }) => {
+    sortedMatches.forEach(({ match, week, slot }, idx) => {
       const weekDate = playingWeeks[week];
-      const matchday = Math.floor(sortedMatches.findIndex(m => m === sortedMatches.find(sm => sm.match === match)) / 8) + 1;
-      console.log(`  Week ${week + 1} (${weekDate}): Slot ${slot + 1} - Speeldag ${matchday} - Team ${match.home} vs Team ${match.away}`);
+      const inferredMatchday = Math.floor(idx / matchesPerMatchday) + 1;
+      console.log(`  Week ${week + 1} (${weekDate}): Slot ${slot + 1} - Speeldag ${inferredMatchday} - Team ${match.home} vs Team ${match.away}`);
     });
     
     return sortedMatches;
@@ -560,6 +583,25 @@ export const competitionService = {
     }
     
     return matches;
+  },
+
+  // Helper: splits teams in bovenste en onderste helft (bij oneven: onderste helft is oneven)
+  splitTopBottomByRanking(teamsInRankingOrder: number[]): { top: number[]; bottom: number[] } {
+    return playoffService.splitTopBottomByRanking(teamsInRankingOrder);
+  },
+
+  // Helper: genereer playoff wedstrijden op basis van ranking (top/bottom aparte dubbele round-robin)
+  generatePlayoffsFromRanking(teamsInRankingOrder: number[], roundsPerGroup: number): Array<{ home: number; away: number; round: string }> {
+    const { top, bottom } = playoffService.splitTopBottomByRanking(teamsInRankingOrder);
+    const topMatches = playoffService.generatePlayoffRoundMatchesCustom(top, 'top_playoff', roundsPerGroup);
+    const bottomMatches = playoffService.generatePlayoffRoundMatchesCustom(bottom, 'bottom_playoff', roundsPerGroup);
+    const interleaved: Array<{ home: number; away: number; round: string }> = [];
+    const maxLen = Math.max(topMatches.length, bottomMatches.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i < topMatches.length) interleaved.push(topMatches[i]);
+      if (i < bottomMatches.length) interleaved.push(bottomMatches[i]);
+    }
+    return interleaved;
   },
 
   // Maak wedstrijd object voor database
@@ -675,8 +717,18 @@ export const competitionService = {
         };
       }
 
-      // Verdeel reguliere wedstrijden over weken
-      const distributedRegularMatches = await this.distributeMatchesOverWeeks(regularMatches, playingWeeks);
+      // Laad teamvoorkeuren en normaliseer
+      const allTeamsData = await teamService.getAllTeams();
+      const selectedTeamsSet = new Set(config.teams);
+      const teamPreferencesRaw = allTeamsData.filter(t => selectedTeamsSet.has(t.team_id));
+      const teamPreferences = normalizeTeamsPreferences(teamPreferencesRaw);
+
+      // Verdeel reguliere wedstrijden over weken met voorkeur-scoring
+      const distributedRegularMatches = await this.distributeMatchesOverWeeks(regularMatches, playingWeeks, {
+        teamPreferences,
+        venues: seasonValidation.data?.venues,
+        dayNames: seasonValidation.data?.day_names,
+      });
       console.log(`📊 Verdeelde reguliere wedstrijden: ${distributedRegularMatches.length}`);
 
       // Genereer alle wedstrijd objecten voor reguliere competitie
@@ -931,42 +983,7 @@ export const competitionService = {
 
   // Genereer beschikbare speelweken voor playoffs (zonder weekbehoefte-berekening)
   async generatePlayoffWeeks(start_date: string, end_date: string): Promise<string[]> {
-    const seasonData = await seasonService.getSeasonData();
-    const vacations = seasonData.vacation_periods || [];
-    const { cupDates } = await this.checkExistingCupMatches();
-
-    const startDate = new Date(start_date);
-    const endDate = new Date(end_date);
-    const weeks: string[] = [];
-
-    let currentDate = new Date(startDate);
-    currentDate.setDate(currentDate.getDate() - currentDate.getDay() + 1); // maandag
-
-    while (currentDate <= endDate) {
-      const weekStart = new Date(currentDate);
-      const weekDateStr = weekStart.toISOString().split('T')[0];
-
-      const isVacation = vacations.some((vacation: any) => {
-        if (!vacation.is_active) return false;
-        const vacStart = new Date(vacation.start_date);
-        const vacEnd = new Date(vacation.end_date);
-        return weekStart >= vacStart && weekStart <= vacEnd;
-      });
-
-      const hasCupConflict = cupDates?.some(cupDate => {
-        const cupWeekStart = new Date(cupDate);
-        cupWeekStart.setDate(cupWeekStart.getDate() - cupWeekStart.getDay() + 1);
-        return cupWeekStart.getTime() === weekStart.getTime();
-      });
-
-      if (!isVacation && !hasCupConflict) {
-        weeks.push(weekDateStr);
-      }
-
-      currentDate.setDate(currentDate.getDate() + 7);
-    }
-
-    return weeks;
+    return playoffService.generatePlayoffWeeks(start_date, end_date);
   },
 
   // Genereer rondes voor playoffs met configurable aantal rondes
@@ -1016,7 +1033,7 @@ export const competitionService = {
         if (i < bottomMatches.length) allMatches.push(bottomMatches[i]);
       }
 
-      // Distributie met 7 slots/week, geen team 2x per week
+      // Distributie met 7 slots/week, geen team 2x per week, met voorkeur-scoring
       const matchesPerWeek = 7;
       const teamsPerWeek: Map<number, Set<number>> = new Map();
       const slotsPerWeek: Map<number, number> = new Map();
@@ -1027,20 +1044,42 @@ export const competitionService = {
 
       const placed: Array<{ match: { home: number; away: number; round: string }; week: number; slot: number }> = [];
 
+      // Laad teamvoorkeuren voor alle betrokken teams
+      const allTeamsData = await teamService.getAllTeams();
+      const involvedTeams = new Set<number>([...topTeams, ...bottomTeams]);
+      const teamPrefs = normalizeTeamsPreferences(allTeamsData.filter(t => involvedTeams.has(t.team_id)));
+      const venues = seasonValidation.data?.venues || [];
+
       for (const m of allMatches) {
-        let placedMatch = false;
-        for (let w = 0; w < playingWeeks.length && !placedMatch; w++) {
+        // Kies beste week obv score voor slot = slotsUsed
+        let bestWeek: number | null = null;
+        let bestSlotForWeek = 0;
+        let bestScore = -1;
+        for (let w = 0; w < playingWeeks.length; w++) {
           const weekTeams = teamsPerWeek.get(w)!;
           const slotsUsed = slotsPerWeek.get(w)!;
-          if (slotsUsed < matchesPerWeek && !weekTeams.has(m.home) && !weekTeams.has(m.away)) {
-            weekTeams.add(m.home); weekTeams.add(m.away);
-            teamsPerWeek.set(w, weekTeams);
-            slotsPerWeek.set(w, slotsUsed + 1);
-            placed.push({ match: m, week: w, slot: slotsUsed });
-            placedMatch = true;
+          if (slotsUsed >= matchesPerWeek) continue;
+          if (weekTeams.has(m.home) || weekTeams.has(m.away)) continue;
+
+          const slotIndex = slotsUsed;
+          const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7);
+          const h = scoreTeamForDetails(teamPrefs.get(m.home), timeslot, venue, venues);
+          const a = scoreTeamForDetails(teamPrefs.get(m.away), timeslot, venue, venues);
+          const combined = h.score + a.score;
+          if (combined > bestScore) {
+            bestScore = combined;
+            bestWeek = w;
+            bestSlotForWeek = slotIndex;
           }
         }
-        if (!placedMatch) {
+
+        if (bestWeek !== null) {
+          const weekTeams = teamsPerWeek.get(bestWeek)!;
+          weekTeams.add(m.home); weekTeams.add(m.away);
+          teamsPerWeek.set(bestWeek, weekTeams);
+          slotsPerWeek.set(bestWeek, bestSlotForWeek + 1);
+          placed.push({ match: m, week: bestWeek, slot: bestSlotForWeek });
+        } else {
           return { success: false, message: "Onvoldoende weken/slots om alle playoff wedstrijden in te plannen." };
         }
       }

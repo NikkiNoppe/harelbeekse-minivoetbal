@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Table,
   TableBody,
@@ -10,16 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, User, Phone, Mail, Palette, Clock, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+// Removed local AlertDialog in favor of centralized ConfirmDeleteDialog in parent
 
 interface Team {
   team_id: number;
@@ -44,25 +35,9 @@ interface TeamsListProps {
 }
 
 const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
-
   const handleDeleteClick = (team: Team) => {
-    setTeamToDelete(team);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (teamToDelete) {
-      onDelete(teamToDelete);
-      setDeleteDialogOpen(false);
-      setTeamToDelete(null);
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteDialogOpen(false);
-    setTeamToDelete(null);
+    // Delegate opening of the delete confirmation to the parent
+    onDelete(team);
   };
 
   const formatPreferences = (preferences?: Team['preferred_play_moments']) => {
@@ -150,34 +125,7 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
         </div>
       </div>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="modal">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="modal__title">
-              Team verwijderen
-            </AlertDialogTitle>
-            <div className="text-center">
-              Weet je zeker dat je <strong>{teamToDelete?.team_name}</strong> wilt verwijderen?
-              <br />
-              Deze actie kan niet ongedaan worden gemaakt.
-            </div>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="modal__actions">
-            <AlertDialogAction 
-              onClick={handleConfirmDelete}
-              className="btn btn--danger flex-1"
-            >
-              Verwijderen
-            </AlertDialogAction>
-            <AlertDialogCancel 
-              onClick={handleCancelDelete}
-              className="btn btn--secondary flex-1"
-            >
-              Annuleren
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Delete confirmation is handled by parent via ConfirmDeleteDialog */}
     </>
   );
 };

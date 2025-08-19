@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,7 +11,6 @@ import { teamService } from "@/services/core/teamService";
 import { seasonService } from "@/services/seasonService";
 import AdminTeamSelector from "@/components/pages/admin/common/components/AdminTeamSelector";
 const AdminCompetitionPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("create");
   const [loading, setLoading] = useState(false);
   const [teams, setTeams] = useState<any[]>([]);
   const [formats, setFormats] = useState<CompetitionFormat[]>([]);
@@ -20,6 +18,8 @@ const AdminCompetitionPage: React.FC = () => {
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [venues, setVenues] = useState<any[]>([]);
+  const [timeslots, setTimeslots] = useState<any[]>([]);
   const [existingCompetition, setExistingCompetition] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -37,6 +37,8 @@ const AdminCompetitionPage: React.FC = () => {
       // Load formats
       const seasonData = await seasonService.getSeasonData();
       setFormats(seasonData.competition_formats || []);
+      setVenues(seasonData.venues || []);
+      setTimeslots(seasonData.venue_timeslots || []);
 
       // Set default dates from season data
       if (seasonData.season_start_date && seasonData.season_end_date) {
@@ -174,69 +176,78 @@ const AdminCompetitionPage: React.FC = () => {
           </div>
         </div>
 
-      <section>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="create">Competitie Aanmaken</TabsTrigger>
-            <TabsTrigger value="manage">Competitie Beheren</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="create" className="space-y-4 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Nieuwe Competitie Aanmaken</CardTitle>
-                <CardDescription>
-                  Maak een nieuwe competitie aan met automatische wedstrijdgeneratie
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Format Selection */}
-                <div className="space-y-2">
-                  <Label htmlFor="format">Competitie Format</Label>
-                  <Select value={selectedFormat} onValueChange={setSelectedFormat}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecteer een format" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {formats.map((format) => (
-                        <SelectItem key={format.id} value={format.id.toString()}>
-                          {format.name}
-                        </SelectItem>
+      <section className="space-y-6 mt-6">
+        {/* Competitie Aanmaken */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Nieuwe Competitie Aanmaken</CardTitle>
+            <CardDescription>
+              Maak een nieuwe competitie aan met automatische wedstrijdgeneratie
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Voorziene presets (alleen-lezen) */}
+            <div className="space-y-2">
+              <Label>Seizoensinstellingen (alleen-lezen)</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-3 rounded-md border bg-white">
+                  <div className="text-xs text-muted-foreground">Seizoensperiode</div>
+                  <div className="font-medium mt-1">
+                    {startDate && endDate ? (
+                      <span>{startDate} → {endDate}</span>
+                    ) : (
+                      <span>Onbekend</span>
+                    )}
+                  </div>
+                </div>
+                <div className="p-3 rounded-md border bg-white">
+                  <div className="text-xs text-muted-foreground">Locaties</div>
+                  <div className="font-medium mt-1">{venues.length} locatie(s)</div>
+                  {venues.length > 0 && (
+                    <ul className="mt-2 text-sm text-muted-foreground space-y-1 max-h-24 overflow-auto">
+                      {venues.map((v: any, idx: number) => (
+                        <li key={idx}>• {v.name || v.venue_name || `Locatie ${idx+1}`}</li>
                       ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedFormat && (
-                    <p className="text-sm text-muted-foreground">
-                      {formats.find(f => f.id.toString() === selectedFormat)?.description}
-                    </p>
+                    </ul>
                   )}
                 </div>
-
-                {/* Date Selection */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate">Start Datum</Label>
-                    <input
-                      id="startDate"
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="endDate">Eind Datum</Label>
-                    <input
-                      id="endDate"
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
+                <div className="p-3 rounded-md border bg-white">
+                  <div className="text-xs text-muted-foreground">Tijdstippen</div>
+                  <div className="font-medium mt-1">{timeslots.length} tijdstip(pen)</div>
+                  {timeslots.length > 0 && (
+                    <ul className="mt-2 text-sm text-muted-foreground space-y-1 max-h-24 overflow-auto">
+                      {timeslots.map((t: any, idx: number) => (
+                        <li key={idx}>• {(t.start_time && t.end_time) ? `${t.start_time} - ${t.end_time}` : (t.label || t.timeslot_id || `Tijdslot ${idx+1}`)}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
+              </div>
+            </div>
 
-                {/* Team Selection */}
+            {/* Format + Teams side-by-side layout */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2 md:col-span-1">
+                <Label htmlFor="format">Competitie Format</Label>
+                <Select value={selectedFormat} onValueChange={setSelectedFormat}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecteer een format" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {formats.map((format) => (
+                      <SelectItem key={format.id} value={format.id.toString()}>
+                        {format.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedFormat && (
+                  <p className="text-sm text-muted-foreground">
+                    {formats.find(f => f.id.toString() === selectedFormat)?.description}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2 md:col-span-2">
                 <AdminTeamSelector
                   label={`Selecteer Teams`}
                   teams={teams}
@@ -244,92 +255,77 @@ const AdminCompetitionPage: React.FC = () => {
                   onToggle={handleTeamToggle}
                   onSelectAll={() => setSelectedTeams(teams.map(t => t.team_id))}
                   onClearAll={() => setSelectedTeams([])}
+                  className="w-full"
                 />
 
-                {/* Planning Information */}
-                {selectedFormat && selectedTeams.length > 0 && startDate && endDate && (
-                  <div className="space-y-2">
-                    <Label>Competitie Planning</Label>
-                    <div className="p-4 bg-muted rounded-lg space-y-2">
-                      {(() => {
-                        const format = formats.find(f => f.id.toString() === selectedFormat);
-                        if (!format) return null;
-                        
-                        const regularMatches = selectedTeams.length * (selectedTeams.length - 1) / 2; // 1 ronde per team
-                        const playoffMatches = 0; // Playoffs worden later apart gegenereerd
-                        const totalMatches = regularMatches;
-                        const weeksNeeded = Math.ceil(totalMatches / 7);
-                        
-                        const start = new Date(startDate);
-                        const end = new Date(endDate);
-                        const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-                        const totalWeeks = Math.ceil(totalDays / 7);
-                        
-                        const isFeasible = totalWeeks >= weeksNeeded;
-                        
+                {/* Speelmoment voorkeuren (alleen-lezen) voor geselecteerde teams */}
+                <div className="mt-2">
+                  <Label>Speelmoment voorkeuren</Label>
+                  {selectedTeams.length === 0 ? (
+                    <div className="text-sm text-muted-foreground mt-1">
+                      Selecteer één of meerdere teams om hun speelmoment voorkeuren te bekijken.
+                    </div>
+                  ) : (
+                    <div className="mt-2 grid grid-cols-1 gap-2 max-h-60 overflow-auto">
+                      {selectedTeams.map((teamId) => {
+                        const team = teams.find((t: any) => t.team_id === teamId);
+                        const prefs = team?.preferred_play_moments as any | undefined;
+                        const dayList: string[] = Array.isArray(prefs?.days) ? prefs!.days : [];
+                        const timeslotList: string[] = Array.isArray(prefs?.timeslots) ? prefs!.timeslots : [];
+                        const venueIdList: number[] = Array.isArray(prefs?.venues) ? prefs!.venues : [];
+                        const venueNames = venueIdList.map((id) => {
+                          const v = venues.find((vv: any) => (vv.venue_id ?? vv.id) === id);
+                          return v?.name || v?.venue_name || `Locatie ${id}`;
+                        });
+
                         return (
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span>Teams:</span>
-                              <span className="font-medium">{selectedTeams.length}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Reguliere competitie:</span>
-                              <span className="font-medium">1 ronde (thuis/uit)</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Reguliere wedstrijden:</span>
-                              <span className="font-medium">{regularMatches}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Playoff wedstrijden:</span>
-                              <span className="font-medium">Later apart gegenereerd</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Totaal wedstrijden:</span>
-                              <span className="font-medium">{totalMatches}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Weken nodig:</span>
-                              <span className="font-medium">{weeksNeeded}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Beschikbare weken:</span>
-                              <span className="font-medium">{totalWeeks}</span>
-                            </div>
-                            <div className={`flex justify-between font-medium ${isFeasible ? 'text-green-600' : 'text-red-600'}`}>
-                              <span>Status:</span>
-                              <span>{isFeasible ? '✅ Haalbaar' : '❌ Niet haalbaar'}</span>
-                            </div>
-                            {!isFeasible && (
-                              <div className="text-xs text-muted-foreground mt-2">
-                                <p>Suggesties:</p>
-                                <ul className="list-disc list-inside space-y-1 mt-1">
-                                  <li>Verminder het aantal teams</li>
-                                  <li>Breid de einddatum uit</li>
-                                  <li>Speel meer wedstrijden per week</li>
-                                </ul>
+                          <div key={teamId} className="p-3 rounded-md border bg-white">
+                            <div className="text-sm font-semibold mb-1">{team?.team_name || `Team ${teamId}`}</div>
+                            {prefs ? (
+                              <div className="text-sm space-y-1">
+                                <div className="flex gap-2">
+                                  <span className="text-muted-foreground min-w-24">Dagen:</span>
+                                  <span className="font-medium">{dayList.length ? dayList.join(', ') : '-'}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                  <span className="text-muted-foreground min-w-24">Tijdstippen:</span>
+                                  <span className="font-medium">{timeslotList.length ? timeslotList.join(', ') : '-'}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                  <span className="text-muted-foreground min-w-24">Locaties:</span>
+                                  <span className="font-medium">{venueNames.length ? venueNames.join(', ') : '-'}</span>
+                                </div>
+                                {prefs?.notes && (
+                                  <div className="flex gap-2">
+                                    <span className="text-muted-foreground min-w-24">Notities:</span>
+                                    <span className="font-medium">{prefs.notes}</span>
+                                  </div>
+                                )}
                               </div>
+                            ) : (
+                              <div className="text-sm text-muted-foreground">Geen voorkeuren opgegeven.</div>
                             )}
                           </div>
                         );
-                      })()}
+                      })}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+              </div>
+            </div>
 
-                {/* Create Button */}
-                {(() => {
-                  const format = formats.find(f => f.id.toString() === selectedFormat);
-                  const isPlanningValid = selectedFormat && selectedTeams.length > 0 && startDate && endDate;
-                  
-                  let isFeasible = true;
-                  let disabledReason = "";
-                  
-                                     if (isPlanningValid && format) {
-                                          const regularMatches = selectedTeams.length * (selectedTeams.length - 1) / 2; // 1 ronde per team
-                     const playoffMatches = 0; // Playoffs worden later apart gegenereerd
-                     const totalMatches = regularMatches;
+            {/* Planning Information */}
+            {selectedFormat && selectedTeams.length > 0 && startDate && endDate && (
+              <div className="space-y-2">
+                <Label>Competitie Planning</Label>
+                <div className="p-4 bg-muted rounded-lg space-y-2">
+                  {(() => {
+                    const format = formats.find(f => f.id.toString() === selectedFormat);
+                    if (!format) return null;
+                    
+                    const regularMatches = selectedTeams.length * (selectedTeams.length - 1) / 2; // 1 ronde per team
+                    const playoffMatches = 0; // Playoffs worden later apart gegenereerd
+                    const totalMatches = regularMatches;
                     const weeksNeeded = Math.ceil(totalMatches / 7);
                     
                     const start = new Date(startDate);
@@ -337,95 +333,192 @@ const AdminCompetitionPage: React.FC = () => {
                     const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
                     const totalWeeks = Math.ceil(totalDays / 7);
                     
-                    isFeasible = totalWeeks >= weeksNeeded;
-                    if (!isFeasible) {
-                      disabledReason = `Niet genoeg tijd: ${weeksNeeded} weken nodig, ${totalWeeks} beschikbaar`;
-                    }
-                  }
-                  
-                  return (
-                    <Button 
-                      onClick={handleCreateCompetition} 
-                      disabled={loading || !isPlanningValid || !isFeasible}
-                      className="w-full"
-                      title={disabledReason}
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Competitie aanmaken...
-                        </>
-                      ) : (
-                        <>
-                          <Trophy className="mr-2 h-4 w-4" />
-                          Competitie Aanmaken
-                        </>
-                      )}
-                    </Button>
-                  );
-                })()}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="manage" className="space-y-4 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Competitie Beheren</CardTitle>
-                <CardDescription>
-                  Bekijk en beheer de huidige competitie
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {hasExistingCompetition ? (
-                  <div className="space-y-4">
-                    <Alert>
-                      <CheckCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Er is een competitie actief met {existingCompetition.length} wedstrijden.
-                      </AlertDescription>
-                    </Alert>
+                    const isFeasible = totalWeeks >= weeksNeeded;
                     
-                    <div className="space-y-2">
-                      <h4 className="font-medium">Competitie Statistieken:</h4>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        <li>• Totaal wedstrijden: {existingCompetition.length}</li>
-                        <li>• Reguliere wedstrijden: {existingCompetition.filter(m => !m.is_playoff_match).length}</li>
-                        <li>• Playoff wedstrijden: {existingCompetition.filter(m => m.is_playoff_match).length}</li>
-                      </ul>
-                    </div>
+                    return (
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>Teams:</span>
+                          <span className="font-medium">{selectedTeams.length}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Reguliere competitie:</span>
+                          <span className="font-medium">1 ronde (thuis/uit)</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Reguliere wedstrijden:</span>
+                          <span className="font-medium">{regularMatches}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Playoff wedstrijden:</span>
+                          <span className="font-medium">Later apart gegenereerd</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Totaal wedstrijden:</span>
+                          <span className="font-medium">{totalMatches}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Weken nodig:</span>
+                          <span className="font-medium">{weeksNeeded}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Beschikbare weken:</span>
+                          <span className="font-medium">{totalWeeks}</span>
+                        </div>
+                        <div className={`flex justify-between font-medium ${isFeasible ? 'text-green-600' : 'text-red-600'}`}>
+                          <span>Status:</span>
+                          <span>{isFeasible ? '✅ Haalbaar' : '❌ Niet haalbaar'}</span>
+                        </div>
+                        {!isFeasible && (
+                          <div className="text-xs text-muted-foreground mt-2">
+                            <p>Suggesties:</p>
+                            <ul className="list-disc list-inside space-y-1 mt-1">
+                              <li>Verminder het aantal teams</li>
+                              <li>Breid de einddatum uit</li>
+                              <li>Speel meer wedstrijden per week</li>
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
 
-                    <Button 
-                      onClick={handleDeleteCompetition}
-                      disabled={loading}
-                      variant="destructive"
-                      className="w-full"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Verwijderen...
-                        </>
-                      ) : (
-                        <>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Competitie Verwijderen
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Er is momenteel geen competitie actief. Maak een nieuwe competitie aan om te beginnen.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            {/* Create Button */}
+            {(() => {
+              const format = formats.find(f => f.id.toString() === selectedFormat);
+              const isPlanningValid = selectedFormat && selectedTeams.length > 0 && startDate && endDate;
+              
+              let isFeasible = true;
+              let disabledReason = "";
+              
+              if (isPlanningValid && format) {
+                const regularMatches = selectedTeams.length * (selectedTeams.length - 1) / 2; // 1 ronde per team
+                const playoffMatches = 0; // Playoffs worden later apart gegenereerd
+                const totalMatches = regularMatches;
+                const weeksNeeded = Math.ceil(totalMatches / 7);
+                
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                const totalWeeks = Math.ceil(totalDays / 7);
+                
+                isFeasible = totalWeeks >= weeksNeeded;
+                if (!isFeasible) {
+                  disabledReason = `Niet genoeg tijd: ${weeksNeeded} weken nodig, ${totalWeeks} beschikbaar`;
+                }
+              }
+              
+              return (
+                <Button 
+                  onClick={handleCreateCompetition} 
+                  disabled={loading || !isPlanningValid || !isFeasible}
+                  className="w-full"
+                  title={disabledReason}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Competitie aanmaken...
+                    </>
+                  ) : (
+                    <>
+                      <Trophy className="mr-2 h-4 w-4" />
+                      Competitie Aanmaken
+                    </>
+                  )}
+                </Button>
+              );
+            })()}
+          </CardContent>
+        </Card>
+
+        {/* Competitie Beheren */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Competitie Beheren</CardTitle>
+            <CardDescription>
+              Bekijk en beheer de huidige competitie
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {hasExistingCompetition ? (
+              <div className="space-y-4">
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Er is een competitie actief met {existingCompetition.length} wedstrijden.
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="space-y-2">
+                  <h4 className="font-medium">Competitie Statistieken:</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Totaal wedstrijden: {existingCompetition.length}</li>
+                    <li>• Reguliere wedstrijden: {existingCompetition.filter(m => !m.is_playoff_match).length}</li>
+                    <li>• Playoff wedstrijden: {existingCompetition.filter(m => m.is_playoff_match).length}</li>
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Er is momenteel geen competitie actief. Maak een nieuwe competitie aan om te beginnen.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Competitie Verwijderen */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Competitie Verwijderen</CardTitle>
+            <CardDescription>
+              Verwijder de volledige competitie en alle gegenereerde wedstrijden. Deze actie kan niet ongedaan worden gemaakt.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {hasExistingCompetition ? (
+              <>
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Je staat op het punt een actieve competitie met {existingCompetition.length} wedstrijden te verwijderen.
+                  </AlertDescription>
+                </Alert>
+                <Button 
+                  onClick={handleDeleteCompetition}
+                  disabled={loading}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verwijderen...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Competitie Verwijderen
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Er is momenteel geen actieve competitie om te verwijderen.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
       </section>
     </div>
   );
