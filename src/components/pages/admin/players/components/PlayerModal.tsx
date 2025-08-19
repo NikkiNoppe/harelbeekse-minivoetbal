@@ -4,9 +4,7 @@ import {
   DialogContent,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X } from 'lucide-react';
 
 interface PlayerModalProps {
   open: boolean;
@@ -63,13 +61,6 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="modal relative">
-        <button
-          onClick={() => onOpenChange(false)}
-          className="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
-        >
-          <X className="h-4 w-4" />
-          <span className="sr-only">Sluiten</span>
-        </button>
         <DialogDescription className="sr-only">
           {isEdit ? "Bewerk de gegevens van de speler" : "Voeg een nieuwe speler toe aan het team"}
         </DialogDescription>

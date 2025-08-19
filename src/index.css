@@ -125,8 +125,9 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
   border-color: #ef4444;
 }
 .btn--danger:hover, .btn--danger:focus {
-  background: #ef4444;
-  color: #fff;
+  background: #ef4444 !important;
+  color: #fff !important;
+  border-color: #ef4444 !important;
 }
 .btn--outline {
   background: #fff;
