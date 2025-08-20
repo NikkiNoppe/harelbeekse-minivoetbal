@@ -690,17 +690,30 @@ export const bekerService = {
         return { success: false, message: "Volgende wedstrijd niet gevonden." };
       }
 
-      // Determine if winner should be home or away team
+      // Determine preferred slot (home for odd, away for even), but fall back to free slot if preferred is occupied
       const shouldBeHome = bekerService.shouldBeHomeTeam(currentMatch.unique_number!, bekerService.extractMatchNumber(currentMatch.unique_number!));
-      
+
       const updateData: any = {};
       if (shouldBeHome) {
-        updateData.home_team_id = winnerTeamId;
+        if (!nextMatch.home_team_id) {
+          updateData.home_team_id = winnerTeamId;
+        } else if (!nextMatch.away_team_id) {
+          updateData.away_team_id = winnerTeamId;
+        } else {
+          // Both occupied; do nothing to avoid overwriting
+          return { success: false, message: "Volgende wedstrijd heeft al beide teams toegewezen." };
+        }
       } else {
-        updateData.away_team_id = winnerTeamId;
+        if (!nextMatch.away_team_id) {
+          updateData.away_team_id = winnerTeamId;
+        } else if (!nextMatch.home_team_id) {
+          updateData.home_team_id = winnerTeamId;
+        } else {
+          return { success: false, message: "Volgende wedstrijd heeft al beide teams toegewezen." };
+        }
       }
 
-      // Update the next match
+      // Update the next match with the decided slot
       const { error: updateError } = await supabase
         .from('matches')
         .update(updateData)
@@ -782,17 +795,31 @@ export const bekerService = {
         return { success: false, message: "Volgende wedstrijd niet gevonden." };
       }
 
-      // Determine if winner should be home or away team
+      // Determine preferred slot (home for odd, away for even), but fall back to free slot if preferred is occupied
       const shouldBeHome = bekerService.shouldBeHomeTeam(currentMatchUniqueNumber, bekerService.extractMatchNumber(currentMatchUniqueNumber));
-      
+
       const updateData: any = {};
       if (shouldBeHome) {
-        updateData.home_team_id = newWinnerTeamId;
+        if (!nextMatch.home_team_id) {
+          updateData.home_team_id = newWinnerTeamId;
+        } else if (!nextMatch.away_team_id) {
+          updateData.away_team_id = newWinnerTeamId;
+        } else {
+          // If both occupied, default to home (replace home)
+          updateData.home_team_id = newWinnerTeamId;
+        }
       } else {
-        updateData.away_team_id = newWinnerTeamId;
+        if (!nextMatch.away_team_id) {
+          updateData.away_team_id = newWinnerTeamId;
+        } else if (!nextMatch.home_team_id) {
+          updateData.home_team_id = newWinnerTeamId;
+        } else {
+          // If both occupied, default to away (replace away)
+          updateData.away_team_id = newWinnerTeamId;
+        }
       }
 
-      // Update the next match
+      // Update the next match with the decided slot
       const { error: updateError } = await supabase
         .from('matches')
         .update(updateData)

@@ -196,46 +196,52 @@ const AdminFinancialPage: React.FC = () => {
           </CardHeader>
           <CardContent className="p-0">
             <div className="w-full overflow-x-auto">
-              <div className="min-w-[700px]">
-                <Table className="table w-full">
+              <div className="min-w-0 lg:min-w-[900px] table-no-inner-scroll-mobile">
+                <Table className="table w-full text-sm md:text-base">
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[150px]">Team</TableHead>
-                      <TableHead className="text-center min-w-[120px]">Start Kapitaal</TableHead>
-                      <TableHead className="text-center min-w-[100px]">Veld</TableHead>
-                      <TableHead className="text-center min-w-[100px]">Scheids</TableHead>
-                      <TableHead className="text-center min-w-[100px]">Boetes</TableHead>
-                      <TableHead className="text-right min-w-[130px]">Saldo</TableHead>
+                    <TableRow className="h-11 md:h-12">
+                      <TableHead className="min-w-[160px]">Team</TableHead>
+                      <TableHead className="hidden sm:table-cell text-center min-w-[140px]">Start Kapitaal</TableHead>
+                      <TableHead className="hidden md:table-cell text-center min-w-[120px]">Veld</TableHead>
+                      <TableHead className="hidden lg:table-cell text-center min-w-[120px]">Scheids</TableHead>
+                      <TableHead className="hidden lg:table-cell text-center min-w-[120px]">Boetes</TableHead>
+                      <TableHead className="text-right min-w-[140px]">Saldo</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {teams?.map(team => {
-                     const finances = calculateTeamFinances(team.team_id);
-                     const isNegative = finances.currentBalance < 0;
-                       return <TableRow key={team.team_id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleTeamClick(team)}>
-                            <TableCell className="font-medium">
-                              <div className="truncate">{team.team_name}</div>
-                            </TableCell>
-                            <TableCell className="text-center text-green-600 font-semibold">
-                              {formatCurrency(finances.startCapital)}
-                            </TableCell>
-                            <TableCell className="text-center text-red-600">
-                              -{formatCurrency(finances.fieldCosts)}
-                            </TableCell>
-                            <TableCell className="text-center text-red-600">
-                              -{formatCurrency(finances.refereeCosts)}
-                            </TableCell>
-                            <TableCell className="text-center text-red-600">
-                              -{formatCurrency(finances.fines)}
-                            </TableCell>
-                           <TableCell className={`text-right font-semibold pr-4 ${isNegative ? 'text-red-600' : 'text-green-600'}`}> 
-                             <div className="flex items-center justify-end gap-1">
-                               {isNegative ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
-                               <span className="truncate">{formatCurrency(finances.currentBalance)}</span>
-                             </div>
-                            </TableCell>
-                          </TableRow>;
-                  })}
+                      const finances = calculateTeamFinances(team.team_id);
+                      const isNegative = finances.currentBalance < 0;
+                      return (
+                        <TableRow
+                          key={team.team_id}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors h-11 md:h-12"
+                          onClick={() => handleTeamClick(team)}
+                        >
+                          <TableCell className="font-medium truncate whitespace-nowrap max-w-[180px] sm:max-w-[220px] text-xs sm:text-sm">
+                            {team.team_name}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-center text-green-600 font-semibold text-xs sm:text-sm whitespace-nowrap">
+                            {formatCurrency(finances.startCapital)}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-center text-red-600 text-xs sm:text-sm whitespace-nowrap">
+                            -{formatCurrency(finances.fieldCosts)}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-center text-red-600 text-xs sm:text-sm whitespace-nowrap">
+                            -{formatCurrency(finances.refereeCosts)}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-center text-red-600 text-xs sm:text-sm whitespace-nowrap">
+                            -{formatCurrency(finances.fines)}
+                          </TableCell>
+                          <TableCell className={`text-right font-semibold pr-4 whitespace-nowrap text-xs sm:text-sm ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
+                            <div className="flex items-center justify-end gap-1">
+                              {isNegative ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
+                              <span className="truncate">{formatCurrency(finances.currentBalance)}</span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

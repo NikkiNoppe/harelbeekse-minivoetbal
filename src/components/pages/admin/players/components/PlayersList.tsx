@@ -73,60 +73,54 @@ const PlayersList: React.FC<PlayersListProps> = ({
   return (
     <>
       <div className="w-full overflow-x-auto">
-        <div className="min-w-[480px] md:min-w-[600px]">
-          <div
-            className="table-no-inner-scroll-mobile"
-            role="region"
-            aria-label="Spelerslijst"
-          >
-            <Table className="table w-full text-sm md:text-base">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="num min-w-[60px] sticky top-0 bg-inherit z-10">#</TableHead>
-            <TableHead className="min-w-[100px] md:min-w-[120px] sticky top-0 bg-inherit z-10">Voornaam</TableHead>
-            <TableHead className="min-w-[100px] md:min-w-[120px] sticky top-0 bg-inherit z-10">Achternaam</TableHead>
-            <TableHead className="center min-w-[110px] md:min-w-[120px] sticky top-0 bg-inherit z-10">Geboortedatum</TableHead>
-            {editMode && <TableHead className="center min-w-[110px] md:min-w-[120px] sticky top-0 bg-inherit z-10">Acties</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {players.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={editMode ? 5 : 4} className="text-center text-muted-foreground py-4">
-                Geen spelers gevonden
-              </TableCell>
-            </TableRow>
-          ) :
-            players.map((player, index) => (
-              <TableRow key={player.player_id}>
-                <TableCell className="num font-medium">{index + 1}</TableCell>
-                <TableCell>{player.first_name}</TableCell>
-                <TableCell>{player.last_name}</TableCell>
-                <TableCell className="center">{formatDate(player.birth_date)}</TableCell>
-                {editMode && (
-                  <TableCell className="center">
-                    <div className="flex items-center gap-1 justify-center">
-                      <Button
-                        onClick={() => onEditPlayer(player.player_id)}
-                        className="btn btn--icon btn--edit"
-                      >
-                        <Edit2 size={15} />
-                      </Button>
-                      <Button
-                        onClick={() => handleDeleteClick(player)}
-                        className="btn btn--icon btn--danger"
-                      >
-                        <Trash2 size={15} />
-                      </Button>
-                    </div>
-                  </TableCell>
-                )}
+        <div className="min-w-0 lg:min-w-[900px] table-no-inner-scroll-mobile" role="region" aria-label="Spelerslijst">
+          <Table className="table w-full text-sm md:text-base">
+            <TableHeader>
+              <TableRow className="table-header-row">
+                <TableHead className="num min-w-[40px] sticky top-0 bg-inherit z-10 hidden md:table-cell">#</TableHead>
+                <TableHead className="min-w-[120px] sticky top-0 bg-inherit z-10">Voornaam</TableHead>
+                <TableHead className="min-w-[140px] sticky top-0 bg-inherit z-10">Achternaam</TableHead>
+                <TableHead className="center min-w-[140px] md:min-w-[160px] sticky top-0 bg-inherit z-10 hidden sm:table-cell">Geboortedatum</TableHead>
+                {editMode && <TableHead className="center min-w-[100px] sticky top-0 bg-inherit z-10">Acties</TableHead>}
               </TableRow>
-            ))
-          }
-        </TableBody>
-      </Table>
-          </div>
+            </TableHeader>
+            <TableBody>
+              {players.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={editMode ? 5 : 4} className="text-center text-muted-foreground py-4">
+                    Geen spelers gevonden
+                  </TableCell>
+                </TableRow>
+              ) : (
+                players.map((player, index) => (
+                  <TableRow key={player.player_id}>
+                    <TableCell className="num font-medium hidden md:table-cell">{index + 1}</TableCell>
+                    <TableCell className="font-medium truncate max-w-[120px] sm:max-w-[160px] text-xs sm:text-sm">{player.first_name}</TableCell>
+                    <TableCell className="truncate max-w-[140px] sm:max-w-[180px] text-xs sm:text-sm">{player.last_name}</TableCell>
+                    <TableCell className="center hidden sm:table-cell text-xs sm:text-sm">{formatDate(player.birth_date)}</TableCell>
+                    {editMode && (
+                      <TableCell className="center whitespace-nowrap">
+                        <div className="flex items-center gap-1 justify-center">
+                          <Button
+                            onClick={() => onEditPlayer(player.player_id)}
+                            className="btn btn--icon btn--edit"
+                          >
+                            <Edit2 size={15} />
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteClick(player)}
+                            className="btn btn--icon btn--danger"
+                          >
+                            <Trash2 size={15} />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
       </div>
 

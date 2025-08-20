@@ -257,14 +257,16 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
     setIsDialogOpen(true);
   }, []);
 
-  const handleDialogClose = useCallback(() => {
+  const handleDialogClose = useCallback((shouldRefresh: boolean = false) => {
     setIsDialogOpen(false);
     setSelectedMatchForm(null);
-    refreshInstantly();
+    if (shouldRefresh) {
+      refreshInstantly();
+    }
   }, [refreshInstantly]);
 
   const handleFormComplete = useCallback(() => {
-    handleDialogClose();
+    handleDialogClose(true);
   }, [handleDialogClose]);
 
   const handleRetry = useCallback(() => {
@@ -320,7 +322,8 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
           onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) {
-              handleDialogClose();
+              // Closed without save → do not refresh or show toast
+              handleDialogClose(false);
             }
           }}
           match={selectedMatchForm}

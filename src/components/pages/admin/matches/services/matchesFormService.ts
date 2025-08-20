@@ -70,7 +70,7 @@ export const fetchUpcomingMatches = async (
       let matchdayDisplay = row.speeldag || "Te bepalen";
       const isPlayoff = (row as any).is_playoff_match === true;
       const isCup = row.is_cup_match === true;
-      if (isCup) {
+      if (isCup && !matchdayDisplay.startsWith('🏆')) {
         matchdayDisplay = `🏆 ${matchdayDisplay}`;
       }
 

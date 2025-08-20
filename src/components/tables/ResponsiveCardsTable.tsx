@@ -22,18 +22,19 @@ interface PlayerCardSummary {
 
 interface ResponsiveCardsTableProps {
   playerSummaries: PlayerCardSummary[];
+  sticky?: boolean;
 }
 
-const ResponsiveCardsTable: React.FC<ResponsiveCardsTableProps> = ({ playerSummaries }) => {
+const ResponsiveCardsTable: React.FC<ResponsiveCardsTableProps> = ({ playerSummaries, sticky = true }) => {
   return (
     <div className="responsive-cards-table">
-      <Table stickyColumns={2}>
+      <Table {...(sticky ? { stickyColumns: 2 } : {})}>
         <TableHeader>
           <TableRow>
-            <TableHead sticky stickyLeft={0} className="min-w-[120px]">
+            <TableHead {...(sticky ? { sticky: true, stickyLeft: 0 } : {})} className="min-w-[120px]">
               Speler
             </TableHead>
-            <TableHead sticky stickyLeft={120} className="min-w-[120px]">
+            <TableHead {...(sticky ? { sticky: true, stickyLeft: 120 } : {})} className="min-w-[120px]">
               Team
             </TableHead>
             <TableHead className="text-center w-24">Geel</TableHead>
@@ -46,10 +47,10 @@ const ResponsiveCardsTable: React.FC<ResponsiveCardsTableProps> = ({ playerSumma
         <TableBody>
           {playerSummaries.map((summary) => (
             <TableRow key={`${summary.playerId}-${summary.playerName}`}>
-              <TableCell sticky stickyLeft={0} className="font-medium min-w-[120px]">
+              <TableCell {...(sticky ? { sticky: true, stickyLeft: 0 } : {})} className="font-medium min-w-[120px]">
                 {summary.playerName}
               </TableCell>
-              <TableCell sticky stickyLeft={120} className="min-w-[120px]">
+              <TableCell {...(sticky ? { sticky: true, stickyLeft: 120 } : {})} className="min-w-[120px]">
                 {summary.teamName}
               </TableCell>
               <TableCell className="text-center">

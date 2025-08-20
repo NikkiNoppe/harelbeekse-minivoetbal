@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Edit, Trash2, RefreshCw, Users, AlertTriangle, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { suspensionService } from '@/services';
 import { useSuspensionsData } from '@/hooks/useSuspensionsData';
@@ -38,6 +38,7 @@ const AdminSuspensionsPage: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingSuspension, setEditingSuspension] = useState<ManualSuspension | null>(null);
   const [newSuspension, setNewSuspension] = useState({
+    teamId: '',
     playerId: '',
     reason: '',
     matches: '1',
@@ -45,7 +46,7 @@ const AdminSuspensionsPage: React.FC = () => {
   });
 
   // Fetch data
-  const { playerCards, suspensions, isLoading, handleRefresh } = useSuspensionsData();
+  const { playerCards, suspensions, isLoading } = useSuspensionsData();
 
   // Niet meer automatisch vernieuwen bij openen; data wordt via queries opgehaald.
   
@@ -91,6 +92,18 @@ const AdminSuspensionsPage: React.FC = () => {
     queryFn: suspensionService.getManualSuspensions
   });
 
+  const teamsQuery = useQuery({
+    queryKey: ['allTeams'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('team_id, team_name')
+        .order('team_name');
+      if (error) throw error;
+      return data as { team_id: number; team_name: string }[];
+    }
+  });
+
   const playersQuery = useQuery({
     queryKey: ['allPlayers'],
     queryFn: async () => {
@@ -100,6 +113,7 @@ const AdminSuspensionsPage: React.FC = () => {
           player_id,
           first_name,
           last_name,
+          team_id,
           teams:team_id (team_name)
         `)
         .order('first_name');
@@ -108,10 +122,17 @@ const AdminSuspensionsPage: React.FC = () => {
       return data.map(p => ({
         playerId: p.player_id,
         playerName: `${p.first_name} ${p.last_name}`,
-        teamName: p.teams?.team_name || 'Onbekend Team'
+        teamName: p.teams?.team_name || 'Onbekend Team',
+        teamId: p.team_id as number
       }));
     }
   });
+
+  const filteredPlayers = React.useMemo(() => {
+    if (!playersQuery.data || !newSuspension.teamId) return [] as { playerId: number; playerName: string; teamName: string; teamId: number }[];
+    const teamIdNum = parseInt(newSuspension.teamId);
+    return playersQuery.data.filter(p => p.teamId === teamIdNum);
+  }, [playersQuery.data, newSuspension.teamId]);
 
   // Mutations
   const addSuspensionMutation = useMutation({
@@ -124,7 +145,7 @@ const AdminSuspensionsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['manualSuspensions'] });
       setIsAddDialogOpen(false);
-      setNewSuspension({ playerId: '', reason: '', matches: '1', notes: '' });
+      setNewSuspension({ teamId: '', playerId: '', reason: '', matches: '1', notes: '' });
       toast({
         title: "Schorsing toegevoegd",
         description: "De schorsing is succesvol toegevoegd."
@@ -218,41 +239,47 @@ const AdminSuspensionsPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Schorsingen Beheer</h1>
         <div className="flex gap-2">
-          <Button 
-            onClick={() => window.location.hash = '#settings'}
-            variant="ghost" 
-            size="sm"
-          >
-            Schorsingsregels
-          </Button>
-          <Button onClick={handleRefresh} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Vernieuwen
-          </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="btn btn--primary">
+              <Button className="btn btn--outline flex items-center gap-2">
                 <Plus className="h-4 w-4 mr-2" />
                 Schorsing Toevoegen
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="modal">
               <DialogHeader>
-                <DialogTitle>Nieuwe Schorsing Toevoegen</DialogTitle>
+                <DialogTitle className="modal__title">Nieuwe Schorsing Toevoegen</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="player">Speler</Label>
-                  <Select value={newSuspension.playerId} onValueChange={(value) => 
-                    setNewSuspension(prev => ({ ...prev, playerId: value }))
+                  <Label htmlFor="team">Team</Label>
+                  <Select value={newSuspension.teamId} onValueChange={(value) =>
+                    setNewSuspension(prev => ({ ...prev, teamId: value, playerId: '' }))
                   }>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecteer speler" />
+                      <SelectValue placeholder={teamsQuery.isLoading ? 'Teams laden...' : 'Selecteer team'} />
                     </SelectTrigger>
                     <SelectContent>
-                      {playersQuery.data?.map(player => (
+                      {teamsQuery.data?.map(team => (
+                        <SelectItem key={team.team_id} value={team.team_id.toString()}>
+                          {team.team_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="player">Speler</Label>
+                  <Select value={newSuspension.playerId} onValueChange={(value) =>
+                    setNewSuspension(prev => ({ ...prev, playerId: value }))
+                  } disabled={!newSuspension.teamId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={!newSuspension.teamId ? 'Selecteer eerst een team' : (playersQuery.isLoading ? 'Spelers laden...' : 'Selecteer speler')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredPlayers.map(player => (
                         <SelectItem key={player.playerId} value={player.playerId.toString()}>
-                          {player.playerName} ({player.teamName})
+                          {player.playerName}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -287,13 +314,21 @@ const AdminSuspensionsPage: React.FC = () => {
                     placeholder="Extra opmerkingen over de schorsing"
                   />
                 </div>
-                <Button 
-                  onClick={handleAddSuspension} 
-                  disabled={!newSuspension.playerId || !newSuspension.reason}
-                  className="w-full"
-                >
-                  Schorsing Toevoegen
-                </Button>
+                <div className="modal__actions">
+                  <Button 
+                    onClick={() => setIsAddDialogOpen(false)}
+                    className="btn btn--secondary flex-1"
+                  >
+                    Annuleren
+                  </Button>
+                  <Button 
+                    onClick={handleAddSuspension} 
+                    disabled={!newSuspension.teamId || !newSuspension.playerId || !newSuspension.reason}
+                    className="btn btn--primary flex-1"
+                  >
+                    Toevoegen
+                  </Button>
+                </div>
               </div>
             </DialogContent>
           </Dialog>
@@ -311,7 +346,7 @@ const AdminSuspensionsPage: React.FC = () => {
               <Loader2 className="h-5 w-5 animate-spin mr-2" /> Laden...
             </div>
           ) : (
-            <ResponsiveCardsTable playerSummaries={playerCardSummaries} />
+            <ResponsiveCardsTable playerSummaries={playerCardSummaries} sticky={false} />
           )}
         </CardContent>
       </Card>
@@ -371,39 +406,43 @@ const AdminSuspensionsPage: React.FC = () => {
               <CardTitle>Actieve Schorsingen</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="table-no-inner-scroll-mobile">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Speler</TableHead>
-                    <TableHead>Team</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Reden</TableHead>
-                    <TableHead>Resterend</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {unified.map(item => (
-                    <TableRow key={item.key}>
-                      <TableCell className="font-medium">{item.playerName}</TableCell>
-                      <TableCell>{item.teamName}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={item.type === 'Automatisch' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
-                          {item.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{item.reason}</TableCell>
-                      <TableCell>
-                        <Badge variant="destructive">{item.remaining} wedstrijd{item.remaining !== 1 ? 'en' : ''}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="destructive">Actief</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="w-full overflow-x-auto">
+                <div className="min-w-0 lg:min-w-[900px] table-no-inner-scroll-mobile">
+                  <Table className="table w-full text-sm md:text-base">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[160px]">Speler</TableHead>
+                        <TableHead className="hidden md:table-cell min-w-[160px]">Team</TableHead>
+                        <TableHead className="hidden md:table-cell min-w-[120px]">Type</TableHead>
+                        <TableHead className="hidden lg:table-cell min-w-[200px]">Reden</TableHead>
+                        <TableHead className="text-center min-w-[120px]">Resterend</TableHead>
+                        <TableHead className="text-center min-w-[120px]">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {unified.map(item => (
+                        <TableRow key={item.key}>
+                          <TableCell className="font-medium truncate max-w-[180px] sm:max-w-[220px] text-xs sm:text-sm" title={`${item.playerName} (${item.teamName})`}>
+                            {item.playerName}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell truncate max-w-[220px] text-xs sm:text-sm">{item.teamName}</TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <Badge variant="outline" className={item.type === 'Automatisch' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
+                              {item.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell truncate max-w-[260px] text-xs sm:text-sm">{item.reason}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="destructive">{item.remaining} wedstrijd{item.remaining !== 1 ? 'en' : ''}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="destructive">Actief</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -421,72 +460,74 @@ const AdminSuspensionsPage: React.FC = () => {
               Geen handmatige schorsingen gevonden
             </div>
           ) : (
-            <div className="table-no-inner-scroll-mobile">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Speler</TableHead>
-                  <TableHead>Reden</TableHead>
-                  <TableHead>Wedstrijden</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Aangemaakt</TableHead>
-                  <TableHead>Acties</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {manualSuspensions.map(suspension => (
-                  <TableRow key={suspension.id}>
-                    <TableCell className="font-medium">
-                      {getPlayerName(suspension.playerId)}
-                    </TableCell>
-                    <TableCell>{suspension.reason}</TableCell>
-                    <TableCell>{suspension.matches}</TableCell>
-                    <TableCell>
-                      <Badge variant={suspension.isActive ? "destructive" : "secondary"}>
-                        {suspension.isActive ? "Actief" : "Inactief"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(suspension.createdAt).toLocaleDateString('nl-NL')}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditingSuspension(suspension)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <Trash2 className="h-4 w-4" />
+            <div className="w-full overflow-x-auto">
+              <div className="min-w-0 lg:min-w-[1000px] table-no-inner-scroll-mobile">
+                <Table className="table w-full text-sm md:text-base">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[200px]">Speler</TableHead>
+                      <TableHead className="hidden lg:table-cell min-w-[220px]">Reden</TableHead>
+                      <TableHead className="hidden sm:table-cell min-w-[120px]">Wedstrijden</TableHead>
+                      <TableHead className="hidden md:table-cell min-w-[120px]">Status</TableHead>
+                      <TableHead className="hidden lg:table-cell min-w-[140px]">Aangemaakt</TableHead>
+                      <TableHead className="text-center min-w-[120px]">Acties</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {manualSuspensions.map(suspension => (
+                      <TableRow key={suspension.id}>
+                        <TableCell className="font-medium truncate max-w-[200px] sm:max-w-[260px] text-xs sm:text-sm" title={getPlayerName(suspension.playerId)}>
+                          {getPlayerName(suspension.playerId)}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell truncate max-w-[260px] text-xs sm:text-sm">{suspension.reason}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{suspension.matches}</TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <Badge variant={suspension.isActive ? 'destructive' : 'secondary'}>
+                            {suspension.isActive ? 'Actief' : 'Inactief'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          {new Date(suspension.createdAt).toLocaleDateString('nl-NL')}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              onClick={() => setEditingSuspension(suspension)}
+                              className="btn btn--icon btn--edit"
+                            >
+                              <Edit className="h-4 w-4" />
                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Schorsing verwijderen</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Weet je zeker dat je deze schorsing wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Annuleren</AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={() => deleteSuspensionMutation.mutate(suspension.id)}
-                              >
-                                Verwijderen
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button className="btn btn--icon btn--danger">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="modal">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="modal__title">Schorsing verwijderen</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Weet je zeker dat je deze schorsing wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="modal__actions">
+                                  <AlertDialogCancel className="btn btn--secondary">Annuleren</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => deleteSuspensionMutation.mutate(suspension.id)}
+                                    className="btn btn--danger"
+                                  >
+                                    Verwijderen
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           )}
         </CardContent>
