@@ -14,7 +14,7 @@ const Logo: React.FC<LogoProps> = ({ onClick }) => {
     >
       <div className="h-14 w-auto flex items-center justify-center">
         <img 
-          src="/lovable-uploads/Minivoetbal transparant.svg?v=4" 
+          src="/lovable-uploads/Minivoetbal%20transparant.svg" 
           alt="KRC Harelbeke Minivoetbal Competitie Logo" 
           className="h-14 w-auto object-contain px-2"
           loading="eager"
