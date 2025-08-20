@@ -143,6 +143,27 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
     )
   }), [isTabVisible]);
 
+  // Determine which tabs are available right now
+  const visibleKeys = useMemo(() => {
+    return (
+      [
+        'algemeen',
+        'beker',
+        'competitie',
+        'playoff',
+        'teams',
+        'kaarten',
+        'schorsingen',
+        'reglement',
+      ] as const
+    ).filter((key) => Boolean((tabContents as any)[key]));
+  }, [tabContents]);
+
+  // Ensure the active tab is always a visible/available tab to avoid runtime issues
+  const currentValue = useMemo(() => {
+    return visibleKeys.includes(activeTab as any) ? activeTab : (visibleKeys[0] ?? 'algemeen');
+  }, [activeTab, visibleKeys]);
+
   // Show loading state while fetching settings
   if (loading) {
     return (
@@ -166,7 +187,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
     <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
       <div className="max-w-7xl mx-auto">
         <Tabs 
-          value={activeTab} 
+          value={currentValue} 
           onValueChange={(value) => setActiveTab(value as TabName)} 
           className="w-full"
         >

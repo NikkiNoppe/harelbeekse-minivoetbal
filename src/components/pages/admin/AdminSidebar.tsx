@@ -105,7 +105,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
       className={`${collapsed ? "w-14" : "w-64"} flex flex-col h-full ${isMobile ? 'px-4 py-6' : 'p-3'}`}
       style={{ background: 'var(--purple-100)' }}
     >
-      {/* Header bovenaan: "admin" en "Administrator" */}
+      {/* Header bovenaan: toon rol van ingelogde gebruiker */}
       <div className="mb-6">
         {collapsed ? (
           <div className="flex items-center justify-center">
@@ -113,8 +113,12 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
           </div>
         ) : (
           <div className={`${isMobile ? 'px-2' : 'px-1'}`}>
-            <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--main-color-dark)' }}>admin</div>
-            <div className="text-base font-semibold" style={{ color: 'var(--main-color-dark)' }}>Administrator</div>
+            <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--main-color-dark)' }}>
+              {isAdmin ? 'ADMIN' : (user?.role === 'player_manager' ? 'TEAM MANAGER' : (user?.role ? user.role.toUpperCase() : 'GEBRUIKER'))}
+            </div>
+            <div className="text-base font-semibold" style={{ color: 'var(--main-color-dark)' }}>
+              {isAdmin ? 'Administrator' : (user?.role === 'player_manager' ? 'Team Manager' : 'Gebruiker')}
+            </div>
           </div>
         )}
       </div>

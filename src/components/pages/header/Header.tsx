@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -8,6 +8,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/pages/login/AuthProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, User, LogOut, Settings, Shield, Users, Calendar, Trophy, Award, DollarSign, Home, BookOpen, Ban, AlertTriangle, Target } from "lucide-react";
+import HamburgerIcon from "@/components/ui/HamburgerIcon";
 import Logo from "./Logo";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 
@@ -18,6 +19,7 @@ interface HeaderProps {
   activeTab: string;
   isAuthenticated: boolean;
   user: any;
+  hasSidebar?: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -26,13 +28,21 @@ const Header: React.FC<HeaderProps> = ({
   onTabChange,
   activeTab,
   isAuthenticated,
-  user
+  user,
+  hasSidebar = false
 }) => {
   const isMobile = useIsMobile();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const navigate = useNavigate();
   const { logout } = useAuth(); // <-- voeg logout toe
   const { isTabVisible } = useTabVisibility();
+
+  const handleLogoClick = useCallback(() => {
+    try {
+      onLogoClick();
+    } catch (_) {}
+    navigate('/');
+  }, [onLogoClick, navigate]);
 
   // Route mapping per key (voor toekomstig onderscheid)
   const routeMap: Record<string, string> = {
@@ -111,14 +121,18 @@ const Header: React.FC<HeaderProps> = ({
   return (
     <header className="bg-purple-900 shadow-lg sticky top-0 z-50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="relative flex items-center justify-between h-16">
           {/* Logo and Sidebar Trigger */}
           <div className="flex items-center gap-3">
-            {/* Sidebar Trigger - only show when authenticated (admin dashboard) */}
-            {isAuthenticated && (
-              <SidebarTrigger className="p-2 text-white hover:bg-purple-800 rounded-md transition-colors" />
+            {/* Sidebar Trigger - only show when authenticated and within SidebarProvider */}
+            {isAuthenticated && hasSidebar && (
+              <SidebarTrigger className="p-2 rounded-md transition-all sidebar-trigger" />
             )}
-            <Logo onClick={onLogoClick} />
+          </div>
+
+          {/* Centered Logo */}
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <Logo onClick={handleLogoClick} />
           </div>
 
           {/* Hamburger Menu for all screen sizes */}
@@ -129,7 +143,7 @@ const Header: React.FC<HeaderProps> = ({
                 size="sm" 
                 className="p-2 text-white bg-purple-200 hover:bg-purple-300/80 transition-all duration-200 hover:scale-105"
               >
-                <Menu size={24} className="transition-transform duration-200 text-purple-900" />
+                <HamburgerIcon className="transition-transform duration-200 text-purple-900" />
               </Button>
             </SheetTrigger>
             <SheetContent 

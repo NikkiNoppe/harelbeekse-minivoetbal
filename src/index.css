@@ -235,6 +235,21 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
   pointer-events: none;
 }
 
+/* Sidebar trigger styling */
+.sidebar-trigger {
+  background: var(--purple-200) !important;
+  color: var(--purple-900) !important;
+  border: none !important;
+  box-shadow: 0 1px 4px rgba(96,54,140,0.15);
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.sidebar-trigger:hover, .sidebar-trigger:focus {
+  background: var(--purple-300) !important;
+  color: var(--purple-900) !important;
+  transform: scale(1.05);
+  box-shadow: 0 3px 10px rgba(96,54,140,0.25);
+}
+
 /* ============================================================================
    5.1. MODAL / POPUP STYLING
 ============================================================================ */

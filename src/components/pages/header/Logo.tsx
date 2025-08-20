@@ -12,11 +12,14 @@ const Logo: React.FC<LogoProps> = ({ onClick }) => {
       role="button" 
       aria-label="Go to home page"
     >
-      <div className="h-16 w-auto flex items-center justify-center">
+      <div className="h-14 w-auto flex items-center justify-center">
         <img 
-          src="/lovable-uploads/a7f94171-fc66-434e-a7a0-00abbc7ea1bf.png" 
+          src="/lovable-uploads/Minivoetbal transparant.svg?v=4" 
           alt="KRC Harelbeke Minivoetbal Competitie Logo" 
-          className="h-16 w-auto object-contain"
+          className="h-14 w-auto object-contain px-2"
+          loading="eager"
+          decoding="async"
+          draggable={false}
         />
       </div>
     </div>
