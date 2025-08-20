@@ -14,7 +14,7 @@ const Layout: React.FC = () => {
   const { user } = useAuth();
 
   const handleLogoClick = () => {
-    setActiveTab("match-forms");
+    setActiveTab("algemeen");
   };
 
   const handleTabChange = (tab: string) => {
