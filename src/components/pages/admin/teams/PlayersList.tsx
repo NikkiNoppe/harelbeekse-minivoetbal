@@ -234,13 +234,18 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
           </div>
 
           <div className="rounded-md border">
-            <Table>
+            <div
+              className="max-h-[50vh] sm:max-h-[60vh] md:max-h-[65vh] overflow-y-auto"
+              role="region"
+              aria-label={`Spelerslijst voor ${teamName}`}
+            >
+            <Table className="table w-full text-sm md:text-base">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Voornaam</TableHead>
-                  <TableHead>Achternaam</TableHead>
-                  <TableHead>Geboortedatum</TableHead>
-                  <TableHead className="text-right">Actie</TableHead>
+                  <TableHead className="sticky top-0 bg-inherit z-10">Voornaam</TableHead>
+                  <TableHead className="sticky top-0 bg-inherit z-10">Achternaam</TableHead>
+                  <TableHead className="sticky top-0 bg-inherit z-10">Geboortedatum</TableHead>
+                  <TableHead className="text-right sticky top-0 bg-inherit z-10">Actie</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -272,6 +277,7 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
                 )}
               </TableBody>
             </Table>
+            </div>
           </div>
         </div>
       </CardContent>

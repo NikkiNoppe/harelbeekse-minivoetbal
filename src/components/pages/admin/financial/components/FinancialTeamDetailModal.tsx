@@ -468,7 +468,7 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                               <Button
                                 size="sm"
                                 onClick={() => handleEditTransaction(transaction)}
-                                className="btn btn--outline"
+                                className="btn btn--icon btn--edit"
                                 disabled={isSubmitting}
                               >
                                 <Edit2 className="h-4 w-4" />

@@ -26,13 +26,18 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
 }) => {
   return (
     <div className="rounded-md border">
-      <Table>
+      <div
+        className="max-h-[50vh] sm:max-h-[60vh] md:max-h-[65vh] overflow-y-auto"
+        role="region"
+        aria-label="Spelerselectie tabel"
+      >
+      <Table className="table w-full text-sm md:text-base">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-12">Selectie</TableHead>
-            <TableHead>Speler</TableHead>
-            <TableHead className="w-24 text-center">Rugnr.</TableHead>
-            <TableHead className="w-24 text-center">Kapitein</TableHead>
+            <TableHead className="w-12 sticky top-0 bg-inherit z-10">Selectie</TableHead>
+            <TableHead className="min-w-[140px] sticky top-0 bg-inherit z-10">Speler</TableHead>
+            <TableHead className="w-24 text-center sticky top-0 bg-inherit z-10">Rugnr.</TableHead>
+            <TableHead className="w-24 text-center sticky top-0 bg-inherit z-10">Kapitein</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -80,6 +85,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 };

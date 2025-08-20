@@ -63,16 +63,41 @@ export const usePlayersData = (authUser: User | null) => {
     }
   };
 
-  const refreshPlayers = async () => {
+  // Optimized: fetch players for a specific team only
+  const fetchPlayersByTeam = async (teamId: number) => {
+    console.log('🔄 Fetching players for team:', teamId);
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select('player_id, first_name, last_name, birth_date, team_id')
+        .eq('team_id', teamId)
+        .order('last_name')
+        .order('first_name');
+
+      if (error) {
+        console.error('❌ Error fetching players by team:', error);
+        return [];
+      }
+
+      console.log('✅ Team players fetched:', data?.length || 0, 'players');
+      return data || [];
+    } catch (error) {
+      console.error('💥 Error in fetchPlayersByTeam:', error);
+      return [];
+    }
+  };
+
+  const refreshPlayers = async (overrideTeamId?: number) => {
     try {
       setLoading(true);
-      const playersData = await fetchPlayers();
-      setAllPlayers(playersData);
-      // Filter direct op huidig team
-      const targetTeamId = authUser?.role === "player_manager" ? authUser.teamId : selectedTeam;
+      const targetTeamId = overrideTeamId ?? (authUser?.role === "player_manager" ? authUser.teamId : selectedTeam);
       if (targetTeamId) {
-        setPlayers(playersData.filter((p: any) => p.team_id === targetTeamId));
+        const teamPlayers = await fetchPlayersByTeam(targetTeamId);
+        setPlayers(teamPlayers);
       } else {
+        // Fallback to full fetch when no team context is available
+        const playersData = await fetchPlayers();
+        setAllPlayers(playersData);
         setPlayers(playersData);
       }
     } catch (error) {
@@ -99,17 +124,17 @@ export const usePlayersData = (authUser: User | null) => {
           setUserTeamName(userTeam.team_name);
           console.log('📝 User team name set:', userTeam.team_name);
         }
-        
-        const playersData = await fetchPlayers(); // Fetch all players here
-        setAllPlayers(playersData); // Store all players
-        setPlayers(playersData.filter((p: any) => p.team_id === authUser.teamId)); // Filter for the user's team
+        // Optimized: fetch only the user's team players
+        const teamPlayers = await fetchPlayersByTeam(authUser.teamId);
+        setAllPlayers([]);
+        setPlayers(teamPlayers);
       } else if (authUser?.role === "admin" && teamsData.length > 0) {
         console.log('👑 Admin detected, selecting first team:', teamsData[0].team_id);
         setSelectedTeam(teamsData[0].team_id);
-        
-        const playersData = await fetchPlayers(); // Fetch all players here
-        setAllPlayers(playersData); // Store all players
-        setPlayers(playersData.filter((p: any) => p.team_id === teamsData[0].team_id)); // Filter for the selected team
+        // Optimized: fetch only the selected team's players
+        const teamPlayers = await fetchPlayersByTeam(teamsData[0].team_id);
+        setAllPlayers([]);
+        setPlayers(teamPlayers);
       }
     } catch (error) {
       console.error('💥 Error initializing data:', error);
@@ -125,17 +150,41 @@ export const usePlayersData = (authUser: User | null) => {
     }
   }, [authUser]);
 
+  // Realtime: auto-refresh when players change for the active team
   useEffect(() => {
-    // Filter alleen in-memory bij teamselectie
-    if (allPlayers.length > 0 && (selectedTeam || authUser?.role === "player_manager")) {
-      const targetTeamId = authUser?.role === "player_manager" ? authUser.teamId : selectedTeam;
-      if (targetTeamId) {
-        setPlayers(allPlayers.filter((p: any) => p.team_id === targetTeamId));
-      } else {
-        setPlayers(allPlayers);
-      }
+    const targetTeamId = authUser?.role === "player_manager" ? authUser.teamId : selectedTeam;
+    if (!targetTeamId) return;
+
+    const channel = supabase
+      .channel(`players-team-${targetTeamId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'players' },
+        (payload: any) => {
+          const affectedTeamIds = [payload.new?.team_id, payload.old?.team_id].filter(Boolean);
+          if (affectedTeamIds.includes(targetTeamId)) {
+            console.log('🔔 Players change detected for team, refreshing...');
+            refreshPlayers(targetTeamId);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (_) {}
+    };
+  }, [authUser, selectedTeam]);
+
+  // On team selection changes, fetch players for that team (admin flow)
+  useEffect(() => {
+    if (!authUser) return;
+    const targetTeamId = authUser.role === "player_manager" ? authUser.teamId : selectedTeam;
+    if (targetTeamId) {
+      refreshPlayers(targetTeamId);
     }
-  }, [selectedTeam, allPlayers, authUser]);
+  }, [selectedTeam]);
 
   return {
     players,

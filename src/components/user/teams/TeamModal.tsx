@@ -8,7 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+// Removed Textarea import as extra notes are no longer used
 import { Checkbox } from "@/components/ui/checkbox";
 import { seasonService } from "@/services";
 
@@ -107,7 +107,36 @@ const TeamModal: React.FC<TeamModalProps> = ({
         ]);
         
         setAvailableDays(Array.isArray(days) ? days : []);
-        setAvailableTimeslots(Array.isArray(timeslots) ? timeslots : []);
+        // Deduplicate timeslots by label and sort ascending by start time
+        if (Array.isArray(timeslots)) {
+          const seen = new Set<string>();
+          const uniqueTimeslots: Array<{ id: string; label: string }> = [];
+          const parseStartMinutes = (label: string): number => {
+            const timeMatch = label.match(/(\d{1,2}):(\d{2})/);
+            if (timeMatch) {
+              const hours = parseInt(timeMatch[1], 10);
+              const minutes = parseInt(timeMatch[2], 10);
+              return hours * 60 + minutes;
+            }
+            const hourOnly = label.match(/(\d{1,2})/);
+            if (hourOnly) {
+              return parseInt(hourOnly[1], 10) * 60;
+            }
+            return Number.MAX_SAFE_INTEGER;
+          };
+          for (const t of timeslots) {
+            const label = (t as any).label ?? String(t);
+            const id = (t as any).id ?? label;
+            if (!seen.has(label)) {
+              seen.add(label);
+              uniqueTimeslots.push({ id: String(id), label: String(label) });
+            }
+          }
+          uniqueTimeslots.sort((a, b) => parseStartMinutes(a.label) - parseStartMinutes(b.label));
+          setAvailableTimeslots(uniqueTimeslots);
+        } else {
+          setAvailableTimeslots([]);
+        }
         setAvailableVenues(Array.isArray(venues) ? venues : []);
         setSeasonDataLoaded(true);
       } catch (error) {
@@ -211,14 +240,7 @@ const TeamModal: React.FC<TeamModalProps> = ({
     onFormChange(field, value);
   }, [onFormChange]);
 
-  // Optimized notes change handler
-  const handleNotesChange = useCallback((value: string) => {
-    setLocalPreferences(prev => {
-      const newPreferences = { ...prev, notes: value };
-      onFormChange('preferred_play_moments', newPreferences);
-      return newPreferences;
-    });
-  }, [onFormChange]);
+  // Notes field removed (not used)
 
   // Optimized save handler
   const handleSave = useCallback(() => {
@@ -304,17 +326,21 @@ const TeamModal: React.FC<TeamModalProps> = ({
         <div className="space-y-2">
           <label className="text-purple-dark font-medium">Voorkeur dagen</label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {availableDays.map((day) => (
-              <div key={day} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`day-${day}`}
-                  checked={isPreferenceSelected('days', day)}
-                  onCheckedChange={(checked) => handlePreferenceChange('days', day, checked as boolean)}
-                  disabled={isLoading}
-                />
-                <label htmlFor={`day-${day}`} className="text-sm">{day}</label>
-              </div>
-            ))}
+            {availableDays.map((day) => {
+              const selected = isPreferenceSelected('days', day);
+              return (
+                <label key={day} htmlFor={`day-${day}`} className="select-chip">
+                  <Checkbox
+                    id={`day-${day}`}
+                    className="select-box"
+                    checked={selected}
+                    onCheckedChange={(checked) => handlePreferenceChange('days', day, checked as boolean)}
+                    disabled={isLoading}
+                  />
+                  <span className="select-chip__label">{day}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
       )}
@@ -324,17 +350,21 @@ const TeamModal: React.FC<TeamModalProps> = ({
         <div className="space-y-2">
           <label className="text-purple-dark font-medium">Voorkeur tijdsloten</label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {availableTimeslots.map((timeslot) => (
-              <div key={timeslot.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`timeslot-${timeslot.id}`}
-                  checked={isPreferenceSelected('timeslots', timeslot.id)}
-                  onCheckedChange={(checked) => handlePreferenceChange('timeslots', timeslot.id, checked as boolean)}
-                  disabled={isLoading}
-                />
-                <label htmlFor={`timeslot-${timeslot.id}`} className="text-sm">{timeslot.label}</label>
-              </div>
-            ))}
+            {availableTimeslots.map((timeslot) => {
+              const selected = isPreferenceSelected('timeslots', timeslot.id);
+              return (
+                <label key={timeslot.id} htmlFor={`timeslot-${timeslot.id}`} className="select-chip">
+                  <Checkbox
+                    id={`timeslot-${timeslot.id}`}
+                    className="select-box"
+                    checked={selected}
+                    onCheckedChange={(checked) => handlePreferenceChange('timeslots', timeslot.id, checked as boolean)}
+                    disabled={isLoading}
+                  />
+                  <span className="select-chip__label">{timeslot.label}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
       )}
@@ -344,35 +374,28 @@ const TeamModal: React.FC<TeamModalProps> = ({
         <div className="space-y-2">
           <label className="text-purple-dark font-medium">Voorkeur locaties</label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {availableVenues.map((venue) => (
-              <div key={venue.venue_id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`venue-${venue.venue_id}`}
-                  checked={isPreferenceSelected('venues', venue.venue_id)}
-                  onCheckedChange={(checked) => handlePreferenceChange('venues', venue.venue_id, checked as boolean)}
-                  disabled={isLoading}
-                />
-                <label htmlFor={`venue-${venue.venue_id}`} className="text-sm">{venue.name}</label>
-              </div>
-            ))}
+            {availableVenues.map((venue) => {
+              const selected = isPreferenceSelected('venues', venue.venue_id);
+              return (
+                <label key={venue.venue_id} htmlFor={`venue-${venue.venue_id}`} className="select-chip">
+                  <Checkbox
+                    id={`venue-${venue.venue_id}`}
+                    className="select-box"
+                    checked={selected}
+                    onCheckedChange={(checked) => handlePreferenceChange('venues', venue.venue_id, checked as boolean)}
+                    disabled={isLoading}
+                  />
+                  <span className="select-chip__label">{venue.name}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Notes */}
-      <div className="space-y-2">
-        <label className="text-purple-dark font-medium">Extra wensen</label>
-        <Textarea
-          placeholder="Extra opmerkingen of wensen"
-          className="modal__input"
-          value={formData.preferred_play_moments?.notes || ''}
-          onChange={(e) => handleNotesChange(e.target.value)}
-          disabled={isLoading}
-          rows={3}
-        />
-      </div>
+      {/* Notes removed */}
     </div>
-  ), [availableDays, availableTimeslots, availableVenues, isPreferenceSelected, handlePreferenceChange, handleNotesChange, formData.preferred_play_moments?.notes, isLoading]);
+  ), [availableDays, availableTimeslots, availableVenues, isPreferenceSelected, handlePreferenceChange, isLoading]);
 
   const actionButtons = useMemo(() => (
     <DialogFooter className="modal__actions">

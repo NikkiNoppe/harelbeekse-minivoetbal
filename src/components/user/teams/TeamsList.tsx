@@ -57,19 +57,23 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
 
   return (
     <>
-      <div className="w-full overflow-x-auto">
-        <div className="min-w-[1200px]">
-          <Table className="table w-full">
+      <div className="w-full">
+        <div>
+          <div
+            className="max-h-[50vh] sm:max-h-[60vh] md:max-h-[65vh] overflow-y-auto"
+            role="region"
+            aria-label="Teams lijst"
+          >
+          <Table className="table w-full text-sm md:text-base">
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[120px]">Team</TableHead>
-                <TableHead className="min-w-[120px]">Contactpersoon</TableHead>
-                <TableHead className="min-w-[120px]">Telefoon</TableHead>
-                <TableHead className="min-w-[150px]">Email</TableHead>
-                <TableHead className="min-w-[100px]">Clubkleuren</TableHead>
-                <TableHead className="min-w-[200px]">Speelmoment voorkeuren</TableHead>
-                
-                <TableHead className="text-center min-w-[120px]">Acties</TableHead>
+                <TableHead className="min-w-[120px] sticky top-0 bg-inherit z-10">Team</TableHead>
+                <TableHead className="min-w-[120px] sticky top-0 bg-inherit z-10 hidden sm:table-cell">Contactpersoon</TableHead>
+                <TableHead className="min-w-[120px] sticky top-0 bg-inherit z-10 hidden md:table-cell">Telefoon</TableHead>
+                <TableHead className="min-w-[150px] sticky top-0 bg-inherit z-10 hidden md:table-cell">Email</TableHead>
+                <TableHead className="min-w-[100px] sticky top-0 bg-inherit z-10 hidden lg:table-cell">Clubkleuren</TableHead>
+                <TableHead className="min-w-[200px] sticky top-0 bg-inherit z-10 hidden lg:table-cell">Speelmoment voorkeuren</TableHead>
+                <TableHead className="text-center min-w-[100px] sticky top-0 bg-inherit z-10">Acties</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -82,11 +86,11 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
               ) : (
                 teams.map((team) => (
                   <TableRow key={team.team_id}>
-                    <TableCell className="font-medium">{team.team_name}</TableCell>
-                    <TableCell>{team.contact_person || <span className="text-gray-400">-</span>}</TableCell>
-                    <TableCell>{team.contact_phone || <span className="text-gray-400">-</span>}</TableCell>
-                    <TableCell>{team.contact_email || <span className="text-gray-400">-</span>}</TableCell>
-                    <TableCell>
+                    <TableCell className="font-medium whitespace-normal break-words">{team.team_name}</TableCell>
+                    <TableCell className="whitespace-normal break-words hidden sm:table-cell">{team.contact_person || <span className="text-gray-400">-</span>}</TableCell>
+                    <TableCell className="whitespace-normal break-words hidden md:table-cell">{team.contact_phone || <span className="text-gray-400">-</span>}</TableCell>
+                    <TableCell className="whitespace-normal break-words hidden md:table-cell">{team.contact_email || <span className="text-gray-400">-</span>}</TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       {team.club_colors ? (
                         <Badge variant="outline" className="flex items-center gap-1">
                           <Palette size={12} />
@@ -96,7 +100,7 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
                         <span className="text-gray-400">-</span>
                       )}
                     </TableCell>
-                    <TableCell className="max-w-[200px]">
+                    <TableCell className="max-w-[200px] hidden lg:table-cell">
                       <div className="truncate" title={formatPreferences(team.preferred_play_moments)}>
                         {formatPreferences(team.preferred_play_moments)}
                       </div>
@@ -105,7 +109,7 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
                       <div className="flex items-center gap-1 justify-center">
                         <Button
                           onClick={() => onEdit(team)}
-                          className="btn btn--icon"
+                          className="btn btn--icon btn--edit"
                         >
                           <Edit size={15} />
                         </Button>
@@ -122,6 +126,7 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
       </div>
 

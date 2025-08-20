@@ -561,7 +561,7 @@ const CompetitionDataSettings: React.FC = () => {
                             <TableCell className="text-center">
                               <div className="flex justify-center gap-1">
                                 <Button
-                                  className="btn btn--icon"
+                                  className="btn btn--icon btn--edit"
                                   onClick={() => handleEdit(format, 'format')}
                                 >
                                   <Edit className="h-4 w-4" />
@@ -611,7 +611,7 @@ const CompetitionDataSettings: React.FC = () => {
                             <TableCell className="text-center">
                               <div className="flex justify-center gap-1">
                                 <Button
-                                  className="btn btn--icon"
+                                  className="btn btn--icon btn--edit"
                                   onClick={() => handleEdit(venue, 'venue')}
                                 >
                                   <Edit className="h-4 w-4" />
@@ -667,7 +667,7 @@ const CompetitionDataSettings: React.FC = () => {
                                                         <TableCell className="text-center">
                             <div className="flex justify-center gap-1">
                               <Button
-                                className="btn btn--icon"
+                                className="btn btn--icon btn--edit"
                                 onClick={() => handleEdit(slot, 'timeslot')}
                               >
                                 <Edit className="h-4 w-4" />
@@ -730,7 +730,7 @@ const CompetitionDataSettings: React.FC = () => {
                                                     <TableCell className="text-center">
                           <div className="flex justify-center gap-1">
                             <Button
-                              className="btn btn--icon"
+                              className="btn btn--icon btn--edit"
                               onClick={() => handleEdit(vacation, 'vacation')}
                             >
                               <Edit className="h-4 w-4" />
@@ -765,7 +765,7 @@ const CompetitionDataSettings: React.FC = () => {
                         <p className="text-sm text-gray-600">{new Date(seasonData.season_start_date).toLocaleDateString('nl-NL')}</p>
                       </div>
                       <Button
-                        className="btn btn--icon"
+                        className="btn btn--icon btn--edit"
                         onClick={() => handleEdit(seasonData, 'season')}
                       >
                         <Edit className="h-4 w-4" />
@@ -779,7 +779,7 @@ const CompetitionDataSettings: React.FC = () => {
                         <p className="text-sm text-gray-600">{new Date(seasonData.season_end_date).toLocaleDateString('nl-NL')}</p>
                       </div>
                       <Button
-                        className="btn btn--icon"
+                        className="btn btn--icon btn--edit"
                         onClick={() => handleEdit(seasonData, 'season')}
                       >
                         <Edit className="h-4 w-4" />

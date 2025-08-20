@@ -42,9 +42,6 @@ const ConfirmDeleteDialog: React.FC<ConfirmDeleteDialogProps> = ({
           </div>
         </AlertDialogHeader>
         <AlertDialogFooter className="modal__actions">
-          <AlertDialogCancel disabled={loading} className="btn btn--secondary flex-1">
-            Annuleren
-          </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             disabled={loading}
@@ -52,6 +49,9 @@ const ConfirmDeleteDialog: React.FC<ConfirmDeleteDialogProps> = ({
           >
             {loading ? "Verwijderen..." : "Verwijderen"}
           </AlertDialogAction>
+          <AlertDialogCancel disabled={loading} className="btn btn--secondary flex-1">
+            Annuleren
+          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

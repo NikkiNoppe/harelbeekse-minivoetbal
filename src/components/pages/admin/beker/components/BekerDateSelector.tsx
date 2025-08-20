@@ -187,19 +187,13 @@ const BekerDateSelector: React.FC<BekerDateSelectorProps> = ({ onDatesSelected, 
     }
     
     const seasonStart = new Date(seasonStartDate);
-    const today = new Date();
-    
-    // Use the later of today + 2 weeks or season start date
-    const twoWeeksFromNow = new Date(today);
-    twoWeeksFromNow.setDate(today.getDate() + 14);
-    
-    const startDate = seasonStart > twoWeeksFromNow ? seasonStart : twoWeeksFromNow;
+    // Use the season start date as the earliest selectable date when available
+    const startDate = seasonStart;
     
     console.log('📅 Calculating minimum dates for beker tournament:', {
       seasonStartDate,
-      todayPlus2Weeks: twoWeeksFromNow.toISOString().split('T')[0],
       selectedStartDate: startDate.toISOString().split('T')[0],
-      reason: seasonStart > twoWeeksFromNow ? 'Using season start date' : 'Using today + 2 weeks'
+      reason: 'Using season start date'
     });
     
     const dates = [];
@@ -240,10 +234,10 @@ const BekerDateSelector: React.FC<BekerDateSelectorProps> = ({ onDatesSelected, 
   );
 
   // Memoize button disabled state
-  const isBekerSubmitDisabled = useMemo(() => 
-    !isBekerSelectionValid || isLoading,
-    [isBekerSelectionValid, isLoading]
-  );
+  const isBekerSubmitDisabled = useMemo(() => {
+    const byeRequiredButMissing = allowByeSelection && !byeTeamId;
+    return !isBekerSelectionValid || isLoading || byeRequiredButMissing;
+  }, [isBekerSelectionValid, isLoading, allowByeSelection, byeTeamId]);
 
   return (
     <div className="modal">
@@ -273,7 +267,7 @@ const BekerDateSelector: React.FC<BekerDateSelectorProps> = ({ onDatesSelected, 
           </div>
         )}
       </div>
-      <div className="bg-white rounded-lg p-4 mt-3">
+      <div className="bg-white rounded-lg p-4 mt-3 w-full max-w-md">
         <div className="space-y-3">
           {loading ? (
             <BekerLoadingComponent />
@@ -309,11 +303,7 @@ const BekerDateSelector: React.FC<BekerDateSelectorProps> = ({ onDatesSelected, 
             </button>
           </div>
 
-          <BekerValidationError
-            isValidSelection={isBekerSelectionValid}
-            selectedDates={selectedDates}
-            seasonStartDate={seasonStartDate}
-          />
+          {/* Validation message intentionally removed for compact UX */}
         </div>
       </div>
     </div>

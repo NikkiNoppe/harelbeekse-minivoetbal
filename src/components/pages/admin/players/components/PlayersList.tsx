@@ -73,15 +73,20 @@ const PlayersList: React.FC<PlayersListProps> = ({
   return (
     <>
       <div className="w-full overflow-x-auto">
-        <div className="min-w-[600px]">
-          <Table className="table w-full">
+        <div className="min-w-[480px] md:min-w-[600px]">
+          <div
+            className="max-h-[50vh] sm:max-h-[60vh] md:max-h-[65vh] overflow-y-auto"
+            role="region"
+            aria-label="Spelerslijst"
+          >
+            <Table className="table w-full text-sm md:text-base">
         <TableHeader>
           <TableRow>
-            <TableHead className="num min-w-[60px]">#</TableHead>
-            <TableHead className="min-w-[120px]">Voornaam</TableHead>
-            <TableHead className="min-w-[120px]">Achternaam</TableHead>
-            <TableHead className="center min-w-[120px]">Geboortedatum</TableHead>
-            {editMode && <TableHead className="center min-w-[120px]">Acties</TableHead>}
+            <TableHead className="num min-w-[60px] sticky top-0 bg-inherit z-10">#</TableHead>
+            <TableHead className="min-w-[100px] md:min-w-[120px] sticky top-0 bg-inherit z-10">Voornaam</TableHead>
+            <TableHead className="min-w-[100px] md:min-w-[120px] sticky top-0 bg-inherit z-10">Achternaam</TableHead>
+            <TableHead className="center min-w-[110px] md:min-w-[120px] sticky top-0 bg-inherit z-10">Geboortedatum</TableHead>
+            {editMode && <TableHead className="center min-w-[110px] md:min-w-[120px] sticky top-0 bg-inherit z-10">Acties</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -103,7 +108,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
                     <div className="flex items-center gap-1 justify-center">
                       <Button
                         onClick={() => onEditPlayer(player.player_id)}
-                        className="btn btn--icon"
+                        className="btn btn--icon btn--edit"
                       >
                         <Edit2 size={15} />
                       </Button>
@@ -121,6 +126,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
           }
         </TableBody>
       </Table>
+          </div>
         </div>
       </div>
 

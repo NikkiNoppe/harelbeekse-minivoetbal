@@ -27,6 +27,7 @@ const BekerPage: React.FC = () => {
     finale: any | null;
   }>(null);
   const [byeTeamId, setByeTeamId] = useState<number | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // Load teams from database on component mount
   useEffect(() => {
@@ -62,6 +63,13 @@ const BekerPage: React.FC = () => {
       setExistingCup(null);
     }
   }, []);
+
+  const handleCancelTournament = useCallback(() => {
+    setSelectedTeams([]);
+    setTournamentDates([]);
+    setByeTeamId(null);
+    toast({ title: "Geannuleerd", description: "Teams en speeldata gewist." });
+  }, [toast]);
 
   // Memoize team selection handler
   const handleTeamSelection = useCallback((teamId: number) => {
@@ -99,6 +107,10 @@ const BekerPage: React.FC = () => {
     }
     if (tournamentDates.length !== requiredWeeks) {
       toast({ title: "Onvoldoende data", description: `Selecteer exact ${requiredWeeks} speeldata`, variant: "destructive" });
+      return;
+    }
+    if (selectedTeams.length % 2 === 1 && !byeTeamId) {
+      toast({ title: "Selecteer bye team", description: "Bij oneven aantal teams moet één team vrijgesteld worden.", variant: "destructive" });
       return;
     }
 
@@ -153,8 +165,10 @@ const BekerPage: React.FC = () => {
   // Memoize validation states
   const canCreateTournament = useMemo(() => {
     const requiredWeeks = selectedTeams.length === 16 ? 5 : 4;
-    return selectedTeams.length >= 2 && tournamentDates.length === requiredWeeks;
-  }, [selectedTeams.length, tournamentDates.length]);
+    const hasBasics = selectedTeams.length >= 2 && tournamentDates.length === requiredWeeks;
+    const needsBye = selectedTeams.length % 2 === 1;
+    return hasBasics && (!needsBye || !!byeTeamId);
+  }, [selectedTeams.length, tournamentDates.length, byeTeamId]);
 
   const canSelectDates = useMemo(() => selectedTeams.length >= 2, [selectedTeams.length]);
 
@@ -239,35 +253,45 @@ const BekerPage: React.FC = () => {
                   )}
                 </div>
 
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button disabled={!canCreateTournament || isCreating} className="w-full">
-                      {isCreating ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Beker aanmaken...
-                        </>
-                      ) : (
-                        <>
-                          <Trophy className="mr-2 h-4 w-4" />
-                          Beker Aanmaken
-                        </>
-                      )}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Beker Aanmaken</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Weet je zeker dat je de beker wilt aanmaken met {selectedTeams.length} teams en {tournamentDates.length} speeldata? Deze actie kan niet ongedaan worden gemaakt.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Annuleren</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleCreateTournament}>Beker Aanmaken</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <div className="flex gap-2">
+                  <button
+                    disabled={!canCreateTournament || isCreating}
+                    className="btn btn--primary flex-1"
+                    onClick={() => setShowConfirm(true)}
+                  >
+                    {isCreating ? "Beker aanmaken..." : "Beker Aanmaken"}
+                  </button>
+                  <button onClick={handleCancelTournament} disabled={isCreating} className="btn btn--secondary">
+                    Beker annuleren
+                  </button>
+                </div>
+
+                {showConfirm && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="modal">
+                      <div className="w-full max-w-sm mx-auto">
+                        <div className="modal__title">Beker Aanmaken</div>
+                        <p className="text-xs text-muted-foreground">
+                          Weet je zeker dat je de beker wilt aanmaken met {selectedTeams.length} teams en {tournamentDates.length} speeldata? Deze actie kan niet ongedaan worden gemaakt.
+                        </p>
+                        <div className="modal__actions">
+                          <button
+                            className="btn btn--primary"
+                            onClick={() => {
+                              setShowConfirm(false);
+                              handleCreateTournament();
+                            }}
+                          >
+                            Beker Aanmaken
+                          </button>
+                          <button className="btn btn--secondary" onClick={() => setShowConfirm(false)}>
+                            Annuleren
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>

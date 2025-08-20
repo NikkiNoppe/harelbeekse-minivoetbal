@@ -200,6 +200,12 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
   background: #fef2f2; color: #dc2626; border-color: #f87171;
 }
 
+/* Reusable edit icon style */
+.btn--icon.btn--edit { color: var(--purple-700); border-color: var(--purple-400); }
+.btn--icon.btn--edit:hover, .btn--icon.btn--edit:focus {
+  background: var(--purple-800) !important; color: #fff !important; border-color: var(--purple-800) !important;
+}
+
 .btn--close {
   width: 2rem;
   height: 2rem;
@@ -364,6 +370,46 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
 }
 .modal__actions .btn--primary, .popup__actions .btn--primary {
   flex: 1 1 0;
+}
+
+/* Compact selectable chips for modal preferences */
+.select-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  color: var(--purple-600);
+  cursor: pointer;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  user-select: none;
+}
+/* Hover/focus: only style the checkbox inside, not the chip */
+.select-chip:hover .select-box,
+.select-chip:focus-within .select-box {
+  border-color: var(--purple-600) !important;
+  box-shadow: 0 0 0 2px var(--purple-200) !important;
+}
+.select-chip__label {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+/* Base checkbox appearance for selection chips */
+.select-box {
+  width: 1rem;
+  height: 1rem;
+  border: 1.5px solid var(--purple-400);
+  border-radius: 0.375rem;
+  background: #fff;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+/* Checked state: dark purple */
+.select-box[data-state="checked"],
+.select-box:checked {
+  outline: none !important;
+  background: var(--purple-700) !important;
+  border-color: var(--purple-700) !important;
+  box-shadow: 0 0 0 2px var(--purple-200) !important;
 }
 
 /* ============================================================================

@@ -314,7 +314,7 @@ const UserListTable: React.FC<UserListProps> = ({
                         <div className="flex items-center gap-1 justify-center">
                           <Button
                             onClick={() => onEditUser?.(user)}
-                            className="btn btn--icon"
+                            className="btn btn--icon btn--edit"
                             disabled={isUpdating || isDeleting}
                           >
                             {isUpdating ? (

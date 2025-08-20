@@ -204,7 +204,7 @@ const VenuesSettings: React.FC = () => {
                       <TableCell className="text-center">
                         <div className="flex justify-center gap-1">
                           <Button
-                            className="btn btn--icon"
+                            className="btn btn--icon btn--edit"
                             onClick={() => handleEdit(venue)}
                           >
                             <Edit className="h-4 w-4" />
