@@ -53,10 +53,8 @@ const DialogContent = React.forwardRef<
           </button>
         </DialogPrimitive.Close>
       </div>
-      <div className="dialog-content-wrapper flex flex-col h-full min-h-0 p-4 sm:p-6 gap-4">
-        <div className="dialog-scroll-content flex-1 overflow-y-auto min-h-0">
-          {children}
-        </div>
+      <div className="overflow-y-auto p-4 sm:p-6">
+        {children}
       </div>
     </DialogPrimitive.Content>
   </DialogPortal>
