@@ -70,53 +70,59 @@ const Header: React.FC<HeaderProps> = ({
     logout(); // <-- roep de echte logout functie aan
   };
 
-  // Admin navigation items
-  const adminNavItems = [
-    { key: "match-forms", label: "Wedstrijdformulieren", icon: <Calendar size={16} />, adminOnly: false },
-    { key: "players", label: "Spelers", icon: <Users size={16} />, adminOnly: false },
-    { key: "teams", label: "Teams", icon: <Shield size={16} />, adminOnly: true },
-    { key: "users", label: "Gebruikers", icon: <User size={16} />, adminOnly: false },
-    { key: "competition", label: "Competitie", icon: <Trophy size={16} />, adminOnly: true },
-    { key: "cup", label: "Beker", icon: <Award size={16} />, adminOnly: true },
-    { key: "financial", label: "Financieel", icon: <DollarSign size={16} />, adminOnly: true },
-    { key: "settings", label: "Instellingen", icon: <Settings size={16} />, adminOnly: true }
-  ];
-
   // Public navigation items
   const publicNavItems = [
     { key: "algemeen", label: "Algemeen", icon: <Home size={16} /> },
-    { key: "beker", label: "Beker", icon: <Award size={16} /> },
+    { key: "reglement", label: "Reglement", icon: <BookOpen size={16} /> },
     { key: "competitie", label: "Competitie", icon: <Trophy size={16} /> },
+    { key: "beker", label: "Beker", icon: <Award size={16} /> },
     { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
     { key: "teams", label: "Teams", icon: <Shield size={16} /> },
-    { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> },
-    { key: "reglement", label: "Reglement", icon: <BookOpen size={16} /> }
+    { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> }
   ];
 
   const isAdmin = user?.role === "admin";
-  
-  // Filter admin items based on visibility settings and admin permissions
-  const visibleAdminItems = adminNavItems.filter(item => {
-    if (item.adminOnly && !isAdmin) return false;
-    
-    // Check tab visibility for specific items
-    switch (item.key) {
-      case 'match-forms':
-        return isTabVisible('match-forms');
-      case 'competition':
-        return isTabVisible('competition');
-      case 'cup':
-        return isTabVisible('cup');
-      default:
-        return true;
-    }
-  });
-  
+
   // Filter public items based on tab visibility settings
   const visiblePublicItems = publicNavItems.filter(item => isTabVisible(item.key));
 
-  // Always show public navigation in the navbar (visibility-controlled), even when authenticated
-  const currentNavItems = visiblePublicItems;
+  // Admin groups (mirrors AdminSidebar)
+  const speelformatenItems = [
+    { key: "competition", label: "Competitie", icon: <Trophy size={14} /> },
+    { key: "cup", label: "Beker", icon: <Award size={14} /> },
+    { key: "playoffs", label: "Playoff", icon: <Target size={14} /> },
+  ];
+
+  const wedstrijdformulierenItems = [
+    { key: "match-forms-league", label: "Competitie", icon: <Trophy size={14} /> },
+    { key: "match-forms-cup", label: "Beker", icon: <Award size={14} /> },
+    { key: "match-forms-playoffs", label: "Play-Off", icon: <Target size={14} /> },
+  ];
+
+  const beheerItems = [
+    { key: "players", label: "Spelers", icon: <Users size={14} />, adminOnly: false },
+    { key: "suspensions", label: "Schorsingen", icon: <Shield size={14} />, adminOnly: true },
+    { key: "teams", label: "Teams", icon: <Shield size={14} />, adminOnly: true },
+    { key: "users", label: "Gebruikers", icon: <User size={14} />, adminOnly: true },
+  ];
+
+  const financieelItems = [
+    { key: "financial", label: "Financieel", icon: <DollarSign size={14} />, adminOnly: true },
+  ];
+
+  const systeemItems = [
+    { key: "settings", label: "Instellingen", icon: <Settings size={14} />, adminOnly: true },
+  ];
+
+  // Visibility filtering similar to AdminSidebar
+  const visibleSpeelformatenItems = isAuthenticated && isAdmin ? speelformatenItems : [];
+  const visibleWedstrijdformulierenItems = isAuthenticated && isAdmin ? wedstrijdformulierenItems : [];
+  const visibleBeheerItems = (isAuthenticated ? beheerItems : [])
+    .filter(item => (!item.adminOnly || isAdmin));
+  const visibleFinancieelItems = (isAuthenticated ? financieelItems : [])
+    .filter(item => (!item.adminOnly || isAdmin));
+  const visibleSysteemItems = (isAuthenticated ? systeemItems : [])
+    .filter(item => (!item.adminOnly || isAdmin));
 
   return (
     <header className="bg-purple-900 shadow-lg sticky top-0 z-50 backdrop-blur-sm">
@@ -159,7 +165,7 @@ const Header: React.FC<HeaderProps> = ({
                 </SheetDescription>
               </SheetHeader>
 
-              <div className="space-y-6 flex-1 overflow-y-auto scrollbar-hide">
+              <div className="space-y-6 flex-1 overflow-y-auto scrollbar-hide pb-24">
                 {/* User Info Section */}
                 {isAuthenticated && (
                   <button
@@ -186,22 +192,22 @@ const Header: React.FC<HeaderProps> = ({
                   </button>
                 )}
 
-                {/* Navigation Items */}
+                {/* Public Navigation Items */}
                 <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-2 mb-3">
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-2 mb-2">
                     Menu
                   </h3>
-                  {currentNavItems.map((item) => (
+                  {visiblePublicItems.map((item) => (
                     <button
                       key={item.key}
                       onClick={() => {
                         setIsSheetOpen(false);
                         onTabChange(item.key);
                       }}
-                      className={`btn-nav w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left font-medium${activeTab === item.key ? ' active' : ''}`}
+                      className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
                     >
                       {React.cloneElement(item.icon as React.ReactElement, {
-                        size: 16,
+                        size: 14,
                         className: "mr-2"
                       })}
                       {item.label}
@@ -209,33 +215,111 @@ const Header: React.FC<HeaderProps> = ({
                   ))}
                 </div>
 
-                {/* Action Buttons Section */}
-                <div className="pt-4 border-t border-gray-200 space-y-3">
-                  {/* Login Button */}
-                  {!isAuthenticated && (
-                    <button
-                      onClick={() => {
-                        onLoginClick();
-                        setIsSheetOpen(false);
-                      }}
-                      className="btn-nav active w-full"
-                    >
-                      <User size={16} className="mr-2" />
-                      Inloggen
-                    </button>
-                  )}
+                {/* Admin Groups when authenticated */}
+                {isAuthenticated && (
+                  <div className="space-y-4">
+                    {visibleSpeelformatenItems.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Speelformaten</h3>
+                        {visibleSpeelformatenItems.map((item) => (
+                          <button
+                            key={item.key}
+                            onClick={() => { setIsSheetOpen(false); onTabChange(item.key); }}
+                            className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
+                          >
+                            {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
-                  {/* Logout Button */}
-                  {isAuthenticated && (
-                    <button
-                      onClick={handleLogout}
-                      className="btn-nav active w-full"
-                    >
-                      <LogOut size={16} className="mr-2" />
-                      <span>Uitloggen</span>
-                    </button>
-                  )}
-                </div>
+                    {visibleWedstrijdformulierenItems.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Wedstrijdformulieren</h3>
+                        {visibleWedstrijdformulierenItems.map((item) => (
+                          <button
+                            key={item.key}
+                            onClick={() => { setIsSheetOpen(false); onTabChange(item.key); }}
+                            className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
+                          >
+                            {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {visibleBeheerItems.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Beheer</h3>
+                        {visibleBeheerItems.map((item) => (
+                          <button
+                            key={item.key}
+                            onClick={() => { setIsSheetOpen(false); onTabChange(item.key); }}
+                            className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
+                          >
+                            {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {visibleFinancieelItems.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Financieel</h3>
+                        {visibleFinancieelItems.map((item) => (
+                          <button
+                            key={item.key}
+                            onClick={() => { setIsSheetOpen(false); onTabChange(item.key); }}
+                            className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
+                          >
+                            {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {visibleSysteemItems.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Systeem</h3>
+                        {visibleSysteemItems.map((item) => (
+                          <button
+                            key={item.key}
+                            onClick={() => { setIsSheetOpen(false); onTabChange(item.key); }}
+                            className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
+                          >
+                            {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Fixed bottom action bar */}
+              <div className="p-3 sticky bottom-0 bg-transparent">
+                {!isAuthenticated ? (
+                  <button
+                    onClick={() => { onLoginClick(); setIsSheetOpen(false); }}
+                    className="btn-nav active w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm"
+                  >
+                    <User size={16} className="mr-1" />
+                    Inloggen
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleLogout}
+                    className="btn-nav active w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm"
+                  >
+                    <LogOut size={16} className="mr-1" />
+                    <span>Uitloggen</span>
+                  </button>
+                )}
               </div>
             </SheetContent>
           </Sheet>

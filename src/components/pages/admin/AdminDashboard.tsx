@@ -35,9 +35,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
   const canSeeAnyForms = canSeeLeagueForms || canSeeCupForms;
 
   return (
-    <div className="w-full">
+    <div className="w-full admin-dashboard">
       {/* Tab Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container-adaptive px-4 sm:px-6 lg:px-8 py-8 w-full">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
           <div className="animate-fade-in">
             <TabsContent value="match-forms" className="mt-0">

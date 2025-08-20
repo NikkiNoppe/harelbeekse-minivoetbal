@@ -75,7 +75,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
       <div className="w-full overflow-x-auto">
         <div className="min-w-[480px] md:min-w-[600px]">
           <div
-            className="max-h-[50vh] sm:max-h-[60vh] md:max-h-[65vh] overflow-y-auto"
+            className="table-no-inner-scroll-mobile"
             role="region"
             aria-label="Spelerslijst"
           >

@@ -371,6 +371,7 @@ const AdminSuspensionsPage: React.FC = () => {
               <CardTitle>Actieve Schorsingen</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="table-no-inner-scroll-mobile">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -403,6 +404,7 @@ const AdminSuspensionsPage: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         );
@@ -419,6 +421,7 @@ const AdminSuspensionsPage: React.FC = () => {
               Geen handmatige schorsingen gevonden
             </div>
           ) : (
+            <div className="table-no-inner-scroll-mobile">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -484,6 +487,7 @@ const AdminSuspensionsPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

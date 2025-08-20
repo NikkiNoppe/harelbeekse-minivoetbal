@@ -60,7 +60,7 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
       <div className="w-full">
         <div>
           <div
-            className="max-h-[50vh] sm:max-h-[60vh] md:max-h-[65vh] overflow-y-auto"
+            className="table-no-inner-scroll-mobile"
             role="region"
             aria-label="Teams lijst"
           >

@@ -251,6 +251,17 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
 }
 
 /* ============================================================================
+   NAVIGATION SHEET - COMPACT BUTTONS ONLY (no global/dashboard impact)
+============================================================================ */
+.navigation-modal .btn-nav {
+  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.6rem;
+}
+.navigation-modal .btn-nav svg { width: 0.9rem; height: 0.9rem; }
+.navigation-modal .btn-nav.active { filter: saturate(1.05); }
+
+/* ============================================================================
    5.1. MODAL / POPUP STYLING
 ============================================================================ */
 .modal, .popup {
@@ -795,6 +806,8 @@ tbody tr:hover { background: var(--purple-50); }
 .sticky-column { position: sticky; z-index: 10; background: #fff !important; border-right: 2px solid var(--purple-400) !important; box-shadow: 2px 0 4px rgba(96,54,140,0.1); }
 thead .sticky-column { z-index: 20; background: var(--purple-600) !important; color: #fff !important; }
 tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-green-50:hover .sticky-column { background: #fff !important; }
+.sticky-left { left: 0; }
+.sticky-right { right: 0; border-right: 0 !important; border-left: 2px solid var(--purple-400) !important; box-shadow: -2px 0 4px rgba(96,54,140,0.1); }
 .responsive-table-container::before, .responsive-table-container::after { content: ''; position: absolute; top: 0; bottom: 0; width: 10px; pointer-events: none; z-index: 15; transition: opacity 0.3s; }
 .responsive-table-container::before { left: 0; background: linear-gradient(90deg,rgba(96,54,140,0.1),transparent); }
 .responsive-table-container::after { right: 0; background: linear-gradient(270deg,rgba(96,54,140,0.1),transparent); }
@@ -857,6 +870,35 @@ tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-
   .responsive-standings-table .sticky-column:nth-child(2),
   .responsive-schedule-table .sticky-column:nth-child(2),
   .responsive-cards-table .sticky-column:nth-child(2) { padding-left: 0.75rem; padding-right: 0.75rem; }
+}
+
+/* ============================================================================
+   15.1. REUSABLE CONTAINERS & MOBILE TABLE UTILITIES
+============================================================================ */
+/* Adaptive content container for admin/dashboard pages */
+.container-adaptive {
+  width: 100%;
+  max-width: 92vw;
+  margin-left: auto;
+  margin-right: auto;
+}
+@media (min-width: 640px) { /* sm */
+  .container-adaptive { max-width: 60ch; }
+}
+@media (min-width: 1024px) { /* lg */
+  .container-adaptive { max-width: 1200px; }
+}
+
+/* On mobile: show full table height (no inner scroll). On md+ re-enable inner scroll */
+.table-no-inner-scroll-mobile {
+  max-height: none;
+  overflow: visible;
+}
+@media (min-width: 768px) { /* md */
+  .table-no-inner-scroll-mobile {
+    max-height: 65vh;
+    overflow-y: auto;
+  }
 }
 
 /* ============================================================================

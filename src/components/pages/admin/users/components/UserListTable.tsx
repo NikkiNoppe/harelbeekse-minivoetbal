@@ -120,24 +120,7 @@ const UserListTable: React.FC<UserListProps> = ({
             </SelectContent>
           </Select>
 
-          {/* Filter by team */}
-          <Select
-            value={teamFilter}
-            onValueChange={onTeamFilterChange}
-            disabled={teams.length === 0}
-          >
-            <SelectTrigger className="dropdown-login-style w-full">
-              <SelectValue placeholder="Alle teams" />
-            </SelectTrigger>
-            <SelectContent className="dropdown-content-login-style">
-              <SelectItem value="all" className="dropdown-item-login-style">Alle teams</SelectItem>
-              {teams.map((team) => (
-                <SelectItem key={team.team_id} value={team.team_id.toString()} className="dropdown-item-login-style">
-                  {team.team_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Team filter removed as requested */}
 
           {/* Add User Button - Mobile */}
           {addUserButton && (
@@ -149,7 +132,7 @@ const UserListTable: React.FC<UserListProps> = ({
 
         {/* Desktop: Grid layout */}
         <div className="hidden md:flex md:items-end md:gap-4">
-          <div className="flex-1 grid grid-cols-3 gap-4">
+          <div className="flex-1 grid grid-cols-2 gap-4">
             {/* Search by name */}
             <SearchInput
               placeholder="Zoeken op naam..."
@@ -173,24 +156,7 @@ const UserListTable: React.FC<UserListProps> = ({
               </SelectContent>
             </Select>
 
-            {/* Filter by team */}
-            <Select
-              value={teamFilter}
-              onValueChange={onTeamFilterChange}
-              disabled={teams.length === 0}
-            >
-              <SelectTrigger className="dropdown-login-style">
-                <SelectValue placeholder="Alle teams" />
-              </SelectTrigger>
-              <SelectContent className="dropdown-content-login-style">
-                <SelectItem value="all" className="dropdown-item-login-style">Alle teams</SelectItem>
-                {teams.map((team) => (
-                  <SelectItem key={team.team_id} value={team.team_id.toString()} className="dropdown-item-login-style">
-                    {team.team_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Team filter removed as requested */}
           </div>
           
           {/* Add User Button - Desktop */}
@@ -204,12 +170,12 @@ const UserListTable: React.FC<UserListProps> = ({
 
       {/* User Table */}
       <div className="w-full overflow-x-auto">
-        <div className="min-w-0 lg:min-w-[1100px]">
+        <div className="min-w-0 lg:min-w-[1100px] table-no-inner-scroll-mobile">
           <Table className="table w-full">
             <TableHeader>
               <TableRow className="table-header-row">
-                <TableHead className="min-w-[200px]">Naam</TableHead>
-                <TableHead className="min-w-[250px]">Email</TableHead>
+                <TableHead className="min-w-[200px] text-center">Naam</TableHead>
+                <TableHead className="min-w-[250px] hidden md:table-cell">Email</TableHead>
                 <TableHead className="hidden md:table-cell min-w-[150px]">Rol</TableHead>
                 <TableHead className="hidden lg:table-cell min-w-[300px] text-center">Teams</TableHead>
                 {editMode && <TableHead className="text-center min-w-[120px]">Acties</TableHead>}
@@ -254,14 +220,14 @@ const UserListTable: React.FC<UserListProps> = ({
               ) : (
                 users.map(user => (
                   <TableRow key={user.user_id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
+                    <TableCell className="font-medium text-center">
+                      <div className="flex items-center justify-center gap-2">
                         <User className="h-4 w-4" />
                         <span className="truncate max-w-[140px] sm:max-w-[200px]">{user.username}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      <div className="truncate max-w-[160px] sm:max-w-[240px]" title={user.email || ""}>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">
+                      <div className="truncate max-w-[200px]" title={user.email || ""}>
                         {user.email || "-"}
                       </div>
                     </TableCell>
