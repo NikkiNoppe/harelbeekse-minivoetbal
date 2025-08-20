@@ -262,7 +262,7 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
 .navigation-modal .btn-nav.active { filter: saturate(1.05); }
 
 /* ============================================================================
-   5.1. MODAL / POPUP STYLING
+   5.1. MODAL / POPUP STYLING - MOBILE OPTIMIZED
 ============================================================================ */
 .modal, .popup {
   background: var(--purple-100);
@@ -270,6 +270,7 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
   box-shadow: 0 8px 32px 0 rgba(96,54,140,0.18);
   padding: 2rem 1.5rem;
   max-width: 95vw;
+  max-height: calc(100dvh - 2rem);
   width: auto;
   min-width: 420px;
   margin: 0 auto;
@@ -282,6 +283,9 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1000;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: manipulation;
 }
 
 /* Navigation modal - rechts geplaatst, geen centering */
@@ -351,20 +355,38 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
 @media (max-width: 600px) {
   .modal, .popup {
     padding: 1.25rem 0.5rem;
-    max-width: 98vw;
+    max-width: calc(100vw - 1rem);
+    max-height: calc(100dvh - 1rem);
     min-width: 320px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 0.75rem;
   }
   
   .navigation-modal {
     padding: 1.25rem 0.5rem;
     width: 100vw;
+    max-height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
   
   /* Mobile adjustments for table modals */
   [data-radix-dialog-content].modal:has(.table),
   [data-radix-dialog-content].modal:has(table) {
     min-width: 320px !important;
-    max-width: 98vw !important;
+    max-width: calc(100vw - 1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+  }
+  
+  /* Mobile keyboard optimizations */
+  .modal input:focus,
+  .modal textarea:focus,
+  .popup input:focus,
+  .popup textarea:focus {
+    scroll-margin-top: 2rem;
+    scroll-margin-bottom: 8rem;
   }
 }
 .modal__title, .popup__title {

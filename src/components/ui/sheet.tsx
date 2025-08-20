@@ -59,7 +59,10 @@ const SheetContent = React.forwardRef<
     <SheetOverlay />
     <SheetPrimitive.Content
       ref={ref}
-      className={cn(sheetVariants({ side }), className)}
+      className={cn(sheetVariants({ side }), "overflow-y-auto overscroll-behavior-contain touch-action-manipulation", className)}
+      style={{
+        maxHeight: '100dvh',
+      }}
       {...props}
     >
       {children}
