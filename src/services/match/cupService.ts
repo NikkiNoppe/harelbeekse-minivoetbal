@@ -33,9 +33,16 @@ export interface TournamentBracket {
 
 export const bekerService = {
   addDaysToDate(dateStr: string, days: number): string {
-    const date = new Date(dateStr);
+    // Parse date in YYYY-MM-DD format and add days
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // Create in local timezone
     date.setDate(date.getDate() + days);
-    return date.toISOString().split('T')[0];
+    
+    // Return in YYYY-MM-DD format
+    const newYear = date.getFullYear();
+    const newMonth = String(date.getMonth() + 1).padStart(2, '0');
+    const newDay = String(date.getDate()).padStart(2, '0');
+    return `${newYear}-${newMonth}-${newDay}`;
   },
 
   // Allow manual assignment (byes) when odd number of teams: admin can prefill next-round slots
@@ -164,9 +171,14 @@ export const bekerService = {
     speeldag: string, 
     homeTeamId: number | null, 
     awayTeamId: number | null, 
-    matchDateTime: string, 
+    dateStr: string,
+    timeStr: string,
     venue: string
   ) {
+    // Create proper Belgian timezone timestamp (CET/CEST)
+    // For September 2025, Belgium uses CEST (UTC+2)
+    const matchDateTime = `${dateStr}T${timeStr}:00+02:00`;
+    
     return {
       unique_number: uniqueNumber,
       speeldag,
@@ -191,12 +203,19 @@ export const bekerService = {
       const weekIndex = playingWeeks.length === 5 ? (i < 4 ? 0 : 1) : 0;
       const matchIndexInWeek = i % 4; // 0-3 for each week (4 matches per week)
 
-      // Kies beste slot (0..3) op basis van teamvoorkeuren (indien beschikbaar)
-      let bestSlot = matchIndexInWeek;
+      // Use cyclical distribution across ALL 7 priority slots, with preference scoring
+      const totalAvailableSlots = 7; // Use all 7 priority slots for best distribution
+      const cycleIndex = i % totalAvailableSlots; // Cycle through all slots
+      
+      let bestSlot = cycleIndex;
       let bestScore = -1;
-      for (let s = 0; s < 4; s++) {
-        const { venue, timeslot } = await priorityOrderService.getMatchDetails(s, 4);
+      
+      // Check a few slots around the cycle index to find best team preference match
+      for (let offset = 0; offset < Math.min(3, totalAvailableSlots); offset++) {
+        const slotIndex = (cycleIndex + offset) % totalAvailableSlots;
+        const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, totalAvailableSlots);
         let combined = 0;
+        
         if (opts?.teamPreferences && opts?.venues) {
           const homeId = shuffledTeams[homeTeamIndex];
           const awayId = shuffledTeams[awayTeamIndex];
@@ -204,30 +223,30 @@ export const bekerService = {
           const a = scoreTeamForDetails(opts.teamPreferences.get(awayId), timeslot, venue, opts.venues);
           combined = h.score + a.score;
         }
+        
         if (combined > bestScore) {
           bestScore = combined;
-          bestSlot = s;
+          bestSlot = slotIndex;
         }
       }
 
-      const { venue, timeslot } = await priorityOrderService.getMatchDetails(bestSlot, 4); // 4 matches per week
+      const { venue, timeslot } = await priorityOrderService.getMatchDetails(bestSlot, totalAvailableSlots);
       
       // Determine the correct date based on the selected slot's day_of_week
       const baseDate = playingWeeks[weekIndex];
       const isMonday = timeslot?.day_of_week === 1;
       const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+      const matchTime = timeslot?.start_time || '19:00';
       
-      // Format the match date with the selected time
-      const matchDateTime = `${matchDate}T${timeslot?.start_time || '19:00'}:00+02:00`;
-      
-      console.log(`🎯 Match ${i + 1}: Week ${weekIndex + 1}, ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${bestSlot + 1} (Priority ${timeslot?.priority || 'N/A'}), Venue: ${venue}, prefScore=${bestScore}`);
+      console.log(`🎯 Match ${i + 1}: Week ${weekIndex + 1}, ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${bestSlot + 1} (Priority ${timeslot?.priority || 'N/A'}), Venue: ${venue}, Time: ${matchTime}, prefScore=${bestScore}`);
       
       cupMatches.push(bekerService.createMatchObject(
         `1/8-${i + 1}`,
         `1/8 Finale ${i + 1}`,
         shuffledTeams[homeTeamIndex],
         shuffledTeams[awayTeamIndex],
-        matchDateTime,
+        matchDate,
+        matchTime,
         venue
       ));
     }
@@ -240,26 +259,25 @@ export const bekerService = {
     // Use week 3 for a 5-week schedule, otherwise week 2 (indexing from 0)
     const baseWeekIndex = playingWeeks.length === 5 ? 2 : 1;
     for (let i = 0; i < 4; i++) {
-      // Get the optimal timeslot for this match (using all 7 priority slots)
-      const optimalSlotIndex = i; // 0-3 for the 4 best slots
-      const { venue, timeslot } = await priorityOrderService.getMatchDetails(optimalSlotIndex, 4);
+      // Distribute across priority slots cyclically (using all 7 slots)
+      const slotIndex = i; // Use first 4 priority slots for quarterfinals
+      const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7); // Use all 7 slots
       
       // Determine the correct date based on the selected slot's day_of_week
       const baseDate = playingWeeks[baseWeekIndex];
       const isMonday = timeslot?.day_of_week === 1;
       const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+      const matchTime = timeslot?.start_time || '19:00';
       
-      // Format the match date with the selected time
-      const matchDateTime = `${matchDate}T${timeslot?.start_time || '19:00'}:00+02:00`;
-      
-      console.log(`🎯 Kwartfinale ${i + 1}: ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${optimalSlotIndex + 1} (Priority ${timeslot?.priority || 'N/A'}), Venue: ${venue}`);
+      console.log(`🎯 Kwartfinale ${i + 1}: ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${slotIndex + 1} (Priority ${timeslot?.priority || 'N/A'}), Venue: ${venue}, Time: ${matchTime}`);
       
       cupMatches.push(bekerService.createMatchObject(
         `QF-${i + 1}`,
         `Kwartfinale ${i + 1}`,
         null,
         null,
-        matchDateTime,
+        matchDate,
+        matchTime,
         venue
       ));
     }
@@ -272,26 +290,25 @@ export const bekerService = {
     // Use week 4 for a 5-week schedule, otherwise week 3 (indexing from 0)
     const baseWeekIndex = playingWeeks.length === 5 ? 3 : 2;
     for (let i = 0; i < 2; i++) {
-      // Get the optimal timeslot for this match (using all 7 priority slots)
-      const optimalSlotIndex = i; // 0-1 for the 2 best slots
-      const { venue, timeslot } = await priorityOrderService.getMatchDetails(optimalSlotIndex, 2);
+      // Use top 2 priority slots for semifinals
+      const slotIndex = i; // 0-1 for the 2 best slots
+      const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7); // Use all 7 slots
       
       // Determine the correct date based on the selected slot's day_of_week
       const baseDate = playingWeeks[baseWeekIndex];
       const isMonday = timeslot?.day_of_week === 1;
       const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+      const matchTime = timeslot?.start_time || '19:00';
       
-      // Format the match date with the selected time
-      const matchDateTime = `${matchDate}T${timeslot?.start_time || '19:00'}:00+02:00`;
-      
-      console.log(`🎯 Halve finale ${i + 1}: ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${optimalSlotIndex + 1} (Priority ${timeslot?.priority || 'N/A'}), Venue: ${venue}`);
+      console.log(`🎯 Halve finale ${i + 1}: ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${slotIndex + 1} (Priority ${timeslot?.priority || 'N/A'}), Venue: ${venue}, Time: ${matchTime}`);
       
       cupMatches.push(bekerService.createMatchObject(
         `SF-${i + 1}`,
         `Halve Finale ${i + 1}`,
         null,
         null,
-        matchDateTime,
+        matchDate,
+        matchTime,
         venue
       ));
     }
@@ -300,9 +317,9 @@ export const bekerService = {
   },
 
   async createFinal(playingWeeks: string[]): Promise<any[]> {
-    // Get the optimal timeslot for the final (using the best slot)
-    const optimalSlotIndex = 0; // Best slot for the final
-    const { venue: finalVenue, timeslot: finalTimeslot } = await priorityOrderService.getMatchDetails(optimalSlotIndex, 1);
+    // Get the best slot for the final (priority slot #1)
+    const finalSlotIndex = 0; // Best slot for the final
+    const { venue: finalVenue, timeslot: finalTimeslot } = await priorityOrderService.getMatchDetails(finalSlotIndex, 7); // Use all 7 slots
     
     // Determine the correct date based on the selected slot's day_of_week
     // Use last week index (4 for 5-week schedule, 3 for 4-week schedule)
@@ -310,18 +327,17 @@ export const bekerService = {
     const baseDate = playingWeeks[baseWeekIndex];
     const isMonday = finalTimeslot?.day_of_week === 1;
     const finalDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+    const finalTime = finalTimeslot?.start_time || '19:00';
     
-    // Format the match date with the selected time
-    const finalMatchDateTime = `${finalDate}T${finalTimeslot?.start_time || '19:00'}:00+02:00`;
-    
-    console.log(`🎯 Finale: ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${optimalSlotIndex + 1} (Priority ${finalTimeslot?.priority || 'N/A'}), Venue: ${finalVenue}`);
+    console.log(`🎯 Finale: ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${finalSlotIndex + 1} (Priority ${finalTimeslot?.priority || 'N/A'}), Venue: ${finalVenue}, Time: ${finalTime}`);
     
     return [bekerService.createMatchObject(
       'FINAL',
       'Finale',
       null,
       null,
-      finalMatchDateTime,
+      finalDate,
+      finalTime,
       finalVenue
     )];
   },

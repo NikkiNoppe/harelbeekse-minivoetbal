@@ -275,8 +275,7 @@ export const priorityOrderService = {
   }> {
     const allTimeslots = await this.getPrioritizedTimeslots();
     
-    // Use ALL timeslots in priority order, regardless of day
-    // The priority order already includes the best slots from both Monday and Tuesday
+    // Use ALL 7 timeslots in priority order for maximum distribution
     let availableSlots = allTimeslots;
     
     if (availableSlots.length === 0) {
@@ -284,8 +283,8 @@ export const priorityOrderService = {
       return { time: '19:00', venue: 'Sporthal De Dageraad Harelbeke', timeslot: null };
     }
 
-    // Use the matchIndex to select the slot in priority order
-    // This will use the best slots from both Monday and Tuesday in priority order
+    // Cyclically distribute matches across ALL available priority slots (1-7)
+    // This ensures both venues and all timeslots are properly utilized
     const selectedSlot = availableSlots[matchIndex % availableSlots.length];
     
     console.log(`🎯 Selected slot for match ${matchIndex + 1}/${totalMatches}: Priority ${selectedSlot.priority}, ${selectedSlot.venue_name} at ${selectedSlot.start_time} (${selectedSlot.day_of_week === 1 ? 'Monday' : 'Tuesday'})`);
