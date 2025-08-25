@@ -71,6 +71,8 @@ export const usePlayersUpdated = () => {
   const memoizedSetNewPlayer = useCallback(setNewPlayer, [setNewPlayer]);
   const memoizedSetEditingPlayer = useCallback(setEditingPlayer, [setEditingPlayer]);
 
+  // No extra mount refresh; initial load happens once in usePlayersData.initializeData
+
   return {
     players,
     teams,

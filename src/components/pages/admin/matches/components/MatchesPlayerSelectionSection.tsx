@@ -69,12 +69,10 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
     getSelectedPlayerIds(awayTeamSelections), [awayTeamSelections, getSelectedPlayerIds]);
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-2xl text-center text-purple-light">Spelers</h3>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="space-y-4">      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Home Team */}
-        <div>
+        <div className="rounded-md border bg-white p-3">
           <MatchesPlayerSelectionTable
             teamLabel={`${match.homeTeamName} (Thuis)`}
             selections={homeTeamSelections}
@@ -88,15 +86,18 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             canEdit={canEdit}
             showRefereeFields={showRefereeFields}
           />
-          <MatchesCaptainSelection
+          <div className="mt-3">
+            <MatchesCaptainSelection
             selections={homeTeamSelections}
             onCaptainChange={(playerId) => handleCaptainChange(playerId?.toString() || "no-captain", true)}
             canEdit={canEdit}
-          />
+            teamLabel={`${match.homeTeamName} (Thuis)`}
+            />
+          </div>
         </div>
         
         {/* Away Team */}
-        <div>
+        <div className="rounded-md border bg-white p-3">
           <MatchesPlayerSelectionTable
             teamLabel={`${match.awayTeamName} (Uit)`}
             selections={awayTeamSelections}
@@ -110,11 +111,14 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             canEdit={canEdit}
             showRefereeFields={showRefereeFields}
           />
-          <MatchesCaptainSelection
+          <div className="mt-3">
+            <MatchesCaptainSelection
             selections={awayTeamSelections}
             onCaptainChange={(playerId) => handleCaptainChange(playerId?.toString() || "no-captain", false)}
             canEdit={canEdit}
-          />
+            teamLabel={`${match.awayTeamName} (Uit)`}
+            />
+          </div>
         </div>
       </div>
     </div>

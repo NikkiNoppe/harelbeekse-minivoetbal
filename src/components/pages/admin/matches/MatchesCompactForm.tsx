@@ -1,9 +1,10 @@
 import React, { useCallback, useMemo } from "react";
 import { MatchDataSection } from "./components/MatchesDataSection";
 import { PlayerSelectionSection } from "./components/MatchesPlayerSelectionSection";
-import MatchesRefereeNotesSection from "./components/MatchesRefereeNotesSection";
+import RefereeNotesSection from "./components/MatchesRefereeNotesSection";
 import MatchesFormActions from "./components/MatchesFormActions";
-import { MatchesRefereePenaltySection } from "./components/MatchesRefereePenaltySection";
+import RefereeCardsSection from "./components/MatchesRefereeCardsSection";
+import { RefereePenaltySection } from "./components/MatchesRefereePenaltySection";
 import MatchesPenaltyShootoutModal from "./components/MatchesPenaltyShootoutModal";
 import { MatchFormData, PlayerSelection } from "./types";
 import { useMatchFormState } from "./hooks/useMatchFormState";
@@ -48,10 +49,13 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   const { submitMatchForm, lockMatch } = useEnhancedMatchFormSubmission();
   const [showPenaltyModal, setShowPenaltyModal] = React.useState(false);
   const [pendingSubmission, setPendingSubmission] = React.useState<MatchFormData | null>(null);
+  const [homeCardsOpen, setHomeCardsOpen] = React.useState(false);
+  const [awayCardsOpen, setAwayCardsOpen] = React.useState(false);
 
   const userRole = useMemo(() => (isAdmin ? "admin" : isReferee ? "referee" : "player_manager"), [isAdmin, isReferee]);
   const canEdit = useMemo(() => !match.isLocked || isAdmin, [match.isLocked, isAdmin]);
   const showRefereeFields = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
+  const hideInlineCardSelectors = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
   const isCupMatch = useMemo(() => match.matchday?.includes('🏆'), [match.matchday]);
 
   const handleCardChange = useCallback((playerId: number, cardType: string) => {
@@ -174,11 +178,15 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
 
   const refereeFields = useMemo(() => showRefereeFields && (
     <>
-      <MatchesRefereePenaltySection
+      {/* Boetes sectie */}
+      <h3 className="text-lg font-semibold text-center text-purple-dark">Boetes</h3>
+      <RefereePenaltySection
         match={match}
         canEdit={canEdit}
       />
-      <MatchesRefereeNotesSection
+      {/* Notities sectie */}
+      <h3 className="text-lg font-semibold text-center text-purple-dark">Notities</h3>
+      <RefereeNotesSection
         notes={refereeNotes}
         onNotesChange={setRefereeNotes}
         canEdit={canEdit}
@@ -188,6 +196,14 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Hoofdtitel en teams */}
+      <div className="space-y-1 text-center">
+        <h2 className="text-xl font-bold">Wedstrijdformulier</h2>
+        <div className="text-sm text-muted-foreground">{match.homeTeamName} vs {match.awayTeamName}</div>
+      </div>
+
+      {/* Gegevens + Score */}
+      <h3 className="text-lg font-semibold text-center text-purple-dark">Wedstrijdgegevens</h3>
       <MatchDataSection
         match={match}
         homeScore={homeScore}
@@ -199,6 +215,9 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         canEdit={canEdit}
         canEditMatchData={showRefereeFields}
       />
+
+      {/* Spelers */}
+      <h3 className="text-lg font-semibold  text-center text-purple-dark">Spelers</h3>
       
       <PlayerSelectionSection
         match={match}
@@ -208,10 +227,22 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         onCardChange={handleCardChange}
         playerCards={playerCards}
         canEdit={canEdit}
-        showRefereeFields={showRefereeFields}
+        showRefereeFields={!hideInlineCardSelectors}
         teamId={teamId}
         isTeamManager={!isAdmin && !isReferee}
       />
+
+      {/* Kaarten */}
+      <h3 className="text-lg font-semibold  text-center text-purple-dark">Kaarten</h3>
+      {showRefereeFields && (
+        <RefereeCardsSection
+          match={match}
+          homeSelections={homeTeamSelections}
+          awaySelections={awayTeamSelections}
+          onCardChange={handleCardChange}
+          canEdit={canEdit}
+        />
+      )}
       
       {refereeFields}
       

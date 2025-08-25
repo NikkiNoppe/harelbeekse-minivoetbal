@@ -8,12 +8,14 @@ interface MatchesCaptainSelectionProps {
   selections: PlayerSelection[];
   onCaptainChange: (playerId: number | null) => void;
   canEdit: boolean;
+  teamLabel?: string;
 }
 
 const MatchesCaptainSelection: React.FC<MatchesCaptainSelectionProps> = ({
   selections,
   onCaptainChange,
   canEdit,
+  teamLabel,
 }) => {
   // Memoize available players (those with playerId)
   const availablePlayers = useMemo(() => {
@@ -38,35 +40,42 @@ const MatchesCaptainSelection: React.FC<MatchesCaptainSelectionProps> = ({
   const captainValue = useMemo(() => {
     return currentCaptain?.playerId?.toString() || "no-captain";
   }, [currentCaptain]);
+  const currentCaptainName = useMemo(() => currentCaptain?.playerName || null, [currentCaptain]);
 
-  if (availablePlayers.length === 0) {
-    return null;
-  }
+  const hasPlayers = availablePlayers.length > 0;
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="captain-select">Aanvoerder</Label>
+      <Label htmlFor="captain-select">Aanvoerder{teamLabel ? ` — ${teamLabel}` : ''}</Label>
       <Select
         value={captainValue}
         onValueChange={handleCaptainChange}
-        disabled={!canEdit}
+        disabled={!canEdit || !hasPlayers}
       >
-        <SelectTrigger className="w-[180px] mt-1 dropdown-login-style">
-          <SelectValue placeholder="Selecteer aanvoerder" />
+        <SelectTrigger className="w-full h-9 mt-1 dropdown-login-style">
+          <SelectValue placeholder={hasPlayers ? "Selecteer aanvoerder" : "Geen spelers beschikbaar"} />
         </SelectTrigger>
         <SelectContent className="dropdown-content-login-style">
-          <SelectItem value="no-captain" className="dropdown-item-login-style">
-            Geen aanvoerder
-          </SelectItem>
-          {availablePlayers.map((selection) => (
-            <SelectItem
-              key={selection.playerId}
-              value={selection.playerId!.toString()}
-              className="dropdown-item-login-style"
-            >
-              {selection.playerName}
+          {hasPlayers ? (
+            <>
+              <SelectItem value="no-captain" className="dropdown-item-login-style">
+                Geen aanvoerder
+              </SelectItem>
+              {availablePlayers.map((selection) => (
+                <SelectItem
+                  key={selection.playerId}
+                  value={selection.playerId!.toString()}
+                  className="dropdown-item-login-style"
+                >
+                  {selection.playerName || `Speler #${selection.playerId}`}
+                </SelectItem>
+              ))}
+            </>
+          ) : (
+            <SelectItem value="no-captain" disabled className="dropdown-item-login-style">
+              Geen spelers geselecteerd
             </SelectItem>
-          ))}
+          )}
         </SelectContent>
       </Select>
     </div>

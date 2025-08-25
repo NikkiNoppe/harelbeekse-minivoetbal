@@ -1,14 +1,5 @@
 import React from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import MatchesCompactForm from "./MatchesCompactForm";
 import { MatchFormData } from "./types";
 
@@ -41,15 +32,6 @@ const MatchFormDialog: React.FC<MatchFormDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="modal w-[95vw] max-w-7xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="modal__title flex items-center gap-2">
-            Wedstrijdformulier - {match.homeTeamName} vs {match.awayTeamName}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Beheer de wedstrijdgegevens, spelers en scores voor deze wedstrijd
-          </DialogDescription>
-        </DialogHeader>
-
         <div className="space-y-6">
           <MatchesCompactForm
             match={match}

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { localDateTimeToISO } from "@/lib/dateUtils";
 
 export interface PrioritizedTimeslot {
   timeslot_id: number;
@@ -116,7 +117,7 @@ export const timeslotPriorityService = {
    */
   async formatMatchDateTime(date: string, matchIndex: number, totalMatches: number): Promise<string> {
     const { time } = await this.getMatchDetails(matchIndex, totalMatches, date);
-    return `${date}T${time}:00+02:00`;
+    return localDateTimeToISO(date, time);
   },
 
   /**

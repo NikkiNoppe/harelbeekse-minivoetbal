@@ -14,12 +14,12 @@ const MatchesCardIcon: React.FC<MatchesCardIconProps> = ({ type, size = 16 }) =>
     
     switch (type) {
       case "yellow":
-        return <Circle {...iconProps} className="text-yellow-500 fill-current" />;
+        return <Square {...iconProps} className="text-yellow-500 fill-current" />;
       case "double_yellow":
         return (
           <div className="flex gap-1">
-            <Circle {...iconProps} className="text-yellow-500 fill-current" />
-            <Circle {...iconProps} className="text-yellow-500 fill-current" />
+            <Square {...iconProps} className="text-yellow-500 fill-current" />
+            <Square {...iconProps} className="text-yellow-500 fill-current" />
           </div>
         );
       case "red":

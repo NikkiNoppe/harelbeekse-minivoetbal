@@ -8,7 +8,7 @@ interface RefereeNotesSectionProps {
   canEdit: boolean;
 }
 
-const MatchesRefereeNotesSection: React.FC<RefereeNotesSectionProps> = ({
+const RefereeNotesSection: React.FC<RefereeNotesSectionProps> = ({
   notes,
   onNotesChange,
   canEdit,
@@ -23,11 +23,8 @@ const MatchesRefereeNotesSection: React.FC<RefereeNotesSectionProps> = ({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-purple-light">
-        📝 Scheidsrechter Notities
-      </h3>
+
       <div className="space-y-2">
-        <Label htmlFor="referee-notes">Notities</Label>
         <Textarea
           id="referee-notes"
           value={notesValue}
@@ -41,4 +38,4 @@ const MatchesRefereeNotesSection: React.FC<RefereeNotesSectionProps> = ({
   );
 };
 
-export default React.memo(MatchesRefereeNotesSection);
+export default React.memo(RefereeNotesSection);

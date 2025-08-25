@@ -3,6 +3,7 @@ import { seasonService } from "@/services/seasonService";
 import { priorityOrderService } from "@/services/priorityOrderService";
 import { teamService } from "@/services/core/teamService";
 import { normalizeTeamsPreferences, scoreTeamForDetails, TeamPreferencesNormalized } from "@/services/core/teamPreferencesService";
+import { localDateTimeToISO } from "@/lib/dateUtils";
 
 export interface CupMatch {
   match_id: number;
@@ -44,6 +45,8 @@ export const bekerService = {
     const newDay = String(date.getDate()).padStart(2, '0');
     return `${newYear}-${newMonth}-${newDay}`;
   },
+
+  
 
   // Allow manual assignment (byes) when odd number of teams: admin can prefill next-round slots
   async assignTeamToMatch(uniqueNumber: string, asHome: boolean, teamId: number): Promise<{ success: boolean; message: string }> {
@@ -175,9 +178,8 @@ export const bekerService = {
     timeStr: string,
     venue: string
   ) {
-    // Create proper Belgian timezone timestamp (CET/CEST)
-    // For September 2025, Belgium uses CEST (UTC+2)
-    const matchDateTime = `${dateStr}T${timeStr}:00+02:00`;
+    // Store as UTC ISO while preserving the intended local clock time
+    const matchDateTime = localDateTimeToISO(dateStr, timeStr);
     
     return {
       unique_number: uniqueNumber,
@@ -931,8 +933,20 @@ export const bekerService = {
 
   // Utility functions
   extractMatchNumber(uniqueNumber: string): number {
-    const match = uniqueNumber.match(/\d+/);
-    return match ? parseInt(match[0]) : 0;
+    // Prefer the number after the last hyphen (e.g., '1/8-3' -> 3, 'QF-2' -> 2)
+    const parts = uniqueNumber.split('-');
+    const lastPart = parts[parts.length - 1];
+    const parsed = parseInt(lastPart, 10);
+    if (!isNaN(parsed)) return parsed;
+
+    // Fallback: take the last number sequence in the string
+    const allNumbers = uniqueNumber.match(/\d+/g);
+    if (allNumbers && allNumbers.length > 0) {
+      const last = allNumbers[allNumbers.length - 1];
+      const fallbackParsed = parseInt(last, 10);
+      if (!isNaN(fallbackParsed)) return fallbackParsed;
+    }
+    return 0;
   },
 
   shouldBeHomeTeam(uniqueNumber: string, matchNumber: number): boolean {

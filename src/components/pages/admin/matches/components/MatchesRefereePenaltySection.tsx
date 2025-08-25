@@ -105,11 +105,12 @@ const PenaltyItemComponent = React.memo<{
   );
 });
 
-export const MatchesRefereePenaltySection: React.FC<RefereePenaltySectionProps> = (props) => {
+export const RefereePenaltySection: React.FC<RefereePenaltySectionProps> = (props) => {
   const { toast } = useToast();
   const [penalties, setPenalties] = useState<PenaltyItem[]>([]);
   const [availablePenalties, setAvailablePenalties] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [savedPenalties, setSavedPenalties] = useState<Array<{ teamName: string; penaltyName: string; amount: number }>>([]);
 
   // Memoize expensive computations
   const memoizedAvailablePenalties = useMemo(() => availablePenalties, [availablePenalties]);
@@ -176,6 +177,8 @@ export const MatchesRefereePenaltySection: React.FC<RefereePenaltySectionProps> 
               penalty_type_id: null,
               cost_setting_id: penalty.costSettingId
             });
+            const teamName = teamOptions.find(t => t.id === penalty.teamId)?.name || 'Team';
+            savedThis.push({ teamName, penaltyName: costSetting.name, amount: costSetting.amount });
           }
         }
       }
@@ -186,6 +189,7 @@ export const MatchesRefereePenaltySection: React.FC<RefereePenaltySectionProps> 
       });
 
       setPenalties([]);
+      setSavedPenalties(prev => [...savedThis, ...prev].slice(0, 10));
     } catch (error) {
       console.error('Error saving penalties:', error);
       toast({
@@ -197,6 +201,10 @@ export const MatchesRefereePenaltySection: React.FC<RefereePenaltySectionProps> 
       setIsLoading(false);
     }
   }, [penalties, availablePenalties, props.match.matchId, toast]);
+
+  const removeSavedPenalty = useCallback((index: number) => {
+    setSavedPenalties(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
   // Memoize the add penalty button disabled state
   const isAddButtonDisabled = useMemo(() => {
@@ -251,14 +259,36 @@ export const MatchesRefereePenaltySection: React.FC<RefereePenaltySectionProps> 
         </div>
       )}
 
-      {penalties.length === 0 && (
+      {penalties.length === 0 && savedPenalties.length === 0 && (
         <div className="text-center py-8 text-gray-500">
           <p>Nog geen boetes toegevoegd</p>
           <p className="text-sm">Klik op "Boete Toevoegen" om een boete toe te voegen</p>
+        </div>
+      )}
+
+      {savedPenalties.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-xs font-semibold text-muted-foreground">Toegevoegd (sessie)</div>
+          <div className="space-y-1">
+            {savedPenalties.map((p, i) => (
+              <div key={i} className="flex items-center justify-between text-sm border rounded px-2 py-1.5 bg-white">
+                <div className="truncate">
+                  <span className="font-medium">{p.teamName}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>{p.penaltyName}</span>
+                  <span className="text-muted-foreground">€{p.amount}</span>
+                  <Button type="button" variant="outline" onClick={() => removeSavedPenalty(i)} className="btn btn--danger h-8 w-8 p-0" aria-label="Verwijderen">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-export default React.memo(MatchesRefereePenaltySection);
+export default React.memo(RefereePenaltySection);

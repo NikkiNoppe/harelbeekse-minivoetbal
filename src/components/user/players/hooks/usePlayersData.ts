@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Player, Team } from "../types";
 import { User } from "@/types/auth";
@@ -13,7 +13,6 @@ export const usePlayersData = (authUser: User | null) => {
   const [userTeamName, setUserTeamName] = useState<string>("");
 
   const fetchTeams = async () => {
-    console.log('🔄 Fetching teams...');
     try {
       const { data, error } = await supabase
         .from('teams_public')
@@ -21,20 +20,17 @@ export const usePlayersData = (authUser: User | null) => {
         .order('team_name');
 
       if (error) {
-        console.error('❌ Error fetching teams:', error);
+        console.error('Error fetching teams:', error);
         return [];
       }
-
-      console.log('✅ Teams fetched:', data?.length || 0, 'teams');
       return data || [];
     } catch (error) {
-      console.error('💥 Error in fetchTeams:', error);
+      console.error('Error in fetchTeams:', error);
       return [];
     }
   };
 
   const fetchPlayers = async () => {
-    console.log('🔄 Fetching all players with teams...');
     try {
       const { data, error } = await supabase
         .from('players')
@@ -52,20 +48,18 @@ export const usePlayersData = (authUser: User | null) => {
         .order('last_name')
         .order('first_name');
       if (error) {
-        console.error('❌ Error fetching players:', error);
+        console.error('Error fetching players:', error);
         return [];
       }
-      console.log('✅ Players fetched:', data?.length || 0, 'players');
       return data || [];
     } catch (error) {
-      console.error('💥 Error in fetchPlayers:', error);
+      console.error('Error in fetchPlayers:', error);
       return [];
     }
   };
 
   // Optimized: fetch players for a specific team only
   const fetchPlayersByTeam = async (teamId: number) => {
-    console.log('🔄 Fetching players for team:', teamId);
     try {
       const { data, error } = await supabase
         .from('players')
@@ -75,14 +69,12 @@ export const usePlayersData = (authUser: User | null) => {
         .order('first_name');
 
       if (error) {
-        console.error('❌ Error fetching players by team:', error);
+        console.error('Error fetching players by team:', error);
         return [];
       }
-
-      console.log('✅ Team players fetched:', data?.length || 0, 'players');
       return data || [];
     } catch (error) {
-      console.error('💥 Error in fetchPlayersByTeam:', error);
+      console.error('Error in fetchPlayersByTeam:', error);
       return [];
     }
   };
@@ -108,7 +100,6 @@ export const usePlayersData = (authUser: User | null) => {
   };
 
   const initializeData = async () => {
-    console.log('🚀 Initializing player data...');
     try {
       setLoading(true);
       
@@ -116,31 +107,29 @@ export const usePlayersData = (authUser: User | null) => {
       setTeams(teamsData);
 
       if (authUser?.role === "player_manager" && authUser.teamId) {
-        console.log('👤 Player manager detected, setting team:', authUser.teamId);
         setSelectedTeam(authUser.teamId);
+        didSetInitialTeam.current = true;
         
         const userTeam = teamsData.find(team => team.team_id === authUser.teamId);
         if (userTeam) {
           setUserTeamName(userTeam.team_name);
-          console.log('📝 User team name set:', userTeam.team_name);
         }
         // Optimized: fetch only the user's team players
         const teamPlayers = await fetchPlayersByTeam(authUser.teamId);
         setAllPlayers([]);
         setPlayers(teamPlayers);
       } else if (authUser?.role === "admin" && teamsData.length > 0) {
-        console.log('👑 Admin detected, selecting first team:', teamsData[0].team_id);
         setSelectedTeam(teamsData[0].team_id);
+        didSetInitialTeam.current = true;
         // Optimized: fetch only the selected team's players
         const teamPlayers = await fetchPlayersByTeam(teamsData[0].team_id);
         setAllPlayers([]);
         setPlayers(teamPlayers);
       }
     } catch (error) {
-      console.error('💥 Error initializing data:', error);
+      console.error('Error initializing data:', error);
     } finally {
       setLoading(false);
-      console.log('✅ Data initialization complete');
     }
   };
 
@@ -150,38 +139,20 @@ export const usePlayersData = (authUser: User | null) => {
     }
   }, [authUser]);
 
-  // Realtime: auto-refresh when players change for the active team
-  useEffect(() => {
-    const targetTeamId = authUser?.role === "player_manager" ? authUser.teamId : selectedTeam;
-    if (!targetTeamId) return;
+  // No realtime auto-refresh to avoid continuous reloads; we refresh only on user actions
 
-    const channel = supabase
-      .channel(`players-team-${targetTeamId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'players' },
-        (payload: any) => {
-          const affectedTeamIds = [payload.new?.team_id, payload.old?.team_id].filter(Boolean);
-          if (affectedTeamIds.includes(targetTeamId)) {
-            console.log('🔔 Players change detected for team, refreshing...');
-            refreshPlayers(targetTeamId);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      try {
-        supabase.removeChannel(channel);
-      } catch (_) {}
-    };
-  }, [authUser, selectedTeam]);
+  const didSetInitialTeam = useRef<boolean>(false);
 
   // On team selection changes, fetch players for that team (admin flow)
   useEffect(() => {
     if (!authUser) return;
     const targetTeamId = authUser.role === "player_manager" ? authUser.teamId : selectedTeam;
     if (targetTeamId) {
+      if (didSetInitialTeam.current) {
+        // Skip the first effect run caused by initial selection set during initialization
+        didSetInitialTeam.current = false;
+        return;
+      }
       refreshPlayers(targetTeamId);
     }
   }, [selectedTeam]);

@@ -37,7 +37,7 @@ const MatchInputField = React.memo<{
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       placeholder={placeholder}
-      className="input-login-style"
+      className="input-login-style h-9"
     />
   </div>
 ));
@@ -57,7 +57,7 @@ const RefereeSelector = React.memo<{
       onValueChange={onRefereeChange}
       disabled={disabled || loading}
     >
-      <SelectTrigger className="dropdown-login-style">
+      <SelectTrigger className="dropdown-login-style h-9">
         <SelectValue placeholder={loading ? "Laden..." : "Selecteer scheidsrechter"} />
       </SelectTrigger>
       <SelectContent className="dropdown-content-login-style">
@@ -89,7 +89,7 @@ const ScoreInput = React.memo<{
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      className="input-login-style text-center"
+      className="input-login-style h-9 text-center"
     />
   </div>
 ));
@@ -147,15 +147,11 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
   const memoizedReferees = useMemo(() => referees, [referees]);
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-2xl text-center text-purple-light">
-        ⚽ Wedstrijdgegevens
-      </h3>
-      
+    <div className="space-y-4"> 
       {/* Match Details - 2 rows layout */}
       <div className="space-y-4">
-        {/* First row: Date, Time */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* First row: Date, Time (1/2 - 1/2 on mobile) */}
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-4">
           <MatchInputField
             id="match-date"
             label="Datum"
@@ -175,8 +171,8 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
           />
         </div>
 
-        {/* Second row: Location, Matchday, Referee */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Second row: Location full width, then Matchday + Referee side by side */}
+        <div className="grid grid-cols-1 gap-4">
           <MatchInputField
             id="match-location"
             label="Locatie"
@@ -185,42 +181,39 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
             disabled={!canEditMatchData}
             placeholder="Wedstrijdlocatie"
           />
-          
-          <MatchInputField
-            id="match-matchday"
-            label="Speeldag"
-            value={match.matchday || ""}
-            onChange={handleMatchdayChange}
-            disabled={!canEditMatchData}
-            placeholder="Speeldag"
-          />
-          
-          <RefereeSelector
-            referees={memoizedReferees}
-            selectedReferee={selectedReferee}
-            onRefereeChange={onRefereeChange}
-            loading={loadingReferees}
-            disabled={!canEdit}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
+            <MatchInputField
+              id="match-matchday"
+              label="Speeldag"
+              value={match.matchday || ""}
+              onChange={handleMatchdayChange}
+              disabled={!canEditMatchData}
+              placeholder="Speeldag"
+            />
+            <RefereeSelector
+              referees={memoizedReferees}
+              selectedReferee={selectedReferee}
+              onRefereeChange={onRefereeChange}
+              loading={loadingReferees}
+              disabled={!canEdit}
+            />
+          </div>
         </div>
       </div>
 
       {/* Score Section */}
       <div className="space-y-4">
-        <h4 className="text-lg font-semibold text-center text-purple-light">
-          📊 Score
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-4">
           <ScoreInput
             id="home-score"
-            label={`${match.homeTeamName} Score`}
+            label={`${match.homeTeamName}`}
             value={homeScore}
             onChange={onHomeScoreChange}
             disabled={!canEdit}
           />
           <ScoreInput
             id="away-score"
-            label={`${match.awayTeamName} Score`}
+            label={`${match.awayTeamName}`}
             value={awayScore}
             onChange={onAwayScoreChange}
             disabled={!canEdit}

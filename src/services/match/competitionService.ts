@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { localDateTimeToISO } from "@/lib/dateUtils";
 import { seasonService } from "@/services/seasonService";
 import { priorityOrderService } from "@/services/priorityOrderService";
 import { teamService } from "@/services/core/teamService";
@@ -746,8 +747,8 @@ export const competitionService = {
         const isMonday = timeslot?.day_of_week === 1;
         const matchDate = isMonday ? baseDate : this.addDaysToDate(baseDate, 1);
         
-        // Format match datum met tijd
-        const matchDateTime = `${matchDate}T${timeslot?.start_time || '19:00'}:00+02:00`;
+        // Format match datum met tijd (UTC opslag, behoud lokale kloktijd)
+        const matchDateTime = localDateTimeToISO(matchDate, timeslot?.start_time || '19:00');
         
         // Gebruik de correcte speeldag van het round-robin algoritme
         const matchday = match.matchday || Math.floor((matchCounter - 1) / 8) + 1;
@@ -1092,7 +1093,7 @@ export const competitionService = {
         const baseDate = playingWeeks[week];
         const isMonday = timeslot?.day_of_week === 1;
         const matchDate = isMonday ? baseDate : this.addDaysToDate(baseDate, 1);
-        const matchDateTime = `${matchDate}T${timeslot?.start_time || '19:00'}:00+02:00`;
+        const matchDateTime = localDateTimeToISO(matchDate, timeslot?.start_time || '19:00');
 
         matchInserts.push(this.createMatchObject(
           `PO-${counter}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
