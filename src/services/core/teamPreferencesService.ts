@@ -76,6 +76,40 @@ export function normalizeTeamsPreferences(teams: Team[]): Map<number, TeamPrefer
   return map;
 }
 
+// Helper function to normalize venue names
+function normalizeVenueName(venueName: string): string {
+  return venueName
+    .toLowerCase()
+    .replace(/^sporthal\s+/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Helper function to parse time and support fuzzy matching (±30 min)
+function parseTime(timeStr: string): { hours: number; minutes: number } | null {
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hours = parseInt(match[1]);
+  const minutes = parseInt(match[2]);
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return { hours, minutes };
+}
+
+function timeMinutesFromMidnight(timeStr: string): number {
+  const parsed = parseTime(timeStr);
+  return parsed ? parsed.hours * 60 + parsed.minutes : -1;
+}
+
+function isTimeWithinRange(targetTime: string, preferredTime: string, toleranceMinutes: number = 30): boolean {
+  const targetMinutes = timeMinutesFromMidnight(targetTime);
+  const preferredMinutes = timeMinutesFromMidnight(preferredTime);
+  
+  if (targetMinutes === -1 || preferredMinutes === -1) return false;
+  
+  const diff = Math.abs(targetMinutes - preferredMinutes);
+  return diff <= toleranceMinutes;
+}
+
 export function scoreTeamForDetails(
   prefs: TeamPreferencesNormalized | undefined,
   timeslot: any,
@@ -85,10 +119,17 @@ export function scoreTeamForDetails(
   // Bij geen voorkeuren: altijd 3 punten
   if (!prefs || prefs.prefCount === 0) return { score: 3, matched: 0, provided: 0 };
 
+  // Normalize venue name for better matching
+  const normalizedVenueName = venueName ? normalizeVenueName(venueName) : '';
+  
   // Determine venue id from name using provided venues list (best-effort)
   let venueId: number | undefined = undefined;
   if (venues && venueName) {
-    const v = venues.find((vv: any) => (vv.name === venueName || vv.venue_name === venueName));
+    const v = venues.find((vv: any) => {
+      const vName1 = normalizeVenueName(vv.name || '');
+      const vName2 = normalizeVenueName(vv.venue_name || '');
+      return vName1 === normalizedVenueName || vName2 === normalizedVenueName;
+    });
     venueId = v?.venue_id ?? v?.id;
   }
 
@@ -97,16 +138,34 @@ export function scoreTeamForDetails(
   if (prefs.days && typeof timeslot?.day_of_week === 'number' && prefs.days.has(timeslot.day_of_week)) {
     matched += 1;
   }
-  // Timeslot match: match by id or by label strings
-  if (prefs.timeslots && timeslot) {
+  
+  // Enhanced timeslot match with fuzzy matching
+  if (prefs.timeslots && timeslot?.start_time) {
+    let timeMatched = false;
+    
+    // Exact matches first
     const label = timeslot?.start_time && timeslot?.end_time
       ? `${timeslot.start_time}-${timeslot.end_time}`
       : (timeslot?.start_time || '');
     const has = (s: string) => !!s && prefs.timeslots!.has(normalize(s));
+    
     if (has(label) || has(timeslot?.start_time || '')) {
+      timeMatched = true;
+    } else {
+      // Fuzzy time matching (±30 minutes)
+      for (const prefTime of prefs.timeslots) {
+        if (isTimeWithinRange(timeslot.start_time, prefTime, 30)) {
+          timeMatched = true;
+          break;
+        }
+      }
+    }
+    
+    if (timeMatched) {
       matched += 1;
     }
   }
+  
   // Venue match by id
   if (prefs.venues && typeof venueId === 'number' && prefs.venues.has(venueId)) {
     matched += 1;
@@ -114,10 +173,8 @@ export function scoreTeamForDetails(
 
   const N = prefs.prefCount;
   const M = matched;
-  // Scoringsregels:
-  // - 1 voorkeur: match = 3, geen match = 0
-  // - 2 voorkeuren: 2 matches = 3, 1 match = 1.5, 0 = 0
-  // - >=3 voorkeuren: 1 punt per match (max 3)
+  
+  // Scoringsregels met adaptive fallback:
   let score = 0;
   if (N === 1) {
     score = M === 1 ? 3 : 0;
@@ -126,7 +183,25 @@ export function scoreTeamForDetails(
   } else {
     score = M >= 3 ? 3 : (M === 2 ? 2 : (M === 1 ? 1 : 0));
   }
+  
   return { score, matched: M, provided: N };
+}
+
+// New function to apply adaptive fallback in score matrix calculation
+export function applyAdaptiveFallback(
+  teamId: number,
+  allSlotScores: number[],
+  teamPreferences: Map<number, TeamPreferencesNormalized>
+): number[] {
+  const hasZeroScores = allSlotScores.every(score => score === 0);
+  
+  if (hasZeroScores) {
+    // Team gets 0 for all slots - treat as "no preference" temporarily
+    console.log(`⚠️ Team ${teamId} has 0 scores for all slots - applying adaptive fallback (treating as no preference)`);
+    return allSlotScores.map(() => 3); // Give 3 points (no preference score) for all slots
+  }
+  
+  return allSlotScores; // Return original scores if not all zero
 }
 
 export async function getSeasonalFairness(teams: any[]): Promise<{ 

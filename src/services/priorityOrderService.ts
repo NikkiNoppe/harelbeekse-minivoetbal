@@ -254,7 +254,10 @@ export const priorityOrderService = {
           return { 
             ...slot, 
             venue_name: (slot.venue_name || venue?.name || 'Unknown')
-              .replace(/^Sporthal\s+/i, ''),
+              .replace(/^Sporthal\s+/i, '')
+              .replace('De Dageraad Harelbeke', 'De Dageraad')
+              .replace('De Vlasschaard Bavikhove', 'De Vlasschaard')
+              .trim(),
             priority: slot.priority || 999 // Default to low priority if not set
           };
         })

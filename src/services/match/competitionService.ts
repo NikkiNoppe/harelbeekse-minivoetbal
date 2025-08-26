@@ -793,23 +793,56 @@ export const competitionService = {
         const m = matchesList.length;
         if (m === 0) continue;
 
-        // Build score matrix m x 7 with seasonal fairness boosts
+        // Build score matrix m x 7 with seasonal fairness boosts and adaptive fallback
+        const { applyAdaptiveFallback } = await import("@/services/core/teamPreferencesService");
         const scoreMatrix: Array<Array<{ combined: number; h: number; a: number }>> = [];
+        
         for (let r = 0; r < m; r++) {
           const { home, away } = matchesList[r];
           const row: Array<{ combined: number; h: number; a: number }> = [];
+          
+          // Calculate base scores for all slots first
+          const homeSlotScores: number[] = [];
+          const awaySlotScores: number[] = [];
+          
           for (let c = 0; c < totalAvailableSlots; c++) {
             const { venue, timeslot } = slotDetails[c];
             const hRes = scoreTeamForDetails(teamPreferences.get(home), timeslot, venue, venues);
             const aRes = scoreTeamForDetails(teamPreferences.get(away), timeslot, venue, venues);
             
-            // Apply seasonal fairness boosts
+            homeSlotScores.push(hRes.score);
+            awaySlotScores.push(aRes.score);
+          }
+          
+          // Apply adaptive fallback if needed
+          const adjustedHomeScores = applyAdaptiveFallback(home, homeSlotScores, teamPreferences);
+          const adjustedAwayScores = applyAdaptiveFallback(away, awaySlotScores, teamPreferences);
+          
+          // Apply seasonal fairness boosts to adjusted scores
+          for (let c = 0; c < totalAvailableSlots; c++) {
             const homeBoost = calculateFairnessBoost(home, teamFairness);
             const awayBoost = calculateFairnessBoost(away, teamFairness);
             
-            // Apply boost to base scores (multiply boost only if team has deficit)
-            const homeScore = hRes.score * homeBoost;
-            const awayScore = aRes.score * awayBoost;
+            // Create pseudo-deficit for teams with no matches to enable boosting in preview
+            const homeFairness = teamFairness.find(tf => tf.teamId === home);
+            const awayFairness = teamFairness.find(tf => tf.teamId === away);
+            
+            const homeHasPseudoDeficit = homeFairness?.totalMatches === 0;
+            const awayHasPseudoDeficit = awayFairness?.totalMatches === 0;
+            
+            let finalHomeBoost = homeBoost;
+            let finalAwayBoost = awayBoost;
+            
+            // Apply pseudo-deficit boost for teams with no matches (1.2x boost)
+            if (homeHasPseudoDeficit && homeBoost === 0) {
+              finalHomeBoost = 1.2;
+            }
+            if (awayHasPseudoDeficit && awayBoost === 0) {
+              finalAwayBoost = 1.2;
+            }
+            
+            const homeScore = adjustedHomeScores[c] * finalHomeBoost;
+            const awayScore = adjustedAwayScores[c] * finalAwayBoost;
             
             row.push({ 
               combined: homeScore + awayScore, 
@@ -859,11 +892,23 @@ export const competitionService = {
           }
         }
 
-        // Stochastic greedy (multi-start) if exact assignment not used or to explore alternatives
-        if (assignment.length === 0) {
-          const attempts = 10 + Math.floor(Math.random() * 5);
-          let bestGreedy: Array<{ r: number; c: number; h: number; a: number; combined: number }> = [];
-          let bestGreedyEval = -1;
+        // Enhanced multi-sample search strategy for preview variation
+        const useMultiSampleSearch = true; // Always use for preview variation
+        
+        if (assignment.length === 0 || useMultiSampleSearch) {
+          // Generate 30-50 alternative solutions and select top 10% based on fairness score
+          const totalSamples = 30 + Math.floor(Math.random() * 20); // 30-50 samples
+          const allSolutions: Array<{
+            assignment: Array<{ r: number; c: number; h: number; a: number; combined: number }>;
+            evalScore: number;
+            totalScore: number;
+            fairnessScore: number;
+          }> = [];
+          
+          for (let sample = 0; sample < totalSamples; sample++) {
+            const attempts = 3 + Math.floor(Math.random() * 3); // 3-5 attempts per sample
+            let bestGreedy: Array<{ r: number; c: number; h: number; a: number; combined: number }> = [];
+            let bestGreedyEval = -1;
           for (let attempt = 0; attempt < attempts; attempt++) {
             const order = shuffle(Array.from({ length: m }, (_, i) => i));
             const used = new Set<number>();
@@ -913,9 +958,43 @@ export const competitionService = {
               bestGreedyEval = evalScore;
               bestGreedy = chosen.map(ch => ({ ...ch, combined: scoreMatrix[ch.r][ch.c].combined }));
             }
+            }
+            
+            if (bestGreedy.length > 0) {
+              // Calculate fairness score for this solution
+              const baseVar = computeVariance(teamTotals);
+              const tempTotals = new Map(teamTotals);
+              
+              for (const ch of bestGreedy) {
+                const mt = matchesList[ch.r];
+                tempTotals.set(mt.home, (tempTotals.get(mt.home) || 0) + ch.h);
+                tempTotals.set(mt.away, (tempTotals.get(mt.away) || 0) + ch.a);
+              }
+              
+              const newVar = computeVariance(tempTotals);
+              const fairnessScore = Math.max(0, 100 - (newVar - baseVar) * 10);
+              const totalScore = bestGreedy.reduce((sum, ch) => sum + ch.combined, 0);
+              
+              allSolutions.push({
+                assignment: bestGreedy,
+                evalScore: bestGreedyEval,
+                totalScore,
+                fairnessScore
+              });
+            }
           }
-          assignment = bestGreedy;
-          bestEval = bestGreedyEval;
+          
+          // Select from top 10% solutions randomly (weighted by fairness + score)
+          if (allSolutions.length > 0) {
+            allSolutions.sort((a, b) => (b.fairnessScore + b.totalScore * 0.1) - (a.fairnessScore + a.totalScore * 0.1));
+            const topSolutions = allSolutions.slice(0, Math.max(1, Math.floor(allSolutions.length * 0.1)));
+            const selectedSolution = topSolutions[Math.floor(Math.random() * topSolutions.length)];
+            
+            assignment = selectedSolution.assignment;
+            bestEval = selectedSolution.evalScore;
+            
+            console.log(`🎲 Multi-sample search: Generated ${allSolutions.length} solutions, selected from top ${topSolutions.length} (fairness: ${selectedSolution.fairnessScore.toFixed(1)}, score: ${selectedSolution.totalScore.toFixed(1)})`);
+          }
         }
 
         // Emit plan for week and update team totals for fairness
