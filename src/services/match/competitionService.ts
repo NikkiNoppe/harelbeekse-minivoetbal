@@ -669,6 +669,16 @@ export const competitionService = {
       const teamPreferences = normalizeTeamsPreferences(allTeamsData.filter(t => selectedTeamsSet.has(t.team_id)));
       const venues = seasonData.venues || [];
 
+      // Load seasonal fairness data for dynamic scoring
+      const { getSeasonalFairness, calculateFairnessBoost } = await import("@/services/core/teamPreferencesService");
+      const { fairnessMetrics, teamFairness } = await getSeasonalFairness(allTeamsData.filter(t => selectedTeamsSet.has(t.team_id)));
+      
+      console.log('🎯 Seasonal fairness loaded:', {
+        overallAverage: fairnessMetrics.overallAverage.toFixed(2),
+        teamsNeedingBoost: fairnessMetrics.teamsNeedingBoost.length,
+        fairnessScore: fairnessMetrics.fairnessScore.toFixed(1)
+      });
+
       // Greedy week assignment without slots (respecting team conflicts and capacity)
       const matchesPerWeek = 7;
       const teamsPerWeek: Map<number, Set<number>> = new Map();
@@ -783,7 +793,7 @@ export const competitionService = {
         const m = matchesList.length;
         if (m === 0) continue;
 
-        // Build score matrix m x 7
+        // Build score matrix m x 7 with seasonal fairness boosts
         const scoreMatrix: Array<Array<{ combined: number; h: number; a: number }>> = [];
         for (let r = 0; r < m; r++) {
           const { home, away } = matchesList[r];
@@ -792,7 +802,20 @@ export const competitionService = {
             const { venue, timeslot } = slotDetails[c];
             const hRes = scoreTeamForDetails(teamPreferences.get(home), timeslot, venue, venues);
             const aRes = scoreTeamForDetails(teamPreferences.get(away), timeslot, venue, venues);
-            row.push({ combined: (hRes.score as number) + (aRes.score as number), h: hRes.score as number, a: aRes.score as number });
+            
+            // Apply seasonal fairness boosts
+            const homeBoost = calculateFairnessBoost(home, teamFairness);
+            const awayBoost = calculateFairnessBoost(away, teamFairness);
+            
+            // Apply boost to base scores (multiply boost only if team has deficit)
+            const homeScore = hRes.score * homeBoost;
+            const awayScore = aRes.score * awayBoost;
+            
+            row.push({ 
+              combined: homeScore + awayScore, 
+              h: homeScore, 
+              a: awayScore 
+            });
           }
           scoreMatrix.push(row);
         }
@@ -829,7 +852,8 @@ export const competitionService = {
                 - fairnessWeight * fairnessPenalty
                 - spreadWeight * spreadDelta
                 + minRaiseWeight * minRaise
-                - lowerBoundWeight * (newDef - baseDef);
+                - lowerBoundWeight * (newDef - baseDef)
+                + Math.random() * 0.1; // Add small randomization for variety
               if (evalScore > bestEval || (evalScore === bestEval && Math.random() < 0.5)) { bestEval = evalScore; assignment = chosen; }
             }
           }
@@ -883,7 +907,8 @@ export const competitionService = {
               - fairnessWeight * fairnessPenalty
               - spreadWeight * spreadDelta
               + minRaiseWeight * minRaise
-              - lowerBoundWeight * (newDef - baseDef);
+              - lowerBoundWeight * (newDef - baseDef)
+              + Math.random() * 0.1; // Add small randomization for variety
             if (evalScore > bestGreedyEval || (evalScore === bestGreedyEval && Math.random() < 0.5)) {
               bestGreedyEval = evalScore;
               bestGreedy = chosen.map(ch => ({ ...ch, combined: scoreMatrix[ch.r][ch.c].combined }));
