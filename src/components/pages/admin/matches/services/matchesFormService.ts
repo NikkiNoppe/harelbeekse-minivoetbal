@@ -186,6 +186,24 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
       }
     }
 
+    // If cup match scores were cleared back to null, remove advancement to next round
+    if (isCupMatch && (matchData.homeScore === null || matchData.awayScore === null)) {
+      try {
+        const current = await cupService.getCupMatchById(matchData.matchId);
+        if (current && current.unique_number) {
+          const nextRound = cupService.getNextRound(current.unique_number);
+          if (nextRound) {
+            await cupService.clearAdvancement(current.unique_number, nextRound);
+            await cupService.clearAdvancementCascade(current.unique_number);
+            return { advanceMessage: "Doorstroming gewist na verwijderen scores" };
+          }
+        }
+      } catch (clearErr) {
+        console.error('❌ Error clearing advancement after scores cleared:', clearErr);
+        // non-fatal: match update already succeeded
+      }
+    }
+
     return {};
 
   } catch (error) {
