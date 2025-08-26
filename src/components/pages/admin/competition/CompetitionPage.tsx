@@ -22,6 +22,17 @@ const AdminCompetitionPage: React.FC = () => {
   const [timeslots, setTimeslots] = useState<any[]>([]);
   const [existingCompetition, setExistingCompetition] = useState<any[]>([]);
   const { toast } = useToast();
+  const [previewPlan, setPreviewPlan] = useState<Array<{ unique_number: string; speeldag: string; home_team_id: number; away_team_id: number | null; match_date: string; match_time: string; venue: string; details: { homeScore: number; awayScore: number; combined: number; maxCombined: number } }> | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [previewTotal, setPreviewTotal] = useState<number | null>(null);
+  const [previewTeamTotals, setPreviewTeamTotals] = useState<Record<number, number> | null>(null);
+  const teamNameById = React.useMemo(() => {
+    const map = new Map<number, string>();
+    teams.forEach((t: any) => map.set(t.team_id, t.team_name));
+    return map;
+  }, [teams]);
 
   // Load initial data
   useEffect(() => {
@@ -79,7 +90,7 @@ const AdminCompetitionPage: React.FC = () => {
       return;
     }
 
-    setLoading(true);
+    setIsCreating(true);
     try {
       const config: CompetitionConfig = {
         format,
@@ -88,24 +99,21 @@ const AdminCompetitionPage: React.FC = () => {
         teams: selectedTeams
       };
 
-      const result = await competitionService.generateCompetition(config);
-      
-      if (result.success) {
-        toast({
-          title: "Competitie aangemaakt",
-          description: result.message,
-          variant: "default"
-        });
-        
-        // Reload existing competition
+      let createResult: { success: boolean; message: string };
+      if (previewPlan && previewPlan.length > 0) {
+        createResult = await competitionService.createCompetitionFromPlan(previewPlan);
+      } else {
+        createResult = await competitionService.generateCompetition(config);
+      }
+
+      if (createResult.success) {
+        toast({ title: "Competitie aangemaakt", description: createResult.message, variant: "default" });
         const existingMatches = await competitionService.getCompetitionMatches();
         setExistingCompetition(existingMatches);
+        setPreviewPlan(null);
+        setPreviewTotal(null);
       } else {
-        toast({
-          title: "Fout bij aanmaken",
-          description: result.message,
-          variant: "destructive"
-        });
+        toast({ title: "Fout bij aanmaken", description: createResult.message, variant: "destructive" });
       }
     } catch (error) {
       console.error('Error creating competition:', error);
@@ -115,8 +123,57 @@ const AdminCompetitionPage: React.FC = () => {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setIsCreating(false);
     }
+  };
+
+  const handleGeneratePreview = async () => {
+    if (!selectedFormat || selectedTeams.length === 0 || !startDate || !endDate) {
+      toast({ title: "Incomplete gegevens", description: "Vul alle verplichte velden in.", variant: "destructive" });
+      return;
+    }
+    const format = formats.find(f => f.id.toString() === selectedFormat);
+    if (!format) {
+      toast({ title: "Ongeldig format", description: "Selecteer een geldig competitieformat.", variant: "destructive" });
+      return;
+    }
+    // Force fresh preview each time
+    setPreviewPlan(null);
+    setPreviewTotal(null);
+    setIsPreviewing(true);
+    try {
+      const config: CompetitionConfig = {
+        format,
+        start_date: startDate,
+        end_date: endDate,
+        teams: selectedTeams
+      };
+      const res = await competitionService.previewCompetition(config);
+      if (!res.success || !res.plan || res.plan.length === 0) {
+        toast({ title: "Preview mislukt", description: res.message || "Geen plan", variant: "destructive" });
+        setPreviewPlan(null);
+        setPreviewTotal(null);
+        setPreviewTeamTotals(null);
+        return;
+      }
+      setPreviewPlan(res.plan);
+      setPreviewTotal(res.totalCombined ?? null);
+      setPreviewTeamTotals(res.teamTotals ?? null);
+      toast({ title: "Preview klaar", description: `Preview bevat ${res.plan.length} wedstrijden (totale score ${res.totalCombined ?? '-'})` });
+    } catch (e) {
+      toast({ title: "Preview fout", description: "Er ging iets mis bij genereren", variant: "destructive" });
+      setPreviewPlan(null);
+      setPreviewTotal(null);
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setSelectedTeams([]);
+    setSelectedFormat("");
+    setPreviewPlan(null);
+    setPreviewTotal(null);
   };
 
   const handleDeleteCompetition = async () => {
@@ -386,52 +443,98 @@ const AdminCompetitionPage: React.FC = () => {
               </div>
             )}
 
-            {/* Create Button */}
-            {(() => {
-              const format = formats.find(f => f.id.toString() === selectedFormat);
-              const isPlanningValid = selectedFormat && selectedTeams.length > 0 && startDate && endDate;
-              
-              let isFeasible = true;
-              let disabledReason = "";
-              
-              if (isPlanningValid && format) {
-                const regularMatches = selectedTeams.length * (selectedTeams.length - 1) / 2; // 1 ronde per team
-                const playoffMatches = 0; // Playoffs worden later apart gegenereerd
-                const totalMatches = regularMatches;
-                const weeksNeeded = Math.ceil(totalMatches / 7);
-                
-                const start = new Date(startDate);
-                const end = new Date(endDate);
-                const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-                const totalWeeks = Math.ceil(totalDays / 7);
-                
-                isFeasible = totalWeeks >= weeksNeeded;
-                if (!isFeasible) {
-                  disabledReason = `Niet genoeg tijd: ${weeksNeeded} weken nodig, ${totalWeeks} beschikbaar`;
-                }
-              }
-              
-              return (
-                <Button 
-                  onClick={handleCreateCompetition} 
-                  disabled={loading || !isPlanningValid || !isFeasible}
-                  className="w-full"
-                  title={disabledReason}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Competitie aanmaken...
-                    </>
-                  ) : (
-                    <>
-                      <Trophy className="mr-2 h-4 w-4" />
-                      Competitie Aanmaken
-                    </>
-                  )}
-                </Button>
-              );
-            })()}
+            {/* Preview & Create Controls */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                disabled={isPreviewing || isCreating}
+                className="btn btn--outline sm:flex-1"
+                onClick={handleGeneratePreview}
+              >
+                {isPreviewing ? 'Preview genereren...' : 'Preview genereren'}
+              </button>
+              <button onClick={() => setShowConfirm(true)} disabled={isCreating} className="btn btn--primary sm:flex-1">
+                {isCreating ? 'Aanmaken...' : (previewPlan ? 'Bevestigen en importeren' : 'Competitie Aanmaken')}
+              </button>
+              <button onClick={handleCancel} disabled={isCreating} className="btn btn--secondary">
+                Annuleren
+              </button>
+            </div>
+
+            {showConfirm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="modal">
+                  <div className="w-full max-w-sm mx-auto">
+                    <div className="modal__title">Competitie Aanmaken</div>
+                    <p className="text-xs text-muted-foreground">
+                      Weet je zeker dat je de competitie wilt aanmaken met {selectedTeams.length} teams? Deze actie kan niet ongedaan worden gemaakt.
+                    </p>
+                    <div className="modal__actions">
+                      <button
+                        className="btn btn--primary"
+                        onClick={() => {
+                          setShowConfirm(false);
+                          handleCreateCompetition();
+                        }}
+                      >
+                        {previewPlan ? 'Bevestigen en importeren' : 'Competitie Aanmaken'}
+                      </button>
+                      <button className="btn btn--secondary" onClick={() => setShowConfirm(false)}>
+                        Annuleren
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {previewPlan && (
+              <div className="p-3 rounded-md border bg-white">
+                <div className="text-sm font-medium mb-2">Preview (totale score: {previewTotal ?? '-'})</div>
+                {previewTeamTotals && (
+                  <div className="mb-3">
+                    <div className="text-xs text-muted-foreground mb-1">Teamscores (som van voorkeur-scores per team)</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {Object.entries(previewTeamTotals).sort((a, b) => Number(b[1]) - Number(a[1])).map(([teamId, total]) => (
+                        <div key={teamId} className="flex justify-between text-xs p-2 bg-gray-50 rounded">
+                          <span className="font-medium">{teamNameById.get(Number(teamId)) || teamId}</span>
+                          <span>{Number(total).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="w-full overflow-x-auto">
+                  <table className="table w-full text-sm">
+                    <thead className="tableHead">
+                      <tr>
+                        <th className="text-left">Speeldag</th>
+                        <th className="text-left">Home</th>
+                        <th className="text-left">Away</th>
+                        <th className="text-left">Datum</th>
+                        <th className="text-left">Tijd</th>
+                        <th className="text-left">Venue</th>
+                        <th className="text-left">Score (home+away/max)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewPlan.map((p, idx) => (
+                        <tr key={idx}>
+                          <td>{p.speeldag}</td>
+                          <td>{p.home_team_id ? (teamNameById.get(p.home_team_id) || p.home_team_id) : '-'}</td>
+                          <td>{p.away_team_id ? (teamNameById.get(p.away_team_id) || p.away_team_id) : '-'}</td>
+                          <td>{p.match_date ? new Date(p.match_date).toLocaleDateString('nl-NL') : ''}</td>
+                          <td>{p.match_time || ''}</td>
+                          <td>{p.venue || ''}</td>
+                          <td>{(p.details?.homeScore ?? 0)} + {(p.details?.awayScore ?? 0)} = {(p.details?.combined ?? 0)} / {p.details?.maxCombined}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            
           </CardContent>
         </Card>
 

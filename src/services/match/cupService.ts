@@ -82,6 +82,44 @@ export const bekerService = {
     }
   },
 
+  // Ensure QFs are fully populated once all 1/8 fixtures have teams; remove stray pre-assigned bye teams
+  async reconcileQuarterFinals(): Promise<{ success: boolean; message: string }> {
+    try {
+      const { data: eight, error: e1 } = await supabase
+        .from('matches')
+        .select('home_team_id, away_team_id')
+        .eq('is_cup_match', true)
+        .like('unique_number', '1/8-%');
+      if (e1) throw e1;
+      const participants = new Set<number>();
+      let complete = true;
+      (eight || []).forEach(m => {
+        if (m.home_team_id == null || m.away_team_id == null) complete = false;
+        if (m.home_team_id != null) participants.add(m.home_team_id);
+        if (m.away_team_id != null) participants.add(m.away_team_id);
+      });
+      if (!complete) return { success: true, message: 'Nog niet alle 1/8 finales gevuld' };
+
+      const { data: qfs } = await supabase
+        .from('matches')
+        .select('match_id, home_team_id, away_team_id, unique_number')
+        .eq('is_cup_match', true)
+        .like('unique_number', 'QF-%');
+
+      for (const qf of (qfs || [])) {
+        const payload: any = {};
+        if (qf.home_team_id != null && !participants.has(qf.home_team_id)) payload.home_team_id = null;
+        if (qf.away_team_id != null && !participants.has(qf.away_team_id)) payload.away_team_id = null;
+        if (Object.keys(payload).length > 0) {
+          await supabase.from('matches').update(payload).eq('match_id', qf.match_id).eq('is_cup_match', true);
+        }
+      }
+      return { success: true, message: 'Kwartfinales gereconcilieerd' };
+    } catch (e) {
+      return { success: false, message: 'Reconciliatie mislukt' };
+    }
+  },
+
   // Helper functions for validation
   validateCupTournamentInput(teams: number[], selectedDates: string[]): { isValid: boolean; message?: string } {
     if (teams.length < 2) {
@@ -198,6 +236,13 @@ export const bekerService = {
     const cupMatches = [];
     // Create only as many matches as there are pairs
     const numberOfPairs = Math.floor(shuffledTeams.length / 2);
+    // Preload all slot details once
+    const totalAvailableSlots = 7;
+    const slotDetails: Array<{ venue: string; timeslot: any }> = [];
+    for (let s = 0; s < totalAvailableSlots; s++) {
+      const { venue, timeslot } = await priorityOrderService.getMatchDetails(s, totalAvailableSlots);
+      slotDetails.push({ venue, timeslot });
+    }
     for (let i = 0; i < numberOfPairs; i++) {
       const homeTeamIndex = i * 2;
       const awayTeamIndex = i * 2 + 1;
@@ -206,16 +251,15 @@ export const bekerService = {
       const matchIndexInWeek = i % 4; // 0-3 for each week (4 matches per week)
 
       // Use cyclical distribution across ALL 7 priority slots, with preference scoring
-      const totalAvailableSlots = 7; // Use all 7 priority slots for best distribution
       const cycleIndex = i % totalAvailableSlots; // Cycle through all slots
       
       let bestSlot = cycleIndex;
       let bestScore = -1;
       
       // Check a few slots around the cycle index to find best team preference match
-      for (let offset = 0; offset < Math.min(3, totalAvailableSlots); offset++) {
+      for (let offset = 0; offset < totalAvailableSlots; offset++) {
         const slotIndex = (cycleIndex + offset) % totalAvailableSlots;
-        const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, totalAvailableSlots);
+        const { venue, timeslot } = slotDetails[slotIndex];
         let combined = 0;
         
         if (opts?.teamPreferences && opts?.venues) {
@@ -232,7 +276,7 @@ export const bekerService = {
         }
       }
 
-      const { venue, timeslot } = await priorityOrderService.getMatchDetails(bestSlot, totalAvailableSlots);
+      const { venue, timeslot } = slotDetails[bestSlot];
       
       // Determine the correct date based on the selected slot's day_of_week
       const baseDate = playingWeeks[weekIndex];
@@ -260,10 +304,15 @@ export const bekerService = {
     const cupMatches = [];
     // Use week 3 for a 5-week schedule, otherwise week 2 (indexing from 0)
     const baseWeekIndex = playingWeeks.length === 5 ? 2 : 1;
+    const slotDetails: Array<{ venue: string; timeslot: any }> = [];
+    for (let s = 0; s < 7; s++) {
+      const { venue, timeslot } = await priorityOrderService.getMatchDetails(s, 7);
+      slotDetails.push({ venue, timeslot });
+    }
     for (let i = 0; i < 4; i++) {
       // Distribute across priority slots cyclically (using all 7 slots)
       const slotIndex = i; // Use first 4 priority slots for quarterfinals
-      const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7); // Use all 7 slots
+      const { venue, timeslot } = slotDetails[slotIndex]; // Use all 7 slots
       
       // Determine the correct date based on the selected slot's day_of_week
       const baseDate = playingWeeks[baseWeekIndex];
@@ -291,10 +340,15 @@ export const bekerService = {
     const cupMatches = [];
     // Use week 4 for a 5-week schedule, otherwise week 3 (indexing from 0)
     const baseWeekIndex = playingWeeks.length === 5 ? 3 : 2;
+    const slotDetails: Array<{ venue: string; timeslot: any }> = [];
+    for (let s = 0; s < 7; s++) {
+      const { venue, timeslot } = await priorityOrderService.getMatchDetails(s, 7);
+      slotDetails.push({ venue, timeslot });
+    }
     for (let i = 0; i < 2; i++) {
       // Use top 2 priority slots for semifinals
       const slotIndex = i; // 0-1 for the 2 best slots
-      const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7); // Use all 7 slots
+      const { venue, timeslot } = slotDetails[slotIndex]; // Use all 7 slots
       
       // Determine the correct date based on the selected slot's day_of_week
       const baseDate = playingWeeks[baseWeekIndex];
@@ -321,7 +375,7 @@ export const bekerService = {
   async createFinal(playingWeeks: string[]): Promise<any[]> {
     // Get the best slot for the final (priority slot #1)
     const finalSlotIndex = 0; // Best slot for the final
-    const { venue: finalVenue, timeslot: finalTimeslot } = await priorityOrderService.getMatchDetails(finalSlotIndex, 7); // Use all 7 slots
+    const { venue: finalVenue, timeslot: finalTimeslot } = await priorityOrderService.getMatchDetails(finalSlotIndex, 7); // direct fetch once
     
     // Determine the correct date based on the selected slot's day_of_week
     // Use last week index (4 for 5-week schedule, 3 for 4-week schedule)
@@ -344,7 +398,330 @@ export const bekerService = {
     )];
   },
 
-  async createCupTournament(teams: number[], selectedDates: string[]): Promise<{ success: boolean; message: string }> {
+  /**
+   * Preview cup tournament plan without DB writes.
+   * Returns detailed planned matches including preference scores for 1/8 finales.
+   */
+  async previewCupTournament(teams: number[], selectedDates: string[], attempts?: number, byeTeamId?: number | null): Promise<{
+    success: boolean;
+    message: string;
+    plan: Array<{ unique_number: string; speeldag: string; home_team_id: number | null; away_team_id: number | null; match_date: string; match_time: string; venue: string; slot_index: number; details: { homeScore?: number; awayScore?: number; combined?: number; maxCombined: number; priority?: number; day_of_week?: number } }>,
+    totalCombined?: number
+  }> {
+    // Validate input
+    const inputValidation = bekerService.validateCupTournamentInput(teams, selectedDates);
+    if (!inputValidation.isValid) {
+      return { success: false, message: inputValidation.message!, plan: [] };
+    }
+
+    try {
+      // Load and validate season data
+      const seasonValidation = await bekerService.validateSeasonData();
+      if (!seasonValidation.isValid) {
+        return { success: false, message: seasonValidation.message!, plan: [] };
+      }
+
+      const { venues, vacations } = seasonValidation.data!;
+
+      // Validate vacation conflicts
+      const vacationValidation = bekerService.validateVacationConflicts(selectedDates, vacations);
+      if (!vacationValidation.isValid) {
+        return { success: false, message: vacationValidation.message!, plan: [] };
+      }
+
+      // Convert selected dates to playing weeks (Mondays)
+      const playingWeeks = bekerService.convertToPlayingWeeks(selectedDates);
+
+      // Team preferences (only useful for 1/8 finales)
+      const allTeamsData = await teamService.getAllTeams();
+      const selectedTeamsSet = new Set(teams);
+      const teamPreferences = normalizeTeamsPreferences(allTeamsData.filter(t => selectedTeamsSet.has(t.team_id)));
+
+      // Helper to build a plan for a given shuffled order and compute total combined score
+      const buildPlanForOrder = async (order: number[]) => {
+        const plan: Array<{ unique_number: string; speeldag: string; home_team_id: number | null; away_team_id: number | null; match_date: string; match_time: string; venue: string; slot_index: number; details: { homeScore?: number; awayScore?: number; combined?: number; maxCombined: number; priority?: number; day_of_week?: number } }> = [];
+        let totalCombined = 0;
+
+        // 1/8 finales with per-week optimal unique slot assignment
+        const totalAvailableSlots = 7;
+        const numberOfPairs = Math.floor(order.length / 2);
+        const weekToIndices = new Map<number, number[]>();
+        for (let i = 0; i < numberOfPairs; i++) {
+          const weekIndex = playingWeeks.length === 5 ? (i < 4 ? 0 : 1) : 0;
+          const arr = weekToIndices.get(weekIndex) || [];
+          arr.push(i);
+          weekToIndices.set(weekIndex, arr);
+        }
+
+        // Preload slot details once
+        const slotDetails: Array<{ venue: string; timeslot: any }> = [];
+        for (let s = 0; s < totalAvailableSlots; s++) {
+          const { venue, timeslot } = await priorityOrderService.getMatchDetails(s, totalAvailableSlots);
+          slotDetails.push({ venue, timeslot });
+        }
+
+        // Helpers to generate combinations and permutations (small sizes only)
+        const combinations = (arr: number[], k: number): number[][] => {
+          const res: number[][] = [];
+          const backtrack = (start: number, path: number[]) => {
+            if (path.length === k) { res.push([...path]); return; }
+            for (let i = start; i < arr.length; i++) {
+              path.push(arr[i]);
+              backtrack(i + 1, path);
+              path.pop();
+            }
+          };
+          backtrack(0, []);
+          return res;
+        };
+        const permutations = (arr: number[]): number[][] => {
+          const res: number[][] = [];
+          const used = new Array(arr.length).fill(false);
+          const path: number[] = [];
+          const backtrack = () => {
+            if (path.length === arr.length) { res.push([...path]); return; }
+            for (let i = 0; i < arr.length; i++) {
+              if (used[i]) continue;
+              used[i] = true; path.push(arr[i]);
+              backtrack();
+              path.pop(); used[i] = false;
+            }
+          };
+          backtrack();
+          return res;
+        };
+
+        for (const [weekIndex, matchIndices] of weekToIndices.entries()) {
+          const m = matchIndices.length;
+          // Build score matrix: m x 7
+          const scoreMatrix: Array<Array<{ combined: number; h: number; a: number }>> = [];
+          for (let r = 0; r < m; r++) {
+            const i = matchIndices[r];
+            const homeTeamIndex = i * 2;
+            const awayTeamIndex = i * 2 + 1;
+            const homeId = order[homeTeamIndex];
+            const awayId = order[awayTeamIndex];
+            const row: Array<{ combined: number; h: number; a: number }> = [];
+            for (let c = 0; c < totalAvailableSlots; c++) {
+              const { venue, timeslot } = slotDetails[c];
+              let hScore = 0, aScore = 0, combined = 0;
+              if (teamPreferences && venues) {
+                const h = scoreTeamForDetails(teamPreferences.get(homeId), timeslot, venue, venues);
+                const a = scoreTeamForDetails(teamPreferences.get(awayId), timeslot, venue, venues);
+                hScore = h.score as number; aScore = a.score as number; combined = hScore + aScore;
+              }
+              row.push({ combined, h: hScore, a: aScore });
+            }
+            scoreMatrix.push(row);
+          }
+
+          // Choose unique slots to maximize total combined
+          const allSlots = Array.from({ length: totalAvailableSlots }, (_, x) => x);
+          let assignment: Array<{ matchIdx: number; slot: number; h: number; a: number; combined: number }> = [];
+          let bestSum = -1;
+          if (m <= totalAvailableSlots && m <= 4) {
+            const slotCombos = combinations(allSlots, m);
+            for (const slots of slotCombos) {
+              const perms = permutations(slots);
+              for (const perm of perms) {
+                let sum = 0;
+                const chosen: Array<{ matchIdx: number; slot: number; h: number; a: number; combined: number }> = [];
+                for (let r = 0; r < m; r++) {
+                  const slot = perm[r];
+                  const s = scoreMatrix[r][slot];
+                  sum += s.combined;
+                  chosen.push({ matchIdx: matchIndices[r], slot, h: s.h, a: s.a, combined: s.combined });
+                }
+                if (sum > bestSum) { bestSum = sum; assignment = chosen; }
+              }
+            }
+          } else {
+            // Greedy fallback
+            const used = new Set<number>();
+            for (let r = 0; r < m; r++) {
+              let bestSlot = -1; let best = -1; let bestH = 0; let bestA = 0;
+              for (let c = 0; c < totalAvailableSlots; c++) {
+                if (used.has(c)) continue;
+                const s = scoreMatrix[r][c];
+                if (s.combined > best) { best = s.combined; bestSlot = c; bestH = s.h; bestA = s.a; }
+              }
+              if (bestSlot === -1) { // if all used, allow reuse minimal
+                bestSlot = 0; const s = scoreMatrix[r][0]; best = s.combined; bestH = s.h; bestA = s.a;
+              }
+              used.add(bestSlot);
+              assignment.push({ matchIdx: matchIndices[r], slot: bestSlot, h: bestH, a: bestA, combined: best });
+              bestSum += best;
+            }
+          }
+
+          // Emit plan rows for this week's assigned matches
+          for (const asn of assignment) {
+            const i = asn.matchIdx;
+            const { venue, timeslot } = slotDetails[asn.slot];
+            const baseDate = playingWeeks[weekIndex];
+            const isMonday = timeslot?.day_of_week === 1;
+            const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+            const matchTime = timeslot?.start_time || '19:00';
+            totalCombined += asn.combined;
+            plan.push({
+              unique_number: `1/8-${i + 1}`,
+              speeldag: `1/8 Finale ${i + 1}`,
+              home_team_id: order[i * 2],
+              away_team_id: order[i * 2 + 1],
+              match_date: matchDate,
+              match_time: matchTime,
+              venue,
+              slot_index: asn.slot,
+              details: { homeScore: asn.h, awayScore: asn.a, combined: asn.combined, maxCombined: 6, priority: timeslot?.priority, day_of_week: timeslot?.day_of_week }
+            });
+          }
+        }
+
+        // Kwartfinales
+        {
+          const baseWeekIndex = playingWeeks.length === 5 ? 2 : 1;
+          for (let i = 0; i < 4; i++) {
+            const slotIndex = i;
+            const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7);
+            const baseDate = playingWeeks[baseWeekIndex];
+            const isMonday = timeslot?.day_of_week === 1;
+            const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+            const matchTime = timeslot?.start_time || '19:00';
+            plan.push({
+              unique_number: `QF-${i + 1}`,
+              speeldag: `Kwartfinale ${i + 1}`,
+              home_team_id: null,
+              away_team_id: null,
+              match_date: matchDate,
+              match_time: matchTime,
+              venue,
+              slot_index: slotIndex,
+              details: { maxCombined: 6, priority: timeslot?.priority, day_of_week: timeslot?.day_of_week }
+            });
+          }
+        }
+
+        // Halve finales
+        {
+          const baseWeekIndex = playingWeeks.length === 5 ? 3 : 2;
+          for (let i = 0; i < 2; i++) {
+            const slotIndex = i;
+            const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7);
+            const baseDate = playingWeeks[baseWeekIndex];
+            const isMonday = timeslot?.day_of_week === 1;
+            const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+            const matchTime = timeslot?.start_time || '19:00';
+            plan.push({
+              unique_number: `SF-${i + 1}`,
+              speeldag: `Halve Finale ${i + 1}`,
+              home_team_id: null,
+              away_team_id: null,
+              match_date: matchDate,
+              match_time: matchTime,
+              venue,
+              slot_index: slotIndex,
+              details: { maxCombined: 6, priority: timeslot?.priority, day_of_week: timeslot?.day_of_week }
+            });
+          }
+        }
+
+        // Finale
+        {
+          const finalSlotIndex = 0;
+          const { venue, timeslot } = await priorityOrderService.getMatchDetails(finalSlotIndex, 7);
+          const baseWeekIndex = playingWeeks.length === 5 ? 4 : 3;
+          const baseDate = playingWeeks[baseWeekIndex];
+          const isMonday = timeslot?.day_of_week === 1;
+          const finalDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+          const finalTime = timeslot?.start_time || '19:00';
+          plan.push({
+            unique_number: 'FINAL',
+            speeldag: 'Finale',
+            home_team_id: null,
+            away_team_id: null,
+            match_date: finalDate,
+            match_time: finalTime,
+            venue,
+            slot_index: finalSlotIndex,
+            details: { maxCombined: 6, priority: timeslot?.priority, day_of_week: timeslot?.day_of_week }
+          });
+        }
+
+        return { plan, totalCombined } as const;
+      };
+
+      // Try multiple shuffled attempts; keep the plan with highest total combined score
+      const tries = Math.max(1, attempts ?? 1);
+      let bestPlan: Array<{ unique_number: string; speeldag: string; home_team_id: number | null; away_team_id: number | null; match_date: string; match_time: string; venue: string; slot_index: number; details: { homeScore?: number; awayScore?: number; combined?: number; maxCombined: number; priority?: number; day_of_week?: number } }> | null = null;
+      let bestScore = -1;
+      for (let t = 0; t < tries; t++) {
+        // Shuffle teams each attempt
+        let shuffled = [...teams].sort(() => Math.random() - 0.5);
+        // If a bye team is provided, remove it from first round pairs
+        if (byeTeamId) {
+          shuffled = shuffled.filter(id => id !== byeTeamId);
+        }
+        const { plan: p, totalCombined } = await buildPlanForOrder(shuffled);
+
+        // If bye team exists: remove it from 1/8 and prefill QF-1 home in preview for clarity
+        if (byeTeamId) {
+          const qf1Index = p.findIndex(x => x.unique_number === 'QF-1');
+          if (qf1Index >= 0) {
+            p[qf1Index].home_team_id = byeTeamId;
+          }
+        }
+        if (totalCombined > bestScore) {
+          bestScore = totalCombined;
+          bestPlan = p;
+        }
+      }
+
+      return { success: true, message: 'Preview gegenereerd', plan: bestPlan || [], totalCombined: bestScore >= 0 ? bestScore : undefined };
+    } catch (error) {
+      console.error('Error previewing cup tournament:', error);
+      return { success: false, message: 'Fout bij genereren preview', plan: [] };
+    }
+  },
+
+  /**
+   * Confirm/import a prepared plan into the database (idempotent simple insert).
+   */
+  async createCupFromPlan(plan: Array<{ unique_number: string; speeldag: string; home_team_id: number | null; away_team_id: number | null; match_date: string; match_time: string; venue: string }>): Promise<{ success: boolean; message: string }> {
+    try {
+      // Remove any existing cup matches with the same unique_numbers to avoid duplicate key errors
+      const uniqueNumbers = plan.map(p => p.unique_number);
+      if (uniqueNumbers.length > 0) {
+        const { error: delError } = await supabase
+          .from('matches')
+          .delete()
+          .in('unique_number', uniqueNumbers)
+          .eq('is_cup_match', true);
+        if (delError) {
+          // Not fatal; continue, insert will fail if truly conflicting
+          console.warn('Warning: could not clear existing matches before import', delError);
+        }
+      }
+
+      const cupMatches = plan.map(p => bekerService.createMatchObject(
+        p.unique_number,
+        p.speeldag,
+        p.home_team_id,
+        p.away_team_id,
+        p.match_date,
+        p.match_time,
+        p.venue
+      ));
+
+      const { error } = await supabase.from('matches').insert(cupMatches);
+      if (error) throw error;
+      return { success: true, message: 'Beker schema geïmporteerd' };
+    } catch (error) {
+      console.error('Error importing cup plan:', error);
+      return { success: false, message: 'Fout bij importeren schema' };
+    }
+  },
+
+  async createCupTournament(teams: number[], selectedDates: string[], byeTeamId?: number | null): Promise<{ success: boolean; message: string }> {
     // Validate input
     const inputValidation = bekerService.validateCupTournamentInput(teams, selectedDates);
     if (!inputValidation.isValid) {
@@ -380,7 +757,11 @@ export const bekerService = {
       }
 
       // Shuffle teams for random bracket
-      const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
+      let shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
+      if (byeTeamId) {
+        // remove bye from 1/8
+        shuffledTeams = shuffledTeams.filter(id => id !== byeTeamId);
+      }
 
       // Convert selected dates to playing weeks (Mondays)
       const playingWeeks = bekerService.convertToPlayingWeeks(selectedDates);
@@ -412,6 +793,11 @@ export const bekerService = {
       // Create kwartfinales (4 matches) - dynamic week index based on schedule length
       console.log('🏆 Creating kwartfinales with optimal timeslot distribution...');
       const quarterFinals = await bekerService.createQuarterFinals(playingWeeks);
+      // If bye team exists, put it in QF-1 home automatically
+      if (byeTeamId) {
+        const idx = quarterFinals.findIndex(x => x.unique_number === 'QF-1');
+        if (idx >= 0) quarterFinals[idx].home_team_id = byeTeamId;
+      }
       cupMatches.push(...quarterFinals);
 
       // Create halve finales (2 matches) - dynamic week index based on schedule length
@@ -606,6 +992,28 @@ export const bekerService = {
 
       if (error) throw error;
 
+      // After updating, re-evaluate winner advancement logic using persisted values
+      try {
+        const currentMatch = await bekerService.getCupMatchById(matchId);
+        if (currentMatch) {
+          const nextRound = bekerService.getNextRound(currentMatch.unique_number!);
+          const hsNew = currentMatch.home_score;
+          const asNew = currentMatch.away_score;
+          if (nextRound) {
+            if (hsNew == null || asNew == null || hsNew === asNew) {
+              // Unknown winner (empty or tie): clear downstream
+              await bekerService.clearAdvancement(currentMatch.unique_number!, nextRound);
+              await bekerService.clearAdvancementCascade(currentMatch.unique_number!);
+            } else {
+              const newWinnerTeamId = hsNew > asNew ? currentMatch.home_team_id! : currentMatch.away_team_id!;
+              await bekerService.updateAdvancement(currentMatch.unique_number!, newWinnerTeamId, nextRound);
+            }
+          }
+        }
+      } catch (advErr) {
+        console.warn('Warning: advancement update after cup match edit failed', advErr);
+      }
+
       return { success: true, message: "Bekerwedstrijd succesvol bijgewerkt!" };
     } catch (error) {
       console.error('Error updating cup match:', error);
@@ -671,6 +1079,7 @@ export const bekerService = {
     const matchNumber = bekerService.extractMatchNumber(currentUniqueNumber);
     
     if (currentUniqueNumber.startsWith('1/8-')) {
+      // Fixed mapping: 1/8-1->QF-1, 1/8-2->QF-1, 1/8-3->QF-2, ... 1/8-8->QF-4
       return `QF-${Math.ceil(matchNumber / 2)}`;
     } else if (currentUniqueNumber.startsWith('QF-')) {
       return `SF-${Math.ceil(matchNumber / 2)}`;
@@ -708,26 +1117,21 @@ export const bekerService = {
         return { success: false, message: "Volgende wedstrijd niet gevonden." };
       }
 
-      // Determine preferred slot (home for odd, away for even), but fall back to free slot if preferred is occupied
+      // Determine reserved slot for this upstream match (no fallback)
       const shouldBeHome = bekerService.shouldBeHomeTeam(currentMatch.unique_number!, bekerService.extractMatchNumber(currentMatch.unique_number!));
+      const loserTeamId = (currentMatch.home_team_id === winnerTeamId) ? currentMatch.away_team_id : currentMatch.home_team_id;
 
+      // Prepare update: set reserved slot to winner; if the opposite slot contains the loser from this match, clear it
       const updateData: any = {};
       if (shouldBeHome) {
-        if (!nextMatch.home_team_id) {
-          updateData.home_team_id = winnerTeamId;
-        } else if (!nextMatch.away_team_id) {
-          updateData.away_team_id = winnerTeamId;
-        } else {
-          // Both occupied; do nothing to avoid overwriting
-          return { success: false, message: "Volgende wedstrijd heeft al beide teams toegewezen." };
+        updateData.home_team_id = winnerTeamId;
+        if (nextMatch.away_team_id === loserTeamId) {
+          updateData.away_team_id = null;
         }
       } else {
-        if (!nextMatch.away_team_id) {
-          updateData.away_team_id = winnerTeamId;
-        } else if (!nextMatch.home_team_id) {
-          updateData.home_team_id = winnerTeamId;
-        } else {
-          return { success: false, message: "Volgende wedstrijd heeft al beide teams toegewezen." };
+        updateData.away_team_id = winnerTeamId;
+        if (nextMatch.home_team_id === loserTeamId) {
+          updateData.home_team_id = null;
         }
       }
 
@@ -813,28 +1217,32 @@ export const bekerService = {
         return { success: false, message: "Volgende wedstrijd niet gevonden." };
       }
 
-      // Determine preferred slot (home for odd, away for even), but fall back to free slot if preferred is occupied
+      // Determine reserved slot for this upstream match (no fallback). Also remove the previous loser if present.
       const shouldBeHome = bekerService.shouldBeHomeTeam(currentMatchUniqueNumber, bekerService.extractMatchNumber(currentMatchUniqueNumber));
+
+      // Fetch current match teams to determine loser
+      const currentMatch = await supabase
+        .from('matches')
+        .select('home_team_id, away_team_id')
+        .eq('unique_number', currentMatchUniqueNumber)
+        .eq('is_cup_match', true)
+        .single();
+
+      let loserTeamId: number | null = null;
+      if (!currentMatch.error && currentMatch.data) {
+        const h = currentMatch.data.home_team_id as number | null;
+        const a = currentMatch.data.away_team_id as number | null;
+        if (h === newWinnerTeamId) loserTeamId = a;
+        else if (a === newWinnerTeamId) loserTeamId = h;
+      }
 
       const updateData: any = {};
       if (shouldBeHome) {
-        if (!nextMatch.home_team_id) {
-          updateData.home_team_id = newWinnerTeamId;
-        } else if (!nextMatch.away_team_id) {
-          updateData.away_team_id = newWinnerTeamId;
-        } else {
-          // If both occupied, default to home (replace home)
-          updateData.home_team_id = newWinnerTeamId;
-        }
+        updateData.home_team_id = newWinnerTeamId;
+        if (loserTeamId && nextMatch.away_team_id === loserTeamId) updateData.away_team_id = null;
       } else {
-        if (!nextMatch.away_team_id) {
-          updateData.away_team_id = newWinnerTeamId;
-        } else if (!nextMatch.home_team_id) {
-          updateData.home_team_id = newWinnerTeamId;
-        } else {
-          // If both occupied, default to away (replace away)
-          updateData.away_team_id = newWinnerTeamId;
-        }
+        updateData.away_team_id = newWinnerTeamId;
+        if (loserTeamId && nextMatch.home_team_id === loserTeamId) updateData.home_team_id = null;
       }
 
       // Update the next match with the decided slot
@@ -911,7 +1319,6 @@ export const bekerService = {
         return { success: false, message: "Geen volgende wedstrijd gevonden." };
       }
 
-      // Clear the next match teams
       const { error: clearError } = await supabase
         .from('matches')
         .update({ home_team_id: null, away_team_id: null })
@@ -928,6 +1335,22 @@ export const bekerService = {
         success: false, 
         message: `Fout bij wissen doorstroming: ${error instanceof Error ? error.message : 'Onbekende fout'}` 
       };
+    }
+  },
+
+  async clearAdvancementCascade(currentMatchUniqueNumber: string): Promise<void> {
+    try {
+      let next = bekerService.getNextMatchUniqueNumber(currentMatchUniqueNumber);
+      while (next) {
+        await supabase
+          .from('matches')
+          .update({ home_team_id: null, away_team_id: null })
+          .eq('unique_number', next)
+          .eq('is_cup_match', true);
+        next = bekerService.getNextMatchUniqueNumber(next);
+      }
+    } catch (_) {
+      // best-effort; ignore errors in cascade
     }
   },
 
@@ -950,8 +1373,14 @@ export const bekerService = {
   },
 
   shouldBeHomeTeam(uniqueNumber: string, matchNumber: number): boolean {
-    // In cup tournaments, odd-numbered matches in each round are home teams
-    return matchNumber % 2 === 1;
+    // Fixed bracket rule:
+    // - For 1/8 finals, the second match in each pair (even: 2,4,6,8) gets home in the corresponding QF
+    //   e.g., 1/8-4 winner -> QF-2 home
+    // - For other rounds, keep existing default (odd -> home) unless specified later
+    if (uniqueNumber.startsWith('1/8-')) {
+      return matchNumber % 2 === 0; // even
+    }
+    return matchNumber % 2 === 1; // default
   },
 
   getNextRound(currentUniqueNumber: string): string | null {

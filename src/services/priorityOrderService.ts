@@ -77,7 +77,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 1,
     venue_id: 1,
-    venue_name: "Sporthal De Dageraad Harelbeke",
+    venue_name: "De Dageraad Harelbeke",
     day_of_week: 1,
     start_time: "20:00",
     end_time: "21:00",
@@ -86,7 +86,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 2,
     venue_id: 2,
-    venue_name: "Sporthal De Vlasschaard Bavikhove",
+    venue_name: "De Vlasschaard Bavikhove",
     day_of_week: 1,
     start_time: "20:00",
     end_time: "21:00",
@@ -95,7 +95,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 3,
     venue_id: 1,
-    venue_name: "Sporthal De Dageraad Harelbeke",
+    venue_name: "De Dageraad Harelbeke",
     day_of_week: 2,
     start_time: "19:30",
     end_time: "20:30",
@@ -104,7 +104,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 4,
     venue_id: 1,
-    venue_name: "Sporthal De Dageraad Harelbeke",
+    venue_name: "De Dageraad Harelbeke",
     day_of_week: 1,
     start_time: "19:00",
     end_time: "20:00",
@@ -113,7 +113,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 5,
     venue_id: 2,
-    venue_name: "Sporthal De Vlasschaard Bavikhove",
+    venue_name: "De Vlasschaard Bavikhove",
     day_of_week: 1,
     start_time: "19:00",
     end_time: "20:00",
@@ -122,7 +122,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 6,
     venue_id: 1,
-    venue_name: "Sporthal De Dageraad Harelbeke",
+    venue_name: "De Dageraad Harelbeke",
     day_of_week: 2,
     start_time: "18:30",
     end_time: "19:30",
@@ -131,7 +131,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 7,
     venue_id: 2,
-    venue_name: "Sporthal De Vlasschaard Bavikhove",
+    venue_name: "De Vlasschaard Bavikhove",
     day_of_week: 2,
     start_time: "18:30",
     end_time: "19:30",
@@ -253,7 +253,8 @@ export const priorityOrderService = {
           const venue = venues.find((v: any) => v.venue_id === slot.venue_id);
           return { 
             ...slot, 
-            venue_name: slot.venue_name || venue?.name || 'Unknown',
+            venue_name: (slot.venue_name || venue?.name || 'Unknown')
+              .replace(/^Sporthal\s+/i, ''),
             priority: slot.priority || 999 // Default to low priority if not set
           };
         })
@@ -281,7 +282,7 @@ export const priorityOrderService = {
     
     if (availableSlots.length === 0) {
       console.warn('⚠️ No available slots found, using default');
-      return { time: '19:00', venue: 'Sporthal De Dageraad Harelbeke', timeslot: null };
+      return { time: '19:00', venue: 'De Dageraad Harelbeke', timeslot: null };
     }
 
     // Cyclically distribute matches across ALL available priority slots (1-7)

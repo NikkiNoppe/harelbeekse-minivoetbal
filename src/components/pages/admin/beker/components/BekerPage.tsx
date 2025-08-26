@@ -11,6 +11,7 @@ import BekerDateSelector from "./BekerDateSelector";
 import { teamService, Team } from "@/services/core";
 import { bekerService } from "@/services/match/cupService";
 import AdminTeamSelector from "@/components/pages/admin/common/components/AdminTeamSelector";
+import { supabase } from "@/integrations/supabase/client";
 const BekerPage: React.FC = () => {
   const { toast } = useToast();
   const [showDateSelector, setShowDateSelector] = useState(false);
@@ -28,6 +29,24 @@ const BekerPage: React.FC = () => {
   }>(null);
   const [byeTeamId, setByeTeamId] = useState<number | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [previewPlan, setPreviewPlan] = useState<Array<{
+    unique_number: string;
+    speeldag: string;
+    home_team_id: number | null;
+    away_team_id: number | null;
+    match_date: string;
+    match_time: string;
+    venue: string;
+    slot_index: number;
+    details: { homeScore?: number; awayScore?: number; combined?: number; maxCombined: number; priority?: number; day_of_week?: number }
+  }> | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewTotal, setPreviewTotal] = useState<number | null>(null);
+  const teamNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    teams.forEach(t => map.set(t.team_id, t.team_name));
+    return map;
+  }, [teams]);
 
   // Load teams from database on component mount
   useEffect(() => {
@@ -64,10 +83,27 @@ const BekerPage: React.FC = () => {
     }
   }, []);
 
+  // Realtime: update bracket when cup matches change elsewhere (e.g., match form updates)
+  useEffect(() => {
+    const channel = supabase
+      .channel('cup-matches-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, (payload: any) => {
+        const row = payload.new || payload.old;
+        if (row?.is_cup_match) {
+          reloadExistingCup();
+        }
+      })
+      .subscribe();
+    return () => {
+      try { supabase.removeChannel(channel); } catch (_) {}
+    };
+  }, [reloadExistingCup]);
+
   const handleCancelTournament = useCallback(() => {
     setSelectedTeams([]);
     setTournamentDates([]);
     setByeTeamId(null);
+    setPreviewPlan(null);
     toast({ title: "Geannuleerd", description: "Teams en speeldata gewist." });
   }, [toast]);
 
@@ -116,9 +152,15 @@ const BekerPage: React.FC = () => {
 
     setIsCreating(true);
     try {
-      const result = await bekerService.createCupTournament(selectedTeams, tournamentDates);
-      if (result.success) {
-        toast({ title: "Beker aangemaakt", description: result.message });
+      // If a preview exists, confirm importing that exact plan for determinisme
+      let createResult: { success: boolean; message: string };
+      if (previewPlan && previewPlan.length > 0) {
+        createResult = await bekerService.createCupFromPlan(previewPlan);
+      } else {
+        createResult = await bekerService.createCupTournament(selectedTeams, tournamentDates, byeTeamId);
+      }
+      if (createResult.success) {
+        toast({ title: "Beker aangemaakt", description: createResult.message });
         // Assign bye team to QF-1 if applicable
         if (selectedTeams.length % 2 === 1 && byeTeamId) {
           const assign = await bekerService.assignTeamToMatch('QF-1', true, byeTeamId);
@@ -129,9 +171,10 @@ const BekerPage: React.FC = () => {
         setSelectedTeams([]);
         setTournamentDates([]);
         setByeTeamId(null);
+        setPreviewPlan(null);
         await reloadExistingCup();
       } else {
-        toast({ title: "Fout bij aanmaken", description: result.message, variant: "destructive" });
+        toast({ title: "Fout bij aanmaken", description: createResult.message, variant: "destructive" });
       }
     } catch (error) {
       console.error('Error creating tournament:', error);
@@ -144,6 +187,37 @@ const BekerPage: React.FC = () => {
       setIsCreating(false);
     }
   }, [selectedTeams, tournamentDates, toast, reloadExistingCup]);
+
+  const handleGeneratePreview = useCallback(async () => {
+    const requiredWeeks = selectedTeams.length === 16 ? 5 : 4;
+    if (selectedTeams.length < 2) {
+      toast({ title: "Onvoldoende teams", description: "Selecteer minstens 2 teams", variant: "destructive" });
+      return;
+    }
+    if (tournamentDates.length !== requiredWeeks) {
+      toast({ title: "Onvoldoende data", description: `Selecteer exact ${requiredWeeks} speeldata`, variant: "destructive" });
+      return;
+    }
+    setIsPreviewing(true);
+    try {
+      const res = await bekerService.previewCupTournament(selectedTeams, tournamentDates, 1, byeTeamId || null);
+      if (!res.success || !res.plan || res.plan.length === 0) {
+        toast({ title: "Preview mislukt", description: res.message || "Geen plan gegenereerd", variant: "destructive" });
+        setPreviewPlan(null);
+        setPreviewTotal(null);
+        return;
+      }
+      setPreviewPlan(res.plan);
+      setPreviewTotal(res.totalCombined ?? null);
+      toast({ title: "Preview klaar", description: `Preview bevat ${res.plan.length} wedstrijden (totale score ${res.totalCombined ?? '-'}).` });
+    } catch (e) {
+      toast({ title: "Preview fout", description: "Er ging iets mis bij genereren", variant: "destructive" });
+      setPreviewPlan(null);
+      setPreviewTotal(null);
+    } finally {
+      setIsPreviewing(false);
+    }
+  }, [selectedTeams, tournamentDates, toast]);
 
   const handleDeleteCup = useCallback(async () => {
     setIsDeleting(true);
@@ -253,16 +327,23 @@ const BekerPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    disabled={isPreviewing || !canCreateTournament}
+                    className="btn btn--outline sm:flex-1"
+                    onClick={handleGeneratePreview}
+                  >
+                    {isPreviewing ? "Preview genereren..." : "Preview genereren"}
+                  </button>
                   <button
                     disabled={!canCreateTournament || isCreating}
-                    className="btn btn--primary flex-1"
+                    className="btn btn--primary sm:flex-1"
                     onClick={() => setShowConfirm(true)}
                   >
-                    {isCreating ? "Beker aanmaken..." : "Beker Aanmaken"}
+                    {isCreating ? "Beker aanmaken..." : (previewPlan ? "Bevestigen en importeren" : "Beker Aanmaken")}
                   </button>
                   <button onClick={handleCancelTournament} disabled={isCreating} className="btn btn--secondary">
-                    Beker annuleren
+                    Annuleren
                   </button>
                 </div>
 
@@ -282,7 +363,7 @@ const BekerPage: React.FC = () => {
                               handleCreateTournament();
                             }}
                           >
-                            Beker Aanmaken
+                            {previewPlan ? "Bevestigen en importeren" : "Beker Aanmaken"}
                           </button>
                           <button className="btn btn--secondary" onClick={() => setShowConfirm(false)}>
                             Annuleren
@@ -296,6 +377,47 @@ const BekerPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {previewPlan && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Preview Beker (scores per match)</CardTitle>
+              <CardDescription>
+                Geplande wedstrijden met gecombineerde voorkeur-score (max 6). Totale score: {previewTotal ?? '-'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="w-full overflow-x-auto">
+                <table className="table w-full text-sm">
+                  <thead className="tableHead">
+                    <tr>
+                      <th className="text-left">Speeldag</th>
+                      <th className="text-left">Home</th>
+                      <th className="text-left">Away</th>
+                      <th className="text-left">Datum</th>
+                      <th className="text-left">Tijd</th>
+                      <th className="text-left">Venue</th>
+                      <th className="text-left">Score (home+away/max)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewPlan.map((p, idx) => (
+                      <tr key={idx}>
+                        <td>{p.speeldag}</td>
+                        <td>{p.home_team_id ? (teamNameById.get(p.home_team_id) || p.home_team_id) : '-'}</td>
+                        <td>{p.away_team_id ? (teamNameById.get(p.away_team_id) || p.away_team_id) : '-'}</td>
+                        <td>{new Date(p.match_date).toLocaleDateString('nl-NL')}</td>
+                        <td>{p.match_time}</td>
+                        <td>{p.venue}</td>
+                        <td>{(p.details?.homeScore ?? 0)} + {(p.details?.awayScore ?? 0)} = {(p.details?.combined ?? 0)} / {p.details?.maxCombined}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Beker Beheren */}
         <Card>

@@ -112,6 +112,21 @@ export const useTabVisibilitySettings = () => {
 
   useEffect(() => {
     fetchSettings();
+    // Subscribe to realtime changes so UI updates across the app immediately
+    const channel = supabase
+      .channel('tab-visibility-live')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'application_settings', filter: 'setting_category=eq.tab_visibility' },
+        () => {
+          fetchSettings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try { supabase.removeChannel(channel); } catch (_) {}
+    };
   }, []);
 
   return {

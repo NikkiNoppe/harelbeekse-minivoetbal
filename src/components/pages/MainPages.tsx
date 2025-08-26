@@ -140,6 +140,13 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
           <MemoizedPloegenPage />
         </TabContentWrapper>
       </TabsContent>
+    ),
+    ploegen: isTabVisible("ploegen") && (
+      <TabsContent value="ploegen" className="mt-0" key="ploegen">
+        <TabContentWrapper>
+          <MemoizedPloegenPage />
+        </TabContentWrapper>
+      </TabsContent>
     )
   }), [isTabVisible]);
 
@@ -152,6 +159,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
         'competitie',
         'playoff',
         'teams',
+        'ploegen',
         'kaarten',
         'schorsingen',
         'reglement',
@@ -196,6 +204,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
           {tabContents.competitie}
           {tabContents.playoff}
           {tabContents.teams}
+          {tabContents.ploegen}
           {tabContents.kaarten}
           {tabContents.schorsingen}
           {tabContents.reglement}

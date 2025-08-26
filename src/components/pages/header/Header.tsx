@@ -77,7 +77,7 @@ const Header: React.FC<HeaderProps> = ({
     { key: "competitie", label: "Competitie", icon: <Trophy size={16} /> },
     { key: "beker", label: "Beker", icon: <Award size={16} /> },
     { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
-    { key: "teams", label: "Teams", icon: <Shield size={16} /> },
+    { key: "ploegen", label: "Teams", icon: <Users size={16} /> },
     { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> }
   ];
 
@@ -203,6 +203,7 @@ const Header: React.FC<HeaderProps> = ({
                       onClick={() => {
                         setIsSheetOpen(false);
                         onTabChange(item.key);
+                        // Do not push a route; tabs remain in-app without URL change
                       }}
                       className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
                     >

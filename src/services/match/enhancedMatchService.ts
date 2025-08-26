@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { updateMatchForm } from "@/components/pages/admin/matches/services/matchesFormService";
 import { MatchFormData } from "@/components/pages/admin/matches/types";
+import { bekerService } from "@/services/match/cupService";
 
 interface MatchUpdateData {
   homeScore?: number | null;
@@ -162,7 +163,30 @@ export const enhancedMatchService = {
       }
       
       console.log('UPDATE SUCCESS:', data);
-      
+
+      // Fallback: If this is a cup match, re-evaluate advancement after successful update (using persisted values)
+      try {
+        if (isCupMatch) {
+          const current = await bekerService.getCupMatchById(matchId);
+          if (current) {
+            const nextRound = bekerService.getNextRound(current.unique_number!);
+            if (nextRound) {
+              const hsNew = current.home_score;
+              const asNew = current.away_score;
+              if (hsNew == null || asNew == null || hsNew === asNew) {
+                await bekerService.clearAdvancement(current.unique_number!, nextRound);
+                await bekerService.clearAdvancementCascade(current.unique_number!);
+              } else {
+                const winnerTeamId = hsNew > asNew ? current.home_team_id! : current.away_team_id!;
+                await bekerService.updateAdvancement(current.unique_number!, winnerTeamId, nextRound);
+              }
+            }
+          }
+        }
+      } catch (advErr) {
+        console.warn('Advancement recalculation failed (fallback path):', advErr);
+      }
+
       return {
         success: true,
         message: isLateSubmission 

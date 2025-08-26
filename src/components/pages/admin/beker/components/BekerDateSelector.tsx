@@ -207,6 +207,17 @@ const BekerDateSelector: React.FC<BekerDateSelectorProps> = ({ onDatesSelected, 
     return dates;
   }, [seasonStartDate, weeks]);
 
+  // Prefill convenience dates for 4-week brackets (user-provided defaults)
+  useEffect(() => {
+    if (weeks === 4) {
+      const allEmpty = selectedDates.every(d => d === '');
+      if (allEmpty) {
+        const preset = ['2025-10-27', '2026-02-23', '2026-04-20', '2026-06-01'];
+        setSelectedDates(preset);
+      }
+    }
+  }, [weeks]);
+
   // Memoize date change handler
   const handleBekerDateChange = useCallback((index: number, value: string) => {
     setSelectedDates(prev => {

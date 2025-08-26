@@ -30,17 +30,23 @@ export function normalizeTeamsPreferences(teams: Team[]): Map<number, TeamPrefer
   const map = new Map<number, TeamPreferencesNormalized>();
   for (const t of teams) {
     const prefs: any = (t as any).preferred_play_moments;
-    const daysSet = Array.isArray(prefs?.days)
-      ? new Set<number>((prefs.days as any[]) 
+    let daysSet = Array.isArray(prefs?.days)
+      ? new Set<number>((prefs.days as any[])
           .map(d => normalizeDayEntry(d))
           .filter((n): n is number => typeof n === 'number'))
       : undefined;
-    const timesSet = Array.isArray(prefs?.timeslots)
+    let timesSet = Array.isArray(prefs?.timeslots)
       ? new Set<string>((prefs.timeslots as string[]).map(normalize))
       : undefined;
-    const venuesSet = Array.isArray(prefs?.venues)
+    let venuesSet = Array.isArray(prefs?.venues)
       ? new Set<number>((prefs.venues as number[]).filter((v) => typeof v === 'number'))
       : undefined;
+
+    // Treat empty arrays as no preference
+    if (daysSet && daysSet.size === 0) daysSet = undefined;
+    if (timesSet && timesSet.size === 0) timesSet = undefined;
+    if (venuesSet && venuesSet.size === 0) venuesSet = undefined;
+
     const prefCount = (daysSet ? 1 : 0) + (timesSet ? 1 : 0) + (venuesSet ? 1 : 0);
     if (prefCount > 0) {
       map.set(t.team_id, { days: daysSet, timeslots: timesSet, venues: venuesSet, prefCount });
@@ -55,7 +61,8 @@ export function scoreTeamForDetails(
   venueName: string | undefined,
   venues: any[]
 ): { score: number; matched: number; provided: number } {
-  if (!prefs || prefs.prefCount === 0) return { score: 0, matched: 0, provided: 0 };
+  // Bij geen voorkeuren: altijd 3 punten
+  if (!prefs || prefs.prefCount === 0) return { score: 3, matched: 0, provided: 0 };
 
   // Determine venue id from name using provided venues list (best-effort)
   let venueId: number | undefined = undefined;
@@ -74,9 +81,8 @@ export function scoreTeamForDetails(
     const label = timeslot?.start_time && timeslot?.end_time
       ? `${timeslot.start_time}-${timeslot.end_time}`
       : (timeslot?.start_time || '');
-    const slotIdStr = timeslot?.timeslot_id ? String(timeslot.timeslot_id) : '';
     const has = (s: string) => !!s && prefs.timeslots!.has(normalize(s));
-    if (has(label) || has(timeslot?.start_time || '') || (slotIdStr && prefs.timeslots.has(slotIdStr))) {
+    if (has(label) || has(timeslot?.start_time || '')) {
       matched += 1;
     }
   }
@@ -87,13 +93,17 @@ export function scoreTeamForDetails(
 
   const N = prefs.prefCount;
   const M = matched;
+  // Scoringsregels:
+  // - 1 voorkeur: match = 3, geen match = 0
+  // - 2 voorkeuren: 2 matches = 3, 1 match = 1.5, 0 = 0
+  // - >=3 voorkeuren: 1 punt per match (max 3)
   let score = 0;
   if (N === 1) {
     score = M === 1 ? 3 : 0;
   } else if (N === 2) {
-    score = M === 2 ? 3 : (M === 1 ? 1 : 0);
-  } else if (N >= 3) {
-    score = M === 3 ? 3 : (M === 2 ? 2 : (M === 1 ? 1 : 0));
+    score = M === 2 ? 3 : (M === 1 ? 1.5 : 0);
+  } else {
+    score = M >= 3 ? 3 : (M === 2 ? 2 : (M === 1 ? 1 : 0));
   }
   return { score, matched: M, provided: N };
 }

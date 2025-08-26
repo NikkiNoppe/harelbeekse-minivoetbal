@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import Header from "@/components/pages/header/Header";
+import { useLocation, useNavigate } from "react-router-dom";
 import Footer from "@/components/pages/footer/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import LoginModal from "@/components/pages/login/LoginModal";
@@ -12,9 +13,12 @@ const Layout: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("financial");
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleLogoClick = () => {
     setActiveTab("algemeen");
+    try { navigate('/'); } catch (_) {}
   };
 
   const handleTabChange = (tab: string) => {
@@ -37,6 +41,25 @@ const Layout: React.FC = () => {
     }
   }, [user, loginDialogOpen]);
 
+  // Sync active tab with URL path for public sections
+  useEffect(() => {
+    const path = location.pathname;
+    const map: Record<string, string> = {
+      '/': 'algemeen',
+      '/beker': 'beker',
+      '/competitie': 'competitie',
+      '/playoff': 'playoff',
+      '/teams': 'ploegen',
+      '/reglement': 'reglement',
+      '/kaarten': 'kaarten',
+      '/schorsingen': 'schorsingen',
+    };
+    const mapped = map[path];
+    if (mapped) {
+      setActiveTab(mapped);
+    }
+  }, [location.pathname]);
+
   // Admin sections die sidebar gebruiken
   const adminTabs = [
     "match-forms", "match-forms-league", "match-forms-cup", "match-forms-playoffs", "players", "teams", "users", 
@@ -46,7 +69,7 @@ const Layout: React.FC = () => {
   // Main public tabs that use MainPages component
   const publicTabs = [
     "algemeen", "beker", "competitie", "playoff", 
-    "kaarten", "schorsingen", "reglement", "teams"
+    "kaarten", "schorsingen", "reglement", "teams", "ploegen"
   ];
 
   const isAdminSection = user && adminTabs.includes(activeTab);

@@ -20,6 +20,8 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       'competition': 'competitie',
       'cup': 'beker', 
       'playoffs': 'playoff',
+      // Ploegen (cards) gebruikt dezelfde toggle als teams
+      'ploegen': 'teams',
       'match-forms': 'admin_match_forms_league', // Check league forms as primary
       'match-forms-league': 'admin_match_forms_league',
       'match-forms-cup': 'admin_match_forms_cup',
@@ -117,6 +119,7 @@ export type TabName =
   | "kaarten"
   | "reglement"
   | "teams"
+  | "ploegen"
   | "admin_match_forms_league"
   | "admin_match_forms_cup"
   | "admin_match_forms_playoffs";

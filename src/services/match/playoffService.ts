@@ -69,6 +69,22 @@ export const playoffService = {
     const weeks: string[] = [];
     let currentDate = new Date(startDate);
     currentDate.setDate(currentDate.getDate() - currentDate.getDay() + 1);
+    // Load existing matches to avoid conflicts (normalize to Mondays)
+    const { data: existingMatchesAll } = await supabase
+      .from('matches')
+      .select('match_date')
+      .order('match_date');
+    const existingMondays = new Set<string>();
+    (existingMatchesAll || []).forEach((m: any) => {
+      if (!m?.match_date) return;
+      const d = new Date(m.match_date);
+      const monday = new Date(d);
+      const dow = monday.getDay();
+      const delta = dow === 0 ? -6 : 1 - dow;
+      monday.setDate(monday.getDate() + delta);
+      existingMondays.add(monday.toISOString().split('T')[0]);
+    });
+
     while (currentDate <= endDate) {
       const weekStart = new Date(currentDate);
       const weekDateStr = weekStart.toISOString().split('T')[0];
@@ -78,7 +94,9 @@ export const playoffService = {
         const vacEnd = new Date(vacation.end_date);
         return weekStart >= vacStart && weekStart <= vacEnd;
       });
-      if (!isVacation) weeks.push(weekDateStr);
+      const mondayStr = weekStart.toISOString().split('T')[0];
+      const hasAnyConflict = existingMondays.has(mondayStr);
+      if (!isVacation && !hasAnyConflict) weeks.push(weekDateStr);
       currentDate.setDate(currentDate.getDate() + 7);
     }
     return weeks;
