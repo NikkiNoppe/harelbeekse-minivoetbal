@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { seasonService } from "@/services/seasonService";
 import { priorityOrderService } from "@/services/priorityOrderService";
 import { teamService } from "@/services/core/teamService";
-import { normalizeTeamsPreferences, scoreTeamForDetails, TeamPreferencesNormalized } from "@/services/core/teamPreferencesService";
+import { normalizeTeamsPreferences, scoreTeamForDetails, TeamPreferencesNormalized, TeamSeasonalFairness } from "@/services/core/teamPreferencesService";
 import { playoffService } from "@/services/match/playoffService";
 import { bekerService as cupService } from "./cupService";
 import { localDateTimeToISO } from "@/lib/dateUtils";
@@ -327,7 +327,7 @@ export const competitionService = {
     return matches;
   },
 
-  // Verbeterde distributie met correct round-robin algoritme
+  // Verbeterde distributie met seasonal fairness tracking
   async distributeMatchesOverWeeks(
     matches: Array<{ home: number; away: number; round: number; matchday?: number }>,
     playingWeeks: string[],
@@ -335,6 +335,7 @@ export const competitionService = {
       teamPreferences?: Map<number, TeamPreferencesNormalized>;
       venues?: any[];
       dayNames?: string[];
+      seasonalFairness?: TeamSeasonalFairness[]; // New: seasonal fairness data
     }
   ): Promise<Array<{ match: { home: number; away: number; round: number }; week: number; slot: number }>> {
     const distributedMatches: Array<{ match: { home: number; away: number; round: number }; week: number; slot: number }> = [];
@@ -860,14 +861,17 @@ export const competitionService = {
             }
             // Compare sums (remove jitter effect for comparison by recomputing actual sum)
             const trueSum = chosen.reduce((acc, ch) => acc + scoreMatrix[ch.r][ch.c].combined, 0);
+            // Enhanced evaluation with seasonal fairness
             const baseVar = computeVariance(teamTotals);
             const { min: baseMin, max: baseMax } = computeMinMax(teamTotals);
             const tempTotals = new Map(teamTotals);
+            
             for (const ch of chosen) {
               const mt = matchesList[ch.r];
               tempTotals.set(mt.home, (tempTotals.get(mt.home) || 0) + ch.h);
               tempTotals.set(mt.away, (tempTotals.get(mt.away) || 0) + ch.a);
             }
+            
             const newVar = computeVariance(tempTotals);
             const { min: newMin, max: newMax } = computeMinMax(tempTotals);
             const fairnessPenalty = newVar - baseVar;

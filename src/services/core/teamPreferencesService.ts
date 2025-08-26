@@ -7,6 +7,27 @@ export interface TeamPreferencesNormalized {
   prefCount: number;
 }
 
+export interface TeamSeasonalFairness {
+  teamId: number;
+  teamName: string;
+  totalMatches: number;
+  cumulativeScore: number;
+  averageScore: number;
+  expectedMinimumScore: number;
+  fairnessDeficit: number;
+  lastUpdateDate: string;
+}
+
+export interface SeasonalFairnessMetrics {
+  overallAverage: number;
+  standardDeviation: number;
+  minScore: number;
+  maxScore: number;
+  fairnessScore: number; // 0-100, higher is better
+  teamsNeedingBoost: number[];
+  recommendations: string[];
+}
+
 const normalize = (s: string) => s.toLowerCase().trim();
 
 function normalizeDayEntry(day: string | number): number | null {
@@ -106,6 +127,186 @@ export function scoreTeamForDetails(
     score = M >= 3 ? 3 : (M === 2 ? 2 : (M === 1 ? 1 : 0));
   }
   return { score, matched: M, provided: N };
+}
+
+export async function getSeasonalFairness(teams: any[]): Promise<{ 
+  fairnessMetrics: SeasonalFairnessMetrics; 
+  teamFairness: TeamSeasonalFairness[] 
+}> {
+  const { supabase } = await import("@/integrations/supabase/client");
+  
+  // Get all competition matches to calculate seasonal scores
+  const { data: matches } = await supabase
+    .from('matches')
+    .select(`
+      match_id,
+      home_team_id,
+      away_team_id,
+      match_date,
+      location,
+      home_score,
+      away_score,
+      is_submitted,
+      is_cup_match,
+      is_playoff_match
+    `)
+    .eq('is_cup_match', false)
+    .eq('is_playoff_match', false)
+    .order('match_date');
+
+  if (!matches || matches.length === 0) {
+    // No matches yet, return baseline fairness
+    const teamFairness: TeamSeasonalFairness[] = teams.map(team => ({
+      teamId: team.team_id,
+      teamName: team.team_name,
+      totalMatches: 0,
+      cumulativeScore: 0,
+      averageScore: 0,
+      expectedMinimumScore: 1.5, // Minimum expected average
+      fairnessDeficit: 0,
+      lastUpdateDate: new Date().toISOString()
+    }));
+
+    return {
+      fairnessMetrics: {
+        overallAverage: 0,
+        standardDeviation: 0,
+        minScore: 0,
+        maxScore: 0,
+        fairnessScore: 100, // Perfect fairness with no matches
+        teamsNeedingBoost: [],
+        recommendations: ["Geen wedstrijden gespeeld - alle teams starten gelijk"]
+      },
+      teamFairness
+    };
+  }
+
+  // Get season data for scoring
+  const { seasonService } = await import("@/services/seasonService");
+  const seasonData = await seasonService.getSeasonData();
+  const venues = seasonData.venues || [];
+  
+  // Normalize team preferences
+  const teamPreferences = normalizeTeamsPreferences(teams);
+  
+  // Calculate cumulative scores for each team
+  const teamStats = new Map<number, { totalScore: number; matchCount: number }>();
+  
+  for (const match of matches) {
+    if (!match.home_team_id || !match.away_team_id) continue;
+    
+    // Parse match timing and location to determine preference scores  
+    const matchDate = new Date(match.match_date);
+    const timeslot = {
+      day_of_week: matchDate.getDay() || 7, // Convert Sunday (0) to 7
+      start_time: '20:00', // Default time since match_time column doesn't exist
+      end_time: '21:00'
+    };
+    
+    // Score both teams for this match
+    const homePrefs = teamPreferences.get(match.home_team_id);
+    const awayPrefs = teamPreferences.get(match.away_team_id);
+    
+    const homeResult = scoreTeamForDetails(homePrefs, timeslot, match.location || '', venues);
+    const awayResult = scoreTeamForDetails(awayPrefs, timeslot, match.location || '', venues);
+    
+    // Update team statistics
+    const updateTeamStats = (teamId: number, score: number) => {
+      const current = teamStats.get(teamId) || { totalScore: 0, matchCount: 0 };
+      teamStats.set(teamId, {
+        totalScore: current.totalScore + score,
+        matchCount: current.matchCount + 1
+      });
+    };
+    
+    updateTeamStats(match.home_team_id, homeResult.score);
+    updateTeamStats(match.away_team_id, awayResult.score);
+  }
+  
+  // Calculate fairness metrics
+  const teamFairness: TeamSeasonalFairness[] = teams.map(team => {
+    const stats = teamStats.get(team.team_id) || { totalScore: 0, matchCount: 0 };
+    const averageScore = stats.matchCount > 0 ? stats.totalScore / stats.matchCount : 0;
+    const expectedMinimumScore = 1.5; // Target minimum average score
+    const fairnessDeficit = Math.max(0, expectedMinimumScore - averageScore);
+    
+    return {
+      teamId: team.team_id,
+      teamName: team.team_name,
+      totalMatches: stats.matchCount,
+      cumulativeScore: stats.totalScore,
+      averageScore,
+      expectedMinimumScore,
+      fairnessDeficit,
+      lastUpdateDate: new Date().toISOString()
+    };
+  });
+  
+  // Calculate overall metrics
+  const averages = teamFairness.map(tf => tf.averageScore).filter(avg => avg > 0);
+  const overallAverage = averages.length > 0 ? averages.reduce((sum, avg) => sum + avg, 0) / averages.length : 0;
+  const variance = averages.length > 0 ? 
+    averages.reduce((sum, avg) => sum + Math.pow(avg - overallAverage, 2), 0) / averages.length : 0;
+  const standardDeviation = Math.sqrt(variance);
+  const minScore = Math.min(...averages);
+  const maxScore = Math.max(...averages);
+  
+  // Fairness score: 100 - (spread penalty + deficit penalty)
+  const spreadPenalty = Math.min(50, (maxScore - minScore) * 10); // Penalize large spreads
+  const totalDeficit = teamFairness.reduce((sum, tf) => sum + tf.fairnessDeficit, 0);
+  const deficitPenalty = Math.min(50, totalDeficit * 5); // Penalize teams below minimum
+  const fairnessScore = Math.max(0, 100 - spreadPenalty - deficitPenalty);
+  
+  // Teams needing boost (below average or with deficit)
+  const teamsNeedingBoost = teamFairness
+    .filter(tf => tf.averageScore < overallAverage || tf.fairnessDeficit > 0)
+    .map(tf => tf.teamId);
+  
+  // Generate recommendations
+  const recommendations: string[] = [];
+  if (standardDeviation > 0.5) {
+    recommendations.push(`Hoge spreiding (σ=${standardDeviation.toFixed(2)}) - meer balans nodig`);
+  }
+  if (totalDeficit > 0) {
+    const deficitTeams = teamFairness.filter(tf => tf.fairnessDeficit > 0).length;
+    recommendations.push(`${deficitTeams} teams onder minimum (1.5) - prioriteit bij volgende planning`);
+  }
+  if (teamsNeedingBoost.length > teams.length / 2) {
+    recommendations.push("Meer dan helft teams heeft boost nodig - heroverweeg voorkeuren");
+  }
+  if (recommendations.length === 0) {
+    recommendations.push("Goede fairness balans - geen actie vereist");
+  }
+  
+  const fairnessMetrics: SeasonalFairnessMetrics = {
+    overallAverage,
+    standardDeviation,
+    minScore: averages.length > 0 ? minScore : 0,
+    maxScore: averages.length > 0 ? maxScore : 0,
+    fairnessScore,
+    teamsNeedingBoost,
+    recommendations
+  };
+  
+  return { fairnessMetrics, teamFairness };
+}
+
+export function calculateFairnessBoost(
+  teamId: number,
+  seasonalFairness: TeamSeasonalFairness[]
+): number {
+  const teamData = seasonalFairness.find(tf => tf.teamId === teamId);
+  if (!teamData) return 0;
+  
+  // Calculate boost multiplier based on deficit
+  // Teams with higher deficit get bigger boost (up to 2x)
+  const baseBoost = Math.min(2.0, 1.0 + teamData.fairnessDeficit);
+  
+  // Additional boost if significantly below average
+  const overallAverage = seasonalFairness.reduce((sum, tf) => sum + tf.averageScore, 0) / seasonalFairness.length;
+  const belowAverageBoost = teamData.averageScore < overallAverage * 0.8 ? 0.5 : 0;
+  
+  return baseBoost + belowAverageBoost;
 }
 
 

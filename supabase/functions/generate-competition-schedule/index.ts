@@ -147,12 +147,12 @@ ${teamPrefs || 'Geen specifieke voorkeuren'}
 VERLOFPERIODES:
 ${vacationDates || 'Geen verlofperiodes'}
 
-EISEN:
-1. Elke team speelt tegen elke andere team (heen en terug als regular_rounds = 2)
-2. Maximaal ${config.matches_per_week} wedstrijden per week
-3. Geen wedstrijden tijdens verlofperiodes
-4. Respecteer team voorkeuren waar mogelijk
-5. Zorg voor eerlijke verdeling van thuis/uit wedstrijden
+        FAIRNESS EISEN:
+        6. Zorg dat geen enkel team gemiddeld onder 1.5 punten per wedstrijd scoort over het seizoen
+        7. Teams met lage scores in vroege weken krijgen prioriteit op betere slots later  
+        8. Streef naar minimale standaarddeviatie tussen team scores (max 0.8)
+        9. Roteer voorkeursslots zodat elk team periodiek hun voorkeuren krijgt
+        10. Compenseer teams die meerdere weken achter elkaar lage scores krijgen
 
 Antwoord met ALLEEN deze JSON structuur:
 {

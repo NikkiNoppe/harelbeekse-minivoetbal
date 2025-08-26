@@ -162,6 +162,7 @@ export const RefereePenaltySection: React.FC<RefereePenaltySectionProps> = (prop
     setIsLoading(true);
     try {
       const currentDate = getCurrentDate();
+      const savedThis: Array<{ teamName: string; penaltyName: string; amount: number }> = [];
       
       for (const penalty of penalties) {
         if (penalty.costSettingId && penalty.teamId) {
