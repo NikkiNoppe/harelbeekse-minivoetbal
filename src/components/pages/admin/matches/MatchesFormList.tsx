@@ -22,6 +22,11 @@ interface MatchFormListProps {
   teamId?: number;
 }
 
+// Helper function to check if a team manager can access a match
+const canTeamManagerAccessMatch = (match: MatchFormData, userTeamId: number): boolean => {
+  return match.homeTeamId === userTeamId || match.awayTeamId === userTeamId;
+};
+
 
 const getMatchStatus = (match: MatchFormData) => {
   const hasValidScore = (score: number | null | undefined): boolean => 
@@ -206,26 +211,37 @@ const getGridClassName = (groupKey: string) => {
           </div>
           
           <div className={`grid gap-4 ${getGridClassName(groupKey)}`}>
-            {groupedMatches.sortedGroups[groupKey].map(match => (
-              <button
-                key={match.matchId}
-                onClick={() => onSelectMatch(match)}
-                className="border-none bg-transparent p-0 hover:shadow-none hover:border-none hover:bg-transparent transition-all duration-200 text-left w-full group"
-              >
-                <MatchesCard
-                  id={undefined}
-                  home={match.homeTeamName}
-                  away={match.awayTeamName}
-                  homeScore={match.homeScore}
-                  awayScore={match.awayScore}
-                  date={match.date}
-                  time={match.time}
-                  location={match.location}
-                  status={undefined}
-                  badgeSlot={createBadgeSlot(match)}
-                />
-              </button>
-            ))}
+            {groupedMatches.sortedGroups[groupKey].map(match => {
+              const isTeamManager = userRole === 'player_manager';
+              const canAccess = hasElevatedPermissions || (isTeamManager && teamId && canTeamManagerAccessMatch(match, teamId));
+              
+              return (
+                <button
+                  key={match.matchId}
+                  onClick={() => canAccess ? onSelectMatch(match) : null}
+                  disabled={!canAccess}
+                  className={`border-none bg-transparent p-0 transition-all duration-200 text-left w-full group ${
+                    canAccess 
+                      ? "hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer" 
+                      : "cursor-not-allowed opacity-50"
+                  }`}
+                  title={!canAccess ? "Alleen toegankelijk voor je eigen team" : undefined}
+                >
+                  <MatchesCard
+                    id={undefined}
+                    home={match.homeTeamName}
+                    away={match.awayTeamName}
+                    homeScore={match.homeScore}
+                    awayScore={match.awayScore}
+                    date={match.date}
+                    time={match.time}
+                    location={match.location}
+                    status={undefined}
+                    badgeSlot={createBadgeSlot(match)}
+                  />
+                </button>
+              );
+            })}
           </div>
         </div>
       ))}

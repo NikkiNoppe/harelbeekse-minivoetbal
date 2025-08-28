@@ -1,8 +1,11 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useState } from "react";
 import MatchesPlayerSelectionTable from "./MatchesPlayerSelectionTable";
 import MatchesCaptainSelection from "./MatchesCaptainSelection";
+import PlayerSelectionActions from "./MatchesPlayerSelectionActions";
 import { useTeamPlayers } from "../hooks/useTeamPlayers";
 import { PlayerSelection, MatchFormData } from "../types";
+import { useEnhancedMatchFormSubmission } from "../hooks/useEnhancedMatchFormSubmission";
+import { useToast } from "@/hooks/use-toast";
 
 interface PlayerSelectionSectionProps {
   match: MatchFormData;
@@ -29,6 +32,9 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   teamId,
   isTeamManager,
 }) => {
+  const [isSubmittingPlayers, setIsSubmittingPlayers] = useState(false);
+  const { submitMatchForm } = useEnhancedMatchFormSubmission();
+  const { toast } = useToast();
   // Live team player data using optimized hook
   const homeTeamId = match.homeTeamId;
   const awayTeamId = match.awayTeamId;
@@ -68,6 +74,49 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   const awaySelectedPlayerIds = useMemo(() => 
     getSelectedPlayerIds(awayTeamSelections), [awayTeamSelections, getSelectedPlayerIds]);
 
+  // Handle team-specific editing for team managers
+  const canEditHome = useMemo(() => 
+    !isTeamManager || match.homeTeamId === teamId, 
+    [isTeamManager, match.homeTeamId, teamId]
+  );
+  
+  const canEditAway = useMemo(() => 
+    !isTeamManager || match.awayTeamId === teamId, 
+    [isTeamManager, match.awayTeamId, teamId]
+  );
+
+  // Save players for team managers
+  const handleSavePlayerSelection = useCallback(async () => {
+    if (!isTeamManager || !canEdit) return;
+    
+    setIsSubmittingPlayers(true);
+    try {
+      const updatedMatch = {
+        ...match,
+        homePlayers: homeTeamSelections,
+        awayPlayers: awayTeamSelections,
+        isCompleted: false // Only updating player selection, not completing match
+      };
+      
+      const result = await submitMatchForm(updatedMatch, false, "player_manager");
+      if (result.success) {
+        toast({
+          title: "Spelers opgeslagen",
+          description: "De spelersselectie is succesvol opgeslagen.",
+        });
+      }
+    } catch (error) {
+      console.error('Error saving player selection:', error);
+      toast({
+        title: "Error",
+        description: "Er is een fout opgetreden bij het opslaan van de spelers.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingPlayers(false);
+    }
+  }, [isTeamManager, canEdit, match, homeTeamSelections, awayTeamSelections, submitMatchForm, toast]);
+
   return (
     <div className="space-y-4">      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -83,14 +132,14 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, true)}
             onCardChange={onCardChange}
             playerCards={playerCards}
-            canEdit={canEdit}
+            canEdit={canEdit && canEditHome}
             showRefereeFields={showRefereeFields}
           />
           <div className="mt-3">
             <MatchesCaptainSelection
             selections={homeTeamSelections}
             onCaptainChange={(playerId) => handleCaptainChange(playerId?.toString() || "no-captain", true)}
-            canEdit={canEdit}
+            canEdit={canEdit && canEditHome}
             teamLabel={`${match.homeTeamName} (Thuis)`}
             />
           </div>
@@ -108,19 +157,27 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, false)}
             onCardChange={onCardChange}
             playerCards={playerCards}
-            canEdit={canEdit}
+            canEdit={canEdit && canEditAway}
             showRefereeFields={showRefereeFields}
           />
           <div className="mt-3">
             <MatchesCaptainSelection
             selections={awayTeamSelections}
             onCaptainChange={(playerId) => handleCaptainChange(playerId?.toString() || "no-captain", false)}
-            canEdit={canEdit}
+            canEdit={canEdit && canEditAway}
             teamLabel={`${match.awayTeamName} (Uit)`}
             />
           </div>
         </div>
       </div>
+      
+      {/* Save button for team managers */}
+      <PlayerSelectionActions
+        onSavePlayerSelection={handleSavePlayerSelection}
+        isSubmittingPlayers={isSubmittingPlayers}
+        canEdit={canEdit}
+        isTeamManager={isTeamManager}
+      />
     </div>
   );
 };

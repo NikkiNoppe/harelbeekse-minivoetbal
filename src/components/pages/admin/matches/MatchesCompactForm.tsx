@@ -53,10 +53,15 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   const [awayCardsOpen, setAwayCardsOpen] = React.useState(false);
 
   const userRole = useMemo(() => (isAdmin ? "admin" : isReferee ? "referee" : "player_manager"), [isAdmin, isReferee]);
+  const isTeamManager = useMemo(() => !isAdmin && !isReferee, [isAdmin, isReferee]);
   const canEdit = useMemo(() => !match.isLocked || isAdmin, [match.isLocked, isAdmin]);
   const showRefereeFields = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
   const hideInlineCardSelectors = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
   const isCupMatch = useMemo(() => match.matchday?.includes('🏆'), [match.matchday]);
+  const canTeamManagerEdit = useMemo(() => 
+    (match.homeTeamId === teamId || match.awayTeamId === teamId) && canEdit, 
+    [match.homeTeamId, match.awayTeamId, teamId, canEdit]
+  );
 
   const handleCardChange = useCallback((playerId: number, cardType: string) => {
     setPlayerCards(prev => ({
@@ -212,7 +217,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         onHomeScoreChange={setHomeScore}
         onAwayScoreChange={setAwayScore}
         onRefereeChange={setSelectedReferee}
-        canEdit={canEdit}
+        canEdit={isTeamManager ? false : canEdit}
         canEditMatchData={showRefereeFields}
       />
 
@@ -226,30 +231,35 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         onPlayerSelection={handlePlayerSelection}
         onCardChange={handleCardChange}
         playerCards={playerCards}
-        canEdit={canEdit}
+        canEdit={isTeamManager ? canTeamManagerEdit : canEdit}
         showRefereeFields={!hideInlineCardSelectors}
         teamId={teamId}
-        isTeamManager={!isAdmin && !isReferee}
+        isTeamManager={isTeamManager}
       />
 
-      {/* Kaarten */}
-      <h3 className="text-lg font-semibold  text-center text-purple-dark">Kaarten</h3>
-      {showRefereeFields && (
-        <RefereeCardsSection
-          match={match}
-          homeSelections={homeTeamSelections}
-          awaySelections={awayTeamSelections}
-          onCardChange={handleCardChange}
-          canEdit={canEdit}
-        />
+      {/* Kaarten - Hidden for team managers */}
+      {!isTeamManager && (
+        <>
+          <h3 className="text-lg font-semibold  text-center text-purple-dark">Kaarten</h3>
+          {showRefereeFields && (
+            <RefereeCardsSection
+              match={match}
+              homeSelections={homeTeamSelections}
+              awaySelections={awayTeamSelections}
+              onCardChange={handleCardChange}
+              canEdit={canEdit}
+            />
+          )}
+        </>
       )}
       
-      {refereeFields}
+      {/* Referee fields - Hidden for team managers */}
+      {!isTeamManager && refereeFields}
       
       <MatchesFormActions
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
-        canActuallyEdit={canEdit}
+        canActuallyEdit={isTeamManager ? canTeamManagerEdit : canEdit}
         isAdmin={isAdmin}
       />
       
