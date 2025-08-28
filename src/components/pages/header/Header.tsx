@@ -94,9 +94,9 @@ const Header: React.FC<HeaderProps> = ({
   ];
 
   const wedstrijdformulierenItems = [
-    { key: "match-forms-league", label: "Competitie", icon: <Trophy size={14} /> },
-    { key: "match-forms-cup", label: "Beker", icon: <Award size={14} /> },
-    { key: "match-forms-playoffs", label: "Play-Off", icon: <Target size={14} /> },
+    { key: "match-forms-league", label: "Competitie", icon: <Trophy size={14} />, adminOnly: false },
+    { key: "match-forms-cup", label: "Beker", icon: <Award size={14} />, adminOnly: false },
+    { key: "match-forms-playoffs", label: "Play-Off", icon: <Target size={14} />, adminOnly: true },
   ];
 
   const beheerItems = [
@@ -116,7 +116,9 @@ const Header: React.FC<HeaderProps> = ({
 
   // Visibility filtering similar to AdminSidebar
   const visibleSpeelformatenItems = isAuthenticated && isAdmin ? speelformatenItems : [];
-  const visibleWedstrijdformulierenItems = isAuthenticated && isAdmin ? wedstrijdformulierenItems : [];
+  const visibleWedstrijdformulierenItems = isAuthenticated ? wedstrijdformulierenItems.filter(item => 
+    (!item.adminOnly || isAdmin) && isTabVisible(item.key)
+  ) : [];
   const visibleBeheerItems = (isAuthenticated ? beheerItems : [])
     .filter(item => (!item.adminOnly || isAdmin));
   const visibleFinancieelItems = (isAuthenticated ? financieelItems : [])
