@@ -85,8 +85,10 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   // Speelformaten zijn pure beheertabs: voor admins altijd zichtbaar, onafhankelijk van publieke tab-zichtbaarheid
   const visibleSpeelformatenItems = speelformatenItems.filter(() => isAdmin);
 
-  // Wedstrijdformulieren alleen zichtbaar voor admins
-  const visibleWedstrijdformulierenItems = isAdmin ? wedstrijdformulierenItems : [];
+  // Wedstrijdformulieren: filter op basis van tab visibility en admin permissions
+  const visibleWedstrijdformulierenItems = wedstrijdformulierenItems.filter(item => 
+    (!item.adminOnly || isAdmin) && isTabVisible(item.key)
+  );
 
   const visibleBeheerItems = beheerItems.filter(item => 
     (!item.adminOnly || isAdmin)
