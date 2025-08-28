@@ -59,8 +59,8 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   const hideInlineCardSelectors = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
   const isCupMatch = useMemo(() => match.matchday?.includes('🏆'), [match.matchday]);
   const canTeamManagerEdit = useMemo(() => 
-    (match.homeTeamId === teamId || match.awayTeamId === teamId) && canEdit, 
-    [match.homeTeamId, match.awayTeamId, teamId, canEdit]
+    (match.homeTeamId === teamId || match.awayTeamId === teamId), 
+    [match.homeTeamId, match.awayTeamId, teamId]
   );
 
   const handleCardChange = useCallback((playerId: number, cardType: string) => {

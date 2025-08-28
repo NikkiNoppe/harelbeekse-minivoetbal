@@ -75,15 +75,19 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
     getSelectedPlayerIds(awayTeamSelections), [awayTeamSelections, getSelectedPlayerIds]);
 
   // Handle team-specific editing for team managers
-  const canEditHome = useMemo(() => 
-    !isTeamManager || match.homeTeamId === teamId, 
-    [isTeamManager, match.homeTeamId, teamId]
-  );
+  const canEditHome = useMemo(() => {
+    if (isTeamManager) {
+      return match.homeTeamId === teamId; // Team managers can always edit their own team
+    }
+    return canEdit; // Non-team managers depend on canEdit (lock status)
+  }, [isTeamManager, match.homeTeamId, teamId, canEdit]);
   
-  const canEditAway = useMemo(() => 
-    !isTeamManager || match.awayTeamId === teamId, 
-    [isTeamManager, match.awayTeamId, teamId]
-  );
+  const canEditAway = useMemo(() => {
+    if (isTeamManager) {
+      return match.awayTeamId === teamId; // Team managers can always edit their own team
+    }
+    return canEdit; // Non-team managers depend on canEdit (lock status)
+  }, [isTeamManager, match.awayTeamId, teamId, canEdit]);
 
   // Save players for team managers
   const handleSavePlayerSelection = useCallback(async () => {
@@ -132,14 +136,14 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, true)}
             onCardChange={onCardChange}
             playerCards={playerCards}
-            canEdit={canEdit && canEditHome}
+            canEdit={canEditHome}
             showRefereeFields={showRefereeFields}
           />
           <div className="mt-3">
             <MatchesCaptainSelection
             selections={homeTeamSelections}
             onCaptainChange={(playerId) => handleCaptainChange(playerId?.toString() || "no-captain", true)}
-            canEdit={canEdit && canEditHome}
+            canEdit={canEditHome}
             teamLabel={`${match.homeTeamName} (Thuis)`}
             />
           </div>
@@ -157,14 +161,14 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, false)}
             onCardChange={onCardChange}
             playerCards={playerCards}
-            canEdit={canEdit && canEditAway}
+            canEdit={canEditAway}
             showRefereeFields={showRefereeFields}
           />
           <div className="mt-3">
             <MatchesCaptainSelection
             selections={awayTeamSelections}
             onCaptainChange={(playerId) => handleCaptainChange(playerId?.toString() || "no-captain", false)}
-            canEdit={canEdit && canEditAway}
+            canEdit={canEditAway}
             teamLabel={`${match.awayTeamName} (Uit)`}
             />
           </div>
