@@ -232,7 +232,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         onCardChange={handleCardChange}
         playerCards={playerCards}
         canEdit={isTeamManager ? canTeamManagerEdit : canEdit}
-        showRefereeFields={!hideInlineCardSelectors}
+        showRefereeFields={showRefereeFields}
         teamId={teamId}
         isTeamManager={isTeamManager}
       />

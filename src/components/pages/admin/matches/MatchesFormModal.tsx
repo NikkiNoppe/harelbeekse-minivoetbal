@@ -31,7 +31,7 @@ const MatchFormDialog: React.FC<MatchFormDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="modal w-[95vw] max-w-7xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="modal w-[98vw] max-w-[1400px] max-h-[90vh] overflow-y-auto">
         <div className="space-y-6">
           <MatchesCompactForm
             match={match}
