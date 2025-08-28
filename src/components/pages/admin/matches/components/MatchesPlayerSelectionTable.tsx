@@ -21,10 +21,19 @@ interface PlayerSelectionTableProps {
 }
 
 const TABLE_COLUMNS = {
-  nr: "w-[40px]",
-  speler: "w-2/3",
-  rugnr: "w-1/3",
-  kaarten: "w-[40px]",
+  // With cards column (for referees/admins)
+  withCards: {
+    nr: "w-[40px]",
+    speler: "w-2/3",
+    rugnr: "w-1/4",
+    kaarten: "w-[40px]",
+  },
+  // Without cards column (for team managers)
+  withoutCards: {
+    nr: "w-[40px]",
+    speler: "w-2/3",
+    rugnr: "w-1/3",
+  }
 } as const;
 
 // Memoized player option component
@@ -147,10 +156,12 @@ const PlayerRow = React.memo<{
     [selectedPlayerIds, selection.playerId]
   );
 
+  const columns = showRefereeFields ? TABLE_COLUMNS.withCards : TABLE_COLUMNS.withoutCards;
+
   return (
     <tr className="table-row">
-      <td className={TABLE_COLUMNS.nr + " text-center text-sm"}>{index + 1}</td>
-      <td className={TABLE_COLUMNS.speler + " text-sm"}>
+      <td className={columns.nr + " text-center text-sm"}>{index + 1}</td>
+      <td className={columns.speler + " text-sm"}>
         {canEdit ? (
           <Select
             value={selection.playerId?.toString() || "no-player"}
@@ -188,7 +199,7 @@ const PlayerRow = React.memo<{
           </span>
         )}
       </td>
-      <td className={TABLE_COLUMNS.rugnr + " text-center px-0"}>
+      <td className={columns.rugnr + " text-center px-0"}>
         {canEdit ? (
           <Input
             id={`jersey-${index}`}
@@ -208,7 +219,7 @@ const PlayerRow = React.memo<{
         )}
       </td>
       {showRefereeFields && (
-        <td className={TABLE_COLUMNS.kaarten + " text-center"}>
+        <td className={(TABLE_COLUMNS.withCards.kaarten) + " text-center"}>
           {canEdit && selection.playerId ? (
             <Select
               value={playerCards[selection.playerId] || "none"}
@@ -251,6 +262,8 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
   const memoizedSelectedPlayerIds = useMemo(() => selectedPlayerIds, [selectedPlayerIds]);
   const memoizedPlayers = useMemo(() => players, [players]);
   const memoizedPlayerCards = useMemo(() => playerCards, [playerCards]);
+  
+  const columns = showRefereeFields ? TABLE_COLUMNS.withCards : TABLE_COLUMNS.withoutCards;
 
   if (loading) {
     return <div className="text-center py-3">Spelers laden...</div>;
@@ -268,10 +281,10 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
         <table className="table min-w-full">
           <thead>
             <tr className="table-head">
-              <th className={TABLE_COLUMNS.nr + " py-1 text-center"}>Nr</th>
-              <th className={TABLE_COLUMNS.speler + " py-1 text-left"}>Speler</th>
-              <th className={TABLE_COLUMNS.rugnr + " py-1 text-center"}>Rugnr</th>
-              {showRefereeFields && <th className={TABLE_COLUMNS.kaarten + " py-1 text-center"}>Kaarten</th>}
+              <th className={columns.nr + " py-1 text-center"}>Nr</th>
+              <th className={columns.speler + " py-1 text-left"}>Speler</th>
+              <th className={columns.rugnr + " py-1 text-center"}>Rugnr</th>
+              {showRefereeFields && <th className={(TABLE_COLUMNS.withCards.kaarten) + " py-1 text-center"}>Kaarten</th>}
             </tr>
           </thead>
           <tbody>
@@ -308,9 +321,9 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
           <div className="rounded-md border bg-white divide-y">
             {selections.map((selection, index) => (
               <div key={`${selection.playerId}-${index}`} className="p-2">
-                <div className="flex items-center justify-end">
-                  {showRefereeFields && (
-                    canEdit && selection.playerId ? (
+                {showRefereeFields && (
+                  <div className="flex items-center justify-end mb-2">
+                    {canEdit && selection.playerId ? (
                       <Select
                         value={memoizedPlayerCards[selection.playerId] || "none"}
                         onValueChange={(value) => {
@@ -329,10 +342,10 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                         </SelectContent>
                       </Select>
                     ) : (
-                      showRefereeFields && <MatchesCardIcon type={(memoizedPlayerCards[selection.playerId!] as any) || "none"} />
-                    )
-                  )}
-                </div>
+                      <MatchesCardIcon type={(memoizedPlayerCards[selection.playerId!] as any) || "none"} />
+                    )}
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-8 h-9 shrink-0 flex items-center justify-center text-xs text-muted-foreground">#{index + 1}</span>
