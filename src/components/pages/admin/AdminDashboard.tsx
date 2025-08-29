@@ -13,6 +13,7 @@ import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
 import PlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
 import SettingsPage from "@/components/pages/admin/settings/SettingsPage";
 import NotAvailable from "@/components/common/NotAvailable";
+import AlgemeenPage from "@/components/pages/AlgemeenPage";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 
 import AdminSuspensionsPage from "@/components/pages/admin/suspensions/AdminSuspensionsPage";
@@ -30,9 +31,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
   const isAdmin = user?.role === "admin";
   const { isTabVisible } = useTabVisibility();
 
-  const canSeeLeagueForms = isTabVisible("admin_match_forms_league");
-  const canSeeCupForms = isTabVisible("admin_match_forms_cup");
-  const canSeeAnyForms = canSeeLeagueForms || canSeeCupForms;
+  const canSeeLeagueForms = isTabVisible("match-forms-competitie");
+  const canSeeCupForms = isTabVisible("match-forms-beker");
+  const canSeePlayoffForms = isTabVisible("match-forms-playoff");
+  const canSeeAnyForms = canSeeLeagueForms || canSeeCupForms || canSeePlayoffForms;
 
   return (
     <div className="w-full admin-dashboard">
@@ -44,7 +46,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
               {canSeeAnyForms ? (
                 <MatchesPage teamId={0} teamName="Admin" />
               ) : (
-                <NotAvailable />
+                user?.role === 'referee' ? <AlgemeenPage /> : <NotAvailable />
               )}
             </TabsContent>
             
@@ -52,7 +54,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
               {canSeeLeagueForms ? (
                 <MatchesPage teamId={0} teamName="Admin" initialTab="league" />
               ) : (
-                <NotAvailable />
+                user?.role === 'referee' ? <AlgemeenPage /> : <NotAvailable />
               )}
             </TabsContent>
             
@@ -60,15 +62,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
               {canSeeCupForms ? (
                 <MatchesPage teamId={0} teamName="Admin" initialTab="cup" />
               ) : (
-                <NotAvailable />
+                user?.role === 'referee' ? <AlgemeenPage /> : <NotAvailable />
               )}
             </TabsContent>
             
             <TabsContent value="match-forms-playoffs" className="mt-0">
-              {isAdmin && isTabVisible('admin_match_forms_playoffs') ? (
+              {canSeePlayoffForms ? (
                 <AdminPlayoffMatchesPage />
               ) : (
-                <NotAvailable />
+                user?.role === 'referee' ? <AlgemeenPage /> : <NotAvailable />
               )}
             </TabsContent>
             

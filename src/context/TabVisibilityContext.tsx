@@ -22,10 +22,10 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       'playoffs': 'playoff',
       // Ploegen (cards) gebruikt dezelfde toggle als teams
       'ploegen': 'teams',
-      'match-forms': 'admin_match_forms_league', // Check league forms as primary
-      'match-forms-league': 'admin_match_forms_league',
-      'match-forms-cup': 'admin_match_forms_cup',
-      'match-forms-playoffs': 'admin_match_forms_playoffs',
+      'match-forms': 'match-forms-competitie', // Check league forms as primary
+      'match-forms-league': 'match-forms-competitie',
+      'match-forms-cup': 'match-forms-beker',
+      'match-forms-playoffs': 'match-forms-playoff',
     };
 
     // Use mapped tab name if it exists, otherwise use original
@@ -35,9 +35,9 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Admin match forms: admins always have access
     const isAdminMatchForms =
-      mappedTab === 'admin_match_forms_league' ||
-      mappedTab === 'admin_match_forms_cup' ||
-      mappedTab === 'admin_match_forms_playoffs';
+      mappedTab === 'match-forms-competitie' ||
+      mappedTab === 'match-forms-beker' ||
+      mappedTab === 'match-forms-playoff';
 
     if (isAdminMatchForms) {
       // Require login for any admin section logic
@@ -55,9 +55,9 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       if (user.role === 'admin') return true;
       
       // Check if any admin match forms are visible
-      const leagueSetting = settings.find(s => s.setting_name === 'admin_match_forms_league');
-      const cupSetting = settings.find(s => s.setting_name === 'admin_match_forms_cup');
-      const playoffsSetting = settings.find(s => s.setting_name === 'admin_match_forms_playoffs');
+      const leagueSetting = settings.find(s => s.setting_name === 'match-forms-competitie');
+      const cupSetting = settings.find(s => s.setting_name === 'match-forms-beker');
+      const playoffsSetting = settings.find(s => s.setting_name === 'match-forms-playoff');
       
       return !!(leagueSetting?.is_visible || cupSetting?.is_visible || playoffsSetting?.is_visible);
     }

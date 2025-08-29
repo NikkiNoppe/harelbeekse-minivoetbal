@@ -91,7 +91,9 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   );
 
   const visibleBeheerItems = beheerItems.filter(item => 
-    (!item.adminOnly || isAdmin)
+    (!item.adminOnly || isAdmin) && 
+    // Hide players tab for referees
+    !(item.key === 'players' && user?.role === 'referee')
   );
 
   const visibleFinancieelItems = financieelItems.filter(item => 
@@ -116,10 +118,10 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
         ) : (
           <div className={`${isMobile ? 'px-2' : 'px-1'}`}>
             <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--main-color-dark)' }}>
-              {isAdmin ? 'ADMIN' : (user?.role === 'player_manager' ? 'TEAM MANAGER' : (user?.role ? user.role.toUpperCase() : 'GEBRUIKER'))}
+              {isAdmin ? 'ADMIN' : (user?.role === 'player_manager' ? 'TEAM MANAGER' : (user?.role === 'referee' ? 'SCHEIDSRECHTER' : (user?.role ? user.role.toUpperCase() : 'GEBRUIKER')))}
             </div>
             <div className="text-base font-semibold" style={{ color: 'var(--main-color-dark)' }}>
-              {isAdmin ? 'Administrator' : (user?.role === 'player_manager' ? 'Team Manager' : 'Gebruiker')}
+              {isAdmin ? 'Administrator' : (user?.role === 'player_manager' ? 'Team Manager' : (user?.role === 'referee' ? 'Scheidsrechter' : 'Gebruiker'))}
             </div>
           </div>
         )}
