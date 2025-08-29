@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Save, Settings, Shield } from "lucide-react";
+import { Eye, EyeOff, Save, Settings, Shield, User } from "lucide-react";
 import { useTabVisibilitySettings } from "@/hooks/useTabVisibilitySettings";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,10 +26,15 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
     []
   );
   const isAdminMatchFormKey = (key: string) => key.startsWith('admin_match_forms_');
+  const isLoginTabKey = (key: string) => key.startsWith('match-forms-');
 
   const publicTabs = useMemo(
     () => localSettings.filter(s => publicTabKeys.includes(s.setting_name)),
     [localSettings, publicTabKeys]
+  );
+  const loginTabs = useMemo(
+    () => localSettings.filter(s => isLoginTabKey(s.setting_name)),
+    [localSettings]
   );
   const adminFormTabs = useMemo(
     () => localSettings.filter(s => isAdminMatchFormKey(s.setting_name)),
@@ -87,9 +92,10 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
     setSaving(true);
     try {
       const defaultPublic = ['algemeen', 'competitie', 'playoff', 'beker', 'schorsingen', 'reglement', 'teams'];
+      const defaultLogin = ['match-forms-league', 'match-forms-cup', 'match-forms-playoffs'];
       const defaultAdminForms = ['admin_match_forms_league', 'admin_match_forms_cup', 'admin_match_forms_playoffs'];
 
-      for (const tabName of [...defaultPublic, ...defaultAdminForms]) {
+      for (const tabName of [...defaultPublic, ...defaultLogin, ...defaultAdminForms]) {
         const existingSetting = settings.find(s => s.setting_name === tabName);
         if (existingSetting) {
           await updateSetting(tabName, {
@@ -121,6 +127,9 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
       'schorsingen': 'Schorsingen',
       'reglement': 'Reglement',
       'teams': 'Teams',
+      'match-forms-league': 'Wedstrijdformulieren (Competitie)',
+      'match-forms-cup': 'Wedstrijdformulieren (Beker)',
+      'match-forms-playoffs': 'Wedstrijdformulieren (Play-offs)',
       'admin_match_forms_league': 'Wedstrijdformulieren (Competitie)',
       'admin_match_forms_cup': 'Wedstrijdformulieren (Beker)',
       'admin_match_forms_playoffs': 'Wedstrijdformulieren (Play-offs)'
@@ -132,11 +141,15 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
     return <div className="py-4 text-center text-muted-foreground">Instellingen laden...</div>;
   }
 
-  const renderRow = (setting: (typeof settings)[number]) => (
+  const renderRow = (setting: (typeof settings)[number], isLoginTab = false) => (
     <div key={setting.setting_name} className="border border-purple-200 rounded-lg p-4 space-y-3 bg-transparent">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {setting.is_visible ? <Eye className="h-4 w-4 text-green-500" /> : <EyeOff className="h-4 w-4 text-red-500" />}
+          {isLoginTab ? (
+            <User className="h-4 w-4 text-blue-500" />
+          ) : (
+            setting.is_visible ? <Eye className="h-4 w-4 text-green-500" /> : <EyeOff className="h-4 w-4 text-red-500" />
+          )}
           <Label className="font-medium">
             {getTabDisplayName(setting.setting_name)}
           </Label>
@@ -170,9 +183,24 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
           <section>
             <h3 className="text-base font-semibold mb-3">Publieke tabs</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {publicTabs.map(renderRow)}
+              {publicTabs.map(setting => renderRow(setting))}
             </div>
           </section>
+
+          {loginTabs.length > 0 && (
+            <section>
+              <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Login tabs
+              </h3>
+              <CardDescription className="mb-3">
+                Deze tabs zijn alleen zichtbaar voor ingelogde gebruikers.
+              </CardDescription>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {loginTabs.map(setting => renderRow(setting, true))}
+              </div>
+            </section>
+          )}
 
           {adminFormTabs.length > 0 && (
             <section>
@@ -184,7 +212,7 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
                 Deze instellingen bepalen of niet-admin gebruikers deze formulieren kunnen openen.
               </CardDescription>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {adminFormTabs.map(renderRow)}
+                {adminFormTabs.map(setting => renderRow(setting))}
               </div>
             </section>
           )}
