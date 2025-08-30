@@ -661,6 +661,10 @@ export type Database = {
         Args: { parameter: string; value: string }
         Returns: undefined
       }
+      set_current_user_context: {
+        Args: { p_role: string; p_team_ids?: string; p_user_id: number }
+        Returns: undefined
+      }
       update_competition_standings: {
         Args: Record<PropertyKey, never>
         Returns: undefined

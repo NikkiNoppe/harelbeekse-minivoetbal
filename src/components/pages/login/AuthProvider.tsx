@@ -118,34 +118,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const userData = data[0];
         console.log('✅ Login successful for user:', userData.username);
         
-        // Set user role in database context for RLS policies
+        // Set initial user context for database access
         try {
-          await supabase.rpc('set_config', {
-            parameter: 'app.current_user_role',
-            value: userData.role
+          await supabase.rpc('set_current_user_context', {
+            p_user_id: userData.user_id,
+            p_role: userData.role
           });
-          console.log('✅ User role set in database context:', userData.role);
+          console.log('✅ User context set in database:', userData.role, userData.user_id);
         } catch (contextError) {
-          console.log('⚠️ Could not set user role in database context:', contextError);
+          console.log('⚠️ Could not set user context in database:', contextError);
         }
         
-        // Try to fetch teamId but don't let it block login
+        // Try to fetch teamId now that context is set
         const teamId = await fetchTeamIdForUser(userData.user_id);
         if (teamId) {
           console.log('👥 Found teamId:', teamId);
           
-          // Set team IDs in database context for RLS policies
+          // Update context with team ID
           try {
-            await supabase.rpc('set_config', {
-              parameter: 'app.current_user_team_ids',
-              value: teamId.toString()
+            await supabase.rpc('set_current_user_context', {
+              p_user_id: userData.user_id,
+              p_role: userData.role,
+              p_team_ids: teamId.toString()
             });
-            console.log('✅ Team IDs set in database context:', teamId);
+            console.log('✅ Full user context set with team ID:', teamId);
           } catch (contextError) {
-            console.log('⚠️ Could not set team IDs in database context:', contextError);
+            console.log('⚠️ Could not update team context:', contextError);
           }
         } else {
-          console.log('👥 No teamId found or access denied');
+          console.log('👥 No teamId found - Team Manager may not have access yet');
         }
 
         const loggedInUser: User = {
