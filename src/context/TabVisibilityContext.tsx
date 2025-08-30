@@ -22,42 +22,36 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       'playoffs': 'playoff',
       // Ploegen (cards) gebruikt dezelfde toggle als teams
       'ploegen': 'teams',
-      'match-forms': 'match-forms-competitie', // Check league forms as primary
-      'match-forms-league': 'match-forms-competitie',
-      'match-forms-cup': 'match-forms-beker',
-      'match-forms-playoffs': 'match-forms-playoff',
     };
 
     // Use mapped tab name if it exists, otherwise use original
     const mappedTab = adminToPublicMapping[tab] || tab;
 
-    // Teams: respect visibility settings (no longer always visible)
+    // Match forms: login required tabs that respect visibility settings
+    const isMatchFormTab = 
+      tab === 'match-forms-league' ||
+      tab === 'match-forms-cup' ||
+      tab === 'match-forms-playoffs';
 
-    // Admin match forms: admins always have access
-    const isAdminMatchForms =
-      mappedTab === 'match-forms-competitie' ||
-      mappedTab === 'match-forms-beker' ||
-      mappedTab === 'match-forms-playoff';
-
-    if (isAdminMatchForms) {
-      // Require login for any admin section logic
+    if (isMatchFormTab) {
+      // Require login for match forms
       if (!user) return false;
       if (user.role === 'admin') return true;
 
       // For non-admin authenticated users, respect the visibility toggle
-      const adminSetting = settings.find(s => s.setting_name === mappedTab);
-      return !!adminSetting?.is_visible;
+      const setting = settings.find(s => s.setting_name === tab);
+      return !!setting?.is_visible;
     }
 
-    // Special case for match-forms - check if any admin match forms are visible
+    // Special case for match-forms - check if any match forms are visible
     if (tab === 'match-forms') {
       if (!user) return false;
       if (user.role === 'admin') return true;
       
-      // Check if any admin match forms are visible
-      const leagueSetting = settings.find(s => s.setting_name === 'match-forms-competitie');
-      const cupSetting = settings.find(s => s.setting_name === 'match-forms-beker');
-      const playoffsSetting = settings.find(s => s.setting_name === 'match-forms-playoff');
+      // Check if any match forms are visible
+      const leagueSetting = settings.find(s => s.setting_name === 'match-forms-league');
+      const cupSetting = settings.find(s => s.setting_name === 'match-forms-cup');
+      const playoffsSetting = settings.find(s => s.setting_name === 'match-forms-playoffs');
       
       return !!(leagueSetting?.is_visible || cupSetting?.is_visible || playoffsSetting?.is_visible);
     }

@@ -31,9 +31,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
   const isAdmin = user?.role === "admin";
   const { isTabVisible } = useTabVisibility();
 
-  const canSeeLeagueForms = isTabVisible("match-forms-competitie");
-  const canSeeCupForms = isTabVisible("match-forms-beker");
-  const canSeePlayoffForms = isTabVisible("match-forms-playoff");
+  const canSeeLeagueForms = isTabVisible("match-forms-league");
+  const canSeeCupForms = isTabVisible("match-forms-cup");
+  const canSeePlayoffForms = isTabVisible("match-forms-playoffs");
   const canSeeAnyForms = canSeeLeagueForms || canSeeCupForms || canSeePlayoffForms;
 
   return (
