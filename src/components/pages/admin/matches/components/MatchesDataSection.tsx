@@ -60,7 +60,7 @@ const RefereeSelector = React.memo<{
       <SelectTrigger className="dropdown-login-style h-9">
         <SelectValue placeholder={loading ? "Laden..." : "Selecteer scheidsrechter"} />
       </SelectTrigger>
-      <SelectContent className="dropdown-content-login-style">
+      <SelectContent className="dropdown-content-login-style z-[1000] bg-white">
         {referees.map((referee) => (
           <SelectItem key={referee.user_id} value={referee.username} className="dropdown-item-login-style">
             {referee.username}

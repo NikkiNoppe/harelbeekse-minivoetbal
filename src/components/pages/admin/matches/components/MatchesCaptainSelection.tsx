@@ -55,7 +55,7 @@ const MatchesCaptainSelection: React.FC<MatchesCaptainSelectionProps> = ({
         <SelectTrigger className="w-full h-9 mt-1 dropdown-login-style">
           <SelectValue placeholder={hasPlayers ? "Selecteer aanvoerder" : "Geen spelers beschikbaar"} />
         </SelectTrigger>
-        <SelectContent className="dropdown-content-login-style">
+        <SelectContent className="dropdown-content-login-style z-[1000] bg-white">
           {hasPlayers ? (
             <>
               <SelectItem value="no-captain" className="dropdown-item-login-style">
