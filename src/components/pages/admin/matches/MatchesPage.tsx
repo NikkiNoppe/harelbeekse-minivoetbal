@@ -329,7 +329,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
           match={selectedMatchForm}
           isAdmin={isAdmin}
           isReferee={isReferee}
-          teamId={teamId}
+          teamId={user?.teamId || 0}
           onComplete={handleFormComplete}
         />
       )}

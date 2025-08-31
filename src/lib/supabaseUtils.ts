@@ -39,7 +39,41 @@ export const withUserContext = async <T>(
       if (['team', 'manager', 'team_manager', 'player-manager'].includes(r)) return 'player_manager';
       return rawRole;
     })();
-    const teamIds = options?.teamIds ?? (userData.teamId ? String(userData.teamId) : '');
+    let teamIds = options?.teamIds ?? (userData.teamId ? String(userData.teamId) : '');
+    
+    // If teamIds are missing for player_manager, try to fetch them
+    if (!teamIds && normalizedRole === 'player_manager') {
+      console.log('🔍 Missing teamIds for player_manager, fetching...');
+      try {
+        const { data, error } = await supabase
+          .from('team_users')
+          .select('team_id')
+          .eq('user_id', userId)
+          .single();
+        
+        if (!error && data?.team_id) {
+          teamIds = String(data.team_id);
+          console.log('✅ Fetched missing teamId:', teamIds);
+          
+          // Update localStorage with the fetched teamId
+          const authDataString = localStorage.getItem('auth_data');
+          if (authDataString) {
+            try {
+              const authData = JSON.parse(authDataString);
+              if (authData?.user) {
+                authData.user.teamId = data.team_id;
+                localStorage.setItem('auth_data', JSON.stringify(authData));
+                console.log('✅ Updated auth_data with fetched teamId');
+              }
+            } catch (e) {
+              console.warn('Could not update auth_data with fetched teamId');
+            }
+          }
+        }
+      } catch (fetchError) {
+        console.warn('Could not fetch missing teamIds:', fetchError);
+      }
+    }
     
     try {
       // Set user context before the operation
@@ -50,8 +84,8 @@ export const withUserContext = async <T>(
       });
       
       console.log('✅ Context set for operation:', { userId, role: normalizedRole, teamIds });
-      if (!teamIds) {
-        console.warn('⚠️ No teamIds found in auth context; RLS may block team data for player_manager.');
+      if (!teamIds && normalizedRole === 'player_manager') {
+        console.warn('⚠️ No teamIds found for player_manager; RLS may block team data.');
       }
     } catch (contextError) {
       console.log('⚠️ Could not set context for operation:', contextError);

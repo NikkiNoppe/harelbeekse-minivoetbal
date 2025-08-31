@@ -10,6 +10,15 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Normalize user role for RLS context
+function normalizeRole(role: string): string {
+  const r = String(role || '').toLowerCase();
+  if (['team', 'manager', 'team_manager', 'player-manager'].includes(r)) {
+    return 'player_manager';
+  }
+  return role;
+}
+
 // Add: fetch teamId for the user (with error handling)
 async function fetchTeamIdForUser(userId: number): Promise<number | undefined> {
   try {
@@ -17,7 +26,7 @@ async function fetchTeamIdForUser(userId: number): Promise<number | undefined> {
       .from("team_users")
       .select("team_id")
       .eq("user_id", userId)
-      .maybeSingle();
+      .single(); // Use single() instead of maybeSingle() to get first result
     
     if (error) {
       console.warn("Could not fetch teamId for user (likely due to RLS):", error.message);
@@ -53,18 +62,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             
             // Restore database context for RLS policies
             try {
-              await supabase.rpc('set_config', {
-                parameter: 'app.current_user_role',
-                value: authData.user.role
+              const normalizedRole = normalizeRole(authData.user.role);
+              await supabase.rpc('set_current_user_context', {
+                p_user_id: authData.user.id,
+                p_role: normalizedRole,
+                p_team_ids: authData.user.teamId ? authData.user.teamId.toString() : ''
               });
-              console.log('✅ Restored user role in database context:', authData.user.role);
+              console.log('✅ Restored user context:', { role: normalizedRole, teamId: authData.user.teamId });
               
-              if (authData.user.teamId) {
-                await supabase.rpc('set_config', {
-                  parameter: 'app.current_user_team_ids',
-                  value: authData.user.teamId.toString()
-                });
-                console.log('✅ Restored team IDs in database context:', authData.user.teamId);
+              // If teamId is missing for player_manager, try to fetch it
+              if (normalizedRole === 'player_manager' && !authData.user.teamId) {
+                console.log('🔍 Team Manager missing teamId, fetching...');
+                const teamId = await fetchTeamIdForUser(authData.user.id);
+                if (teamId) {
+                  console.log('✅ Found missing teamId:', teamId);
+                  // Update the user object and re-set context
+                  const updatedUser = { ...authData.user, teamId };
+                  setUser(updatedUser);
+                  persistAuthState(updatedUser);
+                  
+                  await supabase.rpc('set_current_user_context', {
+                    p_user_id: authData.user.id,
+                    p_role: normalizedRole,
+                    p_team_ids: teamId.toString()
+                  });
+                  console.log('✅ Updated context with fetched teamId:', teamId);
+                }
               }
             } catch (contextError) {
               console.log('⚠️ Could not restore database context on page load:', contextError);
@@ -118,13 +141,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const userData = data[0];
         console.log('✅ Login successful for user:', userData.username);
         
+        // Normalize role for RLS context
+        const normalizedRole = normalizeRole(userData.role);
+        
         // Set initial user context for database access
         try {
           await supabase.rpc('set_current_user_context', {
             p_user_id: userData.user_id,
-            p_role: userData.role
+            p_role: normalizedRole
           });
-          console.log('✅ User context set in database:', userData.role, userData.user_id);
+          console.log('✅ User context set in database:', { role: normalizedRole, userId: userData.user_id });
         } catch (contextError) {
           console.log('⚠️ Could not set user context in database:', contextError);
         }
@@ -138,7 +164,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           try {
             await supabase.rpc('set_current_user_context', {
               p_user_id: userData.user_id,
-              p_role: userData.role,
+              p_role: normalizedRole,
               p_team_ids: teamId.toString()
             });
             console.log('✅ Full user context set with team ID:', teamId);
