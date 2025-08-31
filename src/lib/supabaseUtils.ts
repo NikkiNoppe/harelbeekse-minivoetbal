@@ -13,13 +13,28 @@ export const withUserContext = async <T>(
   }
 ): Promise<T> => {
   // Get user context from localStorage if not provided
-  const userDataString = localStorage.getItem('user');
-  const userData = userDataString ? JSON.parse(userDataString) : null;
-  
+  const authDataString = localStorage.getItem('auth_data');
+  let userData: any = null;
+
+  if (authDataString) {
+    try {
+      const authData = JSON.parse(authDataString);
+      userData = authData?.user || null;
+    } catch (e) {
+      console.warn('Invalid auth_data in localStorage');
+    }
+  }
+
+  // Backward compatibility: fallback to legacy 'user' key
+  if (!userData) {
+    const legacyUserString = localStorage.getItem('user');
+    userData = legacyUserString ? JSON.parse(legacyUserString) : null;
+  }
+
   if (userData) {
-    const userId = options?.userId || userData.id;
-    const role = options?.role || userData.role;
-    const teamIds = options?.teamIds || userData.teamId?.toString() || '';
+    const userId = options?.userId ?? userData.id;
+    const role = options?.role ?? userData.role;
+    const teamIds = options?.teamIds ?? (userData.teamId ? String(userData.teamId) : '');
     
     try {
       // Set user context before the operation
