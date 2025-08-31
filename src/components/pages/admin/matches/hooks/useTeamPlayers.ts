@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export interface TeamPlayer {
   player_id: number;
@@ -32,11 +33,14 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
-        .from('players')
-        .select('player_id, first_name, last_name, team_id')
-        .eq('team_id', teamId)
-        .order('first_name');
+      // Use withUserContext to ensure proper RLS access for Team Managers
+      const { data, error: fetchError } = await withUserContext(async () => {
+        return await supabase
+          .from('players')
+          .select('player_id, first_name, last_name, team_id')
+          .eq('team_id', teamId)
+          .order('first_name');
+      });
 
       if (fetchError) {
         throw fetchError;
