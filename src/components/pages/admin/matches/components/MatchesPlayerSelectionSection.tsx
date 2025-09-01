@@ -6,6 +6,7 @@ import { useTeamPlayers } from "../hooks/useTeamPlayers";
 import { PlayerSelection, MatchFormData } from "../types";
 import { useEnhancedMatchFormSubmission } from "../hooks/useEnhancedMatchFormSubmission";
 import { useToast } from "@/hooks/use-toast";
+import { canTeamManagerEdit } from "@/lib/matchLockUtils";
 
 interface PlayerSelectionSectionProps {
   match: MatchFormData;
@@ -77,17 +78,17 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   // Handle team-specific editing for team managers
   const canEditHome = useMemo(() => {
     if (isTeamManager) {
-      return match.homeTeamId === teamId; // Team managers can always edit their own team
+      return canTeamManagerEdit(match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId) && match.homeTeamId === teamId;
     }
-    return canEdit; // Non-team managers depend on canEdit (lock status)
-  }, [isTeamManager, match.homeTeamId, teamId, canEdit]);
+    return canEdit; // Non-team managers depend on canEdit (which includes time-based locking)
+  }, [isTeamManager, match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, canEdit]);
   
   const canEditAway = useMemo(() => {
     if (isTeamManager) {
-      return match.awayTeamId === teamId; // Team managers can always edit their own team
+      return canTeamManagerEdit(match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId) && match.awayTeamId === teamId;
     }
-    return canEdit; // Non-team managers depend on canEdit (lock status)
-  }, [isTeamManager, match.awayTeamId, teamId, canEdit]);
+    return canEdit; // Non-team managers depend on canEdit (which includes time-based locking)
+  }, [isTeamManager, match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, canEdit]);
 
   // Save players for team managers
   const handleSavePlayerSelection = useCallback(async () => {

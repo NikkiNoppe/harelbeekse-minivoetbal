@@ -8,6 +8,7 @@ import {
   sortMatchesWithinGroups, 
   sortGroupKeys 
 } from "@/lib/matchSortingUtils";
+import { shouldAutoLockMatch } from "@/lib/matchLockUtils";
 
 interface MatchFormListProps {
   matches: MatchFormData[];
@@ -36,13 +37,9 @@ const getMatchStatus = (match: MatchFormData) => {
     return { label: "Gespeeld", color: "bg-green-500", icon: CheckCircle };
   }
   
-  const now = new Date();
-  const matchDateTime = new Date(`${match.date}T${match.time}`);
-  const fiveMinutesBeforeMatch = new Date(matchDateTime.getTime() - 5 * 60 * 1000);
-  const isMatchInPast = now >= matchDateTime;
-  const shouldAutoLock = now >= fiveMinutesBeforeMatch;
+  const isAutoLocked = shouldAutoLockMatch(match.date, match.time);
   
-  if (match.isLocked || shouldAutoLock || isMatchInPast) {
+  if (match.isLocked || isAutoLocked) {
     return { label: "Gesloten", color: "bg-red-400", icon: Lock };
   }
   

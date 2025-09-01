@@ -9,6 +9,7 @@ import MatchesPenaltyShootoutModal from "./components/MatchesPenaltyShootoutModa
 import { MatchFormData, PlayerSelection } from "./types";
 import { useMatchFormState } from "./hooks/useMatchFormState";
 import { useEnhancedMatchFormSubmission } from "./hooks/useEnhancedMatchFormSubmission";
+import { canEditMatch, canTeamManagerEdit } from "@/lib/matchLockUtils";
 
 interface CompactMatchFormProps {
   match: MatchFormData;
@@ -54,13 +55,13 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
 
   const userRole = useMemo(() => (isAdmin ? "admin" : isReferee ? "referee" : "player_manager"), [isAdmin, isReferee]);
   const isTeamManager = useMemo(() => !isAdmin && !isReferee, [isAdmin, isReferee]);
-  const canEdit = useMemo(() => !match.isLocked || isAdmin, [match.isLocked, isAdmin]);
+  const canEdit = useMemo(() => canEditMatch(match.isLocked, match.date, match.time, isAdmin, isReferee), [match.isLocked, match.date, match.time, isAdmin, isReferee]);
   const showRefereeFields = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
   const hideInlineCardSelectors = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
   const isCupMatch = useMemo(() => match.matchday?.includes('🏆'), [match.matchday]);
-  const canTeamManagerEdit = useMemo(() => 
-    (match.homeTeamId === teamId || match.awayTeamId === teamId), 
-    [match.homeTeamId, match.awayTeamId, teamId]
+  const canTeamManagerEditMatch = useMemo(() => 
+    canTeamManagerEdit(match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId), 
+    [match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId]
   );
 
   const handleCardChange = useCallback((playerId: number, cardType: string) => {
@@ -225,7 +226,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         onPlayerSelection={handlePlayerSelection}
         onCardChange={handleCardChange}
         playerCards={playerCards}
-        canEdit={isTeamManager ? canTeamManagerEdit : canEdit}
+        canEdit={isTeamManager ? canTeamManagerEditMatch : canEdit}
         showRefereeFields={showRefereeFields}
         teamId={teamId}
         isTeamManager={isTeamManager}
@@ -253,7 +254,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       <MatchesFormActions
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
-        canActuallyEdit={isTeamManager ? canTeamManagerEdit : canEdit}
+        canActuallyEdit={isTeamManager ? canTeamManagerEditMatch : canEdit}
         isAdmin={isAdmin}
       />
       
