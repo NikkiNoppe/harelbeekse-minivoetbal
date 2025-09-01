@@ -46,7 +46,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     getAwayTeamSelectionsWithCards
   } = useMatchFormState(match);
 
-  const { submitMatchForm, lockMatch } = useEnhancedMatchFormSubmission();
+  const { submitMatchForm } = useEnhancedMatchFormSubmission();
   const [showPenaltyModal, setShowPenaltyModal] = React.useState(false);
   const [pendingSubmission, setPendingSubmission] = React.useState<MatchFormData | null>(null);
   const [homeCardsOpen, setHomeCardsOpen] = React.useState(false);
@@ -141,9 +141,6 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       const updatedMatch = createUpdatedMatch(parsedHomeScore, parsedAwayScore);
       const result = await submitMatchForm(updatedMatch, isAdmin, userRole);
       if (result.success) {
-        if (isReferee && !match.isLocked) {
-          await lockMatch(match.matchId);
-        }
         onComplete();
       }
     } catch (error) {
@@ -151,7 +148,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [homeScore, awayScore, isCupMatch, createUpdatedMatch, submitMatchForm, isAdmin, userRole, isReferee, lockMatch, match, onComplete, setIsSubmitting]);
+  }, [homeScore, awayScore, isCupMatch, createUpdatedMatch, submitMatchForm, isAdmin, userRole, isReferee, match, onComplete, setIsSubmitting]);
 
   const handlePenaltyResult = useCallback(async (winner: 'home' | 'away', homePenalties: number, awayPenalties: number, notes: string) => {
     if (!pendingSubmission) return;
@@ -168,9 +165,6 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       };
       const result = await submitMatchForm(finalMatch, isAdmin, userRole);
       if (result.success) {
-        if (isReferee && !match.isLocked) {
-          await lockMatch(match.matchId);
-        }
         onComplete();
       }
     } catch (error) {
@@ -179,7 +173,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       setIsSubmitting(false);
       setPendingSubmission(null);
     }
-  }, [pendingSubmission, isAdmin, userRole, isReferee, match, submitMatchForm, lockMatch, onComplete, setIsSubmitting]);
+  }, [pendingSubmission, isAdmin, userRole, isReferee, match, submitMatchForm, onComplete, setIsSubmitting]);
 
   const refereeFields = useMemo(() => showRefereeFields && (
     <>
