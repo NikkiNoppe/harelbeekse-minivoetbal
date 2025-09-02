@@ -8,6 +8,7 @@ import { FileText, Trophy, Calendar, AlertCircle, Target } from "lucide-react";
 import { useMatchFormsData, type MatchFormsFilters } from "@/hooks/useMatchFormsData";
 import { MatchFormData } from "./types";
 import MatchesFormFilter from "./MatchesFormFilter";
+import { useTeam } from "@/hooks/useTeams";
 import MatchesFormList from "./MatchesFormList";
 import MatchesFormModal from "./MatchesFormModal";
 
@@ -120,11 +121,7 @@ const TabContent = memo(({
   const isPlayoff = tabType === 'playoff';
   const typeName = isCup ? 'Beker' : isPlayoff ? 'Playoff' : 'Competitie';
   
-  const title = hasElevatedPermissions 
-    ? user?.role === "admin" 
-      ? `${typeName}wedstrijden`
-      : `${typeName}wedstrijden (Scheidsrechter)`
-    : `${typeName}wedstrijden voor ${teamName}`;
+  const title = `${typeName}wedstrijden`;
     
   const description = isEmpty && hasTeam 
     ? `Geen ${typeName.toLowerCase()}wedstrijden gevonden.`
@@ -140,6 +137,9 @@ const TabContent = memo(({
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [tabData.allMatches]);
+
+  const managerTeamId = !hasElevatedPermissions ? (user?.teamId || 0) : 0;
+  const { data: managerTeam } = useTeam(managerTeamId);
 
   return (
     <Card>
@@ -176,6 +176,8 @@ const TabContent = memo(({
                 onSortChange={(value) => onFiltersChange({ ...filters, sortBy: value })}
                 sortOrder={filters.sortOrder}
                 onSortOrderChange={(value) => onFiltersChange({ ...filters, sortOrder: value })}
+                selfTeamToggle={!hasElevatedPermissions && !!managerTeam?.team_name}
+                selfTeamName={managerTeam?.team_name}
                 onClearFilters={() => onFiltersChange({
                   searchTerm: "",
                   dateFilter: "",

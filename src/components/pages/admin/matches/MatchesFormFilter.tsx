@@ -17,6 +17,8 @@ interface MatchFormFilterProps {
   sortOrder: 'asc' | 'desc';
   onSortOrderChange: (value: 'asc' | 'desc') => void;
   onClearFilters: () => void;
+  selfTeamToggle?: boolean;
+  selfTeamName?: string;
 }
 
 const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
@@ -29,7 +31,9 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
   onSortChange,
   sortOrder,
   onSortOrderChange,
-  onClearFilters
+  onClearFilters,
+  selfTeamToggle,
+  selfTeamName
 }) => {
   const ALL_TEAMS_VALUE = 'ALL_TEAMS';
   const hasActiveFilters = dateFilter || teamFilter || sortBy !== 'week';
@@ -66,17 +70,32 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
         />
 
         <div className="flex gap-2">
-          <Select value={teamFilter || ALL_TEAMS_VALUE} onValueChange={(v) => onTeamChange(v === ALL_TEAMS_VALUE ? '' : v)}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Filter op team" />
-            </SelectTrigger>
-            <SelectContent className="z-[1100] bg-popover">
-              <SelectItem value="ALL_TEAMS">Alle teams</SelectItem>
-              {teamOptions.map((team) => (
-                <SelectItem key={team} value={team}>{team}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {selfTeamToggle && selfTeamName ? (
+            <Button
+              variant={teamFilter === selfTeamName ? "default" : "outline"}
+              onClick={() => onTeamChange(teamFilter === selfTeamName ? '' : selfTeamName)}
+              aria-pressed={teamFilter === selfTeamName}
+              className={
+                "btn " +
+                (teamFilter === selfTeamName ? "btn--primary " : "btn--secondary ") +
+                "btn--block flex-1 justify-start"
+              }
+            >
+              {`Filter ${selfTeamName}`}
+            </Button>
+          ) : (
+            <Select value={teamFilter || ALL_TEAMS_VALUE} onValueChange={(v) => onTeamChange(v === ALL_TEAMS_VALUE ? '' : v)}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Filter op team" />
+              </SelectTrigger>
+              <SelectContent className="z-[1100] bg-popover">
+                <SelectItem value="ALL_TEAMS">Alle teams</SelectItem>
+                {teamOptions.map((team) => (
+                  <SelectItem key={team} value={team}>{team}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         <div className="flex gap-2">
