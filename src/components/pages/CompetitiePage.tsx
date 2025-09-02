@@ -180,6 +180,23 @@ const CompetitiePage: React.FC = () => {
     });
   }, [matches.all, selectedMatchday, selectedTeam]);
 
+  // Format: MA 01-09-25
+  const formatDutchDayShort = (dateStr: string): string => {
+    try {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      if (!y || !m || !d) return dateStr;
+      const date = new Date(Date.UTC(y, m - 1, d));
+      const days = ['ZO', 'MA', 'DI', 'WO', 'DO', 'VR', 'ZA'];
+      const dayAbbr = days[date.getUTCDay()];
+      const yy = String(y).slice(-2);
+      const mm = String(m).padStart(2, '0');
+      const dd = String(d).padStart(2, '0');
+      return `${dayAbbr} ${dd}-${mm}-${yy}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <div className="space-y-8 animate-slide-up">
       <div className="flex justify-between items-center">
@@ -232,7 +249,12 @@ const CompetitiePage: React.FC = () => {
               </Select>
             </div>
           </div>
-          <ResponsiveScheduleTable matches={filteredMatches} />
+          <ResponsiveScheduleTable
+            matches={filteredMatches.map((m) => ({
+              ...m,
+              date: formatDutchDayShort(m.date),
+            }))}
+          />
         </CardContent>
       </Card>
     </div>
