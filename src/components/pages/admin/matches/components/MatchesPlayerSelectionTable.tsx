@@ -21,9 +21,9 @@ interface PlayerSelectionTableProps {
 }
 
 const TABLE_COLUMNS = {
-  nr: "w-[40px]",
-  speler: "w-2/3", 
-  rugnr: "w-1/3",
+  nr: "w-1/6",
+  speler: "w-3/6", 
+  rugnr: "w-2/6",
 } as const;
 
 // Memoized player option component
@@ -285,9 +285,9 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
               <div key={`${selection.playerId}-${index}`} className="p-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-8 h-9 shrink-0 flex items-center justify-center text-xs text-muted-foreground">#{index + 1}</span>
-                  {canEdit ? (
-                    <div className="w-2/3">
-                      <Select
+                   {canEdit ? (
+                     <div className="w-3/6">
+                       <Select
                         value={selection.playerId?.toString() || "no-player"}
                         onValueChange={(value) => {
                           const newId = value === "no-player" ? null : parseInt(value);
@@ -319,15 +319,15 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                         </SelectContent>
                       </Select>
                     </div>
-                  ) : (
-                    <div className="w-2/3 text-sm h-9 flex items-center">
-                      {selection.playerName || "-"}
+                   ) : (
+                     <div className="w-3/6 text-sm h-9 flex items-center">
+                       {selection.playerName || "-"}
                       {selection.isCaptain && (
                         <span className="ml-2 text-xs bg-[var(--purple-200)] px-1 py-0.5 rounded font-semibold">(K)</span>
                       )}
                     </div>
                   )}
-                  <div className="w-1/3">
+                  <div className="w-2/6">
                     {canEdit ? (
                       <Input
                         id={`m-jersey-${index}`}

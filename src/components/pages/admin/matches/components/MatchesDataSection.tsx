@@ -190,30 +190,34 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
               disabled={!canEditMatchData}
               placeholder="Speeldag"
             />
-            <RefereeSelector
-              referees={memoizedReferees}
-              selectedReferee={selectedReferee}
-              onRefereeChange={onRefereeChange}
-              loading={loadingReferees}
-              disabled={!canEdit}
-            />
+            
+            {/* Mobile: Full width referee, Desktop: Half width */}
+            <div className="md:col-span-1">
+              <RefereeSelector
+                referees={memoizedReferees}
+                selectedReferee={selectedReferee}
+                onRefereeChange={onRefereeChange}
+                loading={loadingReferees}
+                disabled={!canEdit}
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Score Section */}
       <div className="space-y-4">
-        <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-4">
+        <div className="grid grid-cols-2 gap-2 md:gap-4">
           <ScoreInput
             id="home-score"
-            label={`${match.homeTeamName}`}
+            label={match.homeTeamName.length > 12 ? match.homeTeamName.substring(0, 12) + "..." : match.homeTeamName}
             value={homeScore}
             onChange={onHomeScoreChange}
             disabled={!canEdit}
           />
           <ScoreInput
             id="away-score"
-            label={`${match.awayTeamName}`}
+            label={match.awayTeamName.length > 12 ? match.awayTeamName.substring(0, 12) + "..." : match.awayTeamName}
             value={awayScore}
             onChange={onAwayScoreChange}
             disabled={!canEdit}

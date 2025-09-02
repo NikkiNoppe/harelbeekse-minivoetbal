@@ -157,11 +157,11 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
                     <Button
                       type="button"
                       variant="outline"
-                      className="btn btn--danger h-8 w-8 p-0"
+                      className="btn btn--danger h-8 w-8 p-0 hover:bg-red-50 hover:border-red-300"
                       onClick={() => removeItem(idx)}
                       aria-label="Verwijderen"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4 text-red-600" />
                     </Button>
                   </div>
                 )}
@@ -181,7 +181,6 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
 
       {savedCards.length > 0 && (
         <div className="space-y-2">
-          <div className="text-xs font-semibold text-muted-foreground">Toegevoegd (sessie)</div>
           <div className="space-y-1">
             {savedCards.map((c, i) => (
               <div key={i} className="flex items-center justify-between text-sm border rounded px-2 py-1.5 bg-white">
@@ -195,8 +194,8 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
                     <MatchesCardIcon type={c.cardType as any} />
                     <span>{c.cardType === 'yellow' ? 'Geel' : c.cardType === 'double_yellow' ? '2x Geel' : 'Rood'}</span>
                   </div>
-                  <Button type="button" variant="outline" onClick={() => removeSavedCard(i)} className="btn btn--danger h-8 w-8 p-0" aria-label="Verwijderen">
-                    <Trash2 className="h-4 w-4" />
+                  <Button type="button" variant="outline" onClick={() => removeSavedCard(i)} className="btn btn--danger h-8 w-8 p-0 hover:bg-red-50 hover:border-red-300" aria-label="Verwijderen">
+                    <Trash2 className="h-4 w-4 text-red-600" />
                   </Button>
                 </div>
               </div>

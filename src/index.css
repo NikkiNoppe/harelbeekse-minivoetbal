@@ -1033,3 +1033,15 @@ tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-
 /* .competitie-header, .competitie-cell, .competitie-row, .competitie-standings-table, .competitie-sticky-column, .first-position, en bijbehorende media queries zijn verwijderd */
 
 /* De rest van de .table, .table-header-row, .table-skeleton-cell, .num, .left, .right, .font-medium, .font-bold, en responsive .table regels blijven behouden */
+
+/* ============================================================================
+   17. ENHANCED DELETE BUTTON STYLING
+============================================================================ */
+/* Enhanced delete button styling */
+.btn--danger {
+  @apply hover:bg-red-50 hover:border-red-300;
+}
+
+.btn--danger .lucide-trash-2 {
+  @apply text-red-600;
+}
