@@ -181,7 +181,7 @@ const TabContent = memo(({
                   dateFilter: "",
                   matchdayFilter: "",
                   teamFilter: "",
-                  sortBy: "date",
+                  sortBy: "week",
                   sortOrder: "asc"
                 })}
               />
@@ -218,7 +218,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
     dateFilter: "",
     matchdayFilter: "",
     teamFilter: "",
-    sortBy: "date",
+    sortBy: "week",
     sortOrder: "asc"
   });
 

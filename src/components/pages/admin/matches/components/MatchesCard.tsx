@@ -1,6 +1,7 @@
 import React from "react";
 import { Clock, MapPin, CheckCircle } from "lucide-react";
 import AutoFitText from "@/components/ui/auto-fit-text";
+import { formatDateWithDay } from "@/lib/dateUtils";
 
 
 export type MatchCardStatus = 'completed' | 'upcoming' | 'pending';
@@ -84,7 +85,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
           : "-"}
       </div>
       <div className="match-card-meta">
-        <span className="text-responsive-small"><Clock className="inline h-3 w-3 mr-1" />{date}</span>
+        <span className="text-responsive-small"><Clock className="inline h-3 w-3 mr-1" />{date ? formatDateWithDay(date) : date}</span>
         <span className="text-responsive-small">{time}</span>
       </div>
       <div className="match-card-location">

@@ -108,4 +108,22 @@ export function sortDatesDesc(a: string, b: string): number {
 /** Sorts dates in ascending order (oldest first) */
 export function sortDatesAsc(a: string, b: string): number {
   return new Date(a).getTime() - new Date(b).getTime();
-} 
+}
+
+/** Formats date with Dutch day abbreviation (e.g., "MA 01-09-2025") */
+export function formatDateWithDay(isoString: string): string {
+  try {
+    const date = new Date(isoString);
+    const dayNames = ['ZO', 'MA', 'DI', 'WO', 'DO', 'VR', 'ZA'];
+    const dayAbbr = dayNames[date.getDay()];
+    const formattedDate = date.toLocaleDateString('nl-NL', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    });
+    return `${dayAbbr} ${formattedDate}`;
+  } catch (error) {
+    console.error('Error formatting date with day:', error);
+    return 'Ongeldige datum';
+  }
+}

@@ -4,6 +4,7 @@ import FilterInput from "@/components/ui/filter-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { formatDateWithDay } from "@/lib/dateUtils";
 
 interface MatchFormFilterProps {
   dateFilter: string;
@@ -31,21 +32,21 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
   onClearFilters
 }) => {
   const ALL_TEAMS_VALUE = 'ALL_TEAMS';
-  const hasActiveFilters = dateFilter || teamFilter || sortBy !== 'date';
+  const hasActiveFilters = dateFilter || teamFilter || sortBy !== 'week';
 
   // Helper function to format date for display
   const formatDateForDisplay = (dateString: string): string => {
     try {
       if (dateString.includes('T')) {
         // ISO format
-        return new Date(dateString).toLocaleDateString('nl-NL');
+        return formatDateWithDay(dateString);
       } else if (dateString.includes('-')) {
-        // YYYY-MM-DD format
-        const [year, month, day] = dateString.split('-');
-        return `${day}-${month}-${year}`;
+        // YYYY-MM-DD format - convert to ISO first
+        const isoDate = new Date(dateString).toISOString();
+        return formatDateWithDay(isoDate);
       } else {
         // Try to parse as local date
-        return new Date(dateString).toLocaleDateString('nl-NL');
+        return formatDateWithDay(new Date(dateString).toISOString());
       }
     } catch (error) {
       return dateString; // Return original string if parsing fails
@@ -136,10 +137,10 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
             </Badge>
           )}
           
-          {sortBy !== 'date' && (
+          {sortBy !== 'week' && (
             <Badge variant="secondary" className="gap-1">
-              Sorteer: {sortBy === 'matchday' ? 'Speeldag' : 
-                        sortBy === 'week' ? 'Speelweek' : 
+              Sorteer: {sortBy === 'date' ? 'Datum' :
+                        sortBy === 'matchday' ? 'Speeldag' : 
                         sortBy === 'team' ? 'Team' : 'Status'} ({sortOrder === 'asc' ? 'Oplopend' : 'Aflopend'})
             </Badge>
           )}
