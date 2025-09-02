@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useAuth } from "@/components/pages/login/AuthProvider";
 import { useMatchFormsData, MatchFormsFilters } from "@/hooks/useMatchFormsData";
 import { MatchFormData } from "./types";
@@ -38,6 +38,12 @@ const EmptyState = React.memo(({ message }: { message: string }) => (
 ));
 
 const AdminPlayoffMatchesPage: React.FC = () => {
+  // Ensure page starts at top when playoff match forms view loads
+  useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    } catch (_) {}
+  }, []);
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const isReferee = user?.role === "referee";

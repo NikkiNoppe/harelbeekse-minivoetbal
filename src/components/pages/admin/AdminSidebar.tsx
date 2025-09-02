@@ -12,17 +12,13 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const { user, logout } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const normalizedRole = String(user?.role || '').toLowerCase();
+  const isAdmin = normalizedRole === "admin";
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { isTabVisible } = useTabVisibility();
   const isMobile = useIsMobile();
-  // Speelformaten groep (uitklapbaar) - alleen voor admin
-  const speelformatenItems = [
-    { key: "competition", label: "Competitie", icon: Trophy },
-    { key: "cup", label: "Beker", icon: Award },
-    { key: "playoffs", label: "Playoff", icon: Target },
-  ];
+
 
   // Wedstrijdformulieren groep
   const wedstrijdformulierenItems = [
@@ -43,7 +39,13 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const financieelItems = [
     { key: "financial", label: "Financieel", icon: DollarSign, adminOnly: true },
   ];
-
+  // Speelformaten groep (uitklapbaar) - alleen voor admin
+  const speelformatenItems = [
+    { key: "competition", label: "Competitie", icon: Trophy },
+    { key: "cup", label: "Beker", icon: Award },
+    { key: "playoffs", label: "Playoff", icon: Target },
+  ];
+  
   // Systeem groep
   const systeemItems = [
     { key: "settings", label: "Instellingen", icon: Settings, adminOnly: true },
@@ -118,19 +120,30 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
         ) : (
           <div className={`${isMobile ? 'px-2' : 'px-1'}`}>
             <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--main-color-dark)' }}>
-              {isAdmin ? 'ADMIN' : (user?.role === 'player_manager' ? 'TEAM MANAGER' : (user?.role === 'referee' ? 'SCHEIDSRECHTER' : (user?.role ? user.role.toUpperCase() : 'GEBRUIKER')))}
+              {isAdmin
+                ? 'ADMIN'
+                : normalizedRole === 'referee'
+                ? 'SCHEIDSRECHTER'
+                : normalizedRole === 'player_manager'
+                ? 'TEAM MANAGER'
+                : normalizedRole
+                ? normalizedRole.toUpperCase()
+                : 'GEBRUIKER'}
             </div>
             <div className="text-base font-semibold" style={{ color: 'var(--main-color-dark)' }}>
-              {isAdmin ? 'Administrator' : (user?.role === 'player_manager' ? 'Team Manager' : (user?.role === 'referee' ? 'Scheidsrechter' : 'Gebruiker'))}
+              {isAdmin
+                ? 'Administrator'
+                : normalizedRole === 'referee'
+                ? 'Scheidsrechter'
+                : normalizedRole === 'player_manager'
+                ? 'Team Manager'
+                : 'Gebruiker'}
             </div>
           </div>
         )}
       </div>
 
       <div className="flex-1">
-        {/* Speelformaten groep - filtered by tab visibility */}
-        {renderGroup("Speelformaten", visibleSpeelformatenItems)}
-
         {/* Wedstrijdformulieren groep - filtered by tab visibility */}
         {renderGroup("Wedstrijdformulieren", visibleWedstrijdformulierenItems)}
 
@@ -142,6 +155,9 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
 
         {/* Systeem groep */}
         {renderGroup("Systeem", visibleSysteemItems)}
+
+        {/* Speelformaten groep - helemaal onderaan */}
+        {renderGroup("Speelformaten", visibleSpeelformatenItems)}
 
         {/* Uitloggen knop direct onder Systeem/Instellingen */}
         <div className="mt-2 pb-4">

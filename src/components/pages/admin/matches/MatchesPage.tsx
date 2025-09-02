@@ -1,4 +1,4 @@
-import React, { useState, memo, useMemo, useCallback } from "react";
+import React, { useState, memo, useMemo, useCallback, useEffect } from "react";
 import { useAuth } from "@/components/pages/login/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 // Tabs UI removed (sidebar controls type)
@@ -214,6 +214,13 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
   const [selectedMatchForm, setSelectedMatchForm] = useState<MatchFormData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab ?? "league");
+  
+  // Ensure page starts at top when match forms view loads
+  useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    } catch (_) {}
+  }, []);
   
   const [filters, setFilters] = useState<MatchFormsFilters>({
     searchTerm: "",
