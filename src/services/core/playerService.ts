@@ -44,13 +44,13 @@ export const playerService = {
       .from('players')
       .select('player_id, first_name, last_name, birth_date, team_id')
       .eq('player_id', playerId)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('Error fetching player:', error);
       return null;
     }
     
-    return data;
+    return data || null;
   }
 };

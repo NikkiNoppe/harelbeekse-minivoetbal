@@ -48,12 +48,14 @@ export const withUserContext = async <T>(
         const { data, error } = await supabase
           .from('team_users')
           .select('team_id')
-          .eq('user_id', userId)
-          .single();
-        
-        if (!error && data?.team_id) {
-          teamIds = String(data.team_id);
-          console.log('✅ Fetched missing teamId:', teamIds);
+          .eq('user_id', userId);
+
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const teamIdList = data
+            .map((row: any) => Number(row.team_id))
+            .filter((id: number) => Number.isFinite(id));
+          teamIds = teamIdList.join(',');
+          console.log('✅ Fetched missing teamIds:', teamIds);
           
           // Update localStorage with the fetched teamId
           const authDataString = localStorage.getItem('auth_data');
@@ -61,12 +63,16 @@ export const withUserContext = async <T>(
             try {
               const authData = JSON.parse(authDataString);
               if (authData?.user) {
-                authData.user.teamId = data.team_id;
+                // Preserve first team as primary in client state for UI compatibility
+                const primaryTeamId = teamIdList[0];
+                if (primaryTeamId !== undefined) {
+                  authData.user.teamId = primaryTeamId;
+                }
                 localStorage.setItem('auth_data', JSON.stringify(authData));
-                console.log('✅ Updated auth_data with fetched teamId');
+                console.log('✅ Updated auth_data with fetched teamIds');
               }
             } catch (e) {
-              console.warn('Could not update auth_data with fetched teamId');
+              console.warn('Could not update auth_data with fetched teamIds');
             }
           }
         }

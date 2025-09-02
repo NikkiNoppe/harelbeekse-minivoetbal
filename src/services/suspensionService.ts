@@ -58,22 +58,64 @@ export const suspensionService = {
   },
 
   async checkPlayerEligibility(playerId: number, matchDate: Date): Promise<boolean> {
-    try {
-      const { data, error } = await supabase.rpc('is_player_suspended', {
-        player_id_param: playerId,
-        match_date_param: matchDate.toISOString()
-      });
+    // Minimal-change caching & inflight dedupe to avoid RPC flood
+    // Cache key: playerId + exact ISO timestamp
+    const cacheKey = `${playerId}|${matchDate.toISOString()}`;
+    const now = Date.now();
+    const TTL_MS = 2 * 60 * 1000; // 2 minutes TTL is sufficient for one form session
 
-      if (error) {
-        console.error('Error checking player eligibility:', error);
-        return false;
-      }
-
-      return !data; // Return true if NOT suspended
-    } catch (error) {
-      console.error('Error in checkPlayerEligibility:', error);
-      return false;
+    // Lazy init singletons on the service object to avoid global state
+    // @ts-ignore - attach non-enumerable fields for cache
+    if (!suspensionService.__eligibilityCache) {
+      // @ts-ignore
+      suspensionService.__eligibilityCache = new Map<string, { value: boolean; ts: number }>();
     }
+    // @ts-ignore
+    const cache: Map<string, { value: boolean; ts: number }> = suspensionService.__eligibilityCache;
+
+    // @ts-ignore
+    if (!suspensionService.__eligibilityInflight) {
+      // @ts-ignore
+      suspensionService.__eligibilityInflight = new Map<string, Promise<boolean>>();
+    }
+    // @ts-ignore
+    const inflight: Map<string, Promise<boolean>> = suspensionService.__eligibilityInflight;
+
+    // Serve from cache if fresh
+    const cached = cache.get(cacheKey);
+    if (cached && now - cached.ts < TTL_MS) {
+      return cached.value;
+    }
+
+    // Deduplicate concurrent calls
+    const existing = inflight.get(cacheKey);
+    if (existing) return existing;
+
+    const promise = (async () => {
+      try {
+        const { data, error } = await supabase.rpc('is_player_suspended', {
+          player_id_param: playerId,
+          match_date_param: matchDate.toISOString()
+        });
+
+        if (error) {
+          console.error('Error checking player eligibility:', error);
+          return false;
+        }
+
+        const value = !data; // true if NOT suspended
+        cache.set(cacheKey, { value, ts: Date.now() });
+        return value;
+      } catch (error) {
+        console.error('Error in checkPlayerEligibility:', error);
+        return false;
+      } finally {
+        inflight.delete(cacheKey);
+      }
+    })();
+
+    inflight.set(cacheKey, promise);
+    return promise;
   },
 
   async applySuspension(playerId: number, reason: string, matches: number, notes?: string): Promise<void> {

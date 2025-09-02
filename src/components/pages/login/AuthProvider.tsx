@@ -26,7 +26,7 @@ async function fetchTeamIdForUser(userId: number): Promise<number | undefined> {
       .from("team_users")
       .select("team_id")
       .eq("user_id", userId)
-      .single(); // Use single() instead of maybeSingle() to get first result
+      .limit(1);
     
     if (error) {
       console.warn("Could not fetch teamId for user (likely due to RLS):", error.message);
@@ -34,8 +34,8 @@ async function fetchTeamIdForUser(userId: number): Promise<number | undefined> {
     }
     
     // Return the team_id if found and a number
-    if (data && typeof data.team_id === "number") {
-      return data.team_id;
+    if (Array.isArray(data) && data.length > 0 && typeof data[0].team_id === "number") {
+      return data[0].team_id;
     }
     return undefined;
   } catch (error) {
