@@ -3,6 +3,7 @@ import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { updateMatchForm } from "@/components/pages/admin/matches/services/matchesFormService";
 import { MatchFormData } from "@/components/pages/admin/matches/types";
 import { bekerService } from "@/services/match/cupService";
+import { matchCostService } from "@/services/financial/matchCostService";
 
 interface MatchUpdateData {
   homeScore?: number | null;
@@ -185,6 +186,15 @@ export const enhancedMatchService = {
         }
       } catch (advErr) {
         console.warn('Advancement recalculation failed (fallback path):', advErr);
+      }
+
+      // After successful update: if marked completed, apply match costs idempotently
+      try {
+        if (updateData.isCompleted) {
+          await matchCostService.applyCostsForMatch(matchId);
+        }
+      } catch (costErr) {
+        console.warn('Kon wedstrijdkosten niet automatisch toepassen:', costErr);
       }
 
       return {
