@@ -10,6 +10,10 @@ export const useEnhancedMatchFormSubmission = () => {
   const queryClient = useQueryClient();
 
   const submitMatchForm = async (matchData: MatchFormData, isAdmin: boolean = false, userRole?: string) => {
+    // Filter out empty player slots before sending to server
+    const filteredHomePlayers = matchData.homePlayers?.filter(p => p.playerId !== null) || [];
+    const filteredAwayPlayers = matchData.awayPlayers?.filter(p => p.playerId !== null) || [];
+    
     const updateData = {
       homeScore: matchData.homeScore,
       awayScore: matchData.awayScore,
@@ -19,8 +23,8 @@ export const useEnhancedMatchFormSubmission = () => {
       location: matchData.location,
       date: matchData.date,
       time: matchData.time,
-      homePlayers: matchData.homePlayers,
-      awayPlayers: matchData.awayPlayers,
+      homePlayers: filteredHomePlayers,
+      awayPlayers: filteredAwayPlayers,
       isCompleted: matchData.isCompleted,
       isLocked: matchData.isLocked
     };
@@ -36,9 +40,10 @@ export const useEnhancedMatchFormSubmission = () => {
       return { success: false, error: errorMsg };
     }
 
-    // Validate player data if provided
+    // Validate player data if provided - only check selected players (with playerId)
     if (matchData.homePlayers && Array.isArray(matchData.homePlayers)) {
-      const invalidHomePlayers = matchData.homePlayers.filter(p => !p.playerId || !p.playerName);
+      const selectedHomePlayers = matchData.homePlayers.filter(p => p.playerId !== null);
+      const invalidHomePlayers = selectedHomePlayers.filter(p => !p.playerId || !p.playerName);
       if (invalidHomePlayers.length > 0) {
         const errorMsg = "Ongeldige spelergegevens voor thuisteam";
         toast({
@@ -51,7 +56,8 @@ export const useEnhancedMatchFormSubmission = () => {
     }
 
     if (matchData.awayPlayers && Array.isArray(matchData.awayPlayers)) {
-      const invalidAwayPlayers = matchData.awayPlayers.filter(p => !p.playerId || !p.playerName);
+      const selectedAwayPlayers = matchData.awayPlayers.filter(p => p.playerId !== null);
+      const invalidAwayPlayers = selectedAwayPlayers.filter(p => !p.playerId || !p.playerName);
       if (invalidAwayPlayers.length > 0) {
         const errorMsg = "Ongeldige spelergegevens voor uitteam";
         toast({
