@@ -135,9 +135,24 @@ export const RefereePenaltySection: React.FC<RefereePenaltySectionProps> = (prop
   }, []);
 
   const loadExistingPenalties = useCallback(async () => {
-    // Load existing penalties for this match from team_transactions
-    // This would require a new service method to fetch penalties by match_id
-  }, []);
+    try {
+      // Load penalties for both teams for this match
+      const homeTeamTransactions = await financialService.getTeamTransactions(props.match.homeTeamId);
+      const awayTeamTransactions = await financialService.getTeamTransactions(props.match.awayTeamId);
+      
+      const matchPenalties = [...homeTeamTransactions, ...awayTeamTransactions]
+        .filter(t => t.match_id === props.match.matchId && t.transaction_type === 'penalty')
+        .map(t => ({
+          teamName: t.team_id === props.match.homeTeamId ? props.match.homeTeamName : props.match.awayTeamName,
+          penaltyName: t.cost_settings?.name || 'Boete',
+          amount: t.amount
+        }));
+      
+      setSavedPenalties(matchPenalties);
+    } catch (error) {
+      console.error('Error loading existing penalties:', error);
+    }
+  }, [props.match.matchId, props.match.homeTeamId, props.match.awayTeamId, props.match.homeTeamName, props.match.awayTeamName]);
 
   const addPenalty = useCallback(() => {
     setPenalties(prev => [...prev, {

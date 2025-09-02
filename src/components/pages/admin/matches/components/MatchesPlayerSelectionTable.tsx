@@ -21,8 +21,7 @@ interface PlayerSelectionTableProps {
 }
 
 const TABLE_COLUMNS = {
-  nr: "w-1/6",
-  speler: "w-3/6", 
+  speler: "w-4/6", 
   rugnr: "w-2/6",
 } as const;
 
@@ -148,7 +147,6 @@ const PlayerRow = React.memo<{
 
   return (
     <tr className="table-row">
-      <td className={TABLE_COLUMNS.nr + " text-center text-sm"}>{index + 1}</td>
       <td className={TABLE_COLUMNS.speler + " text-sm"}>
         {canEdit ? (
           <Select
@@ -244,7 +242,6 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
         <table className="table min-w-full">
           <thead>
             <tr className="table-head">
-              <th className={TABLE_COLUMNS.nr + " py-1 text-center"}>Nr</th>
               <th className={TABLE_COLUMNS.speler + " py-1 text-left"}>Speler</th>
               <th className={TABLE_COLUMNS.rugnr + " py-1 text-center"}>Rugnr</th>
             </tr>
@@ -266,7 +263,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
             ))}
             {selections.length === 0 && (
               <tr>
-                <td colSpan={3} className="text-center py-3 text-muted-foreground">
+                <td colSpan={2} className="text-center py-3 text-muted-foreground">
                   Geen spelers geselecteerd voor dit team.
                 </td>
               </tr>
@@ -284,50 +281,49 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
             {selections.map((selection, index) => (
               <div key={`${selection.playerId}-${index}`} className="p-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="w-8 h-9 shrink-0 flex items-center justify-center text-xs text-muted-foreground">#{index + 1}</span>
                    {canEdit ? (
-                     <div className="w-3/6">
-                       <Select
-                        value={selection.playerId?.toString() || "no-player"}
-                        onValueChange={(value) => {
-                          const newId = value === "no-player" ? null : parseInt(value);
-                          onPlayerSelection(index, 'playerId', newId, false);
-                          if (newId) {
-                            const p = memoizedPlayers?.find(pl => pl.player_id === newId);
-                            const name = p ? `${p.first_name} ${p.last_name}` : '';
-                            onPlayerSelection(index, 'playerName', name, false);
-                          } else {
-                            onPlayerSelection(index, 'playerName', '', false);
-                          }
-                        }}
-                        disabled={!canEdit}
-                      >
-                        <SelectTrigger className="dropdown-login-style w-full h-9">
-                          <SelectValue placeholder="Selecteer speler" />
-                        </SelectTrigger>
-                        <SelectContent className="dropdown-content-login-style z-[1000] bg-white">
-                          <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
-                          {memoizedPlayers && Array.isArray(memoizedPlayers) && memoizedPlayers.map((player) => {
-                            const playerIdNum = player.player_id;
-                            const alreadySelected = memoizedSelectedPlayerIds.includes(playerIdNum) && selection.playerId !== playerIdNum;
-                            return (
-                              <SelectItem key={playerIdNum} value={playerIdNum.toString()} disabled={alreadySelected} className="dropdown-item-login-style">
-                                {player.first_name} {player.last_name}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                     <div className="w-4/6">
+                        <Select
+                         value={selection.playerId?.toString() || "no-player"}
+                         onValueChange={(value) => {
+                           const newId = value === "no-player" ? null : parseInt(value);
+                           onPlayerSelection(index, 'playerId', newId, false);
+                           if (newId) {
+                             const p = memoizedPlayers?.find(pl => pl.player_id === newId);
+                             const name = p ? `${p.first_name} ${p.last_name}` : '';
+                             onPlayerSelection(index, 'playerName', name, false);
+                           } else {
+                             onPlayerSelection(index, 'playerName', '', false);
+                           }
+                         }}
+                         disabled={!canEdit}
+                       >
+                         <SelectTrigger className="dropdown-login-style w-full h-9">
+                           <SelectValue placeholder="Selecteer speler" />
+                         </SelectTrigger>
+                         <SelectContent className="dropdown-content-login-style z-[1000] bg-white">
+                           <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
+                           {memoizedPlayers && Array.isArray(memoizedPlayers) && memoizedPlayers.map((player) => {
+                             const playerIdNum = player.player_id;
+                             const alreadySelected = memoizedSelectedPlayerIds.includes(playerIdNum) && selection.playerId !== playerIdNum;
+                             return (
+                               <SelectItem key={playerIdNum} value={playerIdNum.toString()} disabled={alreadySelected} className="dropdown-item-login-style">
+                                 {player.first_name} {player.last_name}
+                               </SelectItem>
+                             );
+                           })}
+                         </SelectContent>
+                       </Select>
+                     </div>
                    ) : (
-                     <div className="w-3/6 text-sm h-9 flex items-center">
-                       {selection.playerName || "-"}
-                      {selection.isCaptain && (
-                        <span className="ml-2 text-xs bg-[var(--purple-200)] px-1 py-0.5 rounded font-semibold">(K)</span>
-                      )}
-                    </div>
-                  )}
-                  <div className="w-2/6">
+                     <div className="w-4/6 text-sm h-9 flex items-center">
+                        {selection.playerName || "-"}
+                       {selection.isCaptain && (
+                         <span className="ml-2 text-xs bg-[var(--purple-200)] px-1 py-0.5 rounded font-semibold">(K)</span>
+                       )}
+                     </div>
+                   )}
+                   <div className="w-2/6">
                     {canEdit ? (
                       <Input
                         id={`m-jersey-${index}`}

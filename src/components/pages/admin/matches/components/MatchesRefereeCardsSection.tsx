@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -33,12 +33,59 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
   const { toast } = useToast();
   const [items, setItems] = useState<CardItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [savedCards, setSavedCards] = useState<Array<{ team: TeamKey; playerName: string; cardType: string }>>([]);
+  const [savedCards, setSavedCards] = useState<Array<{ team: TeamKey; playerName: string; cardType: string; playerId: number }>>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const playersByTeam = useMemo(() => ({
     home: homeSelections.filter(s => s.playerId !== null),
     away: awaySelections.filter(s => s.playerId !== null)
   }), [homeSelections, awaySelections]);
+
+  // Load existing cards from database
+  useEffect(() => {
+    const loadExistingCards = async () => {
+      setIsLoading(true);
+      try {
+        const existingCards: Array<{ team: TeamKey; playerName: string; cardType: string; playerId: number }> = [];
+        
+        // Process home team cards
+        if (match.homePlayers) {
+          for (const player of match.homePlayers) {
+            if (player.playerId && player.cardType && player.cardType !== 'none') {
+              existingCards.push({
+                team: 'home',
+                playerName: player.playerName || `Speler #${player.playerId}`,
+                cardType: player.cardType,
+                playerId: player.playerId
+              });
+            } 
+          }
+        }
+        
+        // Process away team cards
+        if (match.awayPlayers) {
+          for (const player of match.awayPlayers) {
+            if (player.playerId && player.cardType && player.cardType !== 'none') {
+              existingCards.push({
+                team: 'away',
+                playerName: player.playerName || `Speler #${player.playerId}`,
+                cardType: player.cardType,
+                playerId: player.playerId
+              });
+            }
+          }
+        }
+        
+        setSavedCards(existingCards);
+      } catch (error) {
+        console.error('Error loading existing cards:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadExistingCards();
+  }, [match.homePlayers, match.awayPlayers]);
 
   const addItem = useCallback(() => {
     setItems(prev => [...prev, { team: "", playerId: null, cardType: "yellow" }]);
@@ -56,27 +103,37 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
     setIsSaving(true);
     try {
       let saved = 0;
-      const sessionAdds: Array<{ team: TeamKey; playerName: string; cardType: string }> = [];
+      const sessionAdds: Array<{ team: TeamKey; playerName: string; cardType: string; playerId: number }> = [];
       for (const it of items) {
         if (it.team && it.playerId && it.cardType) {
           onCardChange(it.playerId, it.cardType);
           saved++;
           const list = it.team === "home" ? playersByTeam.home : playersByTeam.away;
           const sel = list.find(s => s.playerId === it.playerId);
-          sessionAdds.push({ team: it.team as TeamKey, playerName: sel?.playerName || `Speler #${it.playerId}`, cardType: it.cardType });
+          sessionAdds.push({ 
+            team: it.team as TeamKey, 
+            playerName: sel?.playerName || `Speler #${it.playerId}`, 
+            cardType: it.cardType,
+            playerId: it.playerId
+          });
         }
       }
       toast({ title: "Kaarten opgeslagen", description: `${saved} kaart(en) toegevoegd.` });
       setItems([]);
-      setSavedCards(prev => [...sessionAdds, ...prev].slice(0, 10));
+      setSavedCards(prev => [...sessionAdds, ...prev].slice(0, 20));
     } finally {
       setIsSaving(false);
     }
   }, [items, onCardChange, toast]);
 
   const removeSavedCard = useCallback((index: number) => {
+    const cardToRemove = savedCards[index];
+    if (cardToRemove?.playerId) {
+      // Remove the card from the player by setting it to 'none'
+      onCardChange(cardToRemove.playerId, 'none');
+    }
     setSavedCards(prev => prev.filter((_, i) => i !== index));
-  }, []);
+  }, [savedCards, onCardChange]);
 
   return (
     <div className="space-y-4">
@@ -175,7 +232,11 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
         </div>
       )}
 
-      {items.length === 0 && savedCards.length === 0 && (
+      {isLoading && (
+        <div className="text-center py-6 text-gray-500 text-sm">Kaarten laden...</div>
+      )}
+
+      {!isLoading && items.length === 0 && savedCards.length === 0 && (
         <div className="text-center py-6 text-gray-500 text-sm">Nog geen kaarten toegevoegd</div>
       )}
 
