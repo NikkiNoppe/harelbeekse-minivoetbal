@@ -21,19 +21,9 @@ interface PlayerSelectionTableProps {
 }
 
 const TABLE_COLUMNS = {
-  // With cards column (for referees/admins)
-  withCards: {
-    nr: "w-[40px]",
-    speler: "w-2/3",
-    rugnr: "w-1/4",
-    kaarten: "w-[40px]",
-  },
-  // Without cards column (for team managers)
-  withoutCards: {
-    nr: "w-[40px]",
-    speler: "w-2/3",
-    rugnr: "w-1/3",
-  }
+  nr: "w-[40px]",
+  speler: "w-2/3", 
+  rugnr: "w-1/3",
 } as const;
 
 // Memoized player option component
@@ -156,12 +146,10 @@ const PlayerRow = React.memo<{
     [selectedPlayerIds, selection.playerId]
   );
 
-  const columns = showRefereeFields ? TABLE_COLUMNS.withCards : TABLE_COLUMNS.withoutCards;
-
   return (
     <tr className="table-row">
-      <td className={columns.nr + " text-center text-sm"}>{index + 1}</td>
-      <td className={columns.speler + " text-sm"}>
+      <td className={TABLE_COLUMNS.nr + " text-center text-sm"}>{index + 1}</td>
+      <td className={TABLE_COLUMNS.speler + " text-sm"}>
         {canEdit ? (
           <Select
             value={selection.playerId?.toString() || "no-player"}
@@ -199,7 +187,7 @@ const PlayerRow = React.memo<{
           </span>
         )}
       </td>
-      <td className={columns.rugnr + " text-center px-0"}>
+      <td className={TABLE_COLUMNS.rugnr + " text-center px-0"}>
         {canEdit ? (
           <Input
             id={`jersey-${index}`}
@@ -218,29 +206,6 @@ const PlayerRow = React.memo<{
           </span>
         )}
       </td>
-      {showRefereeFields && (
-        <td className={(TABLE_COLUMNS.withCards.kaarten) + " text-center"}>
-          {canEdit && selection.playerId ? (
-            <Select
-              value={playerCards[selection.playerId] || "none"}
-              onValueChange={handleCardChange}
-            >
-              <SelectTrigger className="w-[48px] min-w-0 p-0 justify-center dropdown-login-style !w-[48px] !min-w-[48px]">
-                <span className="sr-only">Kaart</span>
-                <MatchesCardIcon type={playerCards[selection.playerId] as any || "none"} />
-              </SelectTrigger>
-               <SelectContent className="dropdown-content-login-style z-[1000] bg-white">
-                <SelectItem value="none" className="dropdown-item-login-style">-</SelectItem>
-                <CardOption value="yellow" label="Geel" iconType="yellow" />
-                <CardOption value="double_yellow" label="2x Geel" iconType="double_yellow" />
-                <CardOption value="red" label="Rood" iconType="red" />
-              </SelectContent>
-            </Select>
-          ) : (
-            <MatchesCardIcon type={playerCards[selection.playerId!] as any || "none"} />
-          )}
-        </td>
-      )}
     </tr>
   );
 });
@@ -262,8 +227,6 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
   const memoizedSelectedPlayerIds = useMemo(() => selectedPlayerIds, [selectedPlayerIds]);
   const memoizedPlayers = useMemo(() => players, [players]);
   const memoizedPlayerCards = useMemo(() => playerCards, [playerCards]);
-  
-  const columns = showRefereeFields ? TABLE_COLUMNS.withCards : TABLE_COLUMNS.withoutCards;
 
   if (loading) {
     return <div className="text-center py-3">Spelers laden...</div>;
@@ -281,10 +244,9 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
         <table className="table min-w-full">
           <thead>
             <tr className="table-head">
-              <th className={columns.nr + " py-1 text-center"}>Nr</th>
-              <th className={columns.speler + " py-1 text-left"}>Speler</th>
-              <th className={columns.rugnr + " py-1 text-center"}>Rugnr</th>
-              {showRefereeFields && <th className={(TABLE_COLUMNS.withCards.kaarten) + " py-1 text-center"}>Kaarten</th>}
+              <th className={TABLE_COLUMNS.nr + " py-1 text-center"}>Nr</th>
+              <th className={TABLE_COLUMNS.speler + " py-1 text-left"}>Speler</th>
+              <th className={TABLE_COLUMNS.rugnr + " py-1 text-center"}>Rugnr</th>
             </tr>
           </thead>
           <tbody>
@@ -304,7 +266,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
             ))}
             {selections.length === 0 && (
               <tr>
-                <td colSpan={showRefereeFields ? 4 : 3} className="text-center py-3 text-muted-foreground">
+                <td colSpan={3} className="text-center py-3 text-muted-foreground">
                   Geen spelers geselecteerd voor dit team.
                 </td>
               </tr>
@@ -321,36 +283,10 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
           <div className="rounded-md border bg-white divide-y">
             {selections.map((selection, index) => (
               <div key={`${selection.playerId}-${index}`} className="p-2">
-                {showRefereeFields && (
-                  <div className="flex items-center justify-end mb-2">
-                    {canEdit && selection.playerId ? (
-                      <Select
-                        value={memoizedPlayerCards[selection.playerId] || "none"}
-                        onValueChange={(value) => {
-                          if (selection.playerId) onCardChange(selection.playerId, value);
-                        }}
-                      >
-                        <SelectTrigger className="h-8 w-10 p-0 justify-center dropdown-login-style">
-                          <span className="sr-only">Kaart</span>
-                          <MatchesCardIcon type={(memoizedPlayerCards[selection.playerId!] as any) || "none"} />
-                        </SelectTrigger>
-                         <SelectContent className="dropdown-content-login-style z-[1000] bg-white">
-                          <SelectItem value="none" className="dropdown-item-login-style">-</SelectItem>
-                          <SelectItem value="yellow" className="dropdown-item-login-style">Geel</SelectItem>
-                          <SelectItem value="double_yellow" className="dropdown-item-login-style">2x Geel</SelectItem>
-                          <SelectItem value="red" className="dropdown-item-login-style">Rood</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <MatchesCardIcon type={(memoizedPlayerCards[selection.playerId!] as any) || "none"} />
-                    )}
-                  </div>
-                )}
-
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-8 h-9 shrink-0 flex items-center justify-center text-xs text-muted-foreground">#{index + 1}</span>
                   {canEdit ? (
-                    <div className="w-3/5">
+                    <div className="w-2/3">
                       <Select
                         value={selection.playerId?.toString() || "no-player"}
                         onValueChange={(value) => {
@@ -384,14 +320,14 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                       </Select>
                     </div>
                   ) : (
-                    <div className="w-3/5 text-sm h-9 flex items-center">
+                    <div className="w-2/3 text-sm h-9 flex items-center">
                       {selection.playerName || "-"}
                       {selection.isCaptain && (
                         <span className="ml-2 text-xs bg-[var(--purple-200)] px-1 py-0.5 rounded font-semibold">(K)</span>
                       )}
                     </div>
                   )}
-                  <div className="w-2/5">
+                  <div className="w-1/3">
                     {canEdit ? (
                       <Input
                         id={`m-jersey-${index}`}

@@ -206,6 +206,67 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
   background: var(--purple-800) !important; color: #fff !important; border-color: var(--purple-800) !important;
 }
 
+/* ============================================================================
+   6. DROPDOWN STYLING (for forms)
+============================================================================ */
+.dropdown-login-style {
+  background: #fff;
+  border: 1px solid var(--purple-300);
+  border-radius: 0.5rem;
+  color: var(--purple-600);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dropdown-login-style:focus,
+.dropdown-login-style:focus-within {
+  border-color: var(--purple-600);
+  box-shadow: 0 0 0 2px var(--purple-200);
+  outline: none;
+}
+
+.dropdown-content-login-style {
+  background: #fff !important;
+  border: 1px solid var(--purple-300);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(96, 54, 140, 0.15);
+  z-index: 50;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.dropdown-item-login-style {
+  color: var(--purple-600);
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dropdown-item-login-style:hover,
+.dropdown-item-login-style:focus {
+  background: var(--purple-50);
+  color: var(--purple-700);
+}
+
+.dropdown-item-login-style[data-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--purple-400);
+}
+
+.input-login-style {
+  background: #fff;
+  border: 1px solid var(--purple-300);
+  border-radius: 0.5rem;
+  color: var(--purple-600);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-login-style:focus {
+  border-color: var(--purple-600);
+  box-shadow: 0 0 0 2px var(--purple-200);
+  outline: none;
+}
+
 .btn--close {
   width: 2rem;
   height: 2rem;

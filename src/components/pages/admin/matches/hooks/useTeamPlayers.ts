@@ -21,8 +21,9 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
   const [players, setPlayers] = useState<TeamPlayer[] | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const fetchPlayers = useCallback(async () => {
+  const fetchPlayers = useCallback(async (attempt = 0) => {
     if (!teamId) {
       setPlayers(undefined);
       setLoading(false);
@@ -32,6 +33,11 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
     try {
       setLoading(true);
       setError(null);
+
+      // Add retry delay for failed attempts
+      if (attempt > 0) {
+        await new Promise(resolve => setTimeout(resolve, Math.min(1000 * attempt, 3000)));
+      }
 
       // Use withUserContext to ensure proper RLS access for Team Managers
       const { data, error: fetchError } = await withUserContext(async () => {
@@ -47,29 +53,41 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
       }
 
       setPlayers(data || []);
+      setRetryCount(0);
     } catch (err) {
-      console.error('Error fetching team players:', err);
+      console.error(`Error fetching team players (attempt ${attempt + 1}):`, err);
       setError(err);
-      setPlayers(undefined);
+      
+      // Retry logic - up to 3 attempts
+      if (attempt < 2) {
+        setRetryCount(attempt + 1);
+        setTimeout(() => fetchPlayers(attempt + 1), Math.min(1000 * (attempt + 1), 3000));
+      } else {
+        setPlayers(undefined);
+        setRetryCount(0);
+      }
     } finally {
-      setLoading(false);
+      if (attempt >= 2 || error === null) {
+        setLoading(false);
+      }
     }
   }, [teamId]);
 
   const refetch = useCallback(async () => {
-    await fetchPlayers();
+    setRetryCount(0);
+    await fetchPlayers(0);
   }, [fetchPlayers]);
 
   const memoizedPlayers = useMemo(() => players, [players]);
 
   useEffect(() => {
-    fetchPlayers();
+    fetchPlayers(0);
   }, [fetchPlayers]);
 
   return {
     players: memoizedPlayers,
-    loading,
-    error,
+    loading: loading || retryCount > 0,
+    error: retryCount >= 2 ? error : null,
     refetch,
   };
 };

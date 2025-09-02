@@ -36,19 +36,58 @@ export const useEnhancedMatchFormSubmission = () => {
       return { success: false, error: errorMsg };
     }
 
+    // Validate player data if provided
+    if (matchData.homePlayers && Array.isArray(matchData.homePlayers)) {
+      const invalidHomePlayers = matchData.homePlayers.filter(p => !p.playerId || !p.playerName);
+      if (invalidHomePlayers.length > 0) {
+        const errorMsg = "Ongeldige spelergegevens voor thuisteam";
+        toast({
+          title: "Validatie Fout", 
+          description: errorMsg,
+          variant: "destructive"
+        });
+        return { success: false, error: errorMsg };
+      }
+    }
+
+    if (matchData.awayPlayers && Array.isArray(matchData.awayPlayers)) {
+      const invalidAwayPlayers = matchData.awayPlayers.filter(p => !p.playerId || !p.playerName);
+      if (invalidAwayPlayers.length > 0) {
+        const errorMsg = "Ongeldige spelergegevens voor uitteam";
+        toast({
+          title: "Validatie Fout",
+          description: errorMsg, 
+          variant: "destructive"
+        });
+        return { success: false, error: errorMsg };
+      }
+    }
+
     setIsSubmitting(true);
     
     try {
+      // Optimistic update for better UX
+      queryClient.setQueryData(['match', matchData.matchId], (oldData: any) => ({
+        ...oldData,
+        ...updateData
+      }));
+
       const result = await enhancedMatchService.updateMatch(matchData.matchId, updateData, isAdmin, userRole);
 
       if (result.success) {
-        // Refresh queries after successful update
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['teamMatches'] }),
-          queryClient.invalidateQueries({ queryKey: ['matches'] }),
-          queryClient.invalidateQueries({ queryKey: ['matchData'] }),
-          queryClient.invalidateQueries({ queryKey: ['match', matchData.matchId] })
-        ]);
+        // Refresh queries after successful update - staggered to prevent race conditions
+        await queryClient.invalidateQueries({ queryKey: ['match', matchData.matchId] });
+        
+        // Add small delay before invalidating other queries to prevent conflicts
+        setTimeout(async () => {
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['teamMatches'] }),
+            queryClient.invalidateQueries({ queryKey: ['matches'] }),
+            queryClient.invalidateQueries({ queryKey: ['matchData'] }),
+            queryClient.invalidateQueries({ queryKey: ['competitionStandings'] }),
+            queryClient.invalidateQueries({ queryKey: ['suspensions'] })
+          ]);
+        }, 100);
 
         toast({
           title: "Succesvol",
@@ -56,6 +95,9 @@ export const useEnhancedMatchFormSubmission = () => {
         });
         return { success: true };
       } else {
+        // Revert optimistic update on failure
+        queryClient.invalidateQueries({ queryKey: ['match', matchData.matchId] });
+        
         toast({
           title: "Fout",
           description: result.message,
@@ -64,7 +106,12 @@ export const useEnhancedMatchFormSubmission = () => {
         return { success: false, error: result.message };
       }
     } catch (error) {
+      // Revert optimistic update on failure
+      queryClient.invalidateQueries({ queryKey: ['match', matchData.matchId] });
+      
       const errorMessage = error instanceof Error ? error.message : 'Onbekende fout';
+      console.error('Form submission error:', error);
+      
       toast({
         title: "Fout",
         description: `Fout bij opslaan wedstrijd: ${errorMessage}`,

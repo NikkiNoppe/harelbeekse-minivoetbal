@@ -80,9 +80,12 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-center">
         {canEdit && (
-          <Button onClick={addItem} className="btn btn--secondary h-8 px-3">+ Kaart toevoegen</Button>
+          <Button onClick={addItem} className="btn btn--secondary h-8 px-3">
+            <Plus className="h-4 w-4 mr-2" />
+            Kaart toevoegen
+          </Button>
         )}
       </div>
 
