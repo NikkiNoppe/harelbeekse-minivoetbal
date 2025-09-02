@@ -121,11 +121,11 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
           <div className={`${isMobile ? 'px-2' : 'px-1'}`}>
             <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--main-color-dark)' }}>
               {isAdmin
-                ? 'ADMIN'
+                ? 'Admin'
                 : normalizedRole === 'referee'
                 ? 'SCHEIDSRECHTER'
                 : normalizedRole === 'player_manager'
-                ? 'TEAM MANAGER'
+                ? 'Team Manager'
                 : normalizedRole
                 ? normalizedRole.toUpperCase()
                 : 'GEBRUIKER'}

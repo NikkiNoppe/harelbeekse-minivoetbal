@@ -81,10 +81,22 @@ const Header: React.FC<HeaderProps> = ({
     { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> }
   ];
 
-  const isAdmin = user?.role === "admin";
+  const normalizedRole = String(user?.role || '').toLowerCase();
+  const isAdmin = normalizedRole === "admin";
+  const roleLabel = isAdmin
+    ? 'Administrator'
+    : normalizedRole === 'referee'
+    ? 'Scheidsrechter'
+    : normalizedRole === 'player_manager'
+    ? 'Team Manager'
+    : 'Gebruiker';
 
-  // Filter public items based on tab visibility settings
-  const visiblePublicItems = publicNavItems.filter(item => isTabVisible(item.key));
+  // Filter public items based on tab visibility settings and enforce desired order
+  const desiredPublicOrder = ['algemeen', 'reglement', 'competitie', 'ploegen'] as const;
+  const visiblePublicItems = desiredPublicOrder
+    .map((key) => publicNavItems.find((i) => i.key === key))
+    .filter((i): i is NonNullable<typeof i> => Boolean(i))
+    .filter((item) => isTabVisible(item.key));
 
   // Admin groups (mirrors AdminSidebar)
   const speelformatenItems = [
@@ -187,7 +199,7 @@ const Header: React.FC<HeaderProps> = ({
                           {user?.username || user?.email}
                         </p>
                         <span className="text-xs text-purple-900 bg-white/80 px-2 py-1 rounded-full inline-block mt-1">
-                          {user?.teamName ? user.teamName : 'Team Manager'}
+                          {roleLabel}
                         </span>
                       </div>
                     </div>
@@ -221,22 +233,6 @@ const Header: React.FC<HeaderProps> = ({
                 {/* Admin Groups when authenticated */}
                 {isAuthenticated && (
                   <div className="space-y-4">
-                    {visibleSpeelformatenItems.length > 0 && (
-                      <div className="space-y-2">
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Speelformaten</h3>
-                        {visibleSpeelformatenItems.map((item) => (
-                          <button
-                            key={item.key}
-                            onClick={() => { setIsSheetOpen(false); onTabChange(item.key); }}
-                            className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
-                          >
-                            {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
                     {visibleWedstrijdformulierenItems.length > 0 && (
                       <div className="space-y-2">
                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Wedstrijdformulieren</h3>
@@ -273,6 +269,22 @@ const Header: React.FC<HeaderProps> = ({
                       <div className="space-y-2">
                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Financieel</h3>
                         {visibleFinancieelItems.map((item) => (
+                          <button
+                            key={item.key}
+                            onClick={() => { setIsSheetOpen(false); onTabChange(item.key); }}
+                            className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
+                          >
+                            {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {visibleSpeelformatenItems.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Speelformaten</h3>
+                        {visibleSpeelformatenItems.map((item) => (
                           <button
                             key={item.key}
                             onClick={() => { setIsSheetOpen(false); onTabChange(item.key); }}
