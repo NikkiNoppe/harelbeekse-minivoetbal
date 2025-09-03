@@ -91,7 +91,11 @@ export const useEnhancedMatchFormSubmission = () => {
             queryClient.invalidateQueries({ queryKey: ['matches'] }),
             queryClient.invalidateQueries({ queryKey: ['matchData'] }),
             queryClient.invalidateQueries({ queryKey: ['competitionStandings'] }),
-            queryClient.invalidateQueries({ queryKey: ['suspensions'] })
+            queryClient.invalidateQueries({ queryKey: ['suspensions'] }),
+            // Financial data refresh for instant updates after costs/penalties sync
+            queryClient.invalidateQueries({ queryKey: ['teams-financial'] }),
+            queryClient.invalidateQueries({ queryKey: ['all-team-transactions'] }),
+            queryClient.invalidateQueries({ queryKey: ['submitted-matches'] })
           ]);
         }, 100);
 

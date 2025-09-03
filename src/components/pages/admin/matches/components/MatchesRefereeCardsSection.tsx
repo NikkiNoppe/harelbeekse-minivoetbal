@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import MatchesCardIcon from "./MatchesCardIcon";
 import { MatchFormData, PlayerSelection } from "../types";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, X } from "lucide-react";
 
 type TeamKey = "home" | "away";
 
@@ -147,7 +147,16 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
       </div>
 
       {items.length > 0 && (
-        <div className="space-y-3">
+        <div className="relative space-y-3">
+          <button
+            type="button"
+            className="btn--close"
+            aria-label="Sluiten"
+            onClick={() => setItems([])}
+            style={{ top: '0.5rem', right: '0.5rem', width: '0.75rem', height: '0.75rem' }}
+          >
+            <X size={10} />
+          </button>
           {items.map((it, idx) => {
             const teamPlayers = it.team === "home" ? playersByTeam.home : it.team === "away" ? playersByTeam.away : [];
             return (
@@ -200,28 +209,7 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
                   </Select>
                 </div>
 
-                {canEdit && (
-                  <div className="flex items-center gap-2 md:ml-auto">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="btn btn--secondary h-8 w-8 p-0"
-                      onClick={addItem}
-                      aria-label="Toevoegen"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="btn btn--danger h-8 w-8 p-0 hover:bg-red-50 hover:border-red-300"
-                      onClick={() => removeItem(idx)}
-                      aria-label="Verwijderen"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-600" />
-                    </Button>
-                  </div>
-                )}
+                {/* Inline action buttons removed as requested */}
               </div>
             );
           })}
@@ -255,8 +243,13 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
                     <MatchesCardIcon type={c.cardType as any} />
                     <span>{c.cardType === 'yellow' ? 'Geel' : c.cardType === 'double_yellow' ? '2x Geel' : 'Rood'}</span>
                   </div>
-                  <Button type="button" variant="outline" onClick={() => removeSavedCard(i)} className="btn btn--danger h-8 w-8 p-0 hover:bg-red-50 hover:border-red-300" aria-label="Verwijderen">
-                    <Trash2 className="h-4 w-4 text-red-600" />
+                  <Button
+                    type="button"
+                    onClick={() => removeSavedCard(i)}
+                    className="btn btn--icon btn--danger"
+                    aria-label="Verwijderen"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

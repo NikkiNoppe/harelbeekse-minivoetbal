@@ -4,6 +4,7 @@ import { updateMatchForm } from "@/components/pages/admin/matches/services/match
 import { MatchFormData } from "@/components/pages/admin/matches/types";
 import { bekerService } from "@/services/match/cupService";
 import { matchCostService } from "@/services/financial/matchCostService";
+import { cardPenaltyService } from "@/services/financial/cardPenaltyService";
 
 interface MatchUpdateData {
   homeScore?: number | null;
@@ -192,6 +193,20 @@ export const enhancedMatchService = {
       try {
         if (updateData.isCompleted) {
           await matchCostService.applyCostsForMatch(matchId);
+          // Also sync automatic penalties for cards based on submitted players
+          try {
+            const matchDateISO = (data && Array.isArray(data) ? data[0]?.match_date : null) || null;
+            await cardPenaltyService.syncCardPenaltiesForMatch({
+              matchId,
+              matchDateISO,
+              homeTeamId: matchInfo?.home_team_id,
+              awayTeamId: matchInfo?.away_team_id,
+              homePlayers: updateData.homePlayers || [],
+              awayPlayers: updateData.awayPlayers || []
+            });
+          } catch (cardErr) {
+            console.warn('Kon kaartboetes niet synchroniseren:', cardErr);
+          }
         }
       } catch (costErr) {
         console.warn('Kon wedstrijdkosten niet automatisch toepassen:', costErr);

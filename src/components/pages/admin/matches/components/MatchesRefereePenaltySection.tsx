@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { costSettingsService, financialService } from "@/services/financial";
 import { MatchFormData } from "../types";
@@ -37,9 +37,7 @@ const PenaltyItemComponent = React.memo<{
     onUpdate(index, 'costSettingId', parseInt(value));
   }, [index, onUpdate]);
 
-  const handleRemove = useCallback(() => {
-    onRemove(index);
-  }, [index, onRemove]);
+  // Remove inline delete action from the temporary add-penalty row as requested
 
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-4 p-4 border rounded-lg bg-gray-50">
@@ -91,16 +89,7 @@ const PenaltyItemComponent = React.memo<{
         </Select>
       </div>
 
-      {canEdit && (
-        <Button
-          onClick={handleRemove}
-          variant="outline"
-          size="sm"
-          className="btn--danger"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      )}
+      {/* Delete icon removed in temporary penalty item row */}
     </div>
   );
 });
@@ -246,7 +235,16 @@ export const RefereePenaltySection: React.FC<RefereePenaltySectionProps> = (prop
       </div>
 
       {penalties.length > 0 && (
-        <div className="space-y-4">
+        <div className="relative space-y-4">
+          <button
+            type="button"
+            className="btn--close"
+            aria-label="Sluiten"
+            onClick={() => setPenalties([])}
+            style={{ top: '0.5rem', right: '0.5rem', width: '0.75rem', height: '0.75rem' }}
+          >
+            <X size={10} />
+          </button>
           {penalties.map((penalty, index) => (
             <PenaltyItemComponent
               key={`penalty-${index}`}
