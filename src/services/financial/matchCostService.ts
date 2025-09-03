@@ -16,12 +16,17 @@ export const matchCostService = {
       // Fetch match info
       const { data: match, error: matchErr } = await supabase
         .from('matches')
-        .select('match_id, home_team_id, away_team_id, match_date')
+        .select('match_id, home_team_id, away_team_id, match_date, home_score, away_score, is_submitted')
         .eq('match_id', matchId)
         .single();
 
       if (matchErr || !match) {
         return { success: false, message: `Kon wedstrijd niet ophalen: ${matchErr?.message || 'onbekende fout'}` };
+      }
+
+      // Only apply costs if match has scores and is submitted
+      if (!match.is_submitted || match.home_score === null || match.away_score === null) {
+        return { success: true, message: 'Kosten niet toegepast - wedstrijd heeft nog geen scores' };
       }
 
       const teamIds: number[] = [match.home_team_id, match.away_team_id].filter((id: any) => typeof id === 'number');
