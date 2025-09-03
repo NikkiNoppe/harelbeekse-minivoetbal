@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-type CardType = "yellow" | "double_yellow" | "red";
+type CardType = "yellow" | "double_yellow" | "red" | "none";
 
 interface PlayerLike {
   playerId: number | null;
