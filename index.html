@@ -4,10 +4,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Harelbeekse Minivoetbal Competitie | KRC Harelbeke</title>
-    <meta name="description" content="Officiële website van de KRC Harelbeke Minivoetbalcompetitie. Bekijk standen, wedstrijden, schorsingen en meer." />
+    <title>Minivoetbal Harelbeke - KRC Harelbeke Competitie | Officiële Website</title>
+    <meta name="description" content="Officiële minivoetbalcompetitie van KRC Harelbeke. Volg de standen, wedstrijden, beker en playoff wedstrijden. Bekijk schorsingen, teaminfo en reglementen van de grootste minivoetbalcompetitie in Harelbeke." />
     <meta name="author" content="KRC Harelbeke Minivoetbal" />
     <meta name="robots" content="index, follow" />
+    <meta name="keywords" content="minivoetbal harelbeke, voetbalcompetitie, KRC Harelbeke, minivoetbal belgië, voetbal harelbeke, sportcompetitie, beker harelbeke, playoff voetbal" />
+    <meta name="geo.region" content="BE-VLG" />
+    <meta name="geo.placename" content="Harelbeke, België" />
+    <meta name="geo.position" content="50.853;3.312" />
+    <link rel="canonical" href="https://minivoetbal-harelbeke.lovable.app/" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; connect-src 'self' https: wss: wss://*.supabase.co; font-src 'self' data: https:; object-src 'none'; base-uri 'self';">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -15,15 +20,18 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
     <link rel="manifest" href="/site.webmanifest">
-    <meta property="og:title" content="Harelbeekse Minivoetbal Competitie | KRC Harelbeke" />
-    <meta property="og:description" content="Officiële website van de KRC Harelbeke Minivoetbalcompetitie. Bekijk standen, wedstrijden, schorsingen en meer." />
+    <meta property="og:title" content="Minivoetbal Harelbeke - KRC Harelbeke Competitie" />
+    <meta property="og:description" content="Officiële minivoetbalcompetitie van KRC Harelbeke. Volg standen, wedstrijden, beker en playoff resultaten live." />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://minivoetbal-harelbeke.lovable.app/" />
     <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     <meta property="og:locale" content="nl_BE" />
+    <meta property="og:site_name" content="KRC Harelbeke Minivoetbal" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Harelbeekse Minivoetbal Competitie | KRC Harelbeke" />
-    <meta name="twitter:description" content="Officiële website van de KRC Harelbeke Minivoetbalcompetitie." />
+    <meta name="twitter:title" content="Minivoetbal Harelbeke - KRC Harelbeke Competitie" />
+    <meta name="twitter:description" content="Officiële minivoetbalcompetitie van KRC Harelbeke. Volg standen en wedstrijden live." />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:site" content="@KRCHarelbeke" />
     <!-- Vite injects CSS and JS automatically -->
   </head>
   <body class="bg-purple-100 text-gray-900 antialiased">
@@ -33,6 +41,45 @@
       </div>
     </noscript>
     <div id="root" role="main"></div>
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SportsOrganization",
+      "name": "KRC Harelbeke Minivoetbal",
+      "description": "Officiële minivoetbalcompetitie van KRC Harelbeke",
+      "url": "https://minivoetbal-harelbeke.lovable.app",
+      "logo": "https://minivoetbal-harelbeke.lovable.app/android-chrome-512x512.png",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Harelbeke",
+        "addressRegion": "West-Vlaanderen",
+        "addressCountry": "BE"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "50.853",
+        "longitude": "3.312"
+      },
+      "sport": "Football",
+      "memberOf": {
+        "@type": "SportsOrganization",
+        "name": "KRC Harelbeke"
+      },
+      "event": {
+        "@type": "SportsEvent",
+        "name": "Minivoetbal Competitie",
+        "description": "Jaarlijkse minivoetbalcompetitie met beker en playoff",
+        "location": {
+          "@type": "Place",
+          "name": "Harelbeke",
+          "@id": "https://www.wikidata.org/wiki/Q579554"
+        }
+      }
+    }
+    </script>
+    
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

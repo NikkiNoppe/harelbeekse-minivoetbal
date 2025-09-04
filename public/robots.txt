@@ -1,12 +1,19 @@
 User-agent: *
 Allow: /
 
+# Disallow admin routes for search engines
+Disallow: /admin/
+Disallow: /settings/
+Disallow: /financial/
+
 # Specifieke bots
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 2
 
 User-agent: Twitterbot
 Allow: /
@@ -14,8 +21,9 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-# Crawl-delay voor trage bots (optioneel)
+# Crawl-delay voor andere bots
+User-agent: *
 Crawl-delay: 5
 
 # Sitemap voor betere indexering
-Sitemap: https://jouw-domein.be/sitemap.xml
+Sitemap: https://minivoetbal-harelbeke.lovable.app/sitemap.xml
