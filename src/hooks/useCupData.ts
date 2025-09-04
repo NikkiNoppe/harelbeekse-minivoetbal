@@ -21,16 +21,15 @@ export interface TournamentData {
 }
 
 const formatMatchForDisplay = (match: any): CupMatchDisplay => {
-  const matchDate = new Date(match.match_date);
-  
+  // Use the ISO string directly to avoid timezone issues
   return {
     id: match.match_id.toString(),
     home: match.home_team_name || 'TBD',
     away: match.away_team_name || 'TBD',
     homeScore: match.home_score,
     awayScore: match.away_score,
-    date: matchDate.toLocaleDateString('nl-NL'),
-    time: matchDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }),
+    date: match.match_date, // Pass ISO string directly
+    time: match.match_date, // Pass ISO string, time will be extracted in MatchCard
     location: match.location
   };
 };
