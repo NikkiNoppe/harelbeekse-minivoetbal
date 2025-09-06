@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { cupService } from "@/services";
+import { isoToLocalDateTime } from "@/lib/dateUtils";
 
 export interface CupMatchDisplay {
   id: string;
@@ -21,15 +22,17 @@ export interface TournamentData {
 }
 
 const formatMatchForDisplay = (match: any): CupMatchDisplay => {
-  // Use the ISO string directly to avoid timezone issues
+  // Use isoToLocalDateTime to properly format date and time like other services
+  const { date, time } = match.match_date ? isoToLocalDateTime(match.match_date) : { date: '', time: '' };
+  
   return {
     id: match.match_id.toString(),
     home: match.home_team_name || 'TBD',
     away: match.away_team_name || 'TBD',
     homeScore: match.home_score,
     awayScore: match.away_score,
-    date: match.match_date, // Pass ISO string directly
-    time: match.match_date, // Pass ISO string, time will be extracted in MatchCard
+    date: match.match_date, // Keep ISO string for date formatting
+    time: time, // Extracted time string
     location: match.location
   };
 };
