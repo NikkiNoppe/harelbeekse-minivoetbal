@@ -1,8 +1,7 @@
 import React, { useMemo, useCallback, useState } from "react";
-import MatchesPlayerSelectionTable from "./MatchesPlayerSelectionTable";
+import OptimizedMatchesPlayerSelectionTable from "./OptimizedMatchesPlayerSelectionTable";
 import MatchesCaptainSelection from "./MatchesCaptainSelection";
 import PlayerSelectionActions from "./MatchesPlayerSelectionActions";
-import { useTeamPlayers } from "../hooks/useTeamPlayers";
 import { PlayerSelection, MatchFormData } from "../types";
 import { useEnhancedMatchFormSubmission } from "../hooks/useEnhancedMatchFormSubmission";
 import { useToast } from "@/hooks/use-toast";
@@ -36,21 +35,9 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   const [isSubmittingPlayers, setIsSubmittingPlayers] = useState(false);
   const { submitMatchForm } = useEnhancedMatchFormSubmission();
   const { toast } = useToast();
-  // Live team player data using optimized hook
-  const homeTeamId = match.homeTeamId;
-  const awayTeamId = match.awayTeamId;
   
-  const { 
-    players: homePlayers, 
-    loading: loadingHome, 
-    error: errorHome 
-  } = useTeamPlayers(homeTeamId);
-  
-  const { 
-    players: awayPlayers, 
-    loading: loadingAway, 
-    error: errorAway 
-  } = useTeamPlayers(awayTeamId);
+  // Convert match date string to Date object for suspension checks
+  const matchDate = useMemo(() => new Date(match.date), [match.date]);
 
   // Helper: prevent duplicate selection - memoized for performance
   const getSelectedPlayerIds = useCallback((selections: PlayerSelection[]) =>
@@ -127,12 +114,11 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Home Team */}
         <div className="rounded-md border bg-white p-3">
-          <MatchesPlayerSelectionTable
+          <OptimizedMatchesPlayerSelectionTable
+            teamId={match.homeTeamId}
+            matchDate={matchDate}
             teamLabel={`${match.homeTeamName} (Thuis)`}
             selections={homeTeamSelections}
-            players={homePlayers}
-            loading={loadingHome}
-            error={errorHome}
             selectedPlayerIds={homeSelectedPlayerIds}
             onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, true)}
             onCardChange={onCardChange}
@@ -152,12 +138,11 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
         
         {/* Away Team */}
         <div className="rounded-md border bg-white p-3">
-          <MatchesPlayerSelectionTable
+          <OptimizedMatchesPlayerSelectionTable
+            teamId={match.awayTeamId}
+            matchDate={matchDate}
             teamLabel={`${match.awayTeamName} (Uit)`}
             selections={awayTeamSelections}
-            players={awayPlayers}
-            loading={loadingAway}
-            error={errorAway}
             selectedPlayerIds={awaySelectedPlayerIds}
             onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, false)}
             onCardChange={onCardChange}

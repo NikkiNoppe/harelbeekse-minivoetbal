@@ -8,6 +8,7 @@ export interface TeamPlayer {
   first_name: string;
   last_name: string;
   team_id?: number;
+  is_eligible?: boolean; // Added for suspension status
 }
 
 interface UseTeamPlayersReturn {
@@ -16,6 +17,57 @@ interface UseTeamPlayersReturn {
   error: any;
   refetch: () => Promise<void>;
 }
+
+interface UseTeamPlayersWithSuspensionReturn extends UseTeamPlayersReturn {
+  playersWithSuspensions: TeamPlayer[] | undefined;
+  suspensionLoading: boolean;
+}
+
+// Enhanced hook that includes suspension data for match forms
+export const useTeamPlayersWithSuspensions = (teamId: number, matchDate?: Date): UseTeamPlayersWithSuspensionReturn => {
+  const baseHook = useTeamPlayers(teamId);
+  const [playersWithSuspensions, setPlayersWithSuspensions] = useState<TeamPlayer[] | undefined>(undefined);
+  const [suspensionLoading, setSuspensionLoading] = useState(false);
+
+  useEffect(() => {
+    const loadSuspensions = async () => {
+      if (!baseHook.players?.length || !matchDate) {
+        setPlayersWithSuspensions(baseHook.players);
+        return;
+      }
+
+      setSuspensionLoading(true);
+      try {
+        // Import suspensionService dynamically to avoid circular imports
+        const { suspensionService } = await import('@/services');
+        
+        const playerIds = baseHook.players.map(p => p.player_id);
+        const eligibilityMap = await suspensionService.checkBatchPlayerEligibility(playerIds, matchDate);
+        
+        const playersWithEligibility = baseHook.players.map(player => ({
+          ...player,
+          is_eligible: eligibilityMap[player.player_id] ?? true
+        }));
+        
+        setPlayersWithSuspensions(playersWithEligibility);
+      } catch (error) {
+        console.error('Error loading suspensions:', error);
+        // Fallback: set all players as eligible
+        setPlayersWithSuspensions(baseHook.players?.map(p => ({ ...p, is_eligible: true })));
+      } finally {
+        setSuspensionLoading(false);
+      }
+    };
+
+    loadSuspensions();
+  }, [baseHook.players, matchDate]);
+
+  return {
+    ...baseHook,
+    playersWithSuspensions,
+    suspensionLoading
+  };
+};
 
 export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
   const [players, setPlayers] = useState<TeamPlayer[] | undefined>(undefined);

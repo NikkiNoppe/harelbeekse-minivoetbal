@@ -62,7 +62,7 @@ export const suspensionService = {
     // Cache key: playerId + exact ISO timestamp
     const cacheKey = `${playerId}|${matchDate.toISOString()}`;
     const now = Date.now();
-    const TTL_MS = 2 * 60 * 1000; // 2 minutes TTL is sufficient for one form session
+    const TTL_MS = 5 * 60 * 1000; // Extended to 5 minutes for better performance
 
     // Lazy init singletons on the service object to avoid global state
     // @ts-ignore - attach non-enumerable fields for cache
@@ -116,6 +116,73 @@ export const suspensionService = {
 
     inflight.set(cacheKey, promise);
     return promise;
+  },
+
+  // New batch function to check multiple players at once - significantly reduces DB calls
+  async checkBatchPlayerEligibility(playerIds: number[], matchDate: Date): Promise<Record<number, boolean>> {
+    if (!playerIds.length) return {};
+
+    const batchCacheKey = `batch_${playerIds.sort().join(',')}_${matchDate.toISOString()}`;
+    const now = Date.now();
+    const TTL_MS = 5 * 60 * 1000; // 5 minutes cache
+
+    // Initialize batch cache if needed
+    // @ts-ignore
+    if (!suspensionService.__batchEligibilityCache) {
+      // @ts-ignore
+      suspensionService.__batchEligibilityCache = new Map<string, { value: Record<number, boolean>; ts: number }>();
+    }
+    // @ts-ignore
+    const batchCache: Map<string, { value: Record<number, boolean>; ts: number }> = suspensionService.__batchEligibilityCache;
+
+    // Check cache first
+    const cached = batchCache.get(batchCacheKey);
+    if (cached && now - cached.ts < TTL_MS) {
+      return cached.value;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('check_batch_players_suspended', {
+        player_ids: playerIds,
+        match_date_param: matchDate.toISOString()
+      });
+
+      if (error) {
+        console.error('Error checking batch player eligibility:', error);
+        // Fallback to individual calls on error
+        const result: Record<number, boolean> = {};
+        for (const playerId of playerIds) {
+          result[playerId] = await this.checkPlayerEligibility(playerId, matchDate);
+        }
+        return result;
+      }
+
+      // Convert array result to object: playerId -> isEligible (NOT suspended)
+      const result: Record<number, boolean> = {};
+      if (data && Array.isArray(data)) {
+        data.forEach((row: any) => {
+          result[row.player_id] = !row.is_suspended; // true if NOT suspended
+        });
+      }
+
+      // Fill in any missing players as eligible (fallback)
+      playerIds.forEach(id => {
+        if (!(id in result)) {
+          result[id] = true;
+        }
+      });
+
+      // Cache the result
+      batchCache.set(batchCacheKey, { value: result, ts: now });
+      return result;
+      
+    } catch (error) {
+      console.error('Error in checkBatchPlayerEligibility:', error);
+      // Fallback: return all as eligible to avoid blocking UI
+      const fallbackResult: Record<number, boolean> = {};
+      playerIds.forEach(id => fallbackResult[id] = true);
+      return fallbackResult;
+    }
   },
 
   async applySuspension(playerId: number, reason: string, matches: number, notes?: string): Promise<void> {

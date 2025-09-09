@@ -90,32 +90,11 @@ const PlayerRow = React.memo<{
   onPlayerSelection, 
   onCardChange 
 }) => {
-  const [suspendedPlayers, setSuspendedPlayers] = React.useState<number[]>([]);
-
-  React.useEffect(() => {
-    const checkSuspensions = async () => {
-      if (!players?.length) return;
-      
-      const currentDate = new Date();
-      const suspended: number[] = [];
-      
-      // Import suspensionService dynamically to avoid circular imports
-      const { suspensionService } = await import('@/services');
-      
-      for (const player of players) {
-        const isEligible = await suspensionService.checkPlayerEligibility(player.player_id, currentDate);
-        if (!isEligible) {
-          suspended.push(player.player_id);
-        }
-      }
-      
-      setSuspendedPlayers(suspended);
-    };
-    
-    checkSuspensions();
+  // Use preloaded suspension data from players instead of individual API calls
+  const isPlayerSuspended = useCallback((playerId: number) => {
+    const player = players?.find(p => p.player_id === playerId);
+    return player ? !player.is_eligible : false;
   }, [players]);
-
-  const isPlayerSuspended = (playerId: number) => suspendedPlayers.includes(playerId);
 
   const handlePlayerChange = useCallback((value: string) => {
     const newId = value === "no-player" ? null : parseInt(value);
