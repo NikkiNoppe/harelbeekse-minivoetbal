@@ -138,7 +138,17 @@ const PlayerRow = React.memo<{
             </SelectTrigger>
              <SelectContent className="dropdown-content-login-style z-[1000] bg-white">
               <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
-              {players && Array.isArray(players) &&
+               {/* Show fallback for selected player that might not be in current list */}
+               {selection.playerId && selection.playerName && 
+                !players?.find(p => p.player_id === selection.playerId) && (
+                 <SelectItem 
+                   value={selection.playerId.toString()} 
+                   className="dropdown-item-login-style opacity-75"
+                 >
+                   {selection.playerName} (niet beschikbaar)
+                 </SelectItem>
+               )}
+               {players && Array.isArray(players) &&
                  players.map((player) => {
                    const playerIdNum = player.player_id;
                    const alreadySelected = selectedPlayerIds.includes(playerIdNum) && selection.playerId !== playerIdNum;

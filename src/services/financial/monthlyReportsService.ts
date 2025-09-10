@@ -14,6 +14,7 @@ export interface MonthlyRefereeCosts {
   referee: string;
   totalCost: number;
   matchCount: number;
+  uniqueMatches?: Set<number>; // Internal tracking for unique match IDs
 }
 
 export interface MonthlyFines {
@@ -185,7 +186,7 @@ export const monthlyReportsService = {
           fieldCostsByMonth[key].matchCount++;
         }
 
-        // Referee costs
+        // Referee costs - Fix to count unique matches per referee
         if (category === 'match_cost' && (costName.includes('scheidsrechter') || costDescription.includes('scheidsrechter'))) {
           // Get referee from match if available, otherwise use 'Onbekend'
           const referee = transaction.match_id ? 
@@ -200,11 +201,16 @@ export const monthlyReportsService = {
               season,
               referee,
               totalCost: 0,
-              matchCount: 0
+              matchCount: 0,
+              uniqueMatches: new Set() // Track unique matches
             };
           }
           refereeCostsByMonth[refereeKey].totalCost += Number(transaction.amount || 0);
-          refereeCostsByMonth[refereeKey].matchCount++;
+          // Only count unique matches
+          if (transaction.match_id && !refereeCostsByMonth[refereeKey].uniqueMatches.has(transaction.match_id)) {
+            refereeCostsByMonth[refereeKey].matchCount++;
+            refereeCostsByMonth[refereeKey].uniqueMatches.add(transaction.match_id);
+          }
         }
 
         // Penalties/Fines
@@ -244,7 +250,13 @@ export const monthlyReportsService = {
       });
 
       const fieldCosts = Object.values(fieldCostsByMonth);
-      const refereeCosts = Object.values(refereeCostsByMonth);
+      const refereeCosts = Object.values(refereeCostsByMonth).map(ref => ({
+        month: ref.month,
+        season: ref.season,
+        referee: ref.referee,
+        totalCost: ref.totalCost,
+        matchCount: ref.matchCount
+      }));
       const fines = Object.values(finesByMonth);
       const matchStats = Object.values(matchStatsByMonth);
 
@@ -296,7 +308,14 @@ export const monthlyReportsService = {
         matchRefereeMap.set(match.match_id, match.referee || 'Onbekend');
       });
 
-      const refereePayments: Record<string, MonthlyRefereeCosts> = {};
+      const refereePayments: Record<string, { 
+        month: string; 
+        season: string; 
+        referee: string; 
+        totalCost: number; 
+        matchCount: number;
+        uniqueMatches: Set<number>;
+      }> = {};
 
       // Filter referee cost transactions
       transactions?.forEach((transaction: any) => {
@@ -315,15 +334,26 @@ export const monthlyReportsService = {
               season: seasonData.season,
               referee,
               totalCost: 0,
-              matchCount: 0
+              matchCount: 0,
+              uniqueMatches: new Set()
             };
           }
           refereePayments[referee].totalCost += Number(transaction.amount || 0);
-          refereePayments[referee].matchCount++;
+          // Only count unique matches
+          if (transaction.match_id && !refereePayments[referee].uniqueMatches.has(transaction.match_id)) {
+            refereePayments[referee].matchCount++;
+            refereePayments[referee].uniqueMatches.add(transaction.match_id);
+          }
         }
       });
 
-      return Object.values(refereePayments);
+      return Object.values(refereePayments).map(ref => ({
+        month: ref.month,
+        season: ref.season,
+        referee: ref.referee,
+        totalCost: ref.totalCost,
+        matchCount: ref.matchCount
+      }));
     } catch (error) {
       console.error('Error fetching season referee payments:', error);
       throw error;

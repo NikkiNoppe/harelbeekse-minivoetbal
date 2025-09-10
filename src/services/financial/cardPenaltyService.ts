@@ -73,14 +73,13 @@ export const cardPenaltyService = {
           continue;
         }
 
-        // Fetch existing AUTO rows for this match/team/cost
+        // Fetch existing rows for this match/team/cost WITHOUT description filter
         const { data: existingRows, error: existErr } = await supabase
           .from('team_costs')
           .select('id')
           .eq('team_id', teamId)
           .eq('match_id', matchId)
-          .eq('cost_setting_id', costSetting.id)
-          .ilike('description', 'AUTO_CARD_PENALTY%');
+          .eq('cost_setting_id', costSetting.id);
 
         if (existErr) throw existErr;
         const existingCount = (existingRows || []).length;

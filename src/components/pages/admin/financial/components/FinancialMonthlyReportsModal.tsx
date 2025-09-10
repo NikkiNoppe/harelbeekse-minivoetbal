@@ -282,6 +282,16 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
                         </TableCell>
                       </TableRow>
                     ))}
+                    {/* Totaal row */}
+                    <TableRow className="bg-purple-100 border-t-2 border-purple-light">
+                      <TableCell className="font-bold text-purple-dark">Totaal</TableCell>
+                      <TableCell className="text-center font-bold text-purple-dark">
+                        {report.refereeCosts.reduce((sum, ref) => sum + ref.matchCount, 0)}
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-purple-dark">
+                        {formatCurrency(report.refereeCosts.reduce((sum, ref) => sum + ref.totalCost, 0))}
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </CardContent>
@@ -314,39 +324,6 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
                         <TableCell className="text-center text-purple-dark">{month.fineCount}</TableCell>
                         <TableCell className="text-right font-semibold text-purple-dark">
                           {formatCurrency(month.totalFines)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Wedstrijdstatistieken per Seizoen/Maand */}
-          {report?.matchStats && report.matchStats.length > 0 && (
-            <Card className="border-purple-light">
-              <CardHeader className="bg-purple-100">
-                <CardTitle className="text-purple-light">
-                  {selectedMonth ? 'Wedstrijden per Maand' : 'Wedstrijden per Seizoen'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="bg-white">
-                <Table className="table">
-                  <TableHeader>
-                    <TableRow className="bg-purple-100">
-                      <TableHead className="text-purple-dark">
-                        {selectedMonth ? 'Maand' : 'Seizoen'}
-                      </TableHead>
-                      <TableHead className="text-center text-purple-dark">Gespeelde Wedstrijden</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="bg-white">
-                    {report.matchStats.map((month, index) => (
-                      <TableRow key={index} className="bg-white hover:bg-purple-50">
-                        <TableCell className="font-medium text-purple-dark">{month.month}</TableCell>
-                        <TableCell className="text-center font-semibold text-purple-dark">
-                          {month.totalMatches}
                         </TableCell>
                       </TableRow>
                     ))}

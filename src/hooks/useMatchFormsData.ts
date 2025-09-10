@@ -27,13 +27,13 @@ export const useMatchFormsData = (
       hasElevatedPermissions, 
       'league'
     ),
-    staleTime: 30 * 1000, // 30 seconds - VERY short for instant updates
-    gcTime: 2 * 60 * 1000, // 2 minutes cache
-    retry: 3,
-    refetchOnWindowFocus: true, // Refetch when user returns to tab
-    refetchOnReconnect: true,
-    refetchInterval: 60 * 1000, // Auto-refetch every minute for live updates
-    refetchIntervalInBackground: false // Only when tab is active
+    staleTime: 10 * 60 * 1000, // 10 minutes - Longer for mobile stability
+    gcTime: 30 * 60 * 1000, // 30 minutes cache
+    retry: 2,
+    refetchOnWindowFocus: false, // Disable to prevent blank dropdowns
+    refetchOnReconnect: false, // Disable to prevent excessive calls
+    refetchInterval: false, // Disable automatic refetch
+    refetchIntervalInBackground: false
   });
 
   // Cup matches query - INSTANT UPDATES for time-sensitive data  
@@ -44,13 +44,13 @@ export const useMatchFormsData = (
       hasElevatedPermissions, 
       'cup'
     ),
-    staleTime: 30 * 1000, // 30 seconds - VERY short for instant updates
-    gcTime: 2 * 60 * 1000, // 2 minutes cache  
-    retry: 3,
-    refetchOnWindowFocus: true, // Refetch when user returns to tab
-    refetchOnReconnect: true,
-    refetchInterval: 60 * 1000, // Auto-refetch every minute for live updates
-    refetchIntervalInBackground: false // Only when tab is active
+    staleTime: 10 * 60 * 1000, // 10 minutes - Longer for mobile stability
+    gcTime: 30 * 60 * 1000, // 30 minutes cache  
+    retry: 2,
+    refetchOnWindowFocus: false, // Disable to prevent blank dropdowns
+    refetchOnReconnect: false, // Disable to prevent excessive calls
+    refetchInterval: false, // Disable automatic refetch
+    refetchIntervalInBackground: false
   });
 
   // Playoff matches query - INSTANT UPDATES for time-sensitive data  
@@ -61,13 +61,13 @@ export const useMatchFormsData = (
       hasElevatedPermissions, 
       'playoff'
     ),
-    staleTime: 30 * 1000, // 30 seconds - VERY short for instant updates
-    gcTime: 2 * 60 * 1000, // 2 minutes cache  
-    retry: 3,
-    refetchOnWindowFocus: true, // Refetch when user returns to tab
-    refetchOnReconnect: true,
-    refetchInterval: 60 * 1000, // Auto-refetch every minute for live updates
-    refetchIntervalInBackground: false // Only when tab is active
+    staleTime: 10 * 60 * 1000, // 10 minutes - Longer for mobile stability
+    gcTime: 30 * 60 * 1000, // 30 minutes cache  
+    retry: 2,
+    refetchOnWindowFocus: false, // Disable to prevent blank dropdowns
+    refetchOnReconnect: false, // Disable to prevent excessive calls
+    refetchInterval: false, // Disable automatic refetch
+    refetchIntervalInBackground: false
   });
 
 

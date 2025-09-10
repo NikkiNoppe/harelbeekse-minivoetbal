@@ -69,8 +69,14 @@ export const useTeamPlayersWithSuspensions = (teamId: number, matchDate?: Date):
   };
 };
 
+// In-memory cache to prevent losing data during retries
+const playerCache = new Map<number, TeamPlayer[]>();
+
 export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
-  const [players, setPlayers] = useState<TeamPlayer[] | undefined>(undefined);
+  const [players, setPlayers] = useState<TeamPlayer[] | undefined>(() => {
+    // Initialize from cache if available
+    return playerCache.get(teamId) || undefined;
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -105,6 +111,10 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
       }
 
       setPlayers(data || []);
+      // Cache the data to prevent losing it during retries
+      if (data && data.length > 0) {
+        playerCache.set(teamId, data);
+      }
       setRetryCount(0);
     } catch (err) {
       console.error(`Error fetching team players (attempt ${attempt + 1}):`, err);
