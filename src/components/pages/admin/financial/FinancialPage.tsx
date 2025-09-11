@@ -177,6 +177,39 @@ const AdminFinancialPage: React.FC = () => {
                 </CardDescription>
               </div>
               <div className="flex gap-2 flex-shrink-0">
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const { data: matches } = await supabase
+                        .from('matches')
+                        .select('match_id, home_team_id, away_team_id, match_date, home_players, away_players')
+                        .eq('is_submitted', true);
+                      
+                      if (matches) {
+                        for (const match of matches) {
+                          if (match.home_team_id && match.away_team_id) {
+                            await supabase.functions.invoke('sync-card-penalties', {
+                              body: {
+                                matchId: match.match_id,
+                                matchDateISO: match.match_date,
+                                homeTeamId: match.home_team_id,
+                                awayTeamId: match.away_team_id,
+                                homePlayers: match.home_players || [],
+                                awayPlayers: match.away_players || []
+                              }
+                            });
+                          }
+                        }
+                      }
+                    } catch (error) {
+                      console.error('Backfill failed:', error);
+                    }
+                  }}
+                  className="text-xs"
+                >
+                  Resync kaartboetes
+                </Button>
                 <button
                   onClick={() => setCostListModalOpen(true)}
                   className="btn btn--outline flex items-center gap-2"

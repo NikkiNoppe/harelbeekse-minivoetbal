@@ -51,23 +51,36 @@ Deno.serve(async (req) => {
     const penaltySettings = penalties || [];
     console.log('Loaded penalty settings:', penaltySettings);
 
-    // Helper: map card type -> cost setting
+    // Helper: map card type -> cost setting with improved matching
     const findCostForType = (type: CardType) => {
       const nameIncludes = (s: string, q: string) => s.toLowerCase().includes(q);
       for (const cs of penaltySettings) {
         const n = (cs.name || '').toLowerCase();
-        if (type === 'yellow' && (nameIncludes(n, 'geel') || nameIncludes(n, 'yellow'))) return cs;
+        if (type === 'yellow' && (nameIncludes(n, 'geel') || nameIncludes(n, 'gele') || nameIncludes(n, 'yellow'))) return cs;
         if (type === 'double_yellow' && ((nameIncludes(n, '2x') && nameIncludes(n, 'geel')) || nameIncludes(n, 'dubbel') || nameIncludes(n, 'double'))) return cs;
-        if (type === 'red' && (nameIncludes(n, 'rood') || nameIncludes(n, 'red'))) return cs;
+        if (type === 'red' && (nameIncludes(n, 'rood') || nameIncludes(n, 'rode') || nameIncludes(n, 'red'))) return cs;
       }
       return null;
     };
 
-    // Count desired penalties per team and card type
-    const countByTeamAndType: Record<string, number> = {};
-    const addCount = (teamId: number, type: CardType) => {
-      const key = `${teamId}:${type}`;
-      countByTeamAndType[key] = (countByTeamAndType[key] || 0) + 1;
+    // Fallback for double yellow: if no specific setting, treat as two yellows
+    const getCardCostData = (type: CardType) => {
+      const direct = findCostForType(type);
+      if (direct) return { setting: direct, count: 1 };
+      
+      if (type === 'double_yellow') {
+        const yellowSetting = findCostForType('yellow');
+        if (yellowSetting) return { setting: yellowSetting, count: 2 };
+      }
+      
+      return null;
+    };
+
+    // Count desired penalties per team and cost setting
+    const countByTeamAndCostId: Record<string, number> = {};
+    const addCostCount = (teamId: number, costSettingId: number, count: number = 1) => {
+      const key = `${teamId}:${costSettingId}`;
+      countByTeamAndCostId[key] = (countByTeamAndCostId[key] || 0) + count;
     };
 
     const processPlayers = (teamId: number, players: PlayerLike[]) => {
@@ -75,29 +88,36 @@ Deno.serve(async (req) => {
         if (!p?.playerId) continue;
         const type = (p.cardType as CardType | undefined) || undefined;
         if (!type || type === 'none') continue;
-        if (type === 'yellow') addCount(teamId, 'yellow');
-        else if (type === 'double_yellow') addCount(teamId, 'double_yellow');
-        else if (type === 'red') addCount(teamId, 'red');
+        
+        const cardCostData = getCardCostData(type);
+        if (cardCostData) {
+          addCostCount(teamId, cardCostData.setting.id, cardCostData.count);
+          console.log(`Adding ${cardCostData.count}x ${type} for team ${teamId} (cost_id: ${cardCostData.setting.id}, amount: ${cardCostData.setting.amount})`);
+        } else {
+          console.log(`No cost setting found for card type: ${type}`);
+        }
       }
     };
 
     processPlayers(homeTeamId, homePlayers);
     processPlayers(awayTeamId, awayPlayers);
 
-    console.log('Card penalty counts:', countByTeamAndType);
+    console.log('Card penalty counts by cost setting:', countByTeamAndCostId);
 
-    // Sync for each (team, type)
-    for (const key of Object.keys(countByTeamAndType)) {
-      const [teamIdStr, type] = key.split(':');
+    // Sync for each (team, cost_setting_id)
+    for (const key of Object.keys(countByTeamAndCostId)) {
+      const [teamIdStr, costIdStr] = key.split(':');
       const teamId = parseInt(teamIdStr, 10);
-      const desiredCount = countByTeamAndType[key];
-      const costSetting = findCostForType(type as CardType);
+      const costSettingId = parseInt(costIdStr, 10);
+      const desiredCount = countByTeamAndCostId[key];
+      
+      const costSetting = penaltySettings.find(cs => cs.id === costSettingId);
       if (!costSetting) {
-        console.log(`No cost setting found for card type: ${type}`);
+        console.log(`Cost setting not found for ID: ${costSettingId}`);
         continue;
       }
 
-      console.log(`Processing ${type} cards for team ${teamId}: desired=${desiredCount}`);
+      console.log(`Processing cost setting "${costSetting.name}" (ID: ${costSettingId}) for team ${teamId}: desired=${desiredCount}`);
 
       // Fetch existing rows for this match/team/cost
       const { data: existingRows, error: existErr } = await supabaseServiceRole
@@ -105,14 +125,14 @@ Deno.serve(async (req) => {
         .select('id')
         .eq('team_id', teamId)
         .eq('match_id', matchId)
-        .eq('cost_setting_id', costSetting.id);
+        .eq('cost_setting_id', costSettingId);
 
       if (existErr) {
         throw new Error(`Failed to fetch existing penalty records: ${existErr.message}`);
       }
 
       const existingCount = (existingRows || []).length;
-      console.log(`Existing ${type} penalties for team ${teamId}: ${existingCount}`);
+      console.log(`Existing penalties for cost setting ${costSettingId} team ${teamId}: ${existingCount}`);
 
       if (existingCount < desiredCount) {
         // Insert the difference
@@ -120,7 +140,7 @@ Deno.serve(async (req) => {
         const transactionDate = matchDateISO ? (matchDateISO.slice(0, 10)) : new Date().toISOString().slice(0, 10);
         const rows = Array.from({ length: toInsert }).map(() => ({
           team_id: teamId,
-          cost_setting_id: costSetting.id,
+          cost_setting_id: costSettingId,
           amount: costSetting.amount ?? 0,
           transaction_date: transactionDate,
           match_id: matchId
@@ -154,7 +174,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: 'Kaartboetes gesynchroniseerd',
-        processedCounts: countByTeamAndType
+        processedCounts: countByTeamAndCostId
       }),
       { 
         headers: { 

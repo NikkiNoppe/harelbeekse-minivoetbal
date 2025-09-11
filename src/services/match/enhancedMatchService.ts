@@ -200,18 +200,25 @@ export const enhancedMatchService = {
 
       // Sync card penalties whenever players data changes
       try {
-        if (updateData.homePlayers !== undefined || updateData.awayPlayers !== undefined) {
+        if ((updateData.homePlayers !== undefined || updateData.awayPlayers !== undefined) && 
+            matchInfo?.home_team_id && matchInfo?.away_team_id) {
           const matchDateISO = (data && Array.isArray(data) ? data[0]?.match_date : null) || null;
-          await supabase.functions.invoke('sync-card-penalties', {
+          const response = await supabase.functions.invoke('sync-card-penalties', {
             body: {
               matchId,
               matchDateISO,
-              homeTeamId: matchInfo?.home_team_id,
-              awayTeamId: matchInfo?.away_team_id,
+              homeTeamId: matchInfo.home_team_id,
+              awayTeamId: matchInfo.away_team_id,
               homePlayers: updateData.homePlayers || [],
               awayPlayers: updateData.awayPlayers || []
             }
           });
+          
+          if (response.error) {
+            console.error('Card penalty sync failed:', response.error);
+          } else {
+            console.log('Card penalties synced successfully:', response.data);
+          }
         }
       } catch (cardErr) {
         console.warn('Kon kaartboetes niet synchroniseren:', cardErr);
