@@ -93,8 +93,7 @@ export const cardPenaltyService = {
             cost_setting_id: costSetting.id,
             amount: costSetting.amount ?? 0,
             transaction_date: transactionDate,
-            match_id: matchId,
-            description: `AUTO_CARD_PENALTY ${type}`
+            match_id: matchId
           }));
           const { error: insertErr } = await supabase.from('team_costs').insert(rows);
           if (insertErr) throw insertErr;

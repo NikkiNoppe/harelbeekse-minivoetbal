@@ -202,13 +202,15 @@ export const enhancedMatchService = {
       try {
         if (updateData.homePlayers !== undefined || updateData.awayPlayers !== undefined) {
           const matchDateISO = (data && Array.isArray(data) ? data[0]?.match_date : null) || null;
-          await cardPenaltyService.syncCardPenaltiesForMatch({
-            matchId,
-            matchDateISO,
-            homeTeamId: matchInfo?.home_team_id,
-            awayTeamId: matchInfo?.away_team_id,
-            homePlayers: updateData.homePlayers || [],
-            awayPlayers: updateData.awayPlayers || []
+          await supabase.functions.invoke('sync-card-penalties', {
+            body: {
+              matchId,
+              matchDateISO,
+              homeTeamId: matchInfo?.home_team_id,
+              awayTeamId: matchInfo?.away_team_id,
+              homePlayers: updateData.homePlayers || [],
+              awayPlayers: updateData.awayPlayers || []
+            }
           });
         }
       } catch (cardErr) {
