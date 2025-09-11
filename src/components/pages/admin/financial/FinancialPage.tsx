@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,12 +11,10 @@ import FinancialSettingsModal from "@/components/pages/admin/financial/component
 import FinancialMonthlyReportsModal from "@/components/pages/admin/financial/components/FinancialMonthlyReportsModal";
 import { costSettingsService } from "@/services/financial";
 import { financialOverviewService } from "@/services/financial/financialOverviewService";
-
 interface Team {
   team_id: number;
   team_name: string;
 }
-
 interface SubmittedMatch {
   match_id: number;
   home_team_id: number;
@@ -32,7 +29,6 @@ interface SubmittedMatch {
   match_date: string;
   unique_number: string;
 }
-
 const AdminFinancialPage: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
@@ -83,18 +79,24 @@ const AdminFinancialPage: React.FC = () => {
   });
 
   // Fetch cost settings for dynamic calculations
-  const { data: costSettings } = useQuery({
+  const {
+    data: costSettings
+  } = useQuery({
     queryKey: ['cost-settings'],
     queryFn: costSettingsService.getCostSettings
   });
 
   // Efficient: fetch alle transacties in één query, inclusief costs.amount
-  const { data: allTransactions, isLoading: loadingTransactions } = useQuery({
+  const {
+    data: allTransactions,
+    isLoading: loadingTransactions
+  } = useQuery({
     queryKey: ['all-team-transactions'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('team_costs')
-        .select('*, costs(name, description, category, amount), matches(unique_number, match_date)');
+      const {
+        data,
+        error
+      } = await supabase.from('team_costs').select('*, costs(name, description, category, amount), matches(unique_number, match_date)');
       if (error) throw error;
       return (data || []).map(transaction => ({
         id: transaction.id,
@@ -133,7 +135,13 @@ const AdminFinancialPage: React.FC = () => {
     const fines = teamTransactions.filter(t => t.cost_settings?.category === 'penalty').reduce((sum, t) => sum + Number(t.amount), 0);
     const adjustments = teamTransactions.filter(t => t.cost_settings?.category === 'adjustment' || t.cost_settings?.category === 'other').reduce((sum, t) => sum + Number(t.amount), 0);
     const currentBalance = startCapital - fieldCosts - refereeCosts - fines + adjustments;
-    return { startCapital, fieldCosts, refereeCosts, fines, currentBalance };
+    return {
+      startCapital,
+      fieldCosts,
+      refereeCosts,
+      fines,
+      currentBalance
+    };
   };
 
   // Format currency
@@ -143,20 +151,16 @@ const AdminFinancialPage: React.FC = () => {
       currency: 'EUR'
     }).format(amount);
   };
-
   const handleTeamClick = (team: Team) => {
     setSelectedTeam(team);
     setTeamModalOpen(true);
   };
-
   if (loadingTeams || loadingMatches || loadingTransactions) {
     return <div className="flex items-center justify-center h-40">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>;
   }
-
-  return (
-    <div className="space-y-8 animate-slide-up">
+  return <div className="space-y-8 animate-slide-up">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold flex items-center gap-2">
           <Euro className="h-5 w-5" />
@@ -177,50 +181,12 @@ const AdminFinancialPage: React.FC = () => {
                 </CardDescription>
               </div>
               <div className="flex gap-2 flex-shrink-0">
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    try {
-                      const { data: matches } = await supabase
-                        .from('matches')
-                        .select('match_id, home_team_id, away_team_id, match_date, home_players, away_players')
-                        .eq('is_submitted', true);
-                      
-                      if (matches) {
-                        for (const match of matches) {
-                          if (match.home_team_id && match.away_team_id) {
-                            await supabase.functions.invoke('sync-card-penalties', {
-                              body: {
-                                matchId: match.match_id,
-                                matchDateISO: match.match_date,
-                                homeTeamId: match.home_team_id,
-                                awayTeamId: match.away_team_id,
-                                homePlayers: match.home_players || [],
-                                awayPlayers: match.away_players || []
-                              }
-                            });
-                          }
-                        }
-                      }
-                    } catch (error) {
-                      console.error('Backfill failed:', error);
-                    }
-                  }}
-                  className="text-xs"
-                >
-                  Resync kaartboetes
-                </Button>
-                <button
-                  onClick={() => setCostListModalOpen(true)}
-                  className="btn btn--outline flex items-center gap-2"
-                >
+                
+                <button onClick={() => setCostListModalOpen(true)} className="btn btn--outline flex items-center gap-2">
                   <List className="h-4 w-4 mr-2" />
                   Kostenlijst
                 </button>
-                <button
-                  onClick={() => setMonthlyReportsModalOpen(true)}
-                  className="btn btn--outline flex items-center gap-2"
-                >
+                <button onClick={() => setMonthlyReportsModalOpen(true)} className="btn btn--outline flex items-center gap-2">
                   <Calendar className="h-4 w-4 mr-2" />
                   Maandrapport
                 </button>
@@ -243,14 +209,9 @@ const AdminFinancialPage: React.FC = () => {
                   </TableHeader>
                   <TableBody>
                     {teams?.map(team => {
-                      const finances = calculateTeamFinances(team.team_id);
-                      const isNegative = finances.currentBalance < 0;
-                      return (
-                        <TableRow
-                          key={team.team_id}
-                          className="cursor-pointer hover:bg-muted/50 transition-colors h-11 md:h-12"
-                          onClick={() => handleTeamClick(team)}
-                        >
+                    const finances = calculateTeamFinances(team.team_id);
+                    const isNegative = finances.currentBalance < 0;
+                    return <TableRow key={team.team_id} className="cursor-pointer hover:bg-muted/50 transition-colors h-11 md:h-12" onClick={() => handleTeamClick(team)}>
                           <TableCell className="font-medium truncate whitespace-nowrap max-w-[180px] sm:max-w-[220px] text-xs sm:text-sm">
                             {team.team_name}
                           </TableCell>
@@ -272,9 +233,8 @@ const AdminFinancialPage: React.FC = () => {
                               <span className="truncate">{formatCurrency(finances.currentBalance)}</span>
                             </div>
                           </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                        </TableRow>;
+                  })}
                   </TableBody>
                 </Table>
               </div>
@@ -288,8 +248,6 @@ const AdminFinancialPage: React.FC = () => {
       <FinancialSettingsModal open={costListModalOpen} onOpenChange={setCostListModalOpen} />
 
       <FinancialMonthlyReportsModal open={monthlyReportsModalOpen} onOpenChange={setMonthlyReportsModalOpen} />
-    </div>
-  );
+    </div>;
 };
-
 export default AdminFinancialPage;
