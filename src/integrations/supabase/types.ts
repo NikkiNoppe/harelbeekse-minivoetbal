@@ -92,13 +92,6 @@ export type Database = {
             referencedRelation: "teams"
             referencedColumns: ["team_id"]
           },
-          {
-            foreignKeyName: "competition_standings_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: true
-            referencedRelation: "teams_public"
-            referencedColumns: ["team_id"]
-          },
         ]
       }
       costs: {
@@ -195,24 +188,10 @@ export type Database = {
             referencedColumns: ["team_id"]
           },
           {
-            foreignKeyName: "matches_away_team_id_fkey"
-            columns: ["away_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams_public"
-            referencedColumns: ["team_id"]
-          },
-          {
             foreignKeyName: "matches_home_team_id_fkey"
             columns: ["home_team_id"]
             isOneToOne: false
             referencedRelation: "teams"
-            referencedColumns: ["team_id"]
-          },
-          {
-            foreignKeyName: "matches_home_team_id_fkey"
-            columns: ["home_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams_public"
             referencedColumns: ["team_id"]
           },
         ]
@@ -286,13 +265,6 @@ export type Database = {
             referencedRelation: "teams"
             referencedColumns: ["team_id"]
           },
-          {
-            foreignKeyName: "players_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams_public"
-            referencedColumns: ["team_id"]
-          },
         ]
       }
       team_costs: {
@@ -342,13 +314,6 @@ export type Database = {
             referencedRelation: "teams"
             referencedColumns: ["team_id"]
           },
-          {
-            foreignKeyName: "team_costs_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams_public"
-            referencedColumns: ["team_id"]
-          },
         ]
       }
       team_users: {
@@ -376,13 +341,6 @@ export type Database = {
             referencedColumns: ["team_id"]
           },
           {
-            foreignKeyName: "team_managers_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams_public"
-            referencedColumns: ["team_id"]
-          },
-          {
             foreignKeyName: "team_managers_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -394,13 +352,6 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
-            referencedColumns: ["team_id"]
-          },
-          {
-            foreignKeyName: "team_users_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams_public"
             referencedColumns: ["team_id"]
           },
         ]
@@ -461,78 +412,7 @@ export type Database = {
       }
     }
     Views: {
-      players_public: {
-        Row: {
-          first_name: string | null
-          last_name: string | null
-          player_id: number | null
-          red_cards: number | null
-          suspended_matches_remaining: number | null
-          team_id: number | null
-          yellow_cards: number | null
-        }
-        Insert: {
-          first_name?: string | null
-          last_name?: string | null
-          player_id?: number | null
-          red_cards?: number | null
-          suspended_matches_remaining?: number | null
-          team_id?: number | null
-          yellow_cards?: number | null
-        }
-        Update: {
-          first_name?: string | null
-          last_name?: string | null
-          player_id?: number | null
-          red_cards?: number | null
-          suspended_matches_remaining?: number | null
-          team_id?: number | null
-          yellow_cards?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "players_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["team_id"]
-          },
-          {
-            foreignKeyName: "players_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams_public"
-            referencedColumns: ["team_id"]
-          },
-        ]
-      }
-      teams_public: {
-        Row: {
-          club_colors: string | null
-          contact_email: string | null
-          contact_person: string | null
-          contact_phone: string | null
-          team_id: number | null
-          team_name: string | null
-        }
-        Insert: {
-          club_colors?: string | null
-          contact_email?: string | null
-          contact_person?: string | null
-          contact_phone?: string | null
-          team_id?: number | null
-          team_name?: string | null
-        }
-        Update: {
-          club_colors?: string | null
-          contact_email?: string | null
-          contact_person?: string | null
-          contact_phone?: string | null
-          team_id?: number | null
-          team_name?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       add_team_cost: {
