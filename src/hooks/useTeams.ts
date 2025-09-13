@@ -31,15 +31,15 @@ export const useTeams = () => {
   return useQuery({
     queryKey: teamQueryKeys.lists(),
     queryFn: async () => {
-      // Use updated public view for complete team information
+      // Use teams table for complete team information
       const { data, error } = await supabase
-        .from('teams_public')
+        .from('teams')
         .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors')
         .order('team_name');
 
       if (error) throw error;
 
-      // Map public view data to Team interface
+      // Map teams data to Team interface
       return (data || []).map((team: any) => ({
         team_id: team.team_id,
         team_name: team.team_name,
@@ -59,16 +59,16 @@ export const useTeam = (teamId: number) => {
   return useQuery({
     queryKey: teamQueryKeys.detail(teamId),
     queryFn: async () => {
-      // Use public view for basic team information
+      // Use teams table for basic team information
       const { data: teamData, error } = await supabase
-        .from('teams_public')
+        .from('teams')
         .select('team_id, team_name')
         .eq('team_id', teamId)
         .single();
 
       if (error) throw error;
 
-      // Map public view data to Team interface
+      // Map teams data to Team interface
       const data = teamData ? {
         team_id: teamData.team_id,
         team_name: teamData.team_name,

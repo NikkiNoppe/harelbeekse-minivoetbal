@@ -15,7 +15,7 @@ export const usePlayersData = (authUser: User | null) => {
   const fetchTeams = async () => {
     try {
       const { data, error } = await supabase
-        .from('teams_public')
+        .from('teams')
         .select('team_id, team_name')
         .order('team_name');
 
