@@ -30,8 +30,9 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   // Beheer groep
   const beheerItems = [
     { key: "players", label: "Spelers", icon: Users, adminOnly: false },
+    { key: "ploegen", label: "Teams", icon: Users, adminOnly: false },
     { key: "suspensions", label: "Schorsingen", icon: Shield, adminOnly: true },
-    { key: "teams", label: "Teams", icon: Shield, adminOnly: true },
+    { key: "teams", label: "Teams (Admin)", icon: Shield, adminOnly: true },
     { key: "users", label: "Gebruikers", icon: User, adminOnly: true },
   ];
 
