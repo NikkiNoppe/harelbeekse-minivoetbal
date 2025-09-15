@@ -3,11 +3,11 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, Phone, Mail, Palette, Shield, MapPin } from "lucide-react";
-import { useTeams } from "@/hooks/useTeams";
+import { usePublicTeams } from "@/hooks/useTeams";
 import { TeamCardSkeleton } from "@/components/ui/skeleton";
 
 const TeamsPage: React.FC = () => {
-  const { data: teams, isLoading, error, refetch } = useTeams();
+  const { data: teams, isLoading, error, refetch } = usePublicTeams();
 
   const LoadingSkeleton = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="team-skeleton">
@@ -86,31 +86,11 @@ const TeamsPage: React.FC = () => {
               )}
             </div>
 
-            {/* Contact Information - always show icons */}
+            {/* Team Info - Only show basic team information for privacy */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Users className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                {team.contact_person ? (
-                  <span className="truncate">{team.contact_person}</span>
-                ) : (
-                  <span className="truncate text-gray-400"> </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Phone className="h-4 w-4 text-green-500 flex-shrink-0" />
-                {team.contact_phone ? (
-                  <span>{team.contact_phone}</span>
-                ) : (
-                  <span className="text-gray-400"> </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Mail className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                {team.contact_email ? (
-                  <span className="truncate">{team.contact_email}</span>
-                ) : (
-                  <span className="truncate text-gray-400"> </span>
-                )}
+                <span className="text-gray-500 italic">Contact details beschikbaar voor teamleden</span>
               </div>
             </div>
           </div>

@@ -26,30 +26,20 @@ export const teamQueryKeys = {
   detail: (id: number) => [...teamQueryKeys.details(), id] as const,
 };
 
-// Fetch all teams
+// Fetch all teams (for authenticated admin users - includes contact info)
 export const useTeams = () => {
   return useQuery({
     queryKey: teamQueryKeys.lists(),
-    queryFn: async () => {
-      // Use teams table for complete team information
-      const { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors')
-        .order('team_name');
+    queryFn: () => teamService.getAllTeams(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
 
-      if (error) throw error;
-
-      // Map teams data to Team interface
-      return (data || []).map((team: any) => ({
-        team_id: team.team_id,
-        team_name: team.team_name,
-        contact_person: team.contact_person,
-        contact_phone: team.contact_phone,
-        contact_email: team.contact_email,
-        club_colors: team.club_colors,
-        preferred_play_moments: undefined
-      })) as Team[];
-    },
+// Fetch public teams (safe for public access - no contact info)
+export const usePublicTeams = () => {
+  return useQuery({
+    queryKey: [...teamQueryKeys.all, 'public'],
+    queryFn: () => teamService.getPublicTeams(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
