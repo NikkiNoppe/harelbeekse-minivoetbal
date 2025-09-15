@@ -17,12 +17,12 @@ export interface Team {
 }
 
 export const teamService = {
-  // Public-safe method - only returns basic team info (no contact details)
-  async getPublicTeams(): Promise<Pick<Team, 'team_id' | 'team_name' | 'club_colors'>[]> {
+  // Public-safe method - only returns basic team info (id and name only)
+  async getPublicTeams(): Promise<Pick<Team, 'team_id' | 'team_name'>[]> {
     try {
       const { data, error } = await supabase
         .from('teams')
-        .select('team_id, team_name, club_colors')
+        .select('team_id, team_name')
         .order('team_name');
       
       if (error) {
@@ -30,7 +30,7 @@ export const teamService = {
         throw error;
       }
       
-      return (data || []) as Pick<Team, 'team_id' | 'team_name' | 'club_colors'>[];
+      return (data || []) as Pick<Team, 'team_id' | 'team_name'>[];
     } catch (error) {
       console.error('Error fetching public teams:', error);
       throw error;

@@ -1,8 +1,7 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Phone, Mail, Palette, Shield, MapPin } from "lucide-react";
+import { Users, Shield } from "lucide-react";
 import { usePublicTeams } from "@/hooks/useTeams";
 import { TeamCardSkeleton } from "@/components/ui/skeleton";
 
@@ -35,55 +34,19 @@ const TeamsPage: React.FC = () => {
     </Card>
   );
 
-  // Mapping van kleur-omschrijving naar Tailwind utility classes
-  const colorClassMap: Record<string, string> = {
-    'lichtblauw': 'bg-sky-100 border-sky-200 text-sky-700',
-    'blauw': 'bg-blue-100 border-blue-200 text-blue-700',
-    'muntgroen': 'bg-green-100 border-green-200 text-green-700',
-    'groen': 'bg-green-100 border-green-200 text-green-700',
-    'rood': 'bg-red-100 border-red-200 text-red-700',
-    'geel': 'bg-yellow-100 border-yellow-200 text-yellow-700',
-    'paars': 'bg-purple-100 border-purple-200 text-purple-700',
-    'oranje': 'bg-orange-100 border-orange-200 text-orange-700',
-    'zwart': 'bg-gray-800 border-gray-900 text-white',
-    'wit': 'bg-gray-100 border-gray-200 text-gray-700',
-    // Voeg meer mappings toe indien nodig
-  };
-
-  function getBadgeColorClass(clubColor: string) {
-    if (!clubColor) return 'bg-gray-100 border-gray-200 text-gray-700';
-    // Zoek op basis van volledige string of deelstring
-    const key = clubColor.trim().toLowerCase();
-    // Exacte match
-    if (colorClassMap[key]) return colorClassMap[key];
-    // Zoek op basis van deelstring
-    for (const k in colorClassMap) {
-      if (key.includes(k)) return colorClassMap[k];
-    }
-    return 'bg-gray-100 border-gray-200 text-gray-700';
-  }
-
   const TeamCard = React.memo(({ team }: { team: any }) => {
     return (
       <Card className="group hover:shadow-lg transition-all duration-200 border-l-4 border-l-purple-500 bg-gradient-to-r from-white to-purple-50 hover:border-l-purple-600">
         <CardContent className="p-4">
           <div className="space-y-3">
             {/* Team Name Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                  <Shield className="h-4 w-4 text-purple-600" />
-                </div>
-                <h3 className="font-semibold text-gray-900 text-lg group-hover:text-purple-700 transition-colors">
-                  {team.team_name}
-                </h3>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                <Shield className="h-4 w-4 text-purple-600" />
               </div>
-              {team.club_colors && (
-                <Badge variant="outline" className={`text-xs ${getBadgeColorClass(team.club_colors)}`}>
-                  <Palette className="h-3 w-3 mr-1" />
-                  {team.club_colors}
-                </Badge>
-              )}
+              <h3 className="font-semibold text-gray-900 text-lg group-hover:text-purple-700 transition-colors">
+                {team.team_name}
+              </h3>
             </div>
 
             {/* Team Info - Only show basic team information for privacy */}
