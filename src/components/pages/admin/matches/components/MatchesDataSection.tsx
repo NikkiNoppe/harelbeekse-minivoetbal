@@ -206,6 +206,7 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
       </div>
 
       {/* Score Section */}
+      <h3 className="text-lg font-semibold text-center text-purple-dark">Score</h3>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-2 md:gap-4">
           <ScoreInput

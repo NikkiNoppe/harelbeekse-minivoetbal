@@ -289,7 +289,7 @@ export const RefereePenaltySection: React.FC<RefereePenaltySectionProps> = (prop
                 <div className="flex items-center gap-2">
                   <span>{p.penaltyName}</span>
                   <span className="text-muted-foreground">€{p.amount}</span>
-                  <Button type="button" variant="outline" onClick={() => removeSavedPenalty(i)} className="btn btn--danger h-8 w-8 p-0" aria-label="Verwijderen">
+                  <Button type="button" variant="outline" onClick={() => removeSavedPenalty(i)} className="btn btn--icon btn--danger" aria-label="Verwijderen">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
