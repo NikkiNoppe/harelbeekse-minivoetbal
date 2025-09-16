@@ -32,6 +32,14 @@ const MatchFormDialog: React.FC<MatchFormDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="modal w-[98vw] max-w-[1400px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {match.homeTeamName} vs {match.awayTeamName}
+          </DialogTitle>
+          <DialogDescription>
+            {match.date} - {match.time} | {match.location}
+          </DialogDescription>
+        </DialogHeader>
         <div className="space-y-6">
           <MatchesCompactForm
             match={match}

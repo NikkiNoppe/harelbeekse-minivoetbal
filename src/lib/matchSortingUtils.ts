@@ -113,6 +113,25 @@ export const sortLeagueMatches = (matches: MatchFormData[]): MatchFormData[] => 
 };
 
 /**
+ * Check if it's Thursday (day 4) to automatically sort completed matches to bottom
+ * @returns Whether completed matches should be moved to bottom
+ */
+const shouldSortCompletedToBottom = (): boolean => {
+  const today = new Date();
+  return today.getDay() === 4; // Thursday = 4
+};
+
+/**
+ * Check if a match is completed (has valid scores)
+ * @param match The match to check
+ * @returns Whether the match is completed
+ */
+const isMatchCompleted = (match: MatchFormData): boolean => {
+  return match.homeScore !== null && match.homeScore !== undefined && 
+         match.awayScore !== null && match.awayScore !== undefined;
+};
+
+/**
  * Sort matches within groups (for display purposes)
  * @param groupedMatches Object with groups of matches
  * @param isCupMatchList Whether these are cup matches
@@ -123,15 +142,27 @@ export const sortMatchesWithinGroups = (
   isCupMatchList: boolean
 ): Record<string, MatchFormData[]> => {
   const sortedGroups = { ...groupedMatches };
+  const moveCompletedToBottom = shouldSortCompletedToBottom();
   
   Object.keys(sortedGroups).forEach(groupKey => {
+    let matches = sortedGroups[groupKey];
+    
     if (isCupMatchList) {
       // For cup matches, sort by date and time within each round
-      sortedGroups[groupKey] = sortMatchesByDateAndTime(sortedGroups[groupKey]);
+      matches = sortMatchesByDateAndTime(matches);
     } else {
       // For league matches, sort by date and time within each matchday
-      sortedGroups[groupKey] = sortMatchesByDateAndTime(sortedGroups[groupKey]);
+      matches = sortMatchesByDateAndTime(matches);
     }
+    
+    // On Thursdays, move completed matches to the bottom within each group
+    if (moveCompletedToBottom) {
+      const completedMatches = matches.filter(isMatchCompleted);
+      const incompleteMatches = matches.filter(match => !isMatchCompleted(match));
+      matches = [...incompleteMatches, ...completedMatches];
+    }
+    
+    sortedGroups[groupKey] = matches;
   });
   
   return sortedGroups;

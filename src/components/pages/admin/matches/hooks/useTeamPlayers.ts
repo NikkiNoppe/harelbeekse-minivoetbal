@@ -92,9 +92,11 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
       setLoading(true);
       setError(null);
 
-      // Add retry delay for failed attempts
+      // Enhanced retry delay with jitter for mobile stability
       if (attempt > 0) {
-        await new Promise(resolve => setTimeout(resolve, Math.min(1000 * attempt, 3000)));
+        const baseDelay = Math.min(1000 * Math.pow(2, attempt), 5000);
+        const jitter = Math.random() * 500; // Add randomness to prevent thundering herd
+        await new Promise(resolve => setTimeout(resolve, baseDelay + jitter));
       }
 
       // Use withUserContext to ensure proper RLS access for Team Managers
@@ -103,7 +105,8 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
           .from('players')
           .select('player_id, first_name, last_name, team_id')
           .eq('team_id', teamId)
-          .order('first_name');
+          .order('first_name')
+          .abortSignal(AbortSignal.timeout(10000)); // 10 second timeout for mobile
       });
 
       if (fetchError) {
@@ -120,16 +123,26 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
       console.error(`Error fetching team players (attempt ${attempt + 1}):`, err);
       setError(err);
       
-      // Retry logic - up to 3 attempts
-      if (attempt < 2) {
+      // Enhanced retry logic - up to 4 attempts for mobile
+      if (attempt < 3) {
         setRetryCount(attempt + 1);
-        setTimeout(() => fetchPlayers(attempt + 1), Math.min(1000 * (attempt + 1), 3000));
+        // Use exponential backoff with longer delays for mobile
+        const retryDelay = Math.min(1000 * Math.pow(2, attempt + 1), 8000);
+        setTimeout(() => fetchPlayers(attempt + 1), retryDelay);
       } else {
-        setPlayers(undefined);
+        // After all retries failed, use cached data if available
+        const cachedData = playerCache.get(teamId);
+        if (cachedData && cachedData.length > 0) {
+          console.log('Using cached player data after fetch failure');
+          setPlayers(cachedData);
+          setError(null); // Clear error since we have fallback data
+        } else {
+          setPlayers(undefined);
+        }
         setRetryCount(0);
       }
     } finally {
-      if (attempt >= 2 || error === null) {
+      if (attempt >= 3 || error === null) {
         setLoading(false);
       }
     }

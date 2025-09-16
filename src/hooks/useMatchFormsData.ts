@@ -19,7 +19,7 @@ export const useMatchFormsData = (
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // League matches query - INSTANT UPDATES for time-sensitive data
+  // League matches query - Optimized for mobile stability
   const leagueQuery = useQuery({
     queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'league'],
     queryFn: () => fetchUpcomingMatches(
@@ -27,16 +27,19 @@ export const useMatchFormsData = (
       hasElevatedPermissions, 
       'league'
     ),
-    staleTime: 10 * 60 * 1000, // 10 minutes - Longer for mobile stability
-    gcTime: 30 * 60 * 1000, // 30 minutes cache
-    retry: 2,
-    refetchOnWindowFocus: false, // Disable to prevent blank dropdowns
-    refetchOnReconnect: false, // Disable to prevent excessive calls
-    refetchInterval: false, // Disable automatic refetch
-    refetchIntervalInBackground: false
+    staleTime: 15 * 60 * 1000, // 15 minutes - Extended for mobile stability
+    gcTime: 60 * 60 * 1000, // 1 hour cache - Keep data longer on mobile
+    retry: 3, // More retries for unstable connections
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
+    refetchOnWindowFocus: false, // Prevent blank dropdowns on tab focus
+    refetchOnReconnect: true, // Refetch when connection restored
+    refetchInterval: false,
+    refetchIntervalInBackground: false,
+    placeholderData: (previousData) => previousData, // Keep previous data while loading
+    networkMode: 'offlineFirst' // Use cache first on poor connections
   });
 
-  // Cup matches query - INSTANT UPDATES for time-sensitive data  
+  // Cup matches query - Optimized for mobile stability  
   const cupQuery = useQuery({
     queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'cup'],
     queryFn: () => fetchUpcomingMatches(
@@ -44,16 +47,19 @@ export const useMatchFormsData = (
       hasElevatedPermissions, 
       'cup'
     ),
-    staleTime: 10 * 60 * 1000, // 10 minutes - Longer for mobile stability
-    gcTime: 30 * 60 * 1000, // 30 minutes cache  
-    retry: 2,
-    refetchOnWindowFocus: false, // Disable to prevent blank dropdowns
-    refetchOnReconnect: false, // Disable to prevent excessive calls
-    refetchInterval: false, // Disable automatic refetch
-    refetchIntervalInBackground: false
+    staleTime: 15 * 60 * 1000, // 15 minutes - Extended for mobile stability
+    gcTime: 60 * 60 * 1000, // 1 hour cache - Keep data longer on mobile  
+    retry: 3, // More retries for unstable connections
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
+    refetchOnWindowFocus: false, // Prevent blank dropdowns on tab focus
+    refetchOnReconnect: true, // Refetch when connection restored
+    refetchInterval: false,
+    refetchIntervalInBackground: false,
+    placeholderData: (previousData) => previousData, // Keep previous data while loading
+    networkMode: 'offlineFirst' // Use cache first on poor connections
   });
 
-  // Playoff matches query - INSTANT UPDATES for time-sensitive data  
+  // Playoff matches query - Optimized for mobile stability  
   const playoffQuery = useQuery({
     queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'playoff'],
     queryFn: () => fetchUpcomingMatches(
@@ -61,13 +67,16 @@ export const useMatchFormsData = (
       hasElevatedPermissions, 
       'playoff'
     ),
-    staleTime: 10 * 60 * 1000, // 10 minutes - Longer for mobile stability
-    gcTime: 30 * 60 * 1000, // 30 minutes cache  
-    retry: 2,
-    refetchOnWindowFocus: false, // Disable to prevent blank dropdowns
-    refetchOnReconnect: false, // Disable to prevent excessive calls
-    refetchInterval: false, // Disable automatic refetch
-    refetchIntervalInBackground: false
+    staleTime: 15 * 60 * 1000, // 15 minutes - Extended for mobile stability
+    gcTime: 60 * 60 * 1000, // 1 hour cache - Keep data longer on mobile  
+    retry: 3, // More retries for unstable connections
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
+    refetchOnWindowFocus: false, // Prevent blank dropdowns on tab focus
+    refetchOnReconnect: true, // Refetch when connection restored
+    refetchInterval: false,
+    refetchIntervalInBackground: false,
+    placeholderData: (previousData) => previousData, // Keep previous data while loading
+    networkMode: 'offlineFirst' // Use cache first on poor connections
   });
 
 
