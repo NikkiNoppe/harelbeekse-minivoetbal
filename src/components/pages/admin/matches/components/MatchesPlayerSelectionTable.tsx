@@ -3,6 +3,8 @@ import React, { useMemo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MatchesCardIcon from "./MatchesCardIcon";
+import PlayerSelectValue from "./PlayerSelectValue";
+import PlayerDataRefreshPopup from "./PlayerDataRefreshPopup";
 import { PlayerSelection } from "../types";
 import { TeamPlayer } from "../hooks/useTeamPlayers";
 
@@ -18,6 +20,7 @@ interface PlayerSelectionTableProps {
   playerCards: Record<number, string>;
   canEdit: boolean;
   showRefereeFields: boolean;
+  onRefreshPlayers?: () => Promise<void>;
 }
 
 const TABLE_COLUMNS = {
@@ -143,8 +146,11 @@ const PlayerRow = React.memo<{
             onValueChange={handlePlayerChange}
             disabled={!canEdit}
           >
-            <SelectTrigger className="dropdown-login-style min-w-[100px]">
-              <SelectValue placeholder="Selecteer speler" />
+            <SelectTrigger className="dropdown-login-style min-w-[100px] max-w-full">
+              <PlayerSelectValue 
+                placeholder="Selecteer speler" 
+                selectedPlayerName={selection.playerName}
+              />
             </SelectTrigger>
              <SelectContent className="dropdown-content-login-style z-[1001] bg-white">
               <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
@@ -219,6 +225,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
   playerCards,
   canEdit,
   showRefereeFields,
+  onRefreshPlayers,
 }) => {
   // Memoize expensive computations
   const memoizedSelectedPlayerIds = useMemo(() => selectedPlayerIds, [selectedPlayerIds]);
@@ -228,7 +235,10 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
   if (loading) {
     return (
       <div className="space-y-3">
-        <div className="text-center py-3 text-purple-600">Spelers laden...</div>
+        <div className="text-center py-3 text-purple-600 flex items-center justify-center gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+          Spelers laden...
+        </div>
         <div className="animate-pulse space-y-2">
           <div className="h-10 bg-purple-100 rounded-md"></div>
           <div className="h-10 bg-purple-100 rounded-md"></div>
@@ -244,6 +254,16 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
 
   return (
     <div>
+      {/* Refresh popup for failed data loads */}
+      {onRefreshPlayers && (
+        <PlayerDataRefreshPopup
+          players={players}
+          loading={loading}
+          error={error}
+          onRefresh={onRefreshPlayers}
+          teamLabel={teamLabel}
+        />
+      )}
       <TeamHeader teamLabel={teamLabel} />
       {/* Desktop/tablet view */}
       <div className="hidden md:block rounded-md border bg-white pb-2">
@@ -306,8 +326,11 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                          }}
                          disabled={!canEdit}
                        >
-                         <SelectTrigger className="dropdown-login-style w-full h-9">
-                           <SelectValue placeholder="Selecteer speler" />
+                          <SelectTrigger className="dropdown-login-style w-full max-w-full h-9">
+                            <PlayerSelectValue 
+                              placeholder="Selecteer speler" 
+                              selectedPlayerName={selection.playerName}
+                            />
                          </SelectTrigger>
                          <SelectContent className="dropdown-content-login-style z-[1001] bg-white">
                            <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>

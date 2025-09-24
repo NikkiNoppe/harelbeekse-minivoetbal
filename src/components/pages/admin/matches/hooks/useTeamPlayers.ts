@@ -21,6 +21,7 @@ interface UseTeamPlayersReturn {
 interface UseTeamPlayersWithSuspensionReturn extends UseTeamPlayersReturn {
   playersWithSuspensions: TeamPlayer[] | undefined;
   suspensionLoading: boolean;
+  refetch: () => Promise<void>;
 }
 
 // Enhanced hook that includes suspension data for match forms
