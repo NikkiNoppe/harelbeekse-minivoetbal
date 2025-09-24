@@ -105,10 +105,15 @@ export const useMatchFormsData = (
         match.homeTeamName.toLowerCase() === filters.teamFilter.toLowerCase() ||
         match.awayTeamName.toLowerCase() === filters.teamFilter.toLowerCase();
 
-      const isNotCompleted = !filters.hideCompletedMatches || 
-        (!match.isCompleted && match.homeScore === null && match.awayScore === null);
+      // Helper function to check if a score is valid
+      const hasValidScore = (score: number | null | undefined): boolean => 
+        score !== null && score !== undefined;
+      
+      // Filter completed matches - hide matches that are completed when toggle is enabled
+      const isCompleted = hasValidScore(match.homeScore) && hasValidScore(match.awayScore);
+      const showMatch = !filters.hideCompletedMatches || !isCompleted;
 
-      return matchesSearch && matchesDate && matchesMatchday && matchesTeam && isNotCompleted;
+      return matchesSearch && matchesDate && matchesMatchday && matchesTeam && showMatch;
     });
 
     // Sort matches
