@@ -21,8 +21,8 @@ interface PlayerSelectionTableProps {
 }
 
 const TABLE_COLUMNS = {
-  speler: "w-4/6", 
-  rugnr: "w-2/6",
+  speler: "w-3/4", 
+  rugnr: "w-1/4",
 } as const;
 
 // Memoized player option component
@@ -30,15 +30,25 @@ const PlayerOption = React.memo<{
   player: TeamPlayer;
   isSelected: boolean;
   isDisabled: boolean;
-}>(({ player, isSelected, isDisabled }) => (
-  <SelectItem
-    value={player.player_id.toString()}
-    disabled={isDisabled}
-    className={`dropdown-item-login-style ${isDisabled ? "opacity-50 text-gray-400" : ""}`}
-  >
-    {player.first_name} {player.last_name}
-  </SelectItem>
-));
+}>(({ player, isSelected, isDisabled }) => {
+  const fullName = `${player.first_name} ${player.last_name}`;
+  const fontSize = fullName.length > 15 ? 'text-xs' : fullName.length > 10 ? 'text-sm' : '';
+  
+  return (
+    <SelectItem
+      value={player.player_id.toString()}
+      disabled={isDisabled}
+      className={`dropdown-item-login-style ${fontSize} ${isDisabled ? "opacity-50 text-gray-400" : ""}`}
+      style={{ 
+        textOverflow: 'ellipsis', 
+        overflow: 'hidden',
+        whiteSpace: 'nowrap'
+      }}
+    >
+      {fullName}
+    </SelectItem>
+  );
+});
 
 // Memoized card option component
 const CardOption = React.memo<{
@@ -133,10 +143,10 @@ const PlayerRow = React.memo<{
             onValueChange={handlePlayerChange}
             disabled={!canEdit}
           >
-            <SelectTrigger className="dropdown-login-style min-w-[120px]">
+            <SelectTrigger className="dropdown-login-style min-w-[100px]">
               <SelectValue placeholder="Selecteer speler" />
             </SelectTrigger>
-             <SelectContent className="dropdown-content-login-style z-[1000] bg-white">
+             <SelectContent className="dropdown-content-login-style z-[1001] bg-white">
               <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
                {/* Show fallback for selected player that might not be in current list */}
                {selection.playerId && selection.playerName && 
@@ -185,7 +195,7 @@ const PlayerRow = React.memo<{
             value={selection.jerseyNumber || ""}
             onChange={handleJerseyChange}
             disabled={!selection.playerId}
-            className="w-16 min-w-[64px] text-center text-sm py-1 px-1 input-login-style"
+            className="w-12 min-w-[48px] text-center text-sm py-1 px-1 input-login-style"
           />
         ) : (
           <span className="text-xs">
@@ -216,7 +226,16 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
   const memoizedPlayerCards = useMemo(() => playerCards, [playerCards]);
 
   if (loading) {
-    return <div className="text-center py-3">Spelers laden...</div>;
+    return (
+      <div className="space-y-3">
+        <div className="text-center py-3 text-purple-600">Spelers laden...</div>
+        <div className="animate-pulse space-y-2">
+          <div className="h-10 bg-purple-100 rounded-md"></div>
+          <div className="h-10 bg-purple-100 rounded-md"></div>
+          <div className="h-10 bg-purple-100 rounded-md"></div>
+        </div>
+      </div>
+    );
   }
   
   if (error) {
@@ -269,9 +288,9 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
           <div className="rounded-md border bg-white divide-y">
             {selections.map((selection, index) => (
               <div key={`${selection.playerId}-${index}`} className="p-2">
-                <div className="flex items-center gap-2 min-w-0">
+                 <div className="grid grid-cols-[3fr_1fr] gap-2 min-w-0">
                    {canEdit ? (
-                     <div className="w-4/6">
+                     <div className="min-w-0">
                         <Select
                          value={selection.playerId?.toString() || "no-player"}
                          onValueChange={(value) => {
@@ -290,29 +309,42 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                          <SelectTrigger className="dropdown-login-style w-full h-9">
                            <SelectValue placeholder="Selecteer speler" />
                          </SelectTrigger>
-                         <SelectContent className="dropdown-content-login-style z-[1000] bg-white">
+                         <SelectContent className="dropdown-content-login-style z-[1001] bg-white">
                            <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
-                           {memoizedPlayers && Array.isArray(memoizedPlayers) && memoizedPlayers.map((player) => {
-                             const playerIdNum = player.player_id;
-                             const alreadySelected = memoizedSelectedPlayerIds.includes(playerIdNum) && selection.playerId !== playerIdNum;
-                             return (
-                               <SelectItem key={playerIdNum} value={playerIdNum.toString()} disabled={alreadySelected} className="dropdown-item-login-style">
-                                 {player.first_name} {player.last_name}
-                               </SelectItem>
-                             );
-                           })}
+                            {memoizedPlayers && Array.isArray(memoizedPlayers) && memoizedPlayers.map((player) => {
+                              const playerIdNum = player.player_id;
+                              const alreadySelected = memoizedSelectedPlayerIds.includes(playerIdNum) && selection.playerId !== playerIdNum;
+                              const fullName = `${player.first_name} ${player.last_name}`;
+                              const fontSize = fullName.length > 15 ? 'text-xs' : fullName.length > 10 ? 'text-sm' : '';
+                              
+                              return (
+                                <SelectItem 
+                                  key={playerIdNum} 
+                                  value={playerIdNum.toString()} 
+                                  disabled={alreadySelected} 
+                                  className={`dropdown-item-login-style ${fontSize}`}
+                                  style={{ 
+                                    textOverflow: 'ellipsis', 
+                                    overflow: 'hidden',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {fullName}
+                                </SelectItem>
+                              );
+                            })}
                          </SelectContent>
                        </Select>
                      </div>
-                   ) : (
-                     <div className="w-4/6 text-sm h-9 flex items-center">
+                    ) : (
+                      <div className="min-w-0 text-sm h-9 flex items-center">
                         {selection.playerName || "-"}
                        {selection.isCaptain && (
                          <span className="ml-2 text-xs bg-[var(--purple-200)] px-1 py-0.5 rounded font-semibold">(K)</span>
                        )}
                      </div>
                    )}
-                   <div className="w-2/6">
+                   <div className="min-w-0">
                     {canEdit ? (
                       <Input
                         id={`m-jersey-${index}`}
@@ -323,7 +355,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                         value={selection.jerseyNumber || ""}
                         onChange={(e) => onPlayerSelection(index, 'jerseyNumber', e.target.value, false)}
                         disabled={!selection.playerId}
-                        className="w-full min-w-[96px] h-9 text-center text-sm py-1 px-2 input-login-style"
+                        className="w-full min-w-[64px] h-9 text-center text-sm py-1 px-2 input-login-style"
                       />
                     ) : (
                       <span className="block text-xs text-right">{selection.jerseyNumber && `#${selection.jerseyNumber}`}</span>

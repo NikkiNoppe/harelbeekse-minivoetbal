@@ -229,7 +229,7 @@ p, .card-description, .text-muted-foreground { color: var(--purple-600); }
   border: 1px solid var(--purple-300);
   border-radius: 0.5rem;
   box-shadow: 0 4px 12px rgba(96, 54, 140, 0.15);
-  z-index: 50;
+  z-index: 1001 !important;
   max-height: 200px;
   overflow-y: auto;
 }
