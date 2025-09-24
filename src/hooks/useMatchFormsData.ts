@@ -10,6 +10,7 @@ export interface MatchFormsFilters {
   teamFilter: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
+  hideCompletedMatches: boolean;
 }
 
 export const useMatchFormsData = (
@@ -104,7 +105,10 @@ export const useMatchFormsData = (
         match.homeTeamName.toLowerCase() === filters.teamFilter.toLowerCase() ||
         match.awayTeamName.toLowerCase() === filters.teamFilter.toLowerCase();
 
-      return matchesSearch && matchesDate && matchesMatchday && matchesTeam;
+      const isNotCompleted = !filters.hideCompletedMatches || 
+        (!match.isCompleted && match.homeScore === null && match.awayScore === null);
+
+      return matchesSearch && matchesDate && matchesMatchday && matchesTeam && isNotCompleted;
     });
 
     // Sort matches

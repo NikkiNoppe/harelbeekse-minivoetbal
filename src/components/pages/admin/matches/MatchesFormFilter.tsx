@@ -4,6 +4,7 @@ import FilterInput from "@/components/ui/filter-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { formatDateWithDay } from "@/lib/dateUtils";
 
 interface MatchFormFilterProps {
@@ -19,6 +20,9 @@ interface MatchFormFilterProps {
   onClearFilters: () => void;
   selfTeamToggle?: boolean;
   selfTeamName?: string;
+  hideCompletedMatches: boolean;
+  onHideCompletedChange: (value: boolean) => void;
+  isTeamManager?: boolean;
 }
 
 const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
@@ -33,10 +37,13 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
   onSortOrderChange,
   onClearFilters,
   selfTeamToggle,
-  selfTeamName
+  selfTeamName,
+  hideCompletedMatches,
+  onHideCompletedChange,
+  isTeamManager
 }) => {
   const ALL_TEAMS_VALUE = 'ALL_TEAMS';
-  const hasActiveFilters = dateFilter || teamFilter || sortBy !== 'week';
+  const hasActiveFilters = dateFilter || teamFilter || sortBy !== 'week' || hideCompletedMatches;
 
   // Helper function to format date for display
   const formatDateForDisplay = (dateString: string): string => {
@@ -59,8 +66,23 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Hide Completed Matches Toggle */}
+      <div className="flex items-center gap-3 p-3 bg-card/50 rounded-lg">
+        <Switch
+          id="hide-completed"
+          checked={hideCompletedMatches}
+          onCheckedChange={onHideCompletedChange}
+        />
+        <label 
+          htmlFor="hide-completed" 
+          className="text-sm font-medium cursor-pointer select-none"
+        >
+          Verberg gespeelde wedstrijden
+        </label>
+      </div>
+
       {/* Main Filter Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className={`grid gap-3 ${isTeamManager ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
         <FilterInput
           type="date"
           placeholder="Filter op datum"
@@ -70,7 +92,20 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
         />
 
         <div className="flex gap-2">
-          {selfTeamToggle && selfTeamName ? (
+          {isTeamManager && selfTeamName ? (
+            <Select 
+              value={teamFilter === selfTeamName ? 'my-team' : 'all-matches'} 
+              onValueChange={(v) => onTeamChange(v === 'my-team' ? selfTeamName : '')}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Filter wedstrijden" />
+              </SelectTrigger>
+              <SelectContent className="z-[1100] bg-popover">
+                <SelectItem value="all-matches">Alle wedstrijden</SelectItem>
+                <SelectItem value="my-team">Mijn team ({selfTeamName})</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : selfTeamToggle && selfTeamName ? (
             <Button
               variant={teamFilter === selfTeamName ? "default" : "outline"}
               onClick={() => onTeamChange(teamFilter === selfTeamName ? '' : selfTeamName)}
@@ -150,6 +185,20 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
                 size="sm"
                 className="h-auto p-0 ml-1"
                 onClick={() => onTeamChange("")}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
+          
+          {hideCompletedMatches && (
+            <Badge variant="secondary" className="gap-1">
+              Gespeelde verborgen
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 ml-1"
+                onClick={() => onHideCompletedChange(false)}
               >
                 <X className="h-3 w-3" />
               </Button>

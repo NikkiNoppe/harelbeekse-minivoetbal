@@ -56,7 +56,8 @@ const AdminPlayoffMatchesPage: React.FC = () => {
     matchdayFilter: "",
     teamFilter: "",
     sortBy: "date",
-    sortOrder: "asc"
+    sortOrder: "asc",
+    hideCompletedMatches: false
   });
 
   // Selected match for modal
@@ -200,13 +201,17 @@ const AdminPlayoffMatchesPage: React.FC = () => {
                       onSortChange={(value) => handleFilterChange({ sortBy: value })}
                       sortOrder={filters.sortOrder}
                       onSortOrderChange={(value) => handleFilterChange({ sortOrder: value })}
+                      hideCompletedMatches={filters.hideCompletedMatches}
+                      onHideCompletedChange={(value) => handleFilterChange({ hideCompletedMatches: value })}
+                      isTeamManager={false}
                       onClearFilters={() => handleFilterChange({
                         searchTerm: "",
                         dateFilter: "",
                         matchdayFilter: "",
                         teamFilter: "",
                         sortBy: "date",
-                        sortOrder: "asc"
+                        sortOrder: "asc",
+                        hideCompletedMatches: false
                       } as MatchFormsFilters)}
                     />
                   </div>
