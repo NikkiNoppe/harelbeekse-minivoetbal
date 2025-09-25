@@ -117,10 +117,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 <TabsContent value="polls" className="mt-0">
                   <AdminPollPage />
                 </TabsContent>
-                
-                <TabsContent value="scheidsrechters" className="mt-0">
-                  <AdminPollPage />
-                </TabsContent>
               </>
             )}
 
