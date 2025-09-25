@@ -77,8 +77,7 @@ const Header: React.FC<HeaderProps> = ({
     { key: "competitie", label: "Competitie", icon: <Trophy size={16} /> },
     { key: "beker", label: "Beker", icon: <Award size={16} /> },
     { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
-    { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> },
-    { key: "scheidsrechters", label: "Scheidsrechters", icon: <Shield size={16} /> }
+    { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> }
   ];
 
   const normalizedRole = String(user?.role || '').toLowerCase();
@@ -92,7 +91,7 @@ const Header: React.FC<HeaderProps> = ({
     : 'Gebruiker';
 
   // Filter public items based on tab visibility settings and enforce desired order
-  const desiredPublicOrder = ['algemeen', 'reglement', 'competitie', 'beker', 'schorsingen', 'scheidsrechters'] as const;
+  const desiredPublicOrder = ['algemeen', 'reglement', 'competitie', 'beker', 'schorsingen'] as const;
   const visiblePublicItems = desiredPublicOrder
     .map((key) => publicNavItems.find((i) => i.key === key))
     .filter((i): i is NonNullable<typeof i> => Boolean(i))
@@ -114,6 +113,7 @@ const Header: React.FC<HeaderProps> = ({
   const beheerItems = [
     { key: "players", label: "Spelers", icon: <Users size={14} />, adminOnly: false },
     { key: "ploegen", label: "Teams", icon: <Users size={14} />, adminOnly: false },
+    { key: "scheidsrechters", label: "Scheidsrechters", icon: <Shield size={14} />, adminOnly: false },
     { key: "suspensions", label: "Schorsingen", icon: <Shield size={14} />, adminOnly: true },
     { key: "teams", label: "Teams (Admin)", icon: <Shield size={14} />, adminOnly: true },
     { key: "users", label: "Gebruikers", icon: <User size={14} />, adminOnly: true },
@@ -133,7 +133,9 @@ const Header: React.FC<HeaderProps> = ({
     (!item.adminOnly || isAdmin) && isTabVisible(item.key)
   ) : [];
   const visibleBeheerItems = (isAuthenticated ? beheerItems : [])
-    .filter(item => (!item.adminOnly || isAdmin));
+    .filter(item => (!item.adminOnly || isAdmin) && 
+      // Show scheidsrechters for both admin and referee
+      (item.key !== 'scheidsrechters' || isAdmin || normalizedRole === 'referee'));
   const visibleFinancieelItems = (isAuthenticated ? financieelItems : [])
     .filter(item => (!item.adminOnly || isAdmin));
   const visibleSysteemItems = (isAuthenticated ? systeemItems : [])

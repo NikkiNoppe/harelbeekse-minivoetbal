@@ -31,6 +31,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const beheerItems = [
     { key: "players", label: "Spelers", icon: Users, adminOnly: false },
     { key: "ploegen", label: "Teams", icon: Users, adminOnly: false },
+    { key: "scheidsrechters", label: "Scheidsrechters", icon: Calendar, adminOnly: false },
     { key: "suspensions", label: "Schorsingen", icon: Shield, adminOnly: true },
     { key: "teams", label: "Teams (Admin)", icon: Shield, adminOnly: true },
     { key: "users", label: "Gebruikers", icon: User, adminOnly: true },
@@ -49,7 +50,6 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   
   // Systeem groep
   const systeemItems = [
-    { key: "polls", label: "Scheidsrechter Polls", icon: Calendar, adminOnly: true },
     { key: "settings", label: "Instellingen", icon: Settings, adminOnly: true },
   ];
 
@@ -97,7 +97,9 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const visibleBeheerItems = beheerItems.filter(item => 
     (!item.adminOnly || isAdmin) && 
     // Hide players tab for referees
-    !(item.key === 'players' && user?.role === 'referee')
+    !(item.key === 'players' && user?.role === 'referee') &&
+    // Show scheidsrechters for both admin and referee
+    (item.key !== 'scheidsrechters' || isAdmin || user?.role === 'referee')
   );
 
   const visibleFinancieelItems = financieelItems.filter(item => 

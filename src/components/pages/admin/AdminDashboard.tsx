@@ -117,11 +117,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 <TabsContent value="polls" className="mt-0">
                   <AdminPollPage />
                 </TabsContent>
+                
+                <TabsContent value="scheidsrechters" className="mt-0">
+                  <AdminPollPage />
+                </TabsContent>
               </>
             )}
 
-            {/* Scheidsrechters tab - available for admin and referee */}
-            {(isAdmin || user?.role === 'referee') && (
+            {/* Scheidsrechters tab - show RefereePollPage only for non-admin referees */}
+            {!isAdmin && user?.role === 'referee' && (
               <TabsContent value="scheidsrechters" className="mt-0">
                 <RefereePollPage 
                   userId={user?.id || 0} 
