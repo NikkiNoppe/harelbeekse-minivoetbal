@@ -57,7 +57,7 @@ const TeamsPage: React.FC = () => {
   );
 
   const TeamCard = React.memo(({ team }: { team: any }) => {
-    const showFullDetails = isAuthenticated && (team.contact_person || team.contact_email || team.contact_phone || team.club_colors || team.preferred_play_moments);
+    const showFullDetails = isAuthenticated && (team.contact_person || team.contact_email || team.contact_phone || team.club_colors);
     
     return (
       <Card className="group hover:shadow-lg transition-all duration-200 border-l-4 border-l-primary bg-gradient-to-r from-background to-primary/5 hover:border-l-primary/80">
@@ -71,13 +71,6 @@ const TeamsPage: React.FC = () => {
               <h3 className="font-semibold text-foreground text-lg group-hover:text-primary transition-colors">
                 {team.team_name}
               </h3>
-              {team.club_colors && (
-                <div 
-                  className="w-4 h-4 rounded-full border border-border flex-shrink-0" 
-                  style={{ backgroundColor: team.club_colors }}
-                  title={`Clubkleuren: ${team.club_colors}`}
-                />
-              )}
             </div>
 
             {/* Team Info */}
@@ -104,10 +97,17 @@ const TeamsPage: React.FC = () => {
                   </div>
                 )}
                 
-                {team.preferred_play_moments?.days && team.preferred_play_moments.days.length > 0 && (
+                {team.club_colors && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4 text-primary flex-shrink-0" />
-                    <span>Voorkeur: {team.preferred_play_moments.days.join(', ')}</span>
+                    <Palette className="h-4 w-4 text-primary flex-shrink-0" />
+                    <span>Teamkleuren:</span>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-6 h-6 rounded border border-border shadow-sm" 
+                        style={{ backgroundColor: team.club_colors }}
+                      />
+                      <span className="font-mono text-xs">{team.club_colors}</span>
+                    </div>
                   </div>
                 )}
               </div>
