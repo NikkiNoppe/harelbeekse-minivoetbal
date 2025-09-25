@@ -18,8 +18,9 @@ import { useTabVisibility } from "@/context/TabVisibilityContext";
 
 import AdminSuspensionsPage from "@/components/pages/admin/suspensions/AdminSuspensionsPage";
 import AdminPlayoffMatchesPage from "@/components/pages/admin/matches/AdminPlayoffMatchesPage";
+import AdminPollPage from "@/components/pages/admin/polls/AdminPollPage";
 
-type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "match-forms-playoffs" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup" | "suspensions";
+type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "match-forms-playoffs" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup" | "suspensions" | "polls";
 
 interface AdminDashboardProps {
   activeTab: TabName;
@@ -110,6 +111,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 
                 <TabsContent value="settings" className="mt-0">
                   <SettingsPage />
+                </TabsContent>
+                
+                <TabsContent value="polls" className="mt-0">
+                  <AdminPollPage />
                 </TabsContent>
               </>
             )}

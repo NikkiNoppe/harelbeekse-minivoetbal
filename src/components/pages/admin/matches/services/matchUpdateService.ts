@@ -13,6 +13,9 @@ export interface MatchUpdateData {
   away_players?: any[];
   is_submitted?: boolean;
   speeldag?: string;
+  assigned_referee_id?: number | null;
+  poll_group_id?: string | null;
+  poll_month?: string | null;
 }
 
 export const updateMatchData = async (data: MatchUpdateData): Promise<{ success: boolean; message: string }> => {
@@ -31,6 +34,10 @@ export const updateMatchData = async (data: MatchUpdateData): Promise<{ success:
         away_players: data.away_players,
         is_submitted: data.is_submitted,
         speeldag: data.speeldag,
+        // Preserve poll data
+        assigned_referee_id: data.assigned_referee_id || null,
+        poll_group_id: data.poll_group_id || null,
+        poll_month: data.poll_month || null,
         updated_at: new Date().toISOString()
       })
       .eq('match_id', data.match_id);

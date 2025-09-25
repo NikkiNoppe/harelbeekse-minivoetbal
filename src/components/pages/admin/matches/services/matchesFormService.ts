@@ -31,6 +31,9 @@ export const fetchUpcomingMatches = async (
         away_players,
         is_cup_match,
         is_playoff_match,
+        assigned_referee_id,
+        poll_group_id,
+        poll_month,
         teams_home:teams!home_team_id ( team_name ),
         teams_away:teams!away_team_id ( team_name )
       `)
@@ -92,7 +95,11 @@ export const fetchUpcomingMatches = async (
         referee: row.referee,
         refereeNotes: row.referee_notes,
         homePlayers: row.home_players && Array.isArray(row.home_players) ? row.home_players : [],
-        awayPlayers: row.away_players && Array.isArray(row.away_players) ? row.away_players : []
+        awayPlayers: row.away_players && Array.isArray(row.away_players) ? row.away_players : [],
+        // Poll-related fields (backward compatible)
+        assignedRefereeId: row.assigned_referee_id,
+        pollGroupId: row.poll_group_id,
+        pollMonth: row.poll_month
       };
     });
 
@@ -144,7 +151,11 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
         is_submitted: matchData.isCompleted,
         is_locked: matchData.isLocked,
         home_players: matchData.homePlayers as any,
-        away_players: matchData.awayPlayers as any
+        away_players: matchData.awayPlayers as any,
+        // Preserve poll data if present
+        assigned_referee_id: (matchData as any).assignedRefereeId || null,
+        poll_group_id: (matchData as any).pollGroupId || null,
+        poll_month: (matchData as any).pollMonth || null
       })
       .eq('match_id', matchData.matchId);
 

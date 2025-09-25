@@ -6,6 +6,7 @@ import MatchesFormActions from "./components/MatchesFormActions";
 import RefereeCardsSection from "./components/MatchesRefereeCardsSection";
 import { RefereePenaltySection } from "./components/MatchesRefereePenaltySection";
 import MatchesPenaltyShootoutModal from "./components/MatchesPenaltyShootoutModal";
+import MatchesAdminHiddenFields from "./components/MatchesAdminHiddenFields";
 import { MatchFormData, PlayerSelection } from "./types";
 import { useMatchFormState } from "./hooks/useMatchFormState";
 import { useEnhancedMatchFormSubmission } from "./hooks/useEnhancedMatchFormSubmission";
@@ -250,6 +251,9 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       
       {/* Referee fields - Hidden for team managers */}
       {!isTeamManager && refereeFields}
+      
+      {/* Hidden fields to preserve poll data */}
+      <MatchesAdminHiddenFields match={match} />
       
       <MatchesFormActions
         onSubmit={handleSubmit}

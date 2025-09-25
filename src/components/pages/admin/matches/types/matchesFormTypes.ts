@@ -26,4 +26,8 @@ export interface MatchFormData {
   refereeNotes?: string;
   homePlayers: PlayerSelection[];
   awayPlayers: PlayerSelection[];
+  // Poll-related optional fields for backward compatibility
+  assignedRefereeId?: number | null;
+  pollGroupId?: string | null;
+  pollMonth?: string | null;
 }

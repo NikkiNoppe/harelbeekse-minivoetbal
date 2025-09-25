@@ -49,6 +49,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   
   // Systeem groep
   const systeemItems = [
+    { key: "polls", label: "Scheidsrechter Polls", icon: Calendar, adminOnly: true },
     { key: "settings", label: "Instellingen", icon: Settings, adminOnly: true },
   ];
 
