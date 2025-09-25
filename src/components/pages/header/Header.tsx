@@ -258,23 +258,7 @@ const Header: React.FC<HeaderProps> = ({
                         {visibleBeheerItems.map((item) => (
                           <button
                             key={item.key}
-                            onClick={() => { 
-                              setIsSheetOpen(false); 
-                              
-                              // Special handling for scheidsrechters based on role
-                              if (item.key === 'scheidsrechters') {
-                                if (isAdmin) {
-                                  // Admin goes to polls tab in admin dashboard
-                                  onTabChange('polls');
-                                } else {
-                                  // Referee goes to scheidsrechters tab
-                                  onTabChange('scheidsrechters');
-                                }
-                              } else {
-                                // Standard navigation for other items
-                                onTabChange(item.key);
-                              }
-                            }}
+                            onClick={() => { setIsSheetOpen(false); onTabChange(item.key); }}
                             className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
                           >
                             {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}

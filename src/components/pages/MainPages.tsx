@@ -13,7 +13,7 @@ import SchorsingenPage from "./SchorsingenPage";
 import ReglementPage from "./ReglementPage";
 import PloegenPage from "./PloegenPage";
 import TeamsPage from "./admin/teams/TeamsPage";
-import RefereePollPage from "./referee/RefereePollPage";
+import ScheidsrechtersPage from "./ScheidsrechtersPage";
 import { useAuth } from "@/components/pages/login/AuthProvider";
 
 interface MainPagesProps {
@@ -53,7 +53,7 @@ const MemoizedSchorsingenPage = memo(SchorsingenPage);
 const MemoizedReglementPage = memo(ReglementPage);
 const MemoizedTeamsPage = memo(TeamsPage);
 const MemoizedPloegenPage = memo(PloegenPage);
-const MemoizedRefereePollPage = memo(RefereePollPage);
+const MemoizedScheidsrechtersPage = memo(ScheidsrechtersPage);
 
 MemoizedAlgemeenPage.displayName = 'MemoizedAlgemeenPage';
 MemoizedCompetitiePage.displayName = 'MemoizedCompetitiePage';
@@ -65,7 +65,7 @@ MemoizedSchorsingenPage.displayName = 'MemoizedSchorsingenPage';
 MemoizedReglementPage.displayName = 'MemoizedReglementPage';
 MemoizedTeamsPage.displayName = 'MemoizedTeamsPage';
 MemoizedPloegenPage.displayName = 'MemoizedPloegenPage';
-MemoizedRefereePollPage.displayName = 'MemoizedRefereePollPage';
+MemoizedScheidsrechtersPage.displayName = 'MemoizedScheidsrechtersPage';
 
 // Tab content wrapper with animation
 const TabContentWrapper = memo(({ children }: { children: React.ReactNode }) => (
@@ -156,10 +156,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
     scheidsrechters: isTabVisible("scheidsrechters") && (
       <TabsContent value="scheidsrechters" className="mt-0" key="scheidsrechters">
         <TabContentWrapper>
-          <MemoizedRefereePollPage 
-            userId={user?.id || 0} 
-            username={user?.username || ''} 
-          />
+          <MemoizedScheidsrechtersPage />
         </TabContentWrapper>
       </TabsContent>
     )
