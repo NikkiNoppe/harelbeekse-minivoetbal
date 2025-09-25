@@ -24,11 +24,11 @@ export { fetchCompetitionMatches, fetchAllCards, type MatchData, type CardData }
 export { bekerService as cupService, type CupMatch } from './match/cupService';
 
 // Individual services that don't fit in categories
-export { fetchBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost, type BlogPost } from './blogService';
+export { blogService, fetchBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost, type BlogPostData, type BlogPost } from './blogService';
+export { notificationService, type NotificationData, type Notification } from './notificationService';
 export { seasonService, type SeasonData } from './seasonService';
 export { timeslotPriorityService } from './timeslotPriorityService';
 export { competitionDataService } from './competitionDataService';
 export { enhancedTeamService } from './enhancedTeamService';
 export { suspensionService, type Suspension, type PlayerCard } from './suspensionService';
 export { suspensionRulesService, type SuspensionRules, type YellowCardRule, type RedCardRules } from './suspensionRulesService';
-export { cleanupTestData } from './cleanupService'; 

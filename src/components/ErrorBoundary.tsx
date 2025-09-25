@@ -41,7 +41,7 @@ function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetError
               <RefreshCw className="h-4 w-4 mr-2" />
               Opnieuw proberen
             </Button>
-            <Button onClick={() => (window.location.href = '/')} className="flex-1">
+            <Button onClick={() => (window.location.href = '/')} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white">
               <Home className="h-4 w-4 mr-2" />
               Homepage
             </Button>

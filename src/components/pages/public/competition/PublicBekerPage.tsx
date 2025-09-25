@@ -2,7 +2,7 @@ import React, { memo, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Trophy, Award, AlertCircle } from "lucide-react";
-import MatchesCupCard from "./admin/matches/components/MatchesCupCard";
+import MatchesCupCard from "../../admin/matches/components/MatchesCupCard";
 import { useCupData, CupMatchDisplay } from "@/hooks/useCupData";
 // Skeleton loading components
 const MatchCardSkeleton = memo(() => <Card className="w-full">
@@ -167,7 +167,7 @@ const TournamentContent = memo(({
   </div>);
 
 // Main component
-const BekerPage: React.FC = () => {
+const PublicBekerPage: React.FC = () => {
   const {
     isLoading,
     error,
@@ -198,4 +198,4 @@ TournamentLoading.displayName = 'TournamentLoading';
 TournamentError.displayName = 'TournamentError';
 TournamentEmpty.displayName = 'TournamentEmpty';
 TournamentContent.displayName = 'TournamentContent';
-export default memo(BekerPage);
+export default memo(PublicBekerPage);

@@ -8,7 +8,7 @@ import { Search, AlertTriangle, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllCards, CardData } from "@/services/match";
 import { sortDatesDesc } from "@/lib/dateUtils";
-import ResponsiveCardsTable from "../tables/ResponsiveCardsTable";
+import ResponsiveCardsTable from "@/components/tables/ResponsiveCardsTable";
 
 interface PlayerCardSummary {
   playerId: number;

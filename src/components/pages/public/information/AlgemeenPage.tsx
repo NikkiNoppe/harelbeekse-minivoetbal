@@ -73,30 +73,39 @@ const NewsItemSkeleton = memo(() => (
 ));
 
 // Memoized blog post item
-const BlogPostItem = memo(({ post }: { post: BlogPost }) => (
-  <Card className="card-hover w-full">
-    <CardHeader className="pb-3 sm:pb-4 bg-transparent">
-      <div className="flex justify-between items-start mb-2 gap-2">
-        <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">
-          {formatDateShort(post.date)}
-        </span>
-      </div>
-      <CardTitle className="text-lg sm:text-xl break-words">{post.title}</CardTitle>
-    </CardHeader>
-    <CardContent className="bg-transparent">
-      <p className="text-sm sm:text-base break-words">{post.content}</p>
-      {post.tags && post.tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-3">
-          {post.tags.map((tag, index) => (
-            <Badge key={index} className="badge-purple-white">
-              {tag}
-            </Badge>
-          ))}
+const BlogPostItem = memo(({ post }: { post: BlogPost }) => {
+  // Check if this post has actual content (title, content, etc.)
+  const hasContent = post.setting_value?.title || post.setting_value?.content;
+  
+  // If no content, don't render anything
+  if (!hasContent) {
+    return null;
+  }
+  
+  return (
+    <Card className="card-hover w-full">
+      <CardHeader className="pb-3 sm:pb-4 bg-transparent">
+        <div className="flex justify-between items-start mb-2 gap-2">
+          <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">
+            {formatDateShort(post.created_at)}
+          </span>
         </div>
+        {post.setting_value?.title && (
+          <CardTitle className="text-lg sm:text-xl break-words">
+            {post.setting_value.title}
+          </CardTitle>
+        )}
+      </CardHeader>
+      {post.setting_value?.content && (
+        <CardContent className="bg-transparent">
+          <p className="text-sm sm:text-base break-words">
+            {post.setting_value.content}
+          </p>
+        </CardContent>
       )}
-    </CardContent>
-  </Card>
-));
+    </Card>
+  );
+});
 
 // News section component
 const NewsSection = memo(() => {
@@ -147,9 +156,26 @@ const NewsSection = memo(() => {
       );
     }
 
+    // Filter posts that have actual content
+    const postsWithContent = blogPosts.filter(post => 
+      post.setting_value?.title || post.setting_value?.content
+    );
+
+    if (postsWithContent.length === 0) {
+      return (
+        <Card className="w-full">
+          <CardContent className="py-8 text-center">
+            <p className="text-muted-foreground text-sm sm:text-base">
+              Geen nieuws beschikbaar
+            </p>
+          </CardContent>
+        </Card>
+      );
+    }
+
     return (
       <div className="space-y-3 sm:space-y-4 w-full">
-        {blogPosts.map(post => (
+        {postsWithContent.map(post => (
           <BlogPostItem key={post.id} post={post} />
         ))}
       </div>

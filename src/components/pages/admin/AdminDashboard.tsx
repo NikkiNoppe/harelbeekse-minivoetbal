@@ -13,15 +13,18 @@ import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
 import PlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
 import SettingsPage from "@/components/pages/admin/settings/SettingsPage";
 import NotAvailable from "@/components/common/NotAvailable";
-import AlgemeenPage from "@/components/pages/AlgemeenPage";
+import AlgemeenPage from "@/components/pages/public/information/AlgemeenPage";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 
 import AdminSuspensionsPage from "@/components/pages/admin/suspensions/AdminSuspensionsPage";
 import AdminPlayoffMatchesPage from "@/components/pages/admin/matches/AdminPlayoffMatchesPage";
-import AdminPollPage from "@/components/pages/admin/polls/AdminPollPage";
+import ScheidsrechtersPage from "@/components/pages/admin/scheidsrechter/ScheidsrechtersPage";
 import RefereePollPage from "@/components/pages/referee/RefereePollPage";
+import BlogPage from "@/components/pages/admin/blog/BlogPage";
+import NotificationPage from "@/components/pages/admin/notifications/NotificationPage";
+import SchorsingenPage from "@/components/pages/admin/schorsingen/SchorsingenPage";
 
-type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "match-forms-playoffs" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup" | "suspensions" | "polls" | "scheidsrechters";
+type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "match-forms-playoffs" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup" | "suspensions" | "schorsingen" | "polls" | "scheidsrechters" | "blog-management" | "notification-management";
 
 interface AdminDashboardProps {
   activeTab: TabName;
@@ -90,6 +93,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                   <AdminSuspensionsPage />
                 </TabsContent>
                 
+                <TabsContent value="schorsingen" className="mt-0">
+                  <SchorsingenPage />
+                </TabsContent>
+                
                 <TabsContent value="users" className="mt-0">
                   <UserPage />
                 </TabsContent>
@@ -116,10 +123,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 
                 
                 <TabsContent value="polls" className="mt-0">
-                  <AdminPollPage />
+                  <ScheidsrechtersPage />
                 </TabsContent>
               </>
             )}
+
+            {/* Blog Management */}
+            <TabsContent value="blog-management" className="mt-0">
+              <BlogPage />
+            </TabsContent>
+
+            {/* Notification Management */}
+            <TabsContent value="notification-management" className="mt-0">
+              <NotificationPage />
+            </TabsContent>
 
             {/* Scheidsrechters tab - removed as it's now handled via main navigation */}
           </div>

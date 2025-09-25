@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle } from "lucide-react";
-import MatchesCard from "./admin/matches/components/MatchesCard";
-import ResponsiveStandingsTable from "../tables/ResponsiveStandingsTable";
-import ResponsiveScheduleTable from "../tables/ResponsiveScheduleTable";
+import MatchesCard from "../../admin/matches/components/MatchesCard";
+import ResponsiveStandingsTable from "@/components/tables/ResponsiveStandingsTable";
+import ResponsiveScheduleTable from "@/components/tables/ResponsiveScheduleTable";
 import { useCompetitionData, Team, MatchData } from "@/hooks/useCompetitionData";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";

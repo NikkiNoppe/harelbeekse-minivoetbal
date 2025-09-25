@@ -3,17 +3,15 @@ import React, { memo, useMemo } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTabVisibility, TabName } from "@/context/TabVisibilityContext";
-import AlgemeenPage from "./AlgemeenPage";
-import CompetitiePage from "./CompetitiePage";
-import PlayOffPage from "./PlayOffPage";
-import BekerPage from "./BekerPage";
+import AlgemeenPage from "./public/information/AlgemeenPage";
+import CompetitiePage from "./public/competition/CompetitiePage";
+import PlayOffPage from "./public/competition/PlayOffPage";
+import PublicBekerPage from "./public/competition/PublicBekerPage";
 
-import KaartenPage from "./KaartenPage";
-import SchorsingenPage from "./SchorsingenPage";
-import ReglementPage from "./ReglementPage";
-import PloegenPage from "./PloegenPage";
+import KaartenPage from "./public/information/KaartenPage";
+import ReglementPage from "./public/information/ReglementPage";
 import TeamsPage from "./admin/teams/TeamsPage";
-import ScheidsrechtersPage from "./ScheidsrechtersPage";
+import ScheidsrechtersPage from "./admin/scheidsrechter/ScheidsrechtersPage";
 import { useAuth } from "@/components/pages/login/AuthProvider";
 
 interface MainPagesProps {
@@ -46,13 +44,11 @@ TabContentSkeleton.displayName = 'TabContentSkeleton';
 const MemoizedAlgemeenPage = memo(AlgemeenPage);
 const MemoizedCompetitiePage = memo(CompetitiePage);
 const MemoizedPlayOffPage = memo(PlayOffPage);
-const MemoizedBekerPage = memo(BekerPage);
+const MemoizedBekerPage = memo(PublicBekerPage);
 
 const MemoizedKaartenPage = memo(KaartenPage);
-const MemoizedSchorsingenPage = memo(SchorsingenPage);
 const MemoizedReglementPage = memo(ReglementPage);
 const MemoizedTeamsPage = memo(TeamsPage);
-const MemoizedPloegenPage = memo(PloegenPage);
 const MemoizedScheidsrechtersPage = memo(ScheidsrechtersPage);
 
 MemoizedAlgemeenPage.displayName = 'MemoizedAlgemeenPage';
@@ -61,10 +57,8 @@ MemoizedPlayOffPage.displayName = 'MemoizedPlayOffPage';
 MemoizedBekerPage.displayName = 'MemoizedBekerPage';
 
 MemoizedKaartenPage.displayName = 'MemoizedKaartenPage';
-MemoizedSchorsingenPage.displayName = 'MemoizedSchorsingenPage';
 MemoizedReglementPage.displayName = 'MemoizedReglementPage';
 MemoizedTeamsPage.displayName = 'MemoizedTeamsPage';
-MemoizedPloegenPage.displayName = 'MemoizedPloegenPage';
 MemoizedScheidsrechtersPage.displayName = 'MemoizedScheidsrechtersPage';
 
 // Tab content wrapper with animation
@@ -131,25 +125,11 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
       </TabsContent>
     ),
     
-    schorsingen: isTabVisible("schorsingen") && (
-      <TabsContent value="schorsingen" className="mt-0" key="schorsingen">
-        <TabContentWrapper>
-          <MemoizedSchorsingenPage />
-        </TabContentWrapper>
-      </TabsContent>
-    ),
     
     teams: isTabVisible("teams") && (
       <TabsContent value="teams" className="mt-0" key="teams">
         <TabContentWrapper>
-          <MemoizedPloegenPage />
-        </TabContentWrapper>
-      </TabsContent>
-    ),
-    ploegen: isTabVisible("ploegen") && (
-      <TabsContent value="ploegen" className="mt-0" key="ploegen">
-        <TabContentWrapper>
-          <MemoizedPloegenPage />
+          <MemoizedTeamsPage />
         </TabContentWrapper>
       </TabsContent>
     ),
@@ -171,9 +151,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
         'competitie',
         'playoff',
         'teams',
-        'ploegen',
         'kaarten',
-        'schorsingen',
         'reglement',
         'scheidsrechters',
       ] as const
@@ -217,9 +195,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
           {tabContents.competitie}
           {tabContents.playoff}
           {tabContents.teams}
-          {tabContents.ploegen}
           {tabContents.kaarten}
-          {tabContents.schorsingen}
           {tabContents.reglement}
           {tabContents.scheidsrechters}
         </Tabs>

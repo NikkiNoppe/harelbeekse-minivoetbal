@@ -8,6 +8,7 @@ import LoginModal from "@/components/pages/login/LoginModal";
 import MainPages from "@/components/pages/MainPages";
 import { AdminDashboardLayout } from "@/components/pages/admin/AdminDashboardLayout";
 import { useAuth } from "@/components/pages/login/AuthProvider";
+import NotificationPopup from "@/components/common/NotificationPopup";
 
 const Layout: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
@@ -49,10 +50,10 @@ const Layout: React.FC = () => {
       '/beker': 'beker',
       '/competitie': 'competitie',
       '/playoff': 'playoff',
-      '/teams': 'ploegen',
+      '/teams': 'teams',
       '/reglement': 'reglement',
       '/kaarten': 'kaarten',
-      '/schorsingen': 'schorsingen',
+      '/scheidsrechters': 'scheidsrechters',
     };
     const mapped = map[path];
     if (mapped) {
@@ -63,13 +64,13 @@ const Layout: React.FC = () => {
   // Admin sections die sidebar gebruiken
   const adminTabs = [
     "match-forms", "match-forms-league", "match-forms-cup", "match-forms-playoffs", "players", "teams", "users", 
-    "competition", "playoffs", "cup", "financial", "settings", "schorsingen", "suspensions"
+    "competition", "playoffs", "cup", "financial", "settings", "schorsingen", "suspensions", "blog-management", "notification-management"
   ];
   
   // Main public tabs that use MainPages component
   const publicTabs = [
     "algemeen", "beker", "competitie", "playoff", 
-    "kaarten", "schorsingen", "reglement", "teams", "ploegen"
+    "kaarten", "reglement", "teams", "scheidsrechters"
   ];
 
   const isAdminSection = user && adminTabs.includes(activeTab);
@@ -117,6 +118,7 @@ const Layout: React.FC = () => {
         )}
       </main>
       <Footer />
+      <NotificationPopup />
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
         <DialogContent className="modal">
           <DialogTitle className="sr-only">Inloggen</DialogTitle>

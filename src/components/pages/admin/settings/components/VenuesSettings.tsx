@@ -183,19 +183,21 @@ const VenuesSettings: React.FC = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Sportzalen</h3>
-                <Button onClick={handleAdd} className="btn-dark">
+                <Button onClick={handleAdd} className="btn btn--primary">
                   <Plus className="h-4 w-4 mr-2" />
-                  Nieuwe Locatie
+                  Toevoegen
                 </Button>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Naam</TableHead>
-                    <TableHead>Adres</TableHead>
-                    <TableHead>Acties</TableHead>
-                  </TableRow>
-                </TableHeader>
+              <div className="w-full overflow-x-auto">
+                <div className="min-w-[600px]">
+                  <Table className="table w-full">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[200px]">Naam</TableHead>
+                        <TableHead className="min-w-[300px]">Adres</TableHead>
+                        <TableHead className="text-center min-w-[120px]">Acties</TableHead>
+                      </TableRow>
+                    </TableHeader>
                 <TableBody>
                   {venues.map((venue) => (
                     <TableRow key={venue.venue_id}>
@@ -220,7 +222,9 @@ const VenuesSettings: React.FC = () => {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+                  </Table>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>

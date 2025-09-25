@@ -20,8 +20,6 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       'competition': 'competitie',
       'cup': 'beker', 
       'playoffs': 'playoff',
-      // Ploegen (cards) gebruikt dezelfde toggle als teams
-      'ploegen': 'teams',
     };
 
     // Use mapped tab name if it exists, otherwise use original
@@ -56,6 +54,12 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       return !!(leagueSetting?.is_visible || cupSetting?.is_visible || playoffsSetting?.is_visible);
     }
 
+    // Special handling: scheidsrechters should be visible for admin/referee regardless of settings
+    if (mappedTab === 'scheidsrechters') {
+      if (!user) return false;
+      return user.role === 'admin' || user.role === 'referee';
+    }
+
     // Find the setting for public tabs
     const setting = settings.find(s => s.setting_name === mappedTab);
     
@@ -78,6 +82,7 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     if (user) {
       switch (mappedTab) {
         case "schorsingen":
+          return user.role === "admin" || user.role === "player_manager";
         case "kaarten":
           return user.role === "admin" || user.role === "referee";
         case "scheidsrechters":
@@ -115,7 +120,6 @@ export type TabName =
   | "kaarten"
   | "reglement"
   | "teams"
-  | "ploegen"
   | "scheidsrechters"
   | "admin_match_forms_league"
   | "admin_match_forms_cup"
