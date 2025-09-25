@@ -80,6 +80,8 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
         case "schorsingen":
         case "kaarten":
           return user.role === "admin" || user.role === "referee";
+        case "scheidsrechters":
+          return user.role === "admin" || user.role === "referee";
         default:
           return true; // All other tabs are visible for authenticated users if enabled in settings
       }
@@ -114,6 +116,7 @@ export type TabName =
   | "reglement"
   | "teams"
   | "ploegen"
+  | "scheidsrechters"
   | "admin_match_forms_league"
   | "admin_match_forms_cup"
   | "admin_match_forms_playoffs";

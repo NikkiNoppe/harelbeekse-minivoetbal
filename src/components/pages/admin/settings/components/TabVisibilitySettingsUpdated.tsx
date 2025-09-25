@@ -22,7 +22,7 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
   }, [settings]);
 
   const publicTabKeys = useMemo(
-    () => ['algemeen', 'competitie', 'playoff', 'beker', 'schorsingen', 'reglement', 'teams'],
+    () => ['algemeen', 'competitie', 'playoff', 'beker', 'schorsingen', 'reglement', 'teams', 'scheidsrechters'],
     []
   );
   const isAdminMatchFormKey = (key: string) => key.startsWith('admin_match_forms_');
@@ -127,6 +127,7 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
       'schorsingen': 'Schorsingen',
       'reglement': 'Reglement',
       'teams': 'Teams',
+      'scheidsrechters': 'Scheidsrechters',
       'match-forms-league': 'Wedstrijdformulieren (Competitie)',
       'match-forms-cup': 'Wedstrijdformulieren (Beker)',
       'match-forms-playoffs': 'Wedstrijdformulieren (Play-offs)',

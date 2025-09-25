@@ -77,7 +77,8 @@ const Header: React.FC<HeaderProps> = ({
     { key: "competitie", label: "Competitie", icon: <Trophy size={16} /> },
     { key: "beker", label: "Beker", icon: <Award size={16} /> },
     { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
-    { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> }
+    { key: "schorsingen", label: "Schorsingen", icon: <Ban size={16} /> },
+    { key: "scheidsrechters", label: "Scheidsrechters", icon: <Shield size={16} /> }
   ];
 
   const normalizedRole = String(user?.role || '').toLowerCase();
@@ -91,7 +92,7 @@ const Header: React.FC<HeaderProps> = ({
     : 'Gebruiker';
 
   // Filter public items based on tab visibility settings and enforce desired order
-  const desiredPublicOrder = ['algemeen', 'reglement', 'competitie', 'beker', 'schorsingen'] as const;
+  const desiredPublicOrder = ['algemeen', 'reglement', 'competitie', 'beker', 'schorsingen', 'scheidsrechters'] as const;
   const visiblePublicItems = desiredPublicOrder
     .map((key) => publicNavItems.find((i) => i.key === key))
     .filter((i): i is NonNullable<typeof i> => Boolean(i))

@@ -13,6 +13,8 @@ import SchorsingenPage from "./SchorsingenPage";
 import ReglementPage from "./ReglementPage";
 import PloegenPage from "./PloegenPage";
 import TeamsPage from "./admin/teams/TeamsPage";
+import RefereePollPage from "./referee/RefereePollPage";
+import { useAuth } from "@/components/pages/login/AuthProvider";
 
 interface MainPagesProps {
   activeTab: TabName;
@@ -51,6 +53,7 @@ const MemoizedSchorsingenPage = memo(SchorsingenPage);
 const MemoizedReglementPage = memo(ReglementPage);
 const MemoizedTeamsPage = memo(TeamsPage);
 const MemoizedPloegenPage = memo(PloegenPage);
+const MemoizedRefereePollPage = memo(RefereePollPage);
 
 MemoizedAlgemeenPage.displayName = 'MemoizedAlgemeenPage';
 MemoizedCompetitiePage.displayName = 'MemoizedCompetitiePage';
@@ -62,6 +65,7 @@ MemoizedSchorsingenPage.displayName = 'MemoizedSchorsingenPage';
 MemoizedReglementPage.displayName = 'MemoizedReglementPage';
 MemoizedTeamsPage.displayName = 'MemoizedTeamsPage';
 MemoizedPloegenPage.displayName = 'MemoizedPloegenPage';
+MemoizedRefereePollPage.displayName = 'MemoizedRefereePollPage';
 
 // Tab content wrapper with animation
 const TabContentWrapper = memo(({ children }: { children: React.ReactNode }) => (
@@ -74,6 +78,7 @@ TabContentWrapper.displayName = 'TabContentWrapper';
 
 const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
   const { isTabVisible, loading } = useTabVisibility();
+  const { user } = useAuth();
 
   // Memoize tab content components to prevent unnecessary re-renders
   const tabContents = useMemo(() => ({
@@ -147,8 +152,18 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
           <MemoizedPloegenPage />
         </TabContentWrapper>
       </TabsContent>
+    ),
+    scheidsrechters: isTabVisible("scheidsrechters") && (
+      <TabsContent value="scheidsrechters" className="mt-0" key="scheidsrechters">
+        <TabContentWrapper>
+          <MemoizedRefereePollPage 
+            userId={user?.id || 0} 
+            username={user?.username || ''} 
+          />
+        </TabContentWrapper>
+      </TabsContent>
     )
-  }), [isTabVisible]);
+  }), [isTabVisible, user]);
 
   // Determine which tabs are available right now
   const visibleKeys = useMemo(() => {
@@ -163,6 +178,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
         'kaarten',
         'schorsingen',
         'reglement',
+        'scheidsrechters',
       ] as const
     ).filter((key) => Boolean((tabContents as any)[key]));
   }, [tabContents]);
@@ -208,6 +224,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
           {tabContents.kaarten}
           {tabContents.schorsingen}
           {tabContents.reglement}
+          {tabContents.scheidsrechters}
         </Tabs>
       </div>
     </div>

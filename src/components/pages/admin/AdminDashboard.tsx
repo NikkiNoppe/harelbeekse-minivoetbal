@@ -19,8 +19,9 @@ import { useTabVisibility } from "@/context/TabVisibilityContext";
 import AdminSuspensionsPage from "@/components/pages/admin/suspensions/AdminSuspensionsPage";
 import AdminPlayoffMatchesPage from "@/components/pages/admin/matches/AdminPlayoffMatchesPage";
 import AdminPollPage from "@/components/pages/admin/polls/AdminPollPage";
+import RefereePollPage from "@/components/pages/referee/RefereePollPage";
 
-type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "match-forms-playoffs" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup" | "suspensions" | "polls";
+type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "match-forms-playoffs" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup" | "suspensions" | "polls" | "scheidsrechters";
 
 interface AdminDashboardProps {
   activeTab: TabName;
@@ -117,6 +118,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                   <AdminPollPage />
                 </TabsContent>
               </>
+            )}
+
+            {/* Scheidsrechters tab - available for admin and referee */}
+            {(isAdmin || user?.role === 'referee') && (
+              <TabsContent value="scheidsrechters" className="mt-0">
+                <RefereePollPage 
+                  userId={user?.id || 0} 
+                  username={user?.username || ''} 
+                />
+              </TabsContent>
             )}
           </div>
         </Tabs>
