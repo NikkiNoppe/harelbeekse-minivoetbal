@@ -123,6 +123,7 @@ export type Database = {
       }
       matches: {
         Row: {
+          assigned_referee_id: number | null
           away_players: Json | null
           away_score: number | null
           away_team_id: number | null
@@ -136,12 +137,15 @@ export type Database = {
           location: string | null
           match_date: string
           match_id: number
+          poll_group_id: string | null
+          poll_month: string | null
           referee: string | null
           referee_notes: string | null
           speeldag: string | null
           unique_number: string | null
         }
         Insert: {
+          assigned_referee_id?: number | null
           away_players?: Json | null
           away_score?: number | null
           away_team_id?: number | null
@@ -155,12 +159,15 @@ export type Database = {
           location?: string | null
           match_date: string
           match_id?: number
+          poll_group_id?: string | null
+          poll_month?: string | null
           referee?: string | null
           referee_notes?: string | null
           speeldag?: string | null
           unique_number?: string | null
         }
         Update: {
+          assigned_referee_id?: number | null
           away_players?: Json | null
           away_score?: number | null
           away_team_id?: number | null
@@ -174,6 +181,8 @@ export type Database = {
           location?: string | null
           match_date?: string
           match_id?: number
+          poll_group_id?: string | null
+          poll_month?: string | null
           referee?: string | null
           referee_notes?: string | null
           speeldag?: string | null
@@ -266,6 +275,33 @@ export type Database = {
             referencedColumns: ["team_id"]
           },
         ]
+      }
+      referee_availability: {
+        Row: {
+          created_at: string | null
+          id: number
+          is_available: boolean
+          poll_group_id: string
+          poll_month: string
+          user_id: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          is_available?: boolean
+          poll_group_id: string
+          poll_month: string
+          user_id: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          is_available?: boolean
+          poll_group_id?: string
+          poll_month?: string
+          user_id?: number
+        }
+        Relationships: []
       }
       team_costs: {
         Row: {
