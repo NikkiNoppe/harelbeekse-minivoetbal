@@ -42,10 +42,16 @@ const NotificationPopup: React.FC = () => {
   };
 
   const loadNotifications = async () => {
-    if (!user) return;
+    console.log('🔔 Loading notifications, user:', user ? `${user.username} (${user.role})` : 'null');
+    
+    if (!user) {
+      console.log('❌ No user found, skipping notification load');
+      return;
+    }
 
     try {
       const allNotifications = await notificationService.getActiveNotifications();
+      console.log('📥 Retrieved notifications from service:', allNotifications);
       
       const now = new Date();
       const filteredNotifications = allNotifications.filter(notification => {
@@ -53,15 +59,28 @@ const NotificationPopup: React.FC = () => {
         
         // Check if notification is targeted to user's role
         const userRole = user.role?.toLowerCase();
-        if (!target_roles.includes(userRole)) return false;
+        console.log(`🎯 Checking notification ${notification.id}: target_roles=${target_roles}, userRole=${userRole}`);
+        
+        if (!target_roles.includes(userRole)) {
+          console.log(`❌ Notification ${notification.id} not for role ${userRole}`);
+          return false;
+        }
 
         // Check time constraints
-        if (start_date && new Date(start_date) > now) return false;
-        if (end_date && new Date(end_date) < now) return false;
+        if (start_date && new Date(start_date) > now) {
+          console.log(`❌ Notification ${notification.id} not started yet`);
+          return false;
+        }
+        if (end_date && new Date(end_date) < now) {
+          console.log(`❌ Notification ${notification.id} expired`);
+          return false;
+        }
 
+        console.log(`✅ Notification ${notification.id} passed all filters`);
         return true;
       });
 
+      console.log('📋 Filtered notifications:', filteredNotifications);
       setNotifications(filteredNotifications);
     } catch (error) {
       console.error('Error loading notifications:', error);
@@ -73,9 +92,20 @@ const NotificationPopup: React.FC = () => {
       n => !dismissedNotifications.has(n.id)
     );
 
+    console.log('🔄 showNextNotification called:', {
+      totalNotifications: notifications.length,
+      availableNotifications: availableNotifications.length,
+      dismissedCount: dismissedNotifications.size,
+      currentlyVisible: isVisible
+    });
+
     if (availableNotifications.length > 0) {
-      setCurrentNotification(availableNotifications[0]);
+      const nextNotification = availableNotifications[0];
+      console.log('✅ Showing notification:', nextNotification);
+      setCurrentNotification(nextNotification);
       setIsVisible(true);
+    } else {
+      console.log('❌ No available notifications to show');
     }
   };
 
@@ -105,7 +135,20 @@ const NotificationPopup: React.FC = () => {
   };
 
   useEffect(() => {
-    loadNotifications();
+    // Only load notifications when user is authenticated and available
+    if (user) {
+      console.log('👤 User authenticated, loading notifications...');
+      // Small delay to ensure user context is fully set in database
+      const timer = setTimeout(() => {
+        loadNotifications();
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      console.log('🚫 No user, clearing notifications');
+      setNotifications([]);
+      setCurrentNotification(null);
+      setIsVisible(false);
+    }
   }, [user]);
 
   useEffect(() => {
