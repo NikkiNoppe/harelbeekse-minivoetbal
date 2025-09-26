@@ -19,7 +19,6 @@ import { useTabVisibility } from "@/context/TabVisibilityContext";
 import AdminSuspensionsPage from "@/components/pages/admin/suspensions/AdminSuspensionsPage";
 import AdminPlayoffMatchesPage from "@/components/pages/admin/matches/AdminPlayoffMatchesPage";
 import ScheidsrechtersPage from "@/components/pages/admin/scheidsrechter/ScheidsrechtersPage";
-import RefereePollPage from "@/components/pages/referee/RefereePollPage";
 import BlogPage from "@/components/pages/admin/blog/BlogPage";
 import NotificationPage from "@/components/pages/admin/notifications/NotificationPage";
 import SchorsingenPage from "@/components/pages/admin/schorsingen/SchorsingenPage";

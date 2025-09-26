@@ -65,30 +65,29 @@ const SchorsingenPage: React.FC = memo(() => {
     suspensions, 
     playerCards, 
     isLoading, 
-    error, 
-    refetch 
+    playerCardsError,
+    suspensionsError,
+    refetchPlayerCards,
+    refetchSuspensions
   } = useSuspensionsData();
 
   // Filter data for current team manager's team only
   const teamSuspensions = useMemo(() => {
     if (!user?.teamId || !suspensions) return [];
-    return suspensions.filter(suspension => suspension.team_id === user.teamId);
+    return suspensions.filter(suspension => suspension.teamName === user.teamId?.toString());
   }, [suspensions, user?.teamId]);
 
   const teamPlayerCards = useMemo(() => {
     if (!user?.teamId || !playerCards) return [];
-    return playerCards.filter(card => card.team_id === user.teamId);
+    return playerCards.filter(card => card.teamName === user.teamId?.toString());
   }, [playerCards, user?.teamId]);
 
-  // Get suspension status badge
+  // Get suspension status badge  
   const getSuspensionStatusBadge = (suspension: Suspension) => {
-    const now = new Date();
-    const startDate = new Date(suspension.start_date);
-    const endDate = new Date(suspension.end_date);
-
-    if (now < startDate) {
+    // Since Suspension interface doesn't have startDate/endDate, use status
+    if (suspension.status === 'pending') {
       return <Badge variant="secondary">Nog niet actief</Badge>;
-    } else if (now >= startDate && now <= endDate) {
+    } else if (suspension.status === 'active') {
       return <Badge variant="destructive">Actief</Badge>;
     } else {
       return <Badge variant="outline">Voltooid</Badge>;
@@ -97,10 +96,10 @@ const SchorsingenPage: React.FC = memo(() => {
 
   // Get card status badge
   const getCardStatusBadge = (card: PlayerCard) => {
-    if (card.yellow_cards >= 5) {
+    if (card.yellowCards >= 5) {
       return <Badge variant="destructive">Schorsing</Badge>;
-    } else if (card.yellow_cards >= 3) {
-      return <Badge variant="warning">Waarschuwing</Badge>;
+    } else if (card.yellowCards >= 3) {
+      return <Badge variant="secondary">Waarschuwing</Badge>;
     } else {
       return <Badge variant="outline">OK</Badge>;
     }
@@ -164,7 +163,7 @@ const SchorsingenPage: React.FC = memo(() => {
     );
   }
 
-  if (error) {
+  if (playerCardsError || suspensionsError) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -182,11 +181,14 @@ const SchorsingenPage: React.FC = memo(() => {
         <Alert className="border-red-200 bg-red-50">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="text-red-800">
-            Er is een fout opgetreden bij het laden van de schorsingen: {error.message}
+            Er is een fout opgetreden bij het laden van de schorsingen: {(playerCardsError || suspensionsError)?.message}
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => refetch()} 
+              onClick={() => {
+                refetchPlayerCards();
+                refetchSuspensions();
+              }} 
               className="ml-4"
             >
               Opnieuw proberen
@@ -209,7 +211,10 @@ const SchorsingenPage: React.FC = memo(() => {
             Overzicht van schorsingen en kaarten voor jouw team
           </p>
         </div>
-        <Button variant="outline" onClick={() => refetch()}>
+        <Button variant="outline" onClick={() => {
+          refetchPlayerCards();
+          refetchSuspensions();
+        }}>
           Vernieuwen
         </Button>
       </div>
@@ -245,14 +250,14 @@ const SchorsingenPage: React.FC = memo(() => {
                 </TableHeader>
                 <TableBody>
                   {teamSuspensions.map((suspension) => (
-                    <TableRow key={suspension.id}>
+                    <TableRow key={suspension.playerId}>
                       <TableCell className="font-medium">
-                        {suspension.player_name}
+                        {suspension.playerName}
                       </TableCell>
                       <TableCell>{suspension.reason}</TableCell>
-                      <TableCell>{suspension.match_count}</TableCell>
+                      <TableCell>{suspension.matches}</TableCell>
                       <TableCell>{getSuspensionStatusBadge(suspension)}</TableCell>
-                      <TableCell>{getNextMatchDate(suspension)}</TableCell>
+                      <TableCell>N/A</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -292,18 +297,18 @@ const SchorsingenPage: React.FC = memo(() => {
                 </TableHeader>
                 <TableBody>
                   {teamPlayerCards.map((card) => (
-                    <TableRow key={card.id}>
+                    <TableRow key={card.playerId}>
                       <TableCell className="font-medium">
-                        {card.player_name}
+                        {card.playerName}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={card.yellow_cards >= 3 ? "warning" : "outline"}>
-                          {card.yellow_cards}
+                        <Badge variant={card.yellowCards >= 3 ? "secondary" : "outline"}>
+                          {card.yellowCards}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={card.red_cards > 0 ? "destructive" : "outline"}>
-                          {card.red_cards}
+                        <Badge variant={card.redCards > 0 ? "destructive" : "outline"}>
+                          {card.redCards}
                         </Badge>
                       </TableCell>
                       <TableCell>{getCardStatusBadge(card)}</TableCell>
