@@ -50,8 +50,9 @@ const NotificationPopup: React.FC = () => {
     }
 
     try {
+      console.log('🔄 Calling notificationService.getActiveNotifications()...');
       const allNotifications = await notificationService.getActiveNotifications();
-      console.log('📥 Retrieved notifications from service:', allNotifications);
+      console.log('📥 Retrieved notifications from service:', JSON.stringify(allNotifications, null, 2));
       
       const now = new Date();
       const filteredNotifications = allNotifications.filter(notification => {
