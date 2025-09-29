@@ -60,9 +60,20 @@ const NotificationPopup: React.FC = () => {
         
         // Check if notification is targeted to user's role
         const userRole = user.role?.toLowerCase();
-        console.log(`🎯 Checking notification ${notification.id}: target_roles=${target_roles}, userRole=${userRole}`);
+        console.log(`🎯 Checking notification ${notification.id}:`);
+        console.log(`   - target_roles:`, target_roles);
+        console.log(`   - userRole:`, userRole);
+        console.log(`   - user object:`, JSON.stringify(user, null, 2));
         
-        if (!target_roles.includes(userRole)) {
+        // Normalize target roles to lowercase for comparison
+        const normalizedTargetRoles = Array.isArray(target_roles) 
+          ? target_roles.map(role => String(role).toLowerCase())
+          : [];
+        
+        console.log(`   - normalizedTargetRoles:`, normalizedTargetRoles);
+        console.log(`   - includes check:`, normalizedTargetRoles.includes(userRole));
+        
+        if (!normalizedTargetRoles.includes(userRole)) {
           console.log(`❌ Notification ${notification.id} not for role ${userRole}`);
           return false;
         }
