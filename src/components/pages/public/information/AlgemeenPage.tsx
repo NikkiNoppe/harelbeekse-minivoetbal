@@ -185,7 +185,9 @@ const NewsSection = memo(() => {
   return (
     <section>
       <h2 className="text-2xl font-semibold mb-4">Laatste Nieuws</h2>
-      {renderContent()}
+      <div className="min-h-[400px]">
+        {renderContent()}
+      </div>
     </section>
   );
 });
