@@ -3,6 +3,7 @@ import AdminDashboard from "./AdminDashboard";
 import Footer from "@/components/pages/footer/Footer";
 import Header from "@/components/pages/header/Header";
 import { useAuth } from "@/components/pages/login/AuthProvider";
+import NotificationPopup from "@/components/common/NotificationPopup";
 
 interface AdminDashboardLayoutProps {
   activeTab: string;
@@ -41,6 +42,9 @@ export function AdminDashboardLayout({
 
       {/* Footer - always visible at bottom */}
       <Footer />
+
+      {/* Notification popup for admin users */}
+      <NotificationPopup />
     </div>
   );
 }
