@@ -12,12 +12,23 @@ import { useBlogPosts } from "@/hooks/useBlogPosts";
 const CompetitionInfo = memo(() => (
   <section>
     <Card>
-      <CardContent className="pt-4 sm:pt-6 text-sm sm:text-base bg-transparent">
-        <p className="mb-3 sm:mb-4">
-          De Harelbeekse Minivoetbal Competitie is opgericht in 1979 en is uitgegroeid tot een vaste waarde in de regio.
+      <CardContent className="pt-4 sm:pt-6 text-sm sm:text-base bg-transparent space-y-4">
+        <p>
+          De <strong>Harelbeekse Minivoetbal Competitie</strong> is opgericht in 1979 en is uitgegroeid tot 
+          de grootste <strong>minivoetbal competitie in Harelbeke</strong>. Elk seizoen nemen meerdere teams 
+          uit Harelbeke en omstreken deel aan onze spannende <strong>indoor voetbal competitie</strong>.
         </p>
-        <p className="mb-3 sm:mb-4">
-          Onze competitie staat bekend om zijn sportiviteit.
+        <p>
+          Onze <strong>minivoetbal competitie</strong> vindt wekelijks plaats in Sporthal De Dageraad in Harelbeke 
+          en bestaat uit verschillende onderdelen: de reguliere competitie, het prestigieuze bekertoernooi, en de 
+          spannende play-offs aan het einde van het seizoen. Of je nu ervaren bent in <strong>zaalvoetbal</strong> of 
+          gewoon op zoek bent naar sportief vermaak, bij <strong>minivoetbal Harelbeke</strong> ben je aan het 
+          juiste adres.
+        </p>
+        <p>
+          Volg hier alle uitslagen, klassementen, spelersinformatie en wedstrijdschema's van de 
+          Harelbeekse Minivoetbal Competitie. Blijf op de hoogte van het laatste nieuws en de 
+          prestaties van jouw favoriete team uit de regio <strong>West-Vlaanderen</strong>!
         </p>
       </CardContent>
     </Card>
@@ -197,7 +208,7 @@ const AlgemeenPage: React.FC = () => {
   return (
     <div className="space-y-8 animate-slide-up">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Over de Competitie</h2>
+        <h1 className="text-3xl font-bold">Minivoetbal Harelbeke - Officiële Competitie Website</h1>
       </div>
 
       <CompetitionInfo />
