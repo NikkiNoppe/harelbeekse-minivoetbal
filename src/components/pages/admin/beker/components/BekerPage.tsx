@@ -93,7 +93,12 @@ const BekerPage: React.FC = () => {
           reloadExistingCup();
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        // Silently handle subscription errors to prevent console errors that affect SEO
+        if (status === 'CHANNEL_ERROR') {
+          console.debug('Realtime connection unavailable, continuing without live updates');
+        }
+      });
     return () => {
       try { supabase.removeChannel(channel); } catch (_) {}
     };
