@@ -16,19 +16,18 @@ const CompetitionInfo = memo(() => (
         <p>
           De <strong>Harelbeekse Minivoetbal Competitie</strong> is opgericht in 1979 en is uitgegroeid tot 
           de grootste <strong>minivoetbal competitie in Harelbeke</strong>. Elk seizoen nemen meerdere teams 
-          uit Harelbeke en omstreken deel aan onze spannende <strong>indoor voetbal competitie</strong>.
+          uit Harelbeke en omstreken deel aan onze spannende <strong> minivoetbal competitie</strong>.
         </p>
         <p>
-          Onze <strong>minivoetbal competitie</strong> vindt wekelijks plaats in Sporthal De Dageraad in Harelbeke 
-          en bestaat uit verschillende onderdelen: de reguliere competitie, het prestigieuze bekertoernooi, en de 
+          Onze <strong>minivoetbal competitie</strong> vindt wekelijks plaats in de Sporthal De Dageraad in Harelbeke en in  De Vlasschaard in Bavikhove
+          en bestaat uit verschillende onderdelen: de reguliere competitie, het bekertoernooi, en de 
           spannende play-offs aan het einde van het seizoen. Of je nu ervaren bent in <strong>zaalvoetbal</strong> of 
           gewoon op zoek bent naar sportief vermaak, bij <strong>minivoetbal Harelbeke</strong> ben je aan het 
           juiste adres.
         </p>
         <p>
           Volg hier alle uitslagen, klassementen, spelersinformatie en wedstrijdschema's van de 
-          Harelbeekse Minivoetbal Competitie. Blijf op de hoogte van het laatste nieuws en de 
-          prestaties van jouw favoriete team uit de regio <strong>West-Vlaanderen</strong>!
+          Harelbeekse Minivoetbal Competitie.
         </p>
       </CardContent>
     </Card>
