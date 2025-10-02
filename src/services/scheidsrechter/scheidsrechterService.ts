@@ -37,6 +37,92 @@ export interface ActiveRange {
 }
 
 export const scheidsrechterService = {
+  // Check if month needs auto-grouping
+  async needsAutoGrouping(month: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .select('match_id')
+        .eq('poll_month', month)
+        .is('poll_group_id', null)
+        .limit(1);
+
+      if (error) throw error;
+      return (data && data.length > 0) || false;
+    } catch (error) {
+      console.error('Error checking auto-grouping need:', error);
+      return false;
+    }
+  },
+
+  // Auto-invoke generate-monthly-polls if needed
+  async autoGenerateIfNeeded(month: string): Promise<boolean> {
+    try {
+      const needsGrouping = await this.needsAutoGrouping(month);
+      if (!needsGrouping) return true;
+
+      console.log(`Auto-generating poll groups for ${month}...`);
+      const result = await this.generateMonthlyPolls(month);
+      return result.success;
+    } catch (error) {
+      console.error('Error in auto-generate:', error);
+      return false;
+    }
+  },
+
+  // Update legacy referee text field
+  async updateLegacyReferee(matchId: number, refereeText: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('matches')
+        .update({ referee: refereeText })
+        .eq('match_id', matchId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error updating legacy referee:', error);
+      return false;
+    }
+  },
+
+  // Get legacy matches (without poll_group_id)
+  async getLegacyMatches(month: string): Promise<PollMatch[]> {
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .select(`
+          match_id,
+          unique_number,
+          match_date,
+          location,
+          home_team_id,
+          away_team_id,
+          referee,
+          assigned_referee_id
+        `)
+        .eq('poll_month', month)
+        .is('poll_group_id', null)
+        .order('match_date', { ascending: true });
+
+      if (error) throw error;
+
+      return (data || []).map((match: any) => ({
+        match_id: match.match_id,
+        unique_number: match.unique_number || '',
+        match_date: match.match_date,
+        home_team_name: `Team ${match.home_team_id}`,
+        away_team_name: `Team ${match.away_team_id}`,
+        location: match.location || '',
+        assigned_referee_id: match.assigned_referee_id,
+        referee: match.referee
+      }));
+    } catch (error) {
+      console.error('Error fetching legacy matches:', error);
+      return [];
+    }
+  },
+
   // Get poll system status
   async isPollSystemEnabled(): Promise<boolean> {
     try {
