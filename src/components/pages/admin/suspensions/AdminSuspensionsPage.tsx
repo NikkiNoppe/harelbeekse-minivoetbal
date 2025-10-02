@@ -10,13 +10,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Calendar, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { suspensionService } from '@/services';
 import { useSuspensionsData } from '@/hooks/useSuspensionsData';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchAllCards, type CardData } from '@/services/match';
 import ResponsiveCardsTable from '@/components/tables/ResponsiveCardsTable';
+import { useUpcomingMatches } from '@/hooks/useUpcomingMatches';
+import { format } from 'date-fns';
+import { nl } from 'date-fns/locale';
 
 interface ManualSuspension {
   id: number;
@@ -32,11 +35,23 @@ interface ManualSuspension {
   createdAt: string;
 }
 
+interface EditingSuspensionData {
+  playerId: number;
+  playerName: string;
+  teamId: number;
+  teamName: string;
+  type: 'automatic' | 'manual';
+  remaining: number;
+  reason: string;
+  manualSuspensionId?: number;
+}
+
 const AdminSuspensionsPage: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingSuspension, setEditingSuspension] = useState<ManualSuspension | null>(null);
+  const [editingActiveSuspension, setEditingActiveSuspension] = useState<EditingSuspensionData | null>(null);
   const [newSuspension, setNewSuspension] = useState({
     teamId: '',
     playerId: '',
@@ -180,6 +195,58 @@ const AdminSuspensionsPage: React.FC = () => {
       toast({
         title: "Schorsing verwijderd",
         description: "De schorsing is succesvol verwijderd."
+      });
+    }
+  });
+
+  // Mutation for updating player's suspended_matches_remaining (automatic suspensions)
+  const updatePlayerSuspensionMutation = useMutation({
+    mutationFn: async ({ playerId, remaining }: { playerId: number; remaining: number }) => {
+      const { error } = await supabase
+        .from('players')
+        .update({ suspended_matches_remaining: Math.max(0, remaining) })
+        .eq('player_id', playerId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playerCards'] });
+      queryClient.invalidateQueries({ queryKey: ['suspensions'] });
+      setEditingActiveSuspension(null);
+      toast({
+        title: "Schorsing aangepast",
+        description: "De schorsing is succesvol aangepast."
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het aanpassen van de schorsing.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Mutation for lifting a suspension completely
+  const liftSuspensionMutation = useMutation({
+    mutationFn: async ({ playerId, type, manualId }: { playerId: number; type: 'automatic' | 'manual'; manualId?: number }) => {
+      if (type === 'automatic') {
+        const { error } = await supabase
+          .from('players')
+          .update({ suspended_matches_remaining: 0 })
+          .eq('player_id', playerId);
+        if (error) throw error;
+      } else if (manualId) {
+        await suspensionService.deleteSuspension(manualId);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playerCards'] });
+      queryClient.invalidateQueries({ queryKey: ['suspensions'] });
+      queryClient.invalidateQueries({ queryKey: ['manualSuspensions'] });
+      toast({
+        title: "Schorsing opgeheven",
+        description: "De schorsing is succesvol opgeheven."
       });
     }
   });
@@ -351,103 +418,14 @@ const AdminSuspensionsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Actieve Schorsingen - gecombineerd overzicht (automatisch + handmatig) */}
-      {(() => {
-        const activeManual = manualSuspensions.filter(s => s.isActive);
-        const getPlayerDetails = (playerId: number) => {
-          const match = playersQuery.data?.find(p => p.playerId === playerId);
-          return {
-            playerName: match ? match.playerName : `Speler ${playerId}`,
-            teamName: match ? match.teamName : 'Onbekend Team'
-          };
-        };
-        const unified = [
-          ...suspendedPlayers.map(p => ({
-            key: `auto-${p.playerId}`,
-            playerId: p.playerId,
-            playerName: p.playerName,
-            teamName: p.teamName,
-            type: 'Automatisch',
-            reason: 'Kaarten/systeemregel',
-            remaining: p.suspendedMatches,
-            matches: p.suspendedMatches
-          })),
-          ...activeManual.map(s => {
-            const details = getPlayerDetails(s.playerId);
-            return {
-              key: `manual-${s.id}`,
-              playerId: s.playerId,
-              playerName: details.playerName,
-              teamName: details.teamName,
-              type: 'Handmatig',
-              reason: s.reason,
-              remaining: s.matches,
-              matches: s.matches
-            };
-          })
-        ].sort((a, b) => a.playerName.localeCompare(b.playerName));
-
-        if (unified.length === 0) {
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle>Actieve Schorsingen</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">Geen actieve schorsingen</div>
-              </CardContent>
-            </Card>
-          );
-        }
-
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Actieve Schorsingen</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="w-full overflow-x-auto">
-                <div className="min-w-0 lg:min-w-[900px] table-no-inner-scroll-mobile">
-                  <Table className="table w-full text-sm md:text-base">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[160px]">Speler</TableHead>
-                        <TableHead className="hidden md:table-cell min-w-[160px]">Team</TableHead>
-                        <TableHead className="hidden md:table-cell min-w-[120px]">Type</TableHead>
-                        <TableHead className="hidden lg:table-cell min-w-[200px]">Reden</TableHead>
-                        <TableHead className="text-center min-w-[120px]">Resterend</TableHead>
-                        <TableHead className="text-center min-w-[120px]">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {unified.map(item => (
-                        <TableRow key={item.key}>
-                          <TableCell className="font-medium truncate max-w-[180px] sm:max-w-[220px] text-xs sm:text-sm" title={`${item.playerName} (${item.teamName})`}>
-                            {item.playerName}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell truncate max-w-[220px] text-xs sm:text-sm">{item.teamName}</TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <Badge variant="outline" className={item.type === 'Automatisch' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
-                              {item.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell truncate max-w-[260px] text-xs sm:text-sm">{item.reason}</TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="destructive">{item.remaining} wedstrijd{item.remaining !== 1 ? 'en' : ''}</Badge>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="destructive">Actief</Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
+      {/* Actieve Schorsingen - gecombineerd overzicht (automatisch + handmatig) met edit/delete */}
+      <ActiveSuspensionsSection
+        suspendedPlayers={suspendedPlayers}
+        manualSuspensions={manualSuspensions}
+        playersQuery={playersQuery}
+        onEdit={setEditingActiveSuspension}
+        onLift={liftSuspensionMutation.mutate}
+      />
 
       {/* Manual Suspensions Table */}
       <Card>
@@ -536,9 +514,9 @@ const AdminSuspensionsPage: React.FC = () => {
       {/* Edit Suspension Dialog */}
       {editingSuspension && (
         <Dialog open={!!editingSuspension} onOpenChange={() => setEditingSuspension(null)}>
-          <DialogContent>
+          <DialogContent className="modal">
             <DialogHeader>
-              <DialogTitle>Schorsing Bewerken</DialogTitle>
+              <DialogTitle className="modal__title">Handmatige Schorsing Bewerken</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -576,7 +554,7 @@ const AdminSuspensionsPage: React.FC = () => {
               </div>
               <Button 
                 onClick={() => handleUpdateSuspension(editingSuspension)} 
-                className="w-full"
+                className="w-full btn btn--primary"
               >
                 Wijzigingen Opslaan
               </Button>
@@ -584,7 +562,301 @@ const AdminSuspensionsPage: React.FC = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Edit Active Suspension Dialog (voor automatische schorsingen) */}
+      {editingActiveSuspension && (
+        <EditActiveSuspensionDialog
+          suspension={editingActiveSuspension}
+          onClose={() => setEditingActiveSuspension(null)}
+          onSave={(remaining) => {
+            updatePlayerSuspensionMutation.mutate({
+              playerId: editingActiveSuspension.playerId,
+              remaining
+            });
+          }}
+        />
+      )}
     </div>
+  );
+};
+
+// Component voor Actieve Schorsingen sectie met edit/delete + upcoming matches
+const ActiveSuspensionsSection: React.FC<{
+  suspendedPlayers: any[];
+  manualSuspensions: ManualSuspension[];
+  playersQuery: any;
+  onEdit: (data: EditingSuspensionData) => void;
+  onLift: (data: { playerId: number; type: 'automatic' | 'manual'; manualId?: number }) => void;
+}> = ({ suspendedPlayers, manualSuspensions, playersQuery, onEdit, onLift }) => {
+  const activeManual = manualSuspensions.filter(s => s.isActive);
+  
+  const getPlayerDetails = (playerId: number) => {
+    const match = playersQuery.data?.find((p: any) => p.playerId === playerId);
+    return {
+      playerName: match ? match.playerName : `Speler ${playerId}`,
+      teamName: match ? match.teamName : 'Onbekend Team',
+      teamId: match?.teamId || 0
+    };
+  };
+
+  const unified = [
+    ...suspendedPlayers.map(p => ({
+      key: `auto-${p.playerId}`,
+      playerId: p.playerId,
+      playerName: p.playerName,
+      teamName: p.teamName,
+      teamId: p.teamId || 0,
+      type: 'automatic' as const,
+      reason: 'Kaarten (automatisch)',
+      remaining: p.suspendedMatches,
+      matches: p.suspendedMatches,
+      manualSuspensionId: undefined as number | undefined
+    })),
+    ...activeManual.map(s => {
+      const details = getPlayerDetails(s.playerId);
+      return {
+        key: `manual-${s.id}`,
+        playerId: s.playerId,
+        playerName: details.playerName,
+        teamName: details.teamName,
+        teamId: details.teamId,
+        type: 'manual' as const,
+        reason: s.reason,
+        remaining: s.matches,
+        matches: s.matches,
+        manualSuspensionId: s.id as number | undefined
+      };
+    })
+  ].sort((a, b) => a.playerName.localeCompare(b.playerName));
+
+  if (unified.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Actieve Schorsingen</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">Geen actieve schorsingen</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Actieve Schorsingen</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {unified.map(item => (
+          <SuspensionRow
+            key={item.key}
+            suspension={item}
+            onEdit={() => onEdit({
+              playerId: item.playerId,
+              playerName: item.playerName,
+              teamId: item.teamId,
+              teamName: item.teamName,
+              type: item.type,
+              remaining: item.remaining,
+              reason: item.reason,
+              manualSuspensionId: item.manualSuspensionId
+            })}
+            onLift={() => onLift({
+              playerId: item.playerId,
+              type: item.type,
+              manualId: item.manualSuspensionId
+            })}
+          />
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
+
+// Component voor één schorsing row met upcoming matches
+const SuspensionRow: React.FC<{
+  suspension: any;
+  onEdit: () => void;
+  onLift: () => void;
+}> = ({ suspension, onEdit, onLift }) => {
+  const { data: upcomingMatches, isLoading } = useUpcomingMatches(suspension.teamId, 5);
+
+  return (
+    <div className="border rounded-lg p-4 space-y-3">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-semibold text-base truncate">{suspension.playerName}</h3>
+            <Badge variant="outline" className={suspension.type === 'automatic' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
+              {suspension.type === 'automatic' ? 'Automatisch' : 'Handmatig'}
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">{suspension.teamName}</p>
+          <p className="text-sm mt-1">{suspension.reason}</p>
+          <div className="mt-2">
+            <Badge variant="destructive">{suspension.remaining} wedstrijd{suspension.remaining !== 1 ? 'en' : ''} resterend</Badge>
+          </div>
+        </div>
+        
+        <div className="flex gap-1 shrink-0">
+          <Button onClick={onEdit} size="sm" variant="ghost" className="h-8 w-8 p-0">
+            <Edit className="h-4 w-4" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive">
+                <X className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="modal">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="modal__title">Schorsing opheffen</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Weet je zeker dat je de schorsing van {suspension.playerName} wilt opheffen?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="modal__actions">
+                <AlertDialogCancel className="btn btn--secondary">Annuleren</AlertDialogCancel>
+                <AlertDialogAction onClick={onLift} className="btn btn--danger">
+                  Opheffen
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+
+      {/* Upcoming Matches */}
+      <div className="mt-3 pt-3 border-t">
+        <div className="flex items-center gap-2 mb-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Volgende wedstrijden:</span>
+        </div>
+        
+        {isLoading ? (
+          <div className="text-sm text-muted-foreground">Laden...</div>
+        ) : !upcomingMatches || upcomingMatches.length === 0 ? (
+          <div className="text-sm text-muted-foreground">Geen komende wedstrijden gepland</div>
+        ) : (
+          <div className="space-y-1">
+            {upcomingMatches.slice(0, suspension.remaining + 1).map((match, index) => {
+              const isMissed = index < suspension.remaining;
+              const matchDate = new Date(match.match_date);
+              
+              return (
+                <div 
+                  key={match.match_id} 
+                  className={`flex items-center gap-2 text-sm ${isMissed ? 'text-muted-foreground' : 'text-foreground font-medium'}`}
+                >
+                  {isMissed ? (
+                    <X className="h-3 w-3 text-destructive shrink-0" />
+                  ) : (
+                    <Check className="h-3 w-3 text-success shrink-0" />
+                  )}
+                  <span className="shrink-0">
+                    {format(matchDate, 'dd/MM', { locale: nl })}:
+                  </span>
+                  <span className="truncate">
+                    vs {match.opponent_name}
+                  </span>
+                  {!isMissed && index === suspension.remaining && (
+                    <Badge variant="outline" className="ml-auto shrink-0 bg-success/10 text-success border-success/20">
+                      Beschikbaar
+                    </Badge>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Dialog voor het bewerken van actieve schorsingen
+const EditActiveSuspensionDialog: React.FC<{
+  suspension: EditingSuspensionData;
+  onClose: () => void;
+  onSave: (remaining: number) => void;
+}> = ({ suspension, onClose, onSave }) => {
+  const [remaining, setRemaining] = useState(suspension.remaining);
+  const { data: upcomingMatches } = useUpcomingMatches(suspension.teamId, 10);
+
+  const handleSave = () => {
+    onSave(remaining);
+  };
+
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="modal max-w-md">
+        <DialogHeader>
+          <DialogTitle className="modal__title">
+            {suspension.type === 'automatic' ? 'Automatische Schorsing Aanpassen' : 'Handmatige Schorsing Aanpassen'}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">Speler</Label>
+            <div className="p-2 bg-muted rounded-md mt-1">
+              <p className="font-medium">{suspension.playerName}</p>
+              <p className="text-sm text-muted-foreground">{suspension.teamName}</p>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="remaining-matches">Resterende wedstrijden</Label>
+            <Input
+              id="remaining-matches"
+              type="number"
+              min="0"
+              max="10"
+              value={remaining}
+              onChange={(e) => setRemaining(Math.max(0, parseInt(e.target.value) || 0))}
+              className="mt-1"
+            />
+          </div>
+
+          {upcomingMatches && upcomingMatches.length > 0 && (
+            <div className="pt-2 border-t">
+              <p className="text-sm font-medium mb-2">Impact op beschikbaarheid:</p>
+              <div className="space-y-1">
+                {upcomingMatches.slice(0, Math.max(remaining, suspension.remaining) + 1).map((match, index) => {
+                  const isMissed = index < remaining;
+                  const matchDate = new Date(match.match_date);
+                  
+                  return (
+                    <div key={match.match_id} className={`flex items-center gap-2 text-sm ${isMissed ? 'text-muted-foreground' : 'text-foreground'}`}>
+                      {isMissed ? (
+                        <X className="h-3 w-3 text-destructive" />
+                      ) : (
+                        <Check className="h-3 w-3 text-success" />
+                      )}
+                      <span>{format(matchDate, 'dd/MM', { locale: nl })}: vs {match.opponent_name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {remaining > 0 && upcomingMatches[remaining] && (
+                <p className="text-sm text-success mt-2">
+                  → Beschikbaar vanaf {format(new Date(upcomingMatches[remaining].match_date), 'dd/MM/yyyy', { locale: nl })}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="modal__actions pt-4">
+            <Button onClick={onClose} variant="outline" className="btn btn--secondary flex-1">
+              Annuleren
+            </Button>
+            <Button onClick={handleSave} className="btn btn--primary flex-1">
+              Opslaan
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
