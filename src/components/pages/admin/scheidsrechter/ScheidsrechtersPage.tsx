@@ -142,9 +142,9 @@ const AdminView: React.FC = () => {
   };
 
   // Assign referee to poll group (admin can always change)
-  const handleAssignReferee = async (pollGroupId: string, refereeId: number | null) => {
+  const handleAssignReferee = async (pollGroupId: string, refereeId: string) => {
     try {
-      if (refereeId === null) {
+      if (refereeId === 'none') {
         // Clear assignment - update all matches in group
         const group = pollGroups.find(g => g.poll_group_id === pollGroupId);
         if (!group) return;
@@ -157,7 +157,7 @@ const AdminView: React.FC = () => {
         }
         toast.success('Toewijzing verwijderd');
       } else {
-        const success = await scheidsrechterService.assignRefereeToGroup(pollGroupId, refereeId);
+        const success = await scheidsrechterService.assignRefereeToGroup(pollGroupId, parseInt(refereeId));
         if (success) {
           toast.success('Scheidsrechter toegewezen');
         } else {
@@ -375,15 +375,15 @@ const AdminView: React.FC = () => {
                                 </div>
                               </div>
                               <div className="flex flex-col gap-2">
-                                <Select 
-                                  value={assignedRef?.toString() || ''} 
-                                  onValueChange={(value) => handleAssignReferee(group.poll_group_id, value ? parseInt(value) : null)}
-                                >
+                          <Select
+                            value={assignedRef?.toString() || 'none'}
+                            onValueChange={(value) => handleAssignReferee(group.poll_group_id, value)}
+                          >
                                   <SelectTrigger className="w-[200px]">
                                     <SelectValue placeholder="Kies scheidsrechter" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="">Geen toewijzing</SelectItem>
+                                    <SelectItem value="none">Geen toewijzing</SelectItem>
                                     {availableRefs.map(ref => (
                                       <SelectItem key={ref.user_id} value={ref.user_id.toString()}>
                                         {ref.username}
