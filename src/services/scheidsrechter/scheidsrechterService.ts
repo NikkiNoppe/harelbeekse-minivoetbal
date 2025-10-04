@@ -20,6 +20,7 @@ export interface PollMatch {
   assigned_referee_id?: number | null;
   assigned_referee_name?: string;
   referee?: string;
+  poll_group_id?: string | null;
 }
 
 export interface RefereeAvailability {
@@ -447,47 +448,78 @@ export const scheidsrechterService = {
     }
   },
 
-  // Assign referee to matches in a poll group
-  async assignRefereeToGroup(pollGroupId: string, refereeId: number): Promise<boolean> {
+  // Get all matches for a specific month (no grouping)
+  async getMonthMatches(month: string): Promise<PollMatch[]> {
     try {
-      // Get referee username first
-      const { data: refereeData } = await supabase
-        .from('users')
-        .select('username')
-        .eq('user_id', refereeId)
-        .single();
+      const { data, error } = await supabase
+        .from('matches')
+        .select(`
+          match_id,
+          match_date,
+          location,
+          referee,
+          assigned_referee_id,
+          poll_group_id,
+          unique_number,
+          home_team:teams!matches_home_team_id_fkey(team_name),
+          away_team:teams!matches_away_team_id_fkey(team_name)
+        `)
+        .like('match_date', `${month}%`)
+        .order('match_date', { ascending: true });
+
+      if (error) throw error;
+
+      return (data || []).map(match => ({
+        match_id: match.match_id,
+        unique_number: match.unique_number || '',
+        match_date: match.match_date,
+        home_team_name: match.home_team?.team_name || '',
+        away_team_name: match.away_team?.team_name || '',
+        location: match.location || '',
+        referee: match.referee,
+        assigned_referee_id: match.assigned_referee_id,
+        poll_group_id: match.poll_group_id
+      }));
+    } catch (error) {
+      console.error('Error fetching month matches:', error);
+      return [];
+    }
+  },
+
+  // Assign referee to a specific match
+  async assignRefereeToMatch(matchId: number, refereeId: number | null): Promise<boolean> {
+    try {
+      let refereeUsername = null;
       
-      const refereeUsername = refereeData?.username || null;
+      // Get referee username if refereeId provided
+      if (refereeId) {
+        const { data: refereeData } = await supabase
+          .from('users')
+          .select('username')
+          .eq('user_id', refereeId)
+          .eq('role', 'referee')
+          .single();
+        
+        refereeUsername = refereeData?.username || null;
+      }
       
-      // Update both assigned_referee_id AND referee text field
+      // Update match with referee info
       const { error } = await supabase
         .from('matches')
         .update({ 
           assigned_referee_id: refereeId,
           referee: refereeUsername
         })
-        .eq('poll_group_id', pollGroupId);
-
-      return !error;
-    } catch (error) {
-      console.error('Error assigning referee to group:', error);
-      return false;
-    }
-  },
-
-  // Assign referee to a single match
-  async assignRefereeToMatch(matchId: number, refereeId: number): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('matches')
-        .update({ assigned_referee_id: refereeId })
         .eq('match_id', matchId);
-      return !error;
+
+      if (error) throw error;
+      return true;
     } catch (error) {
       console.error('Error assigning referee to match:', error);
       return false;
     }
   },
+
 
   // Get latest announcements
   async getAnnouncements(limit: number = 5): Promise<{ message: string; created_at?: string; type?: string }[]> {
