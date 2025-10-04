@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -29,6 +30,7 @@ const getMonthOptions = () => {
 // Main component
 const ScheidsrechtersPage = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isLoadingRole, setIsLoadingRole] = useState(true);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -36,21 +38,42 @@ const ScheidsrechtersPage = () => {
       const user = JSON.parse(userData);
       setUserRole(user.role);
     }
+    setIsLoadingRole(false);
   }, []);
 
-  if (!userRole) {
-    return (
-      <div className="container mx-auto p-6">
+  return (
+    <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Scheidsrechter Schema</h1>
+          <p className="text-muted-foreground mt-1">
+            {isLoadingRole 
+              ? 'Gebruikersgegevens laden...' 
+              : userRole === 'admin' 
+                ? 'Beheer scheidsrechter toewijzingen per maand'
+                : 'Bekijk open wedstrijden'}
+          </p>
+        </div>
+      </div>
+
+      {isLoadingRole ? (
         <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            Laden...
+          <CardContent className="p-8 text-center">
+            <div className="animate-pulse space-y-2">
+              <Skeleton className="h-4 w-1/2 mx-auto" />
+              <p className="text-sm text-muted-foreground mt-4">
+                Gebruikersgegevens laden...
+              </p>
+            </div>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  return userRole === 'admin' ? <AdminView /> : <RefereeView />;
+      ) : userRole === 'admin' ? (
+        <AdminView />
+      ) : (
+        <RefereeView />
+      )}
+    </div>
+  );
 };
 
 // Admin view component
@@ -105,16 +128,9 @@ const AdminView = () => {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Scheidsrechter Schema</h1>
-          <p className="text-muted-foreground mt-1">
-            Beheer scheidsrechter toewijzingen per maand
-          </p>
-        </div>
-        
         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
           <SelectTrigger className="w-[200px]">
             <SelectValue />
@@ -131,8 +147,37 @@ const AdminView = () => {
 
       {loading ? (
         <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            Gegevens laden...
+          <CardHeader>
+            <CardTitle>Wedstrijden laden...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Datum</TableHead>
+                  <TableHead>Tijd</TableHead>
+                  <TableHead>Locatie</TableHead>
+                  <TableHead>Wedstrijd</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Scheidsrechter</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[1, 2, 3, 4, 5].map(i => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <p className="text-sm text-muted-foreground text-center mt-4">
+              Database gegevens ophalen... Dit kan even duren.
+            </p>
           </CardContent>
         </Card>
       ) : matches.length === 0 ? (
@@ -240,13 +285,12 @@ const RefereeView = () => {
   const openMatchesCount = matches.length;
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Open Wedstrijden</h1>
           <p className="text-muted-foreground mt-1">
-            {openMatchesCount} {openMatchesCount === 1 ? 'open wedstrijd' : 'open wedstrijden'} voor {format(new Date(selectedMonth + '-01'), 'MMMM yyyy', { locale: nl })}
+            {loading ? 'Wedstrijden laden...' : `${openMatchesCount} ${openMatchesCount === 1 ? 'open wedstrijd' : 'open wedstrijden'} voor ${format(new Date(selectedMonth + '-01'), 'MMMM yyyy', { locale: nl })}`}
           </p>
         </div>
         
@@ -266,8 +310,33 @@ const RefereeView = () => {
 
       {loading ? (
         <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            Gegevens laden...
+          <CardHeader>
+            <CardTitle>Open wedstrijden laden...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Datum</TableHead>
+                  <TableHead>Tijd</TableHead>
+                  <TableHead>Locatie</TableHead>
+                  <TableHead>Wedstrijd</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[1, 2, 3, 4, 5].map(i => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <p className="text-sm text-muted-foreground text-center mt-4">
+              Database gegevens ophalen... Dit kan even duren.
+            </p>
           </CardContent>
         </Card>
       ) : openMatchesCount === 0 ? (
