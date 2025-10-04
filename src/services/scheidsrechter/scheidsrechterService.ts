@@ -451,6 +451,7 @@ export const scheidsrechterService = {
   // Get all matches for a specific month (no grouping)
   async getMonthMatches(month: string): Promise<PollMatch[]> {
     try {
+      // Simpele query zonder JOIN
       const { data, error } = await supabase
         .from('matches')
         .select(`
@@ -461,20 +462,38 @@ export const scheidsrechterService = {
           assigned_referee_id,
           poll_group_id,
           unique_number,
-          home_team:teams!matches_home_team_id_fkey(team_name),
-          away_team:teams!matches_away_team_id_fkey(team_name)
+          home_team_id,
+          away_team_id
         `)
         .like('match_date', `${month}%`)
         .order('match_date', { ascending: true });
 
       if (error) throw error;
+      if (!data || data.length === 0) return [];
 
-      return (data || []).map(match => ({
+      // Haal alle unieke team IDs op
+      const teamIds = [...new Set([
+        ...data.map(m => m.home_team_id),
+        ...data.map(m => m.away_team_id)
+      ].filter(Boolean))];
+
+      // Fetch team names in bulk (aparte simpele query)
+      const { data: teams } = await supabase
+        .from('teams')
+        .select('team_id, team_name')
+        .in('team_id', teamIds);
+
+      // Maak lookup map
+      const teamMap = new Map();
+      teams?.forEach(t => teamMap.set(t.team_id, t.team_name));
+
+      // Map matches met team names
+      return data.map(match => ({
         match_id: match.match_id,
         unique_number: match.unique_number || '',
         match_date: match.match_date,
-        home_team_name: match.home_team?.team_name || '',
-        away_team_name: match.away_team?.team_name || '',
+        home_team_name: teamMap.get(match.home_team_id) || 'Onbekend',
+        away_team_name: teamMap.get(match.away_team_id) || 'Onbekend',
         location: match.location || '',
         referee: match.referee,
         assigned_referee_id: match.assigned_referee_id,
