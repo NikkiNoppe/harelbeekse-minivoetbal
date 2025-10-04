@@ -41,8 +41,10 @@ serve(async (req) => {
     console.log(`Generating polls for month: ${month}`);
 
     // Get matches for the specified month that don't have poll groups yet
+    const [year, monthNum] = month.split('-').map(Number);
+    const lastDayOfMonth = new Date(year, monthNum, 0).getDate();
     const startDate = `${month}-01`;
-    const endDate = `${month}-31`;
+    const endDate = `${month}-${lastDayOfMonth.toString().padStart(2, '0')}`;
     
     const { data: matches, error: matchError } = await supabase
       .from('matches')

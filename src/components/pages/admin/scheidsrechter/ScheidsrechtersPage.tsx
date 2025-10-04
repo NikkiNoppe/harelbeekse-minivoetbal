@@ -35,8 +35,9 @@ const getMonthOptions = () => {
 
 // Helper: Get status badge for poll group
 const getGroupStatus = (group: PollGroup): { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string } => {
-  const allAssigned = group.matches.every(m => m.assigned_referee_id);
-  const someAssigned = group.matches.some(m => m.assigned_referee_id);
+  // Check both assigned_referee_id AND referee text field
+  const allAssigned = group.matches.every(m => m.assigned_referee_id || m.referee);
+  const someAssigned = group.matches.some(m => m.assigned_referee_id || m.referee);
   
   if (allAssigned) return { variant: 'default', label: '🟢 Bevestigd' };
   if (someAssigned) return { variant: 'outline', label: '🟡 Gedeeltelijk' };
@@ -445,7 +446,7 @@ const RefereeView: React.FC = () => {
 
     // Check if poll is confirmed
     const group = pollGroups.find(g => g.poll_group_id === pollGroupId);
-    const isConfirmed = group?.matches.every(m => m.assigned_referee_id);
+    const isConfirmed = group?.matches.every(m => m.assigned_referee_id || m.referee);
 
     if (isConfirmed) {
       toast.error('Deze poll is bevestigd en kan niet meer gewijzigd worden');

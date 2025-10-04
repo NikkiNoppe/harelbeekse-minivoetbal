@@ -450,9 +450,22 @@ export const scheidsrechterService = {
   // Assign referee to matches in a poll group
   async assignRefereeToGroup(pollGroupId: string, refereeId: number): Promise<boolean> {
     try {
+      // Get referee username first
+      const { data: refereeData } = await supabase
+        .from('users')
+        .select('username')
+        .eq('user_id', refereeId)
+        .single();
+      
+      const refereeUsername = refereeData?.username || null;
+      
+      // Update both assigned_referee_id AND referee text field
       const { error } = await supabase
         .from('matches')
-        .update({ assigned_referee_id: refereeId })
+        .update({ 
+          assigned_referee_id: refereeId,
+          referee: refereeUsername
+        })
         .eq('poll_group_id', pollGroupId);
 
       return !error;
