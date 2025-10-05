@@ -369,11 +369,11 @@ const RefereeView = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
-                        <TableHead className="w-32 text-xs">Datum & Locatie</TableHead>
+                        <TableHead className="w-28 text-xs">Datum & Locatie</TableHead>
                         <TableHead className="w-16 text-xs">Tijd</TableHead>
                         <TableHead className="text-xs">Wedstrijd</TableHead>
-                        <TableHead className="w-44 text-xs">Status</TableHead>
-                        <TableHead className="w-24 text-xs text-center">Beschikbaar?</TableHead>
+                        <TableHead className="w-36 text-xs">Scheidsrechter</TableHead>
+                        <TableHead className="w-20 text-xs text-center">Beschikbaar?</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -383,50 +383,55 @@ const RefereeView = () => {
                         const anyAssignedToMe = pollData.matches.some(m => m.assigned_referee_id === userId);
                         const allAvailable = allMatchIds.every(id => availability.get(id));
                         
+                        // Get unique referee for this poll group
+                        const pollReferee = pollData.matches.find(m => m.referee)?.referee || null;
+                        
                         return (
                           <React.Fragment key={pollKey}>
                             {pollData.matches.map((match, idx) => {
                               const date = new Date(match.match_date);
-                              const isAssigned = !!match.referee;
                               
                               return (
                                 <TableRow key={match.match_id} className="text-sm">
                                   {idx === 0 && (
                                     <TableCell 
                                       rowSpan={pollData.matches.length} 
-                                      className="font-medium text-xs bg-muted/30 align-top"
+                                      className="font-medium text-xs bg-muted/30 align-middle px-2"
                                     >
-                                      <div className="space-y-1 py-1">
-                                        <div className="flex items-center gap-1">
-                                          📅 {pollData.date}
-                                        </div>
-                                        <div className="text-muted-foreground">
-                                          📍 {pollData.location}
-                                        </div>
+                                      <div className="flex items-center gap-1 text-[11px]">
+                                        📅 {pollData.date.split(' ').slice(0, 2).join(' ')}
+                                      </div>
+                                      <div className="text-muted-foreground text-[11px]">
+                                        📍 {pollData.location}
                                       </div>
                                     </TableCell>
                                   )}
-                                  <TableCell className="font-medium text-xs">
+                                  <TableCell className="font-medium text-xs px-2">
                                     {format(date, 'HH:mm')}
                                   </TableCell>
-                                  <TableCell className="text-xs">
-                                    {match.home_team_name} vs {match.away_team_name}
-                                  </TableCell>
-                                  <TableCell className="text-xs">
-                                    {isAssigned ? (
-                                      <span className="text-green-600 flex items-center gap-1">
-                                        ✅ {match.referee}
-                                      </span>
-                                    ) : (
-                                      <span className="text-blue-600 flex items-center gap-1">
-                                        🔵 Open
-                                      </span>
-                                    )}
+                                  <TableCell className="text-xs px-2">
+                                    <span className="truncate block">{match.home_team_name} vs {match.away_team_name}</span>
                                   </TableCell>
                                   {idx === 0 && (
                                     <TableCell 
                                       rowSpan={pollData.matches.length} 
-                                      className="text-center bg-muted/30 align-middle"
+                                      className="text-xs bg-muted/30 align-middle px-2"
+                                    >
+                                      {pollReferee ? (
+                                        <span className="text-green-600 flex items-center gap-1">
+                                          ✅ {pollReferee}
+                                        </span>
+                                      ) : (
+                                        <span className="text-blue-600 flex items-center gap-1">
+                                          🔵 Open
+                                        </span>
+                                      )}
+                                    </TableCell>
+                                  )}
+                                  {idx === 0 && (
+                                    <TableCell 
+                                      rowSpan={pollData.matches.length} 
+                                      className="text-center bg-muted/30 align-middle px-2"
                                     >
                                       <Checkbox
                                         checked={allAvailable}
