@@ -258,18 +258,22 @@ const AdminView = () => {
 const RefereeView = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), 'yyyy-MM'));
   const [matches, setMatches] = useState<PollMatch[]>([]);
+  const [availability, setAvailability] = useState<Map<number, boolean>>(new Map());
   const [loading, setLoading] = useState(true);
+  const userId = parseInt(localStorage.getItem('userId') || '0');
 
   // Fetch referee data
   const fetchRefereeData = async () => {
     setLoading(true);
     try {
-      // Fetch all matches for the month
+      // Fetch all matches for the month (no filter on referee)
       const allMatches = await scheidsrechterService.getMonthMatches(selectedMonth);
+      setMatches(allMatches);
       
-      // Filter to only show open matches (no referee assigned)
-      const openMatches = allMatches.filter(m => !m.referee);
-      setMatches(openMatches);
+      // Load availability for all matches
+      const matchIds = allMatches.map(m => m.match_id);
+      const availabilityMap = await scheidsrechterService.getRefereeMatchAvailability(userId, matchIds);
+      setAvailability(availabilityMap);
     } catch (error) {
       console.error('Error fetching referee data:', error);
       toast.error('Fout bij ophalen van gegevens');
@@ -282,105 +286,126 @@ const RefereeView = () => {
     fetchRefereeData();
   }, [selectedMonth]);
 
-  const openMatchesCount = matches.length;
+  const handleAvailabilityChange = async (matchId: number, isAvailable: boolean) => {
+    try {
+      await scheidsrechterService.updateMatchAvailability(userId, matchId, isAvailable, selectedMonth);
+      setAvailability(prev => new Map(prev).set(matchId, isAvailable));
+      toast.success('Beschikbaarheid bijgewerkt');
+    } catch (error) {
+      console.error('Error updating availability:', error);
+      toast.error('Kon beschikbaarheid niet opslaan');
+    }
+  };
+
+  // Group matches by date
+  const groupedMatches = matches.reduce((acc, match) => {
+    const dateKey = format(new Date(match.match_date), 'EEEE d MMMM yyyy', { locale: nl });
+    if (!acc[dateKey]) acc[dateKey] = [];
+    acc[dateKey].push(match);
+    return acc;
+  }, {} as Record<string, PollMatch[]>);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-muted-foreground mt-1">
-            {loading ? 'Wedstrijden laden...' : `${openMatchesCount} ${openMatchesCount === 1 ? 'open wedstrijd' : 'open wedstrijden'} voor ${format(new Date(selectedMonth + '-01'), 'MMMM yyyy', { locale: nl })}`}
-          </p>
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-base">Beschikbaarheid Invullen</CardTitle>
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {getMonthOptions().map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {getMonthOptions().map(opt => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {loading ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Open wedstrijden laden...</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Datum</TableHead>
-                  <TableHead>Tijd</TableHead>
-                  <TableHead>Locatie</TableHead>
-                  <TableHead>Wedstrijd</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[1, 2, 3, 4, 5].map(i => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <p className="text-sm text-muted-foreground text-center mt-4">
-              Database gegevens ophalen... Dit kan even duren.
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Wedstrijden laden...</p>
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-8 w-full" />
+              ))}
+            </div>
+          </div>
+        ) : matches.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground">
+              Geen wedstrijden voor {format(new Date(selectedMonth + '-01'), 'MMMM yyyy', { locale: nl })}
             </p>
-          </CardContent>
-        </Card>
-      ) : openMatchesCount === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            Alle wedstrijden zijn toegewezen voor {format(new Date(selectedMonth + '-01'), 'MMMM yyyy', { locale: nl })}
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Wedstrijden zonder scheidsrechter</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Datum</TableHead>
-                  <TableHead>Tijd</TableHead>
-                  <TableHead>Locatie</TableHead>
-                  <TableHead>Wedstrijd</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {matches.map(match => (
-                  <TableRow key={match.match_id}>
-                    <TableCell>
-                      {format(new Date(match.match_date), 'EEE dd MMM', { locale: nl })}
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(match.match_date), 'HH:mm')}
-                    </TableCell>
-                    <TableCell>{match.location}</TableCell>
-                    <TableCell className="font-medium">
-                      {match.home_team_name} vs {match.away_team_name}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {Object.entries(groupedMatches).map(([dateKey, dateMatches]) => (
+              <div key={dateKey} className="space-y-2">
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  📅 {dateKey}
+                </h3>
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="w-16 text-xs">Tijd</TableHead>
+                        <TableHead className="w-20 text-xs">Locatie</TableHead>
+                        <TableHead className="text-xs">Wedstrijd</TableHead>
+                        <TableHead className="w-32 text-xs">Status</TableHead>
+                        <TableHead className="w-24 text-xs text-center">Beschikbaar?</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {dateMatches.map((match) => {
+                        const date = new Date(match.match_date);
+                        const isAssigned = !!match.referee;
+                        const isAssignedToMe = match.assigned_referee_id === userId;
+                        const isChecked = availability.get(match.match_id) || false;
+                        
+                        return (
+                          <TableRow key={match.match_id} className="text-sm">
+                            <TableCell className="font-medium text-xs">
+                              {format(date, 'HH:mm')}
+                            </TableCell>
+                            <TableCell className="text-xs">{match.location || '-'}</TableCell>
+                            <TableCell className="text-xs">
+                              {match.home_team_name} vs {match.away_team_name}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {isAssigned ? (
+                                <span className="text-green-600 flex items-center gap-1">
+                                  ✅ {match.referee}
+                                </span>
+                              ) : (
+                                <span className="text-blue-600 flex items-center gap-1">
+                                  🔵 Open
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox
+                                checked={isChecked}
+                                disabled={isAssignedToMe}
+                                onCheckedChange={(checked) => 
+                                  handleAvailabilityChange(match.match_id, checked === true)
+                                }
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

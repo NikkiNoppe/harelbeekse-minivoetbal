@@ -505,6 +505,45 @@ export const scheidsrechterService = {
     }
   },
 
+  // Get match-level availability for a referee
+  async getRefereeMatchAvailability(userId: number, matchIds: number[]): Promise<Map<number, boolean>> {
+    const { data, error } = await supabase
+      .from('referee_availability')
+      .select('match_id, is_available')
+      .eq('user_id', userId)
+      .in('match_id', matchIds)
+      .not('match_id', 'is', null);
+    
+    if (error) {
+      console.error('Error fetching referee match availability:', error);
+      return new Map();
+    }
+    
+    const availabilityMap = new Map<number, boolean>();
+    data?.forEach(item => {
+      if (item.match_id) {
+        availabilityMap.set(item.match_id, item.is_available);
+      }
+    });
+    
+    return availabilityMap;
+  },
+
+  // Update match-level availability
+  async updateMatchAvailability(userId: number, matchId: number, isAvailable: boolean, month: string): Promise<void> {
+    const { error } = await supabase
+      .from('referee_availability')
+      .upsert({
+        user_id: userId,
+        match_id: matchId,
+        is_available: isAvailable,
+        poll_month: month,
+        poll_group_id: null
+      } as any);
+    
+    if (error) throw error;
+  },
+
   // Assign referee to a specific match
   async assignRefereeToMatch(matchId: number, refereeId: number | null): Promise<boolean> {
     try {

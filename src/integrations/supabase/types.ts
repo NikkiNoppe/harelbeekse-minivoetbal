@@ -281,6 +281,7 @@ export type Database = {
           created_at: string | null
           id: number
           is_available: boolean
+          match_id: number | null
           poll_group_id: string
           poll_month: string
           user_id: number
@@ -289,6 +290,7 @@ export type Database = {
           created_at?: string | null
           id?: number
           is_available?: boolean
+          match_id?: number | null
           poll_group_id: string
           poll_month: string
           user_id: number
@@ -297,11 +299,27 @@ export type Database = {
           created_at?: string | null
           id?: number
           is_available?: boolean
+          match_id?: number | null
           poll_group_id?: string
           poll_month?: string
           user_id?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "referee_availability_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "referee_availability_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches_with_poll_info"
+            referencedColumns: ["match_id"]
+          },
+        ]
       }
       team_costs: {
         Row: {
