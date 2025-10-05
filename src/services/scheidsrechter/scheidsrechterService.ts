@@ -451,7 +451,13 @@ export const scheidsrechterService = {
   // Get all matches for a specific month (no grouping)
   async getMonthMatches(month: string): Promise<PollMatch[]> {
     try {
-      // Simpele query zonder JOIN
+      // Calculate next month for date range query
+      const [year, monthNum] = month.split('-').map(Number);
+      const nextMonth = monthNum === 12 
+        ? `${year + 1}-01` 
+        : `${year}-${String(monthNum + 1).padStart(2, '0')}`;
+      
+      // Use date range instead of LIKE for timestamp fields
       const { data, error } = await supabase
         .from('matches')
         .select(`
@@ -465,7 +471,8 @@ export const scheidsrechterService = {
           home_team_id,
           away_team_id
         `)
-        .like('match_date', `${month}%`)
+        .gte('match_date', `${month}-01`)
+        .lt('match_date', `${nextMonth}-01`)
         .order('match_date', { ascending: true });
 
       if (error) throw error;
