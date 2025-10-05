@@ -297,13 +297,26 @@ const RefereeView = () => {
     }
   };
 
-  // Group matches by date
-  const groupedMatches = matches.reduce((acc, match) => {
-    const dateKey = format(new Date(match.match_date), 'EEEE d MMMM yyyy', { locale: nl });
-    if (!acc[dateKey]) acc[dateKey] = [];
-    acc[dateKey].push(match);
-    return acc;
-  }, {} as Record<string, PollMatch[]>);
+  // Group matches by week, then by date, then by location and time slot
+  const groupedByWeek = matches.reduce((weekAcc, match) => {
+    const date = new Date(match.match_date);
+    const weekKey = `Week ${format(date, 'w', { locale: nl })} - ${format(date, 'yyyy', { locale: nl })}`;
+    
+    if (!weekAcc[weekKey]) weekAcc[weekKey] = {};
+    
+    const dateKey = format(date, 'EEEE d MMMM yyyy', { locale: nl });
+    if (!weekAcc[weekKey][dateKey]) weekAcc[weekKey][dateKey] = {};
+    
+    // Group by location and time slot (hourly blocks)
+    const location = match.location || 'Onbekend';
+    const hour = format(date, 'HH:00');
+    const timeSlotKey = `${location} - ${hour}`;
+    
+    if (!weekAcc[weekKey][dateKey][timeSlotKey]) weekAcc[weekKey][dateKey][timeSlotKey] = [];
+    weekAcc[weekKey][dateKey][timeSlotKey].push(match);
+    
+    return weekAcc;
+  }, {} as Record<string, Record<string, Record<string, PollMatch[]>>>);
 
   return (
     <Card>
@@ -341,65 +354,81 @@ const RefereeView = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {Object.entries(groupedMatches).map(([dateKey, dateMatches]) => (
-              <div key={dateKey} className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  📅 {dateKey}
-                </h3>
-                <div className="border rounded-lg overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="w-16 text-xs">Tijd</TableHead>
-                        <TableHead className="w-20 text-xs">Locatie</TableHead>
-                        <TableHead className="text-xs">Wedstrijd</TableHead>
-                        <TableHead className="w-32 text-xs">Status</TableHead>
-                        <TableHead className="w-24 text-xs text-center">Beschikbaar?</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {dateMatches.map((match) => {
-                        const date = new Date(match.match_date);
-                        const isAssigned = !!match.referee;
-                        const isAssignedToMe = match.assigned_referee_id === userId;
-                        const isChecked = availability.get(match.match_id) || false;
-                        
-                        return (
-                          <TableRow key={match.match_id} className="text-sm">
-                            <TableCell className="font-medium text-xs">
-                              {format(date, 'HH:mm')}
-                            </TableCell>
-                            <TableCell className="text-xs">{match.location || '-'}</TableCell>
-                            <TableCell className="text-xs">
-                              {match.home_team_name} vs {match.away_team_name}
-                            </TableCell>
-                            <TableCell className="text-xs">
-                              {isAssigned ? (
-                                <span className="text-green-600 flex items-center gap-1">
-                                  ✅ {match.referee}
-                                </span>
-                              ) : (
-                                <span className="text-blue-600 flex items-center gap-1">
-                                  🔵 Open
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Checkbox
-                                checked={isChecked}
-                                disabled={isAssignedToMe}
-                                onCheckedChange={(checked) => 
-                                  handleAvailabilityChange(match.match_id, checked === true)
-                                }
-                              />
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+          <div className="space-y-8">
+            {Object.entries(groupedByWeek).map(([weekKey, weekData]) => (
+              <div key={weekKey} className="space-y-4">
+                <h2 className="text-lg font-semibold border-b-2 border-primary pb-2">
+                  📆 {weekKey}
+                </h2>
+                
+                {Object.entries(weekData).map(([dateKey, timeSlots]) => (
+                  <div key={dateKey} className="space-y-3 ml-2">
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      📅 {dateKey}
+                    </h3>
+                    
+                    {Object.entries(timeSlots).map(([timeSlotKey, slotMatches]) => (
+                      <div key={timeSlotKey} className="ml-4">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">
+                          🕐 {timeSlotKey}
+                        </p>
+                        <div className="border rounded-lg overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/50">
+                                <TableHead className="w-16 text-xs">Tijd</TableHead>
+                                <TableHead className="w-20 text-xs">Locatie</TableHead>
+                                <TableHead className="text-xs">Wedstrijd</TableHead>
+                                <TableHead className="w-44 text-xs">Status</TableHead>
+                                <TableHead className="w-24 text-xs text-center">Beschikbaar?</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {slotMatches.map((match) => {
+                                const date = new Date(match.match_date);
+                                const isAssigned = !!match.referee;
+                                const isAssignedToMe = match.assigned_referee_id === userId;
+                                const isChecked = availability.get(match.match_id) || false;
+                                
+                                return (
+                                  <TableRow key={match.match_id} className="text-sm">
+                                    <TableCell className="font-medium text-xs">
+                                      {format(date, 'HH:mm')}
+                                    </TableCell>
+                                    <TableCell className="text-xs">{match.location || '-'}</TableCell>
+                                    <TableCell className="text-xs">
+                                      {match.home_team_name} vs {match.away_team_name}
+                                    </TableCell>
+                                    <TableCell className="text-xs">
+                                      {isAssigned ? (
+                                        <span className="text-green-600 flex items-center gap-1">
+                                          ✅ {match.referee}
+                                        </span>
+                                      ) : (
+                                        <span className="text-blue-600 flex items-center gap-1">
+                                          🔵 Open
+                                        </span>
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <Checkbox
+                                        checked={isChecked}
+                                        disabled={isAssignedToMe}
+                                        onCheckedChange={(checked) => 
+                                          handleAvailabilityChange(match.match_id, checked === true)
+                                        }
+                                      />
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
