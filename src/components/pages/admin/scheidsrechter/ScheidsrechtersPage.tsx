@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -297,26 +298,29 @@ const RefereeView = () => {
     }
   };
 
-  // Group matches by week, then by date, then by location and time slot
+  // Group matches by week, then by date and location (poll groups)
   const groupedByWeek = matches.reduce((weekAcc, match) => {
     const date = new Date(match.match_date);
     const weekKey = `Week ${format(date, 'w', { locale: nl })} - ${format(date, 'yyyy', { locale: nl })}`;
     
     if (!weekAcc[weekKey]) weekAcc[weekKey] = {};
     
-    const dateKey = format(date, 'EEEE d MMMM yyyy', { locale: nl });
-    if (!weekAcc[weekKey][dateKey]) weekAcc[weekKey][dateKey] = {};
-    
-    // Group by location and time slot (hourly blocks)
+    const dateKey = format(date, 'EEEE d MMMM', { locale: nl });
     const location = match.location || 'Onbekend';
-    const hour = format(date, 'HH:00');
-    const timeSlotKey = `${location} - ${hour}`;
+    const pollKey = `${dateKey} - ${location}`;
     
-    if (!weekAcc[weekKey][dateKey][timeSlotKey]) weekAcc[weekKey][dateKey][timeSlotKey] = [];
-    weekAcc[weekKey][dateKey][timeSlotKey].push(match);
+    if (!weekAcc[weekKey][pollKey]) {
+      weekAcc[weekKey][pollKey] = {
+        date: dateKey,
+        location: location,
+        matches: []
+      };
+    }
+    
+    weekAcc[weekKey][pollKey].matches.push(match);
     
     return weekAcc;
-  }, {} as Record<string, Record<string, Record<string, PollMatch[]>>>);
+  }, {} as Record<string, Record<string, { date: string; location: string; matches: PollMatch[] }>>);
 
   return (
     <Card>
@@ -355,80 +359,95 @@ const RefereeView = () => {
           </div>
         ) : (
           <div className="space-y-8">
-            {Object.entries(groupedByWeek).map(([weekKey, weekData]) => (
+            {Object.entries(groupedByWeek).map(([weekKey, pollGroups]) => (
               <div key={weekKey} className="space-y-4">
-                <h2 className="text-lg font-semibold border-b-2 border-primary pb-2">
+                <h2 className="text-base font-semibold border-b pb-2 text-primary">
                   📆 {weekKey}
                 </h2>
                 
-                {Object.entries(weekData).map(([dateKey, timeSlots]) => (
-                  <div key={dateKey} className="space-y-3 ml-2">
-                    <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                      📅 {dateKey}
-                    </h3>
-                    
-                    {Object.entries(timeSlots).map(([timeSlotKey, slotMatches]) => (
-                      <div key={timeSlotKey} className="ml-4">
-                        <p className="text-xs font-medium text-muted-foreground mb-2">
-                          🕐 {timeSlotKey}
-                        </p>
-                        <div className="border rounded-lg overflow-hidden">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="bg-muted/50">
-                                <TableHead className="w-16 text-xs">Tijd</TableHead>
-                                <TableHead className="w-20 text-xs">Locatie</TableHead>
-                                <TableHead className="text-xs">Wedstrijd</TableHead>
-                                <TableHead className="w-44 text-xs">Status</TableHead>
-                                <TableHead className="w-24 text-xs text-center">Beschikbaar?</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {slotMatches.map((match) => {
-                                const date = new Date(match.match_date);
-                                const isAssigned = !!match.referee;
-                                const isAssignedToMe = match.assigned_referee_id === userId;
-                                const isChecked = availability.get(match.match_id) || false;
-                                
-                                return (
-                                  <TableRow key={match.match_id} className="text-sm">
-                                    <TableCell className="font-medium text-xs">
-                                      {format(date, 'HH:mm')}
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="w-32 text-xs">Datum & Locatie</TableHead>
+                        <TableHead className="w-16 text-xs">Tijd</TableHead>
+                        <TableHead className="text-xs">Wedstrijd</TableHead>
+                        <TableHead className="w-44 text-xs">Status</TableHead>
+                        <TableHead className="w-24 text-xs text-center">Beschikbaar?</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Object.entries(pollGroups).map(([pollKey, pollData]) => {
+                        const firstMatch = pollData.matches[0];
+                        const allMatchIds = pollData.matches.map(m => m.match_id);
+                        const anyAssignedToMe = pollData.matches.some(m => m.assigned_referee_id === userId);
+                        const allAvailable = allMatchIds.every(id => availability.get(id));
+                        
+                        return (
+                          <React.Fragment key={pollKey}>
+                            {pollData.matches.map((match, idx) => {
+                              const date = new Date(match.match_date);
+                              const isAssigned = !!match.referee;
+                              
+                              return (
+                                <TableRow key={match.match_id} className="text-sm">
+                                  {idx === 0 && (
+                                    <TableCell 
+                                      rowSpan={pollData.matches.length} 
+                                      className="font-medium text-xs bg-muted/30 align-top"
+                                    >
+                                      <div className="space-y-1 py-1">
+                                        <div className="flex items-center gap-1">
+                                          📅 {pollData.date}
+                                        </div>
+                                        <div className="text-muted-foreground">
+                                          📍 {pollData.location}
+                                        </div>
+                                      </div>
                                     </TableCell>
-                                    <TableCell className="text-xs">{match.location || '-'}</TableCell>
-                                    <TableCell className="text-xs">
-                                      {match.home_team_name} vs {match.away_team_name}
-                                    </TableCell>
-                                    <TableCell className="text-xs">
-                                      {isAssigned ? (
-                                        <span className="text-green-600 flex items-center gap-1">
-                                          ✅ {match.referee}
-                                        </span>
-                                      ) : (
-                                        <span className="text-blue-600 flex items-center gap-1">
-                                          🔵 Open
-                                        </span>
-                                      )}
-                                    </TableCell>
-                                    <TableCell className="text-center">
+                                  )}
+                                  <TableCell className="font-medium text-xs">
+                                    {format(date, 'HH:mm')}
+                                  </TableCell>
+                                  <TableCell className="text-xs">
+                                    {match.home_team_name} vs {match.away_team_name}
+                                  </TableCell>
+                                  <TableCell className="text-xs">
+                                    {isAssigned ? (
+                                      <span className="text-green-600 flex items-center gap-1">
+                                        ✅ {match.referee}
+                                      </span>
+                                    ) : (
+                                      <span className="text-blue-600 flex items-center gap-1">
+                                        🔵 Open
+                                      </span>
+                                    )}
+                                  </TableCell>
+                                  {idx === 0 && (
+                                    <TableCell 
+                                      rowSpan={pollData.matches.length} 
+                                      className="text-center bg-muted/30 align-middle"
+                                    >
                                       <Checkbox
-                                        checked={isChecked}
-                                        disabled={isAssignedToMe}
-                                        onCheckedChange={(checked) => 
-                                          handleAvailabilityChange(match.match_id, checked === true)
-                                        }
+                                        checked={allAvailable}
+                                        disabled={anyAssignedToMe}
+                                        onCheckedChange={(checked) => {
+                                          allMatchIds.forEach(matchId => 
+                                            handleAvailabilityChange(matchId, checked === true)
+                                          );
+                                        }}
                                       />
                                     </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ))}
+                                  )}
+                                </TableRow>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             ))}
           </div>
