@@ -572,15 +572,15 @@ export type Database = {
           user_id: number
           username: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "users"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_user_team_ids: {
-        Args: Record<PropertyKey, never>
-        Returns: number[]
-      }
+      get_current_user_role: { Args: never; Returns: string }
+      get_current_user_team_ids: { Args: never; Returns: number[] }
       get_match_statistics: {
         Args: { match_id_param: number }
         Returns: {
@@ -590,24 +590,9 @@ export type Database = {
           total_players: number
         }[]
       }
-      insert_transaction_with_auto_data: {
-        Args:
-          | {
-              p_amount: number
-              p_cost_setting_id: number
-              p_date?: string
-              p_match_id?: number
-              p_notes?: string
-              p_team_id: number
-            }
-          | {
-              p_amount: number
-              p_description?: string
-              p_match_id?: number
-              p_team_id: number
-              p_transaction_type: string
-            }
-          | {
+      insert_transaction_with_auto_data:
+        | {
+            Args: {
               p_amount?: number
               p_cost_setting_id?: number
               p_description?: string
@@ -615,20 +600,32 @@ export type Database = {
               p_team_id: number
               p_transaction_type?: string
             }
-        Returns: number
-      }
-      is_admin_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_current_user_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_player_list_locked: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+            Returns: number
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_description?: string
+              p_match_id?: number
+              p_team_id: number
+              p_transaction_type: string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_cost_setting_id: number
+              p_date?: string
+              p_match_id?: number
+              p_notes?: string
+              p_team_id: number
+            }
+            Returns: number
+          }
+      is_admin_user: { Args: never; Returns: boolean }
+      is_current_user_admin: { Args: never; Returns: boolean }
+      is_player_list_locked: { Args: never; Returns: boolean }
       is_player_suspended: {
         Args: { match_date_param: string; player_id_param: number }
         Returns: boolean
@@ -654,38 +651,29 @@ export type Database = {
         Args: { p_role: string; p_team_ids?: string; p_user_id: number }
         Returns: undefined
       }
-      update_competition_standings: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      update_competition_standings: { Args: never; Returns: undefined }
       update_competition_standings_optimized: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: undefined
       }
-      update_player_cards: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      update_team_balances: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      update_player_cards: { Args: never; Returns: undefined }
+      update_team_balances: { Args: never; Returns: undefined }
       update_user_password: {
         Args: { new_password: string; user_id_param: number }
         Returns: boolean
       }
-      validate_player_data: {
-        Args:
-          | {
+      validate_player_data:
+        | {
+            Args: {
               p_birth_date: string
               p_exclude_player_id?: number
               p_first_name: string
               p_last_name: string
               p_team_id: number
             }
-          | { p_name: string; p_team_id?: number }
-        Returns: boolean
-      }
+            Returns: boolean
+          }
+        | { Args: { p_name: string; p_team_id?: number }; Returns: boolean }
       verify_user_password: {
         Args: { input_password: string; input_username_or_email: string }
         Returns: {
