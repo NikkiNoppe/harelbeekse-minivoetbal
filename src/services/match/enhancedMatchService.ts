@@ -62,7 +62,7 @@ export const enhancedMatchService = {
       const isCupMatch = matchInfo?.is_cup_match;
 
       // For cup matches with scores (new completions or score changes), use the matchFormService with auto-advance
-      if (isCupMatch && updateData.isCompleted && updateData.homeScore !== undefined && updateData.awayScore !== undefined) {
+      if (isCupMatch && updateData.isCompleted && updateData.homeScore != null && updateData.awayScore != null) {
         console.log('🟢 [enhancedMatchService] This is a completed cup match with scores, using updateMatchForm');
         try {
           // Convert to MatchFormData format
@@ -208,7 +208,7 @@ export const enhancedMatchService = {
       // After successful update: apply match costs when scores are entered
       console.log('🟢 [enhancedMatchService] Checking if match costs need to be applied...');
       try {
-        if (updateData.isCompleted && updateData.homeScore !== undefined && updateData.awayScore !== undefined) {
+        if (updateData.isCompleted && updateData.homeScore != null && updateData.awayScore != null) {
           console.log('🟢 [enhancedMatchService] Applying match costs...');
           await matchCostService.applyCostsForMatch(matchId);
           console.log('✅ [enhancedMatchService] Match costs applied');
