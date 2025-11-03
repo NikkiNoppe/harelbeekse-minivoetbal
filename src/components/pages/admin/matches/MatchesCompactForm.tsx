@@ -122,7 +122,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     awayScore,
     referee: selectedReferee,
     refereeNotes,
-    isCompleted: true,
+    isCompleted: homeScore != null && awayScore != null,
     homePlayers: getHomeTeamSelectionsWithCards(),
     awayPlayers: getAwayTeamSelectionsWithCards()
   }), [match, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards]);
