@@ -29,6 +29,11 @@ interface ServiceResponse {
 
 export const enhancedMatchService = {
   async updateMatch(matchId: number, updateData: MatchUpdateData, isAdmin: boolean = false, userRole?: string): Promise<ServiceResponse> {
+    console.log('🟢 [enhancedMatchService] Starting updateMatch');
+    console.log('🟢 [enhancedMatchService] Match ID:', matchId);
+    console.log('🟢 [enhancedMatchService] Is Admin:', isAdmin);
+    console.log('🟢 [enhancedMatchService] User Role:', userRole);
+    console.log('🟢 [enhancedMatchService] Update Data:', JSON.stringify(updateData, null, 2));
 
     if (!matchId || isNaN(matchId)) {
       return {
@@ -38,6 +43,7 @@ export const enhancedMatchService = {
     }
 
     try {
+      console.log('🟢 [enhancedMatchService] Fetching match info...');
       // Check if this might be a cup match that could use automatic advancement
       // For cup matches, we want to use the updateMatchForm that has auto-advance logic
       const { data: matchInfo, error: fetchError } = await supabase
@@ -47,14 +53,17 @@ export const enhancedMatchService = {
         .single();
 
       if (fetchError) {
-        console.error('Error fetching match info:', fetchError);
+        console.error('❌ [enhancedMatchService] Error fetching match info:', fetchError);
         // Continue with regular update if we can't fetch match info
+      } else {
+        console.log('✅ [enhancedMatchService] Match info fetched, is_cup_match:', matchInfo?.is_cup_match);
       }
 
       const isCupMatch = matchInfo?.is_cup_match;
 
       // For cup matches with scores (new completions or score changes), use the matchFormService with auto-advance
       if (isCupMatch && updateData.isCompleted && updateData.homeScore !== undefined && updateData.awayScore !== undefined) {
+        console.log('🟢 [enhancedMatchService] This is a completed cup match with scores, using updateMatchForm');
         try {
           // Convert to MatchFormData format
           const { date: matchDate, time: matchTime } = isoToLocalDateTime(matchInfo.match_date);
@@ -81,6 +90,7 @@ export const enhancedMatchService = {
           };
 
           const result = await updateMatchForm(matchFormData);
+          console.log('✅ [enhancedMatchService] Cup match updateMatchForm succeeded');
           
           let successMessage = "Bekerwedstrijd succesvol bijgewerkt";
           if (result.advanceMessage) {
@@ -96,11 +106,12 @@ export const enhancedMatchService = {
             message: successMessage
           };
         } catch (cupError) {
-          console.error('Error with cup match update:', cupError);
+          console.error('❌ [enhancedMatchService] Error with cup match update:', cupError);
           // Fall back to regular update
         }
       }
 
+      console.log('🟢 [enhancedMatchService] Using regular update logic');
       // Regular update logic for non-cup matches or when cup-specific logic fails
       
       // Check for late submission if this is a player_manager submission
@@ -150,7 +161,7 @@ export const enhancedMatchService = {
       }
       
       // Debug: Log what we're sending
-      console.log('SENDING UPDATE:', { matchId, updateObject });
+      console.log('🟢 [enhancedMatchService] SENDING UPDATE:', { matchId, updateObject });
       
       // Direct database update
       const { data, error } = await supabase
@@ -160,11 +171,16 @@ export const enhancedMatchService = {
         .select();
         
       if (error) {
-        console.log('DATABASE ERROR:', error);
+        console.error('❌ [enhancedMatchService] DATABASE ERROR:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         throw error;
       }
       
-      console.log('UPDATE SUCCESS:', data);
+      console.log('✅ [enhancedMatchService] UPDATE SUCCESS:', data);
 
       // Fallback: If this is a cup match, re-evaluate advancement after successful update (using persisted values)
       try {
@@ -190,18 +206,25 @@ export const enhancedMatchService = {
       }
 
       // After successful update: apply match costs when scores are entered
+      console.log('🟢 [enhancedMatchService] Checking if match costs need to be applied...');
       try {
         if (updateData.isCompleted && updateData.homeScore !== undefined && updateData.awayScore !== undefined) {
+          console.log('🟢 [enhancedMatchService] Applying match costs...');
           await matchCostService.applyCostsForMatch(matchId);
+          console.log('✅ [enhancedMatchService] Match costs applied');
+        } else {
+          console.log('🟢 [enhancedMatchService] Skipping match costs (not completed or no scores)');
         }
       } catch (costErr) {
-        console.warn('Kon wedstrijdkosten niet automatisch toepassen:', costErr);
+        console.error('❌ [enhancedMatchService] Error applying match costs:', costErr);
       }
 
       // Sync card penalties whenever players data changes
+      console.log('🟢 [enhancedMatchService] Checking if card penalties need sync...');
       try {
         if ((updateData.homePlayers !== undefined || updateData.awayPlayers !== undefined) && 
             matchInfo?.home_team_id && matchInfo?.away_team_id) {
+          console.log('🟢 [enhancedMatchService] Syncing card penalties...');
           const matchDateISO = (data && Array.isArray(data) ? data[0]?.match_date : null) || null;
           const response = await supabase.functions.invoke('sync-card-penalties', {
             body: {
@@ -215,15 +238,18 @@ export const enhancedMatchService = {
           });
           
           if (response.error) {
-            console.error('Card penalty sync failed:', response.error);
+            console.error('❌ [enhancedMatchService] Card penalty sync failed:', response.error);
           } else {
-            console.log('Card penalties synced successfully:', response.data);
+            console.log('✅ [enhancedMatchService] Card penalties synced successfully:', response.data);
           }
+        } else {
+          console.log('🟢 [enhancedMatchService] Skipping card penalty sync (no player changes or missing team IDs)');
         }
       } catch (cardErr) {
-        console.warn('Kon kaartboetes niet synchroniseren:', cardErr);
+        console.error('❌ [enhancedMatchService] Error syncing card penalties:', cardErr);
       }
 
+      console.log('✅ [enhancedMatchService] All operations completed successfully');
       return {
         success: true,
         message: isLateSubmission 
@@ -233,6 +259,12 @@ export const enhancedMatchService = {
       };
 
     } catch (error) {
+      console.error('❌ [enhancedMatchService] FATAL ERROR in updateMatch:', error);
+      console.error('❌ [enhancedMatchService] Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Onbekende fout',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return {
         success: false,
         message: `Onverwachte fout bij bijwerken wedstrijd: ${error instanceof Error ? error.message : 'Onbekende fout'}`

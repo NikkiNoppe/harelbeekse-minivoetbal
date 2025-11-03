@@ -10,9 +10,14 @@ export const useEnhancedMatchFormSubmission = () => {
   const queryClient = useQueryClient();
 
   const submitMatchForm = async (matchData: MatchFormData, isAdmin: boolean = false, userRole?: string) => {
+    console.log('🟡 [useEnhancedMatchFormSubmission] Starting submitMatchForm');
+    console.log('🟡 [useEnhancedMatchFormSubmission] Match data:', matchData);
+    console.log('🟡 [useEnhancedMatchFormSubmission] isAdmin:', isAdmin, 'userRole:', userRole);
+    
     // Filter out empty player slots before sending to server
     const filteredHomePlayers = matchData.homePlayers?.filter(p => p.playerId !== null) || [];
     const filteredAwayPlayers = matchData.awayPlayers?.filter(p => p.playerId !== null) || [];
+    console.log('🟡 [useEnhancedMatchFormSubmission] Filtered players - Home:', filteredHomePlayers.length, 'Away:', filteredAwayPlayers.length);
     
     const updateData = {
       homeScore: matchData.homeScore,
@@ -30,7 +35,9 @@ export const useEnhancedMatchFormSubmission = () => {
     };
 
     // Validate required data
+    console.log('🟡 [useEnhancedMatchFormSubmission] Validating match ID...');
     if (!matchData.matchId || isNaN(matchData.matchId)) {
+      console.error('❌ [useEnhancedMatchFormSubmission] Invalid match ID');
       const errorMsg = "Ongeldige wedstrijd ID";
       toast({
         title: "Validatie Fout",
@@ -39,12 +46,15 @@ export const useEnhancedMatchFormSubmission = () => {
       });
       return { success: false, error: errorMsg };
     }
+    console.log('✅ [useEnhancedMatchFormSubmission] Match ID validated');
 
     // Validate player data if provided - only check selected players (with playerId)
+    console.log('🟡 [useEnhancedMatchFormSubmission] Validating player data...');
     if (matchData.homePlayers && Array.isArray(matchData.homePlayers)) {
       const selectedHomePlayers = matchData.homePlayers.filter(p => p.playerId !== null);
       const invalidHomePlayers = selectedHomePlayers.filter(p => !p.playerId || !p.playerName);
       if (invalidHomePlayers.length > 0) {
+        console.error('❌ [useEnhancedMatchFormSubmission] Invalid home players:', invalidHomePlayers);
         const errorMsg = "Ongeldige spelergegevens voor thuisteam";
         toast({
           title: "Validatie Fout", 
@@ -59,6 +69,7 @@ export const useEnhancedMatchFormSubmission = () => {
       const selectedAwayPlayers = matchData.awayPlayers.filter(p => p.playerId !== null);
       const invalidAwayPlayers = selectedAwayPlayers.filter(p => !p.playerId || !p.playerName);
       if (invalidAwayPlayers.length > 0) {
+        console.error('❌ [useEnhancedMatchFormSubmission] Invalid away players:', invalidAwayPlayers);
         const errorMsg = "Ongeldige spelergegevens voor uitteam";
         toast({
           title: "Validatie Fout",
@@ -68,10 +79,12 @@ export const useEnhancedMatchFormSubmission = () => {
         return { success: false, error: errorMsg };
       }
     }
+    console.log('✅ [useEnhancedMatchFormSubmission] Player data validated');
 
     setIsSubmitting(true);
     
     try {
+      console.log('🟡 [useEnhancedMatchFormSubmission] Calling enhancedMatchService.updateMatch...');
       // Optimistic update for better UX
       queryClient.setQueryData(['match', matchData.matchId], (oldData: any) => ({
         ...oldData,
@@ -79,8 +92,10 @@ export const useEnhancedMatchFormSubmission = () => {
       }));
 
       const result = await enhancedMatchService.updateMatch(matchData.matchId, updateData, isAdmin, userRole);
+      console.log('🟡 [useEnhancedMatchFormSubmission] Service response:', result);
 
       if (result.success) {
+        console.log('✅ [useEnhancedMatchFormSubmission] Service call succeeded');
         // Refresh queries after successful update - staggered to prevent race conditions
         await queryClient.invalidateQueries({ queryKey: ['match', matchData.matchId] });
         
@@ -105,6 +120,7 @@ export const useEnhancedMatchFormSubmission = () => {
         });
         return { success: true };
       } else {
+        console.error('❌ [useEnhancedMatchFormSubmission] Service returned error:', result.message);
         // Revert optimistic update on failure
         queryClient.invalidateQueries({ queryKey: ['match', matchData.matchId] });
         
@@ -116,11 +132,18 @@ export const useEnhancedMatchFormSubmission = () => {
         return { success: false, error: result.message };
       }
     } catch (error) {
+      console.error('❌ [useEnhancedMatchFormSubmission] ERROR in submitMatchForm:', error);
+      console.error('❌ [useEnhancedMatchFormSubmission] Error type:', typeof error);
+      console.error('❌ [useEnhancedMatchFormSubmission] Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
       // Revert optimistic update on failure
       queryClient.invalidateQueries({ queryKey: ['match', matchData.matchId] });
       
       const errorMessage = error instanceof Error ? error.message : 'Onbekende fout';
-      console.error('Form submission error:', error);
       
       toast({
         title: "Fout",

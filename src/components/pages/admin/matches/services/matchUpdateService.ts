@@ -20,6 +20,9 @@ export interface MatchUpdateData {
 
 export const updateMatchData = async (data: MatchUpdateData): Promise<{ success: boolean; message: string }> => {
   try {
+    console.log('🔵 [matchUpdateService] Starting updateMatchData for match_id:', data.match_id);
+    console.log('🔵 [matchUpdateService] Update data:', JSON.stringify(data, null, 2));
+
     const { error } = await supabase
       .from('matches')
       .update({
@@ -43,13 +46,19 @@ export const updateMatchData = async (data: MatchUpdateData): Promise<{ success:
       .eq('match_id', data.match_id);
 
     if (error) {
-      console.error('Error updating match:', error);
+      console.error('❌ [matchUpdateService] Database error:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
       return { success: false, message: `Fout bij opslaan: ${error.message}` };
     }
 
+    console.log('✅ [matchUpdateService] Match updated successfully');
     return { success: true, message: 'Wedstrijdgegevens succesvol opgeslagen' };
   } catch (error) {
-    console.error('Error in updateMatchData:', error);
+    console.error('❌ [matchUpdateService] Unexpected error:', error);
     return { success: false, message: 'Er is een onverwachte fout opgetreden' };
   }
 };
