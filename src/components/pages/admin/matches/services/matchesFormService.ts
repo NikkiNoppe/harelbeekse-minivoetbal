@@ -3,6 +3,7 @@ import { MatchFormData } from "../types";
 import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { cupService } from "@/services/match";
 import { sortCupMatches, sortLeagueMatches } from "@/lib/matchSortingUtils";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export const fetchUpcomingMatches = async (
   teamId: number,
@@ -135,29 +136,31 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
     const wasAlreadySubmitted = existingMatch?.is_submitted;
     const isBeingCompleted = matchData.isCompleted && !wasAlreadySubmitted;
 
-    // Update the match
-    const { error } = await supabase
-      .from('matches')
-      .update({
-        match_date: localDateTimeToISO(matchData.date, matchData.time),
-        home_team_id: matchData.homeTeamId,
-        away_team_id: matchData.awayTeamId,
-        location: matchData.location,
-        speeldag: matchData.matchday,
-        home_score: matchData.homeScore,
-        away_score: matchData.awayScore,
-        referee: matchData.referee,
-        referee_notes: matchData.refereeNotes,
-        is_submitted: matchData.isCompleted,
-        is_locked: matchData.isLocked,
-        home_players: matchData.homePlayers as any,
-        away_players: matchData.awayPlayers as any,
-        // Preserve poll data if present
-        assigned_referee_id: (matchData as any).assignedRefereeId || null,
-        poll_group_id: (matchData as any).pollGroupId || null,
-        poll_month: (matchData as any).pollMonth || null
-      })
-      .eq('match_id', matchData.matchId);
+    // Update the match with user context
+    const { error } = await withUserContext(async () => {
+      return await supabase
+        .from('matches')
+        .update({
+          match_date: localDateTimeToISO(matchData.date, matchData.time),
+          home_team_id: matchData.homeTeamId,
+          away_team_id: matchData.awayTeamId,
+          location: matchData.location,
+          speeldag: matchData.matchday,
+          home_score: matchData.homeScore,
+          away_score: matchData.awayScore,
+          referee: matchData.referee,
+          referee_notes: matchData.refereeNotes,
+          is_submitted: matchData.isCompleted,
+          is_locked: matchData.isLocked,
+          home_players: matchData.homePlayers as any,
+          away_players: matchData.awayPlayers as any,
+          // Preserve poll data if present
+          assigned_referee_id: (matchData as any).assignedRefereeId || null,
+          poll_group_id: (matchData as any).pollGroupId || null,
+          poll_month: (matchData as any).pollMonth || null
+        })
+        .eq('match_id', matchData.matchId);
+    });
 
     if (error) {
       console.error('Error updating match:', error);

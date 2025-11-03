@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { localDateTimeToISO } from "@/lib/dateUtils";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export interface MatchMetadata {
   matchId: number;
@@ -14,16 +15,18 @@ export interface MatchMetadata {
 
 export const matchService = {
   async updateMatchMetadata(metadata: MatchMetadata): Promise<void> {
-    const { error } = await supabase
-      .from('matches')
-      .update({
-        match_date: localDateTimeToISO(metadata.date, metadata.time),
-        home_team_id: metadata.homeTeamId,
-        away_team_id: metadata.awayTeamId,
-        location: metadata.location,
-        speeldag: metadata.matchday
-      })
-      .eq('match_id', metadata.matchId);
+    const { error } = await withUserContext(async () => {
+      return await supabase
+        .from('matches')
+        .update({
+          match_date: localDateTimeToISO(metadata.date, metadata.time),
+          home_team_id: metadata.homeTeamId,
+          away_team_id: metadata.awayTeamId,
+          location: metadata.location,
+          speeldag: metadata.matchday
+        })
+        .eq('match_id', metadata.matchId);
+    });
 
     if (error) {
       console.error('Error updating match metadata:', error);
