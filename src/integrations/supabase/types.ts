@@ -579,6 +579,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_team_costs_for_match: {
+        Args: { p_cost_setting_ids: number[]; p_match_id: number }
+        Returns: undefined
+      }
       get_current_user_role: { Args: never; Returns: string }
       get_current_user_team_ids: { Args: never; Returns: number[] }
       get_match_statistics: {
