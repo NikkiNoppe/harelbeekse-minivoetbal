@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
 
 export interface MatchUpdateData {
   match_id: number;
@@ -21,29 +20,27 @@ export interface MatchUpdateData {
 
 export const updateMatchData = async (data: MatchUpdateData): Promise<{ success: boolean; message: string }> => {
   try {
-    const { error } = await withUserContext(async () => {
-      return await supabase
-        .from('matches')
-        .update({
-          home_score: data.home_score,
-          away_score: data.away_score,
-          location: data.location,
-          referee: data.referee,
-          referee_notes: data.referee_notes,
-          field_cost: data.field_cost,
-          referee_cost: data.referee_cost,
-          home_players: data.home_players,
-          away_players: data.away_players,
-          is_submitted: data.is_submitted,
-          speeldag: data.speeldag,
-          // Preserve poll data
-          assigned_referee_id: data.assigned_referee_id || null,
-          poll_group_id: data.poll_group_id || null,
-          poll_month: data.poll_month || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('match_id', data.match_id);
-    });
+    const { error } = await supabase
+      .from('matches')
+      .update({
+        home_score: data.home_score,
+        away_score: data.away_score,
+        location: data.location,
+        referee: data.referee,
+        referee_notes: data.referee_notes,
+        field_cost: data.field_cost,
+        referee_cost: data.referee_cost,
+        home_players: data.home_players,
+        away_players: data.away_players,
+        is_submitted: data.is_submitted,
+        speeldag: data.speeldag,
+        // Preserve poll data
+        assigned_referee_id: data.assigned_referee_id || null,
+        poll_group_id: data.poll_group_id || null,
+        poll_month: data.poll_month || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('match_id', data.match_id);
 
     if (error) {
       console.error('Error updating match:', error);
@@ -53,7 +50,6 @@ export const updateMatchData = async (data: MatchUpdateData): Promise<{ success:
     return { success: true, message: 'Wedstrijdgegevens succesvol opgeslagen' };
   } catch (error) {
     console.error('Error in updateMatchData:', error);
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    return { success: false, message: `Er is een onverwachte fout opgetreden: ${errorMsg}` };
+    return { success: false, message: 'Er is een onverwachte fout opgetreden' };
   }
 };

@@ -5,7 +5,6 @@ import { MatchFormData } from "@/components/pages/admin/matches/types";
 import { bekerService } from "@/services/match/cupService";
 import { matchCostService } from "@/services/financial/matchCostService";
 import { cardPenaltyService } from "@/services/financial/cardPenaltyService";
-import { withUserContext } from "@/lib/supabaseUtils";
 
 interface MatchUpdateData {
   homeScore?: number | null;
@@ -153,19 +152,16 @@ export const enhancedMatchService = {
       // Debug: Log what we're sending
       console.log('SENDING UPDATE:', { matchId, updateObject });
       
-      // Direct database update with user context
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('matches')
-          .update(updateObject)
-          .eq('match_id', matchId)
-          .select();
-      });
+      // Direct database update
+      const { data, error } = await supabase
+        .from('matches')
+        .update(updateObject)
+        .eq('match_id', matchId)
+        .select();
         
       if (error) {
         console.log('DATABASE ERROR:', error);
-        const errorMsg = error.message || error.code || JSON.stringify(error);
-        throw new Error(`Database fout: ${errorMsg}`);
+        throw error;
       }
       
       console.log('UPDATE SUCCESS:', data);
@@ -237,16 +233,9 @@ export const enhancedMatchService = {
       };
 
     } catch (error) {
-      console.error('Enhanced match service error:', error);
-      const errorMsg = error instanceof Error 
-        ? error.message 
-        : typeof error === 'object' && error !== null && 'message' in error
-        ? String(error.message)
-        : JSON.stringify(error);
-      
       return {
         success: false,
-        message: `Onverwachte fout bij bijwerken wedstrijd: ${errorMsg}`
+        message: `Onverwachte fout bij bijwerken wedstrijd: ${error instanceof Error ? error.message : 'Onbekende fout'}`
       };
     }
   },
@@ -261,15 +250,13 @@ export const enhancedMatchService = {
     }
 
     try {
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('matches')
-          .update({ 
-            is_locked: true
-          })
-          .eq('match_id', matchId)
-          .select();
-      });
+      const { data, error } = await supabase
+        .from('matches')
+        .update({ 
+          is_locked: true
+        })
+        .eq('match_id', matchId)
+        .select();
 
       if (error) {
         return {
@@ -302,15 +289,13 @@ export const enhancedMatchService = {
     }
 
     try {
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('matches')
-          .update({ 
-            is_locked: false
-          })
-          .eq('match_id', matchId)
-          .select();
-      });
+      const { data, error } = await supabase
+        .from('matches')
+        .update({ 
+          is_locked: false
+        })
+        .eq('match_id', matchId)
+        .select();
 
       if (error) {
         return {
