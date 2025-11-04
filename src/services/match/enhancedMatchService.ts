@@ -205,6 +205,10 @@ export const enhancedMatchService = {
       }
 
 
+      // TIJDELIJK UITGESCHAKELD: sync-card-penalties Edge Function
+      // Reden: Supabase safeupdate extension blokkeert DELETE operaties via .in()
+      // TODO: Herschrijf Edge Function om individuele DELETE statements te gebruiken
+      /*
       // Sync card penalties whenever players data changes
       console.log('🟢 [enhancedMatchService] Checking if card penalties need sync...');
       try {
@@ -234,6 +238,8 @@ export const enhancedMatchService = {
       } catch (cardErr) {
         console.error('❌ [enhancedMatchService] Error syncing card penalties:', cardErr);
       }
+      */
+      console.log('⚠️ [enhancedMatchService] Card penalty sync tijdelijk uitgeschakeld vanwege database DELETE restricties');
 
       console.log('✅ [enhancedMatchService] All operations completed successfully');
       return {
