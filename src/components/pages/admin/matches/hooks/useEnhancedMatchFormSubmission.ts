@@ -131,23 +131,29 @@ export const useEnhancedMatchFormSubmission = () => {
         });
         return { success: false, error: result.message };
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [useEnhancedMatchFormSubmission] ERROR in submitMatchForm:', error);
       console.error('❌ [useEnhancedMatchFormSubmission] Error type:', typeof error);
       console.error('❌ [useEnhancedMatchFormSubmission] Error details:', {
-        name: error instanceof Error ? error.name : 'Unknown',
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        name: error?.name || 'Unknown',
+        message: error?.message || String(error),
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        stack: error?.stack,
+        fullError: error
       });
       
       // Revert optimistic update on failure
       queryClient.invalidateQueries({ queryKey: ['match', matchData.matchId] });
       
-      const errorMessage = error instanceof Error ? error.message : 'Onbekende fout';
+      const errorMessage = error?.message || error?.code || 'Onbekende fout';
+      const errorDetails = error?.details ? ` (${JSON.stringify(error.details)})` : '';
+      const errorCode = error?.code ? ` [${error.code}]` : '';
       
       toast({
-        title: "Fout",
-        description: `Fout bij opslaan wedstrijd: ${errorMessage}`,
+        title: "Fout bij opslaan",
+        description: `${errorMessage}${errorCode}${errorDetails}`,
         variant: "destructive"
       });
       return { success: false, error: errorMessage };

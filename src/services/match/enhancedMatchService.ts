@@ -173,9 +173,10 @@ export const enhancedMatchService = {
           code: error.code,
           message: error.message,
           details: error.details,
-          hint: error.hint
+          hint: error.hint,
+          fullError: JSON.stringify(error, null, 2)
         });
-        throw error;
+        throw new Error(`Database error (${error.code}): ${error.message}. Details: ${JSON.stringify(error.details)}`);
       }
       
       console.log('✅ [enhancedMatchService] UPDATE SUCCESS:', data);
@@ -243,16 +244,25 @@ export const enhancedMatchService = {
         data
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [enhancedMatchService] FATAL ERROR in updateMatch:', error);
       console.error('❌ [enhancedMatchService] Error details:', {
-        name: error instanceof Error ? error.name : 'Unknown',
-        message: error instanceof Error ? error.message : 'Onbekende fout',
-        stack: error instanceof Error ? error.stack : undefined
+        name: error?.name || 'Unknown',
+        message: error?.message || 'Onbekende fout',
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        stack: error?.stack,
+        fullError: error
       });
+      
+      const errorMessage = error?.message || error?.code || 'Onbekende fout';
+      const errorDetails = error?.details ? ` (Details: ${JSON.stringify(error.details)})` : '';
+      const errorCode = error?.code ? ` [Code: ${error.code}]` : '';
+      
       return {
         success: false,
-        message: `Onverwachte fout bij bijwerken wedstrijd: ${error instanceof Error ? error.message : 'Onbekende fout'}`
+        message: `Fout bij bijwerken wedstrijd${errorCode}: ${errorMessage}${errorDetails}`
       };
     }
   },
