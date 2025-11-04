@@ -29,8 +29,8 @@ const MatchFormDialog: React.FC<MatchFormDialogProps> = ({
   return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="modal w-[95vw] max-w-[95vw] max-h-[90vh] overflow-y-auto overflow-x-hidden touch-action-manipulation">
         <DialogHeader>
-          
-          
+          <DialogTitle className="sr-only">Wedstrijdformulier</DialogTitle>
+          <DialogDescription className="sr-only">Vul scores, spelers en details van de wedstrijd in</DialogDescription>
         </DialogHeader>
         <div className="space-y-6">
           <MatchesCompactForm match={match} onComplete={handleComplete} isAdmin={isAdmin} isReferee={isReferee} teamId={teamId} />

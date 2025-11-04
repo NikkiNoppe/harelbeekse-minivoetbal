@@ -154,10 +154,9 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
         setSelectedCost(null);
         setCustomAmount('');
         
-        // Refresh both team transactions and overview
-        queryClient.invalidateQueries({ queryKey: ['team-transactions', team.team_id] });
-        queryClient.invalidateQueries({ queryKey: ['all-team-transactions'] });
-        queryClient.invalidateQueries({ queryKey: ['teams-financial'] });
+        // Subtiel: 1 invalidatie + refetch enkel actieve queries voor dit team
+        await queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
+        await queryClient.refetchQueries({ queryKey: ['team-transactions'], type: 'active' });
       } else {
         console.error('Transaction failed:', result.message);
         toast({

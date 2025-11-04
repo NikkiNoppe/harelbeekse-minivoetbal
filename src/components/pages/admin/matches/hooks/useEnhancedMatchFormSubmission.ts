@@ -96,23 +96,9 @@ export const useEnhancedMatchFormSubmission = () => {
 
       if (result.success) {
         console.log('✅ [useEnhancedMatchFormSubmission] Service call succeeded');
-        // Refresh queries after successful update - staggered to prevent race conditions
-        await queryClient.invalidateQueries({ queryKey: ['match', matchData.matchId] });
-        
-        // Add small delay before invalidating other queries to prevent conflicts
-        setTimeout(async () => {
-          await Promise.all([
-            queryClient.invalidateQueries({ queryKey: ['teamMatches'] }),
-            queryClient.invalidateQueries({ queryKey: ['matches'] }),
-            queryClient.invalidateQueries({ queryKey: ['matchData'] }),
-            queryClient.invalidateQueries({ queryKey: ['competitionStandings'] }),
-            queryClient.invalidateQueries({ queryKey: ['suspensions'] }),
-            // Financial data refresh for instant updates after costs/penalties sync
-            queryClient.invalidateQueries({ queryKey: ['teams-financial'] }),
-            queryClient.invalidateQueries({ queryKey: ['all-team-transactions'] }),
-            queryClient.invalidateQueries({ queryKey: ['submitted-matches'] })
-          ]);
-        }, 100);
+        // Subtiele strategie: 1 invalidatie + refetch enkel voor actieve queries
+        await queryClient.invalidateQueries({ queryKey: ['teamMatches'] });
+        await queryClient.refetchQueries({ queryKey: ['teamMatches'], type: 'active' });
 
         toast({
           title: "Succesvol",
@@ -177,12 +163,9 @@ export const useEnhancedMatchFormSubmission = () => {
       const result = await enhancedMatchService.lockMatch(matchId);
 
       if (result.success) {
-        // Refresh queries after successful lock
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['teamMatches'] }),
-          queryClient.invalidateQueries({ queryKey: ['matches'] }),
-          queryClient.invalidateQueries({ queryKey: ['match', matchId] })
-        ]);
+        // Subtiele strategie: 1 invalidatie + refetch enkel voor actieve queries
+        await queryClient.invalidateQueries({ queryKey: ['teamMatches'] });
+        await queryClient.refetchQueries({ queryKey: ['teamMatches'], type: 'active' });
 
         toast({
           title: "Succesvol",
@@ -223,12 +206,9 @@ export const useEnhancedMatchFormSubmission = () => {
       const result = await enhancedMatchService.unlockMatch(matchId);
 
       if (result.success) {
-        // Refresh queries after successful unlock
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['teamMatches'] }),
-          queryClient.invalidateQueries({ queryKey: ['matches'] }),
-          queryClient.invalidateQueries({ queryKey: ['match', matchId] })
-        ]);
+        // Subtiele strategie: 1 invalidatie + refetch enkel voor actieve queries
+        await queryClient.invalidateQueries({ queryKey: ['teamMatches'] });
+        await queryClient.refetchQueries({ queryKey: ['teamMatches'], type: 'active' });
 
         toast({
           title: "Succesvol",

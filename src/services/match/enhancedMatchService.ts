@@ -161,12 +161,12 @@ export const enhancedMatchService = {
       // Debug: Log what we're sending
       console.log('🟢 [enhancedMatchService] SENDING UPDATE:', { matchId, updateObject });
       
-      // Direct database update
+      // Direct database update (no select to reduce payload)
       const { data, error } = await supabase
         .from('matches')
         .update(updateObject)
         .eq('match_id', matchId)
-        .select();
+        ;
         
       if (error) {
         console.error('❌ [enhancedMatchService] DATABASE ERROR:', {
@@ -179,7 +179,7 @@ export const enhancedMatchService = {
         throw new Error(`Database error (${error.code}): ${error.message}. Details: ${JSON.stringify(error.details)}`);
       }
       
-      console.log('✅ [enhancedMatchService] UPDATE SUCCESS:', data);
+      console.log('✅ [enhancedMatchService] UPDATE SUCCESS');
 
       // Fallback: If this is a cup match, re-evaluate advancement after successful update (using persisted values)
       try {
@@ -205,26 +205,40 @@ export const enhancedMatchService = {
       }
 
 
-      // Sync card penalties whenever players data changes
-      console.log('🟢 [enhancedMatchService] Checking if card penalties need sync...');
-      try {
-        const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-card-penalties', {
-          body: { 
-            matchId,
-            homeScore: updateData.homeScore,
-            awayScore: updateData.awayScore,
-            homePlayers: updateData.homePlayers,
-            awayPlayers: updateData.awayPlayers
-          }
-        });
+      // Sync card penalties only if player arrays were part of this update
+      const playersProvided = updateData.homePlayers !== undefined || updateData.awayPlayers !== undefined;
+      if (playersProvided) {
+        console.log('🟢 [enhancedMatchService] Syncing card penalties (players changed)...');
+        try {
+          const matchDateISO = updateObject.match_date || matchInfo?.match_date || null;
+          const homeTeamId = matchInfo?.home_team_id;
+          const awayTeamId = matchInfo?.away_team_id;
 
-        if (syncError) {
-          console.error('❌ [enhancedMatchService] Error calling sync-card-penalties:', syncError);
-        } else {
-          console.log('✅ [enhancedMatchService] Card penalties synced successfully:', syncData);
+          // Minimize payload: only send playerId and cardType
+          const mapPlayers = (arr?: any[]) => (arr || []).map(p => ({
+            playerId: p?.playerId ?? null,
+            cardType: p?.cardType ?? null,
+          }));
+
+          const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-card-penalties', {
+            body: { 
+              matchId,
+              matchDateISO,
+              homeTeamId,
+              awayTeamId,
+              homePlayers: mapPlayers(updateData.homePlayers),
+              awayPlayers: mapPlayers(updateData.awayPlayers)
+            }
+          });
+          
+          if (syncError) {
+            console.error('❌ [enhancedMatchService] Error calling sync-card-penalties:', syncError);
+          } else {
+            console.log('✅ [enhancedMatchService] Card penalties synced successfully:', syncData);
+          }
+        } catch (cardErr) {
+          console.error('❌ [enhancedMatchService] Error syncing card penalties:', cardErr);
         }
-      } catch (cardErr) {
-        console.error('❌ [enhancedMatchService] Error syncing card penalties:', cardErr);
       }
 
       console.log('✅ [enhancedMatchService] All operations completed successfully');

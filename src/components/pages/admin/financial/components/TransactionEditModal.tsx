@@ -111,8 +111,8 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
           title: "Succesvol",
           description: result.message
         });
-        queryClient.invalidateQueries({ queryKey: ['team-transactions', teamId] });
-        queryClient.invalidateQueries({ queryKey: ['teams-financial'] });
+        await queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
+        await queryClient.refetchQueries({ queryKey: ['team-transactions'], type: 'active' });
         onOpenChange(false);
       } else {
         toast({

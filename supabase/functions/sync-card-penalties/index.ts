@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     console.log('Syncing card penalties for match:', { matchId, homeTeamId, awayTeamId });
 
-    // Load penalty cost settings
+    // Load penalty cost settings (active) for inserts
     const { data: penalties, error: penErr } = await supabaseServiceRole
       .from('costs')
       .select('id, name, amount')
@@ -49,6 +49,37 @@ Deno.serve(async (req) => {
     }
 
     const penaltySettings = penalties || [];
+
+    // Load ALL penalty cost ids (active or inactive) for cleanup
+    const { data: allPenaltyCosts, error: allPenErr } = await supabaseServiceRole
+      .from('costs')
+      .select('id')
+      .eq('category', 'penalty');
+    if (allPenErr) {
+      throw new Error(`Failed to load all penalty cost ids: ${allPenErr.message}`);
+    }
+    let allPenaltyIds: number[] = (allPenaltyCosts || []).map((c: any) => c.id);
+
+    // Fallback: include cost IDs by name pattern when category is not set correctly
+    if (allPenaltyIds.length === 0) {
+      const { data: nameMatchedCosts, error: nameMatchErr } = await supabaseServiceRole
+        .from('costs')
+        .select('id, name')
+        .or(
+          [
+            'name.ilike.%geel%',
+            'name.ilike.%gele%',
+            'name.ilike.%yellow%',
+            'name.ilike.%rood%',
+            'name.ilike.%rode%',
+            'name.ilike.%red%'
+          ].join(',')
+        );
+      if (nameMatchErr) {
+        throw new Error(`Failed to load penalty-like costs by name: ${nameMatchErr.message}`);
+      }
+      allPenaltyIds = (nameMatchedCosts || []).map((c: any) => c.id);
+    }
     console.log('Loaded penalty settings:', penaltySettings);
 
     // Helper: map card type -> cost setting with improved matching
@@ -138,12 +169,14 @@ Deno.serve(async (req) => {
         // Insert the difference
         const toInsert = desiredCount - existingCount;
         const transactionDate = matchDateISO ? (matchDateISO.slice(0, 10)) : new Date().toISOString().slice(0, 10);
-        const rows = Array.from({ length: toInsert }).map(() => ({
+      const rows = Array.from({ length: toInsert }).map(() => ({
           team_id: teamId,
           cost_setting_id: costSettingId,
           amount: costSetting.amount ?? 0,
           transaction_date: transactionDate,
-          match_id: matchId
+          match_id: matchId,
+          // mark as auto-generated so manual items are never affected by cleanup
+          is_auto_card_penalty: true
         }));
 
         console.log(`Inserting ${toInsert} penalty records:`, rows);
@@ -163,6 +196,57 @@ Deno.serve(async (req) => {
             .in('id', idsToDelete);
           if (delErr) {
             throw new Error(`Failed to delete surplus penalty records: ${delErr.message}`);
+          }
+        }
+      }
+    }
+
+    // Cleanup pass: remove any penalty rows for this match that are no longer desired
+    // Use penaltySettings IDs explicitly to avoid FK join issues
+    const penaltyIds = penaltySettings.map((cs: any) => cs.id);
+    // Use ALL penalty IDs for cleanup so obsolete/inactive ones are also removed
+    if (allPenaltyIds.length > 0) {
+      // If nothing is desired anymore, remove all penalty rows for this match
+      const desiredKeys = new Set(Object.keys(countByTeamAndCostId));
+      if (desiredKeys.size === 0) {
+        const { error: delAllErr } = await supabaseServiceRole
+          .from('team_costs')
+          .delete()
+          .eq('match_id', matchId)
+          .or([
+            // Any penalty category (active/inactive)
+            `cost_setting_id.in.(${allPenaltyIds.join(',')})`,
+            // Explicitly auto-generated rows
+            'is_auto_card_penalty.eq.true',
+            // Rows tied to the match date (common convention for card penalties)
+            (matchDateISO ? `transaction_date.eq.${(matchDateISO || '').slice(0,10)}` : '']
+          .filter(Boolean).join(','));
+        if (delAllErr) {
+          throw new Error(`Failed to delete all obsolete penalty rows: ${delAllErr.message}`);
+        }
+      } else {
+        // Select all existing penalty rows for this match
+        const { data: existingAllPenaltyRows, error: existingAllErr } = await supabaseServiceRole
+          .from('team_costs')
+          .select('id, team_id, cost_setting_id, is_auto_card_penalty')
+          .eq('match_id', matchId)
+          .in('cost_setting_id', allPenaltyIds);
+        if (existingAllErr) {
+          throw new Error(`Failed to fetch existing penalty rows for cleanup: ${existingAllErr.message}`);
+        }
+        const idsToDeleteCleanup: number[] = [];
+        for (const row of existingAllPenaltyRows || []) {
+          const key = `${row.team_id}:${row.cost_setting_id}`;
+          const desired = desiredKeys.has(key) ? (countByTeamAndCostId[key] || 0) : 0;
+          if (desired === 0 && row.is_auto_card_penalty === true) idsToDeleteCleanup.push(row.id);
+        }
+        if (idsToDeleteCleanup.length > 0) {
+          const { error: cleanupDelErr } = await supabaseServiceRole
+            .from('team_costs')
+            .delete()
+            .in('id', idsToDeleteCleanup);
+          if (cleanupDelErr) {
+            throw new Error(`Failed to cleanup obsolete penalty rows: ${cleanupDelErr.message}`);
           }
         }
       }
