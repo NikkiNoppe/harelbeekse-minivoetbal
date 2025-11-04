@@ -4,7 +4,7 @@ const Footer: React.FC = () => {
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
           <div>
-            <h3 className="font-semibold text-purple-dark mb-2 sm:mb-3 text-sm sm:text-base">Harelbeekse Minivoetbal Competitie - v1.251103</h3>
+            <h3 className="font-semibold text-purple-dark mb-2 sm:mb-3 text-sm sm:text-base">Harelbeekse Minivoetbal Competitie - v1.251104</h3>
             <p className="text-xs text-white sm:text-sm">Minivoetbalcompetitie in sinds 1979.</p>
           </div>
           <div>
