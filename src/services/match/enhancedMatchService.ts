@@ -3,8 +3,6 @@ import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { updateMatchForm } from "@/components/pages/admin/matches/services/matchesFormService";
 import { MatchFormData } from "@/components/pages/admin/matches/types";
 import { bekerService } from "@/services/match/cupService";
-import { matchCostService } from "@/services/financial/matchCostService";
-import { cardPenaltyService } from "@/services/financial/cardPenaltyService";
 
 interface MatchUpdateData {
   homeScore?: number | null;
@@ -205,19 +203,6 @@ export const enhancedMatchService = {
         console.warn('Advancement recalculation failed (fallback path):', advErr);
       }
 
-      // After successful update: apply match costs when scores are entered
-      console.log('🟢 [enhancedMatchService] Checking if match costs need to be applied...');
-      try {
-        if (updateData.isCompleted && updateData.homeScore != null && updateData.awayScore != null) {
-          console.log('🟢 [enhancedMatchService] Applying match costs...');
-          await matchCostService.applyCostsForMatch(matchId);
-          console.log('✅ [enhancedMatchService] Match costs applied');
-        } else {
-          console.log('🟢 [enhancedMatchService] Skipping match costs (not completed or no scores)');
-        }
-      } catch (costErr) {
-        console.error('❌ [enhancedMatchService] Error applying match costs:', costErr);
-      }
 
       // Sync card penalties whenever players data changes
       console.log('🟢 [enhancedMatchService] Checking if card penalties need sync...');
