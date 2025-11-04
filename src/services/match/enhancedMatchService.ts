@@ -205,41 +205,27 @@ export const enhancedMatchService = {
       }
 
 
-      // TIJDELIJK UITGESCHAKELD: sync-card-penalties Edge Function
-      // Reden: Supabase safeupdate extension blokkeert DELETE operaties via .in()
-      // TODO: Herschrijf Edge Function om individuele DELETE statements te gebruiken
-      /*
       // Sync card penalties whenever players data changes
       console.log('🟢 [enhancedMatchService] Checking if card penalties need sync...');
       try {
-        if ((updateData.homePlayers !== undefined || updateData.awayPlayers !== undefined) && 
-            matchInfo?.home_team_id && matchInfo?.away_team_id) {
-          console.log('🟢 [enhancedMatchService] Syncing card penalties...');
-          const matchDateISO = (data && Array.isArray(data) ? data[0]?.match_date : null) || null;
-          const response = await supabase.functions.invoke('sync-card-penalties', {
-            body: {
-              matchId,
-              matchDateISO,
-              homeTeamId: matchInfo.home_team_id,
-              awayTeamId: matchInfo.away_team_id,
-              homePlayers: updateData.homePlayers || [],
-              awayPlayers: updateData.awayPlayers || []
-            }
-          });
-          
-          if (response.error) {
-            console.error('❌ [enhancedMatchService] Card penalty sync failed:', response.error);
-          } else {
-            console.log('✅ [enhancedMatchService] Card penalties synced successfully:', response.data);
+        const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-card-penalties', {
+          body: { 
+            matchId,
+            homeScore: updateData.homeScore,
+            awayScore: updateData.awayScore,
+            homePlayers: updateData.homePlayers,
+            awayPlayers: updateData.awayPlayers
           }
+        });
+
+        if (syncError) {
+          console.error('❌ [enhancedMatchService] Error calling sync-card-penalties:', syncError);
         } else {
-          console.log('🟢 [enhancedMatchService] Skipping card penalty sync (no player changes or missing team IDs)');
+          console.log('✅ [enhancedMatchService] Card penalties synced successfully:', syncData);
         }
       } catch (cardErr) {
         console.error('❌ [enhancedMatchService] Error syncing card penalties:', cardErr);
       }
-      */
-      console.log('⚠️ [enhancedMatchService] Card penalty sync tijdelijk uitgeschakeld vanwege database DELETE restricties');
 
       console.log('✅ [enhancedMatchService] All operations completed successfully');
       return {
