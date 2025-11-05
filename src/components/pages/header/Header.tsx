@@ -11,6 +11,7 @@ import { Menu, User, LogOut, Settings, Shield, Users, Calendar, Trophy, Award, D
 import HamburgerIcon from "@/components/ui/HamburgerIcon";
 import Logo from "./Logo";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
+import { PUBLIC_ROUTES, ADMIN_ROUTES, getPathFromTab } from "@/config/routes";
 
 interface HeaderProps {
   onLogoClick: () => void;
@@ -41,28 +42,36 @@ const Header: React.FC<HeaderProps> = ({
     try {
       onLogoClick();
     } catch (_) {}
-    navigate('/');
+    navigate(PUBLIC_ROUTES.algemeen);
   }, [onLogoClick, navigate]);
 
-  // Route mapping per key (voor toekomstig onderscheid)
+  /**
+   * Route mapping for tab navigation
+   * Maps tab keys to their corresponding URL paths
+   */
   const routeMap: Record<string, string> = {
     // Publiek
-    algemeen: '/',
-    beker: '/beker',
-    competitie: '/competitie',
-    playoff: '/playoff',
-    teams: '/teams',
-    reglement: '/reglement',
-    kaarten: '/kaarten',
+    algemeen: PUBLIC_ROUTES.algemeen,
+    beker: PUBLIC_ROUTES.beker,
+    competitie: PUBLIC_ROUTES.competitie,
+    playoff: PUBLIC_ROUTES.playoff,
+    teams: PUBLIC_ROUTES.teams,
+    reglement: PUBLIC_ROUTES.reglement,
+    kaarten: PUBLIC_ROUTES.kaarten,
+    scheidsrechters: PUBLIC_ROUTES.scheidsrechters,
     // Admin
-    'match-forms': '/match-forms',
-    players: '/players',
-    users: '/users',
-    competition: '/competition',
-    playoffs: '/playoffs',
-    cup: '/cup',
-    financial: '/financial',
-    settings: '/settings',
+    'match-forms': ADMIN_ROUTES['match-forms'],
+    'match-forms-league': ADMIN_ROUTES['match-forms-league'],
+    'match-forms-cup': ADMIN_ROUTES['match-forms-cup'],
+    'match-forms-playoffs': ADMIN_ROUTES['match-forms-playoffs'],
+    players: ADMIN_ROUTES.players,
+    users: ADMIN_ROUTES.users,
+    competition: ADMIN_ROUTES.competition,
+    playoffs: ADMIN_ROUTES.playoffs,
+    cup: ADMIN_ROUTES.cup,
+    financial: ADMIN_ROUTES.financial,
+    settings: ADMIN_ROUTES.settings,
+    scheidsrechters: ADMIN_ROUTES.scheidsrechters,
   };
 
   const handleLogout = () => {
@@ -193,7 +202,7 @@ const Header: React.FC<HeaderProps> = ({
                     className="w-full p-4 bg-purple-200 rounded-xl shadow-sm border border-purple-200 text-left"
                     onClick={() => {
                       setIsSheetOpen(false);
-                      onTabChange('players');
+                      navigate(ADMIN_ROUTES.players);
                     }}
                   >
                     <div className="flex items-center gap-4">
@@ -222,8 +231,9 @@ const Header: React.FC<HeaderProps> = ({
                       key={item.key}
                       onClick={() => {
                         setIsSheetOpen(false);
-                        onTabChange(item.key);
-                        // Do not push a route; tabs remain in-app without URL change
+                        // Navigate to URL for public tabs
+                        const path = routeMap[item.key] || getPathFromTab(item.key);
+                        navigate(path);
                       }}
                       className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
                     >
@@ -245,7 +255,11 @@ const Header: React.FC<HeaderProps> = ({
                         {visibleWedstrijdformulierenItems.map((item) => (
                           <button
                             key={item.key}
-                            onClick={() => { setIsSheetOpen(false); onTabChange(item.key); }}
+                            onClick={() => { 
+                              setIsSheetOpen(false); 
+                              const path = routeMap[item.key] || getPathFromTab(item.key);
+                              navigate(path);
+                            }}
                             className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
                           >
                             {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
@@ -263,7 +277,8 @@ const Header: React.FC<HeaderProps> = ({
                             key={item.key}
                             onClick={() => {
                               setIsSheetOpen(false);
-                              onTabChange(item.key);
+                              const path = routeMap[item.key] || getPathFromTab(item.key);
+                              navigate(path);
                             }}
                             className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
                           >
@@ -280,7 +295,11 @@ const Header: React.FC<HeaderProps> = ({
                         {visibleFinancieelItems.map((item) => (
                           <button
                             key={item.key}
-                            onClick={() => { setIsSheetOpen(false); onTabChange(item.key); }}
+                            onClick={() => { 
+                              setIsSheetOpen(false); 
+                              const path = routeMap[item.key] || getPathFromTab(item.key);
+                              navigate(path);
+                            }}
                             className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
                           >
                             {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
@@ -296,7 +315,11 @@ const Header: React.FC<HeaderProps> = ({
                         {visibleSpeelformatenItems.map((item) => (
                           <button
                             key={item.key}
-                            onClick={() => { setIsSheetOpen(false); onTabChange(item.key); }}
+                            onClick={() => { 
+                              setIsSheetOpen(false); 
+                              const path = routeMap[item.key] || getPathFromTab(item.key);
+                              navigate(path);
+                            }}
                             className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
                           >
                             {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
@@ -312,7 +335,11 @@ const Header: React.FC<HeaderProps> = ({
                         {visibleSysteemItems.map((item) => (
                           <button
                             key={item.key}
-                            onClick={() => { setIsSheetOpen(false); onTabChange(item.key); }}
+                            onClick={() => { 
+                              setIsSheetOpen(false); 
+                              const path = routeMap[item.key] || getPathFromTab(item.key);
+                              navigate(path);
+                            }}
                             className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
                           >
                             {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}

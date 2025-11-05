@@ -2,15 +2,21 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/components/pages/login/AuthProvider";
 import { TabVisibilityProvider } from "@/context/TabVisibilityContext";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import ResetPassword from "./pages/ResetPassword";
 import { ThemeProvider } from "./hooks/use-theme";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PUBLIC_ROUTES, ADMIN_ROUTES } from "./config/routes";
+import { ProtectedRoute } from "@/components/common/ProtectedRoute";
+import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+
+// Lazy load main components
+const Index = lazy(() => import("./pages/Index"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const queryClient = new QueryClient();
 
@@ -25,11 +31,185 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  {/* public tabs are handled in-app; do not expose direct routes */}
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
+                  {/* Redirect root to algemeen */}
+                  <Route path="/" element={<Navigate to={PUBLIC_ROUTES.algemeen} replace />} />
+                  
+                  {/* Public routes - Lazy loaded with Suspense */}
+                  <Route path={PUBLIC_ROUTES.algemeen} element={
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <Index />
+                    </Suspense>
+                  } />
+                  <Route path={PUBLIC_ROUTES.competitie} element={
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <Index />
+                    </Suspense>
+                  } />
+                  <Route path={PUBLIC_ROUTES.beker} element={
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <Index />
+                    </Suspense>
+                  } />
+                  <Route path={PUBLIC_ROUTES.playoff} element={
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <Index />
+                    </Suspense>
+                  } />
+                  <Route path={PUBLIC_ROUTES.reglement} element={
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <Index />
+                    </Suspense>
+                  } />
+                  <Route path={PUBLIC_ROUTES.kaarten} element={
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <Index />
+                    </Suspense>
+                  } />
+                  <Route path={PUBLIC_ROUTES.teams} element={
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <Index />
+                    </Suspense>
+                  } />
+                  <Route path={PUBLIC_ROUTES.scheidsrechters} element={
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <Index />
+                    </Suspense>
+                  } />
+                  
+                  {/* Admin routes - Protected with authentication - Lazy loaded with Suspense */}
+                  <Route path={ADMIN_ROUTES['match-forms']} element={
+                    <ProtectedRoute>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES['match-forms-league']} element={
+                    <ProtectedRoute>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES['match-forms-cup']} element={
+                    <ProtectedRoute>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES['match-forms-playoffs']} element={
+                    <ProtectedRoute>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES.players} element={
+                    <ProtectedRoute>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES.teams} element={
+                    <ProtectedRoute requireAdmin>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES.users} element={
+                    <ProtectedRoute requireAdmin>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES.competition} element={
+                    <ProtectedRoute requireAdmin>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES.playoffs} element={
+                    <ProtectedRoute requireAdmin>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES.cup} element={
+                    <ProtectedRoute requireAdmin>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES.financial} element={
+                    <ProtectedRoute requireAdmin>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES.settings} element={
+                    <ProtectedRoute requireAdmin>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES.suspensions} element={
+                    <ProtectedRoute requireAdmin>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES.schorsingen} element={
+                    <ProtectedRoute requireAdmin>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES.scheidsrechters} element={
+                    <ProtectedRoute>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES['blog-management']} element={
+                    <ProtectedRoute requireAdmin>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  <Route path={ADMIN_ROUTES['notification-management']} element={
+                    <ProtectedRoute requireAdmin>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  
+                  {/* Other routes - Lazy loaded with Suspense */}
+                  <Route path="/reset-password" element={
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <ResetPassword />
+                    </Suspense>
+                  } />
+                  
+                  {/* Catch-all for unknown routes - Lazy loaded with Suspense */}
+                  <Route path="*" element={
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <NotFound />
+                    </Suspense>
+                  } />
                 </Routes>
               </BrowserRouter>
             </TooltipProvider>

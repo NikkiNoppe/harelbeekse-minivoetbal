@@ -4,6 +4,8 @@ import { useAuth } from "@/components/pages/login/AuthProvider";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNavigate } from "react-router-dom";
+import { ADMIN_ROUTES, getPathFromTab } from "@/config/routes";
 
 interface AdminSidebarProps {
   activeTab: string;
@@ -18,6 +20,32 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const collapsed = state === "collapsed";
   const { isTabVisible } = useTabVisibility();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+
+  /**
+   * Route mapping for admin tab navigation
+   * Maps admin tab keys to their corresponding URL paths
+   */
+  const routeMap: Record<string, string> = {
+    'match-forms': ADMIN_ROUTES['match-forms'],
+    'match-forms-league': ADMIN_ROUTES['match-forms-league'],
+    'match-forms-cup': ADMIN_ROUTES['match-forms-cup'],
+    'match-forms-playoffs': ADMIN_ROUTES['match-forms-playoffs'],
+    players: ADMIN_ROUTES.players,
+    ploegen: ADMIN_ROUTES.teams, // Map "ploegen" to teams route
+    teams: ADMIN_ROUTES.teams,
+    users: ADMIN_ROUTES.users,
+    competition: ADMIN_ROUTES.competition,
+    playoffs: ADMIN_ROUTES.playoffs,
+    cup: ADMIN_ROUTES.cup,
+    financial: ADMIN_ROUTES.financial,
+    settings: ADMIN_ROUTES.settings,
+    suspensions: ADMIN_ROUTES.suspensions,
+    schorsingen: ADMIN_ROUTES.schorsingen,
+    scheidsrechters: ADMIN_ROUTES.scheidsrechters,
+    'blog-management': ADMIN_ROUTES['blog-management'],
+    'notification-management': ADMIN_ROUTES['notification-management'],
+  };
 
 
   // Wedstrijdformulieren groep
@@ -58,7 +86,11 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const renderMenuItem = (item: any) => (
     <div key={item.key} className="mb-1">
       <button
-        onClick={() => onTabChange(item.key)}
+        onClick={() => {
+          // Navigate to URL for admin tabs
+          const path = routeMap[item.key] || getPathFromTab(item.key);
+          navigate(path);
+        }}
         className={`btn-nav w-full flex items-center ${collapsed ? 'justify-center p-2' : 'justify-start gap-2 px-4 py-3'} ${isActive(item.key) ? ' active' : ''} bg-transparent text-white`}
       >
         <item.icon className="h-4 w-4 flex-shrink-0" />

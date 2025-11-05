@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Header from "@/components/pages/header/Header";
 import { useLocation, useNavigate } from "react-router-dom";
 import Footer from "@/components/pages/footer/Footer";
@@ -9,57 +9,19 @@ import MainPages from "@/components/pages/MainPages";
 import { AdminDashboardLayout } from "@/components/pages/admin/AdminDashboardLayout";
 import { useAuth } from "@/components/pages/login/AuthProvider";
 import NotificationPopup from "@/components/common/NotificationPopup";
+import { getTabFromPath, getPathFromTab, PUBLIC_ROUTES, ADMIN_ROUTES } from "@/config/routes";
+import { useTabVisibility } from "@/context/TabVisibilityContext";
+import { useRouteMeta } from "@/hooks/useRouteMeta";
 
 const Layout: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("financial");
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-
-  const handleLogoClick = () => {
-    setActiveTab("algemeen");
-    try { navigate('/'); } catch (_) {}
-  };
-
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-  };
-
-  const handleLoginClick = () => {
-    setLoginDialogOpen(true);
-  };
-
-  const handleLoginSuccess = () => {
-    setLoginDialogOpen(false);
-    // Tab wordt nu gezet in useEffect hieronder
-  };
-
-  // Zet juiste tab zodra user verandert na login
-  useEffect(() => {
-    if (!loginDialogOpen && user) {
-      setActiveTab("match-forms");
-    }
-  }, [user, loginDialogOpen]);
-
-  // Sync active tab with URL path for public sections
-  useEffect(() => {
-    const path = location.pathname;
-    const map: Record<string, string> = {
-      '/': 'algemeen',
-      '/beker': 'beker',
-      '/competitie': 'competitie',
-      '/playoff': 'playoff',
-      '/teams': 'teams',
-      '/reglement': 'reglement',
-      '/kaarten': 'kaarten',
-      '/scheidsrechters': 'scheidsrechters',
-    };
-    const mapped = map[path];
-    if (mapped) {
-      setActiveTab(mapped);
-    }
-  }, [location.pathname]);
+  const { isTabVisible } = useTabVisibility();
+  
+  // Update document title and meta tags based on current route
+  useRouteMeta();
 
   // Admin sections die sidebar gebruiken
   const adminTabs = [
@@ -72,6 +34,84 @@ const Layout: React.FC = () => {
     "algemeen", "beker", "competitie", "playoff", 
     "kaarten", "reglement", "teams", "scheidsrechters"
   ];
+
+  // Determine active tab from URL (single source of truth)
+  const activeTab = useMemo(() => {
+    const tab = getTabFromPath(location.pathname);
+    
+    // For public tabs, URL is always the source of truth
+    if (tab && publicTabs.includes(tab)) {
+      return tab;
+    }
+    
+    // For admin tabs, check URL first
+    if (tab && adminTabs.includes(tab)) {
+      return tab;
+    }
+    
+    // If URL is an admin route but tab not found, try to match
+    if (location.pathname.startsWith('/admin/')) {
+      for (const [key, path] of Object.entries(ADMIN_ROUTES)) {
+        if (path === location.pathname) {
+          return key;
+        }
+      }
+      // Default admin tab if no match
+      return "match-forms";
+    }
+    
+    // Default: public tab
+    return "algemeen";
+  }, [location.pathname, adminTabs, publicTabs]);
+
+  const handleLogoClick = () => {
+    navigate(PUBLIC_ROUTES.algemeen);
+  };
+
+  /**
+   * setActiveTab helper for backward compatibility
+   * Navigates to URL for the given tab name
+   */
+  const setActiveTab = (tab: string) => {
+    const path = getPathFromTab(tab);
+    navigate(path);
+  };
+
+  /**
+   * handleTabChange is same as setActiveTab (for backward compatibility)
+   * Used by Header component for tab navigation
+   */
+  const handleTabChange = setActiveTab;
+
+  const handleLoginClick = () => {
+    setLoginDialogOpen(true);
+  };
+
+  const handleLoginSuccess = () => {
+    setLoginDialogOpen(false);
+    // Check if there's a saved location from redirect and return there after login
+    const from = location.state?.from as string | undefined;
+    if (from && typeof from === 'string') {
+      // Return to original location after successful login
+      navigate(from, { replace: true });
+    }
+    // Otherwise stay on current page
+  };
+
+  // Check if active tab is visible (for tab visibility settings)
+  useEffect(() => {
+    // Only check for public tabs, admin tabs are handled by ProtectedRoute
+    if (publicTabs.includes(activeTab) && !isTabVisible(activeTab)) {
+      // Tab is not visible, redirect to first visible public tab
+      const visibleTab = publicTabs.find(tab => isTabVisible(tab));
+      if (visibleTab) {
+        navigate(getPathFromTab(visibleTab));
+      } else {
+        // Fallback to algemeen if no visible tabs
+        navigate(PUBLIC_ROUTES.algemeen);
+      }
+    }
+  }, [activeTab, publicTabs, isTabVisible, navigate]);
 
   const isAdminSection = user && adminTabs.includes(activeTab);
   const isPublicSection = publicTabs.includes(activeTab);
