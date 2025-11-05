@@ -29,7 +29,7 @@ const OptimizedMatchesPlayerSelectionTable: React.FC<OptimizedMatchesPlayerSelec
   showRefereeFields,
 }) => {
   // Use the enhanced hook that preloads suspension data in batch
-  const { playersWithSuspensions, loading, error, suspensionLoading, refetch } = useTeamPlayersWithSuspensions(teamId, matchDate);
+  const { playersWithSuspensions, loading, error, suspensionLoading, retryCount, refetch } = useTeamPlayersWithSuspensions(teamId, matchDate);
 
   return (
     <MatchesPlayerSelectionTable
@@ -38,6 +38,7 @@ const OptimizedMatchesPlayerSelectionTable: React.FC<OptimizedMatchesPlayerSelec
       players={playersWithSuspensions}
       loading={loading || suspensionLoading}
       error={error}
+      retryCount={retryCount}
       selectedPlayerIds={selectedPlayerIds}
       onPlayerSelection={onPlayerSelection}
       onCardChange={onCardChange}

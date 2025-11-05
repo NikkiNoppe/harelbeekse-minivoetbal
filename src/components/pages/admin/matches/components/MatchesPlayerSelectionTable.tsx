@@ -14,6 +14,7 @@ interface PlayerSelectionTableProps {
   players: TeamPlayer[] | undefined;
   loading: boolean;
   error: any;
+  retryCount?: number;
   selectedPlayerIds: (number | null)[];
   onPlayerSelection: (index: number, field: keyof PlayerSelection, value: any, isHomeTeam: boolean) => void;
   onCardChange: (playerId: number, cardType: string) => void;
@@ -24,8 +25,8 @@ interface PlayerSelectionTableProps {
 }
 
 const TABLE_COLUMNS = {
-  speler: "w-3/4", 
-  rugnr: "w-1/4",
+  speler: "w-[60%]", 
+  rugnr: "w-[40%]",
 } as const;
 
 // Memoized player option component
@@ -90,6 +91,7 @@ const PlayerRow = React.memo<{
   playerCards: Record<number, string>;
   canEdit: boolean;
   showRefereeFields: boolean;
+  loading?: boolean;
   onPlayerSelection: (index: number, field: keyof PlayerSelection, value: any, isHomeTeam: boolean) => void;
   onCardChange: (playerId: number, cardType: string) => void;
 }>(({ 
@@ -100,6 +102,7 @@ const PlayerRow = React.memo<{
   playerCards, 
   canEdit, 
   showRefereeFields, 
+  loading = false,
   onPlayerSelection, 
   onCardChange 
 }) => {
@@ -144,16 +147,28 @@ const PlayerRow = React.memo<{
           <Select
             value={selection.playerId?.toString() || "no-player"}
             onValueChange={handlePlayerChange}
-            disabled={!canEdit}
+            disabled={!canEdit || loading}
           >
             <SelectTrigger className="dropdown-login-style min-w-[100px] max-w-full">
               <PlayerSelectValue 
-                placeholder="Selecteer speler" 
+                placeholder={loading ? "Laden..." : "Selecteer speler"} 
                 selectedPlayerName={selection.playerName}
               />
+              {loading && (
+                <div className="absolute right-2 animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
+              )}
             </SelectTrigger>
              <SelectContent className="dropdown-content-login-style z-[1001] bg-white">
               <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
+               {loading ? (
+                 <SelectItem value="loading" disabled className="dropdown-item-login-style text-center">
+                   <div className="flex items-center justify-center gap-2">
+                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
+                     <span>Spelers laden...</span>
+                   </div>
+                 </SelectItem>
+               ) : (
+                 <>
                {/* Show fallback for selected player that might not be in current list */}
                {selection.playerId && selection.playerName && 
                 !players?.find(p => p.player_id === selection.playerId) && (
@@ -179,6 +194,8 @@ const PlayerRow = React.memo<{
                      />
                    );
                  })}
+                 </>
+               )}
             </SelectContent>
           </Select>
         ) : (
@@ -201,7 +218,7 @@ const PlayerRow = React.memo<{
             value={selection.jerseyNumber || ""}
             onChange={handleJerseyChange}
             disabled={!selection.playerId}
-            className="w-12 min-w-[48px] text-center text-sm py-1 px-1 input-login-style"
+            className="w-16 min-w-[64px] text-center text-sm py-1 px-2 input-login-style"
           />
         ) : (
           <span className="text-xs">
@@ -219,6 +236,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
   players,
   loading,
   error,
+  retryCount = 0,
   selectedPlayerIds,
   onPlayerSelection,
   onCardChange,
@@ -233,11 +251,12 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
   const memoizedPlayerCards = useMemo(() => playerCards, [playerCards]);
 
   if (loading) {
+    const retryMessage = retryCount && retryCount > 0 ? ` (Poging ${retryCount}/3...)` : '';
     return (
       <div className="space-y-3">
         <div className="text-center py-3 text-purple-600 flex items-center justify-center gap-2">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
-          Spelers laden...
+          <span>Spelers laden...{retryMessage}</span>
         </div>
         <div className="animate-pulse space-y-2">
           <div className="h-10 bg-purple-100 rounded-md"></div>
@@ -249,7 +268,21 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
   }
   
   if (error) {
-    return <div className="text-center py-3 text-red-600">Kan spelers niet laden</div>;
+    return (
+      <div className="space-y-3">
+        <div className="text-center py-3 text-red-600 flex flex-col items-center gap-2">
+          <span>Kan spelers niet laden</span>
+          {onRefreshPlayers && (
+            <button
+              onClick={() => onRefreshPlayers()}
+              className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+            >
+              🔄 Opnieuw proberen
+            </button>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -285,6 +318,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                 playerCards={memoizedPlayerCards}
                 canEdit={canEdit}
                 showRefereeFields={showRefereeFields}
+                loading={loading || !memoizedPlayers}
                 onPlayerSelection={onPlayerSelection}
                 onCardChange={onCardChange}
               />
@@ -324,17 +358,28 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                              onPlayerSelection(index, 'playerName', '', false);
                            }
                          }}
-                         disabled={!canEdit}
+                         disabled={!canEdit || loading}
                        >
                           <SelectTrigger className="dropdown-login-style w-full max-w-full h-9">
                             <PlayerSelectValue 
-                              placeholder="Selecteer speler" 
+                              placeholder={loading ? "Laden..." : "Selecteer speler"} 
                               selectedPlayerName={selection.playerName}
                             />
+                            {loading && (
+                              <div className="absolute right-2 animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
+                            )}
                          </SelectTrigger>
                          <SelectContent className="dropdown-content-login-style z-[1001] bg-white">
                            <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
-                            {memoizedPlayers && Array.isArray(memoizedPlayers) && memoizedPlayers.map((player) => {
+                           {loading ? (
+                             <SelectItem value="loading" disabled className="dropdown-item-login-style text-center">
+                               <div className="flex items-center justify-center gap-2">
+                                 <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
+                                 <span>Spelers laden...</span>
+                               </div>
+                             </SelectItem>
+                           ) : (
+                            memoizedPlayers && Array.isArray(memoizedPlayers) && memoizedPlayers.map((player) => {
                               const playerIdNum = player.player_id;
                               const alreadySelected = memoizedSelectedPlayerIds.includes(playerIdNum) && selection.playerId !== playerIdNum;
                               const fullName = `${player.first_name} ${player.last_name}`;
@@ -355,7 +400,8 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                                   {fullName}
                                 </SelectItem>
                               );
-                            })}
+                            })
+                           )}
                          </SelectContent>
                        </Select>
                      </div>

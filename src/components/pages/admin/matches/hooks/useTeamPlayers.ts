@@ -15,6 +15,7 @@ interface UseTeamPlayersReturn {
   players: TeamPlayer[] | undefined;
   loading: boolean;
   error: any;
+  retryCount: number;
   refetch: () => Promise<void>;
 }
 
@@ -120,6 +121,7 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
         playerCache.set(teamId, data);
       }
       setRetryCount(0);
+      setLoading(false); // Success - loading complete
     } catch (err) {
       console.error(`Error fetching team players (attempt ${attempt + 1}):`, err);
       setError(err);
@@ -127,6 +129,8 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
       // Enhanced retry logic - up to 4 attempts for mobile
       if (attempt < 3) {
         setRetryCount(attempt + 1);
+        // Keep loading: true during retries
+        setLoading(true);
         // Use exponential backoff with longer delays for mobile
         const retryDelay = Math.min(1000 * Math.pow(2, attempt + 1), 8000);
         setTimeout(() => fetchPlayers(attempt + 1), retryDelay);
@@ -141,10 +145,7 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
           setPlayers(undefined);
         }
         setRetryCount(0);
-      }
-    } finally {
-      if (attempt >= 3 || error === null) {
-        setLoading(false);
+        setLoading(false); // All retries failed - stop loading
       }
     }
   }, [teamId]);
@@ -163,7 +164,8 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
   return {
     players: memoizedPlayers,
     loading: loading || retryCount > 0,
-    error: retryCount >= 2 ? error : null,
+    error: retryCount >= 3 ? error : null, // Only show error after all retries
+    retryCount,
     refetch,
   };
 };

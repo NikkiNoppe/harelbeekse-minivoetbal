@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
         // Insert the difference
         const toInsert = desiredCount - existingCount;
         const transactionDate = matchDateISO ? (matchDateISO.slice(0, 10)) : new Date().toISOString().slice(0, 10);
-      const rows = Array.from({ length: toInsert }).map(() => ({
+        const rows = Array.from({ length: toInsert }).map(() => ({
           team_id: teamId,
           cost_setting_id: costSettingId,
           amount: costSetting.amount ?? 0,
@@ -219,8 +219,9 @@ Deno.serve(async (req) => {
             // Explicitly auto-generated rows
             'is_auto_card_penalty.eq.true',
             // Rows tied to the match date (common convention for card penalties)
-            (matchDateISO ? `transaction_date.eq.${(matchDateISO || '').slice(0,10)}` : '']
-          .filter(Boolean).join(','));
+            (matchDateISO ? `transaction_date.eq.${(matchDateISO || '').slice(0,10)}` : '')
+          .filter(Boolean)
+          .join(','));
         if (delAllErr) {
           throw new Error(`Failed to delete all obsolete penalty rows: ${delAllErr.message}`);
         }
