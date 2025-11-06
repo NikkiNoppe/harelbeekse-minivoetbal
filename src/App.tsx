@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/components/pages/login/AuthProvider";
 import { TabVisibilityProvider } from "@/context/TabVisibilityContext";
+import { PlayerListLockProvider } from "@/context/PlayerListLockContext";
 import { ThemeProvider } from "./hooks/use-theme";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -25,8 +26,9 @@ const App = () => (
     <ThemeProvider defaultTheme="light">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <TabVisibilityProvider>
-            <TooltipProvider>
+          <PlayerListLockProvider>
+            <TabVisibilityProvider>
+              <TooltipProvider>
               <Toaster />
               <Sonner />
               <BrowserRouter>
@@ -212,8 +214,9 @@ const App = () => (
                   } />
                 </Routes>
               </BrowserRouter>
-            </TooltipProvider>
-          </TabVisibilityProvider>
+              </TooltipProvider>
+            </TabVisibilityProvider>
+          </PlayerListLockProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>

@@ -1,8 +1,23 @@
 import { supabase } from "@/integrations/supabase/client";
 
+// Cache to track the last set context to avoid redundant database calls
+let lastContext: {
+  userId: number;
+  role: string;
+  teamIds: string;
+} | null = null;
+
+/**
+ * Reset the context cache (useful when user logs out or changes)
+ */
+export const resetUserContextCache = () => {
+  lastContext = null;
+};
+
 /**
  * Wrapper function that sets user context before executing Supabase queries
  * This ensures Team Managers have proper RLS access to their data
+ * Optimized to only set context when it actually changes
  */
 export const withUserContext = async <T>(
   operation: () => Promise<T>,
@@ -81,20 +96,34 @@ export const withUserContext = async <T>(
       }
     }
     
-    try {
-      // Set user context before the operation
-      await supabase.rpc('set_current_user_context', {
-        p_user_id: userId,
-        p_role: normalizedRole,
-        p_team_ids: teamIds
-      });
-      
-      console.log('✅ Context set for operation:', { userId, role: normalizedRole, teamIds });
-      if (!teamIds && normalizedRole === 'player_manager') {
-        console.warn('⚠️ No teamIds found for player_manager; RLS may block team data.');
+    // Only set context if it has changed
+    const contextChanged = !lastContext || 
+      lastContext.userId !== userId || 
+      lastContext.role !== normalizedRole || 
+      lastContext.teamIds !== teamIds;
+    
+    if (contextChanged) {
+      try {
+        // Set user context before the operation
+        await supabase.rpc('set_current_user_context', {
+          p_user_id: userId,
+          p_role: normalizedRole,
+          p_team_ids: teamIds
+        });
+        
+        // Update cache
+        lastContext = { userId, role: normalizedRole, teamIds };
+        
+        // Only log when context actually changes
+        console.log('✅ Context set for operation:', { userId, role: normalizedRole, teamIds });
+        if (!teamIds && normalizedRole === 'player_manager') {
+          console.warn('⚠️ No teamIds found for player_manager; RLS may block team data.');
+        }
+      } catch (contextError) {
+        console.log('⚠️ Could not set context for operation:', contextError);
+        // Clear cache on error to force retry next time
+        lastContext = null;
       }
-    } catch (contextError) {
-      console.log('⚠️ Could not set context for operation:', contextError);
     }
   }
   

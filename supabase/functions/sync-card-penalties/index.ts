@@ -1,4 +1,13 @@
+// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
+
+// Declare Deno namespace for TypeScript
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+  serve: (handler: (req: Request) => Promise<Response>) => void;
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -219,9 +228,8 @@ Deno.serve(async (req) => {
             // Explicitly auto-generated rows
             'is_auto_card_penalty.eq.true',
             // Rows tied to the match date (common convention for card penalties)
-            (matchDateISO ? `transaction_date.eq.${(matchDateISO || '').slice(0,10)}` : '')
-          .filter(Boolean)
-          .join(','));
+            ...(matchDateISO ? [`transaction_date.eq.${matchDateISO.slice(0,10)}`] : [])
+          ].filter(Boolean).join(','));
         if (delAllErr) {
           throw new Error(`Failed to delete all obsolete penalty rows: ${delAllErr.message}`);
         }

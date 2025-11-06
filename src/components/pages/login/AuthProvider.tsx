@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
+import { resetUserContextCache } from '@/lib/supabaseUtils';
 
 interface AuthContextType extends AuthState {
   login: (username: string, password: string) => Promise<boolean>;
@@ -187,6 +188,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(loggedInUser);
         setIsAuthenticated(true);
         persistAuthState(loggedInUser);
+        // Reset context cache on login to ensure fresh context
+        resetUserContextCache();
         return true;
       }
 
@@ -203,6 +206,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
     setIsAuthenticated(false);
     persistAuthState(null);
+    // Reset context cache on logout
+    resetUserContextCache();
   };
 
   const value: AuthContextType = {
