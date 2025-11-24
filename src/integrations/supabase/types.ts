@@ -326,6 +326,7 @@ export type Database = {
           amount: number | null
           cost_setting_id: number | null
           id: number
+          is_auto_card_penalty: boolean
           match_id: number | null
           team_id: number | null
           transaction_date: string
@@ -334,6 +335,7 @@ export type Database = {
           amount?: number | null
           cost_setting_id?: number | null
           id?: number
+          is_auto_card_penalty?: boolean
           match_id?: number | null
           team_id?: number | null
           transaction_date?: string
@@ -342,6 +344,7 @@ export type Database = {
           amount?: number | null
           cost_setting_id?: number | null
           id?: number
+          is_auto_card_penalty?: boolean
           match_id?: number | null
           team_id?: number | null
           transaction_date?: string
