@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -112,6 +112,10 @@ export const useTabVisibilitySettings = () => {
 
   useEffect(() => {
     fetchSettings();
+    
+    // Debounce timer ref for realtime updates
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    
     // Subscribe to realtime changes so UI updates across the app immediately
     const channel = supabase
       .channel('tab-visibility-live')
@@ -119,7 +123,11 @@ export const useTabVisibilitySettings = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'application_settings', filter: 'setting_category=eq.tab_visibility' },
         () => {
-          fetchSettings();
+          // Debounce rapid-fire updates to prevent excessive re-renders
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            fetchSettings();
+          }, 500);
         }
       )
       .subscribe((status) => {
@@ -130,6 +138,7 @@ export const useTabVisibilitySettings = () => {
       });
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       try { supabase.removeChannel(channel); } catch (_) {}
     };
   }, []);
