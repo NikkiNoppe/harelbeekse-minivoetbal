@@ -164,29 +164,29 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
     }));
 
     return (
-      <div className="space-y-3">
+      <div className="space-y-2">
         {groupTabs.map(({ key, setting, displayName }) => (
-          <div key={key} className="bg-white rounded-lg p-4 border border-purple-200">
-            <div className="font-medium mb-3 flex items-center justify-between text-purple-dark">
-              <span>{displayName}</span>
+          <div key={key} className="bg-white rounded-lg p-2 sm:p-4 border border-purple-200">
+            <div className="font-medium mb-2 flex items-center justify-between text-purple-800">
+              <span className="text-sm">{displayName}</span>
               {!setting && (
-                <Badge variant="outline" className="text-xs">Niet geconfigureerd</Badge>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">N/A</Badge>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-1.5">
               {ROLES.map(role => {
                 const isVisible = setting?.visibility?.[role.key] ?? false;
                 return (
-                  <div key={role.key} className="flex items-center justify-between bg-purple-50 rounded px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <role.icon className="h-3 w-3 text-purple-600" />
-                      <span className="text-xs text-purple-700">{role.label}</span>
+                  <div key={role.key} className="flex items-center justify-between bg-purple-50 rounded px-1.5 py-1">
+                    <div className="flex items-center gap-1">
+                      <role.icon className="h-2.5 w-2.5 text-purple-600" />
+                      <span className="text-[10px] text-purple-700">{role.label}</span>
                     </div>
                     <Switch
                       checked={isVisible}
                       onCheckedChange={() => setting && handleToggle(key, role.key, isVisible)}
                       disabled={!setting}
-                      className="scale-90"
+                      className="scale-75"
                     />
                   </div>
                 );
@@ -197,6 +197,7 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
       </div>
     );
   };
+
   if (loading) {
     return (
       <Card>
@@ -211,42 +212,41 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Eye className="h-5 w-5" />
+      <CardHeader className="px-3 sm:px-6 py-3 sm:py-6">
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
           Tab Zichtbaarheid per Rol
         </CardTitle>
-        <CardDescription>
-          Configureer welke tabs zichtbaar zijn voor elke gebruikersrol
+        <CardDescription className="text-xs sm:text-sm">
+          Configureer welke tabs zichtbaar zijn per rol
         </CardDescription>
         
-        {/* Role Legend */}
-        <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-border">
+        {/* Role Legend - compact grid on mobile */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border">
           {ROLES.map(role => (
-            <div key={role.key} className="flex items-center gap-2 text-sm">
-              <div className={`w-3 h-3 rounded-full ${role.color}`} />
-              <role.icon className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{role.label}</span>
-              <span className="text-muted-foreground text-xs hidden sm:inline">({role.description})</span>
+            <div key={role.key} className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${role.color}`} />
+              <role.icon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+              <span className="font-medium truncate">{role.label}</span>
             </div>
           ))}
         </div>
       </CardHeader>
 
-      <CardContent>
-        <Accordion type="multiple" defaultValue={TAB_GROUPS.map(g => g.id)} className="space-y-4">
+      <CardContent className="px-2 sm:px-6">
+        <Accordion type="multiple" defaultValue={TAB_GROUPS.map(g => g.id)} className="space-y-2 sm:space-y-4">
           {TAB_GROUPS.map(group => (
-            <AccordionItem key={group.id} value={group.id} className="border rounded-lg px-4">
-              <AccordionTrigger className="hover:no-underline py-4">
-                <div className="flex items-center gap-3">
-                  <group.icon className="h-5 w-5 text-primary" />
+            <AccordionItem key={group.id} value={group.id} className="border rounded-lg px-2 sm:px-4">
+              <AccordionTrigger className="hover:no-underline py-2 sm:py-4">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <group.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                   <div className="text-left">
-                    <div className="font-semibold">{group.title}</div>
-                    <div className="text-sm text-muted-foreground font-normal">{group.description}</div>
+                    <div className="font-semibold text-sm sm:text-base">{group.title}</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground font-normal hidden sm:block">{group.description}</div>
                   </div>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="pb-4">
+              <AccordionContent className="pb-2 sm:pb-4">
                 {/* Desktop view */}
                 <div className="hidden md:block">
                   {renderGroupTable(group)}
