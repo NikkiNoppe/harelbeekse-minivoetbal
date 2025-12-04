@@ -116,9 +116,9 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-1/3">Tab</TableHead>
+            <TableHead className="w-auto">Tab</TableHead>
             {ROLES.map(role => (
-              <TableHead key={role.key} className="text-center">
+              <TableHead key={role.key} className="text-center w-[80px]">
                 <div className="flex flex-col items-center gap-1">
                   <role.icon className="h-4 w-4" />
                   <span className="text-xs">{role.label}</span>
