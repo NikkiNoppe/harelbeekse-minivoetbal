@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye, Users, Shield, UserCog, Globe, ClipboardList, Settings, DollarSign, Cog, Trophy } from "lucide-react";
 
 // Role configuration
@@ -112,48 +113,45 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
     }));
 
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left py-3 px-4 font-medium text-muted-foreground w-1/3">Tab</th>
-              {ROLES.map(role => (
-                <th key={role.key} className="text-center py-3 px-2 font-medium text-muted-foreground">
-                  <div className="flex flex-col items-center gap-1">
-                    <role.icon className="h-4 w-4" />
-                    <span className="text-xs">{role.label}</span>
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {groupTabs.map(({ key, setting, displayName }) => (
-              <tr key={key} className="border-b border-border/50 hover:bg-muted/30">
-                <td className="py-3 px-4">
-                  <span className="font-medium">{displayName}</span>
-                  {!setting && (
-                    <Badge variant="outline" className="ml-2 text-xs">Niet geconfigureerd</Badge>
-                  )}
-                </td>
-                {ROLES.map(role => {
-                  const isVisible = setting?.visibility?.[role.key] ?? false;
-                  return (
-                    <td key={role.key} className="py-3 px-2 text-center">
-                      <Switch
-                        checked={isVisible}
-                        onCheckedChange={() => setting && handleToggle(key, role.key, isVisible)}
-                        disabled={!setting}
-                        className="data-[state=checked]:bg-primary"
-                      />
-                    </td>
-                  );
-                })}
-              </tr>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-1/3">Tab</TableHead>
+            {ROLES.map(role => (
+              <TableHead key={role.key} className="text-center">
+                <div className="flex flex-col items-center gap-1">
+                  <role.icon className="h-4 w-4" />
+                  <span className="text-xs">{role.label}</span>
+                </div>
+              </TableHead>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {groupTabs.map(({ key, setting, displayName }) => (
+            <TableRow key={key}>
+              <TableCell className="font-medium">
+                {displayName}
+                {!setting && (
+                  <Badge variant="outline" className="ml-2 text-xs">Niet geconfigureerd</Badge>
+                )}
+              </TableCell>
+              {ROLES.map(role => {
+                const isVisible = setting?.visibility?.[role.key] ?? false;
+                return (
+                  <TableCell key={role.key} className="text-center">
+                    <Switch
+                      checked={isVisible}
+                      onCheckedChange={() => setting && handleToggle(key, role.key, isVisible)}
+                      disabled={!setting}
+                    />
+                  </TableCell>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     );
   };
 
@@ -168,8 +166,8 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
     return (
       <div className="space-y-3">
         {groupTabs.map(({ key, setting, displayName }) => (
-          <div key={key} className="bg-muted/30 rounded-lg p-4">
-            <div className="font-medium mb-3 flex items-center justify-between">
+          <div key={key} className="bg-white rounded-lg p-4 border border-purple-200">
+            <div className="font-medium mb-3 flex items-center justify-between text-purple-dark">
               <span>{displayName}</span>
               {!setting && (
                 <Badge variant="outline" className="text-xs">Niet geconfigureerd</Badge>
@@ -179,16 +177,16 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
               {ROLES.map(role => {
                 const isVisible = setting?.visibility?.[role.key] ?? false;
                 return (
-                  <div key={role.key} className="flex items-center justify-between bg-background/50 rounded px-3 py-2">
+                  <div key={role.key} className="flex items-center justify-between bg-purple-50 rounded px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <role.icon className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs">{role.label}</span>
+                      <role.icon className="h-3 w-3 text-purple-600" />
+                      <span className="text-xs text-purple-700">{role.label}</span>
                     </div>
                     <Switch
                       checked={isVisible}
                       onCheckedChange={() => setting && handleToggle(key, role.key, isVisible)}
                       disabled={!setting}
-                      className="scale-90 data-[state=checked]:bg-primary"
+                      className="scale-90"
                     />
                   </div>
                 );
@@ -199,7 +197,6 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
       </div>
     );
   };
-
   if (loading) {
     return (
       <Card>
