@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useCallback } from 'react';
 import { useAuth } from '@/components/pages/login/AuthProvider';
-import { useTabVisibilitySettings } from '@/hooks/useTabVisibilitySettings';
+import { useTabVisibilitySettings, RoleKey } from '@/hooks/useTabVisibilitySettings';
 
 interface TabVisibilityContextProps {
   isTabVisible: (tab: TabName | string) => boolean;
@@ -18,7 +18,7 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     // Map admin tabs to their public equivalents for tab visibility checks
     const adminToPublicMapping: Record<string, string> = {
       'competition': 'competitie',
-      'cup': 'beker', 
+      'cup': 'beker',
       'playoffs': 'playoff',
     };
 
@@ -26,7 +26,7 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     const mappedTab = adminToPublicMapping[tab] || tab;
 
     // Match forms: login required tabs that respect visibility settings
-    const isMatchFormTab = 
+    const isMatchFormTab =
       tab === 'match-forms-league' ||
       tab === 'match-forms-cup' ||
       tab === 'match-forms-playoffs';
@@ -34,66 +34,56 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     if (isMatchFormTab) {
       // Require login for match forms
       if (!user) return false;
-      if (user.role === 'admin') return true;
-
-      // For non-admin authenticated users, respect the visibility toggle
+      
       const setting = settings.find(s => s.setting_name === tab);
-      return !!setting?.is_visible;
+      if (!setting) return false;
+      
+      // Check role-specific visibility
+      const userRole = getUserRole(user.role);
+      return setting.visibility?.[userRole] ?? true;
     }
 
     // Special case for match-forms - check if any match forms are visible
     if (tab === 'match-forms') {
       if (!user) return false;
-      if (user.role === 'admin') return true;
       
-      // Check if any match forms are visible
+      const userRole = getUserRole(user.role);
+      
       const leagueSetting = settings.find(s => s.setting_name === 'match-forms-league');
       const cupSetting = settings.find(s => s.setting_name === 'match-forms-cup');
       const playoffsSetting = settings.find(s => s.setting_name === 'match-forms-playoffs');
       
-      return !!(leagueSetting?.is_visible || cupSetting?.is_visible || playoffsSetting?.is_visible);
-    }
-
-    // Special handling: scheidsrechters should be visible for admin/referee regardless of settings
-    if (mappedTab === 'scheidsrechters') {
-      if (!user) return false;
-      return user.role === 'admin' || user.role === 'referee';
+      return !!(
+        leagueSetting?.visibility?.[userRole] || 
+        cupSetting?.visibility?.[userRole] || 
+        playoffsSetting?.visibility?.[userRole]
+      );
     }
 
     // Find the setting for public tabs
     const setting = settings.find(s => s.setting_name === mappedTab);
-    
-    // If no setting found, hide the tab by default (unless it's a fallback tab)
+
+    // If no setting found, hide the tab by default
     if (!setting) {
       return false;
     }
-    
-    // Check visibility from setting_value
-    if (!setting.is_visible) {
+
+    // Determine which role to check
+    const roleToCheck: RoleKey = user ? getUserRole(user.role) : 'public';
+
+    // Check role-specific visibility from the new structure
+    const isVisibleForRole = setting.visibility?.[roleToCheck] ?? setting.is_visible;
+
+    if (!isVisibleForRole) {
       return false;
     }
-    
+
     // If login is required but user is not authenticated, hide the tab
     if (setting.requires_login && !user) {
       return false;
     }
-    
-    // For authenticated users, check role-based visibility
-    if (user) {
-      switch (mappedTab) {
-        case "schorsingen":
-          return user.role === "admin" || user.role === "player_manager";
-        case "kaarten":
-          return user.role === "admin" || user.role === "referee";
-        case "scheidsrechters":
-          return user.role === "admin" || user.role === "referee";
-        default:
-          return true; // All other tabs are visible for authenticated users if enabled in settings
-      }
-    }
-    
-    // For non-authenticated users, show the tab if it doesn't require login
-    return !setting.requires_login;
+
+    return true;
   }, [settings, user]);
 
   return (
@@ -102,6 +92,20 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     </TabVisibilityContext.Provider>
   );
 };
+
+// Helper function to map user role to RoleKey
+function getUserRole(role: string): RoleKey {
+  switch (role) {
+    case 'admin':
+      return 'admin';
+    case 'player_manager':
+      return 'player_manager';
+    case 'referee':
+      return 'referee';
+    default:
+      return 'public';
+  }
+}
 
 export const useTabVisibility = () => {
   const context = useContext(TabVisibilityContext);
