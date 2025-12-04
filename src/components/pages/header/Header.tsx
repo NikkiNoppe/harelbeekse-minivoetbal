@@ -71,7 +71,7 @@ const Header: React.FC<HeaderProps> = ({
     cup: ADMIN_ROUTES.cup,
     financial: ADMIN_ROUTES.financial,
     settings: ADMIN_ROUTES.settings,
-    scheidsrechters: ADMIN_ROUTES.scheidsrechters,
+    'admin-scheidsrechters': ADMIN_ROUTES.scheidsrechters,
   };
 
   const handleLogout = () => {

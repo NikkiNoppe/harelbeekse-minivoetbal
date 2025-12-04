@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useCallback } from 'react';
 import { useAuth } from '@/components/pages/login/AuthProvider';
 import { useTabVisibilitySettings } from '@/hooks/useTabVisibilitySettings';
 
@@ -14,7 +14,7 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
   const { user } = useAuth();
   const { settings, loading } = useTabVisibilitySettings();
 
-  const isTabVisible = (tab: TabName | string): boolean => {
+  const isTabVisible = useCallback((tab: TabName | string): boolean => {
     // Map admin tabs to their public equivalents for tab visibility checks
     const adminToPublicMapping: Record<string, string> = {
       'competition': 'competitie',
@@ -94,7 +94,7 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     
     // For non-authenticated users, show the tab if it doesn't require login
     return !setting.requires_login;
-  };
+  }, [settings, user]);
 
   return (
     <TabVisibilityContext.Provider value={{ isTabVisible, loading }}>

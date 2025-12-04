@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Header from "@/components/pages/header/Header";
 import { useLocation, useNavigate } from "react-router-dom";
 import Footer from "@/components/pages/footer/Footer";
@@ -18,7 +18,8 @@ const Layout: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isTabVisible } = useTabVisibility();
+  const { isTabVisible, loading: tabLoading } = useTabVisibility();
+  const previousActiveTab = useRef<string | null>(null);
   
   // Update document title and meta tags based on current route
   useRouteMeta();
@@ -100,6 +101,13 @@ const Layout: React.FC = () => {
 
   // Check if active tab is visible (for tab visibility settings)
   useEffect(() => {
+    // Wait for settings to load before checking visibility
+    if (tabLoading) return;
+    
+    // Only trigger if activeTab actually changed
+    if (activeTab === previousActiveTab.current) return;
+    previousActiveTab.current = activeTab;
+    
     // Only check for public tabs, admin tabs are handled by ProtectedRoute
     if (publicTabs.includes(activeTab) && !isTabVisible(activeTab)) {
       // Tab is not visible, redirect to first visible public tab
@@ -111,7 +119,7 @@ const Layout: React.FC = () => {
         navigate(PUBLIC_ROUTES.algemeen);
       }
     }
-  }, [activeTab, publicTabs, isTabVisible, navigate]);
+  }, [activeTab, tabLoading]);
 
   const isAdminSection = user && adminTabs.includes(activeTab);
   const isPublicSection = publicTabs.includes(activeTab);
