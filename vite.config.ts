@@ -10,6 +10,9 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     open: false, // Don't auto-open browser
   },
+  build: {
+    sourcemap: true, // Enable source maps for production
+  },
   plugins: [
     react(),
     mode === 'development' &&
