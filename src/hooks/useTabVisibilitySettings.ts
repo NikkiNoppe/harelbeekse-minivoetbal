@@ -29,7 +29,14 @@ const DEFAULT_VISIBILITY: RoleVisibility = {
 
 export const useTabVisibilitySettings = () => {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<TabVisibilitySetting[]>([]);
+  // Initialize with safe defaults to prevent redirect loops during loading
+  const [settings, setSettings] = useState<TabVisibilitySetting[]>([
+    { id: -1, setting_name: 'algemeen', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
+    { id: -2, setting_name: 'competitie', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
+    { id: -3, setting_name: 'beker', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
+    { id: -4, setting_name: 'reglement', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
+    { id: -5, setting_name: 'teams', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
+  ]);
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = useCallback(async () => {

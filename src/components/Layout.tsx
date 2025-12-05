@@ -108,15 +108,19 @@ const Layout: React.FC = () => {
     if (activeTab === previousActiveTab.current) return;
     previousActiveTab.current = activeTab;
     
+    // Skip redirect for /algemeen - this is the fallback page (prevents infinite loop)
+    if (activeTab === 'algemeen') return;
+    
     // Only check for public tabs, admin tabs are handled by ProtectedRoute
     if (publicTabs.includes(activeTab) && !isTabVisible(activeTab)) {
       // Tab is not visible, redirect to first visible public tab
       const visibleTab = publicTabs.find(tab => isTabVisible(tab));
-      if (visibleTab) {
-        navigate(getPathFromTab(visibleTab));
-      } else {
-        // Fallback to algemeen if no visible tabs
-        navigate(PUBLIC_ROUTES.algemeen);
+      // Prevent self-redirect and use replace to avoid history spam
+      if (visibleTab && visibleTab !== activeTab) {
+        navigate(getPathFromTab(visibleTab), { replace: true });
+      } else if (!visibleTab) {
+        // Fallback to algemeen if no visible tabs (use replace to prevent history spam)
+        navigate(PUBLIC_ROUTES.algemeen, { replace: true });
       }
     }
   }, [activeTab, tabLoading]);
