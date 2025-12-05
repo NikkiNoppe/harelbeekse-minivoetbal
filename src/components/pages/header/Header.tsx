@@ -177,6 +177,7 @@ const Header: React.FC<HeaderProps> = ({
                 variant="ghost" 
                 size="sm" 
                 className="p-2 text-white bg-purple-200 hover:bg-purple-300/80 transition-all duration-200 hover:scale-105"
+                aria-label="Open navigatiemenu"
               >
                 <HamburgerIcon className="transition-transform duration-200 text-purple-900" />
               </Button>
