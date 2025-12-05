@@ -60,12 +60,15 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       );
     }
 
+    // Essential public tabs that should always be visible as fallback
+    const alwaysVisiblePublicTabs = ['algemeen', 'competitie', 'beker', 'reglement', 'teams'];
+
     // Find the setting for public tabs
     const setting = settings.find(s => s.setting_name === mappedTab);
 
-    // If no setting found, hide the tab by default
+    // If no setting found, use safe fallback for essential public tabs
     if (!setting) {
-      return false;
+      return alwaysVisiblePublicTabs.includes(mappedTab);
     }
 
     // Determine which role to check
