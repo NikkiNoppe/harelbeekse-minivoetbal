@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useQuery } from "@tanstack/react-query";
-import { monthlyReportsService } from "@/services/financial";
-import { Calendar, Download, Euro, X } from "lucide-react";
+import { monthlyReportsService, type MonthlyRefereeCosts } from "@/services/financial";
+import { Calendar, Download, Euro, ChevronDown, ChevronRight, Users } from "lucide-react";
 
 interface FinancialMonthlyReportsModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
   
   const [selectedSeasonYear, setSelectedSeasonYear] = useState(currentSeasonYear);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [expandedReferees, setExpandedReferees] = useState<Set<string>>(new Set());
 
   // Fetch available seasons from actual transaction data
   const { data: availableSeasons } = useQuery({
@@ -63,17 +65,31 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
     staleTime: 5 * 60 * 1000 // 5 minutes
   });
 
-  const { data: seasonRefereePayments } = useQuery({
-    queryKey: ['season-referee-payments', selectedSeasonYear],
-    queryFn: () => monthlyReportsService.getSeasonRefereePayments(selectedSeasonYear),
-    enabled: open && !!availableSeasons && availableSeasons.length > 0
-  });
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nl-NL', {
       style: 'currency',
       currency: 'EUR'
     }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('nl-NL', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const toggleRefereeExpanded = (referee: string) => {
+    setExpandedReferees(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(referee)) {
+        newSet.delete(referee);
+      } else {
+        newSet.add(referee);
+      }
+      return newSet;
+    });
   };
 
   // Use available seasons from database or fallback to current season
@@ -148,14 +164,14 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
           {/* Show message if no seasons available */}
           {(!availableSeasons || availableSeasons.length === 0) && !isLoading && (
             <div className="text-center py-8">
-              <p className="text-purple-dark">Geen seizoenen met kostengegevens gevonden.</p>
-              <p className="text-sm text-purple-dark opacity-70">Voeg eerst kosten toe om rapporten te kunnen genereren.</p>
+              <p className="text-purple-dark">Geen seizoenen met wedstrijdgegevens gevonden.</p>
+              <p className="text-sm text-purple-dark opacity-70">Voeg eerst wedstrijden toe om rapporten te kunnen genereren.</p>
             </div>
           )}
 
           {/* Filters - only show if seasons are available */}
           {availableSeasons && availableSeasons.length > 0 && (
-            <div className="flex gap-4 items-end">
+            <div className="flex flex-wrap gap-4 items-end">
               <div>
                 <label className="text-sm font-medium mb-2 block text-purple-dark">Seizoen</label>
                 <Select value={selectedSeasonYear.toString()} onValueChange={(value) => setSelectedSeasonYear(parseInt(value))}>
@@ -198,58 +214,58 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
 
           {/* Summary Cards - only show if data available */}
           {report && availableSeasons && availableSeasons.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <Card className="border-purple-light">
-                <CardHeader className="bg-purple-100">
-                  <CardTitle className="text-sm flex items-center gap-2 text-purple-light">
-                    <Euro className="h-4 w-4" />
-                    Wedstrijden Gespeeld
+                <CardHeader className="bg-purple-100 p-3 md:p-4">
+                  <CardTitle className="text-xs md:text-sm flex items-center gap-2 text-purple-light">
+                    <Users className="h-3 w-3 md:h-4 md:w-4" />
+                    Wedstrijden
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white">
-                  <div className="text-2xl font-bold text-purple-dark">
+                <CardContent className="bg-white p-3 md:p-4">
+                  <div className="text-xl md:text-2xl font-bold text-purple-dark">
                     {report.totalMatches}
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-purple-light">
-                <CardHeader className="bg-purple-100">
-                  <CardTitle className="text-sm flex items-center gap-2 text-purple-light">
-                    <Euro className="h-4 w-4" />
-                    Totale Veldkosten
+                <CardHeader className="bg-purple-100 p-3 md:p-4">
+                  <CardTitle className="text-xs md:text-sm flex items-center gap-2 text-purple-light">
+                    <Euro className="h-3 w-3 md:h-4 md:w-4" />
+                    Veldkosten
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white">
-                  <div className="text-2xl font-bold text-purple-dark">
+                <CardContent className="bg-white p-3 md:p-4">
+                  <div className="text-lg md:text-2xl font-bold text-purple-dark">
                     {formatCurrency(report.totalFieldCosts)}
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-purple-light">
-                <CardHeader className="bg-purple-100">
-                  <CardTitle className="text-sm flex items-center gap-2 text-purple-light">
-                    <Euro className="h-4 w-4" />
-                    Scheidsrechterkosten
+                <CardHeader className="bg-purple-100 p-3 md:p-4">
+                  <CardTitle className="text-xs md:text-sm flex items-center gap-2 text-purple-light">
+                    <Euro className="h-3 w-3 md:h-4 md:w-4" />
+                    Scheidsrechters
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white">
-                  <div className="text-2xl font-bold text-purple-dark">
+                <CardContent className="bg-white p-3 md:p-4">
+                  <div className="text-lg md:text-2xl font-bold text-purple-dark">
                     {formatCurrency(report.totalRefereeCosts)}
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-purple-light">
-                <CardHeader className="bg-purple-100">
-                  <CardTitle className="text-sm flex items-center gap-2 text-purple-light">
-                    <Euro className="h-4 w-4" />
-                    Totale Boetes
+                <CardHeader className="bg-purple-100 p-3 md:p-4">
+                  <CardTitle className="text-xs md:text-sm flex items-center gap-2 text-purple-light">
+                    <Euro className="h-3 w-3 md:h-4 md:w-4" />
+                    Boetes
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white">
-                  <div className="text-2xl font-bold text-purple-dark">
+                <CardContent className="bg-white p-3 md:p-4">
+                  <div className="text-lg md:text-2xl font-bold text-purple-dark">
                     {formatCurrency(report.totalFines)}
                   </div>
                 </CardContent>
@@ -257,43 +273,151 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
             </div>
           )}
 
-          {/* Scheidsrechter Betalingen - only show if data available */}
+          {/* Scheidsrechter Betalingen - Improved with expandable match details */}
           {report && report.refereeCosts.length > 0 && availableSeasons && availableSeasons.length > 0 && (
             <Card className="border-purple-light">
               <CardHeader className="bg-purple-100">
-                <CardTitle className="text-purple-light">Scheidsrechter Betalingen</CardTitle>
+                <CardTitle className="text-purple-light flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Scheidsrechter Betalingen
+                </CardTitle>
               </CardHeader>
-              <CardContent className="bg-white">
-                <Table className="table">
-                  <TableHeader>
-                    <TableRow className="bg-purple-100">
-                      <TableHead className="text-purple-dark">Scheidsrechter</TableHead>
-                      <TableHead className="text-center text-purple-dark">Aantal Wedstrijden</TableHead>
-                      <TableHead className="text-right text-purple-dark">Te Betalen Bedrag</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="bg-white">
-                    {report.refereeCosts.map((referee, index) => (
-                      <TableRow key={index} className="bg-white hover:bg-purple-50">
-                        <TableCell className="font-medium text-purple-dark">{referee.referee}</TableCell>
-                        <TableCell className="text-center text-purple-dark">{referee.matchCount}</TableCell>
-                        <TableCell className="text-right font-semibold text-purple-dark">
-                          {formatCurrency(referee.totalCost)}
+              <CardContent className="bg-white p-0">
+                {/* Mobile: Collapsible cards */}
+                <div className="block md:hidden divide-y divide-border">
+                  {report.refereeCosts.map((referee, index) => (
+                    <Collapsible 
+                      key={index}
+                      open={expandedReferees.has(referee.referee)}
+                      onOpenChange={() => toggleRefereeExpanded(referee.referee)}
+                    >
+                      <CollapsibleTrigger className="w-full p-4 hover:bg-purple-50 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="text-left">
+                            <p className="font-medium text-purple-dark">{referee.referee}</p>
+                            <p className="text-sm text-muted-foreground">{referee.matchCount} wedstrijden</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-purple-dark">{formatCurrency(referee.totalCost)}</span>
+                            {expandedReferees.has(referee.referee) ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        {referee.matches && referee.matches.length > 0 && (
+                          <div className="px-4 pb-4 space-y-2">
+                            {referee.matches.map((match, mIdx) => (
+                              <div key={mIdx} className="bg-muted/50 rounded-md p-2 text-sm">
+                                <div className="flex justify-between items-start gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium truncate">{match.home_team} - {match.away_team}</p>
+                                    <p className="text-xs text-muted-foreground">{match.unique_number}</p>
+                                  </div>
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(match.match_date)}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ))}
+                  {/* Mobile Total row */}
+                  <div className="p-4 bg-purple-100">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-bold text-purple-dark">Totaal</p>
+                        <p className="text-sm text-muted-foreground">
+                          {report.refereeCosts.reduce((sum, ref) => sum + ref.matchCount, 0)} wedstrijden
+                        </p>
+                      </div>
+                      <span className="font-bold text-purple-dark">
+                        {formatCurrency(report.refereeCosts.reduce((sum, ref) => sum + ref.totalCost, 0))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Desktop: Table with expandable rows */}
+                <div className="hidden md:block">
+                  <Table className="table">
+                    <TableHeader>
+                      <TableRow className="bg-purple-100">
+                        <TableHead className="text-purple-dark w-8"></TableHead>
+                        <TableHead className="text-purple-dark">Scheidsrechter</TableHead>
+                        <TableHead className="text-center text-purple-dark">Aantal Wedstrijden</TableHead>
+                        <TableHead className="text-right text-purple-dark">Te Betalen Bedrag</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="bg-white">
+                      {report.refereeCosts.map((referee, index) => (
+                        <React.Fragment key={index}>
+                          <TableRow 
+                            className="bg-white hover:bg-purple-50 cursor-pointer"
+                            onClick={() => toggleRefereeExpanded(referee.referee)}
+                          >
+                            <TableCell className="w-8">
+                              {referee.matches && referee.matches.length > 0 && (
+                                expandedReferees.has(referee.referee) ? (
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                )
+                              )}
+                            </TableCell>
+                            <TableCell className="font-medium text-purple-dark">{referee.referee}</TableCell>
+                            <TableCell className="text-center text-purple-dark">{referee.matchCount}</TableCell>
+                            <TableCell className="text-right font-semibold text-purple-dark">
+                              {formatCurrency(referee.totalCost)}
+                            </TableCell>
+                          </TableRow>
+                          {/* Expanded match details */}
+                          {expandedReferees.has(referee.referee) && referee.matches && referee.matches.length > 0 && (
+                            <TableRow className="bg-muted/30">
+                              <TableCell colSpan={4} className="p-0">
+                                <div className="px-8 py-3">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="text-xs text-muted-foreground">Wedstrijd</TableHead>
+                                        <TableHead className="text-xs text-muted-foreground">Teams</TableHead>
+                                        <TableHead className="text-xs text-muted-foreground text-right">Datum</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {referee.matches.map((match, mIdx) => (
+                                        <TableRow key={mIdx} className="border-0">
+                                          <TableCell className="py-1 text-sm">{match.unique_number}</TableCell>
+                                          <TableCell className="py-1 text-sm">{match.home_team} - {match.away_team}</TableCell>
+                                          <TableCell className="py-1 text-sm text-right">{formatDate(match.match_date)}</TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
+                      ))}
+                      {/* Totaal row */}
+                      <TableRow className="bg-purple-100 border-t-2 border-purple-light">
+                        <TableCell></TableCell>
+                        <TableCell className="font-bold text-purple-dark">Totaal</TableCell>
+                        <TableCell className="text-center font-bold text-purple-dark">
+                          {report.refereeCosts.reduce((sum, ref) => sum + ref.matchCount, 0)}
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-purple-dark">
+                          {formatCurrency(report.refereeCosts.reduce((sum, ref) => sum + ref.totalCost, 0))}
                         </TableCell>
                       </TableRow>
-                    ))}
-                    {/* Totaal row */}
-                    <TableRow className="bg-purple-100 border-t-2 border-purple-light">
-                      <TableCell className="font-bold text-purple-dark">Totaal</TableCell>
-                      <TableCell className="text-center font-bold text-purple-dark">
-                        {report.refereeCosts.reduce((sum, ref) => sum + ref.matchCount, 0)}
-                      </TableCell>
-                      <TableCell className="text-right font-bold text-purple-dark">
-                        {formatCurrency(report.refereeCosts.reduce((sum, ref) => sum + ref.totalCost, 0))}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -373,7 +497,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
             <Card className="border-purple-light">
               <CardContent className="text-center py-8 bg-white">
                 <p className="text-purple-dark mb-2">Er is een fout opgetreden bij het laden van het rapport.</p>
-                <p className="text-sm text-purple-dark opacity-70">{error.message}</p>
+                <p className="text-sm text-purple-dark opacity-70">{(error as Error).message}</p>
               </CardContent>
             </Card>
           )}
@@ -392,28 +516,19 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
           {report && !isLoading && !error && report.totalMatches === 0 && availableSeasons && availableSeasons.length > 0 && (
             <Card className="border-purple-light">
               <CardContent className="text-center py-8 bg-white">
-                <p className="text-purple-dark">
-                  Geen wedstrijdgegevens gevonden voor {selectedMonth ? 
-                    seasonMonths.find(m => m.value === selectedMonth)?.label : 
-                    `seizoen ${selectedSeasonYear}/${selectedSeasonYear + 1}`}
+                <p className="text-purple-dark mb-2">Geen wedstrijden gevonden voor deze periode.</p>
+                <p className="text-sm text-purple-dark opacity-70">
+                  Selecteer een andere maand of bekijk het hele seizoen.
                 </p>
               </CardContent>
             </Card>
           )}
 
-          {/* Empty state when no referee costs but seasons are available */}
-          {report && !isLoading && !error && report.refereeCosts.length === 0 && report.totalMatches > 0 && availableSeasons && availableSeasons.length > 0 && (
-            <Card className="border-purple-light">
-              <CardHeader className="bg-purple-100">
-                <CardTitle className="text-purple-light">Scheidsrechter Betalingen</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center py-8 bg-white">
-                <p className="text-purple-dark">
-                  Geen scheidsrechterkosten gevonden voor deze periode.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Sluiten
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
