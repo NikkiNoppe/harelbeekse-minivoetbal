@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { costSettingsService } from "./costSettingsService";
 
 export interface MonthlyFieldCosts {
   month: string;
@@ -14,7 +13,15 @@ export interface MonthlyRefereeCosts {
   referee: string;
   totalCost: number;
   matchCount: number;
-  uniqueMatches?: Set<number>; // Internal tracking for unique match IDs
+  matches?: RefereeMatchInfo[];
+}
+
+export interface RefereeMatchInfo {
+  match_id: number;
+  unique_number: string;
+  match_date: string;
+  home_team: string;
+  away_team: string;
 }
 
 export interface MonthlyFines {
@@ -75,29 +82,43 @@ const getSeasonFromDate = (date: Date): string => {
 };
 
 export const monthlyReportsService = {
-  // Get available seasons based on actual transaction data
+  // Get available seasons based on actual match data (not just transactions)
   async getAvailableSeasons(): Promise<SeasonData[]> {
     try {
-      const { data: transactions, error } = await supabase
-        .from('team_costs')
-        .select('transaction_date')
-        .order('transaction_date', { ascending: false });
+      // Get seasons from both transactions AND matches for comprehensive coverage
+      const [transactionResult, matchResult] = await Promise.all([
+        supabase
+          .from('team_costs')
+          .select('transaction_date')
+          .order('transaction_date', { ascending: false }),
+        supabase
+          .from('matches')
+          .select('match_date')
+          .eq('is_submitted', true)
+          .order('match_date', { ascending: false })
+      ]);
 
-      if (error) throw error;
-      if (!transactions || transactions.length === 0) return [];
-
-      // Get unique season years from transaction dates
       const seasonYears = new Set<number>();
       
-      transactions.forEach(transaction => {
+      // Process transaction dates
+      transactionResult.data?.forEach(transaction => {
         const date = new Date(transaction.transaction_date);
         const year = date.getFullYear();
-        const month = date.getMonth(); // 0-indexed
-        
-        // If month is July (6) or later, it's the start of a new season
+        const month = date.getMonth();
         const seasonStartYear = month >= 6 ? year : year - 1;
         seasonYears.add(seasonStartYear);
       });
+
+      // Process match dates
+      matchResult.data?.forEach(match => {
+        const date = new Date(match.match_date);
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const seasonStartYear = month >= 6 ? year : year - 1;
+        seasonYears.add(seasonStartYear);
+      });
+
+      if (seasonYears.size === 0) return [];
 
       // Convert to array and sort descending (newest first)
       return Array.from(seasonYears)
@@ -136,29 +157,47 @@ export const monthlyReportsService = {
 
       if (error) throw error;
 
-      // Also fetch match data for referee information
+      // IMPORTANT: Fetch match data DIRECTLY for accurate referee information
+      // This ensures we always have up-to-date referee data from the matches table
       const { data: allMatches, error: matchError } = await supabase
         .from('matches')
-        .select('match_id, match_date, referee, is_submitted')
+        .select(`
+          match_id, 
+          match_date, 
+          referee, 
+          unique_number,
+          is_submitted,
+          home_team_id,
+          away_team_id,
+          teams_home:teams!home_team_id(team_name),
+          teams_away:teams!away_team_id(team_name)
+        `)
         .eq('is_submitted', true)
         .gte('match_date', filterStartDate.toISOString())
-        .lte('match_date', filterEndDate.toISOString());
+        .lte('match_date', filterEndDate.toISOString())
+        .order('match_date', { ascending: false });
 
       if (matchError) throw matchError;
 
-      // Create a map of match_id to referee for transactions that have match_id
-      const matchRefereeMap = new Map();
-      allMatches?.forEach(match => {
-        matchRefereeMap.set(match.match_id, match.referee || 'Onbekend');
-      });
+      // Fetch cost settings for referee cost calculation
+      const { data: costSettings } = await supabase
+        .from('costs')
+        .select('id, name, amount, category')
+        .eq('category', 'match_cost')
+        .eq('is_active', true);
+
+      const refereeCostSetting = costSettings?.find(cs => 
+        cs.name?.toLowerCase().includes('scheidsrechter') || 
+        cs.name?.toLowerCase().includes('scheids')
+      );
+      const refereeCostPerMatch = refereeCostSetting?.amount || 0;
 
       // Group data by month
       const fieldCostsByMonth: Record<string, MonthlyFieldCosts> = {};
-      const refereeCostsByMonth: Record<string, MonthlyRefereeCosts> = {};
       const finesByMonth: Record<string, MonthlyFines> = {};
       const matchStatsByMonth: Record<string, MonthlyMatchStats> = {};
 
-      // Process transactions based on transaction_date
+      // Process transactions for field costs and fines
       transactions?.forEach(transaction => {
         const date = new Date(transaction.transaction_date);
         const season = getSeasonFromDate(date);
@@ -186,33 +225,6 @@ export const monthlyReportsService = {
           fieldCostsByMonth[key].matchCount++;
         }
 
-        // Referee costs - Fix to count unique matches per referee
-        if (category === 'match_cost' && (costName.includes('scheidsrechter') || costDescription.includes('scheidsrechter'))) {
-          // Get referee from match if available, otherwise use 'Onbekend'
-          const referee = transaction.match_id ? 
-            matchRefereeMap.get(transaction.match_id) || 'Onbekend' : 
-            'Onbekend';
-          
-          const refereeKey = (month && year) ? `${monthKey}-${referee}` : `season-${referee}`;
-          
-          if (!refereeCostsByMonth[refereeKey]) {
-            refereeCostsByMonth[refereeKey] = {
-              month: monthName,
-              season,
-              referee,
-              totalCost: 0,
-              matchCount: 0,
-              uniqueMatches: new Set() // Track unique matches
-            };
-          }
-          refereeCostsByMonth[refereeKey].totalCost += Number(transaction.amount || 0);
-          // Only count unique matches
-          if (transaction.match_id && !refereeCostsByMonth[refereeKey].uniqueMatches.has(transaction.match_id)) {
-            refereeCostsByMonth[refereeKey].matchCount++;
-            refereeCostsByMonth[refereeKey].uniqueMatches.add(transaction.match_id);
-          }
-        }
-
         // Penalties/Fines
         if (category === 'penalty') {
           const key = (month && year) ? monthKey : 'season-total';
@@ -229,7 +241,10 @@ export const monthlyReportsService = {
         }
       });
 
-      // Process match statistics based on submitted matches in the period
+      // Build referee costs DIRECTLY from matches table
+      // This ensures the data is always current and accurate
+      const refereeCostsByReferee: Record<string, MonthlyRefereeCosts> = {};
+
       allMatches?.forEach(match => {
         const date = new Date(match.match_date);
         const season = getSeasonFromDate(date);
@@ -238,25 +253,46 @@ export const monthlyReportsService = {
           date.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' }) :
           `Seizoen ${season}`;
 
-        const key = (month && year) ? monthKey : 'season-total';
-        if (!matchStatsByMonth[key]) {
-          matchStatsByMonth[key] = {
+        // Track match stats
+        const statsKey = (month && year) ? monthKey : 'season-total';
+        if (!matchStatsByMonth[statsKey]) {
+          matchStatsByMonth[statsKey] = {
             month: monthName,
             season,
             totalMatches: 0
           };
         }
-        matchStatsByMonth[key].totalMatches++;
+        matchStatsByMonth[statsKey].totalMatches++;
+
+        // Track referee data directly from matches
+        const referee = match.referee || 'Niet toegewezen';
+        const refereeKey = (month && year) ? `${monthKey}-${referee}` : `season-${referee}`;
+        
+        if (!refereeCostsByReferee[refereeKey]) {
+          refereeCostsByReferee[refereeKey] = {
+            month: monthName,
+            season,
+            referee,
+            totalCost: 0,
+            matchCount: 0,
+            matches: []
+          };
+        }
+        
+        // Add match info
+        refereeCostsByReferee[refereeKey].matchCount++;
+        refereeCostsByReferee[refereeKey].totalCost += refereeCostPerMatch;
+        refereeCostsByReferee[refereeKey].matches?.push({
+          match_id: match.match_id,
+          unique_number: match.unique_number || `#${match.match_id}`,
+          match_date: match.match_date,
+          home_team: (match.teams_home as any)?.team_name || 'Onbekend',
+          away_team: (match.teams_away as any)?.team_name || 'Onbekend'
+        });
       });
 
       const fieldCosts = Object.values(fieldCostsByMonth);
-      const refereeCosts = Object.values(refereeCostsByMonth).map(ref => ({
-        month: ref.month,
-        season: ref.season,
-        referee: ref.referee,
-        totalCost: ref.totalCost,
-        matchCount: ref.matchCount
-      }));
+      const refereeCosts = Object.values(refereeCostsByReferee).sort((a, b) => b.matchCount - a.matchCount);
       const fines = Object.values(finesByMonth);
       const matchStats = Object.values(matchStatsByMonth);
 
@@ -281,79 +317,81 @@ export const monthlyReportsService = {
       const seasonData = getSeasonFromYear(seasonYear);
       const { startDate, endDate } = getSeasonDates(seasonData);
       
-      // Fetch transactions based on transaction_date
-      const { data: transactions, error } = await supabase
-        .from('team_costs')
-        .select(`
-          *,
-          costs(name, description, category),
-          matches(unique_number, match_date, referee)
-        `)
-        .gte('transaction_date', startDate.toISOString().split('T')[0])
-        .lte('transaction_date', endDate.toISOString().split('T')[0]);
+      // Fetch cost setting for referee payments
+      const { data: costSettings } = await supabase
+        .from('costs')
+        .select('id, name, amount, category')
+        .eq('category', 'match_cost')
+        .eq('is_active', true);
 
-      if (error) throw error;
+      const refereeCostSetting = costSettings?.find(cs => 
+        cs.name?.toLowerCase().includes('scheidsrechter') || 
+        cs.name?.toLowerCase().includes('scheids')
+      );
+      const refereeCostPerMatch = refereeCostSetting?.amount || 0;
 
-      // Also fetch match data for referee information
+      // Get referee data DIRECTLY from matches table - this is the source of truth
       const { data: allMatches, error: matchError } = await supabase
         .from('matches')
-        .select('match_id, referee')
-        .eq('is_submitted', true);
+        .select(`
+          match_id, 
+          match_date, 
+          referee,
+          unique_number,
+          teams_home:teams!home_team_id(team_name),
+          teams_away:teams!away_team_id(team_name)
+        `)
+        .eq('is_submitted', true)
+        .gte('match_date', startDate.toISOString())
+        .lte('match_date', endDate.toISOString())
+        .order('match_date', { ascending: false });
 
       if (matchError) throw matchError;
 
-      // Create a map of match_id to referee
-      const matchRefereeMap = new Map();
-      allMatches?.forEach(match => {
-        matchRefereeMap.set(match.match_id, match.referee || 'Onbekend');
-      });
-
-      const refereePayments: Record<string, { 
-        month: string; 
-        season: string; 
-        referee: string; 
-        totalCost: number; 
+      const refereePayments: Record<string, {
+        month: string;
+        season: string;
+        referee: string;
+        totalCost: number;
         matchCount: number;
-        uniqueMatches: Set<number>;
+        matches: RefereeMatchInfo[];
       }> = {};
 
-      // Filter referee cost transactions
-      transactions?.forEach((transaction: any) => {
-        const isRefereeCost = transaction.costs?.category === 'match_cost' && 
-          (transaction.costs?.name?.toLowerCase().includes('scheidsrechter') || 
-           transaction.costs?.description?.toLowerCase().includes('scheidsrechter'));
+      allMatches?.forEach(match => {
+        const referee = match.referee || 'Niet toegewezen';
         
-        if (isRefereeCost) {
-          const referee = transaction.match_id ? 
-            matchRefereeMap.get(transaction.match_id) || 'Onbekend' : 
-            'Onbekend';
-          
-          if (!refereePayments[referee]) {
-            refereePayments[referee] = {
-              month: 'Seizoen Totaal',
-              season: seasonData.season,
-              referee,
-              totalCost: 0,
-              matchCount: 0,
-              uniqueMatches: new Set()
-            };
-          }
-          refereePayments[referee].totalCost += Number(transaction.amount || 0);
-          // Only count unique matches
-          if (transaction.match_id && !refereePayments[referee].uniqueMatches.has(transaction.match_id)) {
-            refereePayments[referee].matchCount++;
-            refereePayments[referee].uniqueMatches.add(transaction.match_id);
-          }
+        if (!refereePayments[referee]) {
+          refereePayments[referee] = {
+            month: 'Seizoen Totaal',
+            season: seasonData.season,
+            referee,
+            totalCost: 0,
+            matchCount: 0,
+            matches: []
+          };
         }
+        
+        refereePayments[referee].matchCount++;
+        refereePayments[referee].totalCost += refereeCostPerMatch;
+        refereePayments[referee].matches.push({
+          match_id: match.match_id,
+          unique_number: match.unique_number || `#${match.match_id}`,
+          match_date: match.match_date,
+          home_team: (match.teams_home as any)?.team_name || 'Onbekend',
+          away_team: (match.teams_away as any)?.team_name || 'Onbekend'
+        });
       });
 
-      return Object.values(refereePayments).map(ref => ({
-        month: ref.month,
-        season: ref.season,
-        referee: ref.referee,
-        totalCost: ref.totalCost,
-        matchCount: ref.matchCount
-      }));
+      return Object.values(refereePayments)
+        .sort((a, b) => b.matchCount - a.matchCount)
+        .map(ref => ({
+          month: ref.month,
+          season: ref.season,
+          referee: ref.referee,
+          totalCost: ref.totalCost,
+          matchCount: ref.matchCount,
+          matches: ref.matches
+        }));
     } catch (error) {
       console.error('Error fetching season referee payments:', error);
       throw error;

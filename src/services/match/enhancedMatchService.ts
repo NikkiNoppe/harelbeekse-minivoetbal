@@ -237,11 +237,36 @@ export const enhancedMatchService = {
             console.log('✅ [enhancedMatchService] Card penalties synced successfully:', syncData);
           }
         } catch (cardErr) {
-          console.error('❌ [enhancedMatchService] Error syncing card penalties:', cardErr);
-        }
+        console.error('❌ [enhancedMatchService] Error syncing card penalties:', cardErr);
       }
+    }
 
-      console.log('✅ [enhancedMatchService] All operations completed successfully');
+    // Sync match costs (field + referee) when match is submitted
+    if (updateData.isCompleted) {
+      console.log('🟢 [enhancedMatchService] Syncing match costs (field + referee)...');
+      try {
+        const { data: costSyncData, error: costSyncError } = await supabase.functions.invoke('sync-match-costs', {
+          body: {
+            matchId,
+            matchDateISO: updateObject.match_date || matchInfo?.match_date || null,
+            homeTeamId: matchInfo?.home_team_id,
+            awayTeamId: matchInfo?.away_team_id,
+            isSubmitted: updateData.isCompleted,
+            referee: updateData.referee || null
+          }
+        });
+
+        if (costSyncError) {
+          console.error('❌ [enhancedMatchService] Error calling sync-match-costs:', costSyncError);
+        } else {
+          console.log('✅ [enhancedMatchService] Match costs synced successfully:', costSyncData);
+        }
+      } catch (costErr) {
+        console.error('❌ [enhancedMatchService] Error syncing match costs:', costErr);
+      }
+    }
+
+    console.log('✅ [enhancedMatchService] All operations completed successfully');
       return {
         success: true,
         message: isLateSubmission 
