@@ -117,12 +117,22 @@ export const useCompetitionData = () => {
     all: [...(matchesQuery.data.upcoming || []), ...(matchesQuery.data.past || [])]
   } : { upcoming: [], past: [], all: [] };
   
-  // Get filter options
-  const matchdays = [...new Set(processedMatches.all.map(match => match.matchday))];
+  // Get filter options - sorted numerically for matchdays, alphabetically for teams
+  const matchdays = [...new Set(processedMatches.all.map(match => match.matchday))]
+    .filter(Boolean)
+    .sort((a, b) => {
+      // Extract number from matchday string (e.g., "Speeldag 1" -> 1)
+      const numA = parseInt(a.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+  
   const teamNames = [...new Set([
     ...processedMatches.all.map(match => match.homeTeamName),
     ...processedMatches.all.map(match => match.awayTeamName)
-  ])];
+  ])]
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, 'nl'));
   
   return {
     // Standings
