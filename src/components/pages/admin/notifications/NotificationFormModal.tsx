@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -81,8 +80,6 @@ const ROLE_OPTIONS = [
   { value: 'referee', label: 'Scheidsrechter' },
   { value: 'player_manager', label: 'Teamverantwoordelijke' }
 ];
-
-const DURATION_PRESETS = [5, 8, 10, 15, 30];
 
 const DEFAULT_FORM_DATA: FormData = {
   message: '',
@@ -260,14 +257,12 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full h-[100dvh] max-w-none sm:h-auto sm:max-h-[90vh] sm:max-w-2xl p-0 gap-0 flex flex-col bg-[var(--color-50)]">
+      <DialogContent className="modal p-0 gap-0 flex flex-col">
         {/* Sticky Header */}
-        <DialogHeader className="sticky top-0 z-10 bg-[var(--color-100)] border-b border-[var(--color-300)] px-4 py-4 sm:px-6">
-          <DialogTitle className="text-lg sm:text-xl flex items-center gap-2 text-[var(--color-600)]">
-            <Bell className="w-5 h-5 text-[var(--color-500)]" />
-            {isEditing ? 'Notificatie Bewerken' : 'Nieuwe Notificatie'}
-          </DialogTitle>
-        </DialogHeader>
+        <div className="modal__title sticky top-0 z-10 flex items-center gap-2">
+          <Bell className="w-5 h-5 text-[var(--color-500)]" />
+          {isEditing ? 'Notificatie Bewerken' : 'Nieuwe Notificatie'}
+        </div>
 
         {/* Scrollable Content */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
@@ -319,38 +314,6 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                 </div>
               </div>
 
-              {/* Duration Slider with Presets */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-[var(--color-600)]">Weergaveduur</Label>
-                  <span className="text-sm font-medium text-[var(--color-600)]">{formData.duration} sec</span>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {DURATION_PRESETS.map(preset => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, duration: preset }))}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
-                        formData.duration === preset
-                          ? "bg-[var(--color-500)] text-[var(--color-white)]"
-                          : "bg-[var(--color-200)] hover:bg-[var(--color-300)] text-[var(--color-600)]"
-                      )}
-                    >
-                      {preset}s
-                    </button>
-                  ))}
-                </div>
-                <input
-                  type="range"
-                  min={3}
-                  max={60}
-                  value={formData.duration}
-                  onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                  className="w-full h-2 bg-[var(--color-200)] rounded-full appearance-none cursor-pointer accent-[var(--color-500)]"
-                />
-              </div>
             </div>
 
             {/* Section 2: Doelgroep */}
@@ -494,14 +457,15 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                               className="pl-9 h-11"
                             />
                           </div>
-                          <ScrollArea className="h-32 border border-[var(--color-300)] rounded-lg bg-[var(--color-white)]">
-                            <div className="p-2 space-y-1">
+                          <ScrollArea className="h-28 border border-[var(--color-300)] rounded-lg bg-[var(--color-white)]">
+                            <div className="p-1.5 space-y-0.5">
                               {filteredPmTeams.map(team => (
                                 <label 
                                   key={team.team_id} 
-                                  className="flex items-center gap-3 min-h-[44px] px-2 rounded hover:bg-[var(--color-100)] cursor-pointer"
+                                  className="flex items-center gap-2 min-h-[36px] px-1.5 py-1 rounded hover:bg-[var(--color-100)] cursor-pointer"
                                 >
                                   <Checkbox
+                                    className="select-box"
                                     checked={formData.player_manager_teams.includes(team.team_id)}
                                     onCheckedChange={(checked) => {
                                       setFormData(prev => ({
@@ -512,11 +476,11 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                                       }));
                                     }}
                                   />
-                                  <span className="text-sm">{team.team_name}</span>
+                                  <span className="text-xs">{team.team_name}</span>
                                 </label>
                               ))}
                               {filteredPmTeams.length === 0 && (
-                                <p className="text-sm text-muted-foreground text-center py-4">
+                                <p className="text-xs text-muted-foreground text-center py-3">
                                   Geen teams gevonden
                                 </p>
                               )}
@@ -556,13 +520,13 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
 
                   {/* Quick Actions */}
                   <div className="flex gap-2">
-                    <Button type="button" variant="outline" size="sm" onClick={selectAllUsers}>
+                    <button type="button" className="btn btn--secondary text-xs py-1 px-2" onClick={selectAllUsers}>
                       Selecteer alle
-                    </Button>
+                    </button>
                     {selectedUsers.length > 0 && (
-                      <Button type="button" variant="ghost" size="sm" onClick={clearAllUsers}>
+                      <button type="button" className="btn btn--ghost text-xs py-1 px-2" onClick={clearAllUsers}>
                         Wis selectie
-                      </Button>
+                      </button>
                     )}
                   </div>
 
@@ -572,17 +536,18 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                       placeholder="Zoek gebruiker..."
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)}
-                      className="pl-9 h-11"
+                      className="pl-9 h-10"
                     />
                   </div>
-                  <ScrollArea className="h-40 sm:h-48 border border-[var(--color-300)] rounded-lg bg-[var(--color-white)]">
-                    <div className="p-2 space-y-1">
+                  <ScrollArea className="h-32 border border-[var(--color-300)] rounded-lg bg-[var(--color-white)]">
+                    <div className="p-1.5 space-y-0.5">
                       {filteredUsers.map(user => (
                         <label 
                           key={user.user_id} 
-                          className="flex items-center gap-3 min-h-[44px] px-2 rounded hover:bg-[var(--color-100)] cursor-pointer"
+                          className="flex items-center gap-2 min-h-[36px] px-1.5 py-1 rounded hover:bg-[var(--color-100)] cursor-pointer"
                         >
                           <Checkbox
+                            className="select-box"
                             checked={formData.target_users.includes(user.user_id)}
                             onCheckedChange={(checked) => {
                               setFormData(prev => ({
@@ -593,14 +558,14 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                               }));
                             }}
                           />
-                          <span className="text-sm flex-1">{user.username}</span>
-                          <Badge variant="outline" className="text-xs">
+                          <span className="text-xs flex-1">{user.username}</span>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
                             {ROLE_OPTIONS.find(r => r.value === user.role)?.label || user.role}
                           </Badge>
                         </label>
                       ))}
                       {filteredUsers.length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-4">
+                        <p className="text-xs text-muted-foreground text-center py-3">
                           Geen gebruikers gevonden
                         </p>
                       )}
@@ -636,13 +601,13 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
 
                   {/* Quick Actions */}
                   <div className="flex gap-2">
-                    <Button type="button" variant="outline" size="sm" onClick={selectAllTeams}>
+                    <button type="button" className="btn btn--secondary text-xs py-1 px-2" onClick={selectAllTeams}>
                       Selecteer alle
-                    </Button>
+                    </button>
                     {selectedTeams.length > 0 && (
-                      <Button type="button" variant="ghost" size="sm" onClick={clearAllTeams}>
+                      <button type="button" className="btn btn--ghost text-xs py-1 px-2" onClick={clearAllTeams}>
                         Wis selectie
-                      </Button>
+                      </button>
                     )}
                   </div>
 
@@ -652,17 +617,18 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                       placeholder="Zoek team..."
                       value={teamSearch}
                       onChange={(e) => setTeamSearch(e.target.value)}
-                      className="pl-9 h-11"
+                      className="pl-9 h-10"
                     />
                   </div>
-                  <ScrollArea className="h-40 sm:h-48 border border-[var(--color-300)] rounded-lg bg-[var(--color-white)]">
-                    <div className="p-2 space-y-1">
+                  <ScrollArea className="h-32 border border-[var(--color-300)] rounded-lg bg-[var(--color-white)]">
+                    <div className="p-1.5 space-y-0.5">
                       {filteredTeams.map(team => (
                         <label 
                           key={team.team_id} 
-                          className="flex items-center gap-3 min-h-[44px] px-2 rounded hover:bg-[var(--color-100)] cursor-pointer"
+                          className="flex items-center gap-2 min-h-[36px] px-1.5 py-1 rounded hover:bg-[var(--color-100)] cursor-pointer"
                         >
                           <Checkbox
+                            className="select-box"
                             checked={formData.target_teams.includes(team.team_id)}
                             onCheckedChange={(checked) => {
                               setFormData(prev => ({
@@ -673,11 +639,11 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                               }));
                             }}
                           />
-                          <span className="text-sm">{team.team_name}</span>
+                          <span className="text-xs">{team.team_name}</span>
                         </label>
                       ))}
                       {filteredTeams.length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-4">
+                        <p className="text-xs text-muted-foreground text-center py-3">
                           Geen teams gevonden
                         </p>
                       )}
@@ -782,22 +748,21 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
           </div>
 
           {/* Sticky Footer */}
-          <div className="sticky bottom-0 bg-[var(--color-50)] border-t border-[var(--color-300)] px-4 py-4 sm:px-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onClose}
-              className="w-full sm:w-auto h-12 sm:h-10"
-            >
-              Annuleren
-            </Button>
-            <Button 
+          <div className="modal__actions sticky bottom-0">
+            <button 
               type="submit" 
               disabled={isSubmitting || !formData.message}
-              className="w-full sm:w-auto h-12 sm:h-10"
+              className="btn btn--primary"
             >
               {isSubmitting ? 'Opslaan...' : (isEditing ? 'Bijwerken' : 'Aanmaken')}
-            </Button>
+            </button>
+            <button 
+              type="button" 
+              onClick={onClose}
+              className="btn btn--secondary"
+            >
+              Annuleren
+            </button>
           </div>
         </form>
       </DialogContent>
