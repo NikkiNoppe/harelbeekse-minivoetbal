@@ -544,10 +544,10 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                       {filteredUsers.map(user => (
                         <label 
                           key={user.user_id} 
-                          className="flex items-center gap-2 min-h-[36px] px-1.5 py-1 rounded hover:bg-[var(--color-100)] cursor-pointer"
+                          className="flex items-center gap-2 min-h-[40px] px-1.5 py-1 rounded hover:bg-[var(--color-100)] cursor-pointer"
                         >
                           <Checkbox
-                            className="select-box"
+                            className="select-box shrink-0"
                             checked={formData.target_users.includes(user.user_id)}
                             onCheckedChange={(checked) => {
                               setFormData(prev => ({
@@ -558,10 +558,14 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                               }));
                             }}
                           />
-                          <span className="text-xs flex-1">{user.username}</span>
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
-                            {ROLE_OPTIONS.find(r => r.value === user.role)?.label || user.role}
-                          </Badge>
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <span className="text-xs font-medium text-[var(--color-700)] truncate">
+                              {user.username}
+                            </span>
+                            <span className="text-[10px] text-[var(--color-500)] truncate">
+                              {ROLE_OPTIONS.find(r => r.value === user.role)?.label || user.role}
+                            </span>
+                          </div>
                         </label>
                       ))}
                       {filteredUsers.length === 0 && (
@@ -625,10 +629,10 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                       {filteredTeams.map(team => (
                         <label 
                           key={team.team_id} 
-                          className="flex items-center gap-2 min-h-[36px] px-1.5 py-1 rounded hover:bg-[var(--color-100)] cursor-pointer"
+                          className="flex items-center gap-2 min-h-[40px] px-1.5 py-1 rounded hover:bg-[var(--color-100)] cursor-pointer"
                         >
                           <Checkbox
-                            className="select-box"
+                            className="select-box shrink-0"
                             checked={formData.target_teams.includes(team.team_id)}
                             onCheckedChange={(checked) => {
                               setFormData(prev => ({
@@ -639,7 +643,14 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                               }));
                             }}
                           />
-                          <span className="text-xs">{team.team_name}</span>
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <span className="text-xs font-medium text-[var(--color-700)] truncate">
+                              {team.team_name}
+                            </span>
+                            <span className="text-[10px] text-[var(--color-500)]">
+                              Teamverantwoordelijke
+                            </span>
+                          </div>
                         </label>
                       ))}
                       {filteredTeams.length === 0 && (
@@ -721,21 +732,21 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
               </div>
               
               <div className={cn(
-                "p-4 rounded-lg border shadow-sm",
-                formData.type === 'info' && "bg-[var(--color-50)] border-[var(--color-300)]",
-                formData.type === 'warning' && "bg-[var(--color-100)] border-[var(--color-400)]",
-                formData.type === 'success' && "bg-green-50 border-green-200",
-                formData.type === 'error' && "bg-red-50 border-red-200"
+                "p-4 rounded-lg border-2 shadow-sm",
+                formData.type === 'info' && "bg-[var(--color-500)] border-[var(--color-600)]",
+                formData.type === 'warning' && "bg-[var(--color-700)] border-[var(--color-800)]",
+                formData.type === 'success' && "bg-[hsl(var(--success))] border-[hsl(var(--success))]",
+                formData.type === 'error' && "bg-[hsl(var(--destructive))] border-[hsl(var(--destructive))]"
               )}>
                 <div className="flex items-start gap-3">
                   {notificationTypeConfig && (
-                    <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", notificationTypeConfig.color)}>
-                      <notificationTypeConfig.icon className="w-4 h-4 text-[var(--color-white)]" />
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-white/20">
+                      <notificationTypeConfig.icon className="w-4 h-4 text-white" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[var(--color-600)]">
-                      {formData.message || <span className="text-[var(--color-400)] italic">Voer een bericht in...</span>}
+                    <p className="text-sm text-white">
+                      {formData.message || <span className="text-white/60 italic">Voer een bericht in...</span>}
                     </p>
                   </div>
                 </div>
