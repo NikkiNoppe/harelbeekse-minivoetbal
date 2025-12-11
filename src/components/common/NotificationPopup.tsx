@@ -69,7 +69,15 @@ const NotificationPopup: React.FC = () => {
       const now = new Date();
       
       const filteredNotifications = allNotifications.filter(notification => {
-        const { start_date, end_date, target_roles, target_users, target_teams } = notification.setting_value;
+        const { 
+          start_date, 
+          end_date, 
+          target_roles, 
+          target_users, 
+          target_teams,
+          player_manager_mode,
+          player_manager_teams 
+        } = notification.setting_value;
         
         // Check time constraints first
         if (start_date && new Date(start_date) > now) return false;
@@ -81,18 +89,42 @@ const NotificationPopup: React.FC = () => {
           ? target_roles.map(role => String(role).toLowerCase())
           : [];
         
-        // Check role targeting
-        const matchesRole = normalizedTargetRoles.length === 0 || normalizedTargetRoles.includes(userRole);
-        
         // Check user targeting
         const targetUserIds = Array.isArray(target_users) ? target_users : [];
-        const matchesUser = targetUserIds.length === 0 || targetUserIds.includes(user.id);
+        const matchesUser = targetUserIds.length > 0 && targetUserIds.includes(user.id);
         
-        // Check team targeting
+        // Check team targeting (direct team targeting)
         const targetTeamIds = Array.isArray(target_teams) ? target_teams : [];
-        const matchesTeam = targetTeamIds.length === 0 || targetTeamIds.some(tid => userTeamIds.includes(tid));
+        const matchesTeam = targetTeamIds.length > 0 && targetTeamIds.some(tid => userTeamIds.includes(tid));
         
-        // If specific targeting is set, use that. Otherwise fall back to role
+        // Check role targeting with player_manager special handling
+        let matchesRole = false;
+        if (normalizedTargetRoles.length > 0) {
+          // Check non-player_manager roles
+          const nonPmRoles = normalizedTargetRoles.filter(r => r !== 'player_manager');
+          if (nonPmRoles.includes(userRole)) {
+            matchesRole = true;
+          }
+          
+          // Special handling for player_manager role
+          if (normalizedTargetRoles.includes('player_manager') && userRole === 'player_manager') {
+            const pmMode = player_manager_mode || 'all';
+            const pmTeams = Array.isArray(player_manager_teams) ? player_manager_teams : [];
+            
+            if (pmMode === 'all') {
+              // All team managers see this notification
+              matchesRole = true;
+            } else if (pmMode === 'specific_teams' && pmTeams.length > 0) {
+              // Only team managers of specific teams see this
+              const userManagesTargetTeam = pmTeams.some(tid => userTeamIds.includes(tid));
+              if (userManagesTargetTeam) {
+                matchesRole = true;
+              }
+            }
+          }
+        }
+        
+        // If specific user or team targeting is set, use that. Otherwise check role
         const hasSpecificTargeting = targetUserIds.length > 0 || targetTeamIds.length > 0;
         
         if (hasSpecificTargeting) {

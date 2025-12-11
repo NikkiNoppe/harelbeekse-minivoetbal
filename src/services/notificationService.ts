@@ -10,6 +10,8 @@ export interface NotificationData {
     target_roles: string[];
     target_users?: number[];
     target_teams?: number[];
+    player_manager_mode?: 'all' | 'specific_teams';
+    player_manager_teams?: number[];
     start_date?: string;
     end_date?: string;
     duration?: number;
@@ -29,6 +31,8 @@ export interface Notification {
     target_roles: string[];
     target_users?: number[];
     target_teams?: number[];
+    player_manager_mode?: 'all' | 'specific_teams';
+    player_manager_teams?: number[];
     start_date?: string;
     end_date?: string;
     duration?: number;
@@ -55,6 +59,8 @@ const transformNotificationData = (data: any[]): Notification[] => {
         target_roles: settingValue?.target_roles || [],
         target_users: settingValue?.target_users || [],
         target_teams: settingValue?.target_teams || [],
+        player_manager_mode: settingValue?.player_manager_mode || 'all',
+        player_manager_teams: settingValue?.player_manager_teams || [],
         start_date: settingValue?.start_date,
         end_date: settingValue?.end_date,
         duration: settingValue?.duration || 8
