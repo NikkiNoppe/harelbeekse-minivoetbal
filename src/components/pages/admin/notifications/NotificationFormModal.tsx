@@ -70,10 +70,10 @@ interface NotificationFormModalProps {
 }
 
 const NOTIFICATION_TYPES = [
-  { value: 'info', label: 'Info', icon: Info, color: 'bg-blue-500' },
-  { value: 'warning', label: 'Waarschuwing', icon: AlertTriangle, color: 'bg-amber-500' },
-  { value: 'success', label: 'Succes', icon: CheckCircle2, color: 'bg-green-500' },
-  { value: 'error', label: 'Fout', icon: XCircle, color: 'bg-red-500' }
+  { value: 'info', label: 'Info', icon: Info, color: 'bg-[var(--color-500)]' },
+  { value: 'warning', label: 'Waarsch.', icon: AlertTriangle, color: 'bg-[var(--color-700)]' },
+  { value: 'success', label: 'Succes', icon: CheckCircle2, color: 'bg-[var(--color-success)]' },
+  { value: 'error', label: 'Fout', icon: XCircle, color: 'bg-[var(--color-destructive)]' }
 ] as const;
 
 const ROLE_OPTIONS = [
@@ -260,11 +260,11 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full h-[100dvh] max-w-none sm:h-auto sm:max-h-[90vh] sm:max-w-2xl p-0 gap-0 flex flex-col">
+      <DialogContent className="w-full h-[100dvh] max-w-none sm:h-auto sm:max-h-[90vh] sm:max-w-2xl p-0 gap-0 flex flex-col bg-[var(--color-50)]">
         {/* Sticky Header */}
-        <DialogHeader className="sticky top-0 z-10 bg-background border-b px-4 py-4 sm:px-6">
-          <DialogTitle className="text-lg sm:text-xl flex items-center gap-2">
-            <Bell className="w-5 h-5 text-primary" />
+        <DialogHeader className="sticky top-0 z-10 bg-[var(--color-100)] border-b border-[var(--color-300)] px-4 py-4 sm:px-6">
+          <DialogTitle className="text-lg sm:text-xl flex items-center gap-2 text-[var(--color-600)]">
+            <Bell className="w-5 h-5 text-[var(--color-500)]" />
             {isEditing ? 'Notificatie Bewerken' : 'Nieuwe Notificatie'}
           </DialogTitle>
         </DialogHeader>
@@ -274,9 +274,9 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
           <div className="px-4 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
             
             {/* Section 1: Bericht */}
-            <div className="space-y-4 p-4 rounded-xl border bg-card">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <MessageSquare className="w-4 h-4 text-primary" />
+            <div className="space-y-4 p-4 rounded-xl border border-[var(--color-300)] bg-[var(--color-50)]">
+              <div className="flex items-center gap-2 text-sm font-medium text-[var(--color-600)]">
+                <MessageSquare className="w-4 h-4 text-[var(--color-500)]" />
                 Bericht
               </div>
               
@@ -291,8 +291,8 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
 
               {/* Type Selection - Visual Buttons */}
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Type notificatie</Label>
-                <div className="grid grid-cols-4 gap-2">
+                <Label className="text-xs text-[var(--color-600)]">Type notificatie</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {NOTIFICATION_TYPES.map(type => {
                     const Icon = type.icon;
                     const isSelected = formData.type === type.value;
@@ -302,17 +302,17 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, type: type.value }))}
                         className={cn(
-                          "flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all",
-                          "hover:bg-accent/50 active:scale-95",
+                          "flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all min-w-0",
+                          "hover:bg-[var(--color-100)] active:scale-95",
                           isSelected 
-                            ? "border-primary bg-primary/10" 
-                            : "border-border bg-background"
+                            ? "border-[var(--color-500)] bg-[var(--color-100)]" 
+                            : "border-[var(--color-300)] bg-[var(--color-white)]"
                         )}
                       >
-                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", type.color)}>
-                          <Icon className="w-4 h-4 text-white" />
+                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", type.color)}>
+                          <Icon className="w-4 h-4 text-[var(--color-white)]" />
                         </div>
-                        <span className="text-xs font-medium">{type.label}</span>
+                        <span className="text-xs font-medium text-[var(--color-600)] truncate max-w-full">{type.label}</span>
                       </button>
                     );
                   })}
@@ -322,8 +322,8 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
               {/* Duration Slider with Presets */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-muted-foreground">Weergaveduur</Label>
-                  <span className="text-sm font-medium">{formData.duration} sec</span>
+                  <Label className="text-xs text-[var(--color-600)]">Weergaveduur</Label>
+                  <span className="text-sm font-medium text-[var(--color-600)]">{formData.duration} sec</span>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {DURATION_PRESETS.map(preset => (
@@ -334,8 +334,8 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                       className={cn(
                         "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
                         formData.duration === preset
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted hover:bg-muted/80 text-muted-foreground"
+                          ? "bg-[var(--color-500)] text-[var(--color-white)]"
+                          : "bg-[var(--color-200)] hover:bg-[var(--color-300)] text-[var(--color-600)]"
                       )}
                     >
                       {preset}s
@@ -348,15 +348,15 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                   max={60}
                   value={formData.duration}
                   onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                  className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
+                  className="w-full h-2 bg-[var(--color-200)] rounded-full appearance-none cursor-pointer accent-[var(--color-500)]"
                 />
               </div>
             </div>
 
             {/* Section 2: Doelgroep */}
-            <div className="space-y-4 p-4 rounded-xl border bg-card">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <Users className="w-4 h-4 text-primary" />
+            <div className="space-y-4 p-4 rounded-xl border border-[var(--color-300)] bg-[var(--color-50)]">
+              <div className="flex items-center gap-2 text-sm font-medium text-[var(--color-600)]">
+                <Users className="w-4 h-4 text-[var(--color-500)]" />
                 Doelgroep
               </div>
 
@@ -368,53 +368,53 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
               >
                 <label className={cn(
                   "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
-                  targetMode === 'everyone' ? "border-primary bg-primary/5" : "border-border hover:bg-accent/50"
+                  targetMode === 'everyone' ? "border-[var(--color-500)] bg-[var(--color-100)]" : "border-[var(--color-300)] hover:bg-[var(--color-100)]"
                 )}>
                   <RadioGroupItem value="everyone" id="target-everyone" />
                   <div className="flex-1">
-                    <span className="font-medium">Iedereen</span>
-                    <p className="text-xs text-muted-foreground">Alle ingelogde gebruikers</p>
+                    <span className="font-medium text-[var(--color-600)]">Iedereen</span>
+                    <p className="text-xs text-[var(--color-500)]">Alle ingelogde gebruikers</p>
                   </div>
                 </label>
 
                 <label className={cn(
                   "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
-                  targetMode === 'roles' ? "border-primary bg-primary/5" : "border-border hover:bg-accent/50"
+                  targetMode === 'roles' ? "border-[var(--color-500)] bg-[var(--color-100)]" : "border-[var(--color-300)] hover:bg-[var(--color-100)]"
                 )}>
                   <RadioGroupItem value="roles" id="target-roles" />
                   <div className="flex-1 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-muted-foreground" />
+                    <Users className="w-4 h-4 text-[var(--color-500)]" />
                     <div>
-                      <span className="font-medium">Specifieke rol(len)</span>
-                      <p className="text-xs text-muted-foreground">Admin, Scheidsrechter, Teamverantwoordelijke</p>
+                      <span className="font-medium text-[var(--color-600)]">Specifieke rol(len)</span>
+                      <p className="text-xs text-[var(--color-500)]">Admin, Scheidsrechter, Teamverantwoordelijke</p>
                     </div>
                   </div>
                 </label>
 
                 <label className={cn(
                   "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
-                  targetMode === 'users' ? "border-primary bg-primary/5" : "border-border hover:bg-accent/50"
+                  targetMode === 'users' ? "border-[var(--color-500)] bg-[var(--color-100)]" : "border-[var(--color-300)] hover:bg-[var(--color-100)]"
                 )}>
                   <RadioGroupItem value="users" id="target-users" />
                   <div className="flex-1 flex items-center gap-2">
-                    <UserCheck className="w-4 h-4 text-muted-foreground" />
+                    <UserCheck className="w-4 h-4 text-[var(--color-500)]" />
                     <div>
-                      <span className="font-medium">Specifieke gebruiker(s)</span>
-                      <p className="text-xs text-muted-foreground">Selecteer individuele gebruikers</p>
+                      <span className="font-medium text-[var(--color-600)]">Specifieke gebruiker(s)</span>
+                      <p className="text-xs text-[var(--color-500)]">Selecteer individuele gebruikers</p>
                     </div>
                   </div>
                 </label>
 
                 <label className={cn(
                   "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
-                  targetMode === 'teams' ? "border-primary bg-primary/5" : "border-border hover:bg-accent/50"
+                  targetMode === 'teams' ? "border-[var(--color-500)] bg-[var(--color-100)]" : "border-[var(--color-300)] hover:bg-[var(--color-100)]"
                 )}>
                   <RadioGroupItem value="teams" id="target-teams" />
                   <div className="flex-1 flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-muted-foreground" />
+                    <Building2 className="w-4 h-4 text-[var(--color-500)]" />
                     <div>
-                      <span className="font-medium">Specifieke team(s)</span>
-                      <p className="text-xs text-muted-foreground">Alle leden van geselecteerde teams</p>
+                      <span className="font-medium text-[var(--color-600)]">Specifieke team(s)</span>
+                      <p className="text-xs text-[var(--color-500)]">Alle leden van geselecteerde teams</p>
                     </div>
                   </div>
                 </label>
@@ -422,7 +422,7 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
 
               {/* Roles Sub-Selection */}
               {targetMode === 'roles' && (
-                <div className="pl-4 border-l-2 border-primary/30 space-y-3 mt-3">
+                <div className="pl-4 border-l-2 border-[var(--color-400)] space-y-3 mt-3">
                   <div className="flex flex-wrap gap-2">
                     {ROLE_OPTIONS.map(role => (
                       <button
@@ -433,8 +433,8 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                           "px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all",
                           "min-h-[44px] active:scale-95",
                           formData.target_roles.includes(role.value)
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border bg-background hover:bg-accent/50"
+                            ? "border-[var(--color-500)] bg-[var(--color-500)] text-[var(--color-white)]"
+                            : "border-[var(--color-300)] bg-[var(--color-white)] hover:bg-[var(--color-100)] text-[var(--color-600)]"
                         )}
                       >
                         {role.label}
@@ -444,8 +444,8 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
 
                   {/* Player Manager Sub-options */}
                   {isPlayerManagerSelected && (
-                    <div className="p-3 rounded-lg bg-muted/50 space-y-3">
-                      <Label className="text-xs text-muted-foreground">Welke teamverantwoordelijken?</Label>
+                    <div className="p-3 rounded-lg bg-[var(--color-100)] space-y-3">
+                      <Label className="text-xs text-[var(--color-600)]">Welke teamverantwoordelijken?</Label>
                       <RadioGroup 
                         value={formData.player_manager_mode} 
                         onValueChange={(v) => setFormData(prev => ({ ...prev, player_manager_mode: v as PlayerManagerMode }))}
@@ -494,12 +494,12 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                               className="pl-9 h-11"
                             />
                           </div>
-                          <ScrollArea className="h-32 border rounded-lg bg-background">
+                          <ScrollArea className="h-32 border border-[var(--color-300)] rounded-lg bg-[var(--color-white)]">
                             <div className="p-2 space-y-1">
                               {filteredPmTeams.map(team => (
                                 <label 
                                   key={team.team_id} 
-                                  className="flex items-center gap-3 min-h-[44px] px-2 rounded hover:bg-accent/50 cursor-pointer"
+                                  className="flex items-center gap-3 min-h-[44px] px-2 rounded hover:bg-[var(--color-100)] cursor-pointer"
                                 >
                                   <Checkbox
                                     checked={formData.player_manager_teams.includes(team.team_id)}
@@ -531,7 +531,7 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
 
               {/* Users Sub-Selection */}
               {targetMode === 'users' && (
-                <div className="pl-4 border-l-2 border-primary/30 space-y-3 mt-3">
+                <div className="pl-4 border-l-2 border-[var(--color-400)] space-y-3 mt-3">
                   {/* Selected Users Chips */}
                   {selectedUsers.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
@@ -575,12 +575,12 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                       className="pl-9 h-11"
                     />
                   </div>
-                  <ScrollArea className="h-40 sm:h-48 border rounded-lg bg-background">
+                  <ScrollArea className="h-40 sm:h-48 border border-[var(--color-300)] rounded-lg bg-[var(--color-white)]">
                     <div className="p-2 space-y-1">
                       {filteredUsers.map(user => (
                         <label 
                           key={user.user_id} 
-                          className="flex items-center gap-3 min-h-[44px] px-2 rounded hover:bg-accent/50 cursor-pointer"
+                          className="flex items-center gap-3 min-h-[44px] px-2 rounded hover:bg-[var(--color-100)] cursor-pointer"
                         >
                           <Checkbox
                             checked={formData.target_users.includes(user.user_id)}
@@ -611,7 +611,7 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
 
               {/* Teams Sub-Selection */}
               {targetMode === 'teams' && (
-                <div className="pl-4 border-l-2 border-primary/30 space-y-3 mt-3">
+                <div className="pl-4 border-l-2 border-[var(--color-400)] space-y-3 mt-3">
                   {/* Selected Teams Chips */}
                   {selectedTeams.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
@@ -655,12 +655,12 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                       className="pl-9 h-11"
                     />
                   </div>
-                  <ScrollArea className="h-40 sm:h-48 border rounded-lg bg-background">
+                  <ScrollArea className="h-40 sm:h-48 border border-[var(--color-300)] rounded-lg bg-[var(--color-white)]">
                     <div className="p-2 space-y-1">
                       {filteredTeams.map(team => (
                         <label 
                           key={team.team_id} 
-                          className="flex items-center gap-3 min-h-[44px] px-2 rounded hover:bg-accent/50 cursor-pointer"
+                          className="flex items-center gap-3 min-h-[44px] px-2 rounded hover:bg-[var(--color-100)] cursor-pointer"
                         >
                           <Checkbox
                             checked={formData.target_teams.includes(team.team_id)}
@@ -692,24 +692,24 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
               <CollapsibleTrigger asChild>
                 <button
                   type="button"
-                  className="w-full flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-accent/50 transition-colors"
+                  className="w-full flex items-center justify-between p-4 rounded-xl border border-[var(--color-300)] bg-[var(--color-50)] hover:bg-[var(--color-100)] transition-colors"
                 >
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <Calendar className="w-4 h-4 text-primary" />
+                  <div className="flex items-center gap-2 text-sm font-medium text-[var(--color-600)]">
+                    <Calendar className="w-4 h-4 text-[var(--color-500)]" />
                     Planning
-                    <span className="text-xs text-muted-foreground font-normal">(optioneel)</span>
+                    <span className="text-xs text-[var(--color-500)] font-normal">(optioneel)</span>
                   </div>
                   <ChevronDown className={cn(
-                    "w-4 h-4 text-muted-foreground transition-transform",
+                    "w-4 h-4 text-[var(--color-500)] transition-transform",
                     showScheduling && "rotate-180"
                   )} />
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="p-4 rounded-b-xl border border-t-0 bg-card space-y-4">
+                <div className="p-4 rounded-b-xl border border-t-0 border-[var(--color-300)] bg-[var(--color-50)] space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="start_date" className="text-xs text-muted-foreground">Start datum</Label>
+                      <Label htmlFor="start_date" className="text-xs text-[var(--color-600)]">Start datum</Label>
                       <Input
                         id="start_date"
                         type="date"
@@ -719,7 +719,7 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="end_date" className="text-xs text-muted-foreground">Eind datum</Label>
+                      <Label htmlFor="end_date" className="text-xs text-[var(--color-600)]">Eind datum</Label>
                       <Input
                         id="end_date"
                         type="date"
@@ -734,55 +734,55 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
             </Collapsible>
 
             {/* Active Toggle */}
-            <div className="flex items-center justify-between p-4 rounded-xl border bg-card">
+            <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--color-300)] bg-[var(--color-50)]">
               <div className="flex items-center gap-2">
                 <Switch
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
                 />
-                <Label className="cursor-pointer font-medium">Actief</Label>
+                <Label className="cursor-pointer font-medium text-[var(--color-600)]">Actief</Label>
               </div>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-[var(--color-500)]">
                 {formData.is_active ? 'Notificatie is zichtbaar' : 'Notificatie is verborgen'}
               </span>
             </div>
 
             {/* Live Preview */}
-            <div className="space-y-3 p-4 rounded-xl border bg-muted/30">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <Eye className="w-4 h-4 text-primary" />
+            <div className="space-y-3 p-4 rounded-xl border border-[var(--color-300)] bg-[var(--color-100)]">
+              <div className="flex items-center gap-2 text-sm font-medium text-[var(--color-600)]">
+                <Eye className="w-4 h-4 text-[var(--color-500)]" />
                 Preview
               </div>
               
               <div className={cn(
                 "p-4 rounded-lg border shadow-sm",
-                formData.type === 'info' && "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800",
-                formData.type === 'warning' && "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800",
-                formData.type === 'success' && "bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800",
-                formData.type === 'error' && "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800"
+                formData.type === 'info' && "bg-[var(--color-50)] border-[var(--color-300)]",
+                formData.type === 'warning' && "bg-[var(--color-100)] border-[var(--color-400)]",
+                formData.type === 'success' && "bg-green-50 border-green-200",
+                formData.type === 'error' && "bg-red-50 border-red-200"
               )}>
                 <div className="flex items-start gap-3">
                   {notificationTypeConfig && (
                     <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", notificationTypeConfig.color)}>
-                      <notificationTypeConfig.icon className="w-4 h-4 text-white" />
+                      <notificationTypeConfig.icon className="w-4 h-4 text-[var(--color-white)]" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm">
-                      {formData.message || <span className="text-muted-foreground italic">Voer een bericht in...</span>}
+                    <p className="text-sm text-[var(--color-600)]">
+                      {formData.message || <span className="text-[var(--color-400)] italic">Voer een bericht in...</span>}
                     </p>
                   </div>
                 </div>
               </div>
               
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-[var(--color-500)]">
                 Zichtbaar voor: {getTargetSummary()}
               </p>
             </div>
           </div>
 
           {/* Sticky Footer */}
-          <div className="sticky bottom-0 bg-background border-t px-4 py-4 sm:px-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
+          <div className="sticky bottom-0 bg-[var(--color-50)] border-t border-[var(--color-300)] px-4 py-4 sm:px-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
             <Button 
               type="button" 
               variant="outline" 
