@@ -212,12 +212,12 @@ const NotificationPage: React.FC = () => {
     }
   }, [toast, loadData]);
 
-  const getTypeBadgeVariant = useCallback((type: string) => {
+  const getTypeBadgeClass = useCallback((type: string) => {
     switch (type) {
-      case 'success': return 'default';
-      case 'warning': return 'secondary';
-      case 'error': return 'destructive';
-      default: return 'outline';
+      case 'success': return 'bg-[var(--color-success)] text-[var(--color-white)]';
+      case 'warning': return 'bg-[var(--color-700)] text-[var(--color-white)]';
+      case 'error': return 'bg-[var(--color-destructive)] text-[var(--color-white)]';
+      default: return 'bg-[var(--color-500)] text-[var(--color-white)]';
     }
   }, []);
 
@@ -266,8 +266,8 @@ const NotificationPage: React.FC = () => {
   return (
     <div className="container mx-auto p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-xl sm:text-2xl font-bold">Notificaties</h1>
-        <Button className="w-full sm:w-auto" onClick={handleOpenNew}>
+        <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-600)]">Notificaties</h1>
+        <Button className="w-full sm:w-auto bg-[var(--color-500)] hover:bg-[var(--color-600)] text-[var(--color-white)]" onClick={handleOpenNew}>
           <Plus className="w-4 h-4 mr-2" />
           Nieuwe Notificatie
         </Button>
@@ -285,13 +285,13 @@ const NotificationPage: React.FC = () => {
       />
 
       {/* Notifications List */}
-      <Card>
+      <Card className="border-[var(--color-300)] bg-[var(--color-white)]">
         <CardHeader>
-          <CardTitle className="text-lg">Alle Notificaties</CardTitle>
+          <CardTitle className="text-lg text-[var(--color-600)]">Alle Notificaties</CardTitle>
         </CardHeader>
         <CardContent>
           {notifications.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
+            <p className="text-center text-[var(--color-500)] py-8">
               Nog geen notificaties aangemaakt.
             </p>
           ) : (
@@ -301,29 +301,29 @@ const NotificationPage: React.FC = () => {
                 {notifications.map((notification) => {
                   const target = getTargetDescription(notification);
                   return (
-                    <Card key={notification.id} className="p-4">
+                    <Card key={notification.id} className="p-4 border-[var(--color-300)] bg-[var(--color-50)]">
                       <div className="space-y-3">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium line-clamp-2">
+                          <p className="text-sm font-medium text-[var(--color-600)] line-clamp-2">
                             {notification.setting_value.message}
                           </p>
-                          <Badge variant={getTypeBadgeVariant(notification.setting_value.type)} className="shrink-0">
+                          <Badge className={`shrink-0 ${getTypeBadgeClass(notification.setting_value.type)}`}>
                             {NOTIFICATION_TYPES.find(t => t.value === notification.setting_value.type)?.label}
                           </Badge>
                         </div>
                         
                         <div className="flex flex-wrap gap-1">
-                          {target.type === 'users' && <UserCheck className="w-3 h-3 text-muted-foreground" />}
-                          {target.type === 'teams' && <Building2 className="w-3 h-3 text-muted-foreground" />}
-                          {target.type === 'roles' && <Users className="w-3 h-3 text-muted-foreground" />}
-                          {target.type === 'everyone' && <Users className="w-3 h-3 text-muted-foreground" />}
+                          {target.type === 'users' && <UserCheck className="w-3 h-3 text-[var(--color-500)]" />}
+                          {target.type === 'teams' && <Building2 className="w-3 h-3 text-[var(--color-500)]" />}
+                          {target.type === 'roles' && <Users className="w-3 h-3 text-[var(--color-500)]" />}
+                          {target.type === 'everyone' && <Users className="w-3 h-3 text-[var(--color-500)]" />}
                           {target.items.slice(0, 2).map((item, i) => (
-                            <Badge key={i} variant="outline" className="text-xs">
+                            <Badge key={i} variant="outline" className="text-xs border-[var(--color-300)] text-[var(--color-600)]">
                               {item}
                             </Badge>
                           ))}
                           {target.items.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-xs border-[var(--color-300)] text-[var(--color-600)]">
                               +{target.items.length - 2}
                             </Badge>
                           )}
@@ -336,7 +336,7 @@ const NotificationPage: React.FC = () => {
                               onCheckedChange={() => toggleActive(notification)}
                               className="scale-75"
                             />
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-[var(--color-500)]">
                               {notification.is_active ? 'Actief' : 'Inactief'}
                             </span>
                           </div>
@@ -345,15 +345,15 @@ const NotificationPage: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEdit(notification)}
-                              className="h-10 w-10 p-0"
+                              className="h-10 w-10 p-0 hover:bg-[var(--color-100)]"
                             >
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-4 w-4 text-[var(--color-600)]" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDelete(notification.id)}
-                              className="text-destructive h-10 w-10 p-0"
+                              className="text-[var(--color-destructive)] h-10 w-10 p-0 hover:bg-red-50"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -383,27 +383,27 @@ const NotificationPage: React.FC = () => {
                       const target = getTargetDescription(notification);
                       return (
                         <TableRow key={notification.id}>
-                          <TableCell className="font-medium max-w-[200px] truncate">
+                          <TableCell className="font-medium text-[var(--color-600)] max-w-[200px] truncate">
                             {notification.setting_value.message}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={getTypeBadgeVariant(notification.setting_value.type)}>
+                            <Badge className={getTypeBadgeClass(notification.setting_value.type)}>
                               {NOTIFICATION_TYPES.find(t => t.value === notification.setting_value.type)?.label}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1 flex-wrap">
-                              {target.type === 'users' && <UserCheck className="w-4 h-4 text-muted-foreground" />}
-                              {target.type === 'teams' && <Building2 className="w-4 h-4 text-muted-foreground" />}
-                              {target.type === 'roles' && <Users className="w-4 h-4 text-muted-foreground" />}
-                              {target.type === 'everyone' && <Users className="w-4 h-4 text-muted-foreground" />}
+                              {target.type === 'users' && <UserCheck className="w-4 h-4 text-[var(--color-500)]" />}
+                              {target.type === 'teams' && <Building2 className="w-4 h-4 text-[var(--color-500)]" />}
+                              {target.type === 'roles' && <Users className="w-4 h-4 text-[var(--color-500)]" />}
+                              {target.type === 'everyone' && <Users className="w-4 h-4 text-[var(--color-500)]" />}
                               {target.items.slice(0, 3).map((item, i) => (
-                                <Badge key={i} variant="outline" className="text-xs">
+                                <Badge key={i} variant="outline" className="text-xs border-[var(--color-300)] text-[var(--color-600)]">
                                   {item}
                                 </Badge>
                               ))}
                               {target.items.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
+                                <Badge variant="outline" className="text-xs border-[var(--color-300)] text-[var(--color-600)]">
                                   +{target.items.length - 3}
                                 </Badge>
                               )}
@@ -416,12 +416,12 @@ const NotificationPage: React.FC = () => {
                                 onCheckedChange={() => toggleActive(notification)}
                                 className="scale-75"
                               />
-                              <Badge variant={notification.is_active ? 'default' : 'secondary'} className="text-xs">
+                              <Badge className={notification.is_active ? 'bg-[var(--color-success)] text-[var(--color-white)] text-xs' : 'bg-[var(--color-400)] text-[var(--color-white)] text-xs'}>
                                 {notification.is_active ? 'Actief' : 'Inactief'}
                               </Badge>
                             </div>
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
+                          <TableCell className="text-sm text-[var(--color-500)]">
                             {new Date(notification.created_at).toLocaleDateString('nl-NL')}
                           </TableCell>
                           <TableCell>
@@ -430,14 +430,15 @@ const NotificationPage: React.FC = () => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleEdit(notification)}
+                                className="hover:bg-[var(--color-100)]"
                               >
-                                <Edit className="h-4 w-4" />
+                                <Edit className="h-4 w-4 text-[var(--color-600)]" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDelete(notification.id)}
-                                className="text-destructive"
+                                className="text-[var(--color-destructive)] hover:bg-red-50"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
