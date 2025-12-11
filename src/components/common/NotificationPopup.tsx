@@ -55,13 +55,13 @@ const NotificationPopup: React.FC = () => {
   const getTypeContainerStyle = (type: string) => {
     switch (type) {
       case 'success': 
-        return 'bg-[hsl(var(--success))] border-[hsl(var(--success))]';
+        return 'bg-[hsl(var(--success))]';
       case 'warning': 
-        return 'bg-[var(--color-700)] border-[var(--color-800)]';
+        return 'bg-[var(--color-700)]';
       case 'error': 
-        return 'bg-[hsl(var(--destructive))] border-[hsl(var(--destructive))]';
+        return 'bg-[hsl(var(--destructive))]';
       default: // info
-        return 'bg-[var(--color-500)] border-[var(--color-600)]';
+        return 'bg-[var(--color-500)]';
     }
   };
 
@@ -257,7 +257,7 @@ const NotificationPopup: React.FC = () => {
   return (
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 animate-in slide-in-from-bottom-4 duration-300 pb-safe">
       <Card className={cn(
-        "shadow-lg border-2",
+        "shadow-lg border-0",
         getTypeContainerStyle(settingValue?.type || 'info')
       )}>
         <CardContent className="p-3 sm:p-4">
