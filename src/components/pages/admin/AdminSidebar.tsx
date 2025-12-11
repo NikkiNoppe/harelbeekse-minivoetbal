@@ -60,7 +60,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
     { key: "players", label: "Spelers", icon: Users, adminOnly: false },
     { key: "ploegen", label: "Teams", icon: Users, adminOnly: false },
     { key: "scheidsrechters", label: "Scheidsrechters", icon: Calendar, adminOnly: false },
-    { key: "suspensions", label: "Schorsingen", icon: Shield, adminOnly: true },
+    { key: "schorsingen", label: "Schorsingen", icon: Shield, adminOnly: true },
     { key: "teams", label: "Teams (Admin)", icon: Shield, adminOnly: true },
     { key: "users", label: "Gebruikers", icon: User, adminOnly: true },
   ];
@@ -126,13 +126,21 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
     (!item.adminOnly || isAdmin) && isTabVisible(item.key)
   );
 
-  const visibleBeheerItems = beheerItems.filter(item => 
-    (!item.adminOnly || isAdmin) && 
+  const visibleBeheerItems = beheerItems.filter(item => {
+    // First check admin-only permission
+    if (item.adminOnly && !isAdmin) return false;
+    
+    // Check tab visibility from settings
+    if (!isTabVisible(item.key)) return false;
+    
     // Hide players tab for referees
-    !(item.key === 'players' && user?.role === 'referee') &&
+    if (item.key === 'players' && user?.role === 'referee') return false;
+    
     // Show scheidsrechters for both admin and referee
-    (item.key !== 'scheidsrechters' || isAdmin || user?.role === 'referee')
-  );
+    if (item.key === 'scheidsrechters' && !(isAdmin || user?.role === 'referee')) return false;
+    
+    return true;
+  });
 
   const visibleFinancieelItems = financieelItems.filter(item => 
     (!item.adminOnly || isAdmin)

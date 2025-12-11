@@ -122,7 +122,7 @@ const Header: React.FC<HeaderProps> = ({
     { key: "players", label: "Spelers", icon: <Users size={14} />, adminOnly: false },
     { key: "scheidsrechters", label: "Scheidsrechters", icon: <Shield size={14} />, adminOnly: false },
     { key: "schorsingen", label: "Mijn Schorsingen", icon: <Ban size={14} />, adminOnly: false, teamManagerOnly: true },
-    { key: "suspensions", label: "Schorsingen", icon: <Shield size={14} />, adminOnly: true },
+    { key: "schorsingen", label: "Schorsingen", icon: <Shield size={14} />, adminOnly: true },
     { key: "teams", label: "Teams (Admin)", icon: <Shield size={14} />, adminOnly: true },
     { key: "users", label: "Gebruikers", icon: <User size={14} />, adminOnly: true },
   ];
@@ -143,11 +143,21 @@ const Header: React.FC<HeaderProps> = ({
     (!item.adminOnly || isAdmin) && isTabVisible(item.key)
   ) : [];
   const visibleBeheerItems = (isAuthenticated ? beheerItems : [])
-    .filter(item => (!item.adminOnly || isAdmin) && 
+    .filter(item => {
+      // First check admin-only permission
+      if (item.adminOnly && !isAdmin) return false;
+      
+      // Check tab visibility from settings
+      if (!isTabVisible(item.key)) return false;
+      
       // Show scheidsrechters for both admin and referee
-      (item.key !== 'scheidsrechters' || isAdmin || normalizedRole === 'referee') &&
-      // Show schorsingen for team managers only
-      (item.key !== 'schorsingen' || normalizedRole === 'player_manager'));
+      if (item.key === 'scheidsrechters' && !(isAdmin || normalizedRole === 'referee')) return false;
+      
+      // Show "Mijn Schorsingen" for team managers only (teamManagerOnly flag)
+      if (item.teamManagerOnly && normalizedRole !== 'player_manager') return false;
+      
+      return true;
+    });
   const visibleFinancieelItems = (isAuthenticated ? financieelItems : [])
     .filter(item => (!item.adminOnly || isAdmin));
   const visibleSysteemItems = (isAuthenticated ? systeemItems : [])

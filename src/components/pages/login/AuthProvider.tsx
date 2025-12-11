@@ -208,6 +208,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     persistAuthState(null);
     // Reset context cache on logout
     resetUserContextCache();
+    // Clear dismissed notifications so they show again on next login
+    try {
+      sessionStorage.removeItem('dismissedNotifications');
+    } catch (e) {
+      console.warn('Could not clear dismissed notifications:', e);
+    }
   };
 
   const value: AuthContextType = {
