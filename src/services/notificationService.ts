@@ -8,6 +8,8 @@ export interface NotificationData {
     message: string;
     type: 'info' | 'warning' | 'success' | 'error';
     target_roles: string[];
+    target_users?: number[];
+    target_teams?: number[];
     start_date?: string;
     end_date?: string;
     duration?: number;
@@ -25,6 +27,8 @@ export interface Notification {
     message: string;
     type: string;
     target_roles: string[];
+    target_users?: number[];
+    target_teams?: number[];
     start_date?: string;
     end_date?: string;
     duration?: number;
@@ -49,9 +53,11 @@ const transformNotificationData = (data: any[]): Notification[] => {
         message: settingValue?.message || '',
         type: settingValue?.type || 'info',
         target_roles: settingValue?.target_roles || [],
+        target_users: settingValue?.target_users || [],
+        target_teams: settingValue?.target_teams || [],
         start_date: settingValue?.start_date,
         end_date: settingValue?.end_date,
-        duration: settingValue?.duration || 5
+        duration: settingValue?.duration || 8
       },
       is_active: item.is_active,
       created_at: item.created_at,
@@ -166,6 +172,38 @@ export const notificationService = {
     } catch (error) {
       console.error('Error loading active notifications:', error);
       throw new Error('Kon actieve notificaties niet laden');
+    }
+  },
+
+  // Get all users for targeting (admin only)
+  async getAllUsers(): Promise<Array<{ user_id: number; username: string; role: string }>> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('user_id, username, role')
+        .order('username');
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error loading users:', error);
+      return [];
+    }
+  },
+
+  // Get all teams for targeting (admin only)
+  async getAllTeams(): Promise<Array<{ team_id: number; team_name: string }>> {
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('team_id, team_name')
+        .order('team_name');
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error loading teams:', error);
+      return [];
     }
   }
 };

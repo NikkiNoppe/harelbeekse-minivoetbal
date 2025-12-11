@@ -608,21 +608,21 @@ export type Database = {
         | {
             Args: {
               p_amount: number
-              p_description?: string
+              p_cost_setting_id: number
+              p_date?: string
               p_match_id?: number
+              p_notes?: string
               p_team_id: number
-              p_transaction_type: string
             }
             Returns: number
           }
         | {
             Args: {
               p_amount: number
-              p_cost_setting_id: number
-              p_date?: string
+              p_description?: string
               p_match_id?: number
-              p_notes?: string
               p_team_id: number
+              p_transaction_type: string
             }
             Returns: number
           }
