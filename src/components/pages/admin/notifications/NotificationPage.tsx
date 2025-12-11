@@ -8,12 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { notificationService, type Notification } from '@/services/notificationService';
-import { Plus, Edit, Trash2, Bell, Calendar, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, UserCheck, Building2, Search } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-// Constants outside component to prevent re-creation
 const NOTIFICATION_TYPES = [
   { value: 'info', label: 'Informatie' },
   { value: 'warning', label: 'Waarschuwing' },
@@ -24,16 +26,21 @@ const NOTIFICATION_TYPES = [
 const ROLE_OPTIONS = [
   { value: 'admin', label: 'Admin' },
   { value: 'referee', label: 'Scheidsrechter' },
-  { value: 'team_manager', label: 'Team Manager' }
+  { value: 'player_manager', label: 'Teamverantwoordelijke' }
 ];
+
+type TargetType = 'roles' | 'users' | 'teams';
 
 const DEFAULT_FORM_DATA = {
   message: '',
   type: 'info' as 'info' | 'warning' | 'success' | 'error',
   target_roles: [] as string[],
+  target_users: [] as number[],
+  target_teams: [] as number[],
   start_date: '',
   end_date: '',
-  is_active: true
+  is_active: true,
+  duration: 8
 };
 
 const NotificationPage: React.FC = () => {
@@ -43,18 +50,30 @@ const NotificationPage: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
   const [formData, setFormData] = useState<typeof DEFAULT_FORM_DATA>(DEFAULT_FORM_DATA);
+  const [targetType, setTargetType] = useState<TargetType>('roles');
+  
+  // Users and teams for targeting
+  const [users, setUsers] = useState<Array<{ user_id: number; username: string; role: string }>>([]);
+  const [teams, setTeams] = useState<Array<{ team_id: number; team_name: string }>>([]);
+  const [userSearch, setUserSearch] = useState('');
+  const [teamSearch, setTeamSearch] = useState('');
 
-  // Optimized load function using service
-  const loadNotifications = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await notificationService.getAllNotifications();
-      setNotifications(data);
+      const [notificationsData, usersData, teamsData] = await Promise.all([
+        notificationService.getAllNotifications(),
+        notificationService.getAllUsers(),
+        notificationService.getAllTeams()
+      ]);
+      setNotifications(notificationsData);
+      setUsers(usersData);
+      setTeams(teamsData);
     } catch (error) {
-      console.error('Error loading notifications:', error);
+      console.error('Error loading data:', error);
       toast({
         title: 'Error',
-        description: 'Kon notificaties niet laden',
+        description: 'Kon gegevens niet laden',
         variant: 'destructive'
       });
     } finally {
@@ -63,12 +82,15 @@ const NotificationPage: React.FC = () => {
   }, [toast]);
 
   useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
+    loadData();
+  }, [loadData]);
 
   const resetForm = useCallback(() => {
     setFormData(DEFAULT_FORM_DATA);
     setEditingNotification(null);
+    setTargetType('roles');
+    setUserSearch('');
+    setTeamSearch('');
   }, []);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
@@ -81,29 +103,25 @@ const NotificationPage: React.FC = () => {
         setting_value: {
           message: formData.message,
           type: formData.type,
-          target_roles: formData.target_roles,
+          target_roles: targetType === 'roles' ? formData.target_roles : [],
+          target_users: targetType === 'users' ? formData.target_users : [],
+          target_teams: targetType === 'teams' ? formData.target_teams : [],
           start_date: formData.start_date || null,
           end_date: formData.end_date || null,
-          created_at: new Date().toISOString()
+          duration: formData.duration
         },
         is_active: formData.is_active
       };
 
       if (editingNotification) {
         await notificationService.updateNotification(editingNotification.id, notificationData);
-        toast({
-          title: 'Succes',
-          description: 'Notificatie bijgewerkt'
-        });
+        toast({ title: 'Succes', description: 'Notificatie bijgewerkt' });
       } else {
         await notificationService.createNotification(notificationData);
-        toast({
-          title: 'Succes',
-          description: 'Notificatie aangemaakt'
-        });
+        toast({ title: 'Succes', description: 'Notificatie aangemaakt' });
       }
 
-      await loadNotifications();
+      await loadData();
       setIsDialogOpen(false);
       resetForm();
     } catch (error) {
@@ -114,17 +132,31 @@ const NotificationPage: React.FC = () => {
         variant: 'destructive'
       });
     }
-  }, [formData, editingNotification, toast, resetForm, loadNotifications]);
+  }, [formData, targetType, editingNotification, toast, resetForm, loadData]);
 
   const handleEdit = useCallback((notification: Notification) => {
     setEditingNotification(notification);
+    const sv = notification.setting_value;
+    
+    // Determine target type based on what's set
+    let detectedTargetType: TargetType = 'roles';
+    if (sv.target_users && sv.target_users.length > 0) {
+      detectedTargetType = 'users';
+    } else if (sv.target_teams && sv.target_teams.length > 0) {
+      detectedTargetType = 'teams';
+    }
+    
+    setTargetType(detectedTargetType);
     setFormData({
-      message: notification.setting_value.message,
-      type: notification.setting_value.type as 'info' | 'warning' | 'success' | 'error',
-      target_roles: notification.setting_value.target_roles || [],
-      start_date: notification.setting_value.start_date || '',
-      end_date: notification.setting_value.end_date || '',
-      is_active: notification.is_active
+      message: sv.message,
+      type: sv.type as 'info' | 'warning' | 'success' | 'error',
+      target_roles: sv.target_roles || [],
+      target_users: sv.target_users || [],
+      target_teams: sv.target_teams || [],
+      start_date: sv.start_date || '',
+      end_date: sv.end_date || '',
+      is_active: notification.is_active,
+      duration: sv.duration || 8
     });
     setIsDialogOpen(true);
   }, []);
@@ -134,11 +166,8 @@ const NotificationPage: React.FC = () => {
     
     try {
       await notificationService.deleteNotification(id);
-      toast({
-        title: 'Succes',
-        description: 'Notificatie verwijderd'
-      });
-      await loadNotifications();
+      toast({ title: 'Succes', description: 'Notificatie verwijderd' });
+      await loadData();
     } catch (error) {
       console.error('Error deleting notification:', error);
       toast({
@@ -147,7 +176,7 @@ const NotificationPage: React.FC = () => {
         variant: 'destructive'
       });
     }
-  }, [toast, loadNotifications]);
+  }, [toast, loadData]);
 
   const toggleActive = useCallback(async (notification: Notification) => {
     try {
@@ -156,16 +185,16 @@ const NotificationPage: React.FC = () => {
         title: 'Succes',
         description: `Notificatie ${!notification.is_active ? 'geactiveerd' : 'gedeactiveerd'}`
       });
-      await loadNotifications();
+      await loadData();
     } catch (error) {
       console.error('Error toggling notification status:', error);
       toast({
         title: 'Error',
-        description: 'Kon notificatie status niet wijzigen',
+        description: 'Kon status niet wijzigen',
         variant: 'destructive'
       });
     }
-  }, [toast, loadNotifications]);
+  }, [toast, loadData]);
 
   const getTypeBadgeVariant = useCallback((type: string) => {
     switch (type) {
@@ -176,60 +205,63 @@ const NotificationPage: React.FC = () => {
     }
   }, []);
 
-  // Event handlers
-  const handleMessageChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setFormData(prev => ({ ...prev, message: e.target.value }));
-  }, []);
+  const filteredUsers = useMemo(() => {
+    if (!userSearch) return users;
+    const search = userSearch.toLowerCase();
+    return users.filter(u => 
+      u.username.toLowerCase().includes(search) || 
+      u.role.toLowerCase().includes(search)
+    );
+  }, [users, userSearch]);
 
-  const handleTypeChange = useCallback((value: string) => {
-    setFormData(prev => ({ ...prev, type: value as 'info' | 'warning' | 'success' | 'error' }));
-  }, []);
+  const filteredTeams = useMemo(() => {
+    if (!teamSearch) return teams;
+    const search = teamSearch.toLowerCase();
+    return teams.filter(t => t.team_name.toLowerCase().includes(search));
+  }, [teams, teamSearch]);
 
-  const handleRoleToggle = useCallback((role: string) => {
-    setFormData(prev => ({
-      ...prev,
-      target_roles: prev.target_roles.includes(role)
-        ? prev.target_roles.filter(r => r !== role)
-        : [...prev.target_roles, role]
-    }));
-  }, []);
+  const getTargetDescription = (notification: Notification) => {
+    const sv = notification.setting_value;
+    if (sv.target_users && sv.target_users.length > 0) {
+      const userNames = sv.target_users.map(uid => 
+        users.find(u => u.user_id === uid)?.username || `User ${uid}`
+      );
+      return { type: 'users', items: userNames };
+    }
+    if (sv.target_teams && sv.target_teams.length > 0) {
+      const teamNames = sv.target_teams.map(tid => 
+        teams.find(t => t.team_id === tid)?.team_name || `Team ${tid}`
+      );
+      return { type: 'teams', items: teamNames };
+    }
+    if (sv.target_roles && sv.target_roles.length > 0) {
+      return { type: 'roles', items: sv.target_roles.map(r => 
+        ROLE_OPTIONS.find(ro => ro.value === r)?.label || r
+      )};
+    }
+    return { type: 'none', items: [] };
+  };
 
-  const handleStartDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, start_date: e.target.value }));
-  }, []);
-
-  const handleEndDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, end_date: e.target.value }));
-  }, []);
-
-  const handleActiveChange = useCallback((checked: boolean) => {
-    setFormData(prev => ({ ...prev, is_active: checked }));
-  }, []);
-
-  // Memoized loading component
-  const LoadingComponent = useMemo(() => (
-    <div className="flex items-center justify-center h-64">
-      <div className="text-lg">Laden...</div>
-    </div>
-  ), []);
-
-  if (loading) return LoadingComponent;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Laden...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Notificaties</h1>
+    <div className="container mx-auto p-4 sm:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold">Notificaties</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button 
-              className="btn btn--primary"
-              onClick={resetForm}
-            >
+            <Button className="btn btn--primary w-full sm:w-auto" onClick={resetForm}>
               <Plus className="w-4 h-4 mr-2" />
               Nieuwe Notificatie
             </Button>
           </DialogTrigger>
-          <DialogContent className="modal max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="modal max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingNotification ? 'Notificatie Bewerken' : 'Nieuwe Notificatie'}
@@ -240,94 +272,228 @@ const NotificationPage: React.FC = () => {
             </DialogHeader>
             
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Message & Type */}
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="message" className="text-sm font-medium">Bericht</Label>
+                  <Label htmlFor="message">Bericht</Label>
                   <Textarea
                     id="message"
                     value={formData.message}
-                    onChange={handleMessageChange}
-                    rows={4}
+                    onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                    rows={3}
                     required
                     placeholder="Voer het notificatie bericht in..."
-                    className="w-full"
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="type" className="text-sm font-medium">Type</Label>
-                  <Select value={formData.type} onValueChange={handleTypeChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecteer type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {NOTIFICATION_TYPES.map(type => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Type</Label>
+                    <Select 
+                      value={formData.type} 
+                      onValueChange={(v) => setFormData(prev => ({ ...prev, type: v as any }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecteer type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {NOTIFICATION_TYPES.map(type => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="duration">Duur (sec)</Label>
+                    <Input
+                      id="duration"
+                      type="number"
+                      min={3}
+                      max={60}
+                      value={formData.duration}
+                      onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) || 8 }))}
+                    />
+                  </div>
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Doelgroepen</Label>
-                <div className="space-y-2">
-                  {ROLE_OPTIONS.map(role => (
-                    <div key={role.value} className="flex items-start">
-                      <div className="w-1/5 flex justify-center pt-2">
-                        <input
-                          type="checkbox"
-                          id={role.value}
-                          checked={formData.target_roles.includes(role.value)}
-                          onChange={() => handleRoleToggle(role.value)}
-                          className="rounded border-gray-300 w-4 h-4"
+
+              {/* Target Selection */}
+              <div className="space-y-3">
+                <Label>Doelgroep</Label>
+                <Tabs value={targetType} onValueChange={(v) => setTargetType(v as TargetType)}>
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="roles" className="flex items-center gap-1.5">
+                      <Users className="w-4 h-4" />
+                      <span className="hidden sm:inline">Rollen</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="users" className="flex items-center gap-1.5">
+                      <UserCheck className="w-4 h-4" />
+                      <span className="hidden sm:inline">Gebruikers</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="teams" className="flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Teams</span>
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="roles" className="mt-3">
+                    <div className="space-y-2 border rounded-lg p-3">
+                      {ROLE_OPTIONS.map(role => (
+                        <div key={role.value} className="flex items-center space-x-3">
+                          <Checkbox
+                            id={`role-${role.value}`}
+                            checked={formData.target_roles.includes(role.value)}
+                            onCheckedChange={(checked) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                target_roles: checked
+                                  ? [...prev.target_roles, role.value]
+                                  : prev.target_roles.filter(r => r !== role.value)
+                              }));
+                            }}
+                          />
+                          <Label htmlFor={`role-${role.value}`} className="cursor-pointer">
+                            {role.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="users" className="mt-3">
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Zoek gebruiker..."
+                          value={userSearch}
+                          onChange={(e) => setUserSearch(e.target.value)}
+                          className="pl-9"
                         />
                       </div>
-                      <div className="w-4/5">
-                        <Label htmlFor={role.value} className="text-sm">
-                          {role.label}
-                        </Label>
-                      </div>
+                      <ScrollArea className="h-48 border rounded-lg">
+                        <div className="p-3 space-y-2">
+                          {filteredUsers.map(user => (
+                            <div key={user.user_id} className="flex items-center space-x-3">
+                              <Checkbox
+                                id={`user-${user.user_id}`}
+                                checked={formData.target_users.includes(user.user_id)}
+                                onCheckedChange={(checked) => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    target_users: checked
+                                      ? [...prev.target_users, user.user_id]
+                                      : prev.target_users.filter(id => id !== user.user_id)
+                                  }));
+                                }}
+                              />
+                              <Label htmlFor={`user-${user.user_id}`} className="flex-1 cursor-pointer flex items-center gap-2">
+                                <span>{user.username}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {ROLE_OPTIONS.find(r => r.value === user.role)?.label || user.role}
+                                </Badge>
+                              </Label>
+                            </div>
+                          ))}
+                          {filteredUsers.length === 0 && (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              Geen gebruikers gevonden
+                            </p>
+                          )}
+                        </div>
+                      </ScrollArea>
+                      {formData.target_users.length > 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          {formData.target_users.length} gebruiker(s) geselecteerd
+                        </p>
+                      )}
                     </div>
-                  ))}
-                </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="teams" className="mt-3">
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Zoek team..."
+                          value={teamSearch}
+                          onChange={(e) => setTeamSearch(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                      <ScrollArea className="h-48 border rounded-lg">
+                        <div className="p-3 space-y-2">
+                          {filteredTeams.map(team => (
+                            <div key={team.team_id} className="flex items-center space-x-3">
+                              <Checkbox
+                                id={`team-${team.team_id}`}
+                                checked={formData.target_teams.includes(team.team_id)}
+                                onCheckedChange={(checked) => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    target_teams: checked
+                                      ? [...prev.target_teams, team.team_id]
+                                      : prev.target_teams.filter(id => id !== team.team_id)
+                                  }));
+                                }}
+                              />
+                              <Label htmlFor={`team-${team.team_id}`} className="cursor-pointer">
+                                {team.team_name}
+                              </Label>
+                            </div>
+                          ))}
+                          {filteredTeams.length === 0 && (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              Geen teams gevonden
+                            </p>
+                          )}
+                        </div>
+                      </ScrollArea>
+                      {formData.target_teams.length > 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          {formData.target_teams.length} team(s) geselecteerd
+                        </p>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Date Range */}
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="start_date" className="text-sm font-medium">Start Datum</Label>
+                  <Label htmlFor="start_date">Start Datum</Label>
                   <Input
                     id="start_date"
                     type="date"
                     value={formData.start_date}
-                    onChange={handleStartDateChange}
-                    className="w-full"
+                    onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="end_date" className="text-sm font-medium">Eind Datum</Label>
+                  <Label htmlFor="end_date">Eind Datum</Label>
                   <Input
                     id="end_date"
                     type="date"
                     value={formData.end_date}
-                    onChange={handleEndDateChange}
-                    className="w-full"
+                    onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
                   />
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3 p-3 border rounded-lg bg-gray-50">
+              {/* Active Toggle */}
+              <div className="flex items-center space-x-3 p-3 border rounded-lg bg-muted/50">
                 <Switch
                   checked={formData.is_active}
-                  onCheckedChange={handleActiveChange}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
                 />
-                <Label htmlFor="active" className="text-sm font-medium text-gray-700 cursor-pointer">
-                  Actief
-                </Label>
+                <Label className="cursor-pointer">Actief</Label>
               </div>
               
+              {/* Actions */}
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
                 <Button 
                   type="button" 
@@ -337,10 +503,7 @@ const NotificationPage: React.FC = () => {
                 >
                   Annuleren
                 </Button>
-                <Button 
-                  type="submit"
-                  className="btn btn--primary w-full sm:w-auto"
-                >
+                <Button type="submit" className="btn btn--primary w-full sm:w-auto">
                   {editingNotification ? 'Bijwerken' : 'Aanmaken'}
                 </Button>
               </div>
@@ -349,9 +512,10 @@ const NotificationPage: React.FC = () => {
         </Dialog>
       </div>
 
+      {/* Notifications List */}
       <Card>
         <CardHeader>
-          <CardTitle></CardTitle>
+          <CardTitle className="text-lg">Alle Notificaties</CardTitle>
         </CardHeader>
         <CardContent>
           {notifications.length === 0 ? (
@@ -359,78 +523,158 @@ const NotificationPage: React.FC = () => {
               Nog geen notificaties aangemaakt.
             </p>
           ) : (
-            <div className="w-full overflow-x-auto">
-              <div className="min-w-[900px]">
-                <Table className="table w-full">
+            <>
+              {/* Mobile Cards */}
+              <div className="space-y-3 md:hidden">
+                {notifications.map((notification) => {
+                  const target = getTargetDescription(notification);
+                  return (
+                    <Card key={notification.id} className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium line-clamp-2">
+                            {notification.setting_value.message}
+                          </p>
+                          <Badge variant={getTypeBadgeVariant(notification.setting_value.type)} className="shrink-0">
+                            {NOTIFICATION_TYPES.find(t => t.value === notification.setting_value.type)?.label}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-1">
+                          {target.type === 'users' && <UserCheck className="w-3 h-3 text-muted-foreground" />}
+                          {target.type === 'teams' && <Building2 className="w-3 h-3 text-muted-foreground" />}
+                          {target.type === 'roles' && <Users className="w-3 h-3 text-muted-foreground" />}
+                          {target.items.slice(0, 2).map((item, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">
+                              {item}
+                            </Badge>
+                          ))}
+                          {target.items.length > 2 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{target.items.length - 2}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={notification.is_active}
+                              onCheckedChange={() => toggleActive(notification)}
+                              className="scale-75"
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              {notification.is_active ? 'Actief' : 'Inactief'}
+                            </span>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(notification)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(notification.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="min-w-[200px]">Bericht</TableHead>
-                      <TableHead className="min-w-[100px]">Type</TableHead>
-                      <TableHead className="min-w-[150px]">Doelgroepen</TableHead>
-                      <TableHead className="min-w-[100px]">Status</TableHead>
-                      <TableHead className="min-w-[100px]">Gemaakt</TableHead>
-                      <TableHead className="text-center min-w-[120px]">Acties</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Doelgroep</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Datum</TableHead>
+                      <TableHead className="text-center">Acties</TableHead>
                     </TableRow>
                   </TableHeader>
-                <TableBody>
-                  {notifications.map((notification) => (
-                    <TableRow key={notification.id}>
-                      <TableCell className="font-medium max-w-[200px] truncate">
-                        {notification.setting_value.message}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getTypeBadgeVariant(notification.setting_value.type)}>
-                          {NOTIFICATION_TYPES.find(t => t.value === notification.setting_value.type)?.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {(notification.setting_value.target_roles || []).map(role => (
-                            <Badge key={role} variant="outline" className="text-xs">
-                              {ROLE_OPTIONS.find(r => r.value === role)?.label}
+                  <TableBody>
+                    {notifications.map((notification) => {
+                      const target = getTargetDescription(notification);
+                      return (
+                        <TableRow key={notification.id}>
+                          <TableCell className="font-medium max-w-[200px] truncate">
+                            {notification.setting_value.message}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getTypeBadgeVariant(notification.setting_value.type)}>
+                              {NOTIFICATION_TYPES.find(t => t.value === notification.setting_value.type)?.label}
                             </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Switch
-                            checked={notification.is_active}
-                            onCheckedChange={() => toggleActive(notification)}
-                            className="scale-75"
-                          />
-                          <Badge variant={notification.is_active ? 'default' : 'secondary'} className="text-xs">
-                            {notification.is_active ? 'Actief' : 'Inactief'}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(notification.created_at).toLocaleDateString('nl-NL')}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex justify-center gap-1">
-                          <Button
-                            className="btn btn--icon btn--edit"
-                            onClick={() => handleEdit(notification)}
-                            size="sm"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            className="btn btn--icon btn--danger"
-                            onClick={() => handleDelete(notification.id)}
-                            size="sm"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {target.type === 'users' && <UserCheck className="w-4 h-4 text-muted-foreground" />}
+                              {target.type === 'teams' && <Building2 className="w-4 h-4 text-muted-foreground" />}
+                              {target.type === 'roles' && <Users className="w-4 h-4 text-muted-foreground" />}
+                              {target.items.slice(0, 3).map((item, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">
+                                  {item}
+                                </Badge>
+                              ))}
+                              {target.items.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{target.items.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={notification.is_active}
+                                onCheckedChange={() => toggleActive(notification)}
+                                className="scale-75"
+                              />
+                              <Badge variant={notification.is_active ? 'default' : 'secondary'} className="text-xs">
+                                {notification.is_active ? 'Actief' : 'Inactief'}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {new Date(notification.created_at).toLocaleDateString('nl-NL')}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(notification)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(notification.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
                 </Table>
               </div>
-            </div>
+            </>
           )}
         </CardContent>
       </Card>
