@@ -7,12 +7,37 @@ import { notificationService, type Notification } from '@/services/notificationS
 import { useAuth } from '@/components/pages/login/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 
+const DISMISSED_STORAGE_KEY = 'dismissedNotifications';
+
+// Helper to load dismissed IDs from sessionStorage
+const loadDismissedFromSession = (): Set<number> => {
+  try {
+    const stored = sessionStorage.getItem(DISMISSED_STORAGE_KEY);
+    if (stored) {
+      const ids = JSON.parse(stored) as number[];
+      return new Set(ids);
+    }
+  } catch (e) {
+    console.warn('Could not load dismissed notifications from session:', e);
+  }
+  return new Set();
+};
+
+// Helper to save dismissed IDs to sessionStorage
+const saveDismissedToSession = (dismissed: Set<number>) => {
+  try {
+    sessionStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify([...dismissed]));
+  } catch (e) {
+    console.warn('Could not save dismissed notifications to session:', e);
+  }
+};
+
 const NotificationPopup: React.FC = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [currentNotification, setCurrentNotification] = useState<Notification | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [dismissedNotifications, setDismissedNotifications] = useState<Set<number>>(new Set());
+  const [dismissedNotifications, setDismissedNotifications] = useState<Set<number>>(loadDismissedFromSession);
   const [userTeamIds, setUserTeamIds] = useState<number[]>([]);
   const [remainingCount, setRemainingCount] = useState(0);
 
@@ -155,7 +180,11 @@ const NotificationPopup: React.FC = () => {
 
   const dismissNotification = useCallback(() => {
     if (currentNotification) {
-      setDismissedNotifications(prev => new Set([...prev, currentNotification.id]));
+      setDismissedNotifications(prev => {
+        const newSet = new Set([...prev, currentNotification.id]);
+        saveDismissedToSession(newSet);
+        return newSet;
+      });
       setIsVisible(false);
       setCurrentNotification(null);
       
