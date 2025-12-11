@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, Bell, AlertTriangle, CheckCircle, Info, ChevronUp } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { notificationService, type Notification } from '@/services/notificationService';
 import { useAuth } from '@/components/pages/login/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,20 +43,25 @@ const NotificationPopup: React.FC = () => {
   const [remainingCount, setRemainingCount] = useState(0);
 
   const getTypeIcon = (type: string) => {
+    const iconClass = "w-5 h-5 text-white";
     switch (type) {
-      case 'success': return <CheckCircle className="w-5 h-5 text-green-600" />;
-      case 'warning': return <AlertTriangle className="w-5 h-5 text-yellow-600" />;
-      case 'error': return <AlertTriangle className="w-5 h-5 text-red-600" />;
-      default: return <Info className="w-5 h-5 text-blue-600" />;
+      case 'success': return <CheckCircle className={iconClass} />;
+      case 'warning': return <AlertTriangle className={iconClass} />;
+      case 'error': return <AlertTriangle className={iconClass} />;
+      default: return <Info className={iconClass} />;
     }
   };
 
-  const getTypeBadgeVariant = (type: string) => {
+  const getTypeContainerStyle = (type: string) => {
     switch (type) {
-      case 'success': return 'default';
-      case 'warning': return 'secondary';
-      case 'error': return 'destructive';
-      default: return 'outline';
+      case 'success': 
+        return 'bg-[hsl(var(--success))] border-[hsl(var(--success))]';
+      case 'warning': 
+        return 'bg-[var(--color-700)] border-[var(--color-800)]';
+      case 'error': 
+        return 'bg-[hsl(var(--destructive))] border-[hsl(var(--destructive))]';
+      default: // info
+        return 'bg-[var(--color-500)] border-[var(--color-600)]';
     }
   };
 
@@ -250,7 +256,10 @@ const NotificationPopup: React.FC = () => {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 animate-in slide-in-from-bottom-4 duration-300 pb-safe">
-      <Card className="shadow-lg border-2 border-border bg-card">
+      <Card className={cn(
+        "shadow-lg border-2",
+        getTypeContainerStyle(settingValue?.type || 'info')
+      )}>
         <CardContent className="p-3 sm:p-4">
           <div className="flex items-start gap-3">
             <div className="shrink-0 mt-0.5">
@@ -258,16 +267,16 @@ const NotificationPopup: React.FC = () => {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1.5">
-                <Badge variant={getTypeBadgeVariant(settingValue?.type || 'info')} className="text-xs">
+                <Badge className="text-xs bg-white/20 text-white border-white/30">
                   {getTypeLabel(settingValue?.type || 'info')}
                 </Badge>
                 {remainingCount > 0 && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge className="text-xs bg-white/10 text-white/80 border-white/20">
                     +{remainingCount} meer
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-foreground leading-relaxed">
+              <p className="text-sm text-white leading-relaxed">
                 {settingValue?.message || ''}
               </p>
             </div>
@@ -275,7 +284,7 @@ const NotificationPopup: React.FC = () => {
               variant="ghost"
               size="sm"
               onClick={dismissNotification}
-              className="shrink-0 h-8 w-8 p-0 hover:bg-muted touch-manipulation"
+              className="shrink-0 h-8 w-8 p-0 text-white hover:bg-white/10 touch-manipulation"
               aria-label="Sluiten"
             >
               <X className="w-4 h-4" />
@@ -284,7 +293,7 @@ const NotificationPopup: React.FC = () => {
           
           {/* Swipe hint for mobile */}
           <div className="flex justify-center mt-2 md:hidden">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1 text-xs text-white/70">
               <ChevronUp className="w-3 h-3" />
               <span>Tik om te sluiten</span>
             </div>
