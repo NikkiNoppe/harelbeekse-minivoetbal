@@ -194,10 +194,76 @@ export const playoffService = {
     return weeks;
   },
 
+  // Calculate which position has BYE for a given matchday (for odd number of teams)
+  getByePositionForMatchday(
+    positions: number[], 
+    matchday: number
+  ): number | null {
+    if (positions.length % 2 === 0) return null; // No bye with even number
+    
+    const BYE_POSITION = -1;
+    const arr = [...positions, BYE_POSITION];
+    const n = arr.length;
+    const numMatchdays = n - 1;
+    
+    // Normalize matchday to single round
+    const normalizedMatchday = ((matchday - 1) % numMatchdays) + 1;
+    
+    // Simulate round-robin rotation to this matchday
+    for (let day = 1; day < normalizedMatchday; day++) {
+      const last = arr.pop()!;
+      arr.splice(1, 0, last);
+    }
+    
+    // Find which real position plays against BYE
+    for (let i = 0; i < n / 2; i++) {
+      const home = arr[i];
+      const away = arr[n - 1 - i];
+      if (home === BYE_POSITION) return away;
+      if (away === BYE_POSITION) return home;
+    }
+    return null;
+  },
+
+  // Get BYE info for all playoff matchdays
+  getByeInfoForPlayoffs(
+    bottomPositions: number[],
+    rounds: number
+  ): Map<number, number> {
+    const byeInfo = new Map<number, number>();
+    if (bottomPositions.length % 2 === 0) return byeInfo; // No bye needed
+    
+    const numMatchdays = bottomPositions.length; // With BYE added it becomes even, so n-1 = positions.length
+    const totalMatchdays = numMatchdays * rounds;
+    
+    for (let matchday = 1; matchday <= totalMatchdays; matchday++) {
+      const byePosition = this.getByePositionForMatchday(bottomPositions, matchday);
+      if (byePosition) byeInfo.set(matchday, byePosition);
+    }
+    return byeInfo;
+  },
+
+  // Get timeslots filtered by day of week
+  async getTimeslotsForDay(dayOfWeek: number): Promise<Array<{ time: string; venue: string }>> {
+    const seasonData = await seasonService.getSeasonData();
+    const timeslots = seasonData.venue_timeslots || [];
+    const venues = seasonData.venues || [];
+    
+    return timeslots
+      .filter((ts: any) => ts.day_of_week === dayOfWeek)
+      .sort((a: any, b: any) => (a.priority || 99) - (b.priority || 99))
+      .map((ts: any) => {
+        const venue = venues.find((v: any) => v.venue_id === ts.venue_id);
+        return {
+          time: ts.start_time,
+          venue: ts.venue_name || venue?.name || 'Onbekend'
+        };
+      });
+  },
+
   // NEW: Generate position-based playoffs (concept planning)
   // Uses round-robin algorithm: each matchday, every position plays max 1 match
-  // Top 8: 4 matches per matchday, Bottom 7: 3 matches per matchday (1 bye)
-  // Combined: 7 matches per week perfectly fills all timeslots
+  // Top 8: 4 matches per matchday on MONDAY, Bottom 7: 3 matches per matchday on TUESDAY (1 bye)
   async generatePositionBasedPlayoffs(
     topPositions: number[], // e.g. [1,2,3,4,5,6,7,8] for top 8
     bottomPositions: number[], // e.g. [9,10,11,12,13,14,15] for bottom 7
@@ -212,6 +278,13 @@ export const playoffService = {
       const playingWeeks = await this.generatePlayoffWeeks(start_date, end_date);
       if (playingWeeks.length === 0) return { success: false, message: "Geen beschikbare speelweken binnen de geselecteerde periode." };
 
+      // Get timeslots per day - PO1 on Monday (day 1), PO2 on Tuesday (day 2)
+      const mondaySlots = await this.getTimeslotsForDay(1);
+      const tuesdaySlots = await this.getTimeslotsForDay(2);
+      
+      console.log(`📅 Monday slots (for PO1): ${mondaySlots.length}`, mondaySlots);
+      console.log(`📅 Tuesday slots (for PO2): ${tuesdaySlots.length}`, tuesdaySlots);
+
       // Generate position-based matches using round-robin (with proper matchday grouping)
       const topMatches = topPositions.length > 0 
         ? this.generatePlayoffRoundRobinMatches(topPositions, 'top', rounds) 
@@ -221,8 +294,6 @@ export const playoffService = {
         : [];
       
       // Calculate matchdays per round
-      // Top 8: 7 matchdays per round (8-1=7), 4 matches per matchday
-      // Bottom 7 (+BYE=8): 7 matchdays per round (8-1=7), 3 matches per matchday
       const topMatchdays = (topPositions.length > 0) 
         ? (topPositions.length % 2 === 0 ? topPositions.length - 1 : topPositions.length) 
         : 0;
@@ -242,7 +313,6 @@ export const playoffService = {
       }
 
       // Create combined schedule per matchday
-      // Each matchday = 1 week: top matches (slots 0-3) + bottom matches (slots 4-6)
       const matchInserts: any[] = [];
       let counter = 1;
 
@@ -252,16 +322,13 @@ export const playoffService = {
         
         const baseDate = playingWeeks[weekIndex]; // Monday of this week
         
-        // Get top matches for this matchday (slots 0-3, typically Monday)
+        // Get top matches for this matchday - ALWAYS on Monday (day_of_week=1)
         const topMatchesForDay = topMatches.filter(m => m.matchday === matchday);
         let slotIndex = 0;
         
         for (const match of topMatchesForDay) {
-          const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7);
-          // Calculate correct day offset from Monday: day_of_week 1=Monday(+0), 2=Tuesday(+1)
-          const daysToAdd = timeslot?.day_of_week ? timeslot.day_of_week - 1 : 0;
-          const matchDate = daysToAdd > 0 ? this.addDaysToDate(baseDate, daysToAdd) : baseDate;
-          const matchDateTime = localDateTimeToISO(matchDate, timeslot?.start_time || '19:00');
+          const slot = mondaySlots[slotIndex % mondaySlots.length] || { time: '19:00', venue: 'De Dageraad' };
+          const matchDateTime = localDateTimeToISO(baseDate, slot.time);
           
           matchInserts.push({
             unique_number: `PO-${counter}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -274,7 +341,7 @@ export const playoffService = {
             is_playoff_finalized: false,
             is_playoff_match: true,
             match_date: matchDateTime,
-            location: venue,
+            location: slot.venue,
             is_cup_match: false,
             is_submitted: false,
             is_locked: false
@@ -283,15 +350,14 @@ export const playoffService = {
           slotIndex++;
         }
         
-        // Get bottom matches for this matchday (slots 4-6, typically Tuesday)
+        // Get bottom matches for this matchday - ALWAYS on Tuesday (day_of_week=2)
         const bottomMatchesForDay = bottomMatches.filter(m => m.matchday === matchday);
+        slotIndex = 0;
         
         for (const match of bottomMatchesForDay) {
-          const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7);
-          // Calculate correct day offset from Monday
-          const daysToAdd = timeslot?.day_of_week ? timeslot.day_of_week - 1 : 0;
-          const matchDate = daysToAdd > 0 ? this.addDaysToDate(baseDate, daysToAdd) : baseDate;
-          const matchDateTime = localDateTimeToISO(matchDate, timeslot?.start_time || '19:00');
+          const slot = tuesdaySlots[slotIndex % tuesdaySlots.length] || { time: '18:30', venue: 'De Dageraad' };
+          const tuesdayDate = this.addDaysToDate(baseDate, 1); // Monday + 1 = Tuesday
+          const matchDateTime = localDateTimeToISO(tuesdayDate, slot.time);
           
           matchInserts.push({
             unique_number: `PO-${counter}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -304,7 +370,7 @@ export const playoffService = {
             is_playoff_finalized: false,
             is_playoff_match: true,
             match_date: matchDateTime,
-            location: venue,
+            location: slot.venue,
             is_cup_match: false,
             is_submitted: false,
             is_locked: false
@@ -319,7 +385,7 @@ export const playoffService = {
       
       return { 
         success: true, 
-        message: `${matchInserts.length} playoff wedstrijden succesvol aangemaakt (concept - nog niet gefinaliseerd). Top: ${topMatches.length} wedstrijden, Bottom: ${bottomMatches.length} wedstrijden (met bye).` 
+        message: `${matchInserts.length} playoff wedstrijden succesvol aangemaakt (concept - nog niet gefinaliseerd). Top: ${topMatches.length} wedstrijden (maandag), Bottom: ${bottomMatches.length} wedstrijden (dinsdag, met bye).` 
       };
     } catch (e) {
       return { success: false, message: e instanceof Error ? e.message : 'Onbekende fout' };

@@ -161,76 +161,110 @@ const MobileStandingsCard = ({
     </div>
   </div>;
 
-// Enhanced Match Card Component with time, location and playoff type
-const EnhancedMatchCard = ({
+// Compact Match Chip Component
+const CompactMatchChip = ({
   match,
   getTeamDisplay
 }: {
   match: PlayoffMatch;
   getTeamDisplay: (match: PlayoffMatch, isHome: boolean) => string;
-}) => <div className="p-3 bg-muted/50 rounded-lg space-y-2">
-    {/* Header: Datum, Tijd, Playoff Type */}
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">
-          {formatMatchDate(match.match_date)} • {formatMatchTime(match.match_date)}
-        </span>
-        <Badge variant="outline" className={cn(
-          "text-[10px] h-5",
-          match.playoff_type === 'top' 
-            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100" 
-            : "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100"
-        )}>
-          {match.playoff_type === 'top' ? 'PO1' : 'PO2'}
-        </Badge>
-      </div>
-      {!match.is_playoff_finalized && <Badge variant="outline" className="text-[10px] h-5">Concept</Badge>}
-    </div>
-    
-    {/* Teams en Score */}
-    <div className="flex items-center gap-2">
-      <div className="flex-1 text-right min-w-0">
-        <span className={cn("text-sm truncate block", match.is_playoff_finalized ? "font-medium" : "text-muted-foreground italic")}>
-          {getTeamDisplay(match, true)}
-        </span>
-      </div>
-      <div className="px-2 min-w-[50px] text-center flex-shrink-0">
-        {match.home_score !== null && match.away_score !== null ? <span className="font-bold">{match.home_score} - {match.away_score}</span> : <span className="text-muted-foreground text-xs">vs</span>}
-      </div>
-      <div className="flex-1 min-w-0">
-        <span className={cn("text-sm truncate block", match.is_playoff_finalized ? "font-medium" : "text-muted-foreground italic")}>
-          {getTeamDisplay(match, false)}
-        </span>
-      </div>
-    </div>
-    
-    {/* Locatie */}
-    {match.location && (
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <MapPin className="h-3 w-3 flex-shrink-0" />
-        <span className="truncate">{match.location}</span>
-      </div>
-    )}
-  </div>;
+}) => (
+  <div className="inline-flex items-center gap-1 px-2 py-1 bg-background border rounded text-xs">
+    <span className="font-medium truncate max-w-[50px] sm:max-w-[70px]">
+      {getTeamDisplay(match, true)}
+    </span>
+    <span className="text-muted-foreground">v</span>
+    <span className="font-medium truncate max-w-[50px] sm:max-w-[70px]">
+      {getTeamDisplay(match, false)}
+    </span>
+    <span className="text-muted-foreground text-[10px] ml-1">
+      {formatMatchTime(match.match_date)}
+    </span>
+  </div>
+);
 
-// Vacation/Cup Week Card
+// Compact Week Card Component with BYE indication
+const CompactWeekCard = ({
+  week,
+  getTeamDisplay,
+  byePosition,
+  standings
+}: {
+  week: WeekData;
+  getTeamDisplay: (match: PlayoffMatch, isHome: boolean) => string;
+  byePosition?: number;
+  standings: TeamStanding[];
+}) => {
+  const topMatches = week.matches?.filter(m => m.playoff_type === 'top') || [];
+  const bottomMatches = week.matches?.filter(m => m.playoff_type === 'bottom') || [];
+  
+  // Get bye team name if finalized
+  const byeTeamName = byePosition 
+    ? standings.find(s => s.position === byePosition)?.team_name 
+    : null;
+  const byeDisplay = byeTeamName || (byePosition ? `${byePosition}e` : null);
+
+  return (
+    <Card className="overflow-hidden">
+      {/* Compact header */}
+      <div className="flex items-center justify-between px-3 py-2 bg-muted/50 border-b">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-sm font-medium">{week.weekLabel}</span>
+        </div>
+        {byeDisplay && (
+          <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300 border-orange-200">
+            Bye: {byeDisplay}
+          </Badge>
+        )}
+      </div>
+      
+      {/* Compact match grid */}
+      <div className="p-2 space-y-1.5">
+        {/* PO1 matches */}
+        {topMatches.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 text-[9px] h-5 px-1.5 flex-shrink-0">
+              PO1
+            </Badge>
+            {topMatches.map(match => (
+              <CompactMatchChip key={match.match_id} match={match} getTeamDisplay={getTeamDisplay} />
+            ))}
+          </div>
+        )}
+        
+        {/* PO2 matches */}
+        {bottomMatches.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-[9px] h-5 px-1.5 flex-shrink-0">
+              PO2
+            </Badge>
+            {bottomMatches.map(match => (
+              <CompactMatchChip key={match.match_id} match={match} getTeamDisplay={getTeamDisplay} />
+            ))}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+};
+
+// Vacation/Cup Week Card (compact)
 const SkippedWeekCard = ({ week }: { week: WeekData }) => (
-  <Card className="border-dashed opacity-70">
-    <CardContent className="py-4 flex items-center justify-center gap-2">
-      {week.status === 'vacation' && (
-        <>
-          <Palmtree className="h-4 w-4 text-amber-600" />
-          <span className="text-sm text-muted-foreground">{week.weekLabel} - Verlof</span>
-        </>
-      )}
-      {week.status === 'cup' && (
-        <>
-          <Trophy className="h-4 w-4 text-blue-600" />
-          <span className="text-sm text-muted-foreground">{week.weekLabel} - Beker</span>
-        </>
-      )}
-    </CardContent>
-  </Card>
+  <div className="flex items-center gap-2 px-3 py-2 border border-dashed rounded-lg opacity-70">
+    {week.status === 'vacation' && (
+      <>
+        <Palmtree className="h-4 w-4 text-amber-600" />
+        <span className="text-sm text-muted-foreground">{week.weekLabel} - Verlof</span>
+      </>
+    )}
+    {week.status === 'cup' && (
+      <>
+        <Trophy className="h-4 w-4 text-blue-600" />
+        <span className="text-sm text-muted-foreground">{week.weekLabel} - Beker</span>
+      </>
+    )}
+  </div>
 );
 
 const AdminPlayoffPage: React.FC = () => {
@@ -438,6 +472,20 @@ const AdminPlayoffPage: React.FC = () => {
     
     return weeks;
   }, [playoffMatches, vacationPeriods, cupMatches]);
+
+  // Calculate BYE info for each matchday (for bottom playoff with 7 teams)
+  const byeInfoMap = useMemo<Map<number, number>>(() => {
+    const bottomPositions = Array.from({ length: bottomTeamCount }, (_, i) => topTeamCount + i + 1);
+    return playoffService.getByeInfoForPlayoffs(bottomPositions, rounds);
+  }, [bottomTeamCount, topTeamCount, rounds]);
+
+  // Extract matchday number from speeldag string
+  const getMatchdayFromWeek = (week: WeekData): number | undefined => {
+    const firstMatch = week.matches?.[0];
+    if (!firstMatch?.speeldag) return undefined;
+    const match = firstMatch.speeldag.match(/Speeldag (\d+)/);
+    return match ? parseInt(match[1]) : undefined;
+  };
 
   const handleGeneratePositionBasedPlayoffs = async () => {
     if (!startDate || !endDate) {
@@ -871,57 +919,30 @@ const AdminPlayoffPage: React.FC = () => {
             </CardContent>
           </Card>}
 
-        {/* Playoff Matches Display - Grouped by Week */}
+        {/* Playoff Matches Display - Grouped by Week (Compact) */}
         {hasPlayoffMatches && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+          <div className="space-y-2">
+            <h3 className="text-base font-semibold flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
               Planning per Week
             </h3>
             
-            {weeksWithMatches.map((week) => (
-              week.status === 'playoff' && week.matches ? (
-                <Card key={week.weekStart}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      {week.weekLabel}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Top Playoff matches this week */}
-                    {week.matches.filter(m => m.playoff_type === 'top').length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 text-[10px]">
-                            Playoff 1 (Top)
-                          </Badge>
-                        </div>
-                        {week.matches.filter(m => m.playoff_type === 'top').map(match => (
-                          <EnhancedMatchCard key={match.match_id} match={match} getTeamDisplay={getTeamDisplay} />
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Bottom Playoff matches this week */}
-                    {week.matches.filter(m => m.playoff_type === 'bottom').length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-[10px]">
-                            Playoff 2 (Bottom)
-                          </Badge>
-                        </div>
-                        {week.matches.filter(m => m.playoff_type === 'bottom').map(match => (
-                          <EnhancedMatchCard key={match.match_id} match={match} getTeamDisplay={getTeamDisplay} />
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ) : (
-                <SkippedWeekCard key={week.weekStart} week={week} />
-              )
-            ))}
+            {weeksWithMatches.map((week) => {
+              if (week.status === 'playoff' && week.matches) {
+                const matchday = getMatchdayFromWeek(week);
+                const byePosition = matchday ? byeInfoMap.get(matchday) : undefined;
+                return (
+                  <CompactWeekCard 
+                    key={week.weekStart} 
+                    week={week} 
+                    getTeamDisplay={getTeamDisplay}
+                    byePosition={byePosition}
+                    standings={standings}
+                  />
+                );
+              }
+              return <SkippedWeekCard key={week.weekStart} week={week} />;
+            })}
           </div>
         )}
 
