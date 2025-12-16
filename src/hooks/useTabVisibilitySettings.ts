@@ -27,15 +27,24 @@ const DEFAULT_VISIBILITY: RoleVisibility = {
   admin: true,
 };
 
+// Hidden by default visibility (only admin can see)
+const HIDDEN_VISIBILITY: RoleVisibility = {
+  public: false,
+  player_manager: false,
+  referee: false,
+  admin: true,
+};
+
 export const useTabVisibilitySettings = () => {
   const { toast } = useToast();
   // Initialize with safe defaults to prevent redirect loops during loading
   const [settings, setSettings] = useState<TabVisibilitySetting[]>([
     { id: -1, setting_name: 'algemeen', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
     { id: -2, setting_name: 'competitie', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
-    { id: -3, setting_name: 'beker', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
-    { id: -4, setting_name: 'reglement', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
-    { id: -5, setting_name: 'teams', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
+    { id: -3, setting_name: 'playoff', is_visible: false, requires_login: false, visibility: HIDDEN_VISIBILITY },
+    { id: -4, setting_name: 'beker', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
+    { id: -5, setting_name: 'reglement', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
+    { id: -6, setting_name: 'teams', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
   ]);
   const [loading, setLoading] = useState(true);
 
