@@ -353,13 +353,23 @@ export const playoffService = {
         
         const baseDate = playingWeeks[weekIndex]; // Monday of this week
         
-        // Get top matches for this matchday - ALWAYS on Monday (day_of_week=1)
+        // Alternate day assignment per matchday for fair distribution
+        // Odd matchday: PO1=Monday, PO2=Tuesday
+        // Even matchday: PO1=Tuesday, PO2=Monday
+        const isOddMatchday = matchday % 2 === 1;
+        const po1DayOffset = isOddMatchday ? 0 : 1;  // 0 = Monday, 1 = Tuesday
+        const po2DayOffset = isOddMatchday ? 1 : 0;
+        const po1Slots = isOddMatchday ? mondaySlots : tuesdaySlots;
+        const po2Slots = isOddMatchday ? tuesdaySlots : mondaySlots;
+        
+        // Get top matches for this matchday
         const topMatchesForDay = topMatches.filter(m => m.matchday === matchday);
         let slotIndex = 0;
         
         for (const match of topMatchesForDay) {
-          const slot = mondaySlots[slotIndex % mondaySlots.length] || { time: '19:00', venue: 'De Dageraad' };
-          const matchDateTime = localDateTimeToISO(baseDate, slot.time);
+          const slot = po1Slots[slotIndex % po1Slots.length] || { time: '19:00', venue: 'De Dageraad' };
+          const po1Date = this.addDaysToDate(baseDate, po1DayOffset);
+          const matchDateTime = localDateTimeToISO(po1Date, slot.time);
           
           matchInserts.push({
             unique_number: `PO-${counter}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -381,14 +391,14 @@ export const playoffService = {
           slotIndex++;
         }
         
-        // Get bottom matches for this matchday - ALWAYS on Tuesday (day_of_week=2)
+        // Get bottom matches for this matchday
         const bottomMatchesForDay = bottomMatches.filter(m => m.matchday === matchday);
         slotIndex = 0;
         
         for (const match of bottomMatchesForDay) {
-          const slot = tuesdaySlots[slotIndex % tuesdaySlots.length] || { time: '18:30', venue: 'De Dageraad' };
-          const tuesdayDate = this.addDaysToDate(baseDate, 1); // Monday + 1 = Tuesday
-          const matchDateTime = localDateTimeToISO(tuesdayDate, slot.time);
+          const slot = po2Slots[slotIndex % po2Slots.length] || { time: '18:30', venue: 'De Dageraad' };
+          const po2Date = this.addDaysToDate(baseDate, po2DayOffset);
+          const matchDateTime = localDateTimeToISO(po2Date, slot.time);
           
           matchInserts.push({
             unique_number: `PO-${counter}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -416,7 +426,7 @@ export const playoffService = {
       
       return { 
         success: true, 
-        message: `${matchInserts.length} playoff wedstrijden succesvol aangemaakt (concept - nog niet gefinaliseerd). Top: ${topMatches.length} wedstrijden (maandag), Bottom: ${bottomMatches.length} wedstrijden (dinsdag, met bye).` 
+        message: `${matchInserts.length} playoff wedstrijden succesvol aangemaakt (concept). PO1/PO2 wisselen wekelijks van dag (ma↔di) voor eerlijke verdeling.` 
       };
     } catch (e) {
       return { success: false, message: e instanceof Error ? e.message : 'Onbekende fout' };
