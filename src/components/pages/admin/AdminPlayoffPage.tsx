@@ -173,6 +173,23 @@ const MobileStandingsCard = ({
   </div>;
 
 // Compact Match Chip Component
+// Helper to get short location name
+const getLocationShort = (location: string | null): string => {
+  if (!location) return '?';
+  const loc = location.toLowerCase();
+  
+  if (loc.includes('dageraad') || loc.includes('harelbeke')) {
+    return 'Harelb.';
+  }
+  if (loc.includes('vlasschaard') || loc.includes('bavikhove')) {
+    return 'Bavik.';
+  }
+  
+  // Fallback: last word (often the place name)
+  const parts = location.split(' ');
+  return parts[parts.length - 1].substring(0, 6) + '.';
+};
+
 const CompactMatchChip = ({
   match,
   getTeamDisplay
@@ -180,7 +197,7 @@ const CompactMatchChip = ({
   match: PlayoffMatch;
   getTeamDisplay: (match: PlayoffMatch, isHome: boolean) => string;
 }) => {
-  const locationShort = match.location?.split(' ')[0] || '?';
+  const locationShort = getLocationShort(match.location);
   
   return (
     <div className="inline-flex items-center gap-1.5 px-2 py-1.5 bg-background border rounded text-xs">
