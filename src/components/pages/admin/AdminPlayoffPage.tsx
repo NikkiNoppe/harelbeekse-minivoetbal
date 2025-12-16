@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,13 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Trophy, AlertCircle, Trash2, Calendar, CheckCircle, Clock, Undo2, ChevronDown, ChevronRight, Settings } from "lucide-react";
+import { Loader2, Trophy, AlertCircle, Trash2, Calendar, CheckCircle, Clock, Undo2, ChevronDown, ChevronRight, Settings, MapPin, Palmtree } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { competitionService, CompetitionMatch } from "@/services/match/competitionService";
 import { playoffService, PlayoffMatch } from "@/services/match/playoffService";
 import { teamService } from "@/services/core/teamService";
+import { seasonService } from "@/services/seasonService";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+
 interface TeamStanding {
   team_id: number;
   team_name: string;
@@ -29,8 +32,61 @@ interface TeamStanding {
   goal_difference: number;
   position: number;
 }
+
+interface VacationPeriod {
+  start_date: string;
+  end_date: string;
+  name?: string;
+}
+
+interface WeekData {
+  weekStart: string;
+  weekLabel: string;
+  status: 'playoff' | 'vacation' | 'cup';
+  matches?: PlayoffMatch[];
+}
+
 type PlayoffStatus = 'none' | 'concept' | 'finalized';
 type ConfirmAction = 'finalize' | 'unfinalize' | 'delete' | null;
+
+// Helper functions
+const getWeekMonday = (dateStr: string): Date => {
+  const date = new Date(dateStr);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(date.setDate(diff));
+};
+
+const formatWeekLabel = (weekStart: string): string => {
+  const start = new Date(weekStart);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  
+  const startDay = start.getDate();
+  const endDay = end.getDate();
+  const startMonth = start.toLocaleDateString('nl-NL', { month: 'short' });
+  const endMonth = end.toLocaleDateString('nl-NL', { month: 'short' });
+  
+  if (startMonth === endMonth) {
+    return `${startDay}-${endDay} ${startMonth}`;
+  }
+  return `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
+};
+
+const formatMatchTime = (dateStr: string): string => {
+  return new Date(dateStr).toLocaleTimeString('nl-NL', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+};
+
+const formatMatchDate = (dateStr: string): string => {
+  return new Date(dateStr).toLocaleDateString('nl-NL', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short'
+  });
+};
 
 // Workflow Stepper Component
 const WorkflowStepper = ({
@@ -105,24 +161,33 @@ const MobileStandingsCard = ({
     </div>
   </div>;
 
-// Mobile Match Card Component
-const MobileMatchCard = ({
+// Enhanced Match Card Component with time, location and playoff type
+const EnhancedMatchCard = ({
   match,
   getTeamDisplay
 }: {
   match: PlayoffMatch;
   getTeamDisplay: (match: PlayoffMatch, isHome: boolean) => string;
-}) => <div className="p-3 bg-muted/50 rounded-lg">
-    <div className="flex items-center justify-between mb-2">
-      <span className="text-xs text-muted-foreground">
-        {new Date(match.match_date).toLocaleDateString('nl-NL', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short'
-      })}
-      </span>
+}) => <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+    {/* Header: Datum, Tijd, Playoff Type */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">
+          {formatMatchDate(match.match_date)} • {formatMatchTime(match.match_date)}
+        </span>
+        <Badge variant="outline" className={cn(
+          "text-[10px] h-5",
+          match.playoff_type === 'top' 
+            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100" 
+            : "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100"
+        )}>
+          {match.playoff_type === 'top' ? 'PO1' : 'PO2'}
+        </Badge>
+      </div>
       {!match.is_playoff_finalized && <Badge variant="outline" className="text-[10px] h-5">Concept</Badge>}
     </div>
+    
+    {/* Teams en Score */}
     <div className="flex items-center gap-2">
       <div className="flex-1 text-right min-w-0">
         <span className={cn("text-sm truncate block", match.is_playoff_finalized ? "font-medium" : "text-muted-foreground italic")}>
@@ -138,7 +203,36 @@ const MobileMatchCard = ({
         </span>
       </div>
     </div>
+    
+    {/* Locatie */}
+    {match.location && (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <MapPin className="h-3 w-3 flex-shrink-0" />
+        <span className="truncate">{match.location}</span>
+      </div>
+    )}
   </div>;
+
+// Vacation/Cup Week Card
+const SkippedWeekCard = ({ week }: { week: WeekData }) => (
+  <Card className="border-dashed opacity-70">
+    <CardContent className="py-4 flex items-center justify-center gap-2">
+      {week.status === 'vacation' && (
+        <>
+          <Palmtree className="h-4 w-4 text-amber-600" />
+          <span className="text-sm text-muted-foreground">{week.weekLabel} - Verlof</span>
+        </>
+      )}
+      {week.status === 'cup' && (
+        <>
+          <Trophy className="h-4 w-4 text-blue-600" />
+          <span className="text-sm text-muted-foreground">{week.weekLabel} - Beker</span>
+        </>
+      )}
+    </CardContent>
+  </Card>
+);
+
 const AdminPlayoffPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -148,6 +242,10 @@ const AdminPlayoffPage: React.FC = () => {
   const [playoffStatus, setPlayoffStatus] = useState<PlayoffStatus>('none');
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  
+  // Additional data for week display
+  const [vacationPeriods, setVacationPeriods] = useState<VacationPeriod[]>([]);
+  const [cupMatches, setCupMatches] = useState<{ match_date: string }[]>([]);
 
   // Configuration state
   const [topTeamCount, setTopTeamCount] = useState(8);
@@ -155,13 +253,13 @@ const AdminPlayoffPage: React.FC = () => {
   const [rounds, setRounds] = useState(2);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const isMobile = useIsMobile();
+
   useEffect(() => {
     loadInitialData();
   }, []);
+
   const loadInitialData = async () => {
     try {
       setLoading(true);
@@ -180,6 +278,22 @@ const AdminPlayoffPage: React.FC = () => {
       } else {
         setPlayoffStatus('concept');
       }
+      
+      // Load vacation periods
+      try {
+        const seasonData = await seasonService.getSeasonData();
+        setVacationPeriods(seasonData.vacation_periods || []);
+      } catch (e) {
+        console.log('Could not load vacation periods');
+      }
+      
+      // Load cup matches
+      const { data: cupData } = await supabase
+        .from('matches')
+        .select('match_date')
+        .eq('is_cup_match', true);
+      setCupMatches(cupData || []);
+      
     } catch (error) {
       console.error('Error loading initial data:', error);
       toast({
@@ -191,10 +305,9 @@ const AdminPlayoffPage: React.FC = () => {
       setLoading(false);
     }
   };
+
   const calculateStandings = (teams: any[], matches: CompetitionMatch[]): TeamStanding[] => {
-    const standings: {
-      [key: number]: TeamStanding;
-    } = {};
+    const standings: { [key: number]: TeamStanding } = {};
     teams.forEach(team => {
       standings[team.team_id] = {
         team_id: team.team_id,
@@ -251,6 +364,81 @@ const AdminPlayoffPage: React.FC = () => {
       position: index + 1
     }));
   };
+
+  // Group matches by week with vacation/cup indication
+  const weeksWithMatches = useMemo<WeekData[]>(() => {
+    if (playoffMatches.length === 0) return [];
+    
+    // Find date range from playoff matches
+    const dates = playoffMatches.map(m => new Date(m.match_date).getTime());
+    const minDate = new Date(Math.min(...dates));
+    const maxDate = new Date(Math.max(...dates));
+    
+    // Get all weeks in range
+    const weeks: WeekData[] = [];
+    let current = getWeekMonday(minDate.toISOString());
+    const endWeek = getWeekMonday(maxDate.toISOString());
+    endWeek.setDate(endWeek.getDate() + 7);
+    
+    while (current <= endWeek) {
+      const weekKey = current.toISOString().split('T')[0];
+      const weekEnd = new Date(current);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      
+      // Find matches for this week
+      const weekMatches = playoffMatches.filter(m => {
+        const matchWeek = getWeekMonday(m.match_date).toISOString().split('T')[0];
+        return matchWeek === weekKey;
+      }).sort((a, b) => {
+        // Sort by playoff type (top first), then by date
+        if (a.playoff_type !== b.playoff_type) {
+          return a.playoff_type === 'top' ? -1 : 1;
+        }
+        return new Date(a.match_date).getTime() - new Date(b.match_date).getTime();
+      });
+      
+      if (weekMatches.length > 0) {
+        weeks.push({
+          weekStart: weekKey,
+          weekLabel: formatWeekLabel(weekKey),
+          status: 'playoff',
+          matches: weekMatches
+        });
+      } else {
+        // Check if vacation
+        const isVacation = vacationPeriods.some(v => {
+          const vStart = new Date(v.start_date);
+          const vEnd = new Date(v.end_date);
+          return current <= vEnd && weekEnd >= vStart;
+        });
+        
+        // Check if cup matches this week
+        const hasCupMatch = cupMatches.some(cup => {
+          const cupWeek = getWeekMonday(cup.match_date).toISOString().split('T')[0];
+          return cupWeek === weekKey;
+        });
+        
+        if (isVacation) {
+          weeks.push({
+            weekStart: weekKey,
+            weekLabel: formatWeekLabel(weekKey),
+            status: 'vacation'
+          });
+        } else if (hasCupMatch) {
+          weeks.push({
+            weekStart: weekKey,
+            weekLabel: formatWeekLabel(weekKey),
+            status: 'cup'
+          });
+        }
+      }
+      
+      current.setDate(current.getDate() + 7);
+    }
+    
+    return weeks;
+  }, [playoffMatches, vacationPeriods, cupMatches]);
+
   const handleGeneratePositionBasedPlayoffs = async () => {
     if (!startDate || !endDate) {
       toast({
@@ -262,12 +450,8 @@ const AdminPlayoffPage: React.FC = () => {
     }
     setActionLoading(true);
     try {
-      const topPositions = Array.from({
-        length: topTeamCount
-      }, (_, i) => i + 1);
-      const bottomPositions = Array.from({
-        length: bottomTeamCount
-      }, (_, i) => topTeamCount + i + 1);
+      const topPositions = Array.from({ length: topTeamCount }, (_, i) => i + 1);
+      const bottomPositions = Array.from({ length: bottomTeamCount }, (_, i) => topTeamCount + i + 1);
       const result = await playoffService.generatePositionBasedPlayoffs(topPositions, bottomPositions, rounds, startDate, endDate);
       if (result.success) {
         toast({
@@ -293,6 +477,7 @@ const AdminPlayoffPage: React.FC = () => {
       setActionLoading(false);
     }
   };
+
   const handleFinalizePlayoffs = async () => {
     setActionLoading(true);
     try {
@@ -326,6 +511,7 @@ const AdminPlayoffPage: React.FC = () => {
       setConfirmAction(null);
     }
   };
+
   const handleUnfinalizePlayoffs = async () => {
     setActionLoading(true);
     try {
@@ -355,6 +541,7 @@ const AdminPlayoffPage: React.FC = () => {
       setConfirmAction(null);
     }
   };
+
   const handleDeletePlayoffs = async () => {
     setActionLoading(true);
     try {
@@ -384,6 +571,7 @@ const AdminPlayoffPage: React.FC = () => {
       setConfirmAction(null);
     }
   };
+
   const handleConfirmedAction = () => {
     switch (confirmAction) {
       case 'finalize':
@@ -397,6 +585,7 @@ const AdminPlayoffPage: React.FC = () => {
         break;
     }
   };
+
   const getTeamDisplay = (match: PlayoffMatch, isHome: boolean) => {
     if (isHome) {
       if (match.home_team_name) return match.home_team_name;
@@ -408,9 +597,9 @@ const AdminPlayoffPage: React.FC = () => {
       return 'Onbekend';
     }
   };
+
   const hasPlayoffMatches = playoffMatches.length > 0;
-  const topPlayoffMatches = playoffMatches.filter(m => m.playoff_type === 'top');
-  const bottomPlayoffMatches = playoffMatches.filter(m => m.playoff_type === 'bottom');
+  
   const confirmDialogContent = {
     finalize: {
       title: 'Playoffs Finaliseren?',
@@ -431,6 +620,7 @@ const AdminPlayoffPage: React.FC = () => {
       variant: 'destructive' as const
     }
   };
+
   return <div className="space-y-6 animate-slide-up">
       {/* Header */}
       <div className="space-y-3">
@@ -614,9 +804,6 @@ const AdminPlayoffPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Preview */}
-              
-
               <Alert className="bg-muted/50">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-xs sm:text-sm">
@@ -684,34 +871,59 @@ const AdminPlayoffPage: React.FC = () => {
             </CardContent>
           </Card>}
 
-        {/* Playoff Matches Display */}
-        {hasPlayoffMatches && <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Top Playoff Matches */}
-            {topPlayoffMatches.length > 0 && <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 text-xs">Top</Badge>
-                    Top Playoffs
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {topPlayoffMatches.map(match => <MobileMatchCard key={match.match_id} match={match} getTeamDisplay={getTeamDisplay} />)}
-                </CardContent>
-              </Card>}
-
-            {/* Bottom Playoff Matches */}
-            {bottomPlayoffMatches.length > 0 && <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-xs">Bottom</Badge>
-                    Bottom Playoffs
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {bottomPlayoffMatches.map(match => <MobileMatchCard key={match.match_id} match={match} getTeamDisplay={getTeamDisplay} />)}
-                </CardContent>
-              </Card>}
-          </div>}
+        {/* Playoff Matches Display - Grouped by Week */}
+        {hasPlayoffMatches && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Planning per Week
+            </h3>
+            
+            {weeksWithMatches.map((week) => (
+              week.status === 'playoff' && week.matches ? (
+                <Card key={week.weekStart}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      {week.weekLabel}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Top Playoff matches this week */}
+                    {week.matches.filter(m => m.playoff_type === 'top').length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 text-[10px]">
+                            Playoff 1 (Top)
+                          </Badge>
+                        </div>
+                        {week.matches.filter(m => m.playoff_type === 'top').map(match => (
+                          <EnhancedMatchCard key={match.match_id} match={match} getTeamDisplay={getTeamDisplay} />
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Bottom Playoff matches this week */}
+                    {week.matches.filter(m => m.playoff_type === 'bottom').length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-[10px]">
+                            Playoff 2 (Bottom)
+                          </Badge>
+                        </div>
+                        {week.matches.filter(m => m.playoff_type === 'bottom').map(match => (
+                          <EnhancedMatchCard key={match.match_id} match={match} getTeamDisplay={getTeamDisplay} />
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <SkippedWeekCard key={week.weekStart} week={week} />
+              )
+            ))}
+          </div>
+        )}
 
         {/* Empty State */}
         {!hasPlayoffMatches && playoffStatus === 'none' && !loading && <Card>
