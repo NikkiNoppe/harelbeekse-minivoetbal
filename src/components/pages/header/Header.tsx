@@ -99,7 +99,7 @@ const Header: React.FC<HeaderProps> = ({
     : 'Gebruiker';
 
   // Filter public items based on tab visibility settings and enforce desired order
-  const desiredPublicOrder = ['algemeen', 'reglement', 'competitie', 'beker'] as const;
+  const desiredPublicOrder = ['algemeen', 'reglement', 'competitie', 'beker', 'playoff'] as const;
   const visiblePublicItems = desiredPublicOrder
     .map((key) => publicNavItems.find((i) => i.key === key))
     .filter((i): i is NonNullable<typeof i> => Boolean(i))
