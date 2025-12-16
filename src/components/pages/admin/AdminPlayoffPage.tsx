@@ -617,18 +617,18 @@ const AdminPlayoffPage: React.FC = () => {
               {/* Preview */}
               
 
-              {/* Generate Button */}
-              <Button onClick={handleGeneratePositionBasedPlayoffs} disabled={actionLoading || !startDate || !endDate} className="w-full h-12 text-base font-medium">
-                {actionLoading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Trophy className="h-5 w-5 mr-2" />}
-                Genereer Planning
-              </Button>
-
               <Alert className="bg-muted/50">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-xs sm:text-sm">
                   De planning wordt aangemaakt met posities. Bij finalisatie worden echte teams toegewezen.
                 </AlertDescription>
               </Alert>
+
+              {/* Generate Button */}
+              <Button onClick={handleGeneratePositionBasedPlayoffs} disabled={actionLoading || !startDate || !endDate} className="w-full h-12 text-base font-medium">
+                {actionLoading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Trophy className="h-5 w-5 mr-2" />}
+                Genereer Planning
+              </Button>
             </CardContent>
           </Card>}
 
