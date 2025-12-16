@@ -49,23 +49,30 @@ interface WeekData {
 type PlayoffStatus = 'none' | 'concept' | 'finalized';
 type ConfirmAction = 'finalize' | 'unfinalize' | 'delete' | null;
 
-// Helper functions
-const getWeekMonday = (dateStr: string): Date => {
+// Helper functions - gebruik UTC voor consistentie met database opslag
+const getWeekMonday = (dateStr: string): string => {
   const date = new Date(dateStr);
-  const day = date.getDay();
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(date.setDate(diff));
+  const day = date.getUTCDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const monday = new Date(Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate() + diff
+  ));
+  return `${monday.getUTCFullYear()}-${String(monday.getUTCMonth() + 1).padStart(2, '0')}-${String(monday.getUTCDate()).padStart(2, '0')}`;
 };
 
 const formatWeekLabel = (weekStart: string): string => {
-  const start = new Date(weekStart);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
+  // Parse lokaal voor weergave
+  const [year, month, day] = weekStart.split('-').map(Number);
+  const start = new Date(year, month - 1, day);
+  const end = new Date(year, month - 1, day + 6);
   
   const startDay = start.getDate();
   const endDay = end.getDate();
-  const startMonth = start.toLocaleDateString('nl-NL', { month: 'short' });
-  const endMonth = end.toLocaleDateString('nl-NL', { month: 'short' });
+  const monthNames = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  const startMonth = monthNames[start.getMonth()];
+  const endMonth = monthNames[end.getMonth()];
   
   if (startMonth === endMonth) {
     return `${startDay}-${endDay} ${startMonth}`;
@@ -74,18 +81,22 @@ const formatWeekLabel = (weekStart: string): string => {
 };
 
 const formatMatchTime = (dateStr: string): string => {
-  return new Date(dateStr).toLocaleTimeString('nl-NL', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  });
+  const date = new Date(dateStr);
+  // Gebruik UTC om consistentie te behouden met hoe data is opgeslagen
+  return `${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}`;
 };
 
 const formatMatchDate = (dateStr: string): string => {
-  return new Date(dateStr).toLocaleDateString('nl-NL', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short'
-  });
+  const date = new Date(dateStr);
+  const dayNames = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'];
+  const monthNames = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  
+  // Gebruik UTC voor consistentie
+  const dayName = dayNames[date.getUTCDay()];
+  const day = date.getUTCDate();
+  const month = monthNames[date.getUTCMonth()];
+  
+  return `${dayName} ${day} ${month}`;
 };
 
 // Workflow Stepper Component
@@ -422,18 +433,25 @@ const AdminPlayoffPage: React.FC = () => {
     
     // Get all weeks in range
     const weeks: WeekData[] = [];
-    let current = getWeekMonday(minDate.toISOString());
-    const endWeek = getWeekMonday(maxDate.toISOString());
-    endWeek.setDate(endWeek.getDate() + 7);
+    let currentWeekStr = getWeekMonday(minDate.toISOString());
+    const endWeekStr = getWeekMonday(maxDate.toISOString());
     
-    while (current <= endWeek) {
-      const weekKey = current.toISOString().split('T')[0];
-      const weekEnd = new Date(current);
-      weekEnd.setDate(weekEnd.getDate() + 6);
+    // Parse end week and add 7 days
+    const [endY, endM, endD] = endWeekStr.split('-').map(Number);
+    const endWeekDate = new Date(endY, endM - 1, endD + 7);
+    
+    while (true) {
+      const [curY, curM, curD] = currentWeekStr.split('-').map(Number);
+      const currentDate = new Date(curY, curM - 1, curD);
+      
+      if (currentDate > endWeekDate) break;
+      
+      const weekKey = currentWeekStr;
+      const weekEndDate = new Date(curY, curM - 1, curD + 6);
       
       // Find matches for this week
       const weekMatches = playoffMatches.filter(m => {
-        const matchWeek = getWeekMonday(m.match_date).toISOString().split('T')[0];
+        const matchWeek = getWeekMonday(m.match_date);
         return matchWeek === weekKey;
       }).sort((a, b) => {
         // Sort by playoff type (top first), then by date
@@ -455,12 +473,12 @@ const AdminPlayoffPage: React.FC = () => {
         const isVacation = vacationPeriods.some(v => {
           const vStart = new Date(v.start_date);
           const vEnd = new Date(v.end_date);
-          return current <= vEnd && weekEnd >= vStart;
+          return currentDate <= vEnd && weekEndDate >= vStart;
         });
         
         // Check if cup matches this week
         const hasCupMatch = cupMatches.some(cup => {
-          const cupWeek = getWeekMonday(cup.match_date).toISOString().split('T')[0];
+          const cupWeek = getWeekMonday(cup.match_date);
           return cupWeek === weekKey;
         });
         
@@ -479,7 +497,9 @@ const AdminPlayoffPage: React.FC = () => {
         }
       }
       
-      current.setDate(current.getDate() + 7);
+      // Ga naar volgende week
+      const nextDate = new Date(curY, curM - 1, curD + 7);
+      currentWeekStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
     }
     
     return weeks;

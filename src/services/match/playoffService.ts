@@ -161,40 +161,65 @@ export const playoffService = {
   async generatePlayoffWeeks(start_date: string, end_date: string): Promise<string[]> {
     const seasonData = await seasonService.getSeasonData();
     const vacations = seasonData.vacation_periods || [];
-    const startDate = new Date(start_date);
-    const endDate = new Date(end_date);
+    
+    // Parse als lokale datum (niet UTC!) om DST problemen te voorkomen
+    const [startYear, startMonth, startDay] = start_date.split('-').map(Number);
+    const [endYear, endMonth, endDay] = end_date.split('-').map(Number);
+    const startDate = new Date(startYear, startMonth - 1, startDay);
+    const endDate = new Date(endYear, endMonth - 1, endDay);
+    
     const weeks: string[] = [];
     let currentDate = new Date(startDate);
-    currentDate.setDate(currentDate.getDate() - currentDate.getDay() + 1);
     
-    // Load existing matches to avoid conflicts (normalize to Mondays)
+    // Normaliseer naar maandag van de startweek
+    const dow = currentDate.getDay();
+    const daysToMonday = dow === 0 ? -6 : 1 - dow;
+    currentDate.setDate(currentDate.getDate() + daysToMonday);
+    
+    // Load existing non-playoff matches to avoid conflicts
     const { data: existingMatchesAll } = await supabase
       .from('matches')
       .select('match_date')
+      .eq('is_playoff_match', false)
       .order('match_date');
+    
     const existingMondays = new Set<string>();
     (existingMatchesAll || []).forEach((m: any) => {
       if (!m?.match_date) return;
-      const d = new Date(m.match_date);
-      const monday = new Date(d);
-      const dow = monday.getDay();
-      const delta = dow === 0 ? -6 : 1 - dow;
-      monday.setDate(monday.getDate() + delta);
-      existingMondays.add(monday.toISOString().split('T')[0]);
+      // Parse match date en normaliseer naar maandag (lokale tijd)
+      const matchDate = new Date(m.match_date);
+      const monday = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate());
+      const mdow = monday.getDay();
+      const mdelta = mdow === 0 ? -6 : 1 - mdow;
+      monday.setDate(monday.getDate() + mdelta);
+      
+      const mondayStr = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+      existingMondays.add(mondayStr);
     });
 
     while (currentDate <= endDate) {
-      const weekStart = new Date(currentDate);
-      const weekDateStr = weekStart.toISOString().split('T')[0];
+      const weekYear = currentDate.getFullYear();
+      const weekMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const weekDay = String(currentDate.getDate()).padStart(2, '0');
+      const weekDateStr = `${weekYear}-${weekMonth}-${weekDay}`;
+      
+      // Check vakantie - gebruik lokale datum parsing
       const isVacation = vacations.some((vacation: any) => {
         if (!vacation.is_active) return false;
-        const vacStart = new Date(vacation.start_date);
-        const vacEnd = new Date(vacation.end_date);
-        return weekStart >= vacStart && weekStart <= vacEnd;
+        const [vStartY, vStartM, vStartD] = vacation.start_date.split('-').map(Number);
+        const [vEndY, vEndM, vEndD] = vacation.end_date.split('-').map(Number);
+        const vacStart = new Date(vStartY, vStartM - 1, vStartD);
+        const vacEnd = new Date(vEndY, vEndM - 1, vEndD);
+        return currentDate >= vacStart && currentDate <= vacEnd;
       });
-      const mondayStr = weekStart.toISOString().split('T')[0];
-      const hasAnyConflict = existingMondays.has(mondayStr);
-      if (!isVacation && !hasAnyConflict) weeks.push(weekDateStr);
+      
+      const hasConflict = existingMondays.has(weekDateStr);
+      
+      if (!isVacation && !hasConflict) {
+        weeks.push(weekDateStr);
+      }
+      
+      // Ga naar volgende week (maandag)
       currentDate.setDate(currentDate.getDate() + 7);
     }
     return weeks;
