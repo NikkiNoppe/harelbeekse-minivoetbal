@@ -5,6 +5,23 @@ import { priorityOrderService } from "@/services/priorityOrderService";
 import { teamService } from "@/services/core/teamService";
 import { normalizeTeamsPreferences, scoreTeamForDetails } from "@/services/core/teamPreferencesService";
 
+export interface PlayoffMatch {
+  match_id: number;
+  home_team_id: number | null;
+  away_team_id: number | null;
+  home_position: number | null;
+  away_position: number | null;
+  playoff_type: string | null;
+  is_playoff_finalized: boolean;
+  match_date: string;
+  location: string | null;
+  speeldag: string | null;
+  home_score: number | null;
+  away_score: number | null;
+  home_team_name?: string;
+  away_team_name?: string;
+}
+
 export const playoffService = {
   addDaysToDate(dateStr: string, days: number): string {
     const date = new Date(dateStr);
@@ -27,6 +44,36 @@ export const playoffService = {
     const top = teamsInRankingOrder.slice(0, half);
     const bottom = teamsInRankingOrder.slice(half);
     return { top, bottom };
+  },
+
+  // Generate position-based matches (positions instead of team IDs)
+  generatePositionBasedMatches(
+    positions: number[], 
+    playoffType: 'top' | 'bottom', 
+    rounds: number
+  ): Array<{ home_position: number; away_position: number; round: string }> {
+    const matches: Array<{ home_position: number; away_position: number; round: string }> = [];
+    
+    for (let round = 1; round <= rounds; round++) {
+      for (let i = 0; i < positions.length; i++) {
+        for (let j = i + 1; j < positions.length; j++) {
+          if (round % 2 === 1) {
+            matches.push({ 
+              home_position: positions[i], 
+              away_position: positions[j], 
+              round: `${playoffType}_playoff_r${round}` 
+            });
+          } else {
+            matches.push({ 
+              home_position: positions[j], 
+              away_position: positions[i], 
+              round: `${playoffType}_playoff_r${round}` 
+            });
+          }
+        }
+      }
+    }
+    return matches;
   },
 
   generatePlayoffRoundMatches(teams: number[], roundType: string): Array<{ home: number; away: number; round: string }> {
@@ -69,6 +116,7 @@ export const playoffService = {
     const weeks: string[] = [];
     let currentDate = new Date(startDate);
     currentDate.setDate(currentDate.getDate() - currentDate.getDay() + 1);
+    
     // Load existing matches to avoid conflicts (normalize to Mondays)
     const { data: existingMatchesAll } = await supabase
       .from('matches')
@@ -100,6 +148,278 @@ export const playoffService = {
       currentDate.setDate(currentDate.getDate() + 7);
     }
     return weeks;
+  },
+
+  // NEW: Generate position-based playoffs (concept planning)
+  async generatePositionBasedPlayoffs(
+    topPositions: number[], // e.g. [1,2,3,4,5,6,7,8] for top 8
+    bottomPositions: number[], // e.g. [9,10,11,12,13,14,15] for bottom 7
+    rounds: number,
+    start_date: string,
+    end_date: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const seasonValidation = await this.validateSeasonData();
+      if (!seasonValidation.isValid) return { success: false, message: seasonValidation.message! };
+      
+      const playingWeeks = await this.generatePlayoffWeeks(start_date, end_date);
+      if (playingWeeks.length === 0) return { success: false, message: "Geen beschikbare speelweken binnen de geselecteerde periode." };
+
+      // Generate position-based matches
+      const topMatches = topPositions.length > 0 
+        ? this.generatePositionBasedMatches(topPositions, 'top', rounds) 
+        : [];
+      const bottomMatches = bottomPositions.length > 0 
+        ? this.generatePositionBasedMatches(bottomPositions, 'bottom', rounds) 
+        : [];
+      
+      // Interleave top and bottom matches
+      const allMatches: Array<{ home_position: number; away_position: number; round: string; playoff_type: 'top' | 'bottom' }> = [];
+      const maxLen = Math.max(topMatches.length, bottomMatches.length);
+      for (let i = 0; i < maxLen; i++) {
+        if (i < topMatches.length) allMatches.push({ ...topMatches[i], playoff_type: 'top' });
+        if (i < bottomMatches.length) allMatches.push({ ...bottomMatches[i], playoff_type: 'bottom' });
+      }
+
+      const matchesPerWeek = 7;
+      const positionsPerWeek: Map<number, Set<number>> = new Map();
+      const slotsPerWeek: Map<number, number> = new Map();
+      for (let w = 0; w < playingWeeks.length; w++) { 
+        positionsPerWeek.set(w, new Set()); 
+        slotsPerWeek.set(w, 0); 
+      }
+
+      const placed: Array<{ match: typeof allMatches[0]; week: number; slot: number }> = [];
+      
+      for (const m of allMatches) {
+        let bestWeek: number | null = null; 
+        let bestSlotForWeek = 0;
+        
+        for (let w = 0; w < playingWeeks.length; w++) {
+          const weekPositions = positionsPerWeek.get(w)!; 
+          const slotsUsed = slotsPerWeek.get(w)!;
+          if (slotsUsed >= matchesPerWeek) continue;
+          if (weekPositions.has(m.home_position) || weekPositions.has(m.away_position)) continue;
+          
+          bestWeek = w;
+          bestSlotForWeek = slotsUsed;
+          break;
+        }
+        
+        if (bestWeek === null) {
+          return { success: false, message: "Onvoldoende weken/slots om alle playoff wedstrijden in te plannen." };
+        }
+        
+        const weekPositions = positionsPerWeek.get(bestWeek)!; 
+        weekPositions.add(m.home_position); 
+        weekPositions.add(m.away_position);
+        positionsPerWeek.set(bestWeek, weekPositions); 
+        slotsPerWeek.set(bestWeek, bestSlotForWeek + 1);
+        placed.push({ match: m, week: bestWeek, slot: bestSlotForWeek });
+      }
+
+      const matchInserts: any[] = []; 
+      let counter = 1;
+      
+      for (const { match, week, slot } of placed) {
+        const { venue, timeslot } = await priorityOrderService.getMatchDetails(slot, 7);
+        const baseDate = playingWeeks[week];
+        const isMonday = timeslot?.day_of_week === 1;
+        const matchDate = isMonday ? baseDate : this.addDaysToDate(baseDate, 1);
+        const matchDateTime = localDateTimeToISO(matchDate, timeslot?.start_time || '19:00');
+        
+        matchInserts.push({
+          unique_number: `PO-${counter}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          speeldag: `Playoff`,
+          home_team_id: null, // Position-based: no team assigned yet
+          away_team_id: null,
+          home_position: match.home_position,
+          away_position: match.away_position,
+          playoff_type: match.playoff_type,
+          is_playoff_finalized: false,
+          is_playoff_match: true,
+          match_date: matchDateTime,
+          location: venue,
+          is_cup_match: false,
+          is_submitted: false,
+          is_locked: false
+        });
+        counter++;
+      }
+
+      const { error } = await supabase.from('matches').insert(matchInserts);
+      if (error) return { success: false, message: `Fout bij opslaan: ${error.message}` };
+      
+      return { 
+        success: true, 
+        message: `${matchInserts.length} playoff wedstrijden succesvol aangemaakt (concept - nog niet gefinaliseerd).` 
+      };
+    } catch (e) {
+      return { success: false, message: e instanceof Error ? e.message : 'Onbekende fout' };
+    }
+  },
+
+  // NEW: Finalize playoffs - assign actual teams based on current standings
+  async finalizePlayoffs(
+    standingsMap: Map<number, number> // position -> team_id
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Get all non-finalized playoff matches
+      const { data: playoffMatches, error: fetchError } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('is_playoff_match', true)
+        .eq('is_playoff_finalized', false)
+        .not('home_position', 'is', null);
+
+      if (fetchError) {
+        return { success: false, message: `Fout bij ophalen playoff wedstrijden: ${fetchError.message}` };
+      }
+
+      if (!playoffMatches || playoffMatches.length === 0) {
+        return { success: false, message: "Geen concept playoff wedstrijden gevonden om te finaliseren." };
+      }
+
+      // Update each match with actual team IDs
+      let updatedCount = 0;
+      for (const match of playoffMatches) {
+        const homeTeamId = standingsMap.get(match.home_position);
+        const awayTeamId = standingsMap.get(match.away_position);
+
+        if (!homeTeamId || !awayTeamId) {
+          console.warn(`Kon geen team vinden voor positie ${match.home_position} of ${match.away_position}`);
+          continue;
+        }
+
+        const { error: updateError } = await supabase
+          .from('matches')
+          .update({
+            home_team_id: homeTeamId,
+            away_team_id: awayTeamId,
+            is_playoff_finalized: true
+          })
+          .eq('match_id', match.match_id);
+
+        if (updateError) {
+          console.error(`Fout bij updaten match ${match.match_id}:`, updateError);
+          continue;
+        }
+        updatedCount++;
+      }
+
+      return { 
+        success: true, 
+        message: `${updatedCount} playoff wedstrijden succesvol gefinaliseerd met echte teams.` 
+      };
+    } catch (e) {
+      return { success: false, message: e instanceof Error ? e.message : 'Onbekende fout' };
+    }
+  },
+
+  // NEW: Unfinalize playoffs - revert to position-based (clear team assignments)
+  async unfinalizePlayoffs(): Promise<{ success: boolean; message: string }> {
+    try {
+      const { data: playoffMatches, error: fetchError } = await supabase
+        .from('matches')
+        .select('match_id')
+        .eq('is_playoff_match', true)
+        .eq('is_playoff_finalized', true);
+
+      if (fetchError) {
+        return { success: false, message: `Fout bij ophalen playoff wedstrijden: ${fetchError.message}` };
+      }
+
+      if (!playoffMatches || playoffMatches.length === 0) {
+        return { success: false, message: "Geen gefinaliseerde playoff wedstrijden gevonden." };
+      }
+
+      const { error: updateError } = await supabase
+        .from('matches')
+        .update({
+          home_team_id: null,
+          away_team_id: null,
+          is_playoff_finalized: false
+        })
+        .eq('is_playoff_match', true)
+        .eq('is_playoff_finalized', true);
+
+      if (updateError) {
+        return { success: false, message: `Fout bij terugzetten: ${updateError.message}` };
+      }
+
+      return { 
+        success: true, 
+        message: `${playoffMatches.length} playoff wedstrijden teruggezet naar concept (posities).` 
+      };
+    } catch (e) {
+      return { success: false, message: e instanceof Error ? e.message : 'Onbekende fout' };
+    }
+  },
+
+  // NEW: Get playoff matches with team names resolved
+  async getPlayoffMatches(): Promise<PlayoffMatch[]> {
+    const { data: matches, error } = await supabase
+      .from('matches')
+      .select(`
+        match_id,
+        home_team_id,
+        away_team_id,
+        home_position,
+        away_position,
+        playoff_type,
+        is_playoff_finalized,
+        match_date,
+        location,
+        speeldag,
+        home_score,
+        away_score
+      `)
+      .eq('is_playoff_match', true)
+      .order('match_date');
+
+    if (error || !matches) {
+      console.error('Error fetching playoff matches:', error);
+      return [];
+    }
+
+    // Get team names
+    const teamIds = new Set<number>();
+    matches.forEach(m => {
+      if (m.home_team_id) teamIds.add(m.home_team_id);
+      if (m.away_team_id) teamIds.add(m.away_team_id);
+    });
+
+    const teams = await teamService.getAllTeams();
+    const teamMap = new Map(teams.map(t => [t.team_id, t.team_name]));
+
+    return matches.map(m => ({
+      ...m,
+      home_team_name: m.home_team_id ? teamMap.get(m.home_team_id) : undefined,
+      away_team_name: m.away_team_id ? teamMap.get(m.away_team_id) : undefined
+    }));
+  },
+
+  // Check if there are any position-based (concept) playoffs
+  async hasConceptPlayoffs(): Promise<boolean> {
+    const { count, error } = await supabase
+      .from('matches')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_playoff_match', true)
+      .eq('is_playoff_finalized', false)
+      .not('home_position', 'is', null);
+
+    return !error && (count ?? 0) > 0;
+  },
+
+  // Check if there are any finalized playoffs
+  async hasFinalizedPlayoffs(): Promise<boolean> {
+    const { count, error } = await supabase
+      .from('matches')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_playoff_match', true)
+      .eq('is_playoff_finalized', true);
+
+    return !error && (count ?? 0) > 0;
   },
 
   async generateAndSavePlayoffs(
@@ -167,6 +487,8 @@ export const playoffService = {
           speeldag: `Playoff`,
           home_team_id: match.home,
           away_team_id: match.away,
+          is_playoff_match: true,
+          is_playoff_finalized: true, // Direct finalized because we have team IDs
           match_date: matchDateTime,
           location: venue,
           is_cup_match: false,
@@ -186,11 +508,14 @@ export const playoffService = {
 
   async deletePlayoffMatches(): Promise<{ success: boolean; message: string }> {
     try {
+      // Get playoff match IDs
       const { data: playoffMatchIds, error: fetchError } = await supabase
         .from('matches')
         .select('match_id')
-        .like('speeldag', '%[PLAYOFF:%');
+        .eq('is_playoff_match', true);
+        
       if (fetchError) return { success: false, message: `Fout bij ophalen playoff wedstrijd IDs: ${fetchError.message}` };
+      
       if (playoffMatchIds && playoffMatchIds.length > 0) {
         const { error: teamCostsError } = await supabase
           .from('team_costs')
@@ -198,10 +523,12 @@ export const playoffService = {
           .in('match_id', playoffMatchIds.map(m => m.match_id));
         if (teamCostsError) return { success: false, message: `Fout bij verwijderen playoff team kosten: ${teamCostsError.message}` };
       }
+      
       const { error } = await supabase
         .from('matches')
         .delete()
-        .like('speeldag', '%[PLAYOFF:%');
+        .eq('is_playoff_match', true);
+        
       if (error) return { success: false, message: `Fout bij verwijderen: ${error.message}` };
       return { success: true, message: "Playoff wedstrijden succesvol verwijderd" };
     } catch (error) {
@@ -209,5 +536,3 @@ export const playoffService = {
     }
   }
 };
-
-
