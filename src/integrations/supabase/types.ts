@@ -125,18 +125,22 @@ export type Database = {
         Row: {
           assigned_referee_id: number | null
           away_players: Json | null
+          away_position: number | null
           away_score: number | null
           away_team_id: number | null
           home_players: Json | null
+          home_position: number | null
           home_score: number | null
           home_team_id: number | null
           is_cup_match: boolean | null
           is_locked: boolean | null
+          is_playoff_finalized: boolean | null
           is_playoff_match: boolean | null
           is_submitted: boolean | null
           location: string | null
           match_date: string
           match_id: number
+          playoff_type: string | null
           poll_group_id: string | null
           poll_month: string | null
           referee: string | null
@@ -147,18 +151,22 @@ export type Database = {
         Insert: {
           assigned_referee_id?: number | null
           away_players?: Json | null
+          away_position?: number | null
           away_score?: number | null
           away_team_id?: number | null
           home_players?: Json | null
+          home_position?: number | null
           home_score?: number | null
           home_team_id?: number | null
           is_cup_match?: boolean | null
           is_locked?: boolean | null
+          is_playoff_finalized?: boolean | null
           is_playoff_match?: boolean | null
           is_submitted?: boolean | null
           location?: string | null
           match_date: string
           match_id?: number
+          playoff_type?: string | null
           poll_group_id?: string | null
           poll_month?: string | null
           referee?: string | null
@@ -169,18 +177,22 @@ export type Database = {
         Update: {
           assigned_referee_id?: number | null
           away_players?: Json | null
+          away_position?: number | null
           away_score?: number | null
           away_team_id?: number | null
           home_players?: Json | null
+          home_position?: number | null
           home_score?: number | null
           home_team_id?: number | null
           is_cup_match?: boolean | null
           is_locked?: boolean | null
+          is_playoff_finalized?: boolean | null
           is_playoff_match?: boolean | null
           is_submitted?: boolean | null
           location?: string | null
           match_date?: string
           match_id?: number
+          playoff_type?: string | null
           poll_group_id?: string | null
           poll_month?: string | null
           referee?: string | null
