@@ -168,20 +168,32 @@ const CompactMatchChip = ({
 }: {
   match: PlayoffMatch;
   getTeamDisplay: (match: PlayoffMatch, isHome: boolean) => string;
-}) => (
-  <div className="inline-flex items-center gap-1 px-2 py-1 bg-background border rounded text-xs">
-    <span className="font-medium truncate max-w-[50px] sm:max-w-[70px]">
-      {getTeamDisplay(match, true)}
-    </span>
-    <span className="text-muted-foreground">v</span>
-    <span className="font-medium truncate max-w-[50px] sm:max-w-[70px]">
-      {getTeamDisplay(match, false)}
-    </span>
-    <span className="text-muted-foreground text-[10px] ml-1">
-      {formatMatchTime(match.match_date)}
-    </span>
-  </div>
-);
+}) => {
+  const locationShort = match.location?.split(' ')[0] || '?';
+  
+  return (
+    <div className="inline-flex items-center gap-1.5 px-2 py-1.5 bg-background border rounded text-xs">
+      <span className="font-medium truncate max-w-[50px] sm:max-w-[70px]">
+        {getTeamDisplay(match, true)}
+      </span>
+      <span className="text-muted-foreground">v</span>
+      <span className="font-medium truncate max-w-[50px] sm:max-w-[70px]">
+        {getTeamDisplay(match, false)}
+      </span>
+      <span className="text-muted-foreground text-[10px] ml-1 flex items-center gap-0.5">
+        <Clock className="h-2.5 w-2.5" />
+        {formatMatchTime(match.match_date)}
+      </span>
+      <span className="text-muted-foreground text-[10px] flex items-center gap-0.5">
+        <MapPin className="h-2.5 w-2.5" />
+        {locationShort}
+      </span>
+      <span className="text-muted-foreground text-[10px]">
+        {formatMatchDate(match.match_date)}
+      </span>
+    </div>
+  );
+};
 
 // Compact Week Card Component with BYE indication
 const CompactWeekCard = ({

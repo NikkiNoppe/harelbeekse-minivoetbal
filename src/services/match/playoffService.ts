@@ -24,9 +24,15 @@ export interface PlayoffMatch {
 
 export const playoffService = {
   addDaysToDate(dateStr: string, days: number): string {
-    const date = new Date(dateStr);
+    // Parse als lokale datum om DST problemen te voorkomen
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     date.setDate(date.getDate() + days);
-    return date.toISOString().split('T')[0];
+    
+    const newYear = date.getFullYear();
+    const newMonth = String(date.getMonth() + 1).padStart(2, '0');
+    const newDay = String(date.getDate()).padStart(2, '0');
+    return `${newYear}-${newMonth}-${newDay}`;
   },
 
   async validateSeasonData(): Promise<{ isValid: boolean; message?: string; data?: any }> {
