@@ -77,7 +77,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 1,
     venue_id: 1,
-    venue_name: "De Dageraad Harelbeke",
+    venue_name: "Harelbeke - Dageraad",
     day_of_week: 1,
     start_time: "20:00",
     end_time: "21:00",
@@ -86,7 +86,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 2,
     venue_id: 2,
-    venue_name: "De Vlasschaard Bavikhove",
+    venue_name: "Bavikhove - Vlasschaard",
     day_of_week: 1,
     start_time: "20:00",
     end_time: "21:00",
@@ -95,7 +95,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 3,
     venue_id: 1,
-    venue_name: "De Dageraad Harelbeke",
+    venue_name: "Harelbeke - Dageraad",
     day_of_week: 2,
     start_time: "19:30",
     end_time: "20:30",
@@ -104,7 +104,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 4,
     venue_id: 1,
-    venue_name: "De Dageraad Harelbeke",
+    venue_name: "Harelbeke - Dageraad",
     day_of_week: 1,
     start_time: "19:00",
     end_time: "20:00",
@@ -113,7 +113,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 5,
     venue_id: 2,
-    venue_name: "De Vlasschaard Bavikhove",
+    venue_name: "Bavikhove - Vlasschaard",
     day_of_week: 1,
     start_time: "19:00",
     end_time: "20:00",
@@ -122,7 +122,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 6,
     venue_id: 1,
-    venue_name: "De Dageraad Harelbeke",
+    venue_name: "Harelbeke - Dageraad",
     day_of_week: 2,
     start_time: "18:30",
     end_time: "19:30",
@@ -131,7 +131,7 @@ const FALLBACK_TIMESLOTS: VenueTimeslotWithPriority[] = [
   {
     timeslot_id: 7,
     venue_id: 2,
-    venue_name: "De Vlasschaard Bavikhove",
+    venue_name: "Bavikhove - Vlasschaard",
     day_of_week: 2,
     start_time: "18:30",
     end_time: "19:30",

@@ -7,6 +7,7 @@ import { normalizeTeamsPreferences, scoreTeamForDetails, TeamPreferencesNormaliz
 import { playoffService } from "@/services/match/playoffService";
 import { bekerService as cupService } from "./cupService";
 import { localDateTimeToISO } from "@/lib/dateUtils";
+import { normalizeVenueName } from "@/lib/utils";
 
 export interface CompetitionMatch {
   match_id: number;
@@ -628,7 +629,7 @@ export const competitionService = {
       home_team_id: homeTeamId,
       away_team_id: awayTeamId,
       match_date: matchDateTime,
-      location: venue,
+      location: normalizeVenueName(venue),
       is_cup_match: false,
       is_submitted: false,
       is_locked: false
