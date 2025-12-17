@@ -139,6 +139,7 @@ PlayoffStandingsTable.displayName = 'PlayoffStandingsTable';
 const PlayOffPage: React.FC = () => {
   const { data, isLoading, error, refetch } = usePublicPlayoffData();
   const [selectedDivision, setSelectedDivision] = useState<string>("all");
+  const [selectedSpeeldag, setSelectedSpeeldag] = useState<string>("all");
   const [selectedTeam, setSelectedTeam] = useState<string>("all");
 
   // Convert matches to schedule table format
@@ -153,13 +154,20 @@ const PlayOffPage: React.FC = () => {
       });
       
       const poLabel = match.playoff_type === 'top' ? 'PO1' : 'PO2';
-      const matchday = match.speeldag 
-        ? `${match.speeldag} - ${poLabel}`
+      // Remove "Playoff " prefix if present
+      const speeldagClean = match.speeldag 
+        ? match.speeldag.replace(/^Playoff\s+/i, '')
+        : null;
+      
+      const matchday = speeldagClean 
+        ? `${speeldagClean} - ${poLabel}`
         : poLabel;
       
       return {
         matchId: match.match_id,
         matchday,
+        playoffType: poLabel,
+        speeldagNumber: speeldagClean,
         date: dateStr,
         time: match.time,
         homeTeamName: match.home_team_name,
@@ -189,14 +197,28 @@ const PlayOffPage: React.FC = () => {
     });
   }, [scheduleMatches]);
 
+  // Get unique speeldagen for filter (numerically sorted)
+  const speeldagen = useMemo(() => {
+    const uniqueSpeeldagen = new Set<string>();
+    scheduleMatches.forEach(m => {
+      if (m.speeldagNumber) uniqueSpeeldagen.add(m.speeldagNumber);
+    });
+    return Array.from(uniqueSpeeldagen).sort((a, b) => {
+      const numA = parseInt(a.match(/\d+/)?.[0] || '0');
+      const numB = parseInt(b.match(/\d+/)?.[0] || '0');
+      return numA - numB;
+    });
+  }, [scheduleMatches]);
+
   // Filter matches
   const filteredMatches = useMemo(() => {
     return scheduleMatches.filter(m => {
-      if (selectedDivision !== "all" && m.matchday !== selectedDivision) return false;
+      if (selectedDivision !== "all" && m.playoffType !== selectedDivision) return false;
+      if (selectedSpeeldag !== "all" && m.speeldagNumber !== selectedSpeeldag) return false;
       if (selectedTeam !== "all" && m.homeTeamName !== selectedTeam && m.awayTeamName !== selectedTeam) return false;
       return true;
     });
-  }, [scheduleMatches, selectedDivision, selectedTeam]);
+  }, [scheduleMatches, selectedDivision, selectedSpeeldag, selectedTeam]);
 
   if (isLoading) {
     return <PlayoffLoading />;
@@ -257,7 +279,21 @@ const PlayOffPage: React.FC = () => {
           <CardDescription>Volledig overzicht van alle play-off wedstrijden</CardDescription>
         </CardHeader>
         <CardContent className="bg-transparent">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <Label className="mb-2 block">Speeldag</Label>
+              <Select value={selectedSpeeldag} onValueChange={setSelectedSpeeldag}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Alle speeldagen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle speeldagen</SelectItem>
+                  {speeldagen.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <Label className="mb-2 block">Divisie</Label>
               <Select value={selectedDivision} onValueChange={setSelectedDivision}>
