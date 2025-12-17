@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { localDateTimeToISO } from "@/lib/dateUtils";
+import { normalizeVenueName } from "@/lib/utils";
 import { seasonService } from "@/services/seasonService";
 import { priorityOrderService } from "@/services/priorityOrderService";
 import { teamService } from "@/services/core/teamService";
@@ -382,7 +383,7 @@ export const playoffService = {
             is_playoff_finalized: false,
             is_playoff_match: true,
             match_date: matchDateTime,
-            location: slot.venue,
+            location: normalizeVenueName(slot.venue),
             is_cup_match: false,
             is_submitted: false,
             is_locked: false
@@ -411,7 +412,7 @@ export const playoffService = {
             is_playoff_finalized: false,
             is_playoff_match: true,
             match_date: matchDateTime,
-            location: slot.venue,
+            location: normalizeVenueName(slot.venue),
             is_cup_match: false,
             is_submitted: false,
             is_locked: false

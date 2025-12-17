@@ -75,6 +75,32 @@ export function cn(...inputs: any[]) {
   }
 }
 
+/**
+ * Normalizes venue names to a consistent short format for display
+ * Examples:
+ * - "Sporthal De Dageraad Harelbeke" → "Harelbeke - Dageraad"
+ * - "De Vlasschaard Bavikhove" → "Bavikhove - Vlasschaard"
+ * - "De Dageraad" → "Harelbeke - Dageraad"
+ */
+export function normalizeVenueName(venue: string | null | undefined): string {
+  if (!venue) return 'Onbekend';
+  
+  const loc = venue.toLowerCase();
+  
+  // Dageraad / Harelbeke variations
+  if (loc.includes('dageraad') || loc.includes('harelbeke')) {
+    return 'Harelbeke - Dageraad';
+  }
+  
+  // Vlasschaard / Bavikhove variations
+  if (loc.includes('vlasschaard') || loc.includes('bavikhove')) {
+    return 'Bavikhove - Vlasschaard';
+  }
+  
+  // Fallback: return original or cleaned version
+  return venue.replace(/^Sporthal\s+/i, '').trim();
+}
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('nl-NL', {
     style: 'currency',

@@ -4,6 +4,7 @@ import { priorityOrderService } from "@/services/priorityOrderService";
 import { teamService } from "@/services/core/teamService";
 import { normalizeTeamsPreferences, scoreTeamForDetails, TeamPreferencesNormalized } from "@/services/core/teamPreferencesService";
 import { localDateTimeToISO } from "@/lib/dateUtils";
+import { normalizeVenueName } from "@/lib/utils";
 
 export interface CupMatch {
   match_id: number;
@@ -225,7 +226,7 @@ export const bekerService = {
       home_team_id: homeTeamId,
       away_team_id: awayTeamId,
       match_date: matchDateTime,
-      location: venue,
+      location: normalizeVenueName(venue),
       is_cup_match: true,
       is_submitted: false,
       is_locked: false
