@@ -23,15 +23,18 @@ export interface PlayoffMatchData {
   speeldag: string;
   match_date: string;
   time: string;
-  home_team_id: number;
-  away_team_id: number;
+  home_team_id: number | null;
+  away_team_id: number | null;
   home_team_name: string;
   away_team_name: string;
+  home_position: number | null;
+  away_position: number | null;
   home_score: number | null;
   away_score: number | null;
   location: string;
   playoff_type: 'top' | 'bottom';
   is_completed: boolean;
+  is_finalized: boolean;
 }
 
 interface RegularStanding {
@@ -72,11 +75,14 @@ const fetchPlayoffMatches = async (): Promise<any[]> => {
       match_date,
       home_team_id,
       away_team_id,
+      home_position,
+      away_position,
       home_score,
       away_score,
       location,
       playoff_type,
-      is_submitted
+      is_submitted,
+      is_playoff_finalized
     `)
     .eq('is_playoff_match', true)
     .order('match_date', { ascending: true });
@@ -215,6 +221,20 @@ export const usePublicPlayoffData = () => {
         };
       }).sort((a, b) => b.total_points - a.total_points || b.playoff_goal_diff - a.playoff_goal_diff);
 
+      // Helper to get team name with fallback to position
+      const getTeamName = (teamId: number | null, position: number | null): string => {
+        if (teamId && teamMap.has(teamId)) {
+          return teamMap.get(teamId)!;
+        }
+        if (position) {
+          return `Team pos. ${position}`;
+        }
+        return 'Onbekend';
+      };
+
+      // Check if any playoff matches are finalized
+      const isFinalized = playoffMatchesRaw.some(m => m.is_playoff_finalized === true);
+
       // Format matches for display
       const playoffMatches: PlayoffMatchData[] = playoffMatchesRaw.map(match => {
         const matchDate = new Date(match.match_date);
@@ -227,13 +247,16 @@ export const usePublicPlayoffData = () => {
           time,
           home_team_id: match.home_team_id,
           away_team_id: match.away_team_id,
-          home_team_name: teamMap.get(match.home_team_id) || 'Onbekend',
-          away_team_name: teamMap.get(match.away_team_id) || 'Onbekend',
+          home_team_name: getTeamName(match.home_team_id, match.home_position),
+          away_team_name: getTeamName(match.away_team_id, match.away_position),
+          home_position: match.home_position,
+          away_position: match.away_position,
           home_score: match.home_score,
           away_score: match.away_score,
           location: match.location || '',
           playoff_type: match.playoff_type === 'top' ? 'top' : 'bottom',
           is_completed: match.is_submitted && match.home_score !== null && match.away_score !== null,
+          is_finalized: match.is_playoff_finalized ?? false,
         };
       });
 
@@ -249,6 +272,7 @@ export const usePublicPlayoffData = () => {
         upcomingMatches,
         pastMatches,
         hasData: regularStandings.length > 0,
+        isFinalized,
       };
     },
     staleTime: 5 * 60 * 1000,
