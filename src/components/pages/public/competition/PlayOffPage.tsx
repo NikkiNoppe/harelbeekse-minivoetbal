@@ -6,7 +6,7 @@ import { AlertCircle, Trophy } from "lucide-react";
 import { usePublicPlayoffData, PlayoffTeam, PlayoffMatchData } from "@/hooks/usePublicPlayoffData";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ResponsiveScheduleTable from "@/components/tables/ResponsiveScheduleTable";
 
@@ -152,9 +152,14 @@ const PlayOffPage: React.FC = () => {
         month: 'short' 
       });
       
+      const poLabel = match.playoff_type === 'top' ? 'PO1' : 'PO2';
+      const matchday = match.speeldag 
+        ? `${match.speeldag} - ${poLabel}`
+        : poLabel;
+      
       return {
         matchId: match.match_id,
-        matchday: match.playoff_type === 'top' ? 'PO1' : 'PO2',
+        matchday,
         date: dateStr,
         time: match.time,
         homeTeamName: match.home_team_name,
@@ -167,14 +172,21 @@ const PlayOffPage: React.FC = () => {
     });
   }, [data?.allMatches]);
 
-  // Get unique team names for filter
+  // Get unique team names for filter (numerically sorted for position-based names)
   const teamNames = useMemo(() => {
     const names = new Set<string>();
     scheduleMatches.forEach(m => {
       if (m.homeTeamName) names.add(m.homeTeamName);
       if (m.awayTeamName) names.add(m.awayTeamName);
     });
-    return Array.from(names).sort((a, b) => a.localeCompare(b, 'nl'));
+    return Array.from(names).sort((a, b) => {
+      const posA = a.match(/Team pos\. (\d+)/);
+      const posB = b.match(/Team pos\. (\d+)/);
+      if (posA && posB) return parseInt(posA[1]) - parseInt(posB[1]);
+      if (posA) return -1;
+      if (posB) return 1;
+      return a.localeCompare(b, 'nl');
+    });
   }, [scheduleMatches]);
 
   // Filter matches
@@ -208,28 +220,26 @@ const PlayOffPage: React.FC = () => {
         <Badge className="badge-purple">Seizoen 2025-2026</Badge>
       </div>
 
-      {/* Standings with tabs */}
+      {/* Play-Off 1 Standings */}
       <Card>
-        <CardContent className="p-4">
-          <Tabs defaultValue="po1" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="po1" className="text-sm">
-                <Trophy className="w-4 h-4 mr-2" />
-                Play-Off 1 (Top 8)
-              </TabsTrigger>
-              <TabsTrigger value="po2" className="text-sm">
-                Play-Off 2 (Bottom 7)
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="po1">
-              <PlayoffStandingsTable teams={po1Teams} title="Play-Off 1" />
-            </TabsContent>
-            
-            <TabsContent value="po2">
-              <PlayoffStandingsTable teams={po2Teams} title="Play-Off 2" />
-            </TabsContent>
-          </Tabs>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Trophy className="w-5 h-5 text-primary" />
+            Play-Off 1 (Top 8)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          <PlayoffStandingsTable teams={po1Teams} title="Play-Off 1" />
+        </CardContent>
+      </Card>
+
+      {/* Play-Off 2 Standings */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Play-Off 2 (Bottom 7)</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          <PlayoffStandingsTable teams={po2Teams} title="Play-Off 2" />
         </CardContent>
       </Card>
 
