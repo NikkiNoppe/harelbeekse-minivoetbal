@@ -44,11 +44,16 @@ export function isoToLocalDateTime(isoString: string): { date: string; time: str
   }
 }
 
-/** Formats a date for display in Belgian locale (long) */
+/** Formats a date for display in Belgian locale (long) - uses UTC for consistency */
 export function formatDateForDisplay(isoString: string): string {
   try {
     const date = new Date(isoString);
-    return date.toLocaleDateString(BELGIAN_LOCALE, { year: 'numeric', month: 'long', day: 'numeric' });
+    const months = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 
+                    'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+    const day = date.getUTCDate();
+    const month = months[date.getUTCMonth()];
+    const year = date.getUTCFullYear();
+    return `${day} ${month} ${year}`;
   } catch (error) {
     console.error('Error formatting date for display:', error);
     return 'Ongeldige datum';
@@ -77,11 +82,14 @@ export function getCurrentISO(): string {
   return new Date().toISOString();
 }
 
-/** Formats a date for display in short Belgian format (DD-MM-YYYY) */
+/** Formats a date for display in short Belgian format (DD-MM-YYYY) - uses UTC for consistency */
 export function formatDateShort(isoString: string): string {
   try {
     const date = new Date(isoString);
-    return date.toLocaleDateString(BELGIAN_LOCALE, { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const year = date.getUTCFullYear();
+    return `${day}-${month}-${year}`;
   } catch (error) {
     console.error('Error formatting short date:', error);
     return 'Ongeldige datum';
@@ -111,18 +119,16 @@ export function sortDatesAsc(a: string, b: string): number {
   return new Date(a).getTime() - new Date(b).getTime();
 }
 
-/** Formats date with Dutch day abbreviation (e.g., "MA 01-09-2025") */
+/** Formats date with Dutch day abbreviation (e.g., "MA 01-09-2025") - uses UTC for consistency */
 export function formatDateWithDay(isoString: string): string {
   try {
     const date = new Date(isoString);
     const dayNames = ['ZO', 'MA', 'DI', 'WO', 'DO', 'VR', 'ZA'];
-    const dayAbbr = dayNames[date.getDay()];
-    const formattedDate = date.toLocaleDateString('nl-NL', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric' 
-    });
-    return `${dayAbbr} ${formattedDate}`;
+    const dayAbbr = dayNames[date.getUTCDay()];
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const year = date.getUTCFullYear();
+    return `${dayAbbr} ${day}-${month}-${year}`;
   } catch (error) {
     console.error('Error formatting date with day:', error);
     return 'Ongeldige datum';
