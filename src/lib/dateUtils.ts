@@ -55,11 +55,12 @@ export function formatDateForDisplay(isoString: string): string {
   }
 }
 
-/** Formats a time for display in Belgian locale */
+/** Formats a time for display - uses UTC for consistent fixed times (no daylight saving shifts) */
 export function formatTimeForDisplay(isoString: string): string {
   try {
     const date = new Date(isoString);
-    return date.toLocaleTimeString(BELGIAN_LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false });
+    // Gebruik UTC om vaste tijden te behouden (19:00 = altijd 19:00, 18:30 = altijd 18:30)
+    return `${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}`;
   } catch (error) {
     console.error('Error formatting time for display:', error);
     return 'Ongeldige tijd';

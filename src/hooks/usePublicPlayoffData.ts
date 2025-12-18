@@ -238,7 +238,8 @@ export const usePublicPlayoffData = () => {
       // Format matches for display
       const playoffMatches: PlayoffMatchData[] = playoffMatchesRaw.map(match => {
         const matchDate = new Date(match.match_date);
-        const time = matchDate.toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
+        // Gebruik UTC om vaste tijden te behouden (19:00 = altijd 19:00, geen winter/zomeruur verschuiving)
+        const time = `${String(matchDate.getUTCHours()).padStart(2, '0')}:${String(matchDate.getUTCMinutes()).padStart(2, '0')}`;
         
         return {
           match_id: match.match_id,
