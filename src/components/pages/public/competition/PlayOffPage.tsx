@@ -8,6 +8,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ResponsiveScheduleTable from "@/components/tables/ResponsiveScheduleTable";
+import { PageHeader } from "@/components/navigation";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Skeleton components
 const StandingsTableSkeleton = memo(() => <div className="space-y-4">
@@ -132,6 +134,7 @@ const PlayOffPage: React.FC = () => {
   const [selectedDivision, setSelectedDivision] = useState<string>("all");
   const [selectedSpeeldag, setSelectedSpeeldag] = useState<string>("all");
   const [selectedTeam, setSelectedTeam] = useState<string>("all");
+  const isMobile = useIsMobile();
 
   // Convert matches to schedule table format
   const scheduleMatches = useMemo(() => {
@@ -215,12 +218,19 @@ const PlayOffPage: React.FC = () => {
     po1Teams,
     po2Teams
   } = data;
-  return <div className="space-y-8 animate-slide-up">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Play-Off Klassement</h2>
-        <Badge className="badge-purple">Seizoen 2025-2026</Badge>
-      </div>
+  return <div className="space-y-6 animate-slide-up">
+      {/* Header - PageHeader on mobile, inline header on desktop */}
+      {isMobile ? (
+        <PageHeader 
+          title="Play-Off Klassement" 
+          subtitle="Seizoen 2025-2026"
+        />
+      ) : (
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold">Play-Off Klassement</h2>
+          <Badge className="badge-purple">Seizoen 2025-2026</Badge>
+        </div>
+      )}
 
       {/* Play-Off 1 Standings */}
       <Card>

@@ -1041,3 +1041,15 @@ tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-
 .btn--danger .lucide-trash-2 {
   @apply text-red-600;
 }
+
+/* 20. SAFE AREA FOR MOBILE BOTTOM NAV */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Ensure bottom nav doesn't overlap content */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}

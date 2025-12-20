@@ -10,7 +10,8 @@ import { useCompetitionData, Team, MatchData } from "@/hooks/useCompetitionData"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
- 
+import { PageHeader } from "@/components/navigation";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 // Uniform skeleton for standings table
@@ -166,6 +167,7 @@ const CompetitiePage: React.FC = () => {
 
   const [selectedMatchday, setSelectedMatchday] = useState<string | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   const filteredMatches = useMemo(() => {
     const filtered = matches.all.filter((m) => {
@@ -198,10 +200,18 @@ const CompetitiePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 animate-slide-up">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Competitiestand 2025/2026</h2>
-      </div>
+    <div className="space-y-6 animate-slide-up">
+      {/* Header - PageHeader on mobile, inline header on desktop */}
+      {isMobile ? (
+        <PageHeader 
+          title="Competitiestand" 
+          subtitle="Seizoen 2025/2026"
+        />
+      ) : (
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold">Competitiestand 2025/2026</h2>
+        </div>
+      )}
 
       <section>
         <Card>

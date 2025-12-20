@@ -52,6 +52,30 @@ export const ADMIN_ROUTES = {
   'notification-management': '/admin/notification-management',
 } as const;
 
+// Route groupings for mobile navigation
+export const MATCHDAY_ROUTES = {
+  'match-forms-league': ADMIN_ROUTES['match-forms-league'],
+  'match-forms-cup': ADMIN_ROUTES['match-forms-cup'],
+  'match-forms-playoffs': ADMIN_ROUTES['match-forms-playoffs'],
+} as const;
+
+export const ADMIN_MANAGEMENT_ROUTES = {
+  players: ADMIN_ROUTES.players,
+  scheidsrechters: ADMIN_ROUTES.scheidsrechters,
+  schorsingen: ADMIN_ROUTES.schorsingen,
+  teams: ADMIN_ROUTES.teams,
+  users: ADMIN_ROUTES.users,
+} as const;
+
+export const ADMIN_SYSTEM_ROUTES = {
+  competition: ADMIN_ROUTES.competition,
+  cup: ADMIN_ROUTES.cup,
+  playoffs: ADMIN_ROUTES.playoffs,
+  settings: ADMIN_ROUTES.settings,
+  'blog-management': ADMIN_ROUTES['blog-management'],
+  'notification-management': ADMIN_ROUTES['notification-management'],
+} as const;
+
 // Alle routes gecombineerd
 export const ALL_ROUTES = {
   ...PUBLIC_ROUTES,
