@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Trash2, Plus, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { costSettingsService, financialService } from "@/services/financial";
+import { costSettingsService, financialService } from "@/domains/financial";
 import { MatchFormData } from "../types";
 import { getCurrentDate } from "@/lib/dateUtils";
 
