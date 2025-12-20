@@ -12,6 +12,8 @@ import NotificationPopup from "@/components/common/NotificationPopup";
 import { getTabFromPath, getPathFromTab, PUBLIC_ROUTES, ADMIN_ROUTES } from "@/config/routes";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 import { useRouteMeta } from "@/hooks/useRouteMeta";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileBottomNav } from "@/components/navigation";
 
 const Layout: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
@@ -20,6 +22,7 @@ const Layout: React.FC = () => {
   const navigate = useNavigate();
   const { isTabVisible, loading: tabLoading } = useTabVisibility();
   const previousActiveTab = useRef<string | null>(null);
+  const isMobile = useIsMobile();
   
   // Update document title and meta tags based on current route
   useRouteMeta();
@@ -153,7 +156,7 @@ const Layout: React.FC = () => {
 
   // Publieke layout met Header hamburgermenu
   return (
-    <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
+    <div className={`min-h-screen flex flex-col bg-purple-100 text-foreground ${isMobile ? 'pb-16' : ''}`}>
       <Header 
         onLogoClick={handleLogoClick} 
         onLoginClick={handleLoginClick}
@@ -169,7 +172,8 @@ const Layout: React.FC = () => {
           <MainPages activeTab="algemeen" setActiveTab={setActiveTab} />
         )}
       </main>
-      <Footer />
+      {!isMobile && <Footer />}
+      {isMobile && <MobileBottomNav />}
       <NotificationPopup />
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
         <DialogContent className="modal">
