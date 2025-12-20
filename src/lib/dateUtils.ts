@@ -6,6 +6,20 @@ const BELGIAN_LOCALE = 'nl-BE';
 const DATE_FORMAT = 'en-CA'; // YYYY-MM-DD
 const TIME_FORMAT = 'en-GB'; // HH:MM
 
+/** Helper function to parse date strings to UTC Date - handles both ISO and YYYY-MM-DD formats */
+function parseToUTCDate(dateString: string): Date {
+  if (dateString.includes('T')) {
+    // Full ISO string: 2026-01-19T19:00:00.000Z
+    return new Date(dateString);
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    // YYYY-MM-DD format: parse as UTC to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+  // Fallback: try to parse as is
+  return new Date(dateString);
+}
+
 /** Converts local date and time strings to ISO string for DB storage with fixed timezone */
 export function localDateTimeToISO(dateStr: string, timeStr: string): string {
   try {
@@ -47,7 +61,10 @@ export function isoToLocalDateTime(isoString: string): { date: string; time: str
 /** Formats a date for display in Belgian locale (long) - uses UTC for consistency */
 export function formatDateForDisplay(isoString: string): string {
   try {
-    const date = new Date(isoString);
+    if (!isoString) return 'Ongeldige datum';
+    const date = parseToUTCDate(isoString);
+    if (isNaN(date.getTime())) return 'Ongeldige datum';
+    
     const months = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 
                     'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
     const day = date.getUTCDate();
@@ -85,7 +102,10 @@ export function getCurrentISO(): string {
 /** Formats a date for display in short Belgian format (DD-MM-YYYY) - uses UTC for consistency */
 export function formatDateShort(isoString: string): string {
   try {
-    const date = new Date(isoString);
+    if (!isoString) return 'Ongeldige datum';
+    const date = parseToUTCDate(isoString);
+    if (isNaN(date.getTime())) return 'Ongeldige datum';
+    
     const day = String(date.getUTCDate()).padStart(2, '0');
     const month = String(date.getUTCMonth() + 1).padStart(2, '0');
     const year = date.getUTCFullYear();
@@ -122,7 +142,10 @@ export function sortDatesAsc(a: string, b: string): number {
 /** Formats date with Dutch day abbreviation (e.g., "MA 01-09-2025") - uses UTC for consistency */
 export function formatDateWithDay(isoString: string): string {
   try {
-    const date = new Date(isoString);
+    if (!isoString) return 'Ongeldige datum';
+    const date = parseToUTCDate(isoString);
+    if (isNaN(date.getTime())) return 'Ongeldige datum';
+    
     const dayNames = ['ZO', 'MA', 'DI', 'WO', 'DO', 'VR', 'ZA'];
     const dayAbbr = dayNames[date.getUTCDay()];
     const day = String(date.getUTCDate()).padStart(2, '0');
