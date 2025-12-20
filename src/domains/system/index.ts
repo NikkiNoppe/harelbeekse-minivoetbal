@@ -4,3 +4,4 @@
 export * from './services';
 export * from './hooks';
 export * from './context';
+export * from './pages';

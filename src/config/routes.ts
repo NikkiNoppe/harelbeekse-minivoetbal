@@ -1,55 +1,145 @@
 /**
  * Route Configuration
  * 
- * Centralized route mappings for the application.
+ * Centralized route mappings for the application, organized by functional domain.
  * All routes are defined here and can be imported throughout the app.
+ * 
+ * DOMAINS:
+ * 1. Matches & Scores - Competition, cup, playoffs, match forms
+ * 2. Teams & Players - Team management, player management, referees
+ * 3. Cards & Suspensions - Card overview, suspension management
+ * 4. Financial Administration - Cost management, transactions
+ * 5. System & Admin Management - Users, settings, blog, notifications
  * 
  * @example
  * ```tsx
- * import { PUBLIC_ROUTES, ADMIN_ROUTES, getPathFromTab } from '@/config/routes';
+ * import { PUBLIC_ROUTES, ADMIN_ROUTES, DOMAIN_ROUTES } from '@/config/routes';
  * 
- * // Navigate to a public route
- * navigate(PUBLIC_ROUTES.algemeen);
- * 
- * // Navigate to an admin route
- * navigate(ADMIN_ROUTES['match-forms']);
- * 
- * // Get path from tab name
- * const path = getPathFromTab('competitie');
+ * // Navigate to a domain route
+ * navigate(DOMAIN_ROUTES.matches.public.competition);
+ * navigate(DOMAIN_ROUTES.matches.admin.matchForms);
  * ```
  */
 
-// Publieke routes
-export const PUBLIC_ROUTES = {
-  algemeen: '/algemeen',
-  competitie: '/competitie',
-  beker: '/beker',
-  playoff: '/playoff',
-  reglement: '/reglement',
-  kaarten: '/kaarten',
-  teams: '/teams',
-  scheidsrechters: '/scheidsrechters',
+// =============================================================================
+// DOMAIN 1: MATCHES & SCORES
+// =============================================================================
+export const MATCHES_ROUTES = {
+  public: {
+    competition: '/competitie',
+    cup: '/beker',
+    playoff: '/playoff',
+  },
+  admin: {
+    matchForms: '/admin/match-forms',
+    matchFormsLeague: '/admin/match-forms/league',
+    matchFormsCup: '/admin/match-forms/cup',
+    matchFormsPlayoffs: '/admin/match-forms/playoffs',
+    competition: '/admin/competition',
+    cup: '/admin/cup',
+    playoffs: '/admin/playoffs',
+  },
 } as const;
 
-// Admin routes
+// =============================================================================
+// DOMAIN 2: TEAMS & PLAYERS
+// =============================================================================
+export const TEAMS_PLAYERS_ROUTES = {
+  public: {
+    teams: '/teams',
+    referees: '/scheidsrechters',
+  },
+  admin: {
+    players: '/admin/players',
+    teams: '/admin/teams',
+    referees: '/admin/scheidsrechters',
+  },
+} as const;
+
+// =============================================================================
+// DOMAIN 3: CARDS & SUSPENSIONS
+// =============================================================================
+export const CARDS_SUSPENSIONS_ROUTES = {
+  public: {
+    cards: '/kaarten',
+  },
+  admin: {
+    suspensions: '/admin/suspensions',
+    teamSuspensions: '/admin/schorsingen', // Team manager view
+  },
+} as const;
+
+// =============================================================================
+// DOMAIN 4: FINANCIAL ADMINISTRATION
+// =============================================================================
+export const FINANCIAL_ROUTES = {
+  admin: {
+    financial: '/admin/financial',
+  },
+} as const;
+
+// =============================================================================
+// DOMAIN 5: SYSTEM & ADMIN MANAGEMENT
+// =============================================================================
+export const SYSTEM_ROUTES = {
+  public: {
+    info: '/algemeen',
+    regulations: '/reglement',
+  },
+  admin: {
+    users: '/admin/users',
+    settings: '/admin/settings',
+    blog: '/admin/blog-management',
+    notifications: '/admin/notification-management',
+  },
+} as const;
+
+// =============================================================================
+// COMBINED DOMAIN ROUTES (for easy access)
+// =============================================================================
+export const DOMAIN_ROUTES = {
+  matches: MATCHES_ROUTES,
+  teamsPlayers: TEAMS_PLAYERS_ROUTES,
+  cardsSuspensions: CARDS_SUSPENSIONS_ROUTES,
+  financial: FINANCIAL_ROUTES,
+  system: SYSTEM_ROUTES,
+} as const;
+
+// =============================================================================
+// LEGACY ROUTES (backwards compatibility)
+// =============================================================================
+
+// Publieke routes (legacy format)
+export const PUBLIC_ROUTES = {
+  algemeen: SYSTEM_ROUTES.public.info,
+  competitie: MATCHES_ROUTES.public.competition,
+  beker: MATCHES_ROUTES.public.cup,
+  playoff: MATCHES_ROUTES.public.playoff,
+  reglement: SYSTEM_ROUTES.public.regulations,
+  kaarten: CARDS_SUSPENSIONS_ROUTES.public.cards,
+  teams: TEAMS_PLAYERS_ROUTES.public.teams,
+  scheidsrechters: TEAMS_PLAYERS_ROUTES.public.referees,
+} as const;
+
+// Admin routes (legacy format)
 export const ADMIN_ROUTES = {
-  'match-forms': '/admin/match-forms',
-  'match-forms-league': '/admin/match-forms/league',
-  'match-forms-cup': '/admin/match-forms/cup',
-  'match-forms-playoffs': '/admin/match-forms/playoffs',
-  players: '/admin/players',
-  teams: '/admin/teams',
-  users: '/admin/users',
-  competition: '/admin/competition',
-  playoffs: '/admin/playoffs',
-  cup: '/admin/cup',
-  financial: '/admin/financial',
-  settings: '/admin/settings',
-  suspensions: '/admin/suspensions',
-  schorsingen: '/admin/schorsingen',
-  scheidsrechters: '/admin/scheidsrechters',
-  'blog-management': '/admin/blog-management',
-  'notification-management': '/admin/notification-management',
+  'match-forms': MATCHES_ROUTES.admin.matchForms,
+  'match-forms-league': MATCHES_ROUTES.admin.matchFormsLeague,
+  'match-forms-cup': MATCHES_ROUTES.admin.matchFormsCup,
+  'match-forms-playoffs': MATCHES_ROUTES.admin.matchFormsPlayoffs,
+  players: TEAMS_PLAYERS_ROUTES.admin.players,
+  teams: TEAMS_PLAYERS_ROUTES.admin.teams,
+  users: SYSTEM_ROUTES.admin.users,
+  competition: MATCHES_ROUTES.admin.competition,
+  playoffs: MATCHES_ROUTES.admin.playoffs,
+  cup: MATCHES_ROUTES.admin.cup,
+  financial: FINANCIAL_ROUTES.admin.financial,
+  settings: SYSTEM_ROUTES.admin.settings,
+  suspensions: CARDS_SUSPENSIONS_ROUTES.admin.suspensions,
+  schorsingen: CARDS_SUSPENSIONS_ROUTES.admin.teamSuspensions,
+  scheidsrechters: TEAMS_PLAYERS_ROUTES.admin.referees,
+  'blog-management': SYSTEM_ROUTES.admin.blog,
+  'notification-management': SYSTEM_ROUTES.admin.notifications,
 } as const;
 
 // Route groupings for mobile navigation
