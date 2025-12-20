@@ -6,15 +6,12 @@ import { AlertCircle, Trophy } from "lucide-react";
 import { usePublicPlayoffData, PlayoffTeam, PlayoffMatchData } from "@/hooks/usePublicPlayoffData";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ResponsiveScheduleTable from "@/components/tables/ResponsiveScheduleTable";
 
 // Skeleton components
-const StandingsTableSkeleton = memo(() => (
-  <div className="space-y-4">
-    {[...Array(8)].map((_, index) => (
-      <div key={index} className="flex justify-between items-center p-3">
+const StandingsTableSkeleton = memo(() => <div className="space-y-4">
+    {[...Array(8)].map((_, index) => <div key={index} className="flex justify-between items-center p-3">
         <div className="flex items-center space-x-3">
           <Skeleton className="h-6 w-6 rounded" />
           <Skeleton className="h-4 w-32" />
@@ -24,14 +21,10 @@ const StandingsTableSkeleton = memo(() => (
           <Skeleton className="h-4 w-8" />
           <Skeleton className="h-4 w-8" />
         </div>
-      </div>
-    ))}
-  </div>
-));
+      </div>)}
+  </div>);
 StandingsTableSkeleton.displayName = 'StandingsTableSkeleton';
-
-const PlayoffLoading = memo(() => (
-  <div className="space-y-8 animate-slide-up">
+const PlayoffLoading = memo(() => <div className="space-y-8 animate-slide-up">
     <div className="flex justify-between items-center">
       <h2 className="text-2xl font-semibold">Play-Off Klassement</h2>
       <Badge className="badge-purple">Seizoen 2025-2026</Badge>
@@ -41,12 +34,13 @@ const PlayoffLoading = memo(() => (
         <StandingsTableSkeleton />
       </CardContent>
     </Card>
-  </div>
-));
+  </div>);
 PlayoffLoading.displayName = 'PlayoffLoading';
-
-const PlayoffError = memo(({ onRetry }: { onRetry: () => void }) => (
-  <div className="space-y-8 animate-slide-up">
+const PlayoffError = memo(({
+  onRetry
+}: {
+  onRetry: () => void;
+}) => <div className="space-y-8 animate-slide-up">
     <Card>
       <CardContent className="py-12">
         <div className="text-center">
@@ -58,12 +52,9 @@ const PlayoffError = memo(({ onRetry }: { onRetry: () => void }) => (
         </div>
       </CardContent>
     </Card>
-  </div>
-));
+  </div>);
 PlayoffError.displayName = 'PlayoffError';
-
-const PlayoffEmptyState = memo(() => (
-  <div className="space-y-8 animate-slide-up">
+const PlayoffEmptyState = memo(() => <div className="space-y-8 animate-slide-up">
     <Card>
       <CardContent className="py-12">
         <div className="text-center">
@@ -75,40 +66,40 @@ const PlayoffEmptyState = memo(() => (
         </div>
       </CardContent>
     </Card>
-  </div>
-));
+  </div>);
 PlayoffEmptyState.displayName = 'PlayoffEmptyState';
 
 // Playoff standings table component
-const PlayoffStandingsTable = memo(({ teams, title }: { teams: PlayoffTeam[]; title: string }) => {
+const PlayoffStandingsTable = memo(({
+  teams,
+  title
+}: {
+  teams: PlayoffTeam[];
+  title: string;
+}) => {
   if (!teams || teams.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
+    return <div className="text-center py-8 text-muted-foreground">
         Geen teams beschikbaar
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="overflow-x-auto">
+  return <div className="overflow-x-auto">
       <Table className="table">
         <TableHeader>
           <TableRow className="table-header-row">
             <TableHead className="num w-10">Pos</TableHead>
             <TableHead className="left">Team</TableHead>
-            <TableHead className="w-12 text-center" title="Playoff wedstrijden">PO</TableHead>
+            <TableHead className="w-12 text-center" title="Playoff wedstrijden">​Wed</TableHead>
             <TableHead className="w-10 text-center" title="Gewonnen">W</TableHead>
             <TableHead className="w-10 text-center" title="Gelijk">G</TableHead>
             <TableHead className="w-10 text-center" title="Verloren">V</TableHead>
             <TableHead className="w-12 text-center" title="Doelsaldo">+/-</TableHead>
-            <TableHead className="w-14 text-center" title="Reguliere punten">Reg</TableHead>
+            <TableHead className="w-14 text-center" title="Reguliere punten">Reg  </TableHead>
             <TableHead className="w-14 text-center" title="Playoff punten">PO</TableHead>
             <TableHead className="w-14 text-center font-bold" title="Totaal punten">Tot</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {teams.map((team, index) => (
-            <TableRow key={team.team_id}>
+          {teams.map((team, index) => <TableRow key={team.team_id}>
               <TableCell className="num font-medium">{index + 1}</TableCell>
               <TableCell className="left font-medium">{team.team_name}</TableCell>
               <TableCell className="text-center">{team.playoff_played}</TableCell>
@@ -116,28 +107,28 @@ const PlayoffStandingsTable = memo(({ teams, title }: { teams: PlayoffTeam[]; ti
               <TableCell className="text-center text-muted-foreground">{team.playoff_draws}</TableCell>
               <TableCell className="text-center text-red-600 font-medium">{team.playoff_losses}</TableCell>
               <TableCell className="text-center">
-                <span className={
-                  team.playoff_goal_diff > 0 ? "text-green-600 font-medium" : 
-                  team.playoff_goal_diff < 0 ? "text-red-600 font-medium" : ""
-                }>
+                <span className={team.playoff_goal_diff > 0 ? "text-green-600 font-medium" : team.playoff_goal_diff < 0 ? "text-red-600 font-medium" : ""}>
                   {team.playoff_goal_diff > 0 ? "+" : ""}{team.playoff_goal_diff}
                 </span>
               </TableCell>
               <TableCell className="text-center text-muted-foreground">{team.regular_points}</TableCell>
               <TableCell className="text-center text-primary font-medium">{team.playoff_points}</TableCell>
               <TableCell className="text-center font-bold text-lg">{team.total_points}</TableCell>
-            </TableRow>
-          ))}
+            </TableRow>)}
         </TableBody>
       </Table>
-    </div>
-  );
+    </div>;
 });
 PlayoffStandingsTable.displayName = 'PlayoffStandingsTable';
 
 // Main component
 const PlayOffPage: React.FC = () => {
-  const { data, isLoading, error, refetch } = usePublicPlayoffData();
+  const {
+    data,
+    isLoading,
+    error,
+    refetch
+  } = usePublicPlayoffData();
   const [selectedDivision, setSelectedDivision] = useState<string>("all");
   const [selectedSpeeldag, setSelectedSpeeldag] = useState<string>("all");
   const [selectedTeam, setSelectedTeam] = useState<string>("all");
@@ -145,24 +136,16 @@ const PlayOffPage: React.FC = () => {
   // Convert matches to schedule table format
   const scheduleMatches = useMemo(() => {
     if (!data?.allMatches) return [];
-    
     return data.allMatches.map(match => {
       const matchDate = new Date(match.match_date);
-      const dateStr = matchDate.toLocaleDateString('nl-BE', { 
-        day: 'numeric', 
-        month: 'short' 
+      const dateStr = matchDate.toLocaleDateString('nl-BE', {
+        day: 'numeric',
+        month: 'short'
       });
-      
       const poLabel = match.playoff_type === 'top' ? 'PO1' : 'PO2';
       // Remove "Playoff " prefix if present
-      const speeldagClean = match.speeldag 
-        ? match.speeldag.replace(/^Playoff\s+/i, '')
-        : null;
-      
-      const matchday = speeldagClean 
-        ? `${speeldagClean} - ${poLabel}`
-        : poLabel;
-      
+      const speeldagClean = match.speeldag ? match.speeldag.replace(/^Playoff\s+/i, '') : null;
+      const matchday = speeldagClean ? `${speeldagClean} - ${poLabel}` : poLabel;
       return {
         matchId: match.match_id,
         matchday,
@@ -175,7 +158,7 @@ const PlayOffPage: React.FC = () => {
         homeScore: match.home_score ?? undefined,
         awayScore: match.away_score ?? undefined,
         location: match.location,
-        isCompleted: match.is_completed,
+        isCompleted: match.is_completed
       };
     });
   }, [data?.allMatches]);
@@ -219,23 +202,20 @@ const PlayOffPage: React.FC = () => {
       return true;
     });
   }, [scheduleMatches, selectedDivision, selectedSpeeldag, selectedTeam]);
-
   if (isLoading) {
     return <PlayoffLoading />;
   }
-
   if (error) {
     return <PlayoffError onRetry={() => refetch()} />;
   }
-
   if (!data?.hasData) {
     return <PlayoffEmptyState />;
   }
-
-  const { po1Teams, po2Teams } = data;
-
-  return (
-    <div className="space-y-8 animate-slide-up">
+  const {
+    po1Teams,
+    po2Teams
+  } = data;
+  return <div className="space-y-8 animate-slide-up">
       {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Play-Off Klassement</h2>
@@ -247,7 +227,7 @@ const PlayOffPage: React.FC = () => {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Trophy className="w-5 h-5 text-primary" />
-            Play-Off 1 (Top 8)
+            Play-Off 1 
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-0">
@@ -258,7 +238,7 @@ const PlayOffPage: React.FC = () => {
       {/* Play-Off 2 Standings */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Play-Off 2 (Bottom 7)</CardTitle>
+          <CardTitle className="text-lg">Play-Off 2 </CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-0">
           <PlayoffStandingsTable teams={po2Teams} title="Play-Off 2" />
@@ -267,7 +247,7 @@ const PlayOffPage: React.FC = () => {
 
       {/* Legend */}
       <div className="text-xs text-muted-foreground px-2">
-        <span className="mr-4">PO = Playoff wedstrijden</span>
+        <span className="mr-4">PO = Playoff punten</span>
         <span className="mr-4">Reg = Reguliere competitie punten</span>
         <span>Tot = Totaal punten (Reg + PO)</span>
       </div>
@@ -288,9 +268,7 @@ const PlayOffPage: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Alle speeldagen</SelectItem>
-                  {speeldagen.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
+                  {speeldagen.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -315,25 +293,17 @@ const PlayOffPage: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Alle teams</SelectItem>
-                  {teamNames.map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
+                  {teamNames.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
           
-          {filteredMatches.length > 0 ? (
-            <ResponsiveScheduleTable matches={filteredMatches} />
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
+          {filteredMatches.length > 0 ? <ResponsiveScheduleTable matches={filteredMatches} /> : <div className="text-center py-8 text-muted-foreground">
               Geen wedstrijden gevonden met de huidige filters
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default PlayOffPage;
