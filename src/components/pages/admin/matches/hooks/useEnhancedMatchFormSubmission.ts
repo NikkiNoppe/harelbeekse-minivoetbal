@@ -96,14 +96,21 @@ export const useEnhancedMatchFormSubmission = () => {
 
       if (result.success) {
         console.log('✅ [useEnhancedMatchFormSubmission] Service call succeeded');
-        // Subtiele strategie: 1 invalidatie + refetch enkel voor actieve queries
-        await queryClient.invalidateQueries({ queryKey: ['teamMatches'] });
-        await queryClient.refetchQueries({ queryKey: ['teamMatches'], type: 'active' });
-
+        
+        // IMMEDIATE: Show success toast to user
         toast({
           title: "Succesvol",
           description: result.message
         });
+
+        // DEFERRED: Query invalidation runs after user sees success (500ms delay)
+        // This ensures UI feels snappy while data refreshes in background
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['teamMatches'] });
+          queryClient.invalidateQueries({ queryKey: ['match', matchData.matchId] });
+          console.log('🔄 [useEnhancedMatchFormSubmission] Deferred query invalidation complete');
+        }, 500);
+
         return { success: true };
       } else {
         console.error('❌ [useEnhancedMatchFormSubmission] Service returned error:', result.message);

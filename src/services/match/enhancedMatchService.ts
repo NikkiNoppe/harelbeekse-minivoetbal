@@ -181,97 +181,19 @@ export const enhancedMatchService = {
       
       console.log('✅ [enhancedMatchService] UPDATE SUCCESS');
 
-      // Fallback: If this is a cup match, re-evaluate advancement after successful update (using persisted values)
-      try {
-        if (isCupMatch) {
-          const current = await bekerService.getCupMatchById(matchId);
-          if (current) {
-            const nextRound = bekerService.getNextRound(current.unique_number!);
-            if (nextRound) {
-              const hsNew = current.home_score;
-              const asNew = current.away_score;
-              if (hsNew == null || asNew == null || hsNew === asNew) {
-                await bekerService.clearAdvancement(current.unique_number!, nextRound);
-                await bekerService.clearAdvancementCascade(current.unique_number!);
-              } else {
-                const winnerTeamId = hsNew > asNew ? current.home_team_id! : current.away_team_id!;
-                await bekerService.updateAdvancement(current.unique_number!, winnerTeamId, nextRound);
-              }
-            }
-          }
-        }
-      } catch (advErr) {
-        console.warn('Advancement recalculation failed (fallback path):', advErr);
-      }
+      // Prepare success message immediately
+      const successMessage = isLateSubmission 
+        ? "⚠️ Spelerslijst bijgewerkt - LET OP: Te laat ingevuld!"
+        : "Wedstrijd succesvol bijgewerkt";
 
+      // FIRE-AND-FORGET: Schedule non-critical side effects without blocking
+      // These run asynchronously after success response is returned
+      this.scheduleSideEffects(matchId, updateData, matchInfo, isCupMatch);
 
-      // Sync card penalties only if player arrays were part of this update
-      const playersProvided = updateData.homePlayers !== undefined || updateData.awayPlayers !== undefined;
-      if (playersProvided) {
-        console.log('🟢 [enhancedMatchService] Syncing card penalties (players changed)...');
-        try {
-          const matchDateISO = updateObject.match_date || matchInfo?.match_date || null;
-          const homeTeamId = matchInfo?.home_team_id;
-          const awayTeamId = matchInfo?.away_team_id;
-
-          // Minimize payload: only send playerId and cardType
-          const mapPlayers = (arr?: any[]) => (arr || []).map(p => ({
-            playerId: p?.playerId ?? null,
-            cardType: p?.cardType ?? null,
-          }));
-
-          const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-card-penalties', {
-            body: { 
-              matchId,
-              matchDateISO,
-              homeTeamId,
-              awayTeamId,
-              homePlayers: mapPlayers(updateData.homePlayers),
-              awayPlayers: mapPlayers(updateData.awayPlayers)
-            }
-          });
-          
-          if (syncError) {
-            console.error('❌ [enhancedMatchService] Error calling sync-card-penalties:', syncError);
-          } else {
-            console.log('✅ [enhancedMatchService] Card penalties synced successfully:', syncData);
-          }
-        } catch (cardErr) {
-        console.error('❌ [enhancedMatchService] Error syncing card penalties:', cardErr);
-      }
-    }
-
-    // Sync match costs (field + referee) when match is submitted
-    if (updateData.isCompleted) {
-      console.log('🟢 [enhancedMatchService] Syncing match costs (field + referee)...');
-      try {
-        const { data: costSyncData, error: costSyncError } = await supabase.functions.invoke('sync-match-costs', {
-          body: {
-            matchId,
-            matchDateISO: updateObject.match_date || matchInfo?.match_date || null,
-            homeTeamId: matchInfo?.home_team_id,
-            awayTeamId: matchInfo?.away_team_id,
-            isSubmitted: updateData.isCompleted,
-            referee: updateData.referee || null
-          }
-        });
-
-        if (costSyncError) {
-          console.error('❌ [enhancedMatchService] Error calling sync-match-costs:', costSyncError);
-        } else {
-          console.log('✅ [enhancedMatchService] Match costs synced successfully:', costSyncData);
-        }
-      } catch (costErr) {
-        console.error('❌ [enhancedMatchService] Error syncing match costs:', costErr);
-      }
-    }
-
-    console.log('✅ [enhancedMatchService] All operations completed successfully');
+      // Return SUCCESS immediately - critical path complete
       return {
         success: true,
-        message: isLateSubmission 
-          ? "⚠️ Spelerslijst bijgewerkt - LET OP: Te laat ingevuld!"
-          : "Wedstrijd succesvol bijgewerkt",
+        message: successMessage,
         data
       };
 
@@ -296,6 +218,89 @@ export const enhancedMatchService = {
         message: `Fout bij bijwerken wedstrijd${errorCode}: ${errorMessage}${errorDetails}`
       };
     }
+  },
+
+  /**
+   * Fire-and-forget side effects - runs after success response is sent
+   * Failures are logged but don't affect user experience
+   */
+  scheduleSideEffects(matchId: number, updateData: MatchUpdateData, matchInfo: any, isCupMatch: boolean): void {
+    // Don't await - let these run in the background
+    Promise.resolve().then(async () => {
+      console.log('🔄 [enhancedMatchService] Starting background side effects...');
+      
+      // 1. Cup advancement (if applicable)
+      if (isCupMatch) {
+        try {
+          const current = await bekerService.getCupMatchById(matchId);
+          if (current) {
+            const nextRound = bekerService.getNextRound(current.unique_number!);
+            if (nextRound) {
+              const hsNew = current.home_score;
+              const asNew = current.away_score;
+              if (hsNew == null || asNew == null || hsNew === asNew) {
+                await bekerService.clearAdvancement(current.unique_number!, nextRound);
+                await bekerService.clearAdvancementCascade(current.unique_number!);
+              } else {
+                const winnerTeamId = hsNew > asNew ? current.home_team_id! : current.away_team_id!;
+                await bekerService.updateAdvancement(current.unique_number!, winnerTeamId, nextRound);
+              }
+            }
+          }
+          console.log('✅ [enhancedMatchService] Cup advancement processed');
+        } catch (advErr) {
+          console.warn('⚠️ [enhancedMatchService] Cup advancement failed (non-blocking):', advErr);
+        }
+      }
+
+      // 2. Sync card penalties (if players changed)
+      const playersProvided = updateData.homePlayers !== undefined || updateData.awayPlayers !== undefined;
+      if (playersProvided) {
+        try {
+          const mapPlayers = (arr?: any[]) => (arr || []).map(p => ({
+            playerId: p?.playerId ?? null,
+            cardType: p?.cardType ?? null,
+          }));
+
+          await supabase.functions.invoke('sync-card-penalties', {
+            body: { 
+              matchId,
+              matchDateISO: matchInfo?.match_date || null,
+              homeTeamId: matchInfo?.home_team_id,
+              awayTeamId: matchInfo?.away_team_id,
+              homePlayers: mapPlayers(updateData.homePlayers),
+              awayPlayers: mapPlayers(updateData.awayPlayers)
+            }
+          });
+          console.log('✅ [enhancedMatchService] Card penalties synced');
+        } catch (cardErr) {
+          console.warn('⚠️ [enhancedMatchService] Card penalty sync failed (non-blocking):', cardErr);
+        }
+      }
+
+      // 3. Sync match costs (if match completed)
+      if (updateData.isCompleted) {
+        try {
+          await supabase.functions.invoke('sync-match-costs', {
+            body: {
+              matchId,
+              matchDateISO: matchInfo?.match_date || null,
+              homeTeamId: matchInfo?.home_team_id,
+              awayTeamId: matchInfo?.away_team_id,
+              isSubmitted: updateData.isCompleted,
+              referee: updateData.referee || null
+            }
+          });
+          console.log('✅ [enhancedMatchService] Match costs synced');
+        } catch (costErr) {
+          console.warn('⚠️ [enhancedMatchService] Match cost sync failed (non-blocking):', costErr);
+        }
+      }
+
+      console.log('✅ [enhancedMatchService] All background side effects completed');
+    }).catch(err => {
+      console.error('❌ [enhancedMatchService] Background side effects error:', err);
+    });
   },
 
   async lockMatch(matchId: number): Promise<ServiceResponse> {
