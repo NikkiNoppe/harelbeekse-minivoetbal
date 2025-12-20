@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { updateMatchForm } from "@/components/pages/admin/matches/services/matchesFormService";
 import { MatchFormData } from "@/components/pages/admin/matches/types";
-import { bekerService } from "@/services/match/cupService";
+import { scheduleBackgroundSideEffects } from "@/services/match/backgroundSideEffects";
 
 interface MatchUpdateData {
   homeScore?: number | null;
@@ -188,7 +188,8 @@ export const enhancedMatchService = {
 
       // FIRE-AND-FORGET: Schedule non-critical side effects without blocking
       // These run asynchronously after success response is returned
-      this.scheduleSideEffects(matchId, updateData, matchInfo, isCupMatch);
+      // Uses hardened background processor with retry logic and failure tracking
+      scheduleBackgroundSideEffects(matchId, updateData, matchInfo, isCupMatch);
 
       // Return SUCCESS immediately - critical path complete
       return {
@@ -218,89 +219,6 @@ export const enhancedMatchService = {
         message: `Fout bij bijwerken wedstrijd${errorCode}: ${errorMessage}${errorDetails}`
       };
     }
-  },
-
-  /**
-   * Fire-and-forget side effects - runs after success response is sent
-   * Failures are logged but don't affect user experience
-   */
-  scheduleSideEffects(matchId: number, updateData: MatchUpdateData, matchInfo: any, isCupMatch: boolean): void {
-    // Don't await - let these run in the background
-    Promise.resolve().then(async () => {
-      console.log('🔄 [enhancedMatchService] Starting background side effects...');
-      
-      // 1. Cup advancement (if applicable)
-      if (isCupMatch) {
-        try {
-          const current = await bekerService.getCupMatchById(matchId);
-          if (current) {
-            const nextRound = bekerService.getNextRound(current.unique_number!);
-            if (nextRound) {
-              const hsNew = current.home_score;
-              const asNew = current.away_score;
-              if (hsNew == null || asNew == null || hsNew === asNew) {
-                await bekerService.clearAdvancement(current.unique_number!, nextRound);
-                await bekerService.clearAdvancementCascade(current.unique_number!);
-              } else {
-                const winnerTeamId = hsNew > asNew ? current.home_team_id! : current.away_team_id!;
-                await bekerService.updateAdvancement(current.unique_number!, winnerTeamId, nextRound);
-              }
-            }
-          }
-          console.log('✅ [enhancedMatchService] Cup advancement processed');
-        } catch (advErr) {
-          console.warn('⚠️ [enhancedMatchService] Cup advancement failed (non-blocking):', advErr);
-        }
-      }
-
-      // 2. Sync card penalties (if players changed)
-      const playersProvided = updateData.homePlayers !== undefined || updateData.awayPlayers !== undefined;
-      if (playersProvided) {
-        try {
-          const mapPlayers = (arr?: any[]) => (arr || []).map(p => ({
-            playerId: p?.playerId ?? null,
-            cardType: p?.cardType ?? null,
-          }));
-
-          await supabase.functions.invoke('sync-card-penalties', {
-            body: { 
-              matchId,
-              matchDateISO: matchInfo?.match_date || null,
-              homeTeamId: matchInfo?.home_team_id,
-              awayTeamId: matchInfo?.away_team_id,
-              homePlayers: mapPlayers(updateData.homePlayers),
-              awayPlayers: mapPlayers(updateData.awayPlayers)
-            }
-          });
-          console.log('✅ [enhancedMatchService] Card penalties synced');
-        } catch (cardErr) {
-          console.warn('⚠️ [enhancedMatchService] Card penalty sync failed (non-blocking):', cardErr);
-        }
-      }
-
-      // 3. Sync match costs (if match completed)
-      if (updateData.isCompleted) {
-        try {
-          await supabase.functions.invoke('sync-match-costs', {
-            body: {
-              matchId,
-              matchDateISO: matchInfo?.match_date || null,
-              homeTeamId: matchInfo?.home_team_id,
-              awayTeamId: matchInfo?.away_team_id,
-              isSubmitted: updateData.isCompleted,
-              referee: updateData.referee || null
-            }
-          });
-          console.log('✅ [enhancedMatchService] Match costs synced');
-        } catch (costErr) {
-          console.warn('⚠️ [enhancedMatchService] Match cost sync failed (non-blocking):', costErr);
-        }
-      }
-
-      console.log('✅ [enhancedMatchService] All background side effects completed');
-    }).catch(err => {
-      console.error('❌ [enhancedMatchService] Background side effects error:', err);
-    });
   },
 
   async lockMatch(matchId: number): Promise<ServiceResponse> {
