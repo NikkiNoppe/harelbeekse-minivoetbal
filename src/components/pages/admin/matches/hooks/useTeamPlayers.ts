@@ -41,7 +41,7 @@ export const useTeamPlayersWithSuspensions = (teamId: number, matchDate?: Date):
       setSuspensionLoading(true);
       try {
         // Import suspensionService dynamically to avoid circular imports
-        const { suspensionService } = await import('@/services');
+        const { suspensionService } = await import('@/domains/cards-suspensions');
         
         const playerIds = baseHook.players.map(p => p.player_id);
         const eligibilityMap = await suspensionService.checkBatchPlayerEligibility(playerIds, matchDate);

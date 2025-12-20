@@ -12,7 +12,7 @@ import {
   suspensionRulesService, 
   type SuspensionRules, 
   type YellowCardRule 
-} from "@/services/suspensionRulesService";
+} from "@/domains/cards-suspensions";
 
 export const SuspensionRulesSettings: React.FC = () => {
   const { toast } = useToast();
