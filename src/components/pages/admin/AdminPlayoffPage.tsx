@@ -1009,19 +1009,28 @@ const AdminPlayoffPage: React.FC = () => {
 
       {/* Confirmation Dialog */}
       <AlertDialog open={confirmAction !== null} onOpenChange={open => !open && setConfirmAction(null)}>
-        <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
+        <AlertDialogContent className="modal max-w-[90vw] sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>
+            <AlertDialogTitle className="modal__title">
               {confirmAction && confirmDialogContent[confirmAction].title}
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <div className="text-center text-sm text-muted-foreground">
               {confirmAction && confirmDialogContent[confirmAction].description}
-            </AlertDialogDescription>
+            </div>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel className="h-11 sm:h-10">Annuleer</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmedAction} disabled={actionLoading} className={cn("h-11 sm:h-10", confirmAction === 'delete' && "bg-destructive hover:bg-destructive/90")}>
-              {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+          <AlertDialogFooter className="modal__actions">
+            <AlertDialogCancel disabled={actionLoading} className="btn btn--secondary flex-1">
+              Annuleren
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmedAction} 
+              disabled={actionLoading} 
+              className={cn(
+                "btn flex-1",
+                confirmAction === 'delete' ? "btn--danger" : "btn--primary"
+              )}
+            >
+              {actionLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {confirmAction && confirmDialogContent[confirmAction].actionLabel}
             </AlertDialogAction>
           </AlertDialogFooter>
