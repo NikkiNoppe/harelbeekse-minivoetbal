@@ -93,6 +93,16 @@ const AdminPlayoffMatchesPage: React.FC = () => {
     handleModalClose();
   }, [matchFormsData, handleModalClose]);
 
+  // Team options for filter - MUST be before early returns to satisfy hooks rules
+  const teamOptions = useMemo(() => {
+    const set = new Set<string>();
+    (playoffData.allMatches || []).forEach((m: MatchFormData) => {
+      if (m.homeTeamName) set.add(m.homeTeamName);
+      if (m.awayTeamName) set.add(m.awayTeamName);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [playoffData.allMatches]);
+
   // Loading state
   if (matchFormsData.isLoading) {
     return <TabContentSkeleton />;
@@ -109,15 +119,6 @@ const AdminPlayoffMatchesPage: React.FC = () => {
   }
 
   const hasElevatedPermissions = isAdmin || isReferee;
-
-  const teamOptions = useMemo(() => {
-    const set = new Set<string>();
-    (playoffData.allMatches || []).forEach((m: MatchFormData) => {
-      if (m.homeTeamName) set.add(m.homeTeamName);
-      if (m.awayTeamName) set.add(m.awayTeamName);
-    });
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [playoffData.allMatches]);
 
   return (
     <div className="space-y-6 animate-slide-up">
