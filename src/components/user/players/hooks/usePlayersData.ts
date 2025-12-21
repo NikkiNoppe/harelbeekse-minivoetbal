@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { withUserContext } from "@/lib/supabaseUtils";
 import { Player, Team } from "../types";
 import { User } from "@/types/auth";
 
@@ -32,26 +33,28 @@ export const usePlayersData = (authUser: User | null) => {
 
   const fetchPlayers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('players')
-        .select(`
-          player_id,
-          first_name,
-          last_name,
-          birth_date,
-          team_id,
-          teams (
+      return await withUserContext(async () => {
+        const { data, error } = await supabase
+          .from('players')
+          .select(`
+            player_id,
+            first_name,
+            last_name,
+            birth_date,
             team_id,
-            team_name
-          )
-        `)
-        .order('last_name')
-        .order('first_name');
-      if (error) {
-        console.error('Error fetching players:', error);
-        return [];
-      }
-      return data || [];
+            teams (
+              team_id,
+              team_name
+            )
+          `)
+          .order('last_name')
+          .order('first_name');
+        if (error) {
+          console.error('Error fetching players:', error);
+          return [];
+        }
+        return data || [];
+      });
     } catch (error) {
       console.error('Error in fetchPlayers:', error);
       return [];
@@ -61,18 +64,20 @@ export const usePlayersData = (authUser: User | null) => {
   // Optimized: fetch players for a specific team only
   const fetchPlayersByTeam = async (teamId: number) => {
     try {
-      const { data, error } = await supabase
-        .from('players')
-        .select('player_id, first_name, last_name, birth_date, team_id')
-        .eq('team_id', teamId)
-        .order('last_name')
-        .order('first_name');
+      return await withUserContext(async () => {
+        const { data, error } = await supabase
+          .from('players')
+          .select('player_id, first_name, last_name, birth_date, team_id')
+          .eq('team_id', teamId)
+          .order('last_name')
+          .order('first_name');
 
-      if (error) {
-        console.error('Error fetching players by team:', error);
-        return [];
-      }
-      return data || [];
+        if (error) {
+          console.error('Error fetching players by team:', error);
+          return [];
+        }
+        return data || [];
+      });
     } catch (error) {
       console.error('Error in fetchPlayersByTeam:', error);
       return [];
