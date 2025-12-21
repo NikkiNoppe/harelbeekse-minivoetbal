@@ -566,6 +566,10 @@ export type Database = {
         Args: { player_team_id: number }
         Returns: boolean
       }
+      can_read_player_for_match: {
+        Args: { player_team_id: number }
+        Returns: boolean
+      }
       check_batch_players_suspended: {
         Args: { match_date_param: string; player_ids: number[] }
         Returns: {
