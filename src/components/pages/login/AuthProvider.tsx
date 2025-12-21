@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { resetUserContextCache } from '@/lib/supabaseUtils';
 
 interface AuthContextType extends AuthState {
+  authContextReady: boolean; // NEW: signals when RLS context is fully set
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
@@ -49,6 +50,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [authContextReady, setAuthContextReady] = useState(false); // NEW: tracks RLS context readiness
 
   // Initialize auth state from localStorage on mount
   useEffect(() => {
@@ -90,16 +92,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   console.log('✅ Updated context with fetched teamId:', teamId);
                 }
               }
+              
+              // ✅ Context successfully set - mark as ready
+              setAuthContextReady(true);
+              console.log('✅ Auth context is now ready');
             } catch (contextError) {
               console.log('⚠️ Could not restore database context on page load:', contextError);
+              // Still mark as ready so UI can proceed (will use cached data or retry)
+              setAuthContextReady(true);
             }
           } else {
             localStorage.removeItem('auth_data');
+            setAuthContextReady(true); // No user, but context is "ready" (empty)
           }
+        } else {
+          setAuthContextReady(true); // No stored auth, context is "ready" (empty)
         }
       } catch (error) {
         console.error('Error loading auth state:', error);
         localStorage.removeItem('auth_data');
+        setAuthContextReady(true); // Error state, but mark ready to unblock UI
       } finally {
         setLoading(false);
       }
@@ -190,6 +202,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         persistAuthState(loggedInUser);
         // Reset context cache on login to ensure fresh context
         resetUserContextCache();
+        // ✅ Mark auth context as ready after successful login
+        setAuthContextReady(true);
+        console.log('✅ Auth context ready after login');
         return true;
       }
 
@@ -203,6 +218,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = () => {
     console.log('🚪 Logging out user');
+    // Reset context ready FIRST before clearing user state
+    setAuthContextReady(false);
     setUser(null);
     setIsAuthenticated(false);
     persistAuthState(null);
@@ -220,6 +237,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     user,
     isAuthenticated,
     loading,
+    authContextReady, // NEW: expose context ready state
     login,
     logout,
   };

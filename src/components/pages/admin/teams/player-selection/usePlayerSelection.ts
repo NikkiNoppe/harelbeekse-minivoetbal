@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { withUserContext } from "@/lib/supabaseUtils";
+import { useAuth } from "@/components/pages/login/AuthProvider";
 import { Player, FormData, formSchema } from "./types";
 
 // Define a simplified type for existing player data from the database
@@ -17,33 +19,36 @@ interface ExistingPlayerData {
 
 export const usePlayerSelection = (matchId: number, teamId: number, onComplete: () => void) => {
   const { toast } = useToast();
+  const { authContextReady } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch team players function
+  // Fetch team players function with withUserContext wrapper
   const fetchTeamPlayers = async () => {
-    const { data, error } = await supabase
-      .from('players')
-      .select('player_id, first_name, last_name')
-      .eq('team_id', teamId)
-      .order('first_name');
-    
-    if (error) {
-      console.error("Error fetching team players:", error);
-      toast({
-        title: "Fout bij ophalen spelers",
-        description: "Er is een probleem opgetreden bij het ophalen van de teamspelers.",
-        variant: "destructive"
-      });
-      throw error;
-    }
-    
-    return (data || []).map((dbPlayer) => ({
-      playerId: dbPlayer.player_id,
-      playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
-      selected: false,
-      jerseyNumber: "",
-      isCaptain: false
-    }));
+    return await withUserContext(async () => {
+      const { data, error } = await supabase
+        .from('players')
+        .select('player_id, first_name, last_name')
+        .eq('team_id', teamId)
+        .order('first_name');
+      
+      if (error) {
+        console.error("Error fetching team players:", error);
+        toast({
+          title: "Fout bij ophalen spelers",
+          description: "Er is een probleem opgetreden bij het ophalen van de teamspelers.",
+          variant: "destructive"
+        });
+        throw error;
+      }
+      
+      return (data || []).map((dbPlayer) => ({
+        playerId: dbPlayer.player_id,
+        playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
+        selected: false,
+        jerseyNumber: "",
+        isCaptain: false
+      }));
+    });
   };
 
   const fetchMatchData = async () => {
@@ -62,12 +67,14 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   };
 
   // Use React Query without explicit typing to avoid deep instantiation
+  // Only enable query when authContextReady is true
   const {
     data: teamPlayers,
     isLoading
   } = useQuery({
     queryKey: ['teamPlayers', teamId],
-    queryFn: fetchTeamPlayers
+    queryFn: fetchTeamPlayers,
+    enabled: authContextReady // Wait for auth context before fetching
   });
   
   const {

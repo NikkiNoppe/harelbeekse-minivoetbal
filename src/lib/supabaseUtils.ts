@@ -7,11 +7,15 @@ let lastContext: {
   teamIds: string;
 } | null = null;
 
+// Promise lock to serialize context RPC calls and prevent parallel calls
+let contextPromise: Promise<void> | null = null;
+
 /**
  * Reset the context cache (useful when user logs out or changes)
  */
 export const resetUserContextCache = () => {
   lastContext = null;
+  contextPromise = null;
 };
 
 /**
@@ -103,27 +107,39 @@ export const withUserContext = async <T>(
       lastContext.teamIds !== teamIds;
     
     if (contextChanged) {
-      try {
-        // Set user context before the operation
-        await supabase.rpc('set_current_user_context', {
-          p_user_id: userId,
-          p_role: normalizedRole,
-          p_team_ids: teamIds
-        });
-        
-        // Update cache
-        lastContext = { userId, role: normalizedRole, teamIds };
-        
-        // Only log when context actually changes
-        console.log('✅ Context set for operation:', { userId, role: normalizedRole, teamIds });
-        if (!teamIds && normalizedRole === 'player_manager') {
-          console.warn('⚠️ No teamIds found for player_manager; RLS may block team data.');
-        }
-      } catch (contextError) {
-        console.log('⚠️ Could not set context for operation:', contextError);
-        // Clear cache on error to force retry next time
-        lastContext = null;
+      // Wait for any existing context setup to complete (serialize calls)
+      if (contextPromise) {
+        await contextPromise;
       }
+      
+      // Create new promise for this context setup
+      contextPromise = (async () => {
+        try {
+          // Set user context before the operation
+          await supabase.rpc('set_current_user_context', {
+            p_user_id: userId,
+            p_role: normalizedRole,
+            p_team_ids: teamIds
+          });
+          
+          // Update cache
+          lastContext = { userId, role: normalizedRole, teamIds };
+          
+          // Only log when context actually changes
+          console.log('✅ Context set for operation:', { userId, role: normalizedRole, teamIds });
+          if (!teamIds && normalizedRole === 'player_manager') {
+            console.warn('⚠️ No teamIds found for player_manager; RLS may block team data.');
+          }
+        } catch (contextError) {
+          console.log('⚠️ Could not set context for operation:', contextError);
+          // Clear cache on error to force retry next time
+          lastContext = null;
+        } finally {
+          contextPromise = null;
+        }
+      })();
+      
+      await contextPromise;
     }
   }
   

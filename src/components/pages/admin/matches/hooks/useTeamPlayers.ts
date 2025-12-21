@@ -1,7 +1,8 @@
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { withUserContext } from "@/lib/supabaseUtils";
+import { useAuth } from "@/components/pages/login/AuthProvider";
 
 export interface TeamPlayer {
   player_id: number;
@@ -75,6 +76,7 @@ export const useTeamPlayersWithSuspensions = (teamId: number, matchDate?: Date):
 const playerCache = new Map<number, TeamPlayer[]>();
 
 export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
+  const { authContextReady } = useAuth();
   const [players, setPlayers] = useState<TeamPlayer[] | undefined>(() => {
     // Initialize from cache if available
     return playerCache.get(teamId) || undefined;
@@ -82,12 +84,20 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const hasFetchedWithContext = useRef(false);
 
   const fetchPlayers = useCallback(async (attempt = 0) => {
     if (!teamId) {
       setPlayers(undefined);
       setLoading(false);
       return;
+    }
+
+    // Wait for auth context to be ready before fetching
+    if (!authContextReady) {
+      console.log('⏳ Waiting for auth context to be ready before fetching players...');
+      setLoading(true);
+      return; // Will be triggered again when authContextReady changes
     }
 
     try {
@@ -115,6 +125,12 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
         throw fetchError;
       }
 
+      // Smart empty result handling: distinguish real empty from context-blocked
+      if (data?.length === 0 && !hasFetchedWithContext.current) {
+        console.log('⚠️ Empty result on first fetch - may be due to context timing');
+      }
+      
+      hasFetchedWithContext.current = true;
       setPlayers(data || []);
       // Cache the data to prevent losing it during retries
       if (data && data.length > 0) {
@@ -148,18 +164,30 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
         setLoading(false); // All retries failed - stop loading
       }
     }
-  }, [teamId]);
+  }, [teamId, authContextReady]);
 
   const refetch = useCallback(async () => {
     setRetryCount(0);
+    hasFetchedWithContext.current = false;
     await fetchPlayers(0);
   }, [fetchPlayers]);
 
   const memoizedPlayers = useMemo(() => players, [players]);
 
+  // Fetch when teamId changes OR when authContextReady becomes true
   useEffect(() => {
-    fetchPlayers(0);
-  }, [fetchPlayers]);
+    if (authContextReady) {
+      fetchPlayers(0);
+    }
+  }, [fetchPlayers, authContextReady]);
+
+  // Auto-retry if we got empty results before context was ready
+  useEffect(() => {
+    if (authContextReady && (!players || players.length === 0) && hasFetchedWithContext.current === false) {
+      console.log('🔄 Auth context now ready, retrying player fetch...');
+      fetchPlayers(0);
+    }
+  }, [authContextReady, players, fetchPlayers]);
 
   return {
     players: memoizedPlayers,
