@@ -2,10 +2,12 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { withUserContext } from "@/lib/supabaseUtils";
+import { useAuth } from "@/components/pages/login/AuthProvider";
 import { Player, Team } from "../types";
 import { User } from "@/types/auth";
 
 export const usePlayersData = (authUser: User | null) => {
+  const { authContextReady } = useAuth();
   const [players, setPlayers] = useState<Player[]>([]);
   const [allPlayers, setAllPlayers] = useState<Player[]>([]); // alle spelers voor snelle filtering
   const [teams, setTeams] = useState<Team[]>([]);
@@ -139,10 +141,12 @@ export const usePlayersData = (authUser: User | null) => {
   };
 
   useEffect(() => {
-    if (authUser) {
+    // Wait for BOTH authUser AND authContextReady before initializing
+    if (authUser && authContextReady) {
+      console.log('✅ Auth context ready, initializing player data...');
       initializeData();
     }
-  }, [authUser]);
+  }, [authUser, authContextReady]);
 
   // No realtime auto-refresh to avoid continuous reloads; we refresh only on user actions
 
