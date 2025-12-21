@@ -8,8 +8,15 @@ import { User } from "@/types/auth";
 
 export const usePlayersData = (authUser: User | null) => {
   const { authContextReady } = useAuth();
+  
+  // 🔧 REFS FIRST - before any useEffect (Strict Mode safe)
+  const isInitialized = useRef<boolean>(false);
+  const didSetInitialTeam = useRef<boolean>(false);
+  const hasFallbackFetched = useRef<boolean>(false);
+
+  // States
   const [players, setPlayers] = useState<Player[]>([]);
-  const [allPlayers, setAllPlayers] = useState<Player[]>([]); // alle spelers voor snelle filtering
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
@@ -63,7 +70,6 @@ export const usePlayersData = (authUser: User | null) => {
     }
   };
 
-  // Optimized: fetch players for a specific team only
   const fetchPlayersByTeam = async (teamId: number) => {
     try {
       return await withUserContext(async () => {
@@ -94,7 +100,6 @@ export const usePlayersData = (authUser: User | null) => {
         const teamPlayers = await fetchPlayersByTeam(targetTeamId);
         setPlayers(teamPlayers);
       } else {
-        // Fallback to full fetch when no team context is available
         const playersData = await fetchPlayers();
         setAllPlayers(playersData);
         setPlayers(playersData);
@@ -108,8 +113,6 @@ export const usePlayersData = (authUser: User | null) => {
 
   const initializeData = async () => {
     try {
-      setLoading(true);
-      
       const teamsData = await fetchTeams();
       setTeams(teamsData);
 
@@ -121,14 +124,12 @@ export const usePlayersData = (authUser: User | null) => {
         if (userTeam) {
           setUserTeamName(userTeam.team_name);
         }
-        // Optimized: fetch only the user's team players
         const teamPlayers = await fetchPlayersByTeam(authUser.teamId);
         setAllPlayers([]);
         setPlayers(teamPlayers);
       } else if (authUser?.role === "admin" && teamsData.length > 0) {
         setSelectedTeam(teamsData[0].team_id);
         didSetInitialTeam.current = true;
-        // Optimized: fetch only the selected team's players
         const teamPlayers = await fetchPlayersByTeam(teamsData[0].team_id);
         setAllPlayers([]);
         setPlayers(teamPlayers);
@@ -140,31 +141,54 @@ export const usePlayersData = (authUser: User | null) => {
     }
   };
 
+  // Main initialization effect - runs only once (Strict Mode safe)
   useEffect(() => {
-    // Wait for BOTH authUser AND authContextReady before initializing
-    if (authUser && authContextReady) {
+    if (authUser && authContextReady && !isInitialized.current) {
+      isInitialized.current = true;
       console.log('✅ Auth context ready, initializing player data...');
       initializeData();
     }
   }, [authUser, authContextReady]);
 
-  // No realtime auto-refresh to avoid continuous reloads; we refresh only on user actions
-
-  const didSetInitialTeam = useRef<boolean>(false);
-
-  // On team selection changes, fetch players for that team (admin flow)
+  // Cleanup on unmount for HMR/navigation
   useEffect(() => {
-    if (!authUser) return;
+    return () => {
+      isInitialized.current = false;
+      hasFallbackFetched.current = false;
+    };
+  }, []);
+
+  // On team selection changes by USER (not initialization), fetch players
+  useEffect(() => {
+    if (!authUser || !isInitialized.current) return;
+    
+    // Skip the first trigger from initialization
+    if (didSetInitialTeam.current) {
+      didSetInitialTeam.current = false;
+      return;
+    }
+    
     const targetTeamId = authUser.role === "player_manager" ? authUser.teamId : selectedTeam;
     if (targetTeamId) {
-      if (didSetInitialTeam.current) {
-        // Skip the first effect run caused by initial selection set during initialization
-        didSetInitialTeam.current = false;
-        return;
-      }
       refreshPlayers(targetTeamId);
     }
   }, [selectedTeam]);
+
+  // Safety fallback: if admin AND players empty after init, refetch once
+  useEffect(() => {
+    if (
+      authUser?.role === 'admin' && 
+      isInitialized.current && 
+      !loading && 
+      players.length === 0 && 
+      selectedTeam && 
+      !hasFallbackFetched.current
+    ) {
+      console.log('⚠️ Admin fallback: players empty after init, refetching once...');
+      hasFallbackFetched.current = true;
+      refreshPlayers(selectedTeam);
+    }
+  }, [players, loading, selectedTeam, authUser?.role]);
 
   return {
     players,
