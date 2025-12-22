@@ -1,16 +1,12 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, AuthState } from '@/types/auth';
+import React, { useState, useEffect, ReactNode } from 'react';
+import { User } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { resetUserContextCache } from '@/lib/supabaseUtils';
+import { AuthContext, AuthContextType } from '@/hooks/useAuth';
 
-interface AuthContextType extends AuthState {
-  authContextReady: boolean; // NEW: signals when RLS context is fully set
-  login: (username: string, password: string) => Promise<boolean>;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Re-export useAuth for backward compatibility
+export { useAuth } from '@/hooks/useAuth';
 
 // Normalize user role for RLS context
 function normalizeRole(role: string): string {
@@ -245,10 +241,3 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
