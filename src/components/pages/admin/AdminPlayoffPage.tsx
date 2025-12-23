@@ -669,23 +669,30 @@ const AdminPlayoffPage: React.FC = () => {
     }
   };
 
-  const handleConfirmedAction = (e: React.MouseEvent) => {
-    e.preventDefault(); // Voorkom automatisch sluiten voordat actie is uitgevoerd
+  const handleConfirmedAction = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     
-    // Sla de huidige actie op voordat we iets doen
+    // Sla de huidige actie op VOORDAT we iets doen
     const action = confirmAction;
+    if (!action) return;
     
+    // Sluit dialoog NIET automatisch - laat de handlers dat doen
+    // Voer de actie uit en wacht tot deze klaar is
     switch (action) {
       case 'finalize':
-        handleFinalizePlayoffs();
+        await handleFinalizePlayoffs();
         break;
       case 'unfinalize':
-        handleUnfinalizePlayoffs();
+        await handleUnfinalizePlayoffs();
         break;
       case 'delete':
-        handleDeletePlayoffs();
+        await handleDeletePlayoffs();
         break;
     }
+    
+    // Sluit dialoog pas NA succesvolle uitvoering
+    setConfirmAction(null);
   };
 
   const getTeamDisplay = (match: PlayoffMatch, isHome: boolean) => {
