@@ -669,8 +669,13 @@ const AdminPlayoffPage: React.FC = () => {
     }
   };
 
-  const handleConfirmedAction = () => {
-    switch (confirmAction) {
+  const handleConfirmedAction = (e: React.MouseEvent) => {
+    e.preventDefault(); // Voorkom automatisch sluiten voordat actie is uitgevoerd
+    
+    // Sla de huidige actie op voordat we iets doen
+    const action = confirmAction;
+    
+    switch (action) {
       case 'finalize':
         handleFinalizePlayoffs();
         break;
