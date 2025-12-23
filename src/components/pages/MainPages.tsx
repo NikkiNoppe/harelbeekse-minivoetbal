@@ -12,7 +12,7 @@ import KaartenPage from "./public/information/KaartenPage";
 import ReglementPage from "./public/information/ReglementPage";
 import TeamsPage from "./admin/teams/TeamsPage";
 import ScheidsrechtersPage from "./admin/scheidsrechter/ScheidsrechtersPage";
-import { useAuth } from "@/components/pages/login/AuthProvider";
+import { useAuth } from "@/hooks/useAuth";
 import { MatchdayActionsBar } from "@/components/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 

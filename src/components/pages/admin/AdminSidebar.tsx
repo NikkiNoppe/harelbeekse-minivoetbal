@@ -1,6 +1,6 @@
 import React from "react";
 import { Calendar, Trophy, Award, Target, Users, Shield, User, DollarSign, Settings, LogOut } from "lucide-react";
-import { useAuth } from "@/components/pages/login/AuthProvider";
+import { useAuth } from "@/hooks/useAuth";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 import { useIsMobile } from "@/hooks/use-mobile";

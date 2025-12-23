@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { useAuth } from "@/components/pages/login/AuthProvider";
+import { useAuth } from "@/hooks/useAuth";
 import PlayerPage from "@/components/pages/admin/players/PlayerPage.tsx";
 import SettingsPanel from "@/components/pages/admin/settings/components/SettingsPanel";
 import CompetitionPage from "@/components/pages/admin/competition/CompetitionPage";

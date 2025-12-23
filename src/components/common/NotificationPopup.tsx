@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { X, Bell, AlertTriangle, CheckCircle, Info, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { notificationService, type Notification } from '@/services/notificationService';
-import { useAuth } from '@/components/pages/login/AuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
 const DISMISSED_STORAGE_KEY = 'dismissedNotifications';

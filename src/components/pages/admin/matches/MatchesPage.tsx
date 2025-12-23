@@ -1,5 +1,5 @@
 import React, { useState, memo, useMemo, useCallback, useEffect } from "react";
-import { useAuth } from "@/components/pages/login/AuthProvider";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 // Tabs UI removed (sidebar controls type)
 import { Skeleton } from "@/components/ui/skeleton";

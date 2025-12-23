@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import LoginModal from "@/components/pages/login/LoginModal";
 import MainPages from "@/components/pages/MainPages";
 import { AdminDashboardLayout } from "@/components/pages/admin/AdminDashboardLayout";
-import { useAuth } from "@/components/pages/login/AuthProvider";
+import { useAuth } from "@/hooks/useAuth";
 import NotificationPopup from "@/components/common/NotificationPopup";
 import { getTabFromPath, getPathFromTab, PUBLIC_ROUTES, ADMIN_ROUTES } from "@/config/routes";
 import { useTabVisibility } from "@/context/TabVisibilityContext";

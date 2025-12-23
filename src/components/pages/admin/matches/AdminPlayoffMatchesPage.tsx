@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { useAuth } from "@/components/pages/login/AuthProvider";
+import { useAuth } from "@/hooks/useAuth";
 import { useMatchFormsData, MatchFormsFilters } from "@/hooks/useMatchFormsData";
 import { MatchFormData } from "./types";
 import { Target, AlertCircle, Inbox } from "lucide-react";

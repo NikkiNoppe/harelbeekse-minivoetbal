@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "../AuthProvider";
+import { useAuth } from "@/hooks/useAuth";
 
 export const useLoginHook = (onLoginSuccess: () => void) => {
   const { toast } = useToast();
