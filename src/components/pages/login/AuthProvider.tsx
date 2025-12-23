@@ -5,8 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { resetUserContextCache } from '@/lib/supabaseUtils';
 import { AuthContext, AuthContextType } from '@/hooks/useAuth';
 
-// Re-export useAuth for backward compatibility
-export { useAuth } from '@/hooks/useAuth';
+// NOTE: useAuth should be imported directly from '@/hooks/useAuth'
+// Do NOT re-export here to prevent circular dependency issues in production builds
 
 // Normalize user role for RLS context
 function normalizeRole(role: string): string {
