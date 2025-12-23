@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Form } from "@/components/ui/form";
@@ -9,21 +8,19 @@ import { loginValidationSchema, LoginFormData } from "./validation/loginFormSche
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ZodError } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { AppModal } from "@/components/ui/app-modal";
 
 interface LoginModalProps {
   onLoginSuccess: () => void;
-  onClose?: () => void;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ 
-  onLoginSuccess, 
-  onClose,
-  open = true,
-  onOpenChange
-}) => {
+/**
+ * LoginModal - Content-only component
+ * 
+ * Dit is een pure content component die GEEN eigen modal wrapper heeft.
+ * De parent (Layout.tsx) wikkelt dit component in een AppModal.
+ * Dit voorkomt dubbele modal nesting en zorgt voor correcte portal rendering.
+ */
+const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const { login, isLoading } = useLoginHook(onLoginSuccess);
   const { toast } = useToast();
@@ -58,46 +55,31 @@ const LoginModal: React.FC<LoginModalProps> = ({
 
   const handleForgotPassword = () => setIsForgotPasswordOpen(true);
 
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen && onClose) {
-      onClose();
-    }
-    onOpenChange?.(newOpen);
-  };
-
   return (
     <>
-      <AppModal
-        open={open}
-        onOpenChange={handleOpenChange}
-        title="Login"
-        size="sm"
-        showCloseButton={!!onClose}
-      >
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <LoginFields form={form} isLoading={isLoading} />
-            
-            <div className="modal__actions">
-              <button 
-                type="submit" 
-                className="btn btn--primary" 
-                disabled={isLoading}
-              >
-                {isLoading ? "Inloggen..." : "Inloggen"}
-              </button>
-              <button 
-                type="button" 
-                className="btn btn--secondary" 
-                onClick={handleForgotPassword}
-                disabled={isLoading}
-              >
-                Wachtwoord vergeten?
-              </button>
-            </div>
-          </form>
-        </Form>
-      </AppModal>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <LoginFields form={form} isLoading={isLoading} />
+          
+          <div className="modal__actions">
+            <button 
+              type="submit" 
+              className="btn btn--primary" 
+              disabled={isLoading}
+            >
+              {isLoading ? "Inloggen..." : "Inloggen"}
+            </button>
+            <button 
+              type="button" 
+              className="btn btn--secondary" 
+              onClick={handleForgotPassword}
+              disabled={isLoading}
+            >
+              Wachtwoord vergeten?
+            </button>
+          </div>
+        </form>
+      </Form>
       
       <ForgotPasswordModal 
         open={isForgotPasswordOpen} 
