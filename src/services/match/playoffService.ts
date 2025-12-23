@@ -717,21 +717,7 @@ export const playoffService = {
   async deletePlayoffMatches(): Promise<{ success: boolean; message: string }> {
     try {
       // Get playoff match IDs
-      const { data: playoffMatchIds, error: fetchError } = await supabase
-        .from('matches')
-        .select('match_id')
-        .eq('is_playoff_match', true);
-        
-      if (fetchError) return { success: false, message: `Fout bij ophalen playoff wedstrijd IDs: ${fetchError.message}` };
-      
-      if (playoffMatchIds && playoffMatchIds.length > 0) {
-        const { error: teamCostsError } = await supabase
-          .from('team_costs')
-          .delete()
-          .in('match_id', playoffMatchIds.map(m => m.match_id));
-        if (teamCostsError) return { success: false, message: `Fout bij verwijderen playoff team kosten: ${teamCostsError.message}` };
-      }
-      
+      // team_costs worden automatisch verwijderd door CASCADE constraint
       const { error } = await supabase
         .from('matches')
         .delete()
