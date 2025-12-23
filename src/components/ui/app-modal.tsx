@@ -1,11 +1,11 @@
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X } from "lucide-react"
+import { X, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // Types
 export type ModalSize = "xs" | "sm" | "md" | "lg"
-export type ModalVariant = "default" | "bottom-sheet"
+export type ModalVariant = "default" | "bottom-sheet" | "fullscreen"
 
 export interface AppModalAction {
   label: string
@@ -41,20 +41,45 @@ const sizeClasses: Record<ModalSize, string> = {
   lg: "app-modal-lg",
 }
 
-// Hook to detect mobile
+// SSR-safe mobile detection hook using matchMedia
 const useIsMobile = () => {
-  const [isMobile, setIsMobile] = React.useState(false)
+  const [isMobile, setIsMobile] = React.useState(() => {
+    // SSR-safe initial check
+    if (typeof window === "undefined") return false
+    return window.matchMedia("(max-width: 639px)").matches
+  })
 
   React.useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640)
-    }
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
+    const mediaQuery = window.matchMedia("(max-width: 639px)")
+    
+    // Set initial value
+    setIsMobile(mediaQuery.matches)
+    
+    // Listen for changes
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mediaQuery.addEventListener("change", handler)
+    
+    return () => mediaQuery.removeEventListener("change", handler)
   }, [])
 
   return isMobile
+}
+
+// Determine effective variant based on size and device
+const getEffectiveVariant = (
+  variant: ModalVariant | undefined,
+  size: ModalSize,
+  isMobile: boolean
+): ModalVariant => {
+  // If explicitly set, respect it
+  if (variant) return variant
+  
+  // Desktop: always default (centered)
+  if (!isMobile) return "default"
+  
+  // Mobile: large modals become fullscreen, others become bottom-sheet
+  if (size === "lg") return "fullscreen"
+  return "bottom-sheet"
 }
 
 // Overlay Component
@@ -96,14 +121,22 @@ export const AppModal = React.forwardRef<
     ref
   ) => {
     const isMobile = useIsMobile()
-    const effectiveVariant = variant || (isMobile ? "bottom-sheet" : "default")
+    const effectiveVariant = getEffectiveVariant(variant, size, isMobile)
+    
     const isBottomSheet = effectiveVariant === "bottom-sheet"
+    const isFullscreen = effectiveVariant === "fullscreen"
+    const isDefault = effectiveVariant === "default"
 
     const handleOpenChange = (newOpen: boolean) => {
       if (!newOpen && onClose) {
         onClose()
       }
       onOpenChange(newOpen)
+    }
+
+    const handleClose = () => {
+      if (onClose) onClose()
+      onOpenChange(false)
     }
 
     const titleId = React.useId()
@@ -119,7 +152,8 @@ export const AppModal = React.forwardRef<
               "app-modal",
               sizeClasses[size],
               isBottomSheet && "app-modal-bottom-sheet",
-              !isBottomSheet && "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
+              isFullscreen && "app-modal-fullscreen",
+              isDefault && "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
               className
             )}
             aria-labelledby={ariaLabelledBy || (title ? titleId : undefined)}
@@ -138,15 +172,20 @@ export const AppModal = React.forwardRef<
           >
             {/* Modal Wrapper - Flex column for proper scrolling */}
             <div className="app-modal-wrapper">
-              {/* Close Button - Fixed position */}
+              {/* Close Button - X for default/bottom-sheet, Back arrow for fullscreen */}
               {showCloseButton && !persistent && (
                 <DialogPrimitive.Close asChild>
                   <button
                     type="button"
                     className="app-modal-close"
                     aria-label="Close"
+                    onClick={handleClose}
                   >
-                    <X className="h-4 w-4" />
+                    {isFullscreen ? (
+                      <ArrowLeft className="h-5 w-5" />
+                    ) : (
+                      <X className="h-4 w-4" />
+                    )}
                     <span className="sr-only">Close</span>
                   </button>
                 </DialogPrimitive.Close>
@@ -154,12 +193,12 @@ export const AppModal = React.forwardRef<
 
               {/* Drag Handle - Bottom sheet only */}
               {isBottomSheet && (
-                <div className="app-modal-drag-handle flex-shrink-0" aria-hidden="true" />
+                <div className="app-modal-drag-handle" aria-hidden="true" />
               )}
 
               {/* Header - Fixed, no scroll */}
               {(title || subtitle) && (
-                <AppModalHeader>
+                <AppModalHeader className={isFullscreen ? "pl-12" : undefined}>
                   {title && (
                     <AppModalTitle id={titleId}>{title}</AppModalTitle>
                   )}
