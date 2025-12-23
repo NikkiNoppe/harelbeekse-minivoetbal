@@ -35,14 +35,14 @@ const AdminTeamPage: React.FC = () => {
             <h1 className="text-2xl font-bold">
               Team Beheer
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-muted-foreground">
               Beheer alle teams in de competitie
             </p>
           </div>
         </div>
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Teams laden...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" aria-hidden="true"></div>
+          <p className="mt-2 text-muted-foreground">Teams laden...</p>
         </div>
       </div>
     );

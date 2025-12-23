@@ -6,10 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from '@/components/ui/app-modal';
+import { AppAlertModal } from '@/components/ui/app-alert-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, Loader2, Calendar, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { suspensionService } from '@/domains/cards-suspensions';
@@ -306,99 +306,96 @@ const AdminSuspensionsPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Schorsingen Beheer</h1>
         <div className="flex gap-2">
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="btn btn--outline flex items-center gap-2">
-                <Plus className="h-4 w-4 mr-2" />
-                Schorsing Toevoegen
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="modal">
-              <DialogHeader>
-                <DialogTitle className="modal__title">Nieuwe Schorsing Toevoegen</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="team">Team</Label>
-                  <Select value={newSuspension.teamId} onValueChange={(value) =>
-                    setNewSuspension(prev => ({ ...prev, teamId: value, playerId: '' }))
-                  }>
-                    <SelectTrigger>
-                      <SelectValue placeholder={teamsQuery.isLoading ? 'Teams laden...' : 'Selecteer team'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teamsQuery.data?.map(team => (
-                        <SelectItem key={team.team_id} value={team.team_id.toString()}>
-                          {team.team_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="player">Speler</Label>
-                  <Select value={newSuspension.playerId} onValueChange={(value) =>
-                    setNewSuspension(prev => ({ ...prev, playerId: value }))
-                  } disabled={!newSuspension.teamId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={!newSuspension.teamId ? 'Selecteer eerst een team' : (playersQuery.isLoading ? 'Spelers laden...' : 'Selecteer speler')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredPlayers.map(player => (
-                        <SelectItem key={player.playerId} value={player.playerId.toString()}>
-                          {player.playerName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="reason">Reden</Label>
-                  <Input
-                    id="reason"
-                    value={newSuspension.reason}
-                    onChange={(e) => setNewSuspension(prev => ({ ...prev, reason: e.target.value }))}
-                    placeholder="Bijv. Rode kaart - grove overtreding"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="matches">Aantal wedstrijden</Label>
-                  <Input
-                    id="matches"
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={newSuspension.matches}
-                    onChange={(e) => setNewSuspension(prev => ({ ...prev, matches: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="notes">Opmerkingen (optioneel)</Label>
-                  <Textarea
-                    id="notes"
-                    value={newSuspension.notes}
-                    onChange={(e) => setNewSuspension(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="Extra opmerkingen over de schorsing"
-                  />
-                </div>
-                <div className="modal__actions">
-                  <Button 
-                    onClick={() => setIsAddDialogOpen(false)}
-                    className="btn btn--secondary flex-1"
-                  >
-                    Annuleren
-                  </Button>
-                  <Button 
-                    onClick={handleAddSuspension} 
-                    disabled={!newSuspension.teamId || !newSuspension.playerId || !newSuspension.reason}
-                    className="btn btn--primary flex-1"
-                  >
-                    Toevoegen
-                  </Button>
-                </div>
+          <Button 
+            className="btn btn--outline flex items-center gap-2"
+            onClick={() => setIsAddDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Schorsing Toevoegen
+          </Button>
+          <AppModal
+            open={isAddDialogOpen}
+            onOpenChange={setIsAddDialogOpen}
+            title="Nieuwe Schorsing Toevoegen"
+            size="sm"
+            primaryAction={{
+              label: "Toevoegen",
+              onClick: handleAddSuspension,
+              variant: "primary",
+              disabled: !newSuspension.teamId || !newSuspension.playerId || !newSuspension.reason,
+            }}
+            secondaryAction={{
+              label: "Annuleren",
+              onClick: () => setIsAddDialogOpen(false),
+              variant: "secondary",
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="team">Team</Label>
+                <Select value={newSuspension.teamId} onValueChange={(value) =>
+                  setNewSuspension(prev => ({ ...prev, teamId: value, playerId: '' }))
+                }>
+                  <SelectTrigger>
+                    <SelectValue placeholder={teamsQuery.isLoading ? 'Teams laden...' : 'Selecteer team'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teamsQuery.data?.map(team => (
+                      <SelectItem key={team.team_id} value={team.team_id.toString()}>
+                        {team.team_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </DialogContent>
-          </Dialog>
+              <div>
+                <Label htmlFor="player">Speler</Label>
+                <Select value={newSuspension.playerId} onValueChange={(value) =>
+                  setNewSuspension(prev => ({ ...prev, playerId: value }))
+                } disabled={!newSuspension.teamId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={!newSuspension.teamId ? 'Selecteer eerst een team' : (playersQuery.isLoading ? 'Spelers laden...' : 'Selecteer speler')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredPlayers.map(player => (
+                      <SelectItem key={player.playerId} value={player.playerId.toString()}>
+                        {player.playerName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="reason">Reden</Label>
+                <Input
+                  id="reason"
+                  value={newSuspension.reason}
+                  onChange={(e) => setNewSuspension(prev => ({ ...prev, reason: e.target.value }))}
+                  placeholder="Bijv. Rode kaart - grove overtreding"
+                />
+              </div>
+              <div>
+                <Label htmlFor="matches">Aantal wedstrijden</Label>
+                <Input
+                  id="matches"
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={newSuspension.matches}
+                  onChange={(e) => setNewSuspension(prev => ({ ...prev, matches: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="notes">Opmerkingen (optioneel)</Label>
+                <Textarea
+                  id="notes"
+                  value={newSuspension.notes}
+                  onChange={(e) => setNewSuspension(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Extra opmerkingen over de schorsing"
+                />
+              </div>
+            </div>
+          </AppModal>
         </div>
       </div>
 
@@ -475,30 +472,10 @@ const AdminSuspensionsPage: React.FC = () => {
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button className="btn btn--icon btn--danger">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="modal">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle className="modal__title">Schorsing verwijderen</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Weet je zeker dat je deze schorsing wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter className="modal__actions">
-                                  <AlertDialogCancel className="btn btn--secondary">Annuleren</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => deleteSuspensionMutation.mutate(suspension.id)}
-                                    className="btn btn--danger"
-                                  >
-                                    Verwijderen
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <DeleteSuspensionButton
+                              suspensionId={suspension.id}
+                              onDelete={() => deleteSuspensionMutation.mutate(suspension.id)}
+                            />
                           </div>
                         </TableCell>
                       </TableRow>
@@ -513,54 +490,58 @@ const AdminSuspensionsPage: React.FC = () => {
 
       {/* Edit Suspension Dialog */}
       {editingSuspension && (
-        <Dialog open={!!editingSuspension} onOpenChange={() => setEditingSuspension(null)}>
-          <DialogContent className="modal">
-            <DialogHeader>
-              <DialogTitle className="modal__title">Handmatige Schorsing Bewerken</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>Speler</Label>
-                <div className="p-2 bg-muted rounded">
-                  {getPlayerName(editingSuspension.playerId)}
-                </div>
+        <AppModal
+          open={!!editingSuspension}
+          onOpenChange={(open) => !open && setEditingSuspension(null)}
+          title="Handmatige Schorsing Bewerken"
+          size="sm"
+          primaryAction={{
+            label: "Wijzigingen Opslaan",
+            onClick: () => editingSuspension && handleUpdateSuspension(editingSuspension),
+            variant: "primary",
+          }}
+          secondaryAction={{
+            label: "Annuleren",
+            onClick: () => setEditingSuspension(null),
+            variant: "secondary",
+          }}
+        >
+          <div className="space-y-4">
+            <div>
+              <Label>Speler</Label>
+              <div className="p-2 bg-muted rounded">
+                {getPlayerName(editingSuspension.playerId)}
               </div>
-              <div>
-                <Label htmlFor="edit-reason">Reden</Label>
-                <Input
-                  id="edit-reason"
-                  value={editingSuspension.reason}
-                  onChange={(e) => setEditingSuspension(prev => prev ? { ...prev, reason: e.target.value } : null)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-matches">Aantal wedstrijden</Label>
-                <Input
-                  id="edit-matches"
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={editingSuspension.matches}
-                  onChange={(e) => setEditingSuspension(prev => prev ? { ...prev, matches: parseInt(e.target.value) } : null)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-notes">Opmerkingen</Label>
-                <Textarea
-                  id="edit-notes"
-                  value={editingSuspension.notes || ''}
-                  onChange={(e) => setEditingSuspension(prev => prev ? { ...prev, notes: e.target.value } : null)}
-                />
-              </div>
-              <Button 
-                onClick={() => handleUpdateSuspension(editingSuspension)} 
-                className="w-full btn btn--primary"
-              >
-                Wijzigingen Opslaan
-              </Button>
             </div>
-          </DialogContent>
-        </Dialog>
+            <div>
+              <Label htmlFor="edit-reason">Reden</Label>
+              <Input
+                id="edit-reason"
+                value={editingSuspension.reason}
+                onChange={(e) => setEditingSuspension(prev => prev ? { ...prev, reason: e.target.value } : null)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-matches">Aantal wedstrijden</Label>
+              <Input
+                id="edit-matches"
+                type="number"
+                min="1"
+                max="10"
+                value={editingSuspension.matches}
+                onChange={(e) => setEditingSuspension(prev => prev ? { ...prev, matches: parseInt(e.target.value) } : null)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-notes">Opmerkingen</Label>
+              <Textarea
+                id="edit-notes"
+                value={editingSuspension.notes || ''}
+                onChange={(e) => setEditingSuspension(prev => prev ? { ...prev, notes: e.target.value } : null)}
+              />
+            </div>
+          </div>
+        </AppModal>
       )}
 
       {/* Edit Active Suspension Dialog (voor automatische schorsingen) */}
@@ -674,6 +655,84 @@ const ActiveSuspensionsSection: React.FC<{
   );
 };
 
+// Helper component for delete button with modal
+const DeleteSuspensionButton: React.FC<{
+  suspensionId: number;
+  onDelete: () => void;
+}> = ({ suspensionId, onDelete }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button 
+        className="btn btn--icon btn--danger"
+        onClick={() => setOpen(true)}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+      <AppAlertModal
+        open={open}
+        onOpenChange={setOpen}
+        title="Schorsing verwijderen"
+        description="Weet je zeker dat je deze schorsing wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+        confirmAction={{
+          label: "Verwijderen",
+          onClick: () => {
+            onDelete();
+            setOpen(false);
+          },
+          variant: "destructive",
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: () => setOpen(false),
+          variant: "secondary",
+        }}
+      />
+    </>
+  );
+};
+
+// Helper component for lift button with modal
+const LiftSuspensionButton: React.FC<{
+  playerName: string;
+  onLift: () => void;
+}> = ({ playerName, onLift }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button 
+        size="sm" 
+        variant="ghost" 
+        className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+        onClick={() => setOpen(true)}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+      <AppAlertModal
+        open={open}
+        onOpenChange={setOpen}
+        title="Schorsing opheffen"
+        description={`Weet je zeker dat je de schorsing van ${playerName} wilt opheffen?`}
+        confirmAction={{
+          label: "Opheffen",
+          onClick: () => {
+            onLift();
+            setOpen(false);
+          },
+          variant: "destructive",
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: () => setOpen(false),
+          variant: "secondary",
+        }}
+      />
+    </>
+  );
+};
+
 // Component voor één schorsing row met upcoming matches
 const SuspensionRow: React.FC<{
   suspension: any;
@@ -703,27 +762,10 @@ const SuspensionRow: React.FC<{
           <Button onClick={onEdit} size="sm" variant="ghost" className="h-8 w-8 p-0">
             <Edit className="h-4 w-4" />
           </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive">
-                <X className="h-4 w-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="modal">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="modal__title">Schorsing opheffen</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Weet je zeker dat je de schorsing van {suspension.playerName} wilt opheffen?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="modal__actions">
-                <AlertDialogCancel className="btn btn--secondary">Annuleren</AlertDialogCancel>
-                <AlertDialogAction onClick={onLift} className="btn btn--danger">
-                  Opheffen
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <LiftSuspensionButton
+            playerName={suspension.playerName}
+            onLift={onLift}
+          />
         </div>
       </div>
 
@@ -789,74 +831,73 @@ const EditActiveSuspensionDialog: React.FC<{
   };
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="modal max-w-md">
-        <DialogHeader>
-          <DialogTitle className="modal__title">
-            {suspension.type === 'automatic' ? 'Automatische Schorsing Aanpassen' : 'Handmatige Schorsing Aanpassen'}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label className="text-sm font-medium">Speler</Label>
-            <div className="p-2 bg-muted rounded-md mt-1">
-              <p className="font-medium">{suspension.playerName}</p>
-              <p className="text-sm text-muted-foreground">{suspension.teamName}</p>
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="remaining-matches">Resterende wedstrijden</Label>
-            <Input
-              id="remaining-matches"
-              type="number"
-              min="0"
-              max="10"
-              value={remaining}
-              onChange={(e) => setRemaining(Math.max(0, parseInt(e.target.value) || 0))}
-              className="mt-1"
-            />
-          </div>
-
-          {upcomingMatches && upcomingMatches.length > 0 && (
-            <div className="pt-2 border-t">
-              <p className="text-sm font-medium mb-2">Impact op beschikbaarheid:</p>
-              <div className="space-y-1">
-                {upcomingMatches.slice(0, Math.max(remaining, suspension.remaining) + 1).map((match, index) => {
-                  const isMissed = index < remaining;
-                  const matchDate = new Date(match.match_date);
-                  
-                  return (
-                    <div key={match.match_id} className={`flex items-center gap-2 text-sm ${isMissed ? 'text-muted-foreground' : 'text-foreground'}`}>
-                      {isMissed ? (
-                        <X className="h-3 w-3 text-destructive" />
-                      ) : (
-                        <Check className="h-3 w-3 text-success" />
-                      )}
-                      <span>{format(matchDate, 'dd/MM', { locale: nl })}: vs {match.opponent_name}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              {remaining > 0 && upcomingMatches[remaining] && (
-                <p className="text-sm text-success mt-2">
-                  → Beschikbaar vanaf {format(new Date(upcomingMatches[remaining].match_date), 'dd/MM/yyyy', { locale: nl })}
-                </p>
-              )}
-            </div>
-          )}
-
-          <div className="modal__actions pt-4">
-            <Button onClick={onClose} variant="outline" className="btn btn--secondary flex-1">
-              Annuleren
-            </Button>
-            <Button onClick={handleSave} className="btn btn--primary flex-1">
-              Opslaan
-            </Button>
+    <AppModal
+      open={true}
+      onOpenChange={onClose}
+      title={suspension.type === 'automatic' ? 'Automatische Schorsing Aanpassen' : 'Handmatige Schorsing Aanpassen'}
+      size="sm"
+      primaryAction={{
+        label: "Opslaan",
+        onClick: handleSave,
+        variant: "primary",
+      }}
+      secondaryAction={{
+        label: "Annuleren",
+        onClick: onClose,
+        variant: "secondary",
+      }}
+    >
+      <div className="space-y-4">
+        <div>
+          <Label className="text-sm font-medium">Speler</Label>
+          <div className="p-2 bg-muted rounded-md mt-1">
+            <p className="font-medium">{suspension.playerName}</p>
+            <p className="text-sm text-muted-foreground">{suspension.teamName}</p>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <div>
+          <Label htmlFor="remaining-matches">Resterende wedstrijden</Label>
+          <Input
+            id="remaining-matches"
+            type="number"
+            min="0"
+            max="10"
+            value={remaining}
+            onChange={(e) => setRemaining(Math.max(0, parseInt(e.target.value) || 0))}
+            className="mt-1"
+          />
+        </div>
+
+        {upcomingMatches && upcomingMatches.length > 0 && (
+          <div className="pt-2 border-t">
+            <p className="text-sm font-medium mb-2">Impact op beschikbaarheid:</p>
+            <div className="space-y-1">
+              {upcomingMatches.slice(0, Math.max(remaining, suspension.remaining) + 1).map((match, index) => {
+                const isMissed = index < remaining;
+                const matchDate = new Date(match.match_date);
+                
+                return (
+                  <div key={match.match_id} className={`flex items-center gap-2 text-sm ${isMissed ? 'text-muted-foreground' : 'text-foreground'}`}>
+                    {isMissed ? (
+                      <X className="h-3 w-3 text-destructive" />
+                    ) : (
+                      <Check className="h-3 w-3 text-success" />
+                    )}
+                    <span>{format(matchDate, 'dd/MM', { locale: nl })}: vs {match.opponent_name}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {remaining > 0 && upcomingMatches[remaining] && (
+              <p className="text-sm text-success mt-2">
+                → Beschikbaar vanaf {format(new Date(upcomingMatches[remaining].match_date), 'dd/MM/yyyy', { locale: nl })}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </AppModal>
   );
 };
 

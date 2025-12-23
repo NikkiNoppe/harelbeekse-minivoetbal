@@ -1,0 +1,415 @@
+{
+  "timestamp": "2025-12-23T19:50:33.440Z",
+  "baseline": {
+    "referencePage": "CompetitiePage",
+    "referenceFile": "src/components/pages/public/competition/CompetitiePage.tsx",
+    "version": "1.0.0",
+    "lastUpdated": "2025-01-27"
+  },
+  "results": [
+    {
+      "page": "AlgemeenPage",
+      "parity": {
+        "score": 100,
+        "maxScore": 100,
+        "percentage": 100,
+        "details": [
+          {
+            "category": "spacing",
+            "item": "mainContainer",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "spacing",
+            "item": "gridGaps",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "typography",
+            "item": "mainHeading",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "typography",
+            "item": "cardTitles",
+            "status": "pass",
+            "points": 15
+          },
+          {
+            "category": "colors",
+            "item": "requiredTokens",
+            "status": "pass",
+            "points": 15,
+            "ratio": 0.625,
+            "found": 5,
+            "total": 8
+          },
+          {
+            "category": "colors",
+            "item": "forbiddenPatterns",
+            "status": "pass",
+            "points": 10,
+            "issues": 0
+          },
+          {
+            "category": "components",
+            "item": "cardTransparent",
+            "status": "pass",
+            "points": 8
+          },
+          {
+            "category": "components",
+            "item": "pageHeader",
+            "status": "pass",
+            "points": 7
+          },
+          {
+            "category": "accessibility",
+            "item": "ariaLandmarks",
+            "status": "pass",
+            "points": 15,
+            "roleRatio": 1,
+            "ariaRatio": 1
+          }
+        ],
+        "threshold": 95,
+        "passed": true
+      },
+      "issues": {
+        "spacing": null,
+        "typography": null,
+        "colors": null,
+        "components": null,
+        "accessibility": null
+      }
+    },
+    {
+      "page": "ReglementPage",
+      "parity": {
+        "score": 100,
+        "maxScore": 100,
+        "percentage": 100,
+        "details": [
+          {
+            "category": "spacing",
+            "item": "mainContainer",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "spacing",
+            "item": "gridGaps",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "typography",
+            "item": "mainHeading",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "typography",
+            "item": "cardTitles",
+            "status": "pass",
+            "points": 15
+          },
+          {
+            "category": "colors",
+            "item": "requiredTokens",
+            "status": "pass",
+            "points": 15,
+            "ratio": 0.625,
+            "found": 5,
+            "total": 8
+          },
+          {
+            "category": "colors",
+            "item": "forbiddenPatterns",
+            "status": "pass",
+            "points": 10,
+            "issues": 0
+          },
+          {
+            "category": "components",
+            "item": "cardTransparent",
+            "status": "fail",
+            "points": 8,
+            "issues": 0
+          },
+          {
+            "category": "components",
+            "item": "pageHeader",
+            "status": "pass",
+            "points": 7
+          },
+          {
+            "category": "accessibility",
+            "item": "ariaLandmarks",
+            "status": "pass",
+            "points": 15,
+            "roleRatio": 1,
+            "ariaRatio": 1
+          }
+        ],
+        "threshold": 95,
+        "passed": true
+      },
+      "issues": {
+        "spacing": null,
+        "typography": null,
+        "colors": null,
+        "components": null,
+        "accessibility": null
+      }
+    },
+    {
+      "page": "CompetitiePage",
+      "parity": {
+        "score": 85,
+        "maxScore": 100,
+        "percentage": 85,
+        "details": [
+          {
+            "category": "spacing",
+            "item": "mainContainer",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "spacing",
+            "item": "gridGaps",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "typography",
+            "item": "mainHeading",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "typography",
+            "item": "cardTitles",
+            "status": "pass",
+            "points": 15
+          },
+          {
+            "category": "colors",
+            "item": "requiredTokens",
+            "status": "partial",
+            "points": 5,
+            "ratio": 0.375,
+            "found": 3,
+            "total": 8
+          },
+          {
+            "category": "colors",
+            "item": "forbiddenPatterns",
+            "status": "pass",
+            "points": 10,
+            "issues": 0
+          },
+          {
+            "category": "components",
+            "item": "cardTransparent",
+            "status": "pass",
+            "points": 8
+          },
+          {
+            "category": "components",
+            "item": "pageHeader",
+            "status": "pass",
+            "points": 7
+          },
+          {
+            "category": "accessibility",
+            "item": "ariaLandmarks",
+            "status": "partial",
+            "points": 10,
+            "roleRatio": 0.6666666666666666,
+            "ariaRatio": 0.6666666666666666
+          }
+        ],
+        "threshold": 95,
+        "passed": false
+      },
+      "issues": {
+        "spacing": null,
+        "typography": null,
+        "colors": null,
+        "components": null,
+        "accessibility": {
+          "missingAria": 1
+        }
+      }
+    },
+    {
+      "page": "PublicBekerPage",
+      "parity": {
+        "score": 92,
+        "maxScore": 100,
+        "percentage": 92,
+        "details": [
+          {
+            "category": "spacing",
+            "item": "mainContainer",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "spacing",
+            "item": "gridGaps",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "typography",
+            "item": "mainHeading",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "typography",
+            "item": "cardTitles",
+            "status": "pass",
+            "points": 15
+          },
+          {
+            "category": "colors",
+            "item": "requiredTokens",
+            "status": "partial",
+            "points": 7,
+            "ratio": 0.5,
+            "found": 4,
+            "total": 8
+          },
+          {
+            "category": "colors",
+            "item": "forbiddenPatterns",
+            "status": "pass",
+            "points": 10,
+            "issues": 0
+          },
+          {
+            "category": "components",
+            "item": "cardTransparent",
+            "status": "pass",
+            "points": 8
+          },
+          {
+            "category": "components",
+            "item": "pageHeader",
+            "status": "pass",
+            "points": 7
+          },
+          {
+            "category": "accessibility",
+            "item": "ariaLandmarks",
+            "status": "pass",
+            "points": 15,
+            "roleRatio": 1,
+            "ariaRatio": 1
+          }
+        ],
+        "threshold": 95,
+        "passed": false
+      },
+      "issues": {
+        "spacing": null,
+        "typography": null,
+        "colors": null,
+        "components": null,
+        "accessibility": null
+      }
+    },
+    {
+      "page": "PlayOffPage",
+      "parity": {
+        "score": 90,
+        "maxScore": 100,
+        "percentage": 90,
+        "details": [
+          {
+            "category": "spacing",
+            "item": "mainContainer",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "spacing",
+            "item": "gridGaps",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "typography",
+            "item": "mainHeading",
+            "status": "pass",
+            "points": 10
+          },
+          {
+            "category": "typography",
+            "item": "cardTitles",
+            "status": "pass",
+            "points": 15
+          },
+          {
+            "category": "colors",
+            "item": "requiredTokens",
+            "status": "partial",
+            "points": 5,
+            "ratio": 0.375,
+            "found": 3,
+            "total": 8
+          },
+          {
+            "category": "colors",
+            "item": "forbiddenPatterns",
+            "status": "pass",
+            "points": 10,
+            "issues": 0
+          },
+          {
+            "category": "components",
+            "item": "cardTransparent",
+            "status": "pass",
+            "points": 8
+          },
+          {
+            "category": "components",
+            "item": "pageHeader",
+            "status": "pass",
+            "points": 7
+          },
+          {
+            "category": "accessibility",
+            "item": "ariaLandmarks",
+            "status": "pass",
+            "points": 15,
+            "roleRatio": 1,
+            "ariaRatio": 1
+          }
+        ],
+        "threshold": 95,
+        "passed": false
+      },
+      "issues": {
+        "spacing": null,
+        "typography": null,
+        "colors": null,
+        "components": null,
+        "accessibility": null
+      }
+    }
+  ],
+  "summary": {
+    "totalPages": 5,
+    "passed": 2,
+    "failed": 3,
+    "averageScore": 93
+  }
+}

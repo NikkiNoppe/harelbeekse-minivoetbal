@@ -19,7 +19,9 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "app-modal-overlay",
+      "data-[state=open]:animate-in data-[state=closed]:animate-out",
+      "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
@@ -36,24 +38,32 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-[60] flex flex-col w-full max-w-lg -translate-x-1/2 -translate-y-1/2 border bg-white shadow-xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-xl mx-4 max-h-[90vh] max-h-[90dvh] overscroll-behavior-contain touch-action-manipulation",
+        "app-modal app-modal-md",
+        "fixed left-1/2 top-1/2 z-modal -translate-x-1/2 -translate-y-1/2",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out",
+        "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+        "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+        "transition-[opacity,transform]",
+        "sm:rounded-xl mx-4 border",
         className
       )}
       style={{
+        transitionDuration: "var(--transition-fast)",
+        transitionTimingFunction: "var(--transition-timing)",
         maxHeight: 'calc(100dvh - 2rem)',
         maxWidth: 'calc(100vw - 2rem)',
       }}
       {...props}
     >
-      <div className="dialog-close-button absolute right-4 top-4 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none flex items-center justify-center w-8 h-8">
+      <div className="app-modal-close">
         <DialogPrimitive.Close asChild>
-          <button type="button">
+          <button type="button" aria-label="Close">
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
           </button>
         </DialogPrimitive.Close>
       </div>
-      <div className="overflow-y-auto p-4 sm:p-6">
+      <div className="app-modal-body p-4 sm:p-6">
         {children}
       </div>
     </DialogPrimitive.Content>
@@ -96,7 +106,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
+      "app-modal-header",
       className
     )}
     {...props}
@@ -110,7 +120,7 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
+    className={cn("app-modal-subtitle", className)}
     {...props}
   />
 ))

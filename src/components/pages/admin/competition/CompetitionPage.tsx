@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AppAlertModal } from "@/components/ui/app-alert-modal";
 import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { competitionService, CompetitionConfig, CompetitionFormat } from "@/services/match/competitionService";
@@ -460,32 +461,32 @@ const AdminCompetitionPage: React.FC = () => {
               </button>
             </div>
 
-            {showConfirm && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="modal">
-                  <div className="w-full max-w-sm mx-auto">
-                    <div className="modal__title">Competitie Aanmaken</div>
-                    <p className="text-xs text-muted-foreground">
-                      Weet je zeker dat je de competitie wilt aanmaken met {selectedTeams.length} teams? Deze actie kan niet ongedaan worden gemaakt.
-                    </p>
-                    <div className="modal__actions">
-                      <button
-                        className="btn btn--primary"
-                        onClick={() => {
-                          setShowConfirm(false);
-                          handleCreateCompetition();
-                        }}
-                      >
-                        {previewPlan ? 'Bevestigen en importeren' : 'Competitie Aanmaken'}
-                      </button>
-                      <button className="btn btn--secondary" onClick={() => setShowConfirm(false)}>
-                        Annuleren
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            <AppAlertModal
+              open={showConfirm}
+              onOpenChange={setShowConfirm}
+              title="Competitie Aanmaken"
+              description={
+                <p className="text-xs text-muted-foreground">
+                  Weet je zeker dat je de competitie wilt aanmaken met {selectedTeams.length} teams? Deze actie kan niet ongedaan worden gemaakt.
+                </p>
+              }
+              confirmAction={{
+                label: previewPlan ? 'Bevestigen en importeren' : 'Competitie Aanmaken',
+                onClick: () => {
+                  setShowConfirm(false);
+                  handleCreateCompetition();
+                },
+                variant: "primary",
+                disabled: isCreating,
+                loading: isCreating,
+              }}
+              cancelAction={{
+                label: "Annuleren",
+                onClick: () => setShowConfirm(false),
+                disabled: isCreating,
+              }}
+              size="sm"
+            />
 
             {previewPlan && (
               <div className="p-3 rounded-md border bg-white">
@@ -495,7 +496,7 @@ const AdminCompetitionPage: React.FC = () => {
                     <div className="text-xs text-muted-foreground mb-1">Teamscores (som van voorkeur-scores per team)</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                       {Object.entries(previewTeamTotals).sort((a, b) => Number(b[1]) - Number(a[1])).map(([teamId, total]) => (
-                        <div key={teamId} className="flex justify-between text-xs p-2 bg-gray-50 rounded">
+                        <div key={teamId} className="flex justify-between text-xs p-2 bg-muted rounded-lg">
                           <span className="font-medium">{teamNameById.get(Number(teamId)) || teamId}</span>
                           <span>{Number(total).toFixed(2)}</span>
                         </div>

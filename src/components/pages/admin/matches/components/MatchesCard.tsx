@@ -23,13 +23,13 @@ interface MatchCardProps {
 const getStatusBadge = (status: MatchCardStatus, nextMatch?: string) => {
   switch (status) {
     case "completed":
-      return { label: "Afgerond", color: "bg-green-500", icon: CheckCircle };
+      return { label: "Afgerond", color: "bg-success", icon: CheckCircle };
     case "upcoming":
       return { label: nextMatch ? `→ ${nextMatch}` : "Aankomend", color: "bg-orange-400", icon: Clock };
     case "pending":
-      return { label: "In afwachting", color: "bg-gray-400", icon: Clock };
+      return { label: "In afwachting", color: "bg-muted", icon: Clock };
     default:
-      return { label: "Onbekend", color: "bg-gray-400", icon: Clock };
+      return { label: "Onbekend", color: "bg-muted", icon: Clock };
   }
 };
 
@@ -50,32 +50,30 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const StatusIcon = badge.icon;
   return (
     <div className="match-card">
-      <div className="match-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+      <div className="match-card-header flex items-center justify-end mb-2">
         {badgeSlot ? badgeSlot : (
           <span className={`match-card-status-badge ${badge.color} text-white text-xs px-2 py-0.5 rounded font-semibold flex items-center gap-1`}>
-            <StatusIcon className="h-3 w-3 mr-1" />
+            <StatusIcon className="h-3 w-3" />
             {badge.label}
           </span>
         )}
       </div>
       <div className="match-card-teams">
-        <div className="team-name-container text-right" style={{ maxWidth: '47%' }}>
+        <div className="team-name-container text-right max-w-[47%]">
           <AutoFitText 
             text={home}
             maxFontSize={16}
             minFontSize={7}
-            className="text-responsive-team font-medium"
-            style={{ textAlign: 'right' }}
+            className="text-responsive-team font-medium text-right"
           />
         </div>
-        <span className="text-xs mx-1" style={{ minWidth: 20, textAlign: 'center' }}>vs</span>
-        <div className="team-name-container text-left" style={{ maxWidth: '47%' }}>
+        <span className="text-xs mx-1 min-w-[20px] text-center">vs</span>
+        <div className="team-name-container text-left max-w-[47%]">
           <AutoFitText 
             text={away}
             maxFontSize={16}
             minFontSize={7}
-            className="text-responsive-team font-medium"
-            style={{ textAlign: 'left' }}
+            className="text-responsive-team font-medium text-left"
           />
         </div>
       </div>

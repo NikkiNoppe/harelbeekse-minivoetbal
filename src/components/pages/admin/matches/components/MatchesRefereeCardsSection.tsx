@@ -150,17 +150,16 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
         <div className="relative space-y-3">
           <button
             type="button"
-            className="btn--close"
+            className="btn--close absolute top-2 right-2 w-3 h-3 min-w-[44px] min-h-[44px] flex items-center justify-center"
             aria-label="Sluiten"
             onClick={() => setItems([])}
-            style={{ top: '0.5rem', right: '0.5rem', width: '0.75rem', height: '0.75rem' }}
           >
-            <X size={10} />
+            <X className="w-2.5 h-2.5" />
           </button>
           {items.map((it, idx) => {
             const teamPlayers = it.team === "home" ? playersByTeam.home : it.team === "away" ? playersByTeam.away : [];
             return (
-              <div key={idx} className="flex flex-col md:flex-row md:items-center gap-3 p-3 border rounded bg-gray-50">
+              <div key={idx} className="flex flex-col md:flex-row md:items-center gap-3 p-3 border border-border rounded-lg bg-muted">
                 <div className="w-full md:w-1/3">
                   <Label className="text-xs">Team</Label>
                   <Select value={it.team} onValueChange={(v) => updateItem(idx, "team", v)} disabled={!canEdit}>

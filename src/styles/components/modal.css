@@ -1,0 +1,196 @@
+/* Modal Component Styles - Using Design Tokens */
+@layer components {
+  /* Base Modal Container - Flex column layout for proper scrolling */
+  .app-modal {
+    @apply bg-card text-card-foreground rounded-lg shadow-[var(--shadow-elevation-3)];
+    @apply flex flex-col;
+    background-color: rgb(var(--card));
+    color: rgb(var(--card-foreground));
+    max-height: 90vh;
+    max-height: 90dvh;
+    overscroll-behavior: contain;
+    touch-action: manipulation;
+    /* Prevent background scroll when modal is open */
+    position: fixed;
+  }
+
+  /* Modal Wrapper - Contains header, body, footer */
+  .app-modal-wrapper {
+    @apply flex flex-col;
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow: hidden;
+  }
+
+  /* Modal Overlay - Enhanced with stronger blur and darker background */
+  .app-modal-overlay {
+    @apply fixed inset-0 z-[1000] bg-[var(--modal-overlay)]/80 backdrop-blur-md;
+    /* Smooth fade-in/fade-out animations using Radix UI data attributes */
+    transition: opacity var(--transition-base) var(--transition-timing);
+    /* Initial state - hidden */
+    opacity: 0;
+  }
+  
+  /* Fade in when modal opens */
+  .app-modal-overlay[data-state="open"] {
+    opacity: 1;
+  }
+  
+  /* Fade out when modal closes */
+  .app-modal-overlay[data-state="closed"] {
+    opacity: 0;
+  }
+
+  /* Modal Header - Fixed, no scroll */
+  .app-modal-header {
+    @apply flex flex-col space-y-1.5 text-center sm:text-left;
+    @apply flex-shrink-0;
+    padding: 1.5rem 1.5rem 0.5rem;
+    background-color: rgb(var(--card));
+  }
+
+  /* Modal Title */
+  .app-modal-title {
+    @apply text-heading font-semibold leading-none tracking-tight;
+  }
+
+  /* Modal Subtitle */
+  .app-modal-subtitle {
+    @apply text-muted-foreground text-sm;
+  }
+
+  /* Modal Body - Scrollable Content with smooth scrolling */
+  .app-modal-body {
+    @apply overflow-y-auto text-body;
+    @apply flex-1 min-h-0;
+    padding: 1rem 1.5rem;
+    background-color: rgb(var(--card));
+    /* Smooth scrolling with design tokens */
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-300) transparent;
+    /* Webkit scrollbar styling */
+    /* Prevent background scroll when modal is open */
+    overscroll-behavior: contain;
+  }
+
+  /* Smooth scrollbar styling for webkit browsers */
+  .app-modal-body::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .app-modal-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .app-modal-body::-webkit-scrollbar-thumb {
+    background-color: var(--color-300);
+    border-radius: 4px;
+  }
+
+  .app-modal-body::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-400);
+  }
+
+  /* Modal Footer - Action Buttons - Fixed, no scroll */
+  .app-modal-footer {
+    @apply flex gap-3 justify-end pt-4 border-t border-border;
+    @apply flex-shrink-0;
+    padding: 1rem 1.5rem 1.5rem;
+    background-color: rgb(var(--card));
+  }
+
+  /* Mobile: Vertical stack buttons */
+  @media (max-width: 639px) {
+    .app-modal-footer {
+      @apply flex-col-reverse;
+    }
+    
+    .app-modal-footer > * {
+      @apply w-full;
+      min-height: 44px; /* WCAG AA touch target */
+    }
+  }
+
+  /* Desktop: Horizontal row buttons */
+  @media (min-width: 640px) {
+    .app-modal-footer {
+      @apply flex-row;
+    }
+  }
+
+  /* Bottom Sheet Variant (Mobile) */
+  .app-modal-bottom-sheet {
+    @apply fixed bottom-0 left-0 right-0 rounded-t-2xl;
+    @apply flex flex-col;
+    height: 80vh;
+    height: 80dvh;
+    max-height: 80vh;
+    max-height: 80dvh;
+    animation: slide-up var(--transition-base) var(--transition-timing);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    overflow: hidden;
+  }
+
+  /* Bottom Sheet Body - Scrollable with safe area */
+  .app-modal-bottom-sheet .app-modal-body {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    /* Account for header + footer + drag handle */
+    max-height: calc(80vh - 8rem);
+    max-height: calc(80dvh - 8rem);
+  }
+
+  /* Bottom Sheet Wrapper - Ensure proper height constraint */
+  .app-modal-bottom-sheet .app-modal-wrapper {
+    height: 100%;
+    max-height: 80vh;
+    max-height: 80dvh;
+  }
+
+  /* Bottom Sheet Drag Handle */
+  .app-modal-drag-handle {
+    @apply w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto mb-4;
+  }
+
+  /* Size Variants */
+  .app-modal-xs {
+    @apply max-w-sm;
+  }
+
+  .app-modal-sm {
+    @apply max-w-md;
+  }
+
+  .app-modal-md {
+    @apply max-w-lg;
+  }
+
+  .app-modal-lg {
+    @apply max-w-2xl;
+  }
+
+  /* Close Button */
+  .app-modal-close {
+    @apply absolute right-4 top-4 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+    @apply disabled:pointer-events-none flex items-center justify-center;
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .app-modal-close:hover {
+    @apply opacity-100;
+  }
+
+  /* Reduced Motion Support */
+  @media (prefers-reduced-motion: reduce) {
+    .app-modal-overlay,
+    .app-modal,
+    .app-modal-bottom-sheet {
+      animation: none !important;
+      transition: none !important;
+      opacity: 1 !important; /* Keep overlay visible for accessibility */
+    }
+  }
+}
+

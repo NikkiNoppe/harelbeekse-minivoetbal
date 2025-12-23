@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import Header from "@/components/pages/header/Header";
 import { useLocation, useNavigate } from "react-router-dom";
 import Footer from "@/components/pages/footer/Footer";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { AppModal } from "@/components/ui/app-modal";
 import LoginModal from "@/components/pages/login/LoginModal";
 import MainPages from "@/components/pages/MainPages";
 import { AdminDashboardLayout } from "@/components/pages/admin/AdminDashboardLayout";
@@ -141,15 +141,16 @@ const Layout: React.FC = () => {
           onLogoClick={handleLogoClick}
           onLoginClick={handleLoginClick}
         />
-        <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
-          <DialogContent className="modal">
-            <DialogTitle className="sr-only">Inloggen</DialogTitle>
-            <DialogDescription className="sr-only">
-              Log in op je account om toegang te krijgen tot het systeem
-            </DialogDescription>
-            <LoginModal onLoginSuccess={handleLoginSuccess} />
-          </DialogContent>
-        </Dialog>
+        <AppModal
+          open={loginDialogOpen}
+          onOpenChange={setLoginDialogOpen}
+          title="Inloggen"
+          subtitle="Log in op je account om toegang te krijgen tot het systeem"
+          size="sm"
+          showCloseButton={true}
+        >
+          <LoginModal onLoginSuccess={handleLoginSuccess} />
+        </AppModal>
       </>
     );
   }
@@ -175,15 +176,16 @@ const Layout: React.FC = () => {
       {!isMobile && <Footer />}
       {isMobile && <MobileBottomNav />}
       <NotificationPopup />
-      <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
-        <DialogContent className="modal">
-          <DialogTitle className="sr-only">Inloggen</DialogTitle>
-          <DialogDescription className="sr-only">
-            Log in op je account om toegang te krijgen tot het systeem
-          </DialogDescription>
-          <LoginModal onLoginSuccess={handleLoginSuccess} />
-        </DialogContent>
-      </Dialog>
+      <AppModal
+        open={loginDialogOpen}
+        onOpenChange={setLoginDialogOpen}
+        title="Inloggen"
+        subtitle="Log in op je account om toegang te krijgen tot het systeem"
+        size="sm"
+        showCloseButton={true}
+      >
+        <LoginModal onLoginSuccess={handleLoginSuccess} />
+      </AppModal>
     </div>
   );
 };

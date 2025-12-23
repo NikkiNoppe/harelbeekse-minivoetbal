@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/ui/app-modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Settings, Edit, Calendar } from "lucide-react";
@@ -134,7 +134,7 @@ const SeasonDataSettings: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="font-medium text-purple-600">Startdatum</h4>
-                      <p className="text-sm text-gray-600">{new Date(seasonData.season_start_date).toLocaleDateString('nl-NL')}</p>
+                      <p className="text-sm text-muted-foreground">{new Date(seasonData.season_start_date).toLocaleDateString('nl-NL')}</p>
                     </div>
                     <Button
                       className="btn-action-edit"
@@ -147,8 +147,8 @@ const SeasonDataSettings: React.FC = () => {
                 <div className="p-4 border border-purple-200 rounded-lg bg-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-medium text-purple-600">Einddatum</h4>
-                      <p className="text-sm text-gray-600">{new Date(seasonData.season_end_date).toLocaleDateString('nl-NL')}</p>
+                      <h4 className="font-medium text-primary">Einddatum</h4>
+                      <p className="text-sm text-muted-foreground">{new Date(seasonData.season_end_date).toLocaleDateString('nl-NL')}</p>
                     </div>
                     <Button
                       className="btn-action-edit"
@@ -165,53 +165,53 @@ const SeasonDataSettings: React.FC = () => {
       </Card>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="modal">
-          <DialogHeader className="bg-purple-100">
-            <DialogTitle className="text-xl text-center text-purple-light">
-              Bewerk Seizoensdata
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4 bg-purple-100 p-4 sm:p-6">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="seasonStart">Startdatum</Label>
-                <Input 
-                  id="seasonStart" 
-                  type="date" 
-                  value={localSeasonData.season_start_date}
-                  onChange={(e) => handleInputChange('season_start_date', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="seasonEnd">Einddatum</Label>
-                <Input 
-                  id="seasonEnd" 
-                  type="date" 
-                  value={localSeasonData.season_end_date}
-                  onChange={(e) => handleInputChange('season_end_date', e.target.value)}
-                />
-              </div>
-              
-              {!isValid && hasChanges && (
-                <div className="bg-red-50 p-4 rounded-lg">
-                  <p className="text-sm text-red-800">
-                    <strong>Validatie fout:</strong> {validation.errors.join(", ")}
-                  </p>
-                </div>
-              )}
-            </div>
+      <AppModal
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        title="Bewerk Seizoensdata"
+        size="sm"
+        primaryAction={{
+          label: isLoading ? 'Opslaan...' : 'Opslaan',
+          onClick: handleSave,
+          variant: "primary",
+          disabled: isLoading || !hasChanges || !isValid,
+          loading: isLoading,
+        }}
+        secondaryAction={{
+          label: "Annuleren",
+          onClick: handleCancel,
+          variant: "secondary",
+        }}
+      >
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="seasonStart">Startdatum</Label>
+            <Input 
+              id="seasonStart" 
+              type="date" 
+              value={localSeasonData.season_start_date}
+              onChange={(e) => handleInputChange('season_start_date', e.target.value)}
+            />
           </div>
-          <DialogFooter className="modal__actions">
-            <Button className="btn btn--primary" onClick={handleSave} disabled={isLoading || !hasChanges || !isValid}>
-              {isLoading ? 'Opslaan...' : 'Opslaan'}
-            </Button>
-            <Button className="btn btn--secondary" onClick={handleCancel}>
-              Annuleren
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div>
+            <Label htmlFor="seasonEnd">Einddatum</Label>
+            <Input 
+              id="seasonEnd" 
+              type="date" 
+              value={localSeasonData.season_end_date}
+              onChange={(e) => handleInputChange('season_end_date', e.target.value)}
+            />
+          </div>
+          
+          {!isValid && hasChanges && (
+            <div className="bg-red-50 p-4 rounded-lg">
+              <p className="text-sm text-red-800">
+                <strong>Validatie fout:</strong> {validation.errors.join(", ")}
+              </p>
+            </div>
+          )}
+        </div>
+      </AppModal>
     </>
   );
 };

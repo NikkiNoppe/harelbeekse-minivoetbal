@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/ui/app-modal";
 import { Input } from "@/components/ui/input";
 // Removed Textarea import as extra notes are no longer used
 import { Checkbox } from "@/components/ui/checkbox";
@@ -397,47 +390,33 @@ const TeamModal: React.FC<TeamModalProps> = ({
     </div>
   ), [availableDays, availableTimeslots, availableVenues, isPreferenceSelected, handlePreferenceChange, isLoading]);
 
-  const actionButtons = useMemo(() => (
-    <DialogFooter className="modal__actions">
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={isLoading || !isFormValid}
-        className="btn btn--primary"
-      >
-        {saveButtonText}
-      </button>
-      <button
-        type="button"
-        onClick={handleClose}
-        className="btn btn--secondary"
-        disabled={isLoading}
-      >
-        Annuleren
-      </button>
-    </DialogFooter>
-  ), [handleSave, handleClose, isLoading, isFormValid, saveButtonText]);
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="modal">
-        <DialogHeader>
-          <DialogTitle className="modal__title">
-            {modalTitle}
-          </DialogTitle>
-          <DialogDescription className="modal__description">
-            Vul de details van het team in. Alle velden zijn verplicht.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <form className="space-y-4">
-          {teamNameSection}
-          {contactSection}
-          {preferencesSection}
-          {actionButtons}
-        </form>
-      </DialogContent>
-    </Dialog>
+    <AppModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={modalTitle}
+      subtitle="Vul de details van het team in. Alle velden zijn verplicht."
+      size="lg"
+      primaryAction={{
+        label: saveButtonText,
+        onClick: handleSave,
+        variant: "primary",
+        disabled: isLoading || !isFormValid,
+        loading: isLoading,
+      }}
+      secondaryAction={{
+        label: "Annuleren",
+        onClick: handleClose,
+        variant: "secondary",
+        disabled: isLoading,
+      }}
+    >
+      <form className="space-y-4">
+        {teamNameSection}
+        {contactSection}
+        {preferencesSection}
+      </form>
+    </AppModal>
   );
 };
 

@@ -1,7 +1,7 @@
 
 import React from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import ResponsiveTable, { TableColumn } from "./ResponsiveTable";
 
 interface Team {
   id: number;
@@ -23,75 +23,110 @@ interface ResponsiveStandingsTableProps {
 const ResponsiveStandingsTable: React.FC<ResponsiveStandingsTableProps> = ({ teams, isLoading }) => {
   if (isLoading) {
     return (
-      <Table className="table">
-        <TableHeader>
-          <TableRow className="table-header-row">
-            <TableHead>Pos</TableHead>
-            <TableHead>Team</TableHead>
-            <TableHead>Wed</TableHead>
-            <TableHead>W</TableHead>
-            <TableHead>G</TableHead>
-            <TableHead>V</TableHead>
-            <TableHead>+/-</TableHead>
-            <TableHead>Ptn</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {[...Array(5)].map((_, i) => (
-            <TableRow key={i}>
-              <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8" /></TableCell>
-              <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-32" /></TableCell>
-              <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8" /></TableCell>
-              <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8" /></TableCell>
-              <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8" /></TableCell>
-              <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8" /></TableCell>
-              <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8" /></TableCell>
-              <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8" /></TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <div className="space-y-3" role="status" aria-live="polite" aria-busy="true">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-card border border-border rounded-lg p-4 space-y-2 animate-pulse">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-8 bg-muted" />
+              <Skeleton className="h-5 w-32 bg-muted" />
+              <Skeleton className="h-6 w-12 bg-muted" />
+            </div>
+            <div className="flex items-center gap-4 pt-2 border-t border-border">
+              <Skeleton className="h-4 w-16 bg-muted" />
+              <Skeleton className="h-4 w-16 bg-muted" />
+              <Skeleton className="h-4 w-16 bg-muted" />
+            </div>
+          </div>
+        ))}
+      </div>
     );
   }
 
   if (!teams) return null;
 
+  const columns: TableColumn<Team>[] = [
+    {
+      key: "position",
+      header: "Pos",
+      accessor: (_, index) => <span className="font-medium">{index + 1}</span>,
+      className: "num",
+      mobilePriority: "primary",
+      mobileLabel: "Positie",
+    },
+    {
+      key: "name",
+      header: "Team",
+      accessor: (team) => <span className="font-medium">{team.name}</span>,
+      className: "left",
+      mobilePriority: "primary",
+      mobileLabel: "Team",
+    },
+    {
+      key: "points",
+      header: "Ptn",
+      accessor: (team) => <span className="font-bold">{team.points}</span>,
+      mobilePriority: "primary",
+      mobileLabel: "Punten",
+    },
+    {
+      key: "played",
+      header: "Wed",
+      accessor: (team) => team.played,
+      mobilePriority: "secondary",
+      mobileLabel: "Gespeeld",
+    },
+    {
+      key: "won",
+      header: "W",
+      accessor: (team) => <span className="text-green-600 font-medium">{team.won}</span>,
+      mobilePriority: "secondary",
+      mobileLabel: "Gewonnen",
+    },
+    {
+      key: "draw",
+      header: "G",
+      accessor: (team) => <span className="text-yellow-600 font-medium">{team.draw}</span>,
+      mobilePriority: "secondary",
+      mobileLabel: "Gelijk",
+    },
+    {
+      key: "lost",
+      header: "V",
+      accessor: (team) => <span className="text-red-600 font-medium">{team.lost}</span>,
+      mobilePriority: "secondary",
+      mobileLabel: "Verloren",
+    },
+    {
+      key: "goalDiff",
+      header: "+/-",
+      accessor: (team) => (
+        <span
+          className={
+            team.goalDiff > 0
+              ? "text-green-600 font-medium"
+              : team.goalDiff < 0
+              ? "text-red-600 font-medium"
+              : ""
+          }
+        >
+          {team.goalDiff > 0 ? "+" : ""}
+          {team.goalDiff}
+        </span>
+      ),
+      mobilePriority: "secondary",
+      mobileLabel: "Doelsaldo",
+    },
+  ];
+
   return (
-    <Table className="table">
-      <TableHeader>
-        <TableRow className="table-header-row">
-          <TableHead className="num">Pos</TableHead>
-          <TableHead className="left">Team</TableHead>
-          <TableHead>Wed</TableHead>
-          <TableHead>W</TableHead>
-          <TableHead>G</TableHead>
-          <TableHead>V</TableHead>
-          <TableHead>+/-</TableHead>
-          <TableHead>Ptn</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {teams.map((team, index) => (
-          <TableRow key={team.id}>
-            <TableCell className="num font-medium">{index + 1}</TableCell>
-            <TableCell className="left font-medium">{team.name}</TableCell>
-            <TableCell>{team.played}</TableCell>
-            <TableCell className="text-green-600 font-medium">{team.won}</TableCell>
-            <TableCell className="text-yellow-600 font-medium">{team.draw}</TableCell>
-            <TableCell className="text-red-600 font-medium">{team.lost}</TableCell>
-            <TableCell>
-              <span className={
-                team.goalDiff > 0 ? "text-green-600 font-medium" : 
-                team.goalDiff < 0 ? "text-red-600 font-medium" : ""
-              }>
-                {team.goalDiff > 0 ? "+" : ""}{team.goalDiff}
-              </span>
-            </TableCell>
-            <TableCell className="font-bold">{team.points}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <ResponsiveTable
+      data={teams}
+      columns={columns}
+      keyExtractor={(team) => team.id}
+      isLoading={isLoading}
+      emptyMessage="Geen teams gevonden"
+      ariaLabel="Competitie standen"
+    />
   );
 };
 

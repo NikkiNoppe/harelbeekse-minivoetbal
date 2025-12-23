@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AppModal, AppModalHeader, AppModalTitle } from "@/components/ui/app-modal";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -252,7 +252,7 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
       case 'adjustment':
         return 'bg-yellow-100 text-yellow-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-card-foreground';
     }
   };
 
@@ -275,25 +275,28 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="modal max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="modal__title flex items-center gap-2">
-              <Euro className="h-5 w-5" />
-              {team.team_name} - Financieel Detail
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              Financieel overzicht en transacties voor {team.team_name}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
+      <AppModal
+        open={open}
+        onOpenChange={onOpenChange}
+        size="lg"
+        className="max-w-6xl"
+      >
+        <AppModalHeader>
+          <AppModalTitle className="flex items-center gap-2">
+            <Euro className="h-5 w-5" />
+            {team?.team_name} - Financieel Detail
+          </AppModalTitle>
+          <p className="app-modal-subtitle sr-only">
+            Financieel overzicht en transacties voor {team?.team_name}
+          </p>
+        </AppModalHeader>
+        <div className="space-y-6">
             {/* 1. Current Balance */}
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-muted rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold">Huidig Saldo</h3>
-                  <p className="text-sm text-gray-600">Team: {team.team_name}</p>
+                  <p className="text-sm text-card-foreground">Team: {team.team_name}</p>
                 </div>
                 <div className={`text-2xl font-bold ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(currentBalance)}
@@ -316,9 +319,9 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-80 max-h-96 overflow-y-auto z-[60] bg-white border border-gray-200 shadow-xl" style={{ zIndex: 1001 }}>
+                  <DropdownMenuContent className="w-80 max-h-96 overflow-y-auto z-[60] bg-card border border-border shadow-xl">
                     {loadingCostSettings ? (
-                      <div className="p-4 text-center text-gray-500">
+                      <div className="p-4 text-center text-muted-foreground">
                         Kosten laden...
                       </div>
                     ) : costSettings && costSettings.length > 0 ? (
@@ -330,7 +333,7 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                         >
                           <div className="flex-1">
                             <div className="font-medium">{cost.name}</div>
-                            <div className="text-sm text-gray-500">{cost.description}</div>
+                            <div className="text-sm text-muted-foreground">{cost.description}</div>
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className="text-xs">
@@ -345,7 +348,7 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                         </DropdownMenuItem>
                       ))
                     ) : (
-                      <div className="p-4 text-center text-gray-500">
+                      <div className="p-4 text-center text-muted-foreground">
                         Geen kosten gevonden
                       </div>
                     )}
@@ -355,14 +358,14 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
 
               {/* Transaction Form */}
               {showAddTransaction && selectedCost && (
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-muted rounded-lg p-4">
                   <div className="space-y-4">
                     <div>
                       <Label>Geselecteerde Kosten</Label>
                       <div className="p-3 bg-white rounded border">
                         <div className="font-medium">{selectedCost.name}</div>
-                        <div className="text-sm text-gray-500">{selectedCost.description}</div>
-                        <div className="text-sm text-gray-600 mt-1">
+                        <div className="text-sm text-muted-foreground">{selectedCost.description}</div>
+                        <div className="text-sm text-card-foreground mt-1">
                           Categorie: {selectedCost.category === 'match_cost' ? 'Wedstrijd' : 
                                      selectedCost.category === 'penalty' ? 'Boete' : 
                                      selectedCost.category === 'deposit' ? 'Storting' : 'Overig'}
@@ -432,7 +435,7 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                       </TableRow>
                     ) : transactions?.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-gray-500">
+                        <TableCell colSpan={5} className="text-center text-muted-foreground">
                           Geen transacties gevonden
                         </TableCell>
                       </TableRow>
@@ -490,8 +493,7 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </AppModal>
 
       <TransactionEditModal
         open={editModalOpen}

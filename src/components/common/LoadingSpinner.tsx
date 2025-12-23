@@ -1,15 +1,41 @@
 import React from "react";
+import { cn } from "@/lib/utils";
 
-/**
- * LoadingSpinner component
- * Reusable loading spinner for route loading states
- */
-export const LoadingSpinner: React.FC = () => {
+interface LoadingSpinnerProps {
+  className?: string;
+  size?: "sm" | "md" | "lg";
+  "aria-label"?: string;
+}
+
+export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
+  className,
+  size = "md",
+  "aria-label": ariaLabel = "Laden...",
+}) => {
+  const sizeClasses = {
+    sm: "h-4 w-4",
+    md: "h-8 w-8",
+    lg: "h-12 w-12",
+  };
+
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-purple-600 flex items-center space-x-2">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-        <span>Laden...</span>
+    <div
+      className={cn("flex items-center justify-center min-h-screen", className)}
+      role="status"
+      aria-label={ariaLabel}
+      aria-busy="true"
+    >
+      <div className="flex items-center space-x-2 text-primary">
+        <div
+          className={cn(
+            "animate-spin rounded-full border-2 border-muted border-t-primary",
+            sizeClasses[size]
+          )}
+          style={{
+            animationDuration: "var(--transition-slow)",
+          }}
+        />
+        <span className="text-body">Laden...</span>
       </div>
     </div>
   );

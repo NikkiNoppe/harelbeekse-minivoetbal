@@ -9,16 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Trash2, Edit2 } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AppAlertModal } from "@/components/ui/app-alert-modal";
 
 interface Player {
   player_id: number;
@@ -124,34 +115,28 @@ const PlayersList: React.FC<PlayersListProps> = ({
         </div>
       </div>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="modal">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="modal__title">
-              Speler verwijderen
-            </AlertDialogTitle>
-            <div className="text-center">
-              Weet je zeker dat je <strong>{playerToDelete?.first_name} {playerToDelete?.last_name}</strong> wilt verwijderen?
-              <br />
-              Deze actie kan niet ongedaan worden gemaakt.
-            </div>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="modal__actions">
-            <AlertDialogAction 
-              onClick={handleConfirmDelete}
-              className="btn btn--danger flex-1"
-            >
-              Verwijderen
-            </AlertDialogAction>
-            <AlertDialogCancel 
-              onClick={handleCancelDelete}
-              className="btn btn--secondary flex-1"
-            >
-              Annuleren
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AppAlertModal
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Speler verwijderen"
+        description={
+          <div className="text-center">
+            Weet je zeker dat je <strong>{playerToDelete?.first_name} {playerToDelete?.last_name}</strong> wilt verwijderen?
+            <br />
+            Deze actie kan niet ongedaan worden gemaakt.
+          </div>
+        }
+        confirmAction={{
+          label: "Verwijderen",
+          onClick: handleConfirmDelete,
+          variant: "destructive",
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: handleCancelDelete,
+          variant: "secondary",
+        }}
+      />
     </>
   );
 };

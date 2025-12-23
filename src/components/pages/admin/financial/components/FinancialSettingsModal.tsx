@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AppModal, AppModalHeader, AppModalTitle } from "@/components/ui/app-modal";
+import { AppAlertModal } from "@/components/ui/app-alert-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,16 +12,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { enhancedCostSettingsService } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
 import { Settings, Plus, Edit, Trash2, Euro, AlertTriangle } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface FinancialSettingsModalProps {
   open: boolean;
@@ -169,26 +160,27 @@ const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
       case 'penalty': return 'bg-red-100 text-red-800';
       case 'field_cost': return 'bg-green-100 text-green-800';
       case 'referee_cost': return 'bg-purple-100 text-purple-800';
-      case 'other': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'other': return 'bg-muted text-card-foreground';
+      default: return 'bg-muted text-card-foreground';
     }
   }, []);
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="modal max-w-6xl w-full mx-1 max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="modal__title flex items-center gap-2">
-              <Euro className="h-5 w-5" />
-              Kostenlijst Beheer
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              Beheer alle kosten en boetes voor het systeem
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
+      <AppModal
+        open={open}
+        onOpenChange={onOpenChange}
+        size="lg"
+        className="max-w-6xl"
+      >
+        <AppModalHeader>
+          <AppModalTitle className="flex items-center gap-2">
+            <Euro className="h-5 w-5" />
+            Kostenlijst Beheer
+          </AppModalTitle>
+          <p className="app-modal-subtitle">Beheer alle kosten en boetes voor het systeem</p>
+        </AppModalHeader>
+        <div className="space-y-6">
             <div className="border rounded-lg p-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">
@@ -284,7 +276,7 @@ const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
             </div>
 
             <div className="border rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50 border-b">
+              <div className="p-4 bg-muted border-b">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <Settings className="h-5 w-5" />
                   Huidige Tarieven
@@ -310,13 +302,13 @@ const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                           Tarieven laden...
                         </TableCell>
                       </TableRow>
                     ) : costSettings && costSettings.length > 0 ? (
                       costSettings.map((setting) => (
-                        <TableRow key={setting.id} className="hover:bg-gray-50">
+                        <TableRow key={setting.id} className="hover:bg-muted">
                           <TableCell className="font-medium">
                             {setting.name}
                           </TableCell>
@@ -355,7 +347,7 @@ const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                           Nog geen tarieven gedefinieerd
                         </TableCell>
                       </TableRow>
@@ -365,38 +357,34 @@ const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </AppModal>
 
-      <AlertDialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
-        <AlertDialogContent className="modal">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="modal__title flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-              Tarief Verwijderen
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Weet je zeker dat je "{deletingItem?.name}" wilt verwijderen? 
-              Deze actie kan niet ongedaan gemaakt worden.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel 
-              className="btn btn--secondary"
-              disabled={isSubmitting}
-            >
-              Annuleren
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDelete}
-              className="btn btn--danger"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Verwijderen...' : 'Verwijderen'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AppAlertModal
+        open={!!deletingItem}
+        onOpenChange={(open) => {
+          if (!open) setDeletingItem(null);
+        }}
+        title="Tarief Verwijderen"
+        description={
+          <>
+            Weet je zeker dat je "{deletingItem?.name}" wilt verwijderen?
+            Deze actie kan niet ongedaan gemaakt worden.
+          </>
+        }
+        confirmAction={{
+          label: isSubmitting ? 'Verwijderen...' : 'Verwijderen',
+          onClick: handleDelete,
+          variant: "destructive",
+          disabled: isSubmitting,
+          loading: isSubmitting,
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: () => setDeletingItem(null),
+          variant: "secondary",
+          disabled: isSubmitting,
+        }}
+      />
     </>
   );
 };

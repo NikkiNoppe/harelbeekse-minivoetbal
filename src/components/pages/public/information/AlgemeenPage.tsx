@@ -7,11 +7,16 @@ import { AlertCircle } from "lucide-react";
 import { BlogPost } from "@/services";
 import { formatDateShort } from "@/lib/dateUtils";
 import { useBlogPosts } from "@/hooks/useBlogPosts";
+import { PageHeader } from "@/components/navigation";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Memoized sub-components for better performance
-const CompetitionInfo = memo(() => (
-  <section>
-    <Card>
+const CompetitionInfo = memo(() => {
+  const headingId = React.useId();
+  return (
+    <section role="region" aria-labelledby={headingId}>
+      <h2 id={headingId} className="sr-only">Competitie Informatie</h2>
+      <Card>
       <CardContent className="pt-4 sm:pt-6 text-sm sm:text-base bg-transparent space-y-4">
         <p>
           De <strong>Harelbeekse Minivoetbal Competitie</strong> is opgericht in 1979 en is uitgegroeid tot 
@@ -32,25 +37,28 @@ const CompetitionInfo = memo(() => (
       </CardContent>
     </Card>
   </section>
-));
+  );
+});
 
-const ContactInfo = memo(() => (
-  <section>
-    <h2 className="text-2xl font-semibold">Contact</h2>
-    <Card>
+const ContactInfo = memo(() => {
+  const headingId = React.useId();
+  return (
+    <section role="region" aria-labelledby={headingId}>
+      <h2 id={headingId} className="text-2xl font-semibold">Contact</h2>
+      <Card>
       <CardContent className="pt-4 sm:pt-6 bg-transparent">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <div>
-            <h3 className="text-base sm:text-lg font-medium mb-2">Competitieleiding</h3>
-            <div className="space-y-1 text-sm sm:text-base">
+            <h3 className="text-base sm:text-lg font-medium mb-2 text-foreground">Competitieleiding</h3>
+            <div className="space-y-1 text-sm sm:text-base text-card-foreground">
               <p>Nikki Noppe</p>
               <p className="break-all">noppe.nikki@icloud.com</p>
               <p>+32 468 15 52 16</p>
             </div>
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-medium mb-2">Locatie</h3>
-            <div className="space-y-1 text-sm sm:text-base">
+            <h3 className="text-base sm:text-lg font-medium mb-2 text-foreground">Locatie</h3>
+            <div className="space-y-1 text-sm sm:text-base text-card-foreground">
               <p>Sporthal De Dageraad</p>
               <p>Stasegemsesteenweg 21</p>
               <p>8530 Harelbeke</p>
@@ -60,7 +68,8 @@ const ContactInfo = memo(() => (
       </CardContent>
     </Card>
   </section>
-));
+  );
+});
 
 // Skeleton loading component
 const NewsItemSkeleton = memo(() => (
@@ -101,7 +110,7 @@ const BlogPostItem = memo(({ post }: { post: BlogPost }) => {
           </span>
         </div>
         {post.setting_value?.title && (
-          <CardTitle className="text-lg sm:text-xl break-words">
+          <CardTitle className="break-words">
             {post.setting_value.title}
           </CardTitle>
         )}
@@ -140,9 +149,9 @@ const NewsSection = memo(() => {
     if (error) {
       return (
         <Card className="w-full">
-          <CardContent className="py-8 text-center">
+          <CardContent className="py-8 text-center bg-transparent">
             <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
-            <h3 className="text-lg font-semibold mb-2">Fout bij laden</h3>
+            <h3 className="text-lg font-semibold mb-2 text-foreground">Fout bij laden</h3>
             <p className="text-muted-foreground mb-4">
               De nieuwsberichten konden niet worden geladen.
             </p>
@@ -157,7 +166,7 @@ const NewsSection = memo(() => {
     if (!blogPosts?.length) {
       return (
         <Card className="w-full">
-          <CardContent className="py-8 text-center">
+          <CardContent className="py-8 text-center bg-transparent">
             <p className="text-muted-foreground text-sm sm:text-base">
               Geen nieuws beschikbaar
             </p>
@@ -174,7 +183,7 @@ const NewsSection = memo(() => {
     if (postsWithContent.length === 0) {
       return (
         <Card className="w-full">
-          <CardContent className="py-8 text-center">
+          <CardContent className="py-8 text-center bg-transparent">
             <p className="text-muted-foreground text-sm sm:text-base">
               Geen nieuws beschikbaar
             </p>
@@ -192,9 +201,10 @@ const NewsSection = memo(() => {
     );
   };
 
+  const headingId = React.useId();
   return (
-    <section>
-      <h2 className="text-2xl font-semibold mb-4">Laatste Nieuws</h2>
+    <section role="region" aria-labelledby={headingId}>
+      <h2 id={headingId} className="text-2xl font-semibold mb-4">Laatste Nieuws</h2>
       <div className="min-h-[400px]">
         {renderContent()}
       </div>
@@ -204,11 +214,21 @@ const NewsSection = memo(() => {
 
 // Main component
 const AlgemeenPage: React.FC = () => {
+  const isMobile = useIsMobile();
+
   return (
-    <div className="space-y-8 animate-slide-up">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Minivoetbal Harelbeke - Officiële Competitie Website</h1>
-      </div>
+    <div className="space-y-6 animate-slide-up">
+      {/* Header - PageHeader on mobile, inline header on desktop */}
+      {isMobile ? (
+        <PageHeader 
+          title="Minivoetbal Harelbeke" 
+          subtitle="Officiële Competitie Website"
+        />
+      ) : (
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold">Minivoetbal Harelbeke - Officiële Competitie Website</h2>
+        </div>
+      )}
 
       <CompetitionInfo />
       <NewsSection />

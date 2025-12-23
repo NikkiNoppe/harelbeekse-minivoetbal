@@ -1,14 +1,5 @@
 import React from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AppAlertModal } from "@/components/ui/app-alert-modal";
 
 interface Team {
   team_id: number;
@@ -31,30 +22,31 @@ const ConfirmDeleteDialog: React.FC<ConfirmDeleteDialogProps> = ({
   loading
 }) => {
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="modal">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="modal__title">Team verwijderen</AlertDialogTitle>
-          <div className="text-center">
-            Weet je zeker dat je <strong>{team?.team_name}</strong> wilt verwijderen?
-            <br />
-            Deze actie kan niet ongedaan worden gemaakt.
-          </div>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="modal__actions">
-          <AlertDialogAction
-            onClick={onConfirm}
-            disabled={loading}
-            className="btn btn--danger flex-1"
-          >
-            {loading ? "Verwijderen..." : "Verwijderen"}
-          </AlertDialogAction>
-          <AlertDialogCancel disabled={loading} className="btn btn--secondary flex-1">
-            Annuleren
-          </AlertDialogCancel>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <AppAlertModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Team verwijderen"
+      description={
+        <div className="text-center">
+          Weet je zeker dat je <strong>{team?.team_name}</strong> wilt verwijderen?
+          <br />
+          Deze actie kan niet ongedaan worden gemaakt.
+        </div>
+      }
+      confirmAction={{
+        label: loading ? "Verwijderen..." : "Verwijderen",
+        onClick: onConfirm,
+        variant: "destructive",
+        disabled: loading,
+        loading: loading,
+      }}
+      cancelAction={{
+        label: "Annuleren",
+        onClick: () => onOpenChange(false),
+        disabled: loading,
+      }}
+      size="sm"
+    />
   );
 };
 

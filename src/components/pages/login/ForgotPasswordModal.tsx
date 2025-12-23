@@ -4,10 +4,7 @@ import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { AppModal, AppModalFooter } from "@/components/ui/app-modal";
 import {
   Form,
   FormControl,
@@ -63,32 +60,26 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onOpenC
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="modal relative">
-        <button
-          type="button"
-          className="btn--close absolute top-3 right-3 z-10"
-          aria-label="Sluiten"
-          onClick={() => onOpenChange(false)}
-        >
-          <X size={20} />
-        </button>
-        
-        <div className="modal__title">Wachtwoord vergeten</div>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <AppModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Wachtwoord vergeten"
+      subtitle="Voer je e-mailadres in om een wachtwoord reset link te ontvangen."
+      size="sm"
+    >
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-purple-dark">E-mailadres</FormLabel>
+                  <FormLabel>E-mailadres</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
                       placeholder="Voer je e-mailadres in"
-                      className="modal__input bg-white placeholder:text-purple-200"
+                      className="modal__input"
                       disabled={isLoading}
                       {...field}
                     />
@@ -117,8 +108,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onOpenC
             </div>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+    </AppModal>
   );
 };
 

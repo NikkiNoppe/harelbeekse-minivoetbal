@@ -213,7 +213,8 @@ const CompetitiePage: React.FC = () => {
         </div>
       )}
 
-      <section>
+      <section role="region" aria-labelledby="standings-heading">
+        <h2 id="standings-heading" className="sr-only">Competitiestand</h2>
         <Card>
           <CardContent className="bg-transparent">
             <ResponsiveStandingsTable teams={teams} isLoading={standingsLoading} />
@@ -223,11 +224,12 @@ const CompetitiePage: React.FC = () => {
 
 
 
-      <Card>
-        <CardHeader className="bg-transparent">
-          <CardTitle>Speelschema</CardTitle>
-          <CardDescription>Volledig overzicht van alle wedstrijden</CardDescription>
-        </CardHeader>
+      <section role="region" aria-labelledby="schedule-heading">
+        <Card>
+          <CardHeader className="bg-transparent">
+            <CardTitle id="schedule-heading">Speelschema</CardTitle>
+            <CardDescription>Volledig overzicht van alle wedstrijden</CardDescription>
+          </CardHeader>
         <CardContent className="bg-transparent">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -267,6 +269,7 @@ const CompetitiePage: React.FC = () => {
           />
         </CardContent>
       </Card>
+      </section>
     </div>
   );
 };

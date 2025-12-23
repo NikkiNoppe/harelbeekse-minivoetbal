@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/ui/app-modal";
+import { AppAlertModal } from "@/components/ui/app-alert-modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Settings, Edit, Trash2, Building, Plus } from "lucide-react";
@@ -231,65 +232,63 @@ const VenuesSettings: React.FC = () => {
       </Card>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="modal">
-          <DialogHeader className="bg-purple-100">
-            <DialogTitle className="text-xl text-center text-purple-light">
-              {editingItem?.venue_id ? 'Bewerk Locatie' : 'Nieuwe Locatie'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4 bg-purple-100 p-4 sm:p-6">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="venueName">Naam</Label>
-                <Input 
-                  id="venueName" 
-                  value={editingItem?.name || ''} 
-                  onChange={(e) => setEditingItem(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="venueAddress">Adres</Label>
-                <Input 
-                  id="venueAddress" 
-                  value={editingItem?.address || ''} 
-                  onChange={(e) => setEditingItem(prev => ({ ...prev, address: e.target.value }))}
-                />
-              </div>
-            </div>
+      <AppModal
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        title={editingItem?.venue_id ? 'Bewerk Locatie' : 'Nieuwe Locatie'}
+        size="sm"
+        primaryAction={{
+          label: isLoading ? 'Opslaan...' : 'Opslaan',
+          onClick: handleSave,
+          variant: "primary",
+          disabled: isLoading,
+          loading: isLoading,
+        }}
+        secondaryAction={{
+          label: "Annuleren",
+          onClick: handleCancel,
+          variant: "secondary",
+        }}
+      >
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="venueName">Naam</Label>
+            <Input 
+              id="venueName" 
+              value={editingItem?.name || ''} 
+              onChange={(e) => setEditingItem(prev => ({ ...prev, name: e.target.value }))}
+            />
           </div>
-          <DialogFooter className="modal__actions">
-            <Button className="btn btn--primary" onClick={handleSave} disabled={isLoading}>
-              {isLoading ? 'Opslaan...' : 'Opslaan'}
-            </Button>
-            <Button className="btn btn--secondary" onClick={handleCancel}>
-              Annuleren
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div>
+            <Label htmlFor="venueAddress">Adres</Label>
+            <Input 
+              id="venueAddress" 
+              value={editingItem?.address || ''} 
+              onChange={(e) => setEditingItem(prev => ({ ...prev, address: e.target.value }))}
+            />
+          </div>
+        </div>
+      </AppModal>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="modal">
-          <DialogHeader className="bg-red-50">
-            <DialogTitle className="text-xl text-center text-red-600">
-              Bevestig Verwijdering
-            </DialogTitle>
-            <DialogDescription className="text-center text-red-700">
-              Weet je zeker dat je deze locatie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="modal__actions">
-            <Button className="btn btn--danger" onClick={handleDeleteConfirm} disabled={isLoading}>
-              {isLoading ? 'Verwijderen...' : 'Verwijderen'}
-            </Button>
-            <Button className="btn btn--secondary" onClick={handleDeleteCancel}>
-              Annuleren
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AppAlertModal
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Bevestig Verwijdering"
+        description="Weet je zeker dat je deze locatie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+        confirmAction={{
+          label: isLoading ? 'Verwijderen...' : 'Verwijderen',
+          onClick: handleDeleteConfirm,
+          variant: "destructive",
+          disabled: isLoading,
+          loading: isLoading,
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: handleDeleteCancel,
+          variant: "secondary",
+        }}
+      />
     </>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AppModal, AppModalHeader, AppModalTitle } from "@/components/ui/app-modal";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -68,11 +68,11 @@ const FinancialAffectedTransactionsModal: React.FC<FinancialAffectedTransactions
 
   const getTransactionTypeColor = useMemo(() => (type: string) => {
     switch (type) {
-      case 'match_cost': return 'bg-blue-100 text-blue-800';
-      case 'penalty': return 'bg-red-100 text-red-800';
-      case 'deposit': return 'bg-green-100 text-green-800';
-      case 'adjustment': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'match_cost': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'penalty': return 'bg-red-50 text-red-700 border-red-200';
+      case 'deposit': return 'bg-green-50 text-green-700 border-green-200';
+      case 'adjustment': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      default: return 'bg-muted text-card-foreground';
     }
   }, []);
 
@@ -80,19 +80,22 @@ const FinancialAffectedTransactionsModal: React.FC<FinancialAffectedTransactions
   const amountDifference = newAmount - oldAmount;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="modal max-w-3xl w-full max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="modal__title flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-orange-500" />
-            Getroffen Transacties
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Overzicht van transacties die automatisch zijn aangepast na wijziging van "{costSettingName}"
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
+    <AppModal
+      open={open}
+      onOpenChange={onOpenChange}
+      size="lg"
+      className="max-w-3xl"
+    >
+      <AppModalHeader>
+        <AppModalTitle className="flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-orange-500" />
+          Getroffen Transacties
+        </AppModalTitle>
+        <p className="app-modal-subtitle sr-only">
+          Overzicht van transacties die automatisch zijn aangepast na wijziging van "{costSettingName}"
+        </p>
+      </AppModalHeader>
+      <div className="space-y-4">
           {/* Summary Alert */}
           <Alert>
             <Info className="h-4 w-4" />
@@ -109,8 +112,8 @@ const FinancialAffectedTransactionsModal: React.FC<FinancialAffectedTransactions
           {/* Transactions Table */}
           {isLoading ? (
             <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-600">Laden van getroffen transacties...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" aria-hidden="true"></div>
+              <p className="mt-2 text-sm text-muted-foreground">Laden van getroffen transacties...</p>
             </div>
           ) : transactions.length > 0 ? (
             <div className="border rounded-lg overflow-x-auto">
@@ -154,7 +157,7 @@ const FinancialAffectedTransactionsModal: React.FC<FinancialAffectedTransactions
               </Table>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               <Info className="h-8 w-8 mx-auto mb-2" />
               <p>Geen getroffen transacties gevonden</p>
             </div>
@@ -171,8 +174,7 @@ const FinancialAffectedTransactionsModal: React.FC<FinancialAffectedTransactions
             </Alert>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+    </AppModal>
   );
 };
 

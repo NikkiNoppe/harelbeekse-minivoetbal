@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import MatchesCard from "./components/MatchesCard";
 import { Lock, CheckCircle, Clock } from "lucide-react";
 import { MatchFormData } from "./types";
+import { Card, CardContent } from "@/components/ui/card";
 import { 
   sortMatchesByDateAndTime, 
   getCupRoundName, 
@@ -43,7 +44,7 @@ const getMatchStatus = (match: MatchFormData) => {
     return { label: "Gesloten", color: "bg-red-400", icon: Lock };
   }
   
-  return { label: "Open", color: "bg-gray-400", icon: Clock };
+  return { label: "Open", color: "bg-muted", icon: Clock };
 };
 
 const MatchFormList: React.FC<MatchFormListProps> = ({
@@ -185,17 +186,21 @@ const getGridClassName = (groupKey: string) => {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl px-6 py-12 shadow text-center">
-        <p className="text-muted-foreground">Wedstrijden laden...</p>
-      </div>
+      <Card>
+        <CardContent className="p-12 text-center">
+          <p className="text-muted-foreground">Wedstrijden laden...</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (filteredMatches.length === 0) {
     return (
-      <div className="bg-white rounded-xl px-6 py-12 shadow text-center">
-        <p className="text-muted-foreground">Geen wedstrijden gevonden</p>
-      </div>
+      <Card>
+        <CardContent className="p-12 text-center">
+          <p className="text-muted-foreground">Geen wedstrijden gevonden</p>
+        </CardContent>
+      </Card>
     );
   }
 

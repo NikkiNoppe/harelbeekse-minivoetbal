@@ -1,0 +1,130 @@
+{
+  "baseline": {
+    "referencePage": "CompetitiePage",
+    "referenceFile": "src/components/pages/public/competition/CompetitiePage.tsx",
+    "version": "1.0.0",
+    "lastUpdated": "2025-01-27"
+  },
+  "spacing": {
+    "mainContainer": {
+      "required": "space-y-6",
+      "description": "Main page container vertical spacing (24px)",
+      "alternatives": []
+    },
+    "sectionSpacing": {
+      "required": "space-y-6",
+      "description": "Spacing between sections",
+      "alternatives": []
+    },
+    "gridGaps": {
+      "required": "gap-4",
+      "description": "Grid gap spacing (16px)",
+      "alternatives": ["gap-3", "gap-6"]
+    }
+  },
+  "typography": {
+    "mainHeading": {
+      "element": "h2",
+      "classes": ["text-2xl", "font-semibold"],
+      "description": "Main page heading",
+      "required": true
+    },
+    "sectionHeading": {
+      "element": "h2",
+      "classes": ["text-2xl", "font-semibold"],
+      "description": "Section headings (standalone)",
+      "required": true
+    },
+    "cardTitle": {
+      "element": "CardTitle",
+      "classes": [],
+      "description": "Card titles should use default size (no text-lg override)",
+      "forbiddenClasses": ["text-lg", "text-xl", "text-sm"],
+      "required": true
+    },
+    "descriptions": {
+      "classes": ["text-muted-foreground"],
+      "description": "Description text",
+      "required": true
+    }
+  },
+  "colors": {
+    "requiredTokens": [
+      "bg-card",
+      "text-card-foreground",
+      "bg-transparent",
+      "text-muted-foreground",
+      "text-foreground",
+      "text-destructive",
+      "bg-muted",
+      "border-border"
+    ],
+    "forbiddenPatterns": [
+      "text-purple-",
+      "bg-purple-",
+      "border-purple-",
+      "badge-purple",
+      "text-[#",
+      "bg-[#",
+      "border-[#"
+    ],
+    "tokenMappings": {
+      "text-purple-800": "text-foreground",
+      "text-purple-900": "text-card-foreground",
+      "text-purple-700": "text-foreground",
+      "bg-purple-50": "bg-muted/50",
+      "bg-purple-100": "bg-muted",
+      "hover:bg-purple-100": "hover:bg-muted",
+      "border-purple-100": "border-border",
+      "badge-purple": "variant=\"secondary\""
+    }
+  },
+  "components": {
+    "card": {
+      "contentClass": "bg-transparent",
+      "headerClass": "bg-transparent",
+      "required": true
+    },
+    "pageHeader": {
+      "mobile": {
+        "component": "PageHeader",
+        "required": true,
+        "description": "Must use PageHeader component on mobile"
+      },
+      "desktop": {
+        "pattern": "h2 with text-2xl font-semibold",
+        "required": true
+      }
+    }
+  },
+  "accessibility": {
+    "sections": {
+      "requiredAttributes": ["role=\"region\"", "aria-labelledby"],
+      "description": "All major sections should have ARIA landmarks",
+      "required": true
+    },
+    "headings": {
+      "hierarchy": ["h2", "h3"],
+      "description": "Proper heading hierarchy",
+      "required": true
+    }
+  },
+  "animations": {
+    "mainContainer": {
+      "required": "animate-slide-up",
+      "description": "Main container animation",
+      "required": true
+    }
+  },
+  "structure": {
+    "sections": {
+      "wrapper": "section",
+      "required": true
+    },
+    "cards": {
+      "wrapper": "Card",
+      "required": true
+    }
+  }
+}
+

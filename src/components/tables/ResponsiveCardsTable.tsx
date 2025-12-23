@@ -1,8 +1,8 @@
 
 import React from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle } from "lucide-react";
+import ResponsiveTable, { TableColumn } from "./ResponsiveTable";
 
 interface PlayerCardSummary {
   playerId: number;
@@ -23,87 +23,122 @@ interface PlayerCardSummary {
 interface ResponsiveCardsTableProps {
   playerSummaries: PlayerCardSummary[];
   sticky?: boolean;
+  onPlayerClick?: (summary: PlayerCardSummary) => void;
 }
 
-const ResponsiveCardsTable: React.FC<ResponsiveCardsTableProps> = ({ playerSummaries, sticky = true }) => {
+const ResponsiveCardsTable: React.FC<ResponsiveCardsTableProps> = ({ 
+  playerSummaries, 
+  sticky = true,
+  onPlayerClick 
+}) => {
+  const columns: TableColumn<PlayerCardSummary>[] = [
+    {
+      key: "playerName",
+      header: "Speler",
+      accessor: (summary) => <span className="font-medium">{summary.playerName}</span>,
+      className: "min-w-[120px]",
+      mobilePriority: "primary",
+      mobileLabel: "Speler",
+    },
+    {
+      key: "teamName",
+      header: "Team",
+      accessor: (summary) => summary.teamName,
+      className: "min-w-[120px]",
+      mobilePriority: "primary",
+      mobileLabel: "Team",
+    },
+    {
+      key: "status",
+      header: "Status",
+      accessor: (summary) =>
+        summary.isSuspended ? (
+          <Badge variant="destructive" className="flex items-center gap-1 w-fit mx-auto">
+            <AlertTriangle className="h-3 w-3" />
+            Geschorst
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="w-fit mx-auto">Actief</Badge>
+        ),
+      className: "text-center w-24",
+      mobilePriority: "primary",
+      mobileLabel: "Status",
+    },
+    {
+      key: "totalCards",
+      header: "Tot",
+      accessor: (summary) => <span className="font-bold">{summary.totalCards}</span>,
+      className: "text-center w-20",
+      mobilePriority: "primary",
+      mobileLabel: "Totaal kaarten",
+    },
+    {
+      key: "yellowCards",
+      header: "Geel",
+      accessor: (summary) =>
+        summary.yellowCards > 0 ? (
+          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+            {summary.yellowCards}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        ),
+      className: "text-center w-24",
+      mobilePriority: "secondary",
+      mobileLabel: "Gele kaarten",
+    },
+    {
+      key: "redCards",
+      header: "Rood",
+      accessor: (summary) =>
+        summary.redCards > 0 ? (
+          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">
+            {summary.redCards}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        ),
+      className: "text-center w-24",
+      mobilePriority: "secondary",
+      mobileLabel: "Rode kaarten",
+    },
+    {
+      key: "lastCard",
+      header: "Laatste",
+      accessor: (summary) =>
+        summary.cards.length > 0 ? (
+          <div className="text-small">
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  summary.cards[0].cardType === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'
+                }`}
+              ></div>
+              <span>{summary.cards[0].matchDate}</span>
+              <Badge variant="outline" className="text-xs">
+                {summary.cards[0].uniqueNumber}
+              </Badge>
+            </div>
+          </div>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        ),
+      className: "min-w-[120px]",
+      mobilePriority: "secondary",
+      mobileLabel: "Laatste kaart",
+    },
+  ];
+
   return (
     <div className="responsive-cards-table">
-      <Table {...(sticky ? { stickyColumns: 2 } : {})}>
-        <TableHeader>
-          <TableRow>
-            <TableHead {...(sticky ? { sticky: true, stickyLeft: 0 } : {})} className="min-w-[120px]">
-              Speler
-            </TableHead>
-            <TableHead {...(sticky ? { sticky: true, stickyLeft: 120 } : {})} className="min-w-[120px]">
-              Team
-            </TableHead>
-            <TableHead className="text-center w-24">Geel</TableHead>
-            <TableHead className="text-center w-24">Rood</TableHead>
-            <TableHead className="text-center w-20">Tot</TableHead>
-            <TableHead className="text-center w-24">Status</TableHead>
-            <TableHead className="min-w-[120px]">Laatste</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {playerSummaries.map((summary) => (
-            <TableRow key={`${summary.playerId}-${summary.playerName}`}>
-              <TableCell {...(sticky ? { sticky: true, stickyLeft: 0 } : {})} className="font-medium min-w-[120px]">
-                {summary.playerName}
-              </TableCell>
-              <TableCell {...(sticky ? { sticky: true, stickyLeft: 120 } : {})} className="min-w-[120px]">
-                {summary.teamName}
-              </TableCell>
-              <TableCell className="text-center">
-                {summary.yellowCards > 0 && (
-                  <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                    {summary.yellowCards}
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell className="text-center">
-                {summary.redCards > 0 && (
-                  <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">
-                    {summary.redCards}
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell className="text-center font-bold">
-                {summary.totalCards}
-              </TableCell>
-              <TableCell className="text-center">
-                {summary.isSuspended ? (
-                  <Badge variant="destructive" className="flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    Geschorst
-                  </Badge>
-                ) : (
-                  <Badge variant="outline">Actief</Badge>
-                )}
-              </TableCell>
-              <TableCell>
-                {summary.cards.length > 0 && (
-                  <div className="text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${summary.cards[0].cardType === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
-                      <span>{summary.cards[0].matchDate}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {summary.cards[0].uniqueNumber}
-                      </Badge>
-                    </div>
-                  </div>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-          {playerSummaries.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center">
-                Geen kaarten gevonden met de huidige filters.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <ResponsiveTable
+        data={playerSummaries}
+        columns={columns}
+        keyExtractor={(summary) => `${summary.playerId}-${summary.playerName}`}
+        emptyMessage="Geen kaarten gevonden met de huidige filters"
+        onRowClick={onPlayerClick}
+        ariaLabel="Kaarten overzicht"
+      />
     </div>
   );
 };

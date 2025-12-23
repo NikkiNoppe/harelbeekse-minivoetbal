@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AppAlertModal } from "@/components/ui/app-alert-modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -99,52 +99,55 @@ const TableActions = memo(<T extends { id?: number | string }>({
   onDelete: (item: T) => void;
   isDeleting: boolean;
   isUpdating: boolean;
-}) => (
-  <div className="flex items-center justify-end gap-1">
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => onEdit(item)}
-      className="h-8 w-8 p-0 bg-white text-purple-600 border-purple-400 hover:bg-purple-50"
-      disabled={isDeleting || isUpdating}
-    >
-      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit className="h-4 w-4" />}
-    </Button>
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
+}) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+  
+  return (
+    <>
+      <div className="flex items-center justify-end gap-1">
         <Button
           variant="outline"
           size="sm"
+          onClick={() => onEdit(item)}
+          className="h-8 w-8 p-0 bg-white text-purple-600 border-purple-400 hover:bg-purple-50"
+          disabled={isDeleting || isUpdating}
+        >
+          {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit className="h-4 w-4" />}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowDeleteConfirm(true)}
           className="h-8 w-8 p-0 bg-white text-red-500 border-red-400 hover:bg-red-50 hover:text-red-700"
           disabled={isDeleting || isUpdating}
         >
           {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
         </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent className="bg-purple-100 shadow-lg border-purple-200 mx-4 sm:mx-auto">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-500" />
-            Bevestig Verwijderen
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            Weet je zeker dat je dit item wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Annuleren</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => onDelete(item)}
-            className="bg-red-600 hover:bg-red-700"
-            disabled={isDeleting}
-          >
-            {isDeleting ? "Verwijderen..." : "Verwijderen"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  </div>
-));
+      </div>
+      <AppAlertModal
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Bevestig Verwijderen"
+        description="Weet je zeker dat je dit item wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+        confirmAction={{
+          label: isDeleting ? "Verwijderen..." : "Verwijderen",
+          onClick: () => {
+            onDelete(item);
+            setShowDeleteConfirm(false);
+          },
+          variant: "destructive",
+          disabled: isDeleting,
+          loading: isDeleting,
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: () => setShowDeleteConfirm(false),
+          variant: "secondary",
+        }}
+      />
+    </>
+  );
+});
 
 TableActions.displayName = 'TableActions';
 

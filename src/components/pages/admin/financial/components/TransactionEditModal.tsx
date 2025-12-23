@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/ui/app-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -137,97 +137,87 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   if (!transaction) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="modal max-w-md">
-        <DialogHeader>
-          <DialogTitle className="modal__title">
-            Transactie Bewerken
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Bewerk deze transactie
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div>
-            <Label>Type Transactie</Label>
-            <Select 
-              value={formData.cost_setting_id} 
-              onValueChange={(value) => {
-                const selectedCost = costSettings?.find(cs => cs.id.toString() === value);
-                setFormData({
-                  ...formData,
-                  cost_setting_id: value,
-                  amount: selectedCost?.amount?.toString() || formData.amount,
-                  description: selectedCost?.name || formData.description
-                });
-              }}
-            >
-              <SelectTrigger className="modal__input">
-                <SelectValue placeholder="Selecteer transactie type" />
-              </SelectTrigger>
-              <SelectContent>
-                {costSettings?.map((cost) => (
-                  <SelectItem key={cost.id} value={cost.id.toString()}>
-                    {cost.name} - €{cost.amount || '0'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label>Bedrag (€)</Label>
-            <Input
-              type="number"
-              step="0.01"
-              value={formData.amount}
-              onChange={(e) => setFormData({...formData, amount: e.target.value})}
-              placeholder="0.00"
-              className="modal__input"
-            />
-          </div>
-
-          <div>
-            <Label>Datum</Label>
-            <Input
-              type="date"
-              value={formData.transaction_date}
-              onChange={(e) => setFormData({...formData, transaction_date: e.target.value})}
-              className="modal__input"
-            />
-          </div>
-
-          <div>
-            <Label>Beschrijving</Label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-              placeholder="Optionele beschrijving..."
-              rows={3}
-              className="modal__input"
-            />
-          </div>
+    <AppModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Transactie Bewerken"
+      size="sm"
+      primaryAction={{
+        label: isSubmitting ? 'Bezig...' : 'Opslaan',
+        onClick: handleSave,
+        variant: "primary",
+        disabled: isSubmitting,
+        loading: isSubmitting,
+      }}
+      secondaryAction={{
+        label: "Annuleren",
+        onClick: () => onOpenChange(false),
+        variant: "secondary",
+        disabled: isSubmitting,
+      }}
+    >
+      <div className="space-y-4">
+        <div>
+          <Label>Type Transactie</Label>
+          <Select 
+            value={formData.cost_setting_id} 
+            onValueChange={(value) => {
+              const selectedCost = costSettings?.find(cs => cs.id.toString() === value);
+              setFormData({
+                ...formData,
+                cost_setting_id: value,
+                amount: selectedCost?.amount?.toString() || formData.amount,
+                description: selectedCost?.name || formData.description
+              });
+            }}
+          >
+            <SelectTrigger className="modal__input">
+              <SelectValue placeholder="Selecteer transactie type" />
+            </SelectTrigger>
+            <SelectContent>
+              {costSettings?.map((cost) => (
+                <SelectItem key={cost.id} value={cost.id.toString()}>
+                  {cost.name} - €{cost.amount || '0'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <DialogFooter className="modal__actions">
-          <Button 
-            onClick={handleSave} 
-            className="btn btn--primary"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Bezig...' : 'Opslaan'}
-          </Button>
-          <Button 
-            onClick={() => onOpenChange(false)} 
-            className="btn btn--secondary"
-            disabled={isSubmitting}
-          >
-            Annuleren
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <div>
+          <Label>Bedrag (€)</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={formData.amount}
+            onChange={(e) => setFormData({...formData, amount: e.target.value})}
+            placeholder="0.00"
+            className="modal__input"
+          />
+        </div>
+
+        <div>
+          <Label>Datum</Label>
+          <Input
+            type="date"
+            value={formData.transaction_date}
+            onChange={(e) => setFormData({...formData, transaction_date: e.target.value})}
+            className="modal__input"
+          />
+        </div>
+
+        <div>
+          <Label>Beschrijving</Label>
+          <Textarea
+            value={formData.description}
+            onChange={(e) => setFormData({...formData, description: e.target.value})}
+            placeholder="Optionele beschrijving..."
+            rows={3}
+            className="modal__input"
+          />
+        </div>
+      </div>
+    </AppModal>
   );
 };
 

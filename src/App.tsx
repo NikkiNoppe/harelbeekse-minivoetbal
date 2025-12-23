@@ -14,8 +14,17 @@ import { PUBLIC_ROUTES, ADMIN_ROUTES } from "./config/routes";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 
-// Lazy load main components
-const Index = lazy(() => import("./pages/Index"));
+// Lazy load main components with prefetch hints
+const Index = lazy(() => {
+  // Prefetch on hover/focus for likely next routes
+  if (typeof window !== 'undefined') {
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = '/src/pages/Index.tsx';
+    document.head.appendChild(link);
+  }
+  return import("./pages/Index");
+});
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 

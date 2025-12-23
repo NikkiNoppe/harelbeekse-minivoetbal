@@ -82,7 +82,7 @@ const AdminUserPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold">Gebruikers Beheer</h1>
-        <p className="text-gray-600 dark:text-gray-400">Beheer alle gebruikers in het systeem</p>
+        <p className="text-muted-foreground">Beheer alle gebruikers in het systeem</p>
       </div>
 
       {/* Users List */}

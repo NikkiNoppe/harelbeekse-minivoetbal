@@ -116,8 +116,22 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     updatePlayerSelection(selections, setSelections, index, field, value);
   }, [homeTeamSelections, awayTeamSelections, setHomeTeamSelections, setAwayTeamSelections, updatePlayerSelection]);
 
+  // State for match data fields (date, time, location, matchday)
+  const [matchData, setMatchData] = React.useState({
+    date: match.date,
+    time: match.time,
+    location: match.location,
+    matchday: match.matchday || "",
+  });
+
+  // Handler for match data changes (date, time, location, matchday)
+  const handleMatchDataChange = useCallback((field: string, value: string) => {
+    setMatchData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
   const createUpdatedMatch = useCallback((homeScore: number | null, awayScore: number | null) => ({
     ...match,
+    ...matchData, // Include updated match data fields
     homeScore,
     awayScore,
     referee: selectedReferee,
@@ -125,7 +139,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     isCompleted: homeScore != null && awayScore != null,
     homePlayers: getHomeTeamSelectionsWithCards(),
     awayPlayers: getAwayTeamSelectionsWithCards()
-  }), [match, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards]);
+  }), [match, matchData, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards]);
 
   const handleSubmit = useCallback(async () => {
     const parsedHomeScore = homeScore !== "" ? parseInt(homeScore) : null;
@@ -206,13 +220,20 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       {/* Gegevens + Score */}
       <h3 className="text-lg font-semibold text-center text-purple-dark">Wedstrijdgegevens</h3>
       <MatchDataSection
-        match={match}
+        match={{
+          ...match,
+          date: matchData.date,
+          time: matchData.time,
+          location: matchData.location,
+          matchday: matchData.matchday,
+        }}
         homeScore={homeScore}
         awayScore={awayScore}
         selectedReferee={selectedReferee}
         onHomeScoreChange={setHomeScore}
         onAwayScoreChange={setAwayScore}
         onRefereeChange={setSelectedReferee}
+        onMatchDataChange={handleMatchDataChange}
         canEdit={isTeamManager ? false : canEdit}
         canEditMatchData={showRefereeFields}
       />

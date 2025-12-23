@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/ui/app-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,25 +72,21 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-w-[95vw] min-h-[500px] bg-background border shadow-xl relative mx-4 sm:mx-auto z-[1003] animate-in slide-in-from-bottom-4 duration-300">
-        <button
-          type="button"
-          className="btn--close"
-          aria-label="Sluiten"
-          onClick={() => onOpenChange(false)}
-        >
-          <X size={20} />
-        </button>
-        <DialogHeader className="pb-6">
-          <DialogTitle className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <Target className="h-6 w-6 text-primary" />
-            Penalty Shootout
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground text-base mt-2">
-            De wedstrijd staat gelijk na reguliere speeltijd. In bekercompetitie moet er een winnaar zijn - bepaal deze via penalty's.
-          </DialogDescription>
-        </DialogHeader>
+    <AppModal
+      open={open}
+      onOpenChange={onOpenChange}
+      size="lg"
+      className="sm:max-w-2xl min-h-[500px]"
+    >
+      <AppModalHeader>
+        <AppModalTitle className="text-2xl font-bold flex items-center gap-3">
+          <Target className="h-6 w-6 text-primary" />
+          Penalty Shootout
+        </AppModalTitle>
+        <p className="app-modal-subtitle text-muted-foreground text-base mt-2">
+          De wedstrijd staat gelijk na reguliere speeltijd. In bekercompetitie moet er een winnaar zijn - bepaal deze via penalty's.
+        </p>
+      </AppModalHeader>
 
         <div className="space-y-8 px-2">
           <Card className="border-2 shadow-md">
@@ -161,24 +151,22 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
             </CardContent>
           </Card>
 
-          <div className="flex gap-4 pt-4">
-            <Button 
+          <AppModalFooter>
+            <button 
               onClick={handleCancel} 
-              variant="outline" 
-              className="flex-1 h-12 text-base font-medium"
+              className="btn btn--secondary flex-1 h-12 text-base font-medium"
             >
               Annuleren
-            </Button>
-            <Button 
+            </button>
+            <button 
               onClick={handleSubmit} 
-              className="flex-1 h-12 text-base font-medium"
+              className="btn btn--primary flex-1 h-12 text-base font-medium"
             >
               Winnaar Bepalen
-            </Button>
-          </div>
+            </button>
+          </AppModalFooter>
         </div>
-      </DialogContent>
-    </Dialog>
+    </AppModal>
   );
 };
 

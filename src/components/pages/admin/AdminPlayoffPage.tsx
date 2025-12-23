@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AppAlertModal } from "@/components/ui/app-alert-modal";
 import { Loader2, Trophy, AlertCircle, Trash2, Calendar, CheckCircle, Clock, Undo2, ChevronDown, ChevronRight, Settings, MapPin, Palmtree } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -1020,42 +1020,35 @@ const AdminPlayoffPage: React.FC = () => {
       </section>
 
       {/* Confirmation Dialog */}
-      <AlertDialog 
-        open={confirmAction !== null} 
+      <AppAlertModal
+        open={confirmAction !== null}
         onOpenChange={open => {
           // Only close if not loading (prevents closing during async action)
           if (!open && !actionLoading) {
             setConfirmAction(null);
           }
         }}
-      >
-        <AlertDialogContent className="modal max-w-[90vw] sm:max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="modal__title">
-              {confirmAction && confirmDialogContent[confirmAction].title}
-            </AlertDialogTitle>
-            <div className="text-center text-sm text-muted-foreground">
-              {confirmAction && confirmDialogContent[confirmAction].description}
-            </div>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="modal__actions">
-            <AlertDialogCancel disabled={actionLoading} className="btn btn--secondary flex-1">
-              Annuleren
-            </AlertDialogCancel>
-            <Button 
-              onClick={handleConfirmedAction} 
-              disabled={actionLoading} 
-              className={cn(
-                "btn flex-1",
-                confirmAction === 'delete' ? "btn--danger" : "btn--primary"
-              )}
-            >
-              {actionLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {confirmAction && confirmDialogContent[confirmAction].actionLabel}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title={confirmAction ? confirmDialogContent[confirmAction].title : ''}
+        description={
+          <div className="text-center text-sm text-muted-foreground">
+            {confirmAction && confirmDialogContent[confirmAction].description}
+          </div>
+        }
+        confirmAction={{
+          label: confirmAction ? confirmDialogContent[confirmAction].actionLabel : '',
+          onClick: handleConfirmedAction,
+          variant: confirmAction === 'delete' ? 'destructive' : 'primary',
+          disabled: actionLoading,
+          loading: actionLoading,
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: () => setConfirmAction(null),
+          variant: "secondary",
+          disabled: actionLoading,
+        }}
+        size="sm"
+      />
     </div>;
 };
 export default AdminPlayoffPage;

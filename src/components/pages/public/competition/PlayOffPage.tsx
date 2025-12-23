@@ -26,49 +26,93 @@ const StandingsTableSkeleton = memo(() => <div className="space-y-4">
       </div>)}
   </div>);
 StandingsTableSkeleton.displayName = 'StandingsTableSkeleton';
-const PlayoffLoading = memo(() => <div className="space-y-8 animate-slide-up">
-    <div className="flex justify-between items-center">
-      <h2 className="text-2xl font-semibold">Play-Off Klassement</h2>
-      <Badge className="badge-purple">Seizoen 2025-2026</Badge>
+const PlayoffLoading = memo(() => {
+  const isMobile = useIsMobile();
+  return (
+    <div className="space-y-6 animate-slide-up">
+      {isMobile ? (
+        <PageHeader 
+          title="Play-Off Klassement" 
+          subtitle="Seizoen 2025-2026"
+        />
+      ) : (
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold">Play-Off Klassement</h2>
+          <Badge variant="secondary">Seizoen 2025-2026</Badge>
+        </div>
+      )}
+      <Card>
+        <CardContent className="p-0 overflow-x-auto bg-transparent">
+          <StandingsTableSkeleton />
+        </CardContent>
+      </Card>
     </div>
-    <Card>
-      <CardContent className="p-0 overflow-x-auto">
-        <StandingsTableSkeleton />
-      </CardContent>
-    </Card>
-  </div>);
+  );
+});
 PlayoffLoading.displayName = 'PlayoffLoading';
 const PlayoffError = memo(({
   onRetry
 }: {
   onRetry: () => void;
-}) => <div className="space-y-8 animate-slide-up">
-    <Card>
-      <CardContent className="py-12">
-        <div className="text-center">
-          <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
-          <h3 className="text-lg font-semibold mb-2">Fout bij laden</h3>
-          <p className="text-muted-foreground mb-4">
-            Kon playoff gegevens niet laden
-          </p>
+}) => {
+  const isMobile = useIsMobile();
+  return (
+    <div className="space-y-6 animate-slide-up">
+      {isMobile ? (
+        <PageHeader 
+          title="Play-Off Klassement" 
+          subtitle="Seizoen 2025-2026"
+        />
+      ) : (
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold">Play-Off Klassement</h2>
+          <Badge variant="secondary">Seizoen 2025-2026</Badge>
         </div>
-      </CardContent>
-    </Card>
-  </div>);
+      )}
+      <Card>
+        <CardContent className="py-12 bg-transparent">
+          <div className="text-center">
+            <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
+            <h3 className="text-lg font-semibold mb-2">Fout bij laden</h3>
+            <p className="text-muted-foreground mb-4">
+              Kon playoff gegevens niet laden
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+});
 PlayoffError.displayName = 'PlayoffError';
-const PlayoffEmptyState = memo(() => <div className="space-y-8 animate-slide-up">
-    <Card>
-      <CardContent className="py-12">
-        <div className="text-center">
-          <Trophy className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">Geen Play-Off Data</h3>
-          <p className="text-muted-foreground">
-            Er zijn momenteel geen play-off gegevens beschikbaar.
-          </p>
+const PlayoffEmptyState = memo(() => {
+  const isMobile = useIsMobile();
+  return (
+    <div className="space-y-6 animate-slide-up">
+      {isMobile ? (
+        <PageHeader 
+          title="Play-Off Klassement" 
+          subtitle="Seizoen 2025-2026"
+        />
+      ) : (
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold">Play-Off Klassement</h2>
+          <Badge variant="secondary">Seizoen 2025-2026</Badge>
         </div>
-      </CardContent>
-    </Card>
-  </div>);
+      )}
+      <Card>
+        <CardContent className="py-12 bg-transparent">
+          <div className="text-center">
+            <Trophy className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">Geen Play-Off Data</h3>
+            <p className="text-muted-foreground">
+              Er zijn momenteel geen play-off gegevens beschikbaar.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+});
 PlayoffEmptyState.displayName = 'PlayoffEmptyState';
 
 // Playoff standings table component
@@ -228,32 +272,36 @@ const PlayOffPage: React.FC = () => {
       ) : (
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-semibold">Play-Off Klassement</h2>
-          <Badge className="badge-purple">Seizoen 2025-2026</Badge>
+          <Badge variant="secondary">Seizoen 2025-2026</Badge>
         </div>
       )}
 
       {/* Play-Off 1 Standings */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Trophy className="w-5 h-5 text-primary" />
-            Play-Off 1 
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
+      <section role="region" aria-labelledby="po1-heading">
+        <Card>
+          <CardHeader className="pb-2 bg-transparent">
+            <CardTitle id="po1-heading" className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-primary" />
+              Play-Off 1 
+            </CardTitle>
+          </CardHeader>
+        <CardContent className="p-4 pt-0 bg-transparent">
           <PlayoffStandingsTable teams={po1Teams} title="Play-Off 1" />
         </CardContent>
       </Card>
+      </section>
 
       {/* Play-Off 2 Standings */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Play-Off 2 </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
+      <section role="region" aria-labelledby="po2-heading">
+        <Card>
+          <CardHeader className="pb-2 bg-transparent">
+            <CardTitle id="po2-heading">Play-Off 2 </CardTitle>
+          </CardHeader>
+        <CardContent className="p-4 pt-0 bg-transparent">
           <PlayoffStandingsTable teams={po2Teams} title="Play-Off 2" />
         </CardContent>
       </Card>
+      </section>
 
       {/* Legend */}
       <div className="text-xs text-muted-foreground px-2">
@@ -263,11 +311,12 @@ const PlayOffPage: React.FC = () => {
       </div>
 
       {/* Schedule */}
-      <Card>
-        <CardHeader className="bg-transparent">
-          <CardTitle>Speelschema</CardTitle>
-          <CardDescription>Volledig overzicht van alle play-off wedstrijden</CardDescription>
-        </CardHeader>
+      <section role="region" aria-labelledby="schedule-heading">
+        <Card>
+          <CardHeader className="bg-transparent">
+            <CardTitle id="schedule-heading">Speelschema</CardTitle>
+            <CardDescription>Volledig overzicht van alle play-off wedstrijden</CardDescription>
+          </CardHeader>
         <CardContent className="bg-transparent">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
@@ -314,6 +363,7 @@ const PlayOffPage: React.FC = () => {
             </div>}
         </CardContent>
       </Card>
+      </section>
     </div>;
 };
 export default PlayOffPage;

@@ -150,7 +150,7 @@ const KaartenPage: React.FC = () => {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
-              <div className="w-3 h-3 bg-gray-500 rounded-full mr-2"></div>
+              <div className="w-3 h-3 bg-muted-foreground rounded-full mr-2"></div>
               <div>
                 <p className="text-2xl font-bold">{totalYellowCards + totalRedCards}</p>
                 <p className="text-sm text-muted-foreground">Totaal Kaarten</p>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AppAlertModal } from "@/components/ui/app-alert-modal";
 import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 
 import BekerDateSelector from "./BekerDateSelector";
@@ -354,32 +354,32 @@ const BekerPage: React.FC = () => {
                   </button>
                 </div>
 
-                {showConfirm && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="modal">
-                      <div className="w-full max-w-sm mx-auto">
-                        <div className="modal__title">Beker Aanmaken</div>
-                        <p className="text-xs text-muted-foreground">
-                          Weet je zeker dat je de beker wilt aanmaken met {selectedTeams.length} teams en {tournamentDates.length} speeldata? Deze actie kan niet ongedaan worden gemaakt.
-                        </p>
-                        <div className="modal__actions">
-                          <button
-                            className="btn btn--primary"
-                            onClick={() => {
-                              setShowConfirm(false);
-                              handleCreateTournament();
-                            }}
-                          >
-                            {previewPlan ? "Bevestigen en importeren" : "Beker Aanmaken"}
-                          </button>
-                          <button className="btn btn--secondary" onClick={() => setShowConfirm(false)}>
-                            Annuleren
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <AppAlertModal
+                  open={showConfirm}
+                  onOpenChange={setShowConfirm}
+                  title="Beker Aanmaken"
+                  description={
+                    <p className="text-xs text-muted-foreground">
+                      Weet je zeker dat je de beker wilt aanmaken met {selectedTeams.length} teams en {tournamentDates.length} speeldata? Deze actie kan niet ongedaan worden gemaakt.
+                    </p>
+                  }
+                  confirmAction={{
+                    label: previewPlan ? "Bevestigen en importeren" : "Beker Aanmaken",
+                    onClick: () => {
+                      setShowConfirm(false);
+                      handleCreateTournament();
+                    },
+                    variant: "primary",
+                    disabled: isCreating,
+                    loading: isCreating,
+                  }}
+                  cancelAction={{
+                    label: "Annuleren",
+                    onClick: () => setShowConfirm(false),
+                    disabled: isCreating,
+                  }}
+                  size="sm"
+                />
               </div>
             </div>
           </CardContent>

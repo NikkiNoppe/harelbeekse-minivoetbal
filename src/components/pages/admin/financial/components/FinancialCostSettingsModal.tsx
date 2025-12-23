@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AppModal, AppModalHeader, AppModalTitle } from "@/components/ui/app-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -139,13 +139,13 @@ const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProps> = ({
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'match_cost':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'penalty':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-50 text-red-700 border-red-200';
       case 'other':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-card-foreground';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-card-foreground';
     }
   };
 
@@ -159,21 +159,24 @@ const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProps> = ({
   }, {} as Record<string, any[]>) || {};
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="modal max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="modal__title flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Kostentarieven Beheer
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Beheer alle kosten en boetes in het systeem
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6">
+    <AppModal
+      open={open}
+      onOpenChange={onOpenChange}
+      size="lg"
+      className="max-w-4xl"
+    >
+      <AppModalHeader>
+        <AppModalTitle className="flex items-center gap-2">
+          <Settings className="h-5 w-5" />
+          Kostentarieven Beheer
+        </AppModalTitle>
+        <p className="app-modal-subtitle sr-only">
+          Beheer alle kosten en boetes in het systeem
+        </p>
+      </AppModalHeader>
+      <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Beheer alle kosten en boetes in het systeem
             </p>
             <Button 
@@ -186,7 +189,7 @@ const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProps> = ({
           </div>
 
           {showAddForm && (
-            <div className="bg-gray-50 rounded-lg p-4 border">
+            <div className="bg-muted rounded-lg p-4 border border-border">
               <h3 className="text-lg font-semibold mb-4">
                 {editingItem ? 'Tarief Bewerken' : 'Nieuw Tarief Toevoegen'}
               </h3>
@@ -275,7 +278,7 @@ const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProps> = ({
                     {settings.map((setting) => (
                       <TableRow key={setting.id}>
                         <TableCell className="font-medium">{setting.name}</TableCell>
-                        <TableCell className="text-gray-600">
+                        <TableCell className="text-card-foreground">
                           {setting.description || '-'}
                         </TableCell>
                         <TableCell className="text-right font-semibold">
@@ -307,12 +310,11 @@ const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProps> = ({
 
           {isLoading && (
             <div className="flex items-center justify-center h-40">
-              <p className="text-gray-500">Kostentarieven laden...</p>
+              <p className="text-muted-foreground">Kostentarieven laden...</p>
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+    </AppModal>
   );
 };
 

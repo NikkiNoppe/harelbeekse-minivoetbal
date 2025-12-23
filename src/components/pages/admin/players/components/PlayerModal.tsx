@@ -1,9 +1,11 @@
 import React from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  AppModal,
+  AppModalHeader,
+  AppModalTitle,
+  AppModalBody,
+  AppModalFooter,
+} from "@/components/ui/app-modal";
 import { Input } from "@/components/ui/input";
 
 interface PlayerModalProps {
@@ -59,16 +61,47 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
   const isEdit = !!editingPlayer && editingPlayer.player_id && editingPlayer.firstName && editingPlayer.lastName && editingPlayer.birthDate;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="modal relative">
-        <DialogDescription className="sr-only">
-          {isEdit ? "Bewerk de gegevens van de speler" : "Voeg een nieuwe speler toe aan het team"}
-        </DialogDescription>
-        <div className="modal__title">
-          {isEdit ? "Speler bewerken" : "Nieuwe speler toevoegen"}
-        </div>
-
-        <form className="space-y-4">
+    <AppModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isEdit ? "Speler bewerken" : "Nieuwe speler toevoegen"}
+      size="md"
+      aria-describedby={isEdit ? "edit-player-description" : "add-player-description"}
+      primaryAction={{
+        label: isEdit ? "Opslaan" : "Speler toevoegen",
+        onClick: async () => {
+          if (isEdit && onEditSave) {
+            onEditSave();
+          } else {
+            await onSave();
+          }
+        },
+        disabled: !allFieldsValid,
+        variant: "primary",
+      }}
+      secondaryAction={{
+        label: "Annuleren",
+        onClick: () => onOpenChange(false),
+        variant: "secondary",
+      }}
+    >
+      <AppModalBody>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (allFieldsValid) {
+              if (isEdit && onEditSave) {
+                onEditSave();
+              } else {
+                onSave();
+              }
+            }
+          }}
+          className="space-y-4"
+        >
+          <div id={isEdit ? "edit-player-description" : "add-player-description"} className="sr-only">
+            {isEdit ? "Bewerk de gegevens van de speler" : "Voeg een nieuwe speler toe aan het team"}
+          </div>
           <div className="space-y-2">
             <label className="text-purple-dark">Voornaam</label>
             <Input
@@ -98,27 +131,9 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
               onChange={(e) => isEdit && onEditPlayerChange ? onEditPlayerChange({ ...editingPlayer!, birthDate: e.target.value }) : onPlayerChange({ ...newPlayer, birthDate: e.target.value })}
             />
           </div>
-
-          <div className="modal__actions">
-            <button
-              type="button"
-              onClick={isEdit && onEditSave ? onEditSave : onSave}
-              disabled={!allFieldsValid}
-              className="btn btn--primary"
-            >
-              {isEdit ? "Opslaan" : "Speler toevoegen"}
-            </button>
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="btn btn--secondary"
-            >
-              Annuleren
-            </button>
-          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </AppModalBody>
+    </AppModal>
   );
 };
 

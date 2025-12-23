@@ -1,5 +1,7 @@
 import React from "react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { PageHeader } from "@/components/navigation";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const reglement = [
   {
@@ -20,41 +22,41 @@ const reglement = [
     content: (
       <div className="space-y-3">
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'></span><span className='block flex-1 text-justify'></span></p>
-        <h3 className="font-semibold text-purple-700 mt-2 pl-4">2.1 Gedrag op en rond het veld</h3>
+        <h3 className="font-semibold text-foreground mt-2 pl-4">2.1 Gedrag op en rond het veld</h3>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.1.1</span><span className='block flex-1 text-justify'>Alle spelers, coaches en supporters worden geacht zich sportief en respectvol te gedragen tegenover scheidsrechters, tegenstanders, medespelers en andere aanwezigen.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.1.2</span><span className='block flex-1 text-justify'>Ongepast gedrag, verbaal of fysiek geweld, pesten, racisme of andere vormen van discriminatie worden niet getolereerd en kunnen leiden tot sancties door het bestuur of het sportcomité.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.1.3</span><span className='block flex-1 text-justify'>Enkel de kapitein mag op een respectvolle manier vragen stellen aan de scheidsrechter.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.1.4</span><span className='block flex-1 text-justify'>Supporters worden gevraagd hun ploeg positief aan te moedigen en zich te onthouden van negatief of storend gedrag.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.1.5</span><span className='block flex-1 text-justify'>Het bestuur en de scheidsrechters hebben het recht om personen die zich niet aan deze gedragsregels houden, te verwijderen uit de sporthal.</span></p>
-        <h3 className="font-semibold text-purple-700 mt-2 pl-4">2.2 Opstelling en aantal spelers</h3>
+        <h3 className="font-semibold text-foreground mt-2 pl-4">2.2 Opstelling en aantal spelers</h3>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.2.1</span><span className='block flex-1 text-justify'>Een wedstrijd wordt gespeeld door twee ploegen van elk 5 veldspelers.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.2.2</span><span className='block flex-1 text-justify'>Elke ploeg mag maximaal 3 reservespelers en 1 coach op de bank hebben.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.2.3</span><span className='block flex-1 text-justify'>Een ploeg moet bij aanvang van de wedstrijd minstens 4 spelers op het veld hebben. Bij minder dan 4 spelers wordt forfait uitgesproken en de wedstrijd niet gestart.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.2.4</span><span className='block flex-1 text-justify'>Indien een ploeg tijdens de wedstrijd wordt herleid tot 3 spelers, wordt de wedstrijd stopgezet. Het bestuur bepaalt nadien de uitslag.</span></p>
-        <h3 className="font-semibold text-purple-700 mt-2 pl-4">2.3 Wedstrijdverloop</h3>
+        <h3 className="font-semibold text-foreground mt-2 pl-4">2.3 Wedstrijdverloop</h3>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.3.1</span><span className='block flex-1 text-justify'>Een competitiewedstrijd bestaat uit 4 periodes van telkens 12 minuten.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.3.2</span><span className='block flex-1 text-justify'>Er is 1 minuut rust na de eerste en derde periode, en 2 minuten rust (met kampwissel) na de tweede periode.</span></p>
-        <h3 className="font-semibold text-purple-700 mt-2 pl-4">2.4 Verboden handelingen</h3>
+        <h3 className="font-semibold text-foreground mt-2 pl-4">2.4 Verboden handelingen</h3>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.4.1</span><span className='block flex-1 text-justify'>De volgende handelingen zijn verboden en worden bestraft met een rechtstreekse vrije trap of strafschop:<br />- Sliding, met of zonder tegenstander in de buurt<br />- Hakje met de hiel<br />- Spelen van de bal met de hand<br />- Lichamelijk contact (in welke vorm dan ook is niet toegestaan, inclusief duwen, trekken, blokkeren, vasthouden of schouderduw)<br />- Opzettelijk tijdrekken<br />- Onsportief gedrag (zoals natrappen, spuwen, beledigen)</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.4.2</span><span className='block flex-1 text-justify'>Het afschermen van de bal met het lichaam is enkel toegestaan wanneer de speler in balbezit is en geen overtreding maakt door de tegenstander te hinderen of vast te houden. Overdreven gebruik van het lichaam om de tegenstander te blokkeren is niet toegestaan.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.4.3</span><span className='block flex-1 text-justify'>Een onrechtstreekse vrije trap wordt toegekend wanneer de bal het plafond raakt of bij een scheidsrechterlijke beslissing waarbij geen directe overtreding is vastgesteld.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.4.4</span><span className='block flex-1 text-justify'>Overtredingen kunnen leiden tot bijkomende sancties door het sportcomité.</span></p>
-        <h3 className="font-semibold text-purple-700 mt-2 pl-4">2.5 Spelregels</h3>
+        <h3 className="font-semibold text-foreground mt-2 pl-4">2.5 Spelregels</h3>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.5.1</span><span className='block flex-1 text-justify'>Er is geen vaste doelman: elke speler mag keepen, maar niemand mag de bal met de hand spelen.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.5.2</span><span className='block flex-1 text-justify'>Buitenspel bestaat niet in deze competitie.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.5.3</span><span className='block flex-1 text-justify'>De scheidsrechter zal de voordeelregel niet meer toepassen. Spelbederf en opzettelijke overtredingen worden hierdoor strenger bestraft.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.5.4</span><span className='block flex-1 text-justify'>Bij blokkage van de bal die buitengaat, wordt het voordeel toegekend aan de aanvallende partij.</span></p>
-        <h3 className="font-semibold text-purple-700 mt-2 pl-4">2.6 Hoekschoppen en strafcorner</h3>
+        <h3 className="font-semibold text-foreground mt-2 pl-4">2.6 Hoekschoppen en strafcorner</h3>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.6.1</span><span className='block flex-1 text-justify'>Na vier hoekschoppen voor dezelfde ploeg wordt een strafcorner toegekend.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.6.2</span><span className='block flex-1 text-justify'>Uitvoering strafcorner:<br />- Speler A trapt de bal, speler B kopt de bal naar een onverdedigd doel.<br />- Geen enkele speler mag op of over de doellijn staan tot nadat de bal volledig over de doellijn is gegaan.<br />- Na het nemen van een strafcorner wordt het spel hervat na het fluitsignaal van de scheidsrechter.<br />- De verdedigers moeten zich buiten het strafschopgebied bevinden tot het fluitsignaal.</span></p>
-        <h3 className="font-semibold text-purple-700 mt-2 pl-4">2.7 Doeltrap en aftrap</h3>
+        <h3 className="font-semibold text-foreground mt-2 pl-4">2.7 Doeltrap en aftrap</h3>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.7.1</span><span className='block flex-1 text-justify'>De thuisploeg zorgt voor een geschikte bal.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.7.2</span><span className='block flex-1 text-justify'>Bij aftrap en doeltrap kan niet rechtstreeks gescoord worden.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.7.3</span><span className='block flex-1 text-justify'>Na het maken van een doelpunt volgt een doeltrap: beide teams begeven zich naar hun eigen speelhelft. De bal moet stilliggen achter de doellijn. Na het fluitsignaal van de scheidsrechter wordt de bal in het spel gebracht door een pas naar een medespeler buiten het doelgebied (4-meterlijn).</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.7.4</span><span className='block flex-1 text-justify'>Bij een gewone doeltrap (niet na een doelpunt) mag de speler, nadat de bal stilligt voor de doellijn, met de bal het terrein opkomen.</span></p>
-        <h3 className="font-semibold text-purple-700 mt-2 pl-4">2.8 Strafschopgebied</h3>
+        <h3 className="font-semibold text-foreground mt-2 pl-4">2.8 Strafschopgebied</h3>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.8.1</span><span className='block flex-1 text-justify'>Het strafschopgebied is de ruimte tussen de 4-meterlijn en de doellijn.</span></p>
-        <h3 className="font-semibold text-purple-700 mt-2 pl-4">2.9 Uitrusting en identificatie</h3>
+        <h3 className="font-semibold text-foreground mt-2 pl-4">2.9 Uitrusting en identificatie</h3>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.9.1</span><span className='block flex-1 text-justify'>Spelers moeten minimaal 16 jaar zijn. Een ploeg bestaat uit minimaal 8 en maximaal 20 spelers.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.9.2</span><span className='block flex-1 text-justify'>Spelers uit hogere afdelingen dan 1ste Provinciale zijn niet toegestaan.</span></p>
         <p className='pl-6 flex items-start'><span className='min-w-[3.5rem] font-bold flex-shrink-0'>2.9.3</span><span className='block flex-1 text-justify'>Elke ploeg is verplicht om in identieke uitrusting te spelen. Sportschoenen met effen zool zijn verplicht. De kapitein draagt een armband.</span></p>
@@ -148,27 +150,37 @@ const reglement = [
 ];
 
 const ReglementPage: React.FC = () => {
+  const isMobile = useIsMobile();
+  const mainHeadingId = React.useId();
+
   return (
-    <div className="space-y-8 animate-slide-up">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Reglement</h2>
-      </div>
+    <div className="space-y-6 animate-slide-up">
+      {/* Header - PageHeader on mobile, inline header on desktop */}
+      {isMobile ? (
+        <PageHeader 
+          title="Reglement" 
+        />
+      ) : (
+        <div className="flex justify-between items-center">
+          <h2 id={mainHeadingId} className="text-2xl font-semibold">Reglement</h2>
+        </div>
+      )}
       
-      <div className="max-w-2xl mx-auto">
+      <section role="region" aria-labelledby={mainHeadingId} className="max-w-2xl mx-auto">
         <Accordion type="single" collapsible defaultValue="">
         {reglement.map((h, i) => (
-          <AccordionItem key={h.title} value={h.title} className="border-b border-purple-100">
-            <AccordionTrigger className="text-lg text-purple-800 font-semibold bg-purple-50 hover:bg-purple-100 px-4">
+          <AccordionItem key={h.title} value={h.title} className="border-b border-border">
+            <AccordionTrigger className="text-lg text-foreground font-semibold bg-muted/50 hover:bg-muted px-4">
               {h.title}
             </AccordionTrigger>
             <p className="h-2"></p>
-            <AccordionContent className="bg-white px-4 text-purple-900">
+            <AccordionContent className="bg-card px-4 text-card-foreground">
               {h.content}
             </AccordionContent>
           </AccordionItem>
         ))}
         </Accordion>
-      </div>
+      </section>
     </div>
   );
 }

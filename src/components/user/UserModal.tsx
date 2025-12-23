@@ -1,12 +1,9 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AppModal,
+  AppModalBody,
+} from "@/components/ui/app-modal";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
@@ -212,17 +209,30 @@ const UserModal: React.FC<UserModalProps> = ({
   ), [isTeamSelectionDisabled]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="modal">
-        <DialogHeader>
-          <DialogTitle className="modal__title">
-            {modalTitle}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            {modalDescription}
-          </DialogDescription>
-        </DialogHeader>
-        
+    <AppModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={modalTitle}
+      size="md"
+      aria-describedby="user-modal-description"
+      primaryAction={{
+        label: submitButtonText,
+        onClick: () => handleSubmit({ preventDefault: () => {} } as React.FormEvent),
+        disabled: isLoading,
+        variant: "primary",
+        loading: isLoading,
+      }}
+      secondaryAction={{
+        label: "Annuleren",
+        onClick: handleCancel,
+        disabled: isLoading,
+        variant: "secondary",
+      }}
+    >
+      <AppModalBody>
+        <div id="user-modal-description" className="sr-only">
+          {modalDescription}
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Username */}
           <div className="space-y-2">
@@ -312,28 +322,9 @@ const UserModal: React.FC<UserModalProps> = ({
               />
             </div>
           )}
-          
-          {/* Actions */}
-          <div className="modal__actions">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn btn--primary"
-            >
-              {submitButtonText}
-            </button>
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="btn btn--secondary"
-              disabled={isLoading}
-            >
-              Annuleren
-            </button>
-          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </AppModalBody>
+    </AppModal>
   );
 };
 

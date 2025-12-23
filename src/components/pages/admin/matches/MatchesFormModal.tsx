@@ -1,5 +1,5 @@
 import React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AppModal } from "@/components/ui/app-modal";
 import MatchesCompactForm from "./MatchesCompactForm";
 import { MatchFormData } from "./types";
 interface MatchFormDialogProps {
@@ -26,16 +26,22 @@ const MatchFormDialog: React.FC<MatchFormDialogProps> = ({
     }
     onOpenChange(false);
   };
-  return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="modal w-[95vw] max-w-[95vw] max-h-[90vh] overflow-y-auto overflow-x-hidden touch-action-manipulation">
-        <DialogHeader>
-          <DialogTitle className="sr-only">Wedstrijdformulier</DialogTitle>
-          <DialogDescription className="sr-only">Vul scores, spelers en details van de wedstrijd in</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-6">
-          <MatchesCompactForm match={match} onComplete={handleComplete} isAdmin={isAdmin} isReferee={isReferee} teamId={teamId} />
-        </div>
-      </DialogContent>
-    </Dialog>;
+  return (
+    <AppModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Wedstrijdformulier"
+      size="lg"
+      aria-describedby="match-form-description"
+      showCloseButton={true}
+    >
+      <div id="match-form-description" className="sr-only">
+        Vul scores, spelers en details van de wedstrijd in
+      </div>
+      <div className="space-y-6">
+        <MatchesCompactForm match={match} onComplete={handleComplete} isAdmin={isAdmin} isReferee={isReferee} teamId={teamId} />
+      </div>
+    </AppModal>
+  );
 };
 export default MatchFormDialog;

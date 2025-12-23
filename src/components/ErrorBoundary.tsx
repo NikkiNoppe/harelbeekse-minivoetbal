@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface ErrorBoundaryProps {
@@ -10,22 +9,22 @@ interface ErrorBoundaryProps {
 
 function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
           <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
             <AlertTriangle className="h-6 w-6 text-red-600" />
           </div>
-          <CardTitle className="text-xl text-gray-900">
+          <CardTitle className="text-xl text-card-foreground">
             Er is iets misgegaan
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-gray-600 text-center">
+          <p className="text-muted-foreground text-center">
             Er is een onverwachte fout opgetreden. Probeer de pagina te vernieuwen of ga terug naar de homepage.
           </p>
           {process.env.NODE_ENV === 'development' && error && (
-            <details className="bg-gray-100 p-3 rounded text-sm">
+            <details className="bg-muted p-3 rounded text-sm">
               <summary className="cursor-pointer font-medium mb-2">
                 Technische details (alleen in ontwikkeling)
               </summary>
@@ -37,14 +36,14 @@ function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetError
             </details>
           )}
           <div className="flex gap-2">
-            <Button onClick={resetErrorBoundary} className="flex-1" variant="outline">
+            <button onClick={resetErrorBoundary} className="btn btn--secondary flex-1">
               <RefreshCw className="h-4 w-4 mr-2" />
               Opnieuw proberen
-            </Button>
-            <Button onClick={() => (window.location.href = '/')} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white">
+            </button>
+            <button onClick={() => (window.location.href = '/')} className="btn btn--primary flex-1">
               <Home className="h-4 w-4 mr-2" />
               Homepage
-            </Button>
+            </button>
           </div>
         </CardContent>
       </Card>

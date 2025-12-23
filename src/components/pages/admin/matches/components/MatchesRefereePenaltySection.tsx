@@ -238,12 +238,11 @@ export const RefereePenaltySection: React.FC<RefereePenaltySectionProps> = (prop
         <div className="relative space-y-4">
           <button
             type="button"
-            className="btn--close"
+            className="btn--close absolute top-2 right-2 w-3 h-3 min-w-[44px] min-h-[44px] flex items-center justify-center"
             aria-label="Sluiten"
             onClick={() => setPenalties([])}
-            style={{ top: '0.5rem', right: '0.5rem', width: '0.75rem', height: '0.75rem' }}
           >
-            <X size={10} />
+            <X className="w-2.5 h-2.5" />
           </button>
           {penalties.map((penalty, index) => (
             <PenaltyItemComponent

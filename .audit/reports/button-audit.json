@@ -1,0 +1,2209 @@
+{
+  "timestamp": "2025-12-23T20:05:31.684Z",
+  "buttons": [
+    {
+      "component": "ErrorBoundary",
+      "file": "src/components/ErrorBoundary.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 39",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "ErrorBoundary",
+      "file": "src/components/ErrorBoundary.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 43",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "MatchFilterPanel",
+      "file": "src/components/common/MatchFilterPanel.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 92",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "MatchFilterPanel",
+      "file": "src/components/common/MatchFilterPanel.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 109",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "MatchFilterPanel",
+      "file": "src/components/common/MatchFilterPanel.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 120",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "MatchFilterPanel",
+      "file": "src/components/common/MatchFilterPanel.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 123",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "MatchFilterPanel",
+      "file": "src/components/common/MatchFilterPanel.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 187",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "NotificationPopup",
+      "file": "src/components/common/NotificationPopup.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 284",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "PageHeader",
+      "file": "src/components/navigation/PageHeader.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 40",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPanel",
+      "file": "src/components/pages/admin/AdminPanel.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 270",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPanel",
+      "file": "src/components/pages/admin/AdminPanel.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 279",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPanel",
+      "file": "src/components/pages/admin/AdminPanel.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 287",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPanel",
+      "file": "src/components/pages/admin/AdminPanel.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 405",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "AdminPlayoffPage",
+      "file": "src/components/pages/admin/AdminPlayoffPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 166",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPlayoffPage",
+      "file": "src/components/pages/admin/AdminPlayoffPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 169",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPlayoffPage",
+      "file": "src/components/pages/admin/AdminPlayoffPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 256",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPlayoffPage",
+      "file": "src/components/pages/admin/AdminPlayoffPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 792",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPlayoffPage",
+      "file": "src/components/pages/admin/AdminPlayoffPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 795",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPlayoffPage",
+      "file": "src/components/pages/admin/AdminPlayoffPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 924",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "AdminPlayoffPage",
+      "file": "src/components/pages/admin/AdminPlayoffPage.tsx",
+      "usage": "hardcoded",
+      "classes": "flex-1 h-11 bg-green-600 hover:bg-green-700 text-white",
+      "location": "line 945",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPlayoffPage",
+      "file": "src/components/pages/admin/AdminPlayoffPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 949",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPlayoffPage",
+      "file": "src/components/pages/admin/AdminPlayoffPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 971",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPlayoffPage",
+      "file": "src/components/pages/admin/AdminPlayoffPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 975",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPlayoffPage",
+      "file": "src/components/pages/admin/AdminPlayoffPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 1042",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "AdminPlayoffPage",
+      "file": "src/components/pages/admin/AdminPlayoffPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 1050",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "BekerDateSelector",
+      "file": "src/components/pages/admin/beker/components/BekerDateSelector.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 304",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "BekerDateSelector",
+      "file": "src/components/pages/admin/beker/components/BekerDateSelector.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 311",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "BekerPage",
+      "file": "src/components/pages/admin/beker/components/BekerPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 305",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "BekerPage",
+      "file": "src/components/pages/admin/beker/components/BekerPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 317",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "BekerPage",
+      "file": "src/components/pages/admin/beker/components/BekerPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--outline",
+      "location": "line 341",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "BekerPage",
+      "file": "src/components/pages/admin/beker/components/BekerPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 348",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "BekerPage",
+      "file": "src/components/pages/admin/beker/components/BekerPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 353",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "BekerPage",
+      "file": "src/components/pages/admin/beker/components/BekerPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"destructive\"",
+      "location": "line 478",
+      "recommended": "btn--danger",
+      "is_standard": false
+    },
+    {
+      "component": "BlogPage",
+      "file": "src/components/pages/admin/blog/BlogPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 169",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "BlogPage",
+      "file": "src/components/pages/admin/blog/BlogPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 225",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "BlogPage",
+      "file": "src/components/pages/admin/blog/BlogPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 233",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "BlogPage",
+      "file": "src/components/pages/admin/blog/BlogPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 293",
+      "recommended": "btn--icon",
+      "is_standard": false
+    },
+    {
+      "component": "AdminCRUDTable",
+      "file": "src/components/pages/admin/common/components/AdminCRUDTable.tsx",
+      "usage": "component",
+      "classes": "variant=\"destructive\"",
+      "location": "line 76",
+      "recommended": "btn--danger",
+      "is_standard": false
+    },
+    {
+      "component": "AdminCRUDTable",
+      "file": "src/components/pages/admin/common/components/AdminCRUDTable.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 80",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminCRUDTable",
+      "file": "src/components/pages/admin/common/components/AdminCRUDTable.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 105",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminCRUDTable",
+      "file": "src/components/pages/admin/common/components/AdminCRUDTable.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 116",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminCRUDTable",
+      "file": "src/components/pages/admin/common/components/AdminCRUDTable.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 138",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "AdminCRUDTable",
+      "file": "src/components/pages/admin/common/components/AdminCRUDTable.tsx",
+      "usage": "legacy",
+      "classes": "btn-dark",
+      "location": "line 209",
+      "recommended": "btn--primary",
+      "is_standard": false
+    },
+    {
+      "component": "AdminTeamSelector",
+      "file": "src/components/pages/admin/common/components/AdminTeamSelector.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 66",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminTeamSelector",
+      "file": "src/components/pages/admin/common/components/AdminTeamSelector.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 81",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminTeamSelector",
+      "file": "src/components/pages/admin/common/components/AdminTeamSelector.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 86",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminTeamSelector",
+      "file": "src/components/pages/admin/common/components/AdminTeamSelector.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 146",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "CompetitionPage",
+      "file": "src/components/pages/admin/competition/CompetitionPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--outline",
+      "location": "line 451",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "CompetitionPage",
+      "file": "src/components/pages/admin/competition/CompetitionPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 456",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "CompetitionPage",
+      "file": "src/components/pages/admin/competition/CompetitionPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 459",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "CompetitionPage",
+      "file": "src/components/pages/admin/competition/CompetitionPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"destructive\"",
+      "location": "line 600",
+      "recommended": "btn--danger",
+      "is_standard": false
+    },
+    {
+      "component": "CompetitionWithFairnessPage",
+      "file": "src/components/pages/admin/competition/CompetitionWithFairnessPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 129",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "CompetitionWithFairnessPage",
+      "file": "src/components/pages/admin/competition/CompetitionWithFairnessPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 194",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "FairnessPreview",
+      "file": "src/components/pages/admin/competition/FairnessPreview.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 55",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "DateGeneratorPreview",
+      "file": "src/components/pages/admin/competition/components/DateGeneratorPreview.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 103",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "FinancialPage",
+      "file": "src/components/pages/admin/financial/FinancialPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--outline",
+      "location": "line 189",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "FinancialPage",
+      "file": "src/components/pages/admin/financial/FinancialPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--outline",
+      "location": "line 193",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "FinancialAffectedTransactionsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialAffectedTransactionsModal.tsx",
+      "usage": "component",
+      "classes": "variant=\"destructive\"",
+      "location": "line 165",
+      "recommended": "btn--danger",
+      "is_standard": false
+    },
+    {
+      "component": "FinancialCostSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialCostSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 181",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialCostSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialCostSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 246",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialCostSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialCostSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 249",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialCostSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialCostSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--outline",
+      "location": "line 288",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "FinancialCostSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialCostSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 295",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialEnhancedSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialEnhancedSettingsModal.tsx",
+      "usage": "component",
+      "classes": "variant=\"destructive\"",
+      "location": "line 243",
+      "recommended": "btn--danger",
+      "is_standard": false
+    },
+    {
+      "component": "FinancialEnhancedSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialEnhancedSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 322",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialEnhancedSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialEnhancedSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 325",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialEnhancedSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialEnhancedSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--outline",
+      "location": "line 368",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "FinancialEnhancedSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialEnhancedSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 375",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialMonthlyReportsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialMonthlyReportsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 208",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialMonthlyReportsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialMonthlyReportsModal.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 528",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "FinancialSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 191",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 261",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 268",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialSettingsModal.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 284",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "FinancialSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--outline",
+      "location": "line 332",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "FinancialSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialSettingsModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 340",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialTeamDetailModal",
+      "file": "src/components/pages/admin/financial/components/FinancialTeamDetailModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 311",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialTeamDetailModal",
+      "file": "src/components/pages/admin/financial/components/FinancialTeamDetailModal.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 336",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "FinancialTeamDetailModal",
+      "file": "src/components/pages/admin/financial/components/FinancialTeamDetailModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 392",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialTeamDetailModal",
+      "file": "src/components/pages/admin/financial/components/FinancialTeamDetailModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 403",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "FinancialTeamDetailModal",
+      "file": "src/components/pages/admin/financial/components/FinancialTeamDetailModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--outline",
+      "location": "line 478",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "TransactionEditModal",
+      "file": "src/components/pages/admin/financial/components/TransactionEditModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 216",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "TransactionEditModal",
+      "file": "src/components/pages/admin/financial/components/TransactionEditModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 223",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "AdminPlayoffMatchesPage",
+      "file": "src/components/pages/admin/matches/AdminPlayoffMatchesPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"destructive\"",
+      "location": "line 24",
+      "recommended": "btn--danger",
+      "is_standard": false
+    },
+    {
+      "component": "AdminPlayoffMatchesPage",
+      "file": "src/components/pages/admin/matches/AdminPlayoffMatchesPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 28",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesFormFilter",
+      "file": "src/components/pages/admin/matches/MatchesFormFilter.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 115",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "MatchesFormFilter",
+      "file": "src/components/pages/admin/matches/MatchesFormFilter.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 151",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesFormFilter",
+      "file": "src/components/pages/admin/matches/MatchesFormFilter.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 167",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesFormFilter",
+      "file": "src/components/pages/admin/matches/MatchesFormFilter.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 170",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesFormFilter",
+      "file": "src/components/pages/admin/matches/MatchesFormFilter.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 181",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesFormFilter",
+      "file": "src/components/pages/admin/matches/MatchesFormFilter.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 184",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesFormFilter",
+      "file": "src/components/pages/admin/matches/MatchesFormFilter.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 195",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesFormFilter",
+      "file": "src/components/pages/admin/matches/MatchesFormFilter.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 198",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesFormFilter",
+      "file": "src/components/pages/admin/matches/MatchesFormFilter.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 209",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesFormFilter",
+      "file": "src/components/pages/admin/matches/MatchesFormFilter.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 217",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesPage",
+      "file": "src/components/pages/admin/matches/MatchesPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"destructive\"",
+      "location": "line 54",
+      "recommended": "btn--danger",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesPastTabContent",
+      "file": "src/components/pages/admin/matches/MatchesPastTabContent.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 53",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesCupCard",
+      "file": "src/components/pages/admin/matches/components/MatchesCupCard.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 58",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesCupCard",
+      "file": "src/components/pages/admin/matches/components/MatchesCupCard.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 67",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesCupCard",
+      "file": "src/components/pages/admin/matches/components/MatchesCupCard.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 78",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesFormActions",
+      "file": "src/components/pages/admin/matches/components/MatchesFormActions.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 35",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "MatchesPastList",
+      "file": "src/components/pages/admin/matches/components/MatchesPastList.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 38",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesPenaltyShootoutModal",
+      "file": "src/components/pages/admin/matches/components/MatchesPenaltyShootoutModal.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 167",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesRefereeCardsSection",
+      "file": "src/components/pages/admin/matches/components/MatchesRefereeCardsSection.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 142",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "MatchesRefereeCardsSection",
+      "file": "src/components/pages/admin/matches/components/MatchesRefereeCardsSection.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 217",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "MatchesRefereeCardsSection",
+      "file": "src/components/pages/admin/matches/components/MatchesRefereeCardsSection.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 248",
+      "recommended": "btn--icon",
+      "is_standard": false
+    },
+    {
+      "component": "MatchesRefereePenaltySection",
+      "file": "src/components/pages/admin/matches/components/MatchesRefereePenaltySection.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 230",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "MatchesRefereePenaltySection",
+      "file": "src/components/pages/admin/matches/components/MatchesRefereePenaltySection.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 264",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "MatchesRefereePenaltySection",
+      "file": "src/components/pages/admin/matches/components/MatchesRefereePenaltySection.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 291",
+      "recommended": "btn--icon",
+      "is_standard": false
+    },
+    {
+      "component": "PlayerDataRefreshPopup",
+      "file": "src/components/pages/admin/matches/components/PlayerDataRefreshPopup.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 87",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "PlayerDataRefreshPopup",
+      "file": "src/components/pages/admin/matches/components/PlayerDataRefreshPopup.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 109",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "NotificationFormModal",
+      "file": "src/components/pages/admin/notifications/NotificationFormModal.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 435",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "NotificationFormModal",
+      "file": "src/components/pages/admin/notifications/NotificationFormModal.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 505",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "NotificationFormModal",
+      "file": "src/components/pages/admin/notifications/NotificationFormModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 523",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "NotificationFormModal",
+      "file": "src/components/pages/admin/notifications/NotificationFormModal.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 590",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "NotificationFormModal",
+      "file": "src/components/pages/admin/notifications/NotificationFormModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 608",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "NotificationFormModal",
+      "file": "src/components/pages/admin/notifications/NotificationFormModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 766",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "NotificationFormModal",
+      "file": "src/components/pages/admin/notifications/NotificationFormModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 773",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "NotificationPage",
+      "file": "src/components/pages/admin/notifications/NotificationPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 321",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "NotificationPage",
+      "file": "src/components/pages/admin/notifications/NotificationPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 326",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "NotificationPage",
+      "file": "src/components/pages/admin/notifications/NotificationPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 345",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "NotificationPage",
+      "file": "src/components/pages/admin/notifications/NotificationPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 353",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "NotificationPage",
+      "file": "src/components/pages/admin/notifications/NotificationPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 401",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "NotificationPage",
+      "file": "src/components/pages/admin/notifications/NotificationPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 406",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "NotificationPage",
+      "file": "src/components/pages/admin/notifications/NotificationPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 430",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "NotificationPage",
+      "file": "src/components/pages/admin/notifications/NotificationPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 438",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "PlayerPage",
+      "file": "src/components/pages/admin/players/PlayerPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--outline",
+      "location": "line 126",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "PlayerPage",
+      "file": "src/components/pages/admin/players/PlayerPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--outline",
+      "location": "line 140",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "PlayersList",
+      "file": "src/components/pages/admin/players/components/PlayersList.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 112",
+      "recommended": "btn--icon",
+      "is_standard": false
+    },
+    {
+      "component": "PlayersList",
+      "file": "src/components/pages/admin/players/components/PlayersList.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 142",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "PlayersList",
+      "file": "src/components/pages/admin/players/components/PlayersList.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 148",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "ScheidsrechtersPage",
+      "file": "src/components/pages/admin/scheidsrechter/ScheidsrechtersPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"default\"",
+      "location": "line 224",
+      "recommended": "btn--primary",
+      "is_standard": false
+    },
+    {
+      "component": "ScheidsrechtersPage",
+      "file": "src/components/pages/admin/scheidsrechter/ScheidsrechtersPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 226",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "SchorsingenPage",
+      "file": "src/components/pages/admin/schorsingen/SchorsingenPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 88",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "SchorsingenPage",
+      "file": "src/components/pages/admin/schorsingen/SchorsingenPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"destructive\"",
+      "location": "line 90",
+      "recommended": "btn--danger",
+      "is_standard": false
+    },
+    {
+      "component": "SchorsingenPage",
+      "file": "src/components/pages/admin/schorsingen/SchorsingenPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 92",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "SchorsingenPage",
+      "file": "src/components/pages/admin/schorsingen/SchorsingenPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"destructive\"",
+      "location": "line 99",
+      "recommended": "btn--danger",
+      "is_standard": false
+    },
+    {
+      "component": "SchorsingenPage",
+      "file": "src/components/pages/admin/schorsingen/SchorsingenPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 101",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "SchorsingenPage",
+      "file": "src/components/pages/admin/schorsingen/SchorsingenPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 103",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "SchorsingenPage",
+      "file": "src/components/pages/admin/schorsingen/SchorsingenPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 185",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "SchorsingenPage",
+      "file": "src/components/pages/admin/schorsingen/SchorsingenPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 213",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 515",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 538",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 570",
+      "recommended": "btn--icon",
+      "is_standard": false
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 592",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 620",
+      "recommended": "btn--icon",
+      "is_standard": false
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 642",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 676",
+      "recommended": "btn--icon",
+      "is_standard": false
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 699",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 739",
+      "recommended": "btn--icon",
+      "is_standard": false
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 820",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 823",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 842",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 845",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "PlayerListLockSettings",
+      "file": "src/components/pages/admin/settings/components/PlayerListLockSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 205",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "SeasonDataSettings",
+      "file": "src/components/pages/admin/settings/components/SeasonDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 206",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "SeasonDataSettings",
+      "file": "src/components/pages/admin/settings/components/SeasonDataSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 209",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "SuspensionRulesSettings",
+      "file": "src/components/pages/admin/settings/components/SuspensionRulesSettings.tsx",
+      "usage": "component",
+      "classes": "variant=\"destructive\"",
+      "location": "line 132",
+      "recommended": "btn--danger",
+      "is_standard": false
+    },
+    {
+      "component": "SuspensionRulesSettings",
+      "file": "src/components/pages/admin/settings/components/SuspensionRulesSettings.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 150",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "SuspensionRulesSettings",
+      "file": "src/components/pages/admin/settings/components/SuspensionRulesSettings.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 156",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "SuspensionRulesSettings",
+      "file": "src/components/pages/admin/settings/components/SuspensionRulesSettings.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 181",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "SuspensionRulesSettings",
+      "file": "src/components/pages/admin/settings/components/SuspensionRulesSettings.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 231",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "TabVisibilitySettingsUpdated",
+      "file": "src/components/pages/admin/settings/components/TabVisibilitySettingsUpdated.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 136",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "TabVisibilitySettingsUpdated",
+      "file": "src/components/pages/admin/settings/components/TabVisibilitySettingsUpdated.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 173",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "TimeslotsSettings",
+      "file": "src/components/pages/admin/settings/components/TimeslotsSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn-dark",
+      "location": "line 224",
+      "recommended": "btn--primary",
+      "is_standard": false
+    },
+    {
+      "component": "TimeslotsSettings",
+      "file": "src/components/pages/admin/settings/components/TimeslotsSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 260",
+      "recommended": "btn--icon",
+      "is_standard": false
+    },
+    {
+      "component": "TimeslotsSettings",
+      "file": "src/components/pages/admin/settings/components/TimeslotsSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 357",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "TimeslotsSettings",
+      "file": "src/components/pages/admin/settings/components/TimeslotsSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 360",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "TimeslotsSettings",
+      "file": "src/components/pages/admin/settings/components/TimeslotsSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 379",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "TimeslotsSettings",
+      "file": "src/components/pages/admin/settings/components/TimeslotsSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 382",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "VacationsSettings",
+      "file": "src/components/pages/admin/settings/components/VacationsSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn-dark",
+      "location": "line 199",
+      "recommended": "btn--primary",
+      "is_standard": false
+    },
+    {
+      "component": "VacationsSettings",
+      "file": "src/components/pages/admin/settings/components/VacationsSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 239",
+      "recommended": "btn--icon",
+      "is_standard": false
+    },
+    {
+      "component": "VacationsSettings",
+      "file": "src/components/pages/admin/settings/components/VacationsSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 306",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "VacationsSettings",
+      "file": "src/components/pages/admin/settings/components/VacationsSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 309",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "VacationsSettings",
+      "file": "src/components/pages/admin/settings/components/VacationsSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 328",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "VacationsSettings",
+      "file": "src/components/pages/admin/settings/components/VacationsSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 331",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "VenuesSettings",
+      "file": "src/components/pages/admin/settings/components/VenuesSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 186",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "VenuesSettings",
+      "file": "src/components/pages/admin/settings/components/VenuesSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 215",
+      "recommended": "btn--icon",
+      "is_standard": false
+    },
+    {
+      "component": "VenuesSettings",
+      "file": "src/components/pages/admin/settings/components/VenuesSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 262",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "VenuesSettings",
+      "file": "src/components/pages/admin/settings/components/VenuesSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 265",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "VenuesSettings",
+      "file": "src/components/pages/admin/settings/components/VenuesSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 284",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "VenuesSettings",
+      "file": "src/components/pages/admin/settings/components/VenuesSettings.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 287",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--outline",
+      "location": "line 311",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 387",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 394",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 480",
+      "recommended": "btn--icon",
+      "is_standard": false
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 492",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 495",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 557",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 691",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"destructive\"",
+      "location": "line 698",
+      "recommended": "btn--danger",
+      "is_standard": false
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 703",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 708",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 720",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 721",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 764",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 850",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 853",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "PlayersList",
+      "file": "src/components/pages/admin/teams/PlayersList.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 266",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "TeamsPage",
+      "file": "src/components/pages/admin/teams/TeamsPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--outline",
+      "location": "line 66",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "TeamForm",
+      "file": "src/components/pages/admin/teams/components/TeamForm.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 52",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "PlayerSelectionActions",
+      "file": "src/components/pages/admin/teams/player-selection/PlayerSelectionActions.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 19",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "UserPage",
+      "file": "src/components/pages/admin/users/UserPage.tsx",
+      "usage": "legacy",
+      "classes": "btn--outline",
+      "location": "line 108",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "UserListTable",
+      "file": "src/components/pages/admin/users/components/UserListTable.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 245",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "UserListTable",
+      "file": "src/components/pages/admin/users/components/UserListTable.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 255",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "UserListTable",
+      "file": "src/components/pages/admin/users/components/UserListTable.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 258",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "UserListTable",
+      "file": "src/components/pages/admin/users/components/UserListTable.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 294",
+      "recommended": "btn--icon",
+      "is_standard": false
+    },
+    {
+      "component": "UserListTable",
+      "file": "src/components/pages/admin/users/components/UserListTable.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 330",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "UserListTable",
+      "file": "src/components/pages/admin/users/components/UserListTable.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 336",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "Header",
+      "file": "src/components/pages/header/Header.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 187",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "ForgotPasswordModal",
+      "file": "src/components/pages/login/ForgotPasswordModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 105",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "ForgotPasswordModal",
+      "file": "src/components/pages/login/ForgotPasswordModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 112",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "LoginModal",
+      "file": "src/components/pages/login/LoginModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 77",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "LoginModal",
+      "file": "src/components/pages/login/LoginModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 84",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "PlayOffPage",
+      "file": "src/components/pages/public/competition/PlayOffPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 41",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "PlayOffPage",
+      "file": "src/components/pages/public/competition/PlayOffPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 69",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "PlayOffPage",
+      "file": "src/components/pages/public/competition/PlayOffPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 99",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "PlayOffPage",
+      "file": "src/components/pages/public/competition/PlayOffPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 275",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "AlgemeenPage",
+      "file": "src/components/pages/public/information/AlgemeenPage.tsx",
+      "usage": "legacy",
+      "classes": "btn-dark",
+      "location": "line 156",
+      "recommended": "btn--primary",
+      "is_standard": false
+    },
+    {
+      "component": "KaartenPage",
+      "file": "src/components/pages/public/information/KaartenPage.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 218",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "ResponsiveCardsTable",
+      "file": "src/components/tables/ResponsiveCardsTable.tsx",
+      "usage": "component",
+      "classes": "variant=\"destructive\"",
+      "location": "line 56",
+      "recommended": "btn--danger",
+      "is_standard": false
+    },
+    {
+      "component": "ResponsiveCardsTable",
+      "file": "src/components/tables/ResponsiveCardsTable.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 61",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "ResponsiveCardsTable",
+      "file": "src/components/tables/ResponsiveCardsTable.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 80",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "ResponsiveCardsTable",
+      "file": "src/components/tables/ResponsiveCardsTable.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 95",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "ResponsiveCardsTable",
+      "file": "src/components/tables/ResponsiveCardsTable.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 118",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "alert-dialog",
+      "file": "src/components/ui/alert-dialog.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 118",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "alert-dialog",
+      "file": "src/components/ui/alert-dialog.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 131",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "app-alert-modal",
+      "file": "src/components/ui/app-alert-modal.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 97",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "app-alert-modal",
+      "file": "src/components/ui/app-alert-modal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 98",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "app-alert-modal",
+      "file": "src/components/ui/app-alert-modal.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 113",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "app-alert-modal",
+      "file": "src/components/ui/app-alert-modal.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 114",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "app-modal",
+      "file": "src/components/ui/app-modal.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 186",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "app-modal",
+      "file": "src/components/ui/app-modal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 187",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "app-modal",
+      "file": "src/components/ui/app-modal.tsx",
+      "usage": "legacy",
+      "classes": "btn--danger",
+      "location": "line 201",
+      "recommended": "btn--danger",
+      "is_standard": true
+    },
+    {
+      "component": "app-modal",
+      "file": "src/components/ui/app-modal.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 202",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "sidebar",
+      "file": "src/components/ui/sidebar.tsx",
+      "usage": "component",
+      "classes": "variant=\"ghost\"",
+      "location": "line 304",
+      "recommended": "btn--ghost",
+      "is_standard": false
+    },
+    {
+      "component": "UserRow",
+      "file": "src/components/user/UserRow.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 41",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "UserRow",
+      "file": "src/components/user/UserRow.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 49",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "TeamSelector",
+      "file": "src/components/user/dialog/TeamSelector.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 56",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "TeamSelector",
+      "file": "src/components/user/dialog/TeamSelector.tsx",
+      "usage": "component",
+      "classes": "variant=\"secondary\"",
+      "location": "line 108",
+      "recommended": "btn--secondary",
+      "is_standard": false
+    },
+    {
+      "component": "TeamModal",
+      "file": "src/components/user/teams/TeamModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--primary",
+      "location": "line 406",
+      "recommended": "btn--primary",
+      "is_standard": true
+    },
+    {
+      "component": "TeamModal",
+      "file": "src/components/user/teams/TeamModal.tsx",
+      "usage": "legacy",
+      "classes": "btn--secondary",
+      "location": "line 413",
+      "recommended": "btn--secondary",
+      "is_standard": true
+    },
+    {
+      "component": "TeamsList",
+      "file": "src/components/user/teams/TeamsList.tsx",
+      "usage": "component",
+      "classes": "variant=\"outline\"",
+      "location": "line 95",
+      "recommended": "btn--outline",
+      "is_standard": false
+    },
+    {
+      "component": "TeamsList",
+      "file": "src/components/user/teams/TeamsList.tsx",
+      "usage": "legacy",
+      "classes": "btn--icon",
+      "location": "line 118",
+      "recommended": "btn--icon",
+      "is_standard": false
+    }
+  ],
+  "summary": {
+    "total_buttons": 244,
+    "standardized_buttons": 96,
+    "inconsistent_buttons": 148,
+    "legacy_usage": 127,
+    "component_usage": 116,
+    "hardcoded_usage": 1
+  }
+}

@@ -6,6 +6,10 @@ import { PlayerSelection, MatchFormData } from "../types";
 import { useEnhancedMatchFormSubmission } from "../hooks/useEnhancedMatchFormSubmission";
 import { useToast } from "@/hooks/use-toast";
 import { canTeamManagerEdit } from "@/lib/matchLockUtils";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { ChevronDown, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PlayerSelectionSectionProps {
   match: MatchFormData;
@@ -35,6 +39,10 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   const [isSubmittingPlayers, setIsSubmittingPlayers] = useState(false);
   const { submitMatchForm } = useEnhancedMatchFormSubmission();
   const { toast } = useToast();
+  
+  // Collapsible state for mobile - both teams open by default on desktop, closed on mobile
+  const [homeTeamOpen, setHomeTeamOpen] = useState(true);
+  const [awayTeamOpen, setAwayTeamOpen] = useState(false);
   
   // Convert match date string to Date object for suspension checks
   const matchDate = useMemo(() => new Date(match.date), [match.date]);
@@ -110,55 +118,100 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   }, [isTeamManager, canEdit, match, homeTeamSelections, awayTeamSelections, submitMatchForm, toast]);
 
   return (
-    <div className="space-y-4">      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Home Team */}
-        <div className="rounded-md border bg-white p-3">
-          <OptimizedMatchesPlayerSelectionTable
-            teamId={match.homeTeamId}
-            matchDate={matchDate}
-            teamLabel={`${match.homeTeamName} (Thuis)`}
-            selections={homeTeamSelections}
-            selectedPlayerIds={homeSelectedPlayerIds}
-            onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, true)}
-            onCardChange={onCardChange}
-            playerCards={playerCards}
-            canEdit={canEditHome}
-            showRefereeFields={showRefereeFields}
-          />
-          <div className="mt-3">
-            <MatchesCaptainSelection
-            selections={homeTeamSelections}
-            onCaptainChange={(playerId) => handleCaptainChange(playerId?.toString() || "no-captain", true)}
-            canEdit={canEditHome}
-            teamLabel={`${match.homeTeamName} (Thuis)`}
-            />
-          </div>
-        </div>
-        
-        {/* Away Team */}
-        <div className="rounded-md border bg-white p-3">
-          <OptimizedMatchesPlayerSelectionTable
-            teamId={match.awayTeamId}
-            matchDate={matchDate}
-            teamLabel={`${match.awayTeamName} (Uit)`}
-            selections={awayTeamSelections}
-            selectedPlayerIds={awaySelectedPlayerIds}
-            onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, false)}
-            onCardChange={onCardChange}
-            playerCards={playerCards}
-            canEdit={canEditAway}
-            showRefereeFields={showRefereeFields}
-          />
-          <div className="mt-3">
-            <MatchesCaptainSelection
-            selections={awayTeamSelections}
-            onCaptainChange={(playerId) => handleCaptainChange(playerId?.toString() || "no-captain", false)}
-            canEdit={canEditAway}
-            teamLabel={`${match.awayTeamName} (Uit)`}
-            />
-          </div>
-        </div>
+    <div className="space-y-4">
+      {/* Mobile-first: Stacked cards, collapsible on mobile */}
+      <div className="space-y-4">
+        {/* Home Team Card */}
+        <Collapsible open={homeTeamOpen} onOpenChange={setHomeTeamOpen}>
+          <Card className="bg-card border-border">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Users className="h-5 w-5 text-primary" />
+                    {match.homeTeamName} <span className="text-sm font-normal text-muted-foreground">(Thuis)</span>
+                  </CardTitle>
+                  <ChevronDown
+                    className={cn(
+                      "h-5 w-5 text-muted-foreground transition-transform duration-200",
+                      homeTeamOpen && "transform rotate-180"
+                    )}
+                  />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <OptimizedMatchesPlayerSelectionTable
+                  teamId={match.homeTeamId}
+                  matchDate={matchDate}
+                  teamLabel={`${match.homeTeamName} (Thuis)`}
+                  selections={homeTeamSelections}
+                  selectedPlayerIds={homeSelectedPlayerIds}
+                  onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, true)}
+                  onCardChange={onCardChange}
+                  playerCards={playerCards}
+                  canEdit={canEditHome}
+                  showRefereeFields={showRefereeFields}
+                />
+                <div className="mt-4">
+                  <MatchesCaptainSelection
+                    selections={homeTeamSelections}
+                    onCaptainChange={(playerId) => handleCaptainChange(playerId?.toString() || "no-captain", true)}
+                    canEdit={canEditHome}
+                    teamLabel={`${match.homeTeamName} (Thuis)`}
+                  />
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        {/* Away Team Card */}
+        <Collapsible open={awayTeamOpen} onOpenChange={setAwayTeamOpen}>
+          <Card className="bg-card border-border">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Users className="h-5 w-5 text-primary" />
+                    {match.awayTeamName} <span className="text-sm font-normal text-muted-foreground">(Uit)</span>
+                  </CardTitle>
+                  <ChevronDown
+                    className={cn(
+                      "h-5 w-5 text-muted-foreground transition-transform duration-200",
+                      awayTeamOpen && "transform rotate-180"
+                    )}
+                  />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <OptimizedMatchesPlayerSelectionTable
+                  teamId={match.awayTeamId}
+                  matchDate={matchDate}
+                  teamLabel={`${match.awayTeamName} (Uit)`}
+                  selections={awayTeamSelections}
+                  selectedPlayerIds={awaySelectedPlayerIds}
+                  onPlayerSelection={(index, field, value) => onPlayerSelection(index, field as keyof PlayerSelection, value, false)}
+                  onCardChange={onCardChange}
+                  playerCards={playerCards}
+                  canEdit={canEditAway}
+                  showRefereeFields={showRefereeFields}
+                />
+                <div className="mt-4">
+                  <MatchesCaptainSelection
+                    selections={awayTeamSelections}
+                    onCaptainChange={(playerId) => handleCaptainChange(playerId?.toString() || "no-captain", false)}
+                    canEdit={canEditAway}
+                    teamLabel={`${match.awayTeamName} (Uit)`}
+                  />
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       </div>
       
       {/* Save button for team managers */}

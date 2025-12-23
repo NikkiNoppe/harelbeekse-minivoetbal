@@ -21,16 +21,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import TeamForm from "@/components/pages/admin/teams/components/TeamForm";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AppAlertModal } from "@/components/ui/app-alert-modal";
 import { Edit, Trash2, AlertTriangle } from "lucide-react";
 import { teamService, Team } from "@/services/core";
 import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
@@ -387,28 +378,22 @@ const AdminPanel: React.FC = () => {
       </Tabs>
       
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-              Team verwijderen
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Weet u zeker dat u dit team wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuleren</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDeleteTeam}
-              className="bg-red-500 text-white hover:bg-red-600"
-            >
-              Verwijderen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AppAlertModal
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Team verwijderen"
+        description="Weet u zeker dat u dit team wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+        confirmAction={{
+          label: "Verwijderen",
+          onClick: confirmDeleteTeam,
+          variant: "destructive",
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: () => setDeleteDialogOpen(false),
+          variant: "secondary",
+        }}
+      />
     </div>
   );
 };

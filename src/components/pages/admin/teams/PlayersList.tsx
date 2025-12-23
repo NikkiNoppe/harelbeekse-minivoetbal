@@ -228,7 +228,7 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
             <Button onClick={handleAddPlayer} disabled={!canEdit}>
               Speler toevoegen
             </Button>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted-foreground">
               {players.length}/20 spelers
             </span>
           </div>
@@ -251,7 +251,7 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
               <TableBody>
                 {players.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-gray-500">
+                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
                       Geen spelers toegevoegd
                     </TableCell>
                   </TableRow>

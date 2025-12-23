@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AppModal } from "@/components/ui/app-modal";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -148,17 +148,19 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
   const seasonMonths = getSeasonMonths(selectedSeasonYear);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="modal max-w-6xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="modal__title flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Seizoen Kostenrapportage
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Bekijk seizoen/maandelijkse kosten, scheidsrechterbetalingen en boetes voor teams
-          </DialogDescription>
-        </DialogHeader>
+    <AppModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Seizoen Kostenrapportage"
+      subtitle="Bekijk seizoen/maandelijkse kosten, scheidsrechterbetalingen en boetes voor teams"
+      size="xl"
+      className="max-w-6xl max-h-[80vh] overflow-y-auto"
+      secondaryAction={{
+        label: "Sluiten",
+        onClick: () => onOpenChange(false),
+        variant: "secondary",
+      }}
+    >
 
         <div className="space-y-6">
           {/* Show message if no seasons available */}
@@ -216,7 +218,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
           {report && availableSeasons && availableSeasons.length > 0 && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <Card className="border-purple-light">
-                <CardHeader className="bg-purple-100 p-3 md:p-4">
+                <CardHeader className="bg-muted p-3 md:p-4">
                   <CardTitle className="text-xs md:text-sm flex items-center gap-2 text-purple-light">
                     <Users className="h-3 w-3 md:h-4 md:w-4" />
                     Wedstrijden
@@ -230,7 +232,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
               </Card>
 
               <Card className="border-purple-light">
-                <CardHeader className="bg-purple-100 p-3 md:p-4">
+                <CardHeader className="bg-muted p-3 md:p-4">
                   <CardTitle className="text-xs md:text-sm flex items-center gap-2 text-purple-light">
                     <Euro className="h-3 w-3 md:h-4 md:w-4" />
                     Veldkosten
@@ -244,7 +246,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
               </Card>
 
               <Card className="border-purple-light">
-                <CardHeader className="bg-purple-100 p-3 md:p-4">
+                <CardHeader className="bg-muted p-3 md:p-4">
                   <CardTitle className="text-xs md:text-sm flex items-center gap-2 text-purple-light">
                     <Euro className="h-3 w-3 md:h-4 md:w-4" />
                     Scheidsrechters
@@ -258,7 +260,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
               </Card>
 
               <Card className="border-purple-light">
-                <CardHeader className="bg-purple-100 p-3 md:p-4">
+                <CardHeader className="bg-muted p-3 md:p-4">
                   <CardTitle className="text-xs md:text-sm flex items-center gap-2 text-purple-light">
                     <Euro className="h-3 w-3 md:h-4 md:w-4" />
                     Boetes
@@ -291,7 +293,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
                       open={expandedReferees.has(referee.referee)}
                       onOpenChange={() => toggleRefereeExpanded(referee.referee)}
                     >
-                      <CollapsibleTrigger className="w-full p-4 hover:bg-purple-50 transition-colors">
+                      <CollapsibleTrigger className="w-full p-4 hover:bg-muted transition-colors">
                         <div className="flex items-center justify-between">
                           <div className="text-left">
                             <p className="font-medium text-purple-dark">{referee.referee}</p>
@@ -327,7 +329,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
                     </Collapsible>
                   ))}
                   {/* Mobile Total row */}
-                  <div className="p-4 bg-purple-100">
+                  <div className="p-4 bg-muted">
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="font-bold text-purple-dark">Totaal</p>
@@ -346,7 +348,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
                 <div className="hidden md:block">
                   <Table className="table">
                     <TableHeader>
-                      <TableRow className="bg-purple-100">
+                      <TableRow className="bg-muted">
                         <TableHead className="text-purple-dark w-8"></TableHead>
                         <TableHead className="text-purple-dark">Scheidsrechter</TableHead>
                         <TableHead className="text-center text-purple-dark">Aantal Wedstrijden</TableHead>
@@ -357,7 +359,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
                       {report.refereeCosts.map((referee, index) => (
                         <React.Fragment key={index}>
                           <TableRow 
-                            className="bg-white hover:bg-purple-50 cursor-pointer"
+                            className="bg-card hover:bg-muted cursor-pointer"
                             onClick={() => toggleRefereeExpanded(referee.referee)}
                           >
                             <TableCell className="w-8">
@@ -524,14 +526,8 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
             </Card>
           )}
 
-          <div className="flex justify-end">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Sluiten
-            </Button>
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </AppModal>
   );
 };
 

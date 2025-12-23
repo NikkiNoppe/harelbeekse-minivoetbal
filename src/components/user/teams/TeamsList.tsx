@@ -87,9 +87,9 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
                 teams.map((team) => (
                   <TableRow key={team.team_id}>
                     <TableCell className="font-medium whitespace-normal break-words">{team.team_name}</TableCell>
-                    <TableCell className="whitespace-normal break-words hidden sm:table-cell">{team.contact_person || <span className="text-gray-400">-</span>}</TableCell>
-                    <TableCell className="whitespace-normal break-words hidden md:table-cell">{team.contact_phone || <span className="text-gray-400">-</span>}</TableCell>
-                    <TableCell className="whitespace-normal break-words hidden md:table-cell">{team.contact_email || <span className="text-gray-400">-</span>}</TableCell>
+                    <TableCell className="whitespace-normal break-words hidden sm:table-cell">{team.contact_person || <span className="text-muted-foreground">-</span>}</TableCell>
+                    <TableCell className="whitespace-normal break-words hidden md:table-cell">{team.contact_phone || <span className="text-muted-foreground">-</span>}</TableCell>
+                    <TableCell className="whitespace-normal break-words hidden md:table-cell">{team.contact_email || <span className="text-muted-foreground">-</span>}</TableCell>
                     <TableCell className="hidden lg:table-cell">
                       {team.club_colors ? (
                         <Badge variant="outline" className="flex items-center gap-1">
@@ -97,7 +97,7 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
                           {team.club_colors}
                         </Badge>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell className="max-w-[200px] hidden lg:table-cell">

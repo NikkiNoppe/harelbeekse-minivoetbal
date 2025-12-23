@@ -1,0 +1,1760 @@
+{
+  "timestamp": "2025-12-23T20:15:03.290Z",
+  "modals": [
+    {
+      "component": "Layout",
+      "file": "src/components/Layout.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "hardcoded",
+      "hardcoded_colors": [
+        "bg-purple-100"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "AdminPanel",
+      "file": "src/components/pages/admin/AdminPanel.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [
+        "bg-purple-100",
+        "bg-red-100"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "component",
+          "classes": "variant=\"secondary\"",
+          "location": "line 261",
+          "recommended": "secondary"
+        }
+      ],
+      "recommended_variants": [
+        "primary"
+      ]
+    },
+    {
+      "component": "AdminPlayoffPage",
+      "file": "src/components/pages/admin/AdminPlayoffPage.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 166",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 169",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 256",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 792",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 795",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 924",
+          "recommended": "primary"
+        },
+        {
+          "type": "hardcoded",
+          "classes": "bg-green-600 bg-green-700",
+          "location": "line 945",
+          "recommended": "btn--secondary"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 949",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 971",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 975",
+          "recommended": "outline"
+        }
+      ],
+      "recommended_variants": [
+        "secondary"
+      ]
+    },
+    {
+      "component": "BekerPage",
+      "file": "src/components/pages/admin/beker/components/BekerPage.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [
+        "bg-gray-50",
+        "bg-black"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 305",
+          "recommended": "primary"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"secondary\"",
+          "location": "line 317",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--outline",
+          "location": "line 341",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 348",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 353",
+          "recommended": "secondary"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"destructive\"",
+          "location": "line 478",
+          "recommended": "destructive"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "BlogPage",
+      "file": "src/components/pages/admin/blog/BlogPage.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": true,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 169",
+          "recommended": "primary"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 225",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 233",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--icon",
+          "location": "line 293",
+          "recommended": "icon"
+        }
+      ],
+      "recommended_variants": [
+        "secondary"
+      ]
+    },
+    {
+      "component": "AdminCRUDTable",
+      "file": "src/components/pages/admin/common/components/AdminCRUDTable.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [
+        "bg-purple-50",
+        "bg-red-50",
+        "bg-white"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "component",
+          "classes": "variant=\"destructive\"",
+          "location": "line 76",
+          "recommended": "destructive"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 80",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 109",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 118",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn-dark",
+          "location": "line 212",
+          "recommended": "btn-primary"
+        }
+      ],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "CompetitionPage",
+      "file": "src/components/pages/admin/competition/CompetitionPage.tsx",
+      "type": "AppModal",
+      "needs_migration": false,
+      "modal_background": "missing",
+      "hardcoded_colors": [
+        "bg-white"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--outline",
+          "location": "line 451",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 456",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 459",
+          "recommended": "secondary"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"destructive\"",
+          "location": "line 600",
+          "recommended": "destructive"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "FinancialAffectedTransactionsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialAffectedTransactionsModal.tsx",
+      "type": "AppModal",
+      "needs_migration": false,
+      "modal_background": "hardcoded",
+      "hardcoded_colors": [
+        "bg-red-50",
+        "bg-blue-50"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": true,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "component",
+          "classes": "variant=\"destructive\"",
+          "location": "line 168",
+          "recommended": "destructive"
+        }
+      ],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "FinancialCostSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialCostSettingsModal.tsx",
+      "type": "AppModal",
+      "needs_migration": false,
+      "modal_background": "hardcoded",
+      "hardcoded_colors": [
+        "bg-red-50",
+        "bg-blue-50"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": true,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 184",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 249",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 252",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--outline",
+          "location": "line 291",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--danger",
+          "location": "line 298",
+          "recommended": "danger"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "FinancialEnhancedSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialEnhancedSettingsModal.tsx",
+      "type": "AppModal",
+      "needs_migration": false,
+      "modal_background": "hardcoded",
+      "hardcoded_colors": [
+        "bg-purple-50",
+        "bg-red-50",
+        "bg-blue-50"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": true,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "component",
+          "classes": "variant=\"destructive\"",
+          "location": "line 246",
+          "recommended": "destructive"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 325",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 328",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--outline",
+          "location": "line 371",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--danger",
+          "location": "line 378",
+          "recommended": "danger"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "FinancialMonthlyReportsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialMonthlyReportsModal.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "hardcoded",
+      "hardcoded_colors": [
+        "bg-purple-100",
+        "bg-purple-50",
+        "bg-white"
+      ],
+      "token_coverage": {
+        "bgCard": true,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 208",
+          "recommended": "secondary"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 528",
+          "recommended": "outline"
+        }
+      ],
+      "recommended_variants": [
+        "primary"
+      ]
+    },
+    {
+      "component": "FinancialSettingsModal",
+      "file": "src/components/pages/admin/financial/components/FinancialSettingsModal.tsx",
+      "type": "AppModal",
+      "needs_migration": false,
+      "modal_background": "hardcoded",
+      "hardcoded_colors": [
+        "bg-purple-100",
+        "bg-red-100",
+        "bg-blue-100"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": true,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 191",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 261",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 268",
+          "recommended": "secondary"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"secondary\"",
+          "location": "line 284",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--outline",
+          "location": "line 332",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--danger",
+          "location": "line 340",
+          "recommended": "danger"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "FinancialTeamDetailModal",
+      "file": "src/components/pages/admin/financial/components/FinancialTeamDetailModal.tsx",
+      "type": "AppModal",
+      "needs_migration": false,
+      "modal_background": "hardcoded",
+      "hardcoded_colors": [
+        "bg-red-100",
+        "bg-red-50",
+        "bg-blue-100",
+        "bg-gray-50",
+        "bg-white"
+      ],
+      "token_coverage": {
+        "bgCard": true,
+        "textCardForeground": true,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 314",
+          "recommended": "secondary"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 339",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 395",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 406",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--outline",
+          "location": "line 481",
+          "recommended": "outline"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "TransactionEditModal",
+      "file": "src/components/pages/admin/financial/components/TransactionEditModal.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "present",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 216",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 223",
+          "recommended": "secondary"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "MatchesFormModal",
+      "file": "src/components/pages/admin/matches/MatchesFormModal.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "present",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "MatchesPage",
+      "file": "src/components/pages/admin/matches/MatchesPage.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "component",
+          "classes": "variant=\"destructive\"",
+          "location": "line 54",
+          "recommended": "destructive"
+        }
+      ],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "MatchesPenaltyShootoutModal",
+      "file": "src/components/pages/admin/matches/components/MatchesPenaltyShootoutModal.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 167",
+          "recommended": "outline"
+        }
+      ],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "NotificationFormModal",
+      "file": "src/components/pages/admin/notifications/NotificationFormModal.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [
+        "bg-white"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "component",
+          "classes": "variant=\"secondary\"",
+          "location": "line 435",
+          "recommended": "secondary"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"secondary\"",
+          "location": "line 505",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 523",
+          "recommended": "secondary"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"secondary\"",
+          "location": "line 590",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 608",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 766",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 773",
+          "recommended": "secondary"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "NotificationPage",
+      "file": "src/components/pages/admin/notifications/NotificationPage.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [
+        "bg-red-50"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 321",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 326",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 401",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 406",
+          "recommended": "outline"
+        }
+      ],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "PlayerPage",
+      "file": "src/components/pages/admin/players/PlayerPage.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--outline",
+          "location": "line 126",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--outline",
+          "location": "line 140",
+          "recommended": "outline"
+        }
+      ],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "PlayerModal",
+      "file": "src/components/pages/admin/players/components/PlayerModal.tsx",
+      "type": "AppModal",
+      "needs_migration": false,
+      "modal_background": "hardcoded",
+      "hardcoded_colors": [
+        "bg-white"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "PlayersList",
+      "file": "src/components/pages/admin/players/components/PlayersList.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--icon",
+          "location": "line 112",
+          "recommended": "icon"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--danger",
+          "location": "line 142",
+          "recommended": "danger"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 148",
+          "recommended": "secondary"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "usePlayersUpdated",
+      "file": "src/components/pages/admin/players/hooks/usePlayersUpdated.ts",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "CompetitionDataSettings",
+      "file": "src/components/pages/admin/settings/components/CompetitionDataSettings.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [
+        "bg-purple-100",
+        "bg-red-50",
+        "bg-white"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": true,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 515",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 538",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--icon",
+          "location": "line 570",
+          "recommended": "icon"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 592",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--icon",
+          "location": "line 620",
+          "recommended": "icon"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 642",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--icon",
+          "location": "line 676",
+          "recommended": "icon"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 699",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--icon",
+          "location": "line 739",
+          "recommended": "icon"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 820",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 823",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--danger",
+          "location": "line 842",
+          "recommended": "danger"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 845",
+          "recommended": "secondary"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "SeasonDataSettings",
+      "file": "src/components/pages/admin/settings/components/SeasonDataSettings.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [
+        "bg-purple-100",
+        "bg-red-50",
+        "bg-white"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 206",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 209",
+          "recommended": "secondary"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "TimeslotsSettings",
+      "file": "src/components/pages/admin/settings/components/TimeslotsSettings.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "present",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn-dark",
+          "location": "line 225",
+          "recommended": "btn-primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--icon",
+          "location": "line 261",
+          "recommended": "icon"
+        }
+      ],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "VacationsSettings",
+      "file": "src/components/pages/admin/settings/components/VacationsSettings.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "hardcoded",
+      "hardcoded_colors": [
+        "bg-red-100"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn-dark",
+          "location": "line 200",
+          "recommended": "btn-primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--icon",
+          "location": "line 240",
+          "recommended": "icon"
+        }
+      ],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "VenuesSettings",
+      "file": "src/components/pages/admin/settings/components/VenuesSettings.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "present",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 187",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--icon",
+          "location": "line 216",
+          "recommended": "icon"
+        }
+      ],
+      "recommended_variants": [
+        "secondary"
+      ]
+    },
+    {
+      "component": "AdminSuspensionsPage",
+      "file": "src/components/pages/admin/suspensions/AdminSuspensionsPage.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [
+        "bg-purple-50",
+        "bg-blue-50"
+      ],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--outline",
+          "location": "line 311",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 387",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 394",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--icon",
+          "location": "line 480",
+          "recommended": "icon"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 492",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--danger",
+          "location": "line 495",
+          "recommended": "danger"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 557",
+          "recommended": "primary"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 691",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"destructive\"",
+          "location": "line 698",
+          "recommended": "destructive"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 720",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--danger",
+          "location": "line 721",
+          "recommended": "danger"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 764",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 850",
+          "recommended": "secondary"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 850",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 853",
+          "recommended": "primary"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "TeamsPage",
+      "file": "src/components/pages/admin/teams/TeamsPage.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--outline",
+          "location": "line 66",
+          "recommended": "outline"
+        }
+      ],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "UserPage",
+      "file": "src/components/pages/admin/users/UserPage.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--outline",
+          "location": "line 108",
+          "recommended": "outline"
+        }
+      ],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "UserDeleteConfirmDialog",
+      "file": "src/components/pages/admin/users/components/UserDeleteConfirmDialog.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "UserListTable",
+      "file": "src/components/pages/admin/users/components/UserListTable.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 245",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 255",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"secondary\"",
+          "location": "line 258",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--icon",
+          "location": "line 294",
+          "recommended": "icon"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--danger",
+          "location": "line 330",
+          "recommended": "danger"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 336",
+          "recommended": "secondary"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "useUserManagement",
+      "file": "src/components/pages/admin/users/hooks/useUserManagement.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "ForgotPasswordModal",
+      "file": "src/components/pages/login/ForgotPasswordModal.tsx",
+      "type": "AppModal",
+      "needs_migration": false,
+      "modal_background": "present",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 96",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 103",
+          "recommended": "secondary"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "alert-dialog",
+      "file": "src/components/ui/alert-dialog.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "present",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 118",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 131",
+          "recommended": "secondary"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "app-alert-modal",
+      "file": "src/components/ui/app-alert-modal.tsx",
+      "type": "AppModal",
+      "needs_migration": false,
+      "modal_background": "present",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--danger",
+          "location": "line 97",
+          "recommended": "danger"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 98",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--danger",
+          "location": "line 113",
+          "recommended": "danger"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 114",
+          "recommended": "primary"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "app-modal",
+      "file": "src/components/ui/app-modal.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "present",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--danger",
+          "location": "line 186",
+          "recommended": "danger"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 187",
+          "recommended": "secondary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--danger",
+          "location": "line 201",
+          "recommended": "danger"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 202",
+          "recommended": "primary"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "command",
+      "file": "src/components/ui/command.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "dialog",
+      "file": "src/components/ui/dialog.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "present",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "UserModal",
+      "file": "src/components/user/UserModal.tsx",
+      "type": "AppModal",
+      "needs_migration": false,
+      "modal_background": "present",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "TeamSelector",
+      "file": "src/components/user/dialog/TeamSelector.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 56",
+          "recommended": "outline"
+        },
+        {
+          "type": "component",
+          "classes": "variant=\"secondary\"",
+          "location": "line 108",
+          "recommended": "secondary"
+        }
+      ],
+      "recommended_variants": [
+        "primary"
+      ]
+    },
+    {
+      "component": "UserFormFields",
+      "file": "src/components/user/dialog/UserFormFields.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "useEditPlayerOperation",
+      "file": "src/components/user/players/hooks/useEditPlayerOperation.ts",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "usePlayerDialogs",
+      "file": "src/components/user/players/hooks/usePlayerDialogs.ts",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "usePlayerOperations",
+      "file": "src/components/user/players/hooks/usePlayerOperations.ts",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "ConfirmDeleteDialog",
+      "file": "src/components/user/teams/ConfirmDeleteDialog.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "TeamModal",
+      "file": "src/components/user/teams/TeamModal.tsx",
+      "type": "Mixed",
+      "needs_migration": true,
+      "modal_background": "present",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "legacy",
+          "classes": "btn--primary",
+          "location": "line 399",
+          "recommended": "primary"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--secondary",
+          "location": "line 406",
+          "recommended": "secondary"
+        }
+      ],
+      "recommended_variants": []
+    },
+    {
+      "component": "TeamsList",
+      "file": "src/components/user/teams/TeamsList.tsx",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [
+        {
+          "type": "component",
+          "classes": "variant=\"outline\"",
+          "location": "line 95",
+          "recommended": "outline"
+        },
+        {
+          "type": "legacy",
+          "classes": "btn--icon",
+          "location": "line 118",
+          "recommended": "icon"
+        }
+      ],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "component": "useTeamsEnhanced",
+      "file": "src/components/user/teams/hooks/useTeamsEnhanced.ts",
+      "type": "Dialog",
+      "needs_migration": true,
+      "modal_background": "missing",
+      "hardcoded_colors": [],
+      "token_coverage": {
+        "bgCard": false,
+        "textCardForeground": false,
+        "shadow": false
+      },
+      "buttons_found": [],
+      "recommended_variants": [
+        "primary",
+        "secondary"
+      ]
+    }
+  ],
+  "summary": {
+    "total_modals": 50,
+    "migrated_modals": 10,
+    "legacy_modals": 40,
+    "modals_with_hardcoded_colors": 18,
+    "modals_missing_tokens": 49
+  }
+}

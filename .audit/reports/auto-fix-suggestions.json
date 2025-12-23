@@ -1,0 +1,32 @@
+{
+  "timestamp": "2025-12-23T19:45:39.263Z",
+  "suggestions": [
+    {
+      "page": "AlgemeenPage",
+      "file": "src/components/pages/public/information/AlgemeenPage.tsx",
+      "suggestions": [
+        {
+          "type": "component",
+          "description": "Add bg-transparent to 3 CardContent/CardHeader component(s)",
+          "safe": true
+        },
+        {
+          "type": "typography",
+          "description": "Remove forbidden size override: text-xl from CardTitle",
+          "safe": true
+        }
+      ]
+    },
+    {
+      "page": "PublicBekerPage",
+      "file": "src/components/pages/public/competition/PublicBekerPage.tsx",
+      "suggestions": [
+        {
+          "type": "component",
+          "description": "Add bg-transparent to 1 CardContent/CardHeader component(s)",
+          "safe": true
+        }
+      ]
+    }
+  ]
+}

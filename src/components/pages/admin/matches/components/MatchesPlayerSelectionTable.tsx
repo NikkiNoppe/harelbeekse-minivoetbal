@@ -73,9 +73,9 @@ const TeamHeader = React.memo<{ teamLabel: string }>(({ teamLabel }) => (
   <div
     className="font-medium text-sm text-center p-2 rounded shadow border mb-2"
     style={{
-      borderColor: "var(--purple-light, #ab86dd)",
-      color: "var(--purple-light, #ab86dd)",
-      background: "#fff"
+      borderColor: "var(--purple-light)",
+      color: "var(--purple-light)",
+      background: "var(--color-white)"
     }}
   >
     {teamLabel}
@@ -155,18 +155,18 @@ const PlayerRow = React.memo<{
                 selectedPlayerName={selection.playerName}
               />
               {loading && (
-                <div className="absolute right-2 animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
+                <div className="absolute right-2 animate-spin rounded-full h-3 w-3 border-b-2 border-primary" aria-hidden="true"></div>
               )}
             </SelectTrigger>
              <SelectContent className="dropdown-content-login-style z-[1001] bg-white">
               <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
                {loading ? (
-                 <SelectItem value="loading" disabled className="dropdown-item-login-style text-center">
-                   <div className="flex items-center justify-center gap-2">
-                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
-                     <span>Spelers laden...</span>
-                   </div>
-                 </SelectItem>
+                     <SelectItem value="loading" disabled className="dropdown-item-login-style text-center" aria-busy="true">
+                       <div className="flex items-center justify-center gap-2">
+                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary" aria-hidden="true"></div>
+                         <span>Spelers laden...</span>
+                       </div>
+                     </SelectItem>
                ) : (
                  <>
                {/* Show fallback for selected player that might not be in current list */}
@@ -202,7 +202,7 @@ const PlayerRow = React.memo<{
           <span className="block w-full">
             {selection.playerName || "-"}
             {selection.isCaptain && (
-              <span className="ml-2 text-xs bg-[var(--purple-200)] px-1 py-0.5 rounded font-semibold">(K)</span>
+              <span className="ml-2 text-xs bg-secondary px-1 py-0.5 rounded font-semibold">(K)</span>
             )}
           </span>
         )}
@@ -259,9 +259,9 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
           <span>Spelers laden...{retryMessage}</span>
         </div>
         <div className="animate-pulse space-y-2">
-          <div className="h-10 bg-purple-100 rounded-md"></div>
-          <div className="h-10 bg-purple-100 rounded-md"></div>
-          <div className="h-10 bg-purple-100 rounded-md"></div>
+          <div className="h-10 bg-muted rounded-md"></div>
+          <div className="h-10 bg-muted rounded-md"></div>
+          <div className="h-10 bg-muted rounded-md"></div>
         </div>
       </div>
     );
@@ -270,12 +270,13 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
   if (error) {
     return (
       <div className="space-y-3">
-        <div className="text-center py-3 text-red-600 flex flex-col items-center gap-2">
+        <div className="text-center py-3 text-destructive flex flex-col items-center gap-2" role="alert">
           <span>Kan spelers niet laden</span>
           {onRefreshPlayers && (
             <button
               onClick={() => onRefreshPlayers()}
-              className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+              className="px-3 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 text-sm min-h-[44px]"
+              aria-label="Opnieuw proberen"
             >
               🔄 Opnieuw proberen
             </button>
@@ -366,18 +367,18 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                               selectedPlayerName={selection.playerName}
                             />
                             {loading && (
-                              <div className="absolute right-2 animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
+                              <div className="absolute right-2 animate-spin rounded-full h-3 w-3 border-b-2 border-primary" aria-hidden="true"></div>
                             )}
                          </SelectTrigger>
                          <SelectContent className="dropdown-content-login-style z-[1001] bg-white">
                            <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
                            {loading ? (
-                             <SelectItem value="loading" disabled className="dropdown-item-login-style text-center">
-                               <div className="flex items-center justify-center gap-2">
-                                 <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
-                                 <span>Spelers laden...</span>
-                               </div>
-                             </SelectItem>
+                     <SelectItem value="loading" disabled className="dropdown-item-login-style text-center" aria-busy="true">
+                       <div className="flex items-center justify-center gap-2">
+                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary" aria-hidden="true"></div>
+                         <span>Spelers laden...</span>
+                       </div>
+                     </SelectItem>
                            ) : (
                             memoizedPlayers && Array.isArray(memoizedPlayers) && memoizedPlayers.map((player) => {
                               const playerIdNum = player.player_id;
@@ -409,7 +410,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                       <div className="min-w-0 text-sm h-9 flex items-center">
                         {selection.playerName || "-"}
                        {selection.isCaptain && (
-                         <span className="ml-2 text-xs bg-[var(--purple-200)] px-1 py-0.5 rounded font-semibold">(K)</span>
+                         <span className="ml-2 text-xs bg-secondary px-1 py-0.5 rounded font-semibold">(K)</span>
                        )}
                      </div>
                    )}

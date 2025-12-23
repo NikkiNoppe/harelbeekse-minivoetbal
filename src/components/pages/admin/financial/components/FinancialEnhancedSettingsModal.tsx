@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/ui/app-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -201,17 +201,17 @@ const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsModalPro
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'match_cost':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'penalty':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-50 text-red-700 border-red-200';
       case 'other':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-card-foreground';
       case 'field_cost':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-50 text-green-700 border-green-200';
       case 'referee_cost':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-50 text-purple-700 border-purple-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-card-foreground';
     }
   };
 
@@ -226,19 +226,22 @@ const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsModalPro
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="modal max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="modal__title flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Uitgebreide Kostenbeheer
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              Beheer alle kostentarieven en boetes. Wijzigingen worden automatisch toegepast op alle gerelateerde transacties.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
+      <AppModal
+        open={open}
+        onOpenChange={onOpenChange}
+        size="lg"
+        className="max-w-4xl"
+      >
+        <AppModalHeader>
+          <AppModalTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Uitgebreide Kostenbeheer
+          </AppModalTitle>
+          <p className="app-modal-subtitle sr-only">
+            Beheer alle kostentarieven en boetes. Wijzigingen worden automatisch toegepast op alle gerelateerde transacties.
+          </p>
+        </AppModalHeader>
+        <div className="space-y-6">
             {/* Database Health Warning */}
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
@@ -318,14 +321,14 @@ const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsModalPro
                       </SelectContent>
                     </Select>
                   </div>
-                  <DialogFooter>
-                    <Button onClick={handleSave} className="btn btn--primary">
+                  <AppModalFooter>
+                    <button onClick={handleSave} className="btn btn--primary">
                       {editingItem ? 'Bijwerken' : 'Toevoegen'}
-                    </Button>
-                    <Button onClick={resetForm} className="btn btn--secondary">
+                    </button>
+                    <button onClick={resetForm} className="btn btn--secondary">
                       Annuleren
-                    </Button>
-                  </DialogFooter>
+                    </button>
+                  </AppModalFooter>
                 </CardContent>
               </Card>
             )}
@@ -355,7 +358,7 @@ const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsModalPro
                         {settings.map((setting) => (
                           <TableRow key={setting.id}>
                             <TableCell className="font-medium">{setting.name}</TableCell>
-                            <TableCell className="text-gray-600">
+                            <TableCell className="text-card-foreground">
                               {setting.description || '-'}
                             </TableCell>
                             <TableCell className="text-right font-semibold">
@@ -388,12 +391,11 @@ const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsModalPro
 
             {isLoading && (
               <div className="flex items-center justify-center h-40">
-                <p className="text-gray-500">Kostentarieven laden...</p>
+                <p className="text-muted-foreground">Kostentarieven laden...</p>
               </div>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
+      </AppModal>
 
       <FinancialAffectedTransactionsModal
         open={showAffectedTransactions}

@@ -85,6 +85,8 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
   const [error, setError] = useState<any>(null);
   const [retryCount, setRetryCount] = useState(0);
   const hasFetchedWithContext = useRef(false);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const previousTeamIdRef = useRef<number | null>(null);
 
   const fetchPlayers = useCallback(async (attempt = 0) => {
     if (!teamId) {
@@ -94,10 +96,11 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
     }
 
     // Wait for auth context to be ready before fetching
+    // Check inside function, not in dependency array to avoid recreation
     if (!authContextReady) {
       console.log('⏳ Waiting for auth context to be ready before fetching players...');
       setLoading(true);
-      return; // Will be triggered again when authContextReady changes
+      return; // Will be triggered again when authContextReady changes via useEffect
     }
 
     try {
@@ -149,7 +152,15 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
         setLoading(true);
         // Use exponential backoff with longer delays for mobile
         const retryDelay = Math.min(1000 * Math.pow(2, attempt + 1), 8000);
-        setTimeout(() => fetchPlayers(attempt + 1), retryDelay);
+        
+        // Clear previous timeout to prevent multiple retries
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+        }
+        
+        retryTimeoutRef.current = setTimeout(() => {
+          fetchPlayers(attempt + 1);
+        }, retryDelay);
       } else {
         // After all retries failed, use cached data if available
         const cachedData = playerCache.get(teamId);
@@ -164,30 +175,45 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
         setLoading(false); // All retries failed - stop loading
       }
     }
-  }, [teamId, authContextReady]);
+  }, [teamId]); // ✅ FIXED: Removed authContextReady from dependencies to prevent unnecessary recreations
 
   const refetch = useCallback(async () => {
     setRetryCount(0);
     hasFetchedWithContext.current = false;
+    // Clear any pending retries
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
     await fetchPlayers(0);
   }, [fetchPlayers]);
 
   const memoizedPlayers = useMemo(() => players, [players]);
 
-  // Fetch when teamId changes OR when authContextReady becomes true
+  // ✅ FIXED: Single useEffect that handles both teamId changes and auth context readiness
+  // Only fetch if auth is ready and we haven't fetched yet for this teamId
   useEffect(() => {
-    if (authContextReady) {
+    // Reset fetch flag only when teamId actually changes
+    if (teamId !== previousTeamIdRef.current) {
+      hasFetchedWithContext.current = false;
+      previousTeamIdRef.current = teamId;
+    }
+    
+    // Only fetch if auth is ready and we haven't fetched yet
+    if (authContextReady && teamId && !hasFetchedWithContext.current) {
       fetchPlayers(0);
     }
-  }, [fetchPlayers, authContextReady]);
+  }, [teamId, authContextReady, fetchPlayers]);
 
-  // Auto-retry if we got empty results before context was ready
+  // ✅ FIXED: Cleanup timeout on unmount to prevent memory leaks
   useEffect(() => {
-    if (authContextReady && (!players || players.length === 0) && hasFetchedWithContext.current === false) {
-      console.log('🔄 Auth context now ready, retrying player fetch...');
-      fetchPlayers(0);
-    }
-  }, [authContextReady, players, fetchPlayers]);
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   return {
     players: memoizedPlayers,

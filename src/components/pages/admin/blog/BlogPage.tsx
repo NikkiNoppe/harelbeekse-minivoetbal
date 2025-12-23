@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from '@/components/ui/app-modal';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -163,25 +163,24 @@ const BlogPage: React.FC = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Blogs</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              className="btn btn--primary"
-              onClick={resetForm}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nieuwe Blog
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="modal max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingPost ? 'Blog Post Bewerken' : 'Nieuwe Blog Post'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingPost ? 'Bewerk de blog post details' : 'Maak een nieuwe blog post aan'}
-              </DialogDescription>
-            </DialogHeader>
+        <Button 
+          className="btn btn--primary"
+          onClick={() => {
+            resetForm();
+            setIsDialogOpen(true);
+          }}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nieuwe Blog
+        </Button>
+        <AppModal
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          title={editingPost ? 'Blog Post Bewerken' : 'Nieuwe Blog Post'}
+          subtitle={editingPost ? 'Bewerk de blog post details' : 'Maak een nieuwe blog post aan'}
+          size="lg"
+          className="max-w-4xl"
+        >
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -209,35 +208,33 @@ const BlogPage: React.FC = () => {
               </div>
             </div>
               
-              <div className="flex items-center space-x-3 p-3 border rounded-lg bg-gray-50">
+              <div className="flex items-center space-x-3 p-3 border border-border rounded-lg bg-muted">
                 <Switch
                   checked={formData.published}
                   onCheckedChange={handlePublishedChange}
                 />
-                <Label htmlFor="published" className="text-sm font-medium text-gray-700 cursor-pointer">
+                <Label htmlFor="published" className="text-sm font-medium text-card-foreground cursor-pointer">
                   Gepubliceerd
                 </Label>
               </div>
               
-              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
-                <Button 
+              <AppModalFooter>
+                <button 
                   type="button" 
-                  variant="outline" 
                   onClick={() => setIsDialogOpen(false)}
-                  className="w-full sm:w-auto"
+                  className="btn btn--secondary w-full sm:w-auto"
                 >
                   Annuleren
-                </Button>
-                <Button 
+                </button>
+                <button 
                   type="submit"
                   className="btn btn--primary w-full sm:w-auto"
                 >
                   {editingPost ? 'Bijwerken' : 'Aanmaken'}
-                </Button>
-              </div>
+                </button>
+              </AppModalFooter>
             </form>
-          </DialogContent>
-        </Dialog>
+        </AppModal>
       </div>
 
       <Card>
