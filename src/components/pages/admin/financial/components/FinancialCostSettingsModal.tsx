@@ -1,7 +1,6 @@
 
 import React, { useState } from "react";
 import { AppModal, AppModalHeader, AppModalTitle } from "@/components/ui/app-modal";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -179,13 +178,13 @@ const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProps> = ({
             <p className="text-sm text-muted-foreground">
               Beheer alle kosten en boetes in het systeem
             </p>
-            <Button 
+            <button 
               onClick={() => setShowAddForm(!showAddForm)}
               className="btn btn--primary"
             >
               <Plus className="h-4 w-4" />
               {showAddForm ? 'Annuleren' : 'Nieuw Tarief'}
-            </Button>
+            </button>
           </div>
 
           {showAddForm && (
@@ -246,12 +245,12 @@ const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProps> = ({
               </div>
 
               <div className="modal__actions mt-4">
-                <Button onClick={handleSave} className="btn btn--primary">
+                <button onClick={handleSave} className="btn btn--primary">
                   {editingItem ? 'Bijwerken' : 'Toevoegen'}
-                </Button>
-                <Button onClick={resetForm} className="btn btn--secondary">
+                </button>
+                <button onClick={resetForm} className="btn btn--secondary">
                   Annuleren
-                </Button>
+                </button>
               </div>
             </div>
           )}
@@ -285,20 +284,18 @@ const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProps> = ({
                           {formatCurrency(setting.amount)}
                         </TableCell>
                         <TableCell className="flex gap-2 justify-end">
-                          <Button
-                            size="sm"
+                          <button
                             onClick={() => handleEdit(setting)}
-                            className="btn btn--outline"
+                            className="btn btn--outline p-2"
                           >
                             <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
+                          </button>
+                          <button
                             onClick={() => handleDelete(setting.id)}
-                            className="btn btn--danger"
+                            className="btn btn--danger p-2"
                           >
                             <Trash2 className="h-3 w-3" />
-                          </Button>
+                          </button>
                         </TableCell>
                       </TableRow>
                     ))}

@@ -153,7 +153,7 @@ const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> 
       onOpenChange={onOpenChange}
       title="Seizoen Kostenrapportage"
       subtitle="Bekijk seizoen/maandelijkse kosten, scheidsrechterbetalingen en boetes voor teams"
-      size="xl"
+      size="lg"
       className="max-w-6xl max-h-[80vh] overflow-y-auto"
       secondaryAction={{
         label: "Sluiten",

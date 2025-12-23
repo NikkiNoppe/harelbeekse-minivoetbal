@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { AppModal, AppModalHeader, AppModalTitle } from "@/components/ui/app-modal";
 import { AppAlertModal } from "@/components/ui/app-alert-modal";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { enhancedCostSettingsService } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Plus, Edit, Trash2, Euro, AlertTriangle } from "lucide-react";
+import { Settings, Plus, Edit, Trash2, Euro } from "lucide-react";
 
 interface FinancialSettingsModalProps {
   open: boolean;
@@ -186,14 +185,14 @@ const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                 <h3 className="text-lg font-semibold">
                   {showAddForm ? (editingItem ? 'Tarief Bewerken' : 'Nieuw Tarief Toevoegen') : 'Acties'}
                 </h3>
-                <Button 
+                <button 
                   onClick={() => showAddForm ? resetForm() : setShowAddForm(true)}
                   className="btn btn--secondary flex items-center gap-2"
                   disabled={isSubmitting}
                 >
                   <Plus className="h-4 w-4" />
                   {showAddForm ? 'Annuleren' : 'Nieuw Tarief'}
-                </Button>
+                </button>
               </div>
 
               {showAddForm && (
@@ -256,20 +255,20 @@ const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                   </div>
 
                   <div className="md:col-span-2 modal__actions pt-2">
-                    <Button 
+                    <button 
                       onClick={handleSave}
                       className="btn btn--primary"
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? 'Bezig...' : (editingItem ? 'Bijwerken' : 'Toevoegen')}
-                    </Button>
-                    <Button 
+                    </button>
+                    <button 
                       onClick={resetForm}
                       className="btn btn--secondary"
                       disabled={isSubmitting}
                     >
                       Annuleren
-                    </Button>
+                    </button>
                   </div>
                 </div>
               )}
@@ -326,22 +325,20 @@ const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                             {formatCurrency(setting.amount)}
                           </TableCell>
                           <TableCell className="flex gap-2 justify-center">
-                            <Button
-                              size="sm"
+                            <button
                               onClick={() => handleEdit(setting)}
-                              className="btn btn--outline"
+                              className="btn btn--outline p-2"
                               disabled={isSubmitting}
                             >
                               <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
+                            </button>
+                            <button
                               onClick={() => setDeletingItem(setting)}
-                              className="btn btn--danger"
+                              className="btn btn--danger p-2"
                               disabled={isSubmitting}
                             >
                               <Trash2 className="h-4 w-4" />
-                            </Button>
+                            </button>
                           </TableCell>
                         </TableRow>
                       ))

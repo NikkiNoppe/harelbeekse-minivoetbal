@@ -669,10 +669,7 @@ const AdminPlayoffPage: React.FC = () => {
     }
   };
 
-  const handleConfirmedAction = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+  const handleConfirmedAction = async () => {
     // Sla de huidige actie op VOORDAT we iets doen
     const action = confirmAction;
     if (!action) return;

@@ -310,14 +310,14 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                 <h3 className="text-lg font-semibold">Transactie Toevoegen</h3>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button 
+                    <button 
                       className="btn btn--secondary flex items-center gap-2"
                       disabled={loadingCostSettings || !costSettings || costSettings.length === 0}
                     >
                       <Plus className="h-4 w-4" />
                       {loadingCostSettings ? 'Laden...' : 'Kosten Selecteren'}
                       <ChevronDown className="h-4 w-4" />
-                    </Button>
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-80 max-h-96 overflow-y-auto z-[60] bg-card border border-border shadow-xl">
                     {loadingCostSettings ? (
@@ -390,14 +390,14 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                     )}
 
                     <div className="flex gap-2">
-                      <Button 
+                      <button 
                         onClick={handleAddTransaction}
                         className="btn btn--primary"
                         disabled={isSubmitting || (selectedCost.category === 'deposit' && (!customAmount || parseFloat(customAmount) <= 0))}
                       >
                         {isSubmitting ? 'Bezig...' : 'Transactie Toevoegen'}
-                      </Button>
-                      <Button 
+                      </button>
+                      <button 
                         onClick={() => {
                           setShowAddTransaction(false);
                           setSelectedCost(null);
@@ -407,7 +407,7 @@ const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ ope
                         disabled={isSubmitting}
                       >
                         Annuleren
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 </div>

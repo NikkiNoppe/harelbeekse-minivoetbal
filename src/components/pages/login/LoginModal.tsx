@@ -9,14 +9,21 @@ import { loginValidationSchema, LoginFormData } from "./validation/loginFormSche
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ZodError } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { X } from 'lucide-react';
+import { AppModal } from "@/components/ui/app-modal";
 
 interface LoginModalProps {
   onLoginSuccess: () => void;
   onClose?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ 
+  onLoginSuccess, 
+  onClose,
+  open = true,
+  onOpenChange
+}) => {
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const { login, isLoading } = useLoginHook(onLoginSuccess);
   const { toast } = useToast();
@@ -51,22 +58,22 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose }) => {
 
   const handleForgotPassword = () => setIsForgotPasswordOpen(true);
 
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen && onClose) {
+      onClose();
+    }
+    onOpenChange?.(newOpen);
+  };
+
   return (
     <>
-      <div className="relative">
-        {onClose && (
-          <button
-            type="button"
-            className="btn--close absolute top-3 right-3 z-10"
-            aria-label="Sluiten"
-            onClick={onClose}
-          >
-            <X size={20} />
-          </button>
-        )}
-        
-        <div className="modal__title">Login</div>
-        
+      <AppModal
+        open={open}
+        onOpenChange={handleOpenChange}
+        title="Login"
+        size="sm"
+        showCloseButton={!!onClose}
+      >
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <LoginFields form={form} isLoading={isLoading} />
@@ -90,7 +97,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose }) => {
             </div>
           </form>
         </Form>
-      </div>
+      </AppModal>
       
       <ForgotPasswordModal 
         open={isForgotPasswordOpen} 
