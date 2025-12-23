@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { withUserContext } from "@/lib/supabaseUtils";
-import { useAuth } from "@/components/pages/login/AuthProvider";
+import { useAuth } from "@/hooks/useAuth";
 import { Player, FormData, formSchema } from "./types";
 
 // Define a simplified type for existing player data from the database

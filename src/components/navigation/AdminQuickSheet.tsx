@@ -5,7 +5,7 @@ import {
   Trophy, Award, Target, Users, Shield, Ban, 
   User, Settings, BookOpen, AlertTriangle, Zap 
 } from "lucide-react";
-import { useAuth } from "@/components/pages/login/AuthProvider";
+import { useAuth } from "@/hooks/useAuth";
 import { ADMIN_ROUTES } from "@/config/routes";
 import { cn } from "@/lib/utils";
 

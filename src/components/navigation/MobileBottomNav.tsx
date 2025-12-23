@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Trophy, Users, CreditCard, Settings, Calendar } from "lucide-react";
-import { useAuth } from "@/components/pages/login/AuthProvider";
+import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PUBLIC_ROUTES, ADMIN_ROUTES } from "@/config/routes";
 import { cn } from "@/lib/utils";

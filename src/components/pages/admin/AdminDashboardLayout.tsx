@@ -2,7 +2,7 @@ import React from "react";
 import AdminDashboard from "./AdminDashboard";
 import Footer from "@/components/pages/footer/Footer";
 import Header from "@/components/pages/header/Header";
-import { useAuth } from "@/components/pages/login/AuthProvider";
+import { useAuth } from "@/hooks/useAuth";
 import NotificationPopup from "@/components/common/NotificationPopup";
 
 interface AdminDashboardLayoutProps {
