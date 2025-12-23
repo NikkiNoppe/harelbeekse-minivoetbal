@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Form } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import { useLoginHook } from "./hooks/useLoginHook";
 import LoginFields from "./components/LoginFields";
@@ -61,22 +62,25 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <LoginFields form={form} isLoading={isLoading} />
           
-          <div className="modal__actions">
-            <button 
-              type="submit" 
-              className="btn btn--primary" 
-              disabled={isLoading}
-            >
-              {isLoading ? "Inloggen..." : "Inloggen"}
-            </button>
-            <button 
+          <div className="flex flex-col-reverse gap-3 mt-6">
+            <Button 
               type="button" 
-              className="btn btn--secondary" 
+              variant="secondary"
               onClick={handleForgotPassword}
               disabled={isLoading}
+              className="w-full"
             >
               Wachtwoord vergeten?
-            </button>
+            </Button>
+            <Button 
+              type="submit" 
+              variant="default"
+              loading={isLoading}
+              disabled={isLoading}
+              className="w-full"
+            >
+              Inloggen
+            </Button>
           </div>
         </form>
       </Form>

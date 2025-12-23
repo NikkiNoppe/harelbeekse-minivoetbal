@@ -1,9 +1,15 @@
 import * as React from "react"
-import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X, ArrowLeft } from "lucide-react"
-import { cn } from "@/lib/utils"
+import ReactDOM from "react-dom"
+import { X } from "lucide-react"
 
-// Types
+/**
+ * AppModal - Lightweight Portal-based Modal
+ * 
+ * Vervangt de oude Radix-based implementatie met een pure React Portal.
+ * Behoudt dezelfde API voor backward compatibility.
+ */
+
+// Types (behouden voor compatibility)
 export type ModalSize = "xs" | "sm" | "md" | "lg"
 export type ModalVariant = "default" | "bottom-sheet" | "fullscreen"
 
@@ -33,73 +39,15 @@ export interface AppModalProps {
   onClose?: () => void
 }
 
-// Size mapping
-const sizeClasses: Record<ModalSize, string> = {
-  xs: "app-modal-xs",
-  sm: "app-modal-sm",
-  md: "app-modal-md",
-  lg: "app-modal-lg",
-}
+// Size mapping (voor width)
+const sizeMap: Record<ModalSize, string> = {
+  xs: "320px",
+  sm: "384px",
+  md: "448px",
+  lg: "672px"
+};
 
-// SSR-safe mobile detection hook using matchMedia
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = React.useState(() => {
-    // SSR-safe initial check
-    if (typeof window === "undefined") return false
-    return window.matchMedia("(max-width: 639px)").matches
-  })
-
-  React.useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 639px)")
-    
-    // Set initial value
-    setIsMobile(mediaQuery.matches)
-    
-    // Listen for changes
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
-    mediaQuery.addEventListener("change", handler)
-    
-    return () => mediaQuery.removeEventListener("change", handler)
-  }, [])
-
-  return isMobile
-}
-
-// Determine effective variant based on size and device
-const getEffectiveVariant = (
-  variant: ModalVariant | undefined,
-  size: ModalSize,
-  isMobile: boolean
-): ModalVariant => {
-  // If explicitly set, respect it
-  if (variant) return variant
-  
-  // Desktop: always default (centered)
-  if (!isMobile) return "default"
-  
-  // Mobile: large modals become fullscreen, others become bottom-sheet
-  if (size === "lg") return "fullscreen"
-  return "bottom-sheet"
-}
-
-// Overlay Component
-const AppModalOverlay = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Overlay
-    ref={ref}
-    className={cn("app-modal-overlay", className)}
-    {...props}
-  />
-))
-AppModalOverlay.displayName = "AppModalOverlay"
-
-// Main Modal Component
-export const AppModal = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Content>,
-  AppModalProps
->(
+export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
   (
     {
       open,
@@ -111,213 +59,278 @@ export const AppModal = React.forwardRef<
       secondaryAction,
       persistent = false,
       size = "md",
-      variant,
-      "aria-labelledby": ariaLabelledBy,
-      "aria-describedby": ariaDescribedBy,
-      className,
       showCloseButton = true,
       onClose,
     },
     ref
   ) => {
-    const isMobile = useIsMobile()
-    const effectiveVariant = getEffectiveVariant(variant, size, isMobile)
-    
-    const isBottomSheet = effectiveVariant === "bottom-sheet"
-    const isFullscreen = effectiveVariant === "fullscreen"
-    const isDefault = effectiveVariant === "default"
-
-    const handleOpenChange = (newOpen: boolean) => {
-      if (!newOpen && onClose) {
-        onClose()
+    // Body scroll lock
+    React.useEffect(() => {
+      if (open) {
+        const originalStyle = window.getComputedStyle(document.body).overflow;
+        document.body.style.overflow = 'hidden';
+        
+        return () => {
+          document.body.style.overflow = originalStyle;
+        };
       }
-      onOpenChange(newOpen)
-    }
+    }, [open]);
 
-    const handleClose = () => {
-      if (onClose) onClose()
-      onOpenChange(false)
-    }
+    // Escape key handler
+    React.useEffect(() => {
+      if (!open || persistent) return;
 
-    const titleId = React.useId()
-    const subtitleId = React.useId()
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          onClose?.();
+          onOpenChange(false);
+        }
+      };
 
-    return (
-      <DialogPrimitive.Root open={open} onOpenChange={handleOpenChange}>
-        <DialogPrimitive.Portal>
-          <AppModalOverlay />
-          <DialogPrimitive.Content
-            ref={ref}
-            className={cn(
-              "app-modal",
-              sizeClasses[size],
-              isBottomSheet && "app-modal-bottom-sheet",
-              isFullscreen && "app-modal-fullscreen",
-              isDefault && "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
-              className
-            )}
-            aria-labelledby={ariaLabelledBy || (title ? titleId : undefined)}
-            aria-describedby={ariaDescribedBy || (subtitle ? subtitleId : undefined)}
-            onPointerDownOutside={(e) => {
-              if (persistent) {
-                e.preventDefault()
-              }
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }, [open, persistent, onOpenChange, onClose]);
+
+    const handleOverlayClick = () => {
+      if (!persistent) {
+        onClose?.();
+        onOpenChange(false);
+      }
+    };
+
+    const handleCloseClick = () => {
+      onClose?.();
+      onOpenChange(false);
+    };
+
+    if (!open) return null;
+
+    const modalContent = (
+      <div 
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1000,
+          background: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          animation: 'fadeIn 200ms ease-out'
+        }}
+        onClick={handleOverlayClick}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? 'modal-title' : undefined}
+        aria-describedby={subtitle ? 'modal-subtitle' : undefined}
+      >
+        <div 
+          ref={ref}
+          style={{
+            background: 'white',
+            borderRadius: '1rem 1rem 0 0',
+            maxWidth: sizeMap[size],
+            width: '90%',
+            maxHeight: '85vh',
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'slideUp 250ms ease-out',
+            boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.2)',
+            position: 'relative'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Close Button */}
+          {showCloseButton && !persistent && (
+            <button
+              onClick={handleCloseClick}
+              style={{
+                position: 'absolute',
+                right: '1rem',
+                top: '1rem',
+                background: 'rgba(0, 0, 0, 0.05)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '2rem',
+                height: '2rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 10,
+                transition: 'background 150ms'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
+              }}
+              aria-label="Sluiten"
+            >
+              <X size={16} />
+            </button>
+          )}
+
+          {/* Drag Handle */}
+          <div
+            style={{
+              width: '2.5rem',
+              height: '4px',
+              background: 'rgba(0, 0, 0, 0.2)',
+              borderRadius: '2px',
+              margin: '0.75rem auto 0.5rem',
+              flexShrink: 0
             }}
-            onEscapeKeyDown={(e) => {
-              if (persistent) {
-                e.preventDefault()
-              }
-            }}
-            {...(persistent && { onInteractOutside: (e) => e.preventDefault() })}
-          >
-            {/* Modal Wrapper - Flex column for proper scrolling */}
-            <div className="app-modal-wrapper">
-              {/* Close Button - X for default/bottom-sheet, Back arrow for fullscreen */}
-              {showCloseButton && !persistent && (
-                <DialogPrimitive.Close asChild>
-                  <button
-                    type="button"
-                    className="app-modal-close"
-                    aria-label="Close"
-                    onClick={handleClose}
-                  >
-                    {isFullscreen ? (
-                      <ArrowLeft className="h-5 w-5" />
-                    ) : (
-                      <X className="h-4 w-4" />
-                    )}
-                    <span className="sr-only">Close</span>
-                  </button>
-                </DialogPrimitive.Close>
+            aria-hidden="true"
+          />
+
+          {/* Header */}
+          {(title || subtitle) && (
+            <div
+              style={{
+                padding: '1rem 1.5rem',
+                borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
+                flexShrink: 0
+              }}
+            >
+              {title && (
+                <h2
+                  id="modal-title"
+                  style={{
+                    fontSize: '1.25rem',
+                    fontWeight: 600,
+                    color: '#4a2a6b',
+                    margin: 0,
+                    marginBottom: subtitle ? '0.25rem' : 0
+                  }}
+                >
+                  {title}
+                </h2>
               )}
-
-              {/* Drag Handle - Bottom sheet only */}
-              {isBottomSheet && (
-                <div className="app-modal-drag-handle" aria-hidden="true" />
-              )}
-
-              {/* Header - Fixed, no scroll */}
-              {(title || subtitle) && (
-                <AppModalHeader className={isFullscreen ? "pl-12" : undefined}>
-                  {title && (
-                    <AppModalTitle id={titleId}>{title}</AppModalTitle>
-                  )}
-                  {subtitle && (
-                    <AppModalSubtitle id={subtitleId}>{subtitle}</AppModalSubtitle>
-                  )}
-                </AppModalHeader>
-              )}
-
-              {/* Body - Scrollable content */}
-              <AppModalBody>{children}</AppModalBody>
-
-              {/* Footer - Fixed, no scroll */}
-              {(primaryAction || secondaryAction) && (
-                <AppModalFooter>
-                  {secondaryAction && (
-                    <button
-                      type="button"
-                      onClick={secondaryAction.onClick}
-                      disabled={secondaryAction.disabled || secondaryAction.loading}
-                      className={cn(
-                        "btn",
-                        secondaryAction.variant === "destructive"
-                          ? "btn--danger"
-                          : "btn--secondary"
-                      )}
-                    >
-                      {secondaryAction.loading ? "Loading..." : secondaryAction.label}
-                    </button>
-                  )}
-                  {primaryAction && (
-                    <button
-                      type="button"
-                      onClick={primaryAction.onClick}
-                      disabled={primaryAction.disabled || primaryAction.loading}
-                      className={cn(
-                        "btn",
-                        primaryAction.variant === "destructive"
-                          ? "btn--danger"
-                          : "btn--primary"
-                      )}
-                    >
-                      {primaryAction.loading ? "Loading..." : primaryAction.label}
-                    </button>
-                  )}
-                </AppModalFooter>
+              {subtitle && (
+                <p
+                  id="modal-subtitle"
+                  style={{
+                    fontSize: '0.875rem',
+                    color: '#666',
+                    margin: 0
+                  }}
+                >
+                  {subtitle}
+                </p>
               )}
             </div>
-          </DialogPrimitive.Content>
-        </DialogPrimitive.Portal>
-      </DialogPrimitive.Root>
-    )
+          )}
+
+          {/* Body - Scrollable */}
+          <div
+            style={{
+              padding: '1.5rem',
+              overflowY: 'auto',
+              flex: 1,
+              minHeight: 0
+            }}
+          >
+            {children}
+          </div>
+
+          {/* Footer - Actions */}
+          {(primaryAction || secondaryAction) && (
+            <div
+              style={{
+                padding: '1rem 1.5rem',
+                borderTop: '1px solid rgba(0, 0, 0, 0.1)',
+                display: 'flex',
+                flexDirection: 'column-reverse',
+                gap: '0.75rem',
+                flexShrink: 0
+              }}
+            >
+              {secondaryAction && (
+                <button
+                  onClick={secondaryAction.onClick}
+                  disabled={secondaryAction.disabled || secondaryAction.loading}
+                  className="btn btn--secondary w-full"
+                  style={{
+                    minHeight: '48px'
+                  }}
+                >
+                  {secondaryAction.loading ? "Loading..." : secondaryAction.label}
+                </button>
+              )}
+              {primaryAction && (
+                <button
+                  onClick={primaryAction.onClick}
+                  disabled={primaryAction.disabled || primaryAction.loading}
+                  className={`btn ${primaryAction.variant === "destructive" ? "btn--danger" : "btn--primary"} w-full`}
+                  style={{
+                    minHeight: '48px'
+                  }}
+                >
+                  {primaryAction.loading ? "Loading..." : primaryAction.label}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Animations */}
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            
+            @keyframes slideUp {
+              from { 
+                opacity: 0;
+                transform: translateY(100%); 
+              }
+              to { 
+                opacity: 1;
+                transform: translateY(0); 
+              }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+              * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+              }
+            }
+          `}</style>
+        </div>
+      </div>
+    );
+
+    return ReactDOM.createPortal(modalContent, document.body);
   }
-)
-AppModal.displayName = "AppModal"
+);
 
-// Sub-components for composition pattern
-export const AppModalHeader = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("app-modal-header", className)}
-    {...props}
-  />
-))
-AppModalHeader.displayName = "AppModalHeader"
+AppModal.displayName = "AppModal";
 
-export const AppModalTitle = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Title
-    ref={ref}
-    className={cn("app-modal-title", className)}
-    {...props}
-  />
-))
-AppModalTitle.displayName = "AppModalTitle"
+// Export oude sub-components voor backward compatibility (nu als dummy)
+export const AppModalHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  (props, ref) => <div ref={ref} {...props} />
+);
+AppModalHeader.displayName = "AppModalHeader";
 
-export const AppModalSubtitle = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className={cn("app-modal-subtitle", className)}
-    {...props}
-  />
-))
-AppModalSubtitle.displayName = "AppModalSubtitle"
+export const AppModalTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  (props, ref) => <div ref={ref} {...props} />
+);
+AppModalTitle.displayName = "AppModalTitle";
 
-export const AppModalBody = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("app-modal-body", className)}
-    {...props}
-  />
-))
-AppModalBody.displayName = "AppModalBody"
+export const AppModalSubtitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
+  (props, ref) => <p ref={ref} {...props} />
+);
+AppModalSubtitle.displayName = "AppModalSubtitle";
 
-export const AppModalFooter = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("app-modal-footer", className)}
-    {...props}
-  />
-))
-AppModalFooter.displayName = "AppModalFooter"
+export const AppModalBody = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  (props, ref) => <div ref={ref} {...props} />
+);
+AppModalBody.displayName = "AppModalBody";
 
-// Export Dialog primitives for advanced use cases
-export {
-  DialogPrimitive as DialogPrimitives,
-}
-
+export const AppModalFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  (props, ref) => <div ref={ref} {...props} />
+);
+AppModalFooter.displayName = "AppModalFooter";

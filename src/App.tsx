@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/components/pages/login/AuthProvider";
+import { ModalProvider } from "@/context/ModalContext";
 import { TabVisibilityProvider } from "@/context/TabVisibilityContext";
 import { PlayerListLockProvider } from "@/context/PlayerListLockContext";
 import { ThemeProvider } from "./hooks/use-theme";
@@ -35,12 +36,13 @@ const App = () => (
     <ThemeProvider defaultTheme="light">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <PlayerListLockProvider>
-            <TabVisibilityProvider>
-              <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
+          <ModalProvider>
+            <PlayerListLockProvider>
+              <TabVisibilityProvider>
+                <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
                 <Routes>
                   {/* Redirect root to algemeen */}
                   <Route path="/" element={<Navigate to={PUBLIC_ROUTES.algemeen} replace />} />
@@ -226,6 +228,7 @@ const App = () => (
               </TooltipProvider>
             </TabVisibilityProvider>
           </PlayerListLockProvider>
+          </ModalProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>

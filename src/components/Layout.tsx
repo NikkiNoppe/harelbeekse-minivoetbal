@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import Header from "@/components/pages/header/Header";
 import { useLocation, useNavigate } from "react-router-dom";
 import Footer from "@/components/pages/footer/Footer";
@@ -8,16 +8,16 @@ import LoginModal from "@/components/pages/login/LoginModal";
 import MainPages from "@/components/pages/MainPages";
 import { AdminDashboardLayout } from "@/components/pages/admin/AdminDashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
+import { useModal } from "@/context/ModalContext";
 import NotificationPopup from "@/components/common/NotificationPopup";
 import { getTabFromPath, getPathFromTab, PUBLIC_ROUTES, ADMIN_ROUTES } from "@/config/routes";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 import { useRouteMeta } from "@/hooks/useRouteMeta";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MobileBottomNav } from "@/components/navigation";
 
 const Layout: React.FC = () => {
-  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const { user } = useAuth();
+  const { isLoginModalOpen, openLoginModal, closeLoginModal } = useModal();
   const location = useLocation();
   const navigate = useNavigate();
   const { isTabVisible, loading: tabLoading } = useTabVisibility();
@@ -88,11 +88,11 @@ const Layout: React.FC = () => {
   const handleTabChange = setActiveTab;
 
   const handleLoginClick = () => {
-    setLoginDialogOpen(true);
+    openLoginModal();
   };
 
   const handleLoginSuccess = () => {
-    setLoginDialogOpen(false);
+    closeLoginModal();
     // Check if there's a saved location from redirect and return there after login
     const from = location.state?.from as string | undefined;
     if (from && typeof from === 'string') {
@@ -141,9 +141,10 @@ const Layout: React.FC = () => {
           onLogoClick={handleLogoClick}
           onLoginClick={handleLoginClick}
         />
+        {/* Global Login Modal */}
         <AppModal
-          open={loginDialogOpen}
-          onOpenChange={setLoginDialogOpen}
+          open={isLoginModalOpen}
+          onOpenChange={closeLoginModal}
           title="Inloggen"
           subtitle="Log in op je account om toegang te krijgen tot het systeem"
           size="sm"
@@ -157,7 +158,7 @@ const Layout: React.FC = () => {
 
   // Publieke layout met Header hamburgermenu
   return (
-    <div className={`min-h-screen flex flex-col bg-purple-100 text-foreground ${isMobile ? 'pb-16' : ''}`}>
+    <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
       <Header 
         onLogoClick={handleLogoClick} 
         onLoginClick={handleLoginClick}
@@ -174,11 +175,12 @@ const Layout: React.FC = () => {
         )}
       </main>
       {!isMobile && <Footer />}
-      {isMobile && <MobileBottomNav />}
       <NotificationPopup />
+      
+      {/* Global Login Modal */}
       <AppModal
-        open={loginDialogOpen}
-        onOpenChange={setLoginDialogOpen}
+        open={isLoginModalOpen}
+        onOpenChange={closeLoginModal}
         title="Inloggen"
         subtitle="Log in op je account om toegang te krijgen tot het systeem"
         size="sm"
