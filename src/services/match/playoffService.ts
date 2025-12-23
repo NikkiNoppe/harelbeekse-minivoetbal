@@ -358,19 +358,52 @@ export const playoffService = {
         // Odd matchday: PO1=Monday, PO2=Tuesday
         // Even matchday: PO1=Tuesday, PO2=Monday
         const isOddMatchday = matchday % 2 === 1;
-        const po1DayOffset = isOddMatchday ? 0 : 1;  // 0 = Monday, 1 = Tuesday
-        const po2DayOffset = isOddMatchday ? 1 : 0;
-        const po1Slots = isOddMatchday ? mondaySlots : tuesdaySlots;
-        const po2Slots = isOddMatchday ? tuesdaySlots : mondaySlots;
+        const po1PrimaryDayOffset = isOddMatchday ? 0 : 1;  // 0 = Monday, 1 = Tuesday
+        const po2PrimaryDayOffset = isOddMatchday ? 1 : 0;
+        const po1PrimarySlots = isOddMatchday ? mondaySlots : tuesdaySlots;
+        const po2PrimarySlots = isOddMatchday ? tuesdaySlots : mondaySlots;
+        
+        // Overflow slots: the OTHER day's slots for when primary day doesn't have enough
+        const po1OverflowSlots = isOddMatchday ? tuesdaySlots : mondaySlots;
+        const po1OverflowDayOffset = isOddMatchday ? 1 : 0;
         
         // Get top matches for this matchday
         const topMatchesForDay = topMatches.filter(m => m.matchday === matchday);
+        
+        // PO2 uses 3 slots max, so on the PO2 day there's always 1 free slot we can use for overflow
+        // Find the free Bavikhove slot on PO2's day (the one PO2 won't use)
+        // PO2 has 3 matches, uses indices 0,1,2 of its slots
+        // If PO2 is on Monday (4 slots), slot index 3 is free (usually Bavikhove 19:30)
+        const po2SlotsCount = po2PrimarySlots.length;
+        const bottomMatchesCount = bottomMatches.filter(m => m.matchday === matchday).length;
+        
+        // Find the free slot on PO2's day that PO2 won't use
+        const freeSlotOnPo2Day = po2SlotsCount > bottomMatchesCount 
+          ? po2PrimarySlots[po2SlotsCount - 1] // Last slot is typically Bavikhove
+          : null;
+        
         let slotIndex = 0;
         
         for (const match of topMatchesForDay) {
-          const slot = po1Slots[slotIndex % po1Slots.length] || { time: '19:00', venue: 'De Dageraad' };
-          const po1Date = this.addDaysToDate(baseDate, po1DayOffset);
-          const matchDateTime = localDateTimeToISO(po1Date, slot.time);
+          let slot: { time: string; venue: string };
+          let matchDate: string;
+          
+          if (slotIndex < po1PrimarySlots.length) {
+            // Use primary day slots
+            slot = po1PrimarySlots[slotIndex] || { time: '19:00', venue: 'De Dageraad' };
+            matchDate = this.addDaysToDate(baseDate, po1PrimaryDayOffset);
+          } else if (freeSlotOnPo2Day) {
+            // Overflow: use the free slot on PO2's day (the Bavikhove slot that PO2 doesn't use)
+            slot = freeSlotOnPo2Day;
+            matchDate = this.addDaysToDate(baseDate, po2PrimaryDayOffset);
+          } else {
+            // Fallback: use overflow day's slots (shouldn't happen with current config)
+            const overflowIndex = slotIndex - po1PrimarySlots.length;
+            slot = po1OverflowSlots[overflowIndex % po1OverflowSlots.length] || { time: '19:00', venue: 'De Dageraad' };
+            matchDate = this.addDaysToDate(baseDate, po1OverflowDayOffset);
+          }
+          
+          const matchDateTime = localDateTimeToISO(matchDate, slot.time);
           
           matchInserts.push({
             unique_number: `PO-${counter}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -397,8 +430,8 @@ export const playoffService = {
         slotIndex = 0;
         
         for (const match of bottomMatchesForDay) {
-          const slot = po2Slots[slotIndex % po2Slots.length] || { time: '18:30', venue: 'De Dageraad' };
-          const po2Date = this.addDaysToDate(baseDate, po2DayOffset);
+          const slot = po2PrimarySlots[slotIndex % po2PrimarySlots.length] || { time: '18:30', venue: 'De Dageraad' };
+          const po2Date = this.addDaysToDate(baseDate, po2PrimaryDayOffset);
           const matchDateTime = localDateTimeToISO(po2Date, slot.time);
           
           matchInserts.push({
