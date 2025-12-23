@@ -256,13 +256,13 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
   const notificationTypeConfig = NOTIFICATION_TYPES.find(t => t.value === formData.type);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="modal p-0 gap-0 flex flex-col">
-        {/* Sticky Header */}
-        <div className="modal__title sticky top-0 z-10 flex items-center gap-2">
-          <Bell className="w-5 h-5 text-[var(--color-500)]" />
-          {isEditing ? 'Notificatie Bewerken' : 'Nieuwe Notificatie'}
-        </div>
+    <AppModal
+      open={isOpen}
+      onOpenChange={onClose}
+      title={isEditing ? 'Notificatie Bewerken' : 'Nieuwe Notificatie'}
+      size="lg"
+      variant="default"
+    >
 
         {/* Scrollable Content */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
@@ -776,7 +776,6 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
             </button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </AppModal>
   );
 };
