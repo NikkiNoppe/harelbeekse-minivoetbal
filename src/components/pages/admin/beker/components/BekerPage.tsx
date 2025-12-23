@@ -87,11 +87,13 @@ const BekerPage: React.FC = () => {
   useEffect(() => {
     const channel = supabase
       .channel('cup-matches-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, (payload: any) => {
-        const row = payload.new || payload.old;
-        if (row?.is_cup_match) {
-          reloadExistingCup();
-        }
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'matches',
+        filter: 'is_cup_match=eq.true'
+      }, () => {
+        reloadExistingCup();
       })
       .subscribe((status) => {
         // Silently handle subscription errors to prevent console errors that affect SEO
