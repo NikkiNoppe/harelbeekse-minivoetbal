@@ -1020,7 +1020,15 @@ const AdminPlayoffPage: React.FC = () => {
       </section>
 
       {/* Confirmation Dialog */}
-      <AlertDialog open={confirmAction !== null} onOpenChange={open => !open && setConfirmAction(null)}>
+      <AlertDialog 
+        open={confirmAction !== null} 
+        onOpenChange={open => {
+          // Only close if not loading (prevents closing during async action)
+          if (!open && !actionLoading) {
+            setConfirmAction(null);
+          }
+        }}
+      >
         <AlertDialogContent className="modal max-w-[90vw] sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="modal__title">
@@ -1034,7 +1042,7 @@ const AdminPlayoffPage: React.FC = () => {
             <AlertDialogCancel disabled={actionLoading} className="btn btn--secondary flex-1">
               Annuleren
             </AlertDialogCancel>
-            <AlertDialogAction 
+            <Button 
               onClick={handleConfirmedAction} 
               disabled={actionLoading} 
               className={cn(
@@ -1044,7 +1052,7 @@ const AdminPlayoffPage: React.FC = () => {
             >
               {actionLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {confirmAction && confirmDialogContent[confirmAction].actionLabel}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
