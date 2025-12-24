@@ -36,7 +36,7 @@ export const TableRowSkeleton = () => (
 )
 
 export const TeamCardSkeleton = () => (
-  <div className="space-y-3 p-4 border border-border rounded-lg bg-card">
+  <div className="space-y-3 p-4 border border-border rounded-lg bg-card" style={{ backgroundColor: 'white' }}>
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
         <Skeleton className="w-8 h-8 rounded-full bg-muted" />
@@ -55,7 +55,7 @@ export const TeamCardSkeleton = () => (
 export const StandingsSkeleton = () => (
   <div className="space-y-3">
     {[...Array(5)].map((_, i) => (
-      <div key={i} className="bg-card border border-border rounded-lg p-4 space-y-2">
+      <div key={i} className="bg-card border border-border rounded-lg p-4 space-y-2" style={{ backgroundColor: 'white' }}>
         <div className="flex items-center justify-between">
           <Skeleton className="h-5 w-8 bg-muted" />
           <Skeleton className="h-5 w-32 bg-muted" />
@@ -72,7 +72,7 @@ export const StandingsSkeleton = () => (
 )
 
 export const MatchCardSkeleton = () => (
-  <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+  <div className="bg-card border border-border rounded-lg p-4 space-y-3" style={{ backgroundColor: 'white' }}>
     <div className="flex items-center justify-between">
       <Skeleton className="h-4 w-20 bg-muted" />
       <Skeleton className="h-4 w-16 bg-muted" />

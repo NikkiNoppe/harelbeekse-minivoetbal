@@ -67,7 +67,7 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
   return (
     <div className="space-y-4">
       {/* Hide Completed Matches Toggle */}
-      <div className="flex items-center gap-3 p-3 bg-card/50 rounded-lg">
+      <div className="flex items-center gap-3 p-3 bg-card/50 rounded-lg" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
         <Switch
           id="hide-completed"
           checked={hideCompletedMatches}

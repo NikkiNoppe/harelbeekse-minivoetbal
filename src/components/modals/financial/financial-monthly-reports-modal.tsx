@@ -361,6 +361,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                           <TableRow 
                             className="bg-card hover:bg-muted cursor-pointer"
                             onClick={() => toggleRefereeExpanded(referee.referee)}
+                            style={{ backgroundColor: 'white' }}
                           >
                             <TableCell className="w-8">
                               {referee.matches && referee.matches.length > 0 && (

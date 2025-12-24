@@ -174,7 +174,7 @@ const ReglementPage: React.FC = () => {
               {h.title}
             </AccordionTrigger>
             <p className="h-2"></p>
-            <AccordionContent className="bg-card px-4 text-card-foreground">
+            <AccordionContent className="bg-card px-4 text-card-foreground" style={{ backgroundColor: 'white' }}>
               {h.content}
             </AccordionContent>
           </AccordionItem>

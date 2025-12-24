@@ -25,7 +25,7 @@ const ResponsiveStandingsTable: React.FC<ResponsiveStandingsTableProps> = ({ tea
     return (
       <div className="space-y-3" role="status" aria-live="polite" aria-busy="true">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="bg-card border border-border rounded-lg p-4 space-y-2 animate-pulse">
+          <div key={i} className="bg-card border border-border rounded-lg p-4 space-y-2 animate-pulse" style={{ backgroundColor: 'white' }}>
             <div className="flex items-center justify-between">
               <Skeleton className="h-5 w-8 bg-muted" />
               <Skeleton className="h-5 w-32 bg-muted" />
