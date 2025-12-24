@@ -86,7 +86,7 @@ const StandingsSection = memo(({
 }) => (
   <section>
     <Card>
-      <CardContent className="bg-transparent">
+      <CardContent className="">
         {isLoading ? (
           <StandingsTableSkeleton />
         ) : error ? (
@@ -124,11 +124,11 @@ const MatchesSection = memo(({
   isLoading: boolean; 
 }) => (
   <Card>
-    <CardHeader className="bg-transparent">
+    <CardHeader className="">
       <CardTitle>{title}</CardTitle>
       <CardDescription>{description}</CardDescription>
     </CardHeader>
-    <CardContent className="bg-transparent">
+    <CardContent className="">
       {isLoading ? (
         <ScheduleTableSkeleton />
       ) : (
@@ -216,7 +216,7 @@ const CompetitiePage: React.FC = () => {
       <section role="region" aria-labelledby="standings-heading">
         <h2 id="standings-heading" className="sr-only">Competitiestand</h2>
         <Card>
-          <CardContent className="bg-transparent">
+          <CardContent className="">
             <ResponsiveStandingsTable teams={teams} isLoading={standingsLoading} />
           </CardContent>
         </Card>
@@ -226,11 +226,11 @@ const CompetitiePage: React.FC = () => {
 
       <section role="region" aria-labelledby="schedule-heading">
         <Card>
-          <CardHeader className="bg-transparent">
+          <CardHeader className="">
             <CardTitle id="schedule-heading">Speelschema</CardTitle>
             <CardDescription>Volledig overzicht van alle wedstrijden</CardDescription>
           </CardHeader>
-        <CardContent className="bg-transparent">
+        <CardContent className="">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <Label className="mb-2 block">Speeldag</Label>

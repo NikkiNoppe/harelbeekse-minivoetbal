@@ -42,7 +42,7 @@ const PlayoffLoading = memo(() => (
       subtitle="Seizoen 2025-2026"
     />
     <Card>
-      <CardContent className="p-4 bg-transparent">
+      <CardContent className="p-4">
         <StandingsTableSkeleton />
       </CardContent>
     </Card>
@@ -57,7 +57,7 @@ const PlayoffError = memo(({ onRetry }: { onRetry: () => void }) => (
       subtitle="Seizoen 2025-2026"
     />
     <Card>
-      <CardContent className="py-12 bg-transparent">
+      <CardContent className="py-12">
         <div className="text-center">
           <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
           <h3 className="text-lg font-semibold mb-2">Fout bij laden</h3>
@@ -78,7 +78,7 @@ const PlayoffEmptyState = memo(() => (
       subtitle="Seizoen 2025-2026"
     />
     <Card>
-      <CardContent className="py-12 bg-transparent">
+      <CardContent className="py-12">
         <div className="text-center">
           <Trophy className="h-8 w-8 mx-auto mb-4" style={{ color: 'var(--accent)' }} />
           <h3 className="text-lg font-semibold mb-2">Geen Play-Off Data</h3>
@@ -419,13 +419,13 @@ const PlayOffPage: React.FC = () => {
       {/* Play-Off 1 Standings */}
       <section role="region" aria-labelledby="po1-heading">
         <Card>
-          <CardHeader className="pb-3 bg-transparent">
+          <CardHeader className="pb-3">
             <CardTitle id="po1-heading" className="flex items-center gap-2 text-lg">
               <Trophy className="w-5 h-5 text-primary" />
               Play-Off 1
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 bg-transparent">
+          <CardContent className="p-4 pt-0">
             <CompactStandings teams={po1Teams} title="Play-Off 1" />
           </CardContent>
         </Card>
@@ -434,10 +434,10 @@ const PlayOffPage: React.FC = () => {
       {/* Play-Off 2 Standings */}
       <section role="region" aria-labelledby="po2-heading">
         <Card>
-          <CardHeader className="pb-3 bg-transparent">
+          <CardHeader className="pb-3">
             <CardTitle id="po2-heading" className="text-lg">Play-Off 2</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 bg-transparent">
+          <CardContent className="p-4 pt-0">
             <CompactStandings teams={po2Teams} title="Play-Off 2" />
           </CardContent>
         </Card>
@@ -446,10 +446,10 @@ const PlayOffPage: React.FC = () => {
       {/* Schedule */}
       <section role="region" aria-labelledby="schedule-heading">
         <Card>
-          <CardHeader className="pb-3 bg-transparent">
+          <CardHeader className="pb-3">
             <CardTitle id="schedule-heading" className="text-lg">Speelschema</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 bg-transparent">
+          <CardContent className="p-4 pt-0">
             {/* Filters - Mobile-first with automatic responsive layout */}
             <FilterGroup columns={1} className="mb-4">
               <FilterSelect

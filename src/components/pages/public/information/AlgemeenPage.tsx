@@ -15,7 +15,7 @@ const CompetitionInfo = memo(() => {
     <section role="region" aria-labelledby={headingId}>
       <h2 id={headingId} className="sr-only">Competitie Informatie</h2>
       <Card>
-      <CardContent className="pt-4 text-sm bg-transparent space-y-4">
+      <CardContent className="pt-4 text-sm space-y-4">
         <p>
           Opgericht in 1979 is de Harelbeekse Minivoetbal Competitie uitgegroeid tot de grootste minivoetbalcompetitie van Harelbeke. Elk seizoen nemen tal van teams uit Harelbeke en omgeving deel.
         </p>
@@ -32,13 +32,13 @@ const CompetitionInfo = memo(() => {
 // Skeleton loading component
 const NewsItemSkeleton = memo(() => (
   <Card className="w-full">
-    <CardHeader className="pb-3 bg-transparent">
+    <CardHeader className="pb-3">
       <div className="flex justify-between items-start mb-2 gap-2">
         <Skeleton className="h-4 w-20" />
       </div>
       <Skeleton className="h-6 w-3/4" />
     </CardHeader>
-    <CardContent className="bg-transparent">
+    <CardContent>
       <Skeleton className="h-4 w-full mb-2" />
       <Skeleton className="h-4 w-2/3" />
       <div className="flex gap-2 mt-3">
@@ -61,7 +61,7 @@ const BlogPostItem = memo(({ post }: { post: BlogPost }) => {
   
   return (
     <Card className="card-hover w-full">
-      <CardHeader className="pb-3 bg-transparent">
+      <CardHeader className="pb-3">
         <div className="flex justify-between items-start mb-2 gap-2">
           <span className="text-xs text-muted-foreground flex-shrink-0">
             {formatDateShort(post.created_at)}
@@ -74,7 +74,7 @@ const BlogPostItem = memo(({ post }: { post: BlogPost }) => {
         )}
       </CardHeader>
       {post.setting_value?.content && (
-        <CardContent className="bg-transparent">
+        <CardContent>
           <p className="text-sm break-words">
             {post.setting_value.content}
           </p>
@@ -107,7 +107,7 @@ const NewsSection = memo(() => {
     if (error) {
       return (
         <Card className="w-full">
-          <CardContent className="py-8 text-center bg-transparent">
+          <CardContent className="py-8 text-center">
             <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
             <h3 className="text-lg font-semibold mb-2 text-foreground">Fout bij laden</h3>
             <p className="text-muted-foreground mb-4">
@@ -124,7 +124,7 @@ const NewsSection = memo(() => {
     if (!blogPosts?.length) {
       return (
         <Card className="w-full">
-          <CardContent className="py-8 text-center bg-transparent">
+          <CardContent className="py-8 text-center">
             <p className="text-muted-foreground text-sm">
               Geen nieuws beschikbaar
             </p>
@@ -141,7 +141,7 @@ const NewsSection = memo(() => {
     if (postsWithContent.length === 0) {
       return (
         <Card className="w-full">
-          <CardContent className="py-8 text-center bg-transparent">
+          <CardContent className="py-8 text-center">
             <p className="text-muted-foreground text-sm">
               Geen nieuws beschikbaar
             </p>
