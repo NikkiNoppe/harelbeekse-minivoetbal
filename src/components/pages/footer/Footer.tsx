@@ -4,14 +4,14 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-purple-300 py-4 mt-auto">
       <div className="w-full max-w-7xl mx-auto px-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <h3 className="font-semibold text-purple-dark mb-3 text-sm">Harelbeekse Minivoetbal Competitie</h3>
+            <h3 className="font-semibold text-purple-dark mb-0.5 text-sm">Harelbeekse Minivoetbal Competitie</h3>
             <p className="text-xs text-white">Minivoetbalcompetitie sinds 1979.</p>
           </div>
           
           <div>
-            <h3 className="font-semibold text-purple-dark mb-3 text-sm">Contact</h3>
+            <h3 className="font-semibold text-purple-dark mb-1.5 text-sm">Contact</h3>
             <div className="space-y-2 text-xs text-white">
               <div>
                 <p className="font-medium">Nikki Noppe</p>
