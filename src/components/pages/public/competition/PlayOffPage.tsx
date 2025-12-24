@@ -284,7 +284,7 @@ const MatchGroup = memo(({ speeldag, matches, playoffType }: {
       </div>
       
       {/* Matches */}
-      <div className="rounded-lg overflow-hidden bg-card">
+      <div className="rounded-lg overflow-hidden bg-card" style={{ backgroundColor: 'white' }}>
         {matches.map((match) => (
           <MatchListItem key={match.matchId} match={match} />
         ))}
