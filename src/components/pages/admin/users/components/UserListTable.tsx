@@ -21,7 +21,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { AppAlertModal } from "@/components/ui/app-alert-modal";
+import { AppAlertModal } from "@/components/modals";
 import { DbUser } from "../userTypes";
 
 interface UserListProps {

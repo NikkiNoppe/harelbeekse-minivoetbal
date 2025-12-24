@@ -56,14 +56,9 @@ const PageHeader: React.FC<PageHeaderProps> = ({
 
       {/* Title section */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground leading-tight">
+        <h1 className="text-2xl font-bold text-primary leading-tight">
           {title}
         </h1>
-        {subtitle && (
-          <p className="text-sm text-muted-foreground mt-1">
-            {subtitle}
-          </p>
-        )}
       </div>
     </div>
   );

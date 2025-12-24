@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import MatchesFormFilter from "./MatchesFormFilter";
 import MatchesFormList from "./MatchesFormList";
-import MatchesFormModal from "./MatchesFormModal";
+import { MatchesFormModal } from "@/components/modals";
 
 // Simple components for loading, error, and empty states
 const TabContentSkeleton = React.memo(() => (

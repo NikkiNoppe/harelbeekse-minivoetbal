@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from '@/components/ui/app-modal';
+import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from '@/components/modals';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';

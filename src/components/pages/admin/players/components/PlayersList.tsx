@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Trash2, Edit2 } from "lucide-react";
-import { AppAlertModal } from "@/components/ui/app-alert-modal";
+import { AppAlertModal } from "@/components/modals";
 
 interface Player {
   player_id: number;

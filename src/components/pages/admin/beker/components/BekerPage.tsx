@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AppAlertModal } from "@/components/ui/app-alert-modal";
+import { AppAlertModal } from "@/components/modals";
 import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 
 import BekerDateSelector from "./BekerDateSelector";

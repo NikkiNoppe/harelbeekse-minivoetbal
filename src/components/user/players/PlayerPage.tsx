@@ -7,4 +7,4 @@ import { usePlayersUpdated } from "@/components/pages/admin/players/hooks/usePla
 import { usePlayerListLock } from "@/components/user/players/hooks/usePlayerListLock";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDateShort } from "@/lib/dateUtils";
-import PlayerModal from "@/components/pages/admin/players/components/PlayerModal";
+import { PlayerModal } from "@/components/modals";

@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { AppAlertModal } from "@/components/ui/app-alert-modal";
+import { AppAlertModal } from "@/components/modals";
 import { Loader2, Trophy, AlertCircle, Trash2, Calendar, CheckCircle, Clock, Undo2, ChevronDown, ChevronRight, Settings, MapPin, Palmtree } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";

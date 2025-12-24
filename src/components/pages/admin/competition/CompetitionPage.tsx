@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AppAlertModal } from "@/components/ui/app-alert-modal";
+import { AppAlertModal } from "@/components/modals";
 import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { competitionService, CompetitionConfig, CompetitionFormat } from "@/services/match/competitionService";

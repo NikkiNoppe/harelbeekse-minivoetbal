@@ -10,7 +10,7 @@ import { MatchFormData } from "./types";
 import MatchesFormFilter from "./MatchesFormFilter";
 import { useTeam } from "@/hooks/useTeams";
 import MatchesFormList from "./MatchesFormList";
-import MatchesFormModal from "./MatchesFormModal";
+import { MatchesFormModal } from "@/components/modals";
 
 interface MatchFormTabProps {
   teamId: number;

@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { notificationService, type Notification } from '@/services/notificationService';
 import { Plus, Edit, Trash2, Users, UserCheck, Building2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { NotificationFormModal } from './NotificationFormModal';
+import { NotificationFormModal } from '@/components/modals';
 
 const NOTIFICATION_TYPES = [
   { value: 'info', label: 'Informatie' },

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MatchesCardIcon from "./MatchesCardIcon";
 import PlayerSelectValue from "./PlayerSelectValue";
-import PlayerDataRefreshPopup from "./PlayerDataRefreshPopup";
+import { PlayerDataRefreshModal } from "@/components/modals";
 import { PlayerSelection } from "../types";
 import { TeamPlayer } from "../hooks/useTeamPlayers";
 
@@ -290,7 +290,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
     <div>
       {/* Refresh popup for failed data loads */}
       {onRefreshPlayers && (
-        <PlayerDataRefreshPopup
+        <PlayerDataRefreshModal
           players={players}
           loading={loading}
           error={error}

@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useUserManagement } from "./hooks/useUserManagement";
-import UserModal from "@/components/user/UserModal";
+import { UserModal } from "@/components/modals";
 import UserListTable from "./components/UserListTable";
 
 

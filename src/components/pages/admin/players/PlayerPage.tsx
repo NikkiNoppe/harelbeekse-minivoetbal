@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import PlayersList from "./components/PlayersList";
-import PlayerModal from "./components/PlayerModal";
+import { PlayerModal } from "@/components/modals";
 import PlayerRegulations from "./components/PlayerRegulations";
 import { usePlayersUpdated } from "./hooks/usePlayersUpdated";
-import { usePlayerListLock } from "@/components/user/players/hooks/usePlayerListLock";
+import { usePlayerListLock } from "./hooks/usePlayerListLock";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDateShort } from "@/lib/dateUtils";
 

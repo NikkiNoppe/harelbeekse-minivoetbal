@@ -1,6 +1,5 @@
 import React, { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
@@ -8,7 +7,6 @@ import { BlogPost } from "@/services";
 import { formatDateShort } from "@/lib/dateUtils";
 import { useBlogPosts } from "@/hooks/useBlogPosts";
 import { PageHeader } from "@/components/layout";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 // Memoized sub-components for better performance
 const CompetitionInfo = memo(() => {
@@ -17,22 +15,12 @@ const CompetitionInfo = memo(() => {
     <section role="region" aria-labelledby={headingId}>
       <h2 id={headingId} className="sr-only">Competitie Informatie</h2>
       <Card>
-      <CardContent className="pt-4 sm:pt-6 text-sm sm:text-base bg-transparent space-y-4">
+      <CardContent className="pt-4 text-sm bg-transparent space-y-4">
         <p>
-          De <strong>Harelbeekse Minivoetbal Competitie</strong> is opgericht in 1979 en is uitgegroeid tot 
-          de grootste <strong>minivoetbal competitie in Harelbeke</strong>. Elk seizoen nemen meerdere teams 
-          uit Harelbeke en omstreken deel aan onze spannende <strong> minivoetbal competitie</strong>.
+          Opgericht in 1979 is de Harelbeekse Minivoetbal Competitie uitgegroeid tot de grootste minivoetbalcompetitie van Harelbeke. Elk seizoen nemen tal van teams uit Harelbeke en omgeving deel.
         </p>
         <p>
-          Onze <strong>minivoetbal competitie</strong> vindt wekelijks plaats in de Sporthal De Dageraad in Harelbeke en in  De Vlasschaard in Bavikhove
-          en bestaat uit verschillende onderdelen: de reguliere competitie, het bekertoernooi, en de 
-          spannende play-offs aan het einde van het seizoen. Of je nu ervaren bent in <strong>zaalvoetbal</strong> of 
-          gewoon op zoek bent naar sportief vermaak, bij <strong>minivoetbal Harelbeke</strong> ben je aan het 
-          juiste adres.
-        </p>
-        <p>
-          Volg hier alle uitslagen, klassementen, spelersinformatie en wedstrijdschema's van de 
-          Harelbeekse Minivoetbal Competitie.
+          Ontdek hier alle uitslagen, klassementen, spelersinfo en wedstrijdschema's.
         </p>
       </CardContent>
     </Card>
@@ -40,41 +28,11 @@ const CompetitionInfo = memo(() => {
   );
 });
 
-const ContactInfo = memo(() => {
-  const headingId = React.useId();
-  return (
-    <section role="region" aria-labelledby={headingId}>
-      <h2 id={headingId} className="text-2xl font-semibold">Contact</h2>
-      <Card>
-      <CardContent className="pt-4 sm:pt-6 bg-transparent">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-          <div>
-            <h3 className="text-base sm:text-lg font-medium mb-2 text-foreground">Competitieleiding</h3>
-            <div className="space-y-1 text-sm sm:text-base text-card-foreground">
-              <p>Nikki Noppe</p>
-              <p className="break-all">noppe.nikki@icloud.com</p>
-              <p>+32 468 15 52 16</p>
-            </div>
-          </div>
-          <div>
-            <h3 className="text-base sm:text-lg font-medium mb-2 text-foreground">Locatie</h3>
-            <div className="space-y-1 text-sm sm:text-base text-card-foreground">
-              <p>Sporthal De Dageraad</p>
-              <p>Stasegemsesteenweg 21</p>
-              <p>8530 Harelbeke</p>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  </section>
-  );
-});
 
 // Skeleton loading component
 const NewsItemSkeleton = memo(() => (
   <Card className="w-full">
-    <CardHeader className="pb-3 sm:pb-4 bg-transparent">
+    <CardHeader className="pb-3 bg-transparent">
       <div className="flex justify-between items-start mb-2 gap-2">
         <Skeleton className="h-4 w-20" />
       </div>
@@ -103,9 +61,9 @@ const BlogPostItem = memo(({ post }: { post: BlogPost }) => {
   
   return (
     <Card className="card-hover w-full">
-      <CardHeader className="pb-3 sm:pb-4 bg-transparent">
+      <CardHeader className="pb-3 bg-transparent">
         <div className="flex justify-between items-start mb-2 gap-2">
-          <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">
+          <span className="text-xs text-muted-foreground flex-shrink-0">
             {formatDateShort(post.created_at)}
           </span>
         </div>
@@ -117,7 +75,7 @@ const BlogPostItem = memo(({ post }: { post: BlogPost }) => {
       </CardHeader>
       {post.setting_value?.content && (
         <CardContent className="bg-transparent">
-          <p className="text-sm sm:text-base break-words">
+          <p className="text-sm break-words">
             {post.setting_value.content}
           </p>
         </CardContent>
@@ -138,7 +96,7 @@ const NewsSection = memo(() => {
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="space-y-3 sm:space-y-4 w-full">
+        <div className="space-y-3 w-full">
           {[...Array(3)].map((_, index) => (
             <NewsItemSkeleton key={index} />
           ))}
@@ -167,7 +125,7 @@ const NewsSection = memo(() => {
       return (
         <Card className="w-full">
           <CardContent className="py-8 text-center bg-transparent">
-            <p className="text-muted-foreground text-sm sm:text-base">
+            <p className="text-muted-foreground text-sm">
               Geen nieuws beschikbaar
             </p>
           </CardContent>
@@ -184,7 +142,7 @@ const NewsSection = memo(() => {
       return (
         <Card className="w-full">
           <CardContent className="py-8 text-center bg-transparent">
-            <p className="text-muted-foreground text-sm sm:text-base">
+            <p className="text-muted-foreground text-sm">
               Geen nieuws beschikbaar
             </p>
           </CardContent>
@@ -193,7 +151,7 @@ const NewsSection = memo(() => {
     }
 
     return (
-      <div className="space-y-3 sm:space-y-4 w-full">
+      <div className="space-y-3 w-full">
         {postsWithContent.map(post => (
           <BlogPostItem key={post.id} post={post} />
         ))}
@@ -212,34 +170,23 @@ const NewsSection = memo(() => {
   );
 });
 
-// Main component
+// Main component - Mobile-first design
 const AlgemeenPage: React.FC = () => {
-  const isMobile = useIsMobile();
-
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Header - PageHeader on mobile, inline header on desktop */}
-      {isMobile ? (
-        <PageHeader 
-          title="Minivoetbal Harelbeke" 
-          subtitle="Officiële Competitie Website"
-        />
-      ) : (
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold">Minivoetbal Harelbeke - Officiële Competitie Website</h2>
-        </div>
-      )}
+      <PageHeader 
+        title="Minivoetbal Harelbeke" 
+        subtitle="Officiële Competitie Website"
+      />
 
       <CompetitionInfo />
       <NewsSection />
-      <ContactInfo />
     </div>
   );
 };
 
 // Set display names for better debugging
 CompetitionInfo.displayName = 'CompetitionInfo';
-ContactInfo.displayName = 'ContactInfo';
 NewsItemSkeleton.displayName = 'NewsItemSkeleton';
 BlogPostItem.displayName = 'BlogPostItem';
 NewsSection.displayName = 'NewsSection';

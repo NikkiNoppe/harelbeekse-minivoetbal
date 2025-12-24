@@ -1,8 +1,8 @@
 import React, { useCallback, useMemo } from "react";
-import { usePlayersData } from "@/components/user/players/hooks/usePlayersData";
-import { usePlayerOperations } from "@/components/user/players/hooks/usePlayerOperations";
-import { usePlayerDialogs } from "@/components/user/players/hooks/usePlayerDialogs";
-import { formatDate, getFullName, handleTeamChange } from "@/components/user/players/utils/playerUtils";
+import { usePlayersData } from "./usePlayersData";
+import { usePlayerOperations } from "./usePlayerOperations";
+import { usePlayerDialogs } from "./usePlayerDialogs";
+import { formatDate, getFullName, handleTeamChange } from "../utils/playerUtils";
 import { useAuth } from "@/hooks/useAuth";
 
 export const usePlayersUpdated = () => {

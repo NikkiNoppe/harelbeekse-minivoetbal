@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { usePlayerListLock } from "@/components/user/players/hooks/usePlayerListLock";
+import { usePlayerListLock } from "../players/hooks/usePlayerListLock";
 import { Lock } from "lucide-react";
 import { playerService, Player } from "@/services/core";
 import { supabase } from "@/integrations/supabase/client";

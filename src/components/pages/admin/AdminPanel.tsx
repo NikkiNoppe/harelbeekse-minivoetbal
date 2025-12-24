@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import TeamForm from "@/components/pages/admin/teams/components/TeamForm";
-import { AppAlertModal } from "@/components/ui/app-alert-modal";
+import { AppAlertModal } from "@/components/modals";
 import { Edit, Trash2, AlertTriangle } from "lucide-react";
 import { teamService, Team } from "@/services/core";
 import BekerPage from "@/components/pages/admin/beker/components/BekerPage";

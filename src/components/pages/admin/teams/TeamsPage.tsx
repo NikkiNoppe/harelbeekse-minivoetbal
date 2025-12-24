@@ -1,10 +1,9 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { useTeamsEnhanced } from "@/components/user/teams/hooks/useTeamsEnhanced";
-import TeamsList from "@/components/user/teams/TeamsList";
-import TeamModal from "@/components/user/teams/TeamModal";
-import ConfirmDeleteDialog from "@/components/user/teams/ConfirmDeleteDialog";
+import { useTeamsEnhanced } from "./hooks/useTeamsEnhanced";
+import TeamsList from "./components/TeamsList";
+import { TeamModal, ConfirmDeleteModal } from "@/components/modals";
 
 const AdminTeamPage: React.FC = () => {
   const {
@@ -90,7 +89,7 @@ const AdminTeamPage: React.FC = () => {
       />
 
       {/* Confirm Delete Dialog */}
-      <ConfirmDeleteDialog
+      <ConfirmDeleteModal
         open={confirmDeleteOpen}
         onOpenChange={setConfirmDeleteOpen}
         team={teamToDelete}

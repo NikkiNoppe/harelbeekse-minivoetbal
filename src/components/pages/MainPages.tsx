@@ -12,9 +12,6 @@ import KaartenPage from "./public/information/KaartenPage";
 import ReglementPage from "./public/information/ReglementPage";
 import TeamsPage from "./admin/teams/TeamsPage";
 import ScheidsrechtersPage from "./admin/scheidsrechter/ScheidsrechtersPage";
-import { useAuth } from "@/hooks/useAuth";
-import MatchdayActionsBar from "./admin/matches/matchday-actions-bar";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MainPagesProps {
   activeTab: TabName;
@@ -74,8 +71,6 @@ TabContentWrapper.displayName = 'TabContentWrapper';
 
 const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
   const { isTabVisible, loading } = useTabVisibility();
-  const { user } = useAuth();
-  const isMobile = useIsMobile();
 
   // Memoize tab content components to prevent unnecessary re-renders
   const tabContents = useMemo(() => ({
@@ -143,7 +138,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
         </TabContentWrapper>
       </TabsContent>
     )
-  }), [isTabVisible, user]);
+  }), [isTabVisible]);
 
   // Determine which tabs are available right now
   const visibleKeys = useMemo(() => {
@@ -188,11 +183,6 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
       <div className="max-w-7xl mx-auto">
-        {/* Matchday Actions Bar - show on relevant pages for authenticated users on mobile */}
-        {isMobile && user && ['competitie', 'beker', 'playoff', 'algemeen'].includes(currentValue) && (
-          <MatchdayActionsBar />
-        )}
-        
         <Tabs 
           value={currentValue} 
           onValueChange={(value) => setActiveTab(value as TabName)} 

@@ -3,8 +3,8 @@ import React, { useEffect, useMemo, useRef } from "react";
 import Header from "@/components/pages/header/Header";
 import { useLocation, useNavigate } from "react-router-dom";
 import Footer from "@/components/pages/footer/Footer";
-import { AppModal } from "@/components/ui/app-modal";
-import LoginModal from "@/components/pages/login/LoginModal";
+import { AppModal } from "@/components/modals";
+import { LoginModal } from "@/components/modals";
 import MainPages from "@/components/pages/MainPages";
 import { AdminDashboardLayout } from "@/components/pages/admin/AdminDashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
@@ -174,7 +174,7 @@ const Layout: React.FC = () => {
           <MainPages activeTab="algemeen" setActiveTab={setActiveTab} />
         )}
       </main>
-      {!isMobile && <Footer />}
+      <Footer />
       <NotificationPopup />
       
       {/* Global Login Modal */}
