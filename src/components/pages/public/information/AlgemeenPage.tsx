@@ -7,7 +7,7 @@ import { AlertCircle } from "lucide-react";
 import { BlogPost } from "@/services";
 import { formatDateShort } from "@/lib/dateUtils";
 import { useBlogPosts } from "@/hooks/useBlogPosts";
-import { PageHeader } from "@/components/navigation";
+import { PageHeader } from "@/components/layout";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Memoized sub-components for better performance

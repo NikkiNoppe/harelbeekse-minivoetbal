@@ -1,11 +1,11 @@
 
 import React from "react";
-import Layout from "@/components/Layout";
+import AppLayout from "@/components/app-layout";
 import { PageTransition } from "@/components/common/PageTransition";
 
 const Index = () => (
   <PageTransition>
-    <Layout />
+    <AppLayout />
   </PageTransition>
 );
 

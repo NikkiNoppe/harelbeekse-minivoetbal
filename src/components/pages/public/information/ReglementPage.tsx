@@ -1,6 +1,6 @@
 import React from "react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { PageHeader } from "@/components/navigation";
+import { PageHeader } from "@/components/layout";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const reglement = [

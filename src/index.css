@@ -22,9 +22,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import modal component styles */
-@import './styles/components/modal.css';
-
 /* Page transitions - respect prefers-reduced-motion */
 @keyframes fadeIn {
   from {

@@ -1,6 +1,6 @@
 import React, { memo } from "react";
 import { Button } from "@/components/ui/button";
-import PageHeader from "./PageHeader";
+import PageHeader from "./page-header";
 import { cn } from "@/lib/utils";
 
 interface ActionConfig {

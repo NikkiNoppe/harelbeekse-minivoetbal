@@ -13,7 +13,7 @@ import ReglementPage from "./public/information/ReglementPage";
 import TeamsPage from "./admin/teams/TeamsPage";
 import ScheidsrechtersPage from "./admin/scheidsrechter/ScheidsrechtersPage";
 import { useAuth } from "@/hooks/useAuth";
-import { MatchdayActionsBar } from "@/components/navigation";
+import MatchdayActionsBar from "./admin/matches/matchday-actions-bar";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MainPagesProps {

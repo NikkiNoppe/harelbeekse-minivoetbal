@@ -8,7 +8,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ResponsiveScheduleTable from "@/components/tables/ResponsiveScheduleTable";
-import { PageHeader } from "@/components/navigation";
+import { PageHeader } from "@/components/layout";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Skeleton components

@@ -8,7 +8,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, User, LogOut, Settings, Shield, Users, Calendar, Trophy, Award, DollarSign, Home, BookOpen, Ban, AlertTriangle, Target } from "lucide-react";
-import HamburgerIcon from "@/components/ui/HamburgerIcon";
+import HamburgerIcon from "@/components/ui/hamburger-icon";
 import Logo from "./Logo";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 import { PUBLIC_ROUTES, ADMIN_ROUTES, getPathFromTab } from "@/config/routes";

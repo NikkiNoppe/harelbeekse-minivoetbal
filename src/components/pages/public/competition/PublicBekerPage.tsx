@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Trophy, Award, AlertCircle } from "lucide-react";
 import MatchesCupCard from "../../admin/matches/components/MatchesCupCard";
 import { useCupData, CupMatchDisplay } from "@/hooks/useCupData";
-import { PageHeader } from "@/components/navigation";
+import { PageHeader } from "@/components/layout";
 import { useIsMobile } from "@/hooks/use-mobile";
 // Skeleton loading components
 const MatchCardSkeleton = memo(() => <Card className="w-full">
