@@ -6,7 +6,7 @@
   
   <!-- Homepage -->
   <url>
-    <loc>https://minivoetbal-harelbeke.lovable.app/</loc>
+    <loc>https://harelbekeminivoetbal.be/</loc>
     <lastmod>2025-01-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -14,42 +14,42 @@
   
   <!-- Main sections -->
   <url>
-    <loc>https://minivoetbal-harelbeke.lovable.app/competitie</loc>
+    <loc>https://harelbekeminivoetbal.be/competitie</loc>
     <lastmod>2025-01-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   
   <url>
-    <loc>https://minivoetbal-harelbeke.lovable.app/beker</loc>
+    <loc>https://harelbekeminivoetbal.be/beker</loc>
     <lastmod>2025-01-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>https://minivoetbal-harelbeke.lovable.app/playoff</loc>
+    <loc>https://harelbekeminivoetbal.be/playoff</loc>
     <lastmod>2025-01-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>https://minivoetbal-harelbeke.lovable.app/teams</loc>
+    <loc>https://harelbekeminivoetbal.be/teams</loc>
     <lastmod>2025-01-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
-    <loc>https://minivoetbal-harelbeke.lovable.app/reglement</loc>
+    <loc>https://harelbekeminivoetbal.be/reglement</loc>
     <lastmod>2025-01-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://minivoetbal-harelbeke.lovable.app/schorsingen</loc>
+    <loc>https://harelbekeminivoetbal.be/schorsingen</loc>
     <lastmod>2025-01-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>

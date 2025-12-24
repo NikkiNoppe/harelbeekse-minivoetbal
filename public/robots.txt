@@ -26,4 +26,4 @@ User-agent: *
 Crawl-delay: 5
 
 # Sitemap voor betere indexering
-Sitemap: https://minivoetbal-harelbeke.lovable.app/sitemap.xml
+Sitemap: https://harelbekeminivoetbal.be/sitemap.xml

@@ -1,5 +1,4 @@
 import React from "react";
-import logoTransparent from "@/assets/logo-krc-transparent.svg";
 
 interface LogoProps {
   onClick: () => void;
@@ -15,7 +14,7 @@ const Logo: React.FC<LogoProps> = ({ onClick }) => {
     >
       <div className="h-14 w-[189px] flex items-center justify-center">
         <img
-          src={logoTransparent}
+          src="/images/logos/logo-krc-transparent.svg"
           alt="KRC Harelbeke Minivoetbal Competitie Logo"
           className="h-14 w-auto object-contain px-2"
           width={189}
@@ -25,7 +24,7 @@ const Logo: React.FC<LogoProps> = ({ onClick }) => {
           draggable={false}
           onError={(e) => {
             e.currentTarget.onerror = null;
-            e.currentTarget.src = "/lovable-uploads/Minivoetbal.svg";
+            e.currentTarget.src = "/images/logos/Minivoetbal.svg";
           }}
         />
       </div>
