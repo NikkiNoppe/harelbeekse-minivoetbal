@@ -195,9 +195,7 @@ const UserProfilePage: React.FC = () => {
       <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
         <CardHeader>
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center shadow-lg">
-              <User className="h-10 w-10 text-primary-foreground" />
-            </div>
+            <User className="h-12 w-12 text-muted-foreground opacity-50 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <CardTitle className="text-2xl font-bold mb-2">{user.username}</CardTitle>
               <div className="flex items-center gap-2 flex-wrap">

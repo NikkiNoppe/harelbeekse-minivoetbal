@@ -14,6 +14,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PUBLIC_ROUTES, ADMIN_ROUTES } from "./config/routes";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { ScrollRestore } from "@/components/common/ScrollRestore";
 
 // Lazy load main components with prefetch hints
 const Index = lazy(() => {
@@ -40,6 +41,7 @@ const App = () => (
             <PlayerListLockProvider>
               <TabVisibilityProvider>
                 <TooltipProvider>
+                <ScrollRestore />
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>

@@ -285,6 +285,13 @@
     line-height: var(--line-height-body);
     font-weight: var(--font-weight-normal);
     font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  html {
+    overflow-y: auto;
+    overflow-x: hidden;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);

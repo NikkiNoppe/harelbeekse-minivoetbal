@@ -9,6 +9,7 @@ import { usePlayersUpdated } from "./hooks/usePlayersUpdated";
 import { usePlayerListLock } from "./hooks/usePlayerListLock";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDateShort } from "@/lib/dateUtils";
+import { PageHeader } from "@/components/layout";
 
 const PlayerPage: React.FC = () => {
   const { user: authUser } = useAuth();
@@ -67,12 +68,23 @@ const PlayerPage: React.FC = () => {
   }, [setDialogOpen, setEditDialogOpen, setEditingPlayer, setNewPlayer]);
 
   const handleTeamSelectChange = useCallback((value: string) => {
-    handleTeamChange(parseInt(value));
+    if (value === "all" || value === "") {
+      handleTeamChange(null);
+    } else {
+      handleTeamChange(parseInt(value));
+    }
   }, [handleTeamChange]);
 
   // Memoized team options to prevent unnecessary re-renders
-  const teamOptions = useMemo(() => 
-    teams.map(team => (
+  const teamOptions = useMemo(() => [
+    <SelectItem 
+      key="all" 
+      value="all" 
+      className="dropdown-item-login-style"
+    >
+      Alle teams
+    </SelectItem>,
+    ...teams.map(team => (
       <SelectItem 
         key={team.team_id} 
         value={team.team_id.toString()} 
@@ -81,34 +93,26 @@ const PlayerPage: React.FC = () => {
         {team.team_name}
       </SelectItem>
     ))
-  , [teams]);
+  ], [teams]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-slide-up">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">
-            Spelerslijst
-          </h1>
-          {showLockMessage && (
-            <p className="text-sm text-red-600 mt-1">
-              Spelerslijst vergrendeld vanaf {formatDateShort(lockDate)}
-            </p>
-          )}
-        </div>
-      </div>
+      <PageHeader 
+        title="Spelerslijst"
+        subtitle={showLockMessage ? `Vergrendeld vanaf ${formatDateShort(lockDate)}` : currentTeamName || undefined}
+      />
 
       {/* Team Selector and Add Button for Admin */}
       {isAdmin ? (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex flex-col gap-2">
             <Select 
-              value={selectedTeam?.toString() || ""} 
+              value={selectedTeam?.toString() || "all"} 
               onValueChange={handleTeamSelectChange}
             >
               <SelectTrigger className="dropdown-login-style min-w-[200px]">
-                <SelectValue placeholder="Selecteer team" />
+                <SelectValue placeholder="Alle teams" />
               </SelectTrigger>
               <SelectContent className="dropdown-content-login-style">
                 {teamOptions}

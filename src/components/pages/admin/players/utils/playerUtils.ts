@@ -13,7 +13,7 @@ export const getFullName = (player: Player) => {
 };
 
 // Handle team selection (admins only)
-export const handleTeamChange = (teamId: number, setSelectedTeam: (id: number) => void, setEditMode: (mode: boolean) => void) => {
+export const handleTeamChange = (teamId: number | null, setSelectedTeam: (id: number | null) => void, setEditMode: (mode: boolean) => void) => {
   setSelectedTeam(teamId);
   setEditMode(false);
 };

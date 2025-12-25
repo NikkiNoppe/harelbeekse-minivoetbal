@@ -67,12 +67,20 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
     // Body scroll lock
     React.useEffect(() => {
       if (open) {
-        const originalStyle = window.getComputedStyle(document.body).overflow;
+        const originalOverflow = window.getComputedStyle(document.body).overflow;
+        const originalOverflowY = window.getComputedStyle(document.body).overflowY;
         document.body.style.overflow = 'hidden';
+        document.body.style.overflowY = 'hidden';
         
         return () => {
-          document.body.style.overflow = originalStyle;
+          // Always restore scroll when modal closes
+          document.body.style.overflow = originalOverflow || 'auto';
+          document.body.style.overflowY = originalOverflowY || 'auto';
         };
+      } else {
+        // Ensure scroll is restored when modal is closed
+        document.body.style.overflowY = 'auto';
+        document.body.style.overflowX = 'hidden';
       }
     }, [open]);
 
