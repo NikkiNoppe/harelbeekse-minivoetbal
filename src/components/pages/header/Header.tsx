@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Menu, User, LogOut, Settings, Shield, Users, Calendar, Trophy, Award, DollarSign, Home, BookOpen, Ban, AlertTriangle, Target } from "lucide-react";
+import { Menu, User, LogOut, Settings, Shield, Users, Calendar, Trophy, Award, DollarSign, Home, BookOpen, Ban, AlertTriangle, Target, ChevronDown } from "lucide-react";
 import HamburgerIcon from "@/components/ui/hamburger-icon";
 import Logo from "./Logo";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 import { PUBLIC_ROUTES, ADMIN_ROUTES, getPathFromTab } from "@/config/routes";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   onLogoClick: () => void;
@@ -81,11 +83,11 @@ const Header: React.FC<HeaderProps> = ({
 
   // Public navigation items
   const publicNavItems = [
-    { key: "algemeen", label: "Algemeen", icon: <Home size={16} /> },
-    { key: "reglement", label: "Reglement", icon: <BookOpen size={16} /> },
-    { key: "competitie", label: "Competitie", icon: <Trophy size={16} /> },
-    { key: "beker", label: "Beker", icon: <Award size={16} /> },
-    { key: "playoff", label: "Play-off", icon: <Target size={16} /> },
+    { key: "algemeen", label: "Algemeen", icon: <Home size={18} /> },
+    { key: "reglement", label: "Reglement", icon: <BookOpen size={18} /> },
+    { key: "competitie", label: "Competitie", icon: <Trophy size={18} /> },
+    { key: "beker", label: "Beker", icon: <Award size={18} /> },
+    { key: "playoff", label: "Play-off", icon: <Target size={18} /> },
   ];
 
   const normalizedRole = String(user?.role || '').toLowerCase();
@@ -99,7 +101,7 @@ const Header: React.FC<HeaderProps> = ({
     : 'Gebruiker';
 
   // Filter public items based on tab visibility settings and enforce desired order
-  const desiredPublicOrder = ['algemeen', 'reglement', 'competitie', 'beker', 'playoff'] as const;
+  const desiredPublicOrder = ['algemeen', 'competitie', 'playoff', 'beker', 'reglement'] as const;
   const visiblePublicItems = desiredPublicOrder
     .map((key) => publicNavItems.find((i) => i.key === key))
     .filter((i): i is NonNullable<typeof i> => Boolean(i))
@@ -107,34 +109,34 @@ const Header: React.FC<HeaderProps> = ({
 
   // Admin groups (mirrors AdminSidebar)
   const speelformatenItems = [
-    { key: "competition", label: "Competitie", icon: <Trophy size={14} /> },
-    { key: "cup", label: "Beker", icon: <Award size={14} /> },
-    { key: "playoffs", label: "Playoff", icon: <Target size={14} /> },
+    { key: "competition", label: "Competitie", icon: <Trophy size={18} /> },
+    { key: "cup", label: "Beker", icon: <Award size={18} /> },
+    { key: "playoffs", label: "Play-off", icon: <Target size={18} /> },
   ];
 
   const wedstrijdformulierenItems = [
-    { key: "match-forms-league", label: "Competitie", icon: <Trophy size={14} />, adminOnly: false },
-    { key: "match-forms-cup", label: "Beker", icon: <Award size={14} />, adminOnly: false },
-    { key: "match-forms-playoffs", label: "Play-Off", icon: <Target size={14} />, adminOnly: true },
+    { key: "match-forms-league", label: "Competitie", icon: <Trophy size={18} />, adminOnly: false },
+    { key: "match-forms-cup", label: "Beker", icon: <Award size={18} />, adminOnly: false },
+    { key: "match-forms-playoffs", label: "Play-off", icon: <Target size={18} />, adminOnly: true },
   ];
 
   const beheerItems = [
-    { key: "players", label: "Spelers", icon: <Users size={14} />, adminOnly: false },
-    { key: "scheidsrechters", label: "Scheidsrechters", icon: <Shield size={14} />, adminOnly: false },
-    { key: "schorsingen", label: "Mijn Schorsingen", icon: <Ban size={14} />, adminOnly: false, teamManagerOnly: true },
-    { key: "schorsingen", label: "Schorsingen", icon: <Shield size={14} />, adminOnly: true },
-    { key: "teams", label: "Teams (Admin)", icon: <Shield size={14} />, adminOnly: true },
-    { key: "users", label: "Gebruikers", icon: <User size={14} />, adminOnly: true },
+    { key: "players", label: "Spelers", icon: <Users size={18} />, adminOnly: false },
+    { key: "scheidsrechters", label: "Scheidsrechters", icon: <Shield size={18} />, adminOnly: false },
+    { key: "schorsingen", label: "Mijn Schorsingen", icon: <Ban size={18} />, adminOnly: false, teamManagerOnly: true },
+    { key: "schorsingen", label: "Schorsingen", icon: <Shield size={18} />, adminOnly: true },
+    { key: "teams", label: "Teams (Admin)", icon: <Shield size={18} />, adminOnly: true },
+    { key: "users", label: "Gebruikers", icon: <User size={18} />, adminOnly: true },
   ];
 
   const financieelItems = [
-    { key: "financial", label: "Financieel", icon: <DollarSign size={14} />, adminOnly: true },
+    { key: "financial", label: "Financieel", icon: <DollarSign size={18} />, adminOnly: true },
   ];
 
   const systeemItems = [
-    { key: "settings", label: "Instellingen", icon: <Settings size={14} />, adminOnly: true },
-    { key: "blog-management", label: "Blog Beheer", icon: <BookOpen size={14} />, adminOnly: true },
-    { key: "notification-management", label: "Notificaties", icon: <AlertTriangle size={14} />, adminOnly: true },
+    { key: "settings", label: "Instellingen", icon: <Settings size={18} />, adminOnly: true },
+    { key: "blog-management", label: "Blog Beheer", icon: <BookOpen size={18} />, adminOnly: true },
+    { key: "notification-management", label: "Notificaties", icon: <AlertTriangle size={18} />, adminOnly: true },
   ];
 
   // Visibility filtering similar to AdminSidebar
@@ -194,26 +196,18 @@ const Header: React.FC<HeaderProps> = ({
             </SheetTrigger>
             <SheetContent 
               side="right" 
-              className="navigation-modal w-80 bg-gradient-to-b from-white to-gray-50 border-l border-purple-200 shadow-2xl flex flex-col"
+              className="navigation-modal w-80 border-l border-purple-200 shadow-2xl flex flex-col"
+              style={{ backgroundColor: 'var(--color-100)' }}
             >
-              <SheetHeader className="border-b border-gray-200 pb-6 mb-6 flex-shrink-0">
-                <SheetTitle className="text-2xl font-bold text-purple-800 text-left">
-                  {isAuthenticated ? "Dashboard" : "Navigatie"}
-                </SheetTitle>
-                <SheetDescription className="sr-only">
-                  {isAuthenticated ? "Beheer je dashboard en navigeer door de applicatie" : "Navigeer door de verschillende secties van de website"}
-                </SheetDescription>
-              </SheetHeader>
-
-              <div className="space-y-6 flex-1 overflow-y-auto scrollbar-hide pb-24">
-                {/* User Info Section */}
-                {isAuthenticated && (
+              <SheetHeader className="border-b border-gray-200 pb-4 mb-4 flex-shrink-0 pr-16 sm:pr-14">
+                {/* User Info Section - Moved to header */}
+                {isAuthenticated ? (
                   <button
                     type="button"
-                    className="w-full p-4 bg-purple-200 rounded-xl shadow-sm border border-purple-200 text-left"
+                    className="w-full p-4 bg-purple-200 rounded-xl shadow-sm border border-purple-200 text-left hover:bg-purple-300/80 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
                     onClick={() => {
                       setIsSheetOpen(false);
-                      navigate(ADMIN_ROUTES.players);
+                      navigate(ADMIN_ROUTES.profile);
                     }}
                   >
                     <div className="flex items-center gap-4">
@@ -230,12 +224,23 @@ const Header: React.FC<HeaderProps> = ({
                       </div>
                     </div>
                   </button>
+                ) : (
+                  <>
+                    <SheetTitle className="text-2xl font-bold text-purple-800 text-left">
+                      Navigatie
+                    </SheetTitle>
+                    <SheetDescription className="sr-only">
+                      Navigeer door de verschillende secties van de website
+                    </SheetDescription>
+                  </>
                 )}
+              </SheetHeader>
 
+              <div className="space-y-6 flex-1 overflow-y-auto scrollbar-hide pb-24">
                 {/* Public Navigation Items */}
                 <div className="space-y-2">
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-2 mb-2">
-                    Menu
+                    Informatie
                   </h3>
                   {visiblePublicItems.map((item) => (
                     <button
@@ -246,11 +251,14 @@ const Header: React.FC<HeaderProps> = ({
                         const path = routeMap[item.key] || getPathFromTab(item.key);
                         navigate(path);
                       }}
-                      className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
+                      className={cn(
+                        "btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
+                        activeTab === item.key && 'active'
+                      )}
                     >
                       {React.cloneElement(item.icon as React.ReactElement, {
-                        size: 14,
-                        className: "mr-2"
+                        size: 18,
+                        className: "flex-shrink-0"
                       })}
                       {item.label}
                     </button>
@@ -259,126 +267,176 @@ const Header: React.FC<HeaderProps> = ({
 
                 {/* Admin Groups when authenticated */}
                 {isAuthenticated && (
-                  <div className="space-y-4">
+                  <Accordion type="multiple" defaultValue={["wedstrijdformulieren", "beheer"]} className="space-y-2">
                     {visibleWedstrijdformulierenItems.length > 0 && (
-                      <div className="space-y-2">
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Wedstrijdformulieren</h3>
-                        {visibleWedstrijdformulierenItems.map((item) => (
-                          <button
-                            key={item.key}
-                            onClick={() => { 
-                              setIsSheetOpen(false); 
-                              const path = routeMap[item.key] || getPathFromTab(item.key);
-                              navigate(path);
-                            }}
-                            className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
-                          >
-                            {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
+                      <AccordionItem value="wedstrijdformulieren" className="border-none">
+                        <AccordionTrigger className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-2 py-2 hover:no-underline">
+                          Formulieren
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-2 pt-2">
+                          {visibleWedstrijdformulierenItems.map((item) => (
+                            <button
+                              key={item.key}
+                              onClick={() => { 
+                                setIsSheetOpen(false); 
+                                const path = routeMap[item.key] || getPathFromTab(item.key);
+                                navigate(path);
+                              }}
+                              className={cn(
+                                "btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
+                                activeTab === item.key && 'active'
+                              )}
+                            >
+                              {React.cloneElement(item.icon as React.ReactElement, { 
+                                size: 18,
+                                className: "flex-shrink-0"
+                              })}
+                              {item.label}
+                            </button>
+                          ))}
+                        </AccordionContent>
+                      </AccordionItem>
                     )}
 
                     {visibleBeheerItems.length > 0 && (
-                      <div className="space-y-2">
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Beheer</h3>
-                        {visibleBeheerItems.map((item) => (
-                          <button
-                            key={item.key}
-                            onClick={() => {
-                              setIsSheetOpen(false);
-                              const path = routeMap[item.key] || getPathFromTab(item.key);
-                              navigate(path);
-                            }}
-                            className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
-                          >
-                            {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
+                      <AccordionItem value="beheer" className="border-none">
+                        <AccordionTrigger className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-2 py-2 hover:no-underline">
+                          Beheer
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-2 pt-2">
+                          {visibleBeheerItems.map((item) => (
+                            <button
+                              key={item.key}
+                              onClick={() => {
+                                setIsSheetOpen(false);
+                                const path = routeMap[item.key] || getPathFromTab(item.key);
+                                navigate(path);
+                              }}
+                              className={cn(
+                                "btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
+                                activeTab === item.key && 'active'
+                              )}
+                            >
+                              {React.cloneElement(item.icon as React.ReactElement, { 
+                                size: 18,
+                                className: "flex-shrink-0"
+                              })}
+                              {item.label}
+                            </button>
+                          ))}
+                        </AccordionContent>
+                      </AccordionItem>
                     )}
 
                     {visibleFinancieelItems.length > 0 && (
-                      <div className="space-y-2">
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Financieel</h3>
-                        {visibleFinancieelItems.map((item) => (
-                          <button
-                            key={item.key}
-                            onClick={() => { 
-                              setIsSheetOpen(false); 
-                              const path = routeMap[item.key] || getPathFromTab(item.key);
-                              navigate(path);
-                            }}
-                            className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
-                          >
-                            {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
+                      <AccordionItem value="financieel" className="border-none">
+                        <AccordionTrigger className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-2 py-2 hover:no-underline">
+                          Financieel
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-2 pt-2">
+                          {visibleFinancieelItems.map((item) => (
+                            <button
+                              key={item.key}
+                              onClick={() => { 
+                                setIsSheetOpen(false); 
+                                const path = routeMap[item.key] || getPathFromTab(item.key);
+                                navigate(path);
+                              }}
+                              className={cn(
+                                "btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
+                                activeTab === item.key && 'active'
+                              )}
+                            >
+                              {React.cloneElement(item.icon as React.ReactElement, { 
+                                size: 18,
+                                className: "flex-shrink-0"
+                              })}
+                              {item.label}
+                            </button>
+                          ))}
+                        </AccordionContent>
+                      </AccordionItem>
                     )}
 
                     {visibleSpeelformatenItems.length > 0 && (
-                      <div className="space-y-2">
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Speelformaten</h3>
-                        {visibleSpeelformatenItems.map((item) => (
-                          <button
-                            key={item.key}
-                            onClick={() => { 
-                              setIsSheetOpen(false); 
-                              const path = routeMap[item.key] || getPathFromTab(item.key);
-                              navigate(path);
-                            }}
-                            className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
-                          >
-                            {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
+                      <AccordionItem value="speelformaten" className="border-none">
+                        <AccordionTrigger className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-2 py-2 hover:no-underline">
+                          Speelformaten
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-2 pt-2">
+                          {visibleSpeelformatenItems.map((item) => (
+                            <button
+                              key={item.key}
+                              onClick={() => { 
+                                setIsSheetOpen(false); 
+                                const path = routeMap[item.key] || getPathFromTab(item.key);
+                                navigate(path);
+                              }}
+                              className={cn(
+                                "btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
+                                activeTab === item.key && 'active'
+                              )}
+                            >
+                              {React.cloneElement(item.icon as React.ReactElement, { 
+                                size: 18,
+                                className: "flex-shrink-0"
+                              })}
+                              {item.label}
+                            </button>
+                          ))}
+                        </AccordionContent>
+                      </AccordionItem>
                     )}
 
                     {visibleSysteemItems.length > 0 && (
-                      <div className="space-y-2">
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Systeem</h3>
-                        {visibleSysteemItems.map((item) => (
-                          <button
-                            key={item.key}
-                            onClick={() => { 
-                              setIsSheetOpen(false); 
-                              const path = routeMap[item.key] || getPathFromTab(item.key);
-                              navigate(path);
-                            }}
-                            className={`btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm${activeTab === item.key ? ' active' : ''}`}
-                          >
-                            {React.cloneElement(item.icon as React.ReactElement, { className: "mr-2" })}
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
+                      <AccordionItem value="instellingen" className="border-none">
+                        <AccordionTrigger className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-2 py-2 hover:no-underline">
+                          Instellingen
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-2 pt-2">
+                          {visibleSysteemItems.map((item) => (
+                            <button
+                              key={item.key}
+                              onClick={() => { 
+                                setIsSheetOpen(false); 
+                                const path = routeMap[item.key] || getPathFromTab(item.key);
+                                navigate(path);
+                              }}
+                              className={cn(
+                                "btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
+                                activeTab === item.key && 'active'
+                              )}
+                            >
+                              {React.cloneElement(item.icon as React.ReactElement, { 
+                                size: 18,
+                                className: "flex-shrink-0"
+                              })}
+                              {item.label}
+                            </button>
+                          ))}
+                        </AccordionContent>
+                      </AccordionItem>
                     )}
-                  </div>
+                  </Accordion>
                 )}
               </div>
 
               {/* Fixed bottom action bar */}
-              <div className="p-3 sticky bottom-0 bg-transparent">
+              <div className="p-3 sticky bottom-0 bg-gradient-to-t from-white via-white to-transparent safe-area-bottom">
                 {!isAuthenticated ? (
                   <button
                     onClick={() => { onLoginClick(); setIsSheetOpen(false); }}
-                    className="btn-nav active w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm"
+                    className="btn-nav active w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
                   >
-                    <User size={16} className="mr-1" />
+                    <User size={18} className="flex-shrink-0" />
                     Inloggen
                   </button>
                 ) : (
                   <button
                     onClick={handleLogout}
-                    className="btn-nav active w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm"
+                    className="btn-nav active w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
                   >
-                    <LogOut size={16} className="mr-1" />
+                    <LogOut size={18} className="flex-shrink-0" />
                     <span>Uitloggen</span>
                   </button>
                 )}

@@ -8,7 +8,6 @@ import ResponsiveStandingsTable from "@/components/tables/ResponsiveStandingsTab
 import { useCompetitionData, Team, MatchData } from "@/hooks/useCompetitionData";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/layout";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 
 
@@ -231,7 +230,6 @@ const CompetitiePage: React.FC = () => {
 
   const [selectedMatchday, setSelectedMatchday] = useState<string>("all");
   const [selectedTeam, setSelectedTeam] = useState<string>("all");
-  const isMobile = useIsMobile();
 
   const filteredMatches = useMemo(() => {
     const filtered = matches.all.filter((m) => {
@@ -282,17 +280,11 @@ const CompetitiePage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Header - PageHeader on mobile, inline header on desktop */}
-      {isMobile ? (
-        <PageHeader 
-          title="Competitiestand" 
-          subtitle="Seizoen 2025/2026"
-        />
-      ) : (
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold" style={{ color: 'var(--primary)' }}>Competitiestand 2025/2026</h2>
-        </div>
-      )}
+      {/* Header */}
+      <PageHeader 
+        title="Competitiestand" 
+        subtitle="Seizoen 2025/2026"
+      />
 
       <section role="region" aria-labelledby="standings-heading">
         <h2 id="standings-heading" className="sr-only">Competitiestand</h2>

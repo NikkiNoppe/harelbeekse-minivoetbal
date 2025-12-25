@@ -7,6 +7,7 @@ import { AppModal } from "@/components/modals";
 import { LoginModal } from "@/components/modals";
 import MainPages from "@/components/pages/MainPages";
 import { AdminDashboardLayout } from "@/components/pages/admin/AdminDashboardLayout";
+import UserProfilePage from "@/components/pages/user/UserProfilePage";
 import { useAuth } from "@/hooks/useAuth";
 import { useModal } from "@/context/ModalContext";
 import NotificationPopup from "@/components/common/NotificationPopup";
@@ -130,6 +131,7 @@ const Layout: React.FC = () => {
 
   const isAdminSection = user && adminTabs.includes(activeTab);
   const isPublicSection = publicTabs.includes(activeTab);
+  const isProfilePage = location.pathname === ADMIN_ROUTES.profile;
 
   // Voorwaardelijke rendering: Sidebar voor admin, Header voor publiek
   if (isAdminSection) {
@@ -168,7 +170,13 @@ const Layout: React.FC = () => {
         user={user}
       />
       <main className="flex-1 w-full bg-purple-100 pt-6">
-        {isPublicSection ? (
+        {isProfilePage ? (
+          <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-7xl mx-auto">
+              <UserProfilePage />
+            </div>
+          </div>
+        ) : isPublicSection ? (
           <MainPages activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
         ) : (
           <MainPages activeTab="algemeen" setActiveTab={setActiveTab} />

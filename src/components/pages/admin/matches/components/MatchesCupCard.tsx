@@ -36,25 +36,23 @@ const CupMatchCard: React.FC<CupMatchCardProps> = ({
 
   return (
     <div className="relative">
-      <div className="pt-14">
-        <MatchesCard
-          id={id}
-          home={home}
-          away={away}
-          homeScore={homeScore}
-          awayScore={awayScore}
-          date={date}
-          time={time}
-          location={location}
-          status={undefined}
-          nextMatch={nextMatch}
-          badgeSlot={<div></div>}
-        />
-      </div>
+      <MatchesCard
+        id={id}
+        home={home}
+        away={away}
+        homeScore={homeScore}
+        awayScore={awayScore}
+        date={date}
+        time={time}
+        location={location}
+        status={undefined}
+        nextMatch={nextMatch}
+        badgeSlot={<div></div>}
+      />
       
       {/* Tournament round badge - positioned absolutely at top right */}
       {tournamentRound && (
-        <div className="absolute top-16 right-3">
+        <div className="absolute top-2 right-2">
           <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-300 shadow-sm">
             {tournamentRound}
           </Badge>
@@ -63,7 +61,7 @@ const CupMatchCard: React.FC<CupMatchCardProps> = ({
       
       {/* Next match badge - positioned below tournament round */}
       {nextMatch && (
-        <div className="absolute top-2 right-1">
+        <div className="absolute top-2 right-2" style={{ marginTop: tournamentRound ? '24px' : '0' }}>
           <Badge variant="secondary" className="text-xs">
             <ArrowRight className="h-3 w-3 mr-1" />
             {nextMatch}

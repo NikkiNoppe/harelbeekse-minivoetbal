@@ -210,6 +210,15 @@ const App = () => (
                     </ProtectedRoute>
                   } />
                   
+                  {/* User Profile Route - Protected */}
+                  <Route path={ADMIN_ROUTES.profile} element={
+                    <ProtectedRoute>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Index />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  
                   {/* Other routes - Lazy loaded with Suspense */}
                   <Route path="/reset-password" element={
                     <Suspense fallback={<LoadingSpinner />}>

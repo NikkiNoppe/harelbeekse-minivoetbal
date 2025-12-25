@@ -66,7 +66,12 @@ const SheetContent = React.forwardRef<
       {...props}
     >
       {children}
-      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary flex items-center justify-center w-8 h-8">
+      <SheetPrimitive.Close 
+        className="absolute right-3 top-3 sm:right-4 sm:top-4 rounded-full bg-black/5 hover:bg-black/10 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 z-10"
+        style={{
+          transition: 'background 150ms'
+        }}
+      >
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </SheetPrimitive.Close>

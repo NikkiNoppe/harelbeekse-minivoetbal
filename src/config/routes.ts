@@ -140,6 +140,7 @@ export const ADMIN_ROUTES = {
   scheidsrechters: TEAMS_PLAYERS_ROUTES.admin.referees,
   'blog-management': SYSTEM_ROUTES.admin.blog,
   'notification-management': SYSTEM_ROUTES.admin.notifications,
+  profile: '/profile',
 } as const;
 
 // Route groupings for mobile navigation
@@ -213,6 +214,9 @@ export function getTabFromPath(path: string): TabName | null {
     if (subpath === 'cup') return 'match-forms-cup';
     if (subpath === 'playoffs') return 'match-forms-playoffs';
   }
+  
+  // Check profile route
+  if (path === '/profile') return 'profile';
   
   // Default fallback
   if (path === '/') return 'algemeen';
