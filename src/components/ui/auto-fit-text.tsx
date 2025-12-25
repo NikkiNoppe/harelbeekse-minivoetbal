@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 
 interface AutoFitTextProps {
   text: string;
@@ -19,45 +19,102 @@ const AutoFitText: React.FC<AutoFitTextProps> = ({
 }) => {
   const textRef = useRef<HTMLSpanElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [fontSize, setFontSize] = useState(maxFontSize);
+  const rafRef = useRef<number | null>(null);
+  const isAdjustingRef = useRef(false);
+  const lastWidthRef = useRef(0);
   
-  useEffect(() => {
-    const adjustFontSize = () => {
+  const adjustFontSize = useCallback(() => {
+    // Prevent concurrent adjustments
+    if (isAdjustingRef.current) return;
+    
+    // Cancel any pending RAF
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+    }
+    
+    rafRef.current = requestAnimationFrame(() => {
       if (!textRef.current || !containerRef.current) return;
       
       const container = containerRef.current;
       const textElement = textRef.current;
+      const containerWidth = container.clientWidth;
       
-      // Reset to max font size to start
+      // Skip if width hasn't changed significantly (prevents flickering)
+      if (Math.abs(containerWidth - lastWidthRef.current) < 2) return;
+      
+      lastWidthRef.current = containerWidth;
+      isAdjustingRef.current = true;
+      
+      // Use a temporary invisible element for measurements to avoid layout thrashing
+      const measureSpan = document.createElement('span');
+      measureSpan.style.cssText = `
+        position: absolute;
+        visibility: hidden;
+        height: auto;
+        width: auto;
+        white-space: nowrap;
+        font-family: ${window.getComputedStyle(textElement).fontFamily};
+        font-weight: ${window.getComputedStyle(textElement).fontWeight};
+      `;
+      measureSpan.textContent = text;
+      document.body.appendChild(measureSpan);
+      
       let currentSize = maxFontSize;
-      textElement.style.fontSize = `${currentSize}px`;
+      measureSpan.style.fontSize = `${currentSize}px`;
       
-      // Reduce font size until text fits
-      while (
-        (textElement.scrollWidth > container.clientWidth || 
-         textElement.scrollHeight > container.clientHeight) &&
-        currentSize > minFontSize
-      ) {
-        currentSize -= step;
-        textElement.style.fontSize = `${currentSize}px`;
+      // Binary search for optimal font size (faster than linear)
+      let minSize = minFontSize;
+      let maxSize = maxFontSize;
+      
+      while (maxSize - minSize > step) {
+        currentSize = (minSize + maxSize) / 2;
+        measureSpan.style.fontSize = `${currentSize}px`;
+        
+        if (measureSpan.offsetWidth <= containerWidth) {
+          minSize = currentSize;
+        } else {
+          maxSize = currentSize;
+        }
       }
       
-      setFontSize(currentSize);
-    };
+      // Use the size that fits
+      currentSize = minSize;
+      
+      // Clean up measurement element
+      document.body.removeChild(measureSpan);
+      
+      // Apply the final size directly (no state update to prevent re-renders)
+      textElement.style.fontSize = `${Math.max(minFontSize, currentSize)}px`;
+      
+      isAdjustingRef.current = false;
+      rafRef.current = null;
+    });
+  }, [text, maxFontSize, minFontSize, step]);
+  
+  useEffect(() => {
+    // Initial adjustment with a small delay to ensure layout is ready
+    const timer = setTimeout(adjustFontSize, 0);
     
-    // Initial adjustment
-    adjustFontSize();
+    // Use ResizeObserver with debouncing
+    let resizeTimer: NodeJS.Timeout;
+    const resizeObserver = new ResizeObserver(() => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(adjustFontSize, 50); // 50ms debounce
+    });
     
-    // Adjust on resize
-    const resizeObserver = new ResizeObserver(adjustFontSize);
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
     }
     
     return () => {
+      clearTimeout(timer);
+      clearTimeout(resizeTimer);
       resizeObserver.disconnect();
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+      }
     };
-  }, [text, maxFontSize, minFontSize, step]);
+  }, [adjustFontSize]);
   
   return (
     <div 
@@ -76,13 +133,14 @@ const AutoFitText: React.FC<AutoFitTextProps> = ({
         ref={textRef}
         className="auto-fit-text-span"
         style={{
-          fontSize: `${fontSize}px`,
+          fontSize: `${maxFontSize}px`,
           lineHeight: '1.2',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           width: '100%',
           display: 'block',
+          transition: 'font-size 0.1s ease-out',
         }}
       >
         {text}

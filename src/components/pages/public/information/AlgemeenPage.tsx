@@ -162,7 +162,7 @@ const NewsSection = memo(() => {
   const headingId = React.useId();
   return (
     <section role="region" aria-labelledby={headingId}>
-      <h2 id={headingId} className="text-2xl font-semibold mb-4">Laatste Nieuws</h2>
+      <h2 id={headingId} className="text-2xl font-semibold mb-4" style={{ color: 'var(--primary)' }}>Laatste Nieuws</h2>
       <div className="min-h-[400px]">
         {renderContent()}
       </div>

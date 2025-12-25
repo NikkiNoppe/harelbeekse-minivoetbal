@@ -89,21 +89,37 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, 
               )}
             />
             
-            <div className="modal__actions">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="btn btn--primary"
-              >
-                {isLoading ? "Versturen..." : "Wachtwoord resetten"}
-              </button>
+            <div className="modal__actions" style={{ display: 'flex', flexDirection: 'column-reverse', gap: '0.875rem', marginTop: '1.5rem' }}>
               <button
                 type="button"
                 onClick={() => onOpenChange(false)}
                 className="btn btn--secondary"
                 disabled={isLoading}
+                style={{
+                  width: '100%',
+                  minHeight: '48px',
+                  fontSize: '1rem',
+                  fontWeight: '500',
+                  borderRadius: 'var(--radius)',
+                  transition: 'all 150ms ease-in-out'
+                }}
               >
                 Annuleren
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="btn btn--primary"
+                style={{
+                  width: '100%',
+                  minHeight: '48px',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  borderRadius: 'var(--radius)',
+                  transition: 'all 150ms ease-in-out'
+                }}
+              >
+                {isLoading ? "Versturen..." : "Wachtwoord resetten"}
               </button>
             </div>
           </form>

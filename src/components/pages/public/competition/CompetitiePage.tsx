@@ -209,7 +209,7 @@ const CompetitiePage: React.FC = () => {
         />
       ) : (
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold">Competitiestand 2025/2026</h2>
+          <h2 className="text-2xl font-semibold" style={{ color: 'var(--primary)' }}>Competitiestand 2025/2026</h2>
         </div>
       )}
 

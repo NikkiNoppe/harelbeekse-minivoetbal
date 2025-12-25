@@ -105,6 +105,9 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
 
     if (!open) return null;
 
+    // Bepaal of modal klein genoeg is voor centrale positie op mobile
+    const isSmallModal = size === 'xs' || size === 'sm';
+    
     const modalContent = (
       <div 
         style={{
@@ -114,29 +117,34 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
           background: 'rgba(0, 0, 0, 0.8)',
           backdropFilter: 'blur(4px)',
           display: 'flex',
-          alignItems: 'flex-end',
+          alignItems: isSmallModal ? 'center' : 'flex-start',
           justifyContent: 'center',
-          animation: 'fadeIn 200ms ease-out'
+          animation: 'fadeIn 200ms ease-out',
+          padding: isSmallModal ? '1rem' : '0',
+          paddingTop: isSmallModal ? '1rem' : 'env(safe-area-inset-top, 0)'
         }}
         onClick={handleOverlayClick}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}
         aria-describedby={subtitle ? 'modal-subtitle' : undefined}
+        data-modal-size={size}
       >
         <div 
           ref={ref}
           style={{
-            background: 'white',
-            borderRadius: '1rem 1rem 0 0',
-            maxWidth: sizeMap[size],
-            width: '90%',
+            background: 'var(--color-100)',
+            borderRadius: '1rem',
+            maxWidth: `min(${sizeMap[size]}, calc(100vw - 2rem))`,
+            width: isSmallModal ? `min(${sizeMap[size]}, calc(100vw - 2rem))` : 'calc(100vw - 2rem)',
+            minWidth: 'auto',
             maxHeight: '85vh',
             display: 'flex',
             flexDirection: 'column',
-            animation: 'slideUp 250ms ease-out',
-            boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.2)',
-            position: 'relative'
+            animation: isSmallModal ? 'fadeIn 250ms ease-out' : 'slideDown 250ms ease-out',
+            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2)',
+            position: 'relative',
+            marginTop: 0
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -172,26 +180,15 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
             </button>
           )}
 
-          {/* Drag Handle */}
-          <div
-            style={{
-              width: '2.5rem',
-              height: '4px',
-              background: 'rgba(0, 0, 0, 0.2)',
-              borderRadius: '2px',
-              margin: '0.75rem auto 0.5rem',
-              flexShrink: 0
-            }}
-            aria-hidden="true"
-          />
 
           {/* Header */}
           {(title || subtitle) && (
             <div
               style={{
-                padding: '1rem 1.5rem',
-                borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
-                flexShrink: 0
+                padding: '1.25rem 1.5rem',
+                borderBottom: 'none',
+                flexShrink: 0,
+                background: 'var(--color-100)'
               }}
             >
               {title && (
@@ -200,9 +197,15 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
                   style={{
                     fontSize: '1.25rem',
                     fontWeight: 600,
-                    color: '#4a2a6b',
+                    color: 'var(--color-700)',
                     margin: 0,
-                    marginBottom: subtitle ? '0.25rem' : 0
+                    marginBottom: subtitle ? '0.25rem' : 0,
+                    minHeight: '2rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingRight: showCloseButton && !persistent ? '3rem' : 0,
+                    textAlign: 'center'
                   }}
                 >
                   {title}
@@ -213,8 +216,11 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
                   id="modal-subtitle"
                   style={{
                     fontSize: '0.875rem',
-                    color: '#666',
-                    margin: 0
+                    color: 'var(--color-600)',
+                    margin: 0,
+                    marginTop: '0.75rem',
+                    lineHeight: 1.5,
+                    textAlign: 'center'
                   }}
                 >
                   {subtitle}
@@ -229,7 +235,8 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
               padding: '1.5rem',
               overflowY: 'auto',
               flex: 1,
-              minHeight: 0
+              minHeight: 0,
+              background: 'var(--color-100)'
             }}
           >
             {children}
@@ -239,52 +246,63 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
           {(primaryAction || secondaryAction) && (
             <div
               style={{
-                padding: '1rem 1.5rem',
-                borderTop: '1px solid rgba(0, 0, 0, 0.1)',
+                padding: '1.25rem 1.5rem',
+                borderTop: '1px solid var(--color-200)',
                 display: 'flex',
                 flexDirection: 'column-reverse',
-                gap: '0.75rem',
-                flexShrink: 0
+                gap: '0.875rem',
+                flexShrink: 0,
+                background: 'var(--color-50)'
               }}
             >
               {secondaryAction && (
                 <button
                   onClick={secondaryAction.onClick}
                   disabled={secondaryAction.disabled || secondaryAction.loading}
-                  className="btn btn--secondary w-full"
+                  className="btn btn--secondary"
                   style={{
-                    minHeight: '48px'
+                    width: '100%',
+                    minHeight: '48px',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    borderRadius: 'var(--radius)',
+                    transition: 'all 150ms ease-in-out'
                   }}
                 >
-                  {secondaryAction.loading ? "Loading..." : secondaryAction.label}
+                  {secondaryAction.loading ? "Laden..." : secondaryAction.label}
                 </button>
               )}
               {primaryAction && (
                 <button
                   onClick={primaryAction.onClick}
                   disabled={primaryAction.disabled || primaryAction.loading}
-                  className={`btn ${primaryAction.variant === "destructive" ? "btn--danger" : "btn--primary"} w-full`}
+                  className={`btn ${primaryAction.variant === "destructive" ? "btn--danger" : "btn--primary"}`}
                   style={{
-                    minHeight: '48px'
+                    width: '100%',
+                    minHeight: '48px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    borderRadius: 'var(--radius)',
+                    transition: 'all 150ms ease-in-out'
                   }}
                 >
-                  {primaryAction.loading ? "Loading..." : primaryAction.label}
+                  {primaryAction.loading ? "Laden..." : primaryAction.label}
                 </button>
               )}
             </div>
           )}
 
-          {/* Animations */}
+          {/* Animations & Responsive Styles */}
           <style>{`
             @keyframes fadeIn {
               from { opacity: 0; }
               to { opacity: 1; }
             }
             
-            @keyframes slideUp {
+            @keyframes slideDown {
               from { 
                 opacity: 0;
-                transform: translateY(100%); 
+                transform: translateY(-100%); 
               }
               to { 
                 opacity: 1;
@@ -292,10 +310,87 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
               }
             }
 
+            /* Desktop: Altijd gecentreerd met ronde hoeken */
+            @media (min-width: 640px) {
+              [role="dialog"] {
+                align-items: center !important;
+                padding: 2rem !important;
+              }
+              [role="dialog"] > div {
+                border-radius: 1rem !important;
+                margin-top: 0 !important;
+                width: ${sizeMap[size]} !important;
+                max-width: ${sizeMap[size]} !important;
+                min-width: auto !important;
+              }
+              /* Desktop: Buttons naast elkaar */
+              [role="dialog"] > div > div:last-of-type {
+                flex-direction: row !important;
+                gap: 1rem !important;
+              }
+              [role="dialog"] > div > div:last-of-type button {
+                flex: 1 !important;
+                min-width: 120px !important;
+              }
+            }
+
+            /* Mobile: Kleine modals (xs, sm) centraal */
+            @media (max-width: 639px) {
+              [role="dialog"][data-modal-size="xs"],
+              [role="dialog"][data-modal-size="sm"] {
+                align-items: center !important;
+                padding: 1rem !important;
+              }
+              [role="dialog"][data-modal-size="xs"] > div,
+              [role="dialog"][data-modal-size="sm"] > div {
+                border-radius: 1rem !important;
+                width: calc(100vw - 2rem) !important;
+                min-width: auto !important;
+                max-width: calc(100vw - 2rem) !important;
+              }
+            }
+
+            /* Mobile: Grote modals (md, lg) bovenaan */
+            @media (max-width: 639px) {
+              [role="dialog"][data-modal-size="md"],
+              [role="dialog"][data-modal-size="lg"] {
+                align-items: flex-start !important;
+                padding: 1rem !important;
+                padding-top: max(env(safe-area-inset-top, 1rem), 1rem) !important;
+              }
+              [role="dialog"][data-modal-size="md"] > div,
+              [role="dialog"][data-modal-size="lg"] > div {
+                width: calc(100vw - 2rem) !important;
+                max-width: calc(100vw - 2rem) !important;
+                min-width: auto !important;
+                border-radius: 1rem !important;
+              }
+            }
+
+            /* Button hover states voor desktop */
+            @media (hover: hover) and (pointer: fine) {
+              [role="dialog"] button.btn:hover:not(:disabled) {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(96, 54, 140, 0.2);
+              }
+            }
+
+            /* Button active state */
+            [role="dialog"] button.btn:active:not(:disabled) {
+              transform: translateY(0);
+            }
+
+            /* Disabled button styling */
+            [role="dialog"] button.btn:disabled {
+              opacity: 0.6;
+              cursor: not-allowed;
+            }
+
             @media (prefers-reduced-motion: reduce) {
               * {
                 animation-duration: 0.01ms !important;
                 animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
               }
             }
           `}</style>

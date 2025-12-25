@@ -162,19 +162,25 @@ const ReglementPage: React.FC = () => {
         />
       ) : (
         <div className="flex justify-between items-center">
-          <h2 id={mainHeadingId} className="text-2xl font-semibold">Reglement</h2>
+          <h2 id={mainHeadingId} className="text-2xl font-semibold" style={{ color: 'var(--primary)' }}>Reglement</h2>
         </div>
       )}
       
       <section role="region" aria-labelledby={mainHeadingId} className="max-w-2xl mx-auto">
-        <Accordion type="single" collapsible defaultValue="">
+        <Accordion type="single" collapsible defaultValue="" className="space-y-3">
         {reglement.map((h, i) => (
-          <AccordionItem key={h.title} value={h.title} className="border-b border-border">
-            <AccordionTrigger className="text-lg text-foreground font-semibold bg-muted/50 hover:bg-muted px-4">
-              {h.title}
+          <AccordionItem 
+            key={h.title} 
+            value={h.title} 
+            className="border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white"
+          >
+            <AccordionTrigger 
+              className="text-base font-semibold px-5 py-4 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4"
+              style={{ color: 'var(--color-700)' }}
+            >
+              <span className="text-left flex-1">{h.title}</span>
             </AccordionTrigger>
-            <p className="h-2"></p>
-            <AccordionContent className="bg-card px-4 text-card-foreground" style={{ backgroundColor: 'white' }}>
+            <AccordionContent className="px-5 py-4 text-card-foreground border-t border-[var(--color-200)]" style={{ backgroundColor: 'white' }}>
               {h.content}
             </AccordionContent>
           </AccordionItem>

@@ -40,8 +40,8 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   const { submitMatchForm } = useEnhancedMatchFormSubmission();
   const { toast } = useToast();
   
-  // Collapsible state for mobile - both teams open by default on desktop, closed on mobile
-  const [homeTeamOpen, setHomeTeamOpen] = useState(true);
+  // Collapsible state for mobile - both teams closed by default
+  const [homeTeamOpen, setHomeTeamOpen] = useState(false);
   const [awayTeamOpen, setAwayTeamOpen] = useState(false);
   
   // Convert match date string to Date object for suspension checks
@@ -120,12 +120,12 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
   return (
     <div className="space-y-4">
       {/* Mobile-first: Stacked cards, collapsible on mobile */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Home Team Card */}
         <Collapsible open={homeTeamOpen} onOpenChange={setHomeTeamOpen}>
           <Card className="bg-card border-border">
             <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardHeader className="text-base font-semibold bg-white hover:bg-[var(--color-50)] px-5 py-4 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Users className="h-5 w-5 text-primary" />
@@ -140,8 +140,8 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
                 </div>
               </CardHeader>
             </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="pt-0">
+            <CollapsibleContent className="border-t border-[var(--color-200)]">
+              <CardContent className="pt-4">
                 <OptimizedMatchesPlayerSelectionTable
                   teamId={match.homeTeamId}
                   matchDate={matchDate}
@@ -171,7 +171,7 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
         <Collapsible open={awayTeamOpen} onOpenChange={setAwayTeamOpen}>
           <Card className="bg-card border-border">
             <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardHeader className="text-base font-semibold bg-white hover:bg-[var(--color-50)] px-5 py-4 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Users className="h-5 w-5 text-primary" />
@@ -186,8 +186,8 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
                 </div>
               </CardHeader>
             </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="pt-0">
+            <CollapsibleContent className="border-t border-[var(--color-200)]">
+              <CardContent className="pt-4">
                 <OptimizedMatchesPlayerSelectionTable
                   teamId={match.awayTeamId}
                   matchDate={matchDate}

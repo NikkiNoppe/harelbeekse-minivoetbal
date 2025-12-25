@@ -32,7 +32,14 @@ const MatchesFormActions: React.FC<MatchesFormActionsProps> = ({
       <Button
         onClick={onSubmit}
         disabled={isSubmitDisabled}
-        className="btn btn--primary flex items-center gap-2 px-8"
+        className="btn btn--primary flex items-center gap-2 w-full"
+        style={{ 
+          minHeight: '48px', 
+          fontSize: '1rem', 
+          fontWeight: '600', 
+          borderRadius: 'var(--radius)', 
+          transition: 'all 150ms ease-in-out' 
+        }}
       >
         {isSubmitting ? (
           <Loader2 className="h-4 w-4 animate-spin" />

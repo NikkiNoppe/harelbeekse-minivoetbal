@@ -107,7 +107,7 @@ const TournamentLoading = memo(() => {
         />
       ) : (
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold flex items-center gap-2 text-foreground">
+          <h2 className="text-2xl font-semibold flex items-center gap-2 text-foreground" style={{ color: 'var(--primary)' }}>
             <Award className="h-5 w-5" />
             Beker 2025/2026
           </h2>
@@ -139,7 +139,7 @@ const TournamentError = memo(({
         />
       ) : (
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold flex items-center gap-2 text-foreground">
+          <h2 className="text-2xl font-semibold flex items-center gap-2 text-foreground" style={{ color: 'var(--primary)' }}>
             <Award className="h-5 w-5" />
             Beker 2025/2026
           </h2>
@@ -172,7 +172,7 @@ const TournamentEmpty = memo(() => {
         />
       ) : (
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold flex items-center gap-2 text-foreground">
+          <h2 className="text-2xl font-semibold flex items-center gap-2 text-foreground" style={{ color: 'var(--primary)' }}>
             <Award className="h-5 w-5" />
             Beker 2025/2026
           </h2>
@@ -210,7 +210,7 @@ const TournamentContent = memo(({
         />
       ) : (
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold flex items-center gap-2 text-foreground">
+          <h2 className="text-2xl font-semibold flex items-center gap-2 text-foreground" style={{ color: 'var(--primary)' }}>
             <Award className="h-5 w-5" />
             Beker 2025/2026
           </h2>

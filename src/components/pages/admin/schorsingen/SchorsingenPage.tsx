@@ -125,7 +125,7 @@ const SchorsingenPage: React.FC = memo(() => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-semibold flex items-center gap-2">
+            <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
               <Shield className="h-6 w-6 text-primary" />
               Schorsingen - Mijn Team
             </h2>
@@ -167,7 +167,7 @@ const SchorsingenPage: React.FC = memo(() => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-semibold flex items-center gap-2">
+            <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
               <Shield className="h-6 w-6 text-primary" />
               Schorsingen - Mijn Team
             </h2>
@@ -202,7 +202,7 @@ const SchorsingenPage: React.FC = memo(() => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-semibold flex items-center gap-2">
+          <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
             <Shield className="h-6 w-6 text-primary" />
             Schorsingen - Mijn Team
           </h2>

@@ -294,7 +294,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
     return (
       <div className="space-y-8 animate-slide-up">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold flex items-center gap-2">
+          <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
             <FileText className="h-5 w-5" />
             Wedstrijdformulieren
           </h2>
@@ -307,7 +307,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
   return (
     <div className="space-y-8 animate-slide-up">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold flex items-center gap-2">
+        <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
           <FileText className="h-5 w-5" />
           Wedstrijdformulieren
         </h2>
