@@ -5,13 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle } from "lucide-react";
 import MatchesCard from "../../admin/matches/components/MatchesCard";
 import ResponsiveStandingsTable from "@/components/tables/ResponsiveStandingsTable";
-import ResponsiveScheduleTable from "@/components/tables/ResponsiveScheduleTable";
 import { useCompetitionData, Team, MatchData } from "@/hooks/useCompetitionData";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/layout";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 
 
 // Uniform skeleton for standings table
@@ -71,6 +69,72 @@ const ScheduleTableSkeleton = memo(() => (
     </TableBody>
   </Table>
 ));
+
+// Compact match list item - 2 lines max with perfect time centering
+const MatchListItem = memo(({ match }: { match: MatchData }) => {
+  const isCompleted = match.homeScore !== undefined && match.awayScore !== undefined;
+  
+  return (
+    <div className="py-2.5 px-3 border-b last:border-0 hover:bg-muted/20 transition-colors" style={{ borderColor: 'var(--accent)' }}>
+      {/* Line 1: Teams with scores - Grid layout */}
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mb-1">
+        {/* Home Team - Left aligned */}
+        <div className="text-sm font-medium leading-tight text-left truncate">
+          {match.homeTeamName}
+        </div>
+        
+        {/* Center: VS + Scores */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {isCompleted ? (
+            <>
+              <span className="text-base font-bold min-w-[20px] text-center">{match.homeScore}</span>
+              <span className="text-xs" style={{ color: 'var(--accent)' }}>-</span>
+              <span className="text-base font-bold min-w-[20px] text-center">{match.awayScore}</span>
+            </>
+          ) : (
+            <span className="text-xs font-medium" style={{ color: 'var(--accent)' }}>vs</span>
+          )}
+        </div>
+        
+        {/* Away Team - Right aligned */}
+        <div className="text-sm font-medium leading-tight text-right truncate">
+          {match.awayTeamName}
+        </div>
+      </div>
+
+      {/* Line 2: Date, time (perfect center), location (right) - Grid layout */}
+      <div className="grid grid-cols-3 gap-2 text-xs" style={{ color: 'var(--accent)', fontSize: '11px' }}>
+        <span className="text-left">{match.date}</span>
+        <span className="text-center font-medium">{match.time || ''}</span>
+        <span className="text-right">{match.location || ''}</span>
+      </div>
+    </div>
+  );
+});
+MatchListItem.displayName = 'MatchListItem';
+
+// Group matches by speeldag
+const MatchGroup = memo(({ speeldag, matches }: { 
+  speeldag: string; 
+  matches: MatchData[];
+}) => {
+  return (
+    <div className="mb-4">
+      {/* Speeldag header */}
+      <div className="flex items-center justify-between px-3 py-2 mb-2 rounded-lg" style={{ backgroundColor: 'var(--accent)' }}>
+        <h4 className="text-sm font-semibold text-white">{speeldag}</h4>
+      </div>
+      
+      {/* Matches */}
+      <div className="rounded-lg overflow-hidden bg-card" style={{ backgroundColor: 'white' }}>
+        {matches.map((match) => (
+          <MatchListItem key={match.matchId} match={match} />
+        ))}
+      </div>
+    </div>
+  );
+});
+MatchGroup.displayName = 'MatchGroup';
 
 // Memoized standings section
 const StandingsSection = memo(({ 
@@ -165,14 +229,14 @@ const CompetitiePage: React.FC = () => {
     matchesLoading,
   } = useCompetitionData();
 
-  const [selectedMatchday, setSelectedMatchday] = useState<string | null>(null);
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [selectedMatchday, setSelectedMatchday] = useState<string>("all");
+  const [selectedTeam, setSelectedTeam] = useState<string>("all");
   const isMobile = useIsMobile();
 
   const filteredMatches = useMemo(() => {
     const filtered = matches.all.filter((m) => {
-      if (selectedMatchday && m.matchday !== selectedMatchday) return false;
-      if (selectedTeam && m.homeTeamName !== selectedTeam && m.awayTeamName !== selectedTeam) return false;
+      if (selectedMatchday !== "all" && m.matchday !== selectedMatchday) return false;
+      if (selectedTeam !== "all" && m.homeTeamName !== selectedTeam && m.awayTeamName !== selectedTeam) return false;
       return true;
     });
     return filtered.sort((a, b) => {
@@ -181,6 +245,23 @@ const CompetitiePage: React.FC = () => {
       return aKey.localeCompare(bKey);
     });
   }, [matches.all, selectedMatchday, selectedTeam]);
+
+  // Group matches by speeldag
+  const groupedMatches = useMemo(() => {
+    const groups = new Map<string, MatchData[]>();
+    filteredMatches.forEach(match => {
+      const speeldag = match.matchday || 'Overige';
+      if (!groups.has(speeldag)) {
+        groups.set(speeldag, []);
+      }
+      groups.get(speeldag)!.push(match);
+    });
+    return Array.from(groups.entries()).sort(([a], [b]) => {
+      const numA = parseInt(a.match(/\d+/)?.[0] || '999');
+      const numB = parseInt(b.match(/\d+/)?.[0] || '999');
+      return numA - numB;
+    });
+  }, [filteredMatches]);
 
   // Format: MA 01-09-25
   const formatDutchDayShort = (dateStr: string): string => {
@@ -227,46 +308,52 @@ const CompetitiePage: React.FC = () => {
       <section role="region" aria-labelledby="schedule-heading">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle id="schedule-heading">Speelschema</CardTitle>
-            <CardDescription>Volledig overzicht van alle wedstrijden</CardDescription>
+            <CardTitle id="schedule-heading" className="text-lg">Speelschema</CardTitle>
           </CardHeader>
         <CardContent className="p-4 pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {/* Filters - Mobile-first with automatic responsive layout */}
+          <FilterGroup columns={1} className="mb-4">
+            <FilterSelect
+              label="Speeldag"
+              value={selectedMatchday}
+              onValueChange={setSelectedMatchday}
+              placeholder="Alle speeldagen"
+              options={[
+                { value: "all", label: "Alle speeldagen" },
+                ...matchdays.map(d => ({ value: d, label: d }))
+              ]}
+            />
+            <FilterSelect
+              label="Team"
+              value={selectedTeam}
+              onValueChange={setSelectedTeam}
+              placeholder="Alle teams"
+              options={[
+                { value: "all", label: "Alle teams" },
+                ...teamNames.map(t => ({ value: t, label: t }))
+              ]}
+            />
+          </FilterGroup>
+
+          {/* Grouped Matches */}
+          {groupedMatches.length > 0 ? (
             <div>
-              <Label className="mb-2 block">Speeldag</Label>
-              <Select value={selectedMatchday ?? "all"} onValueChange={(v) => setSelectedMatchday(v === "all" ? null : v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Alle speeldagen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle speeldagen</SelectItem>
-                  {matchdays.map((d) => (
-                    <SelectItem key={d} value={d}>{d}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {groupedMatches.map(([speeldag, matches]) => (
+                <MatchGroup 
+                  key={speeldag}
+                  speeldag={speeldag}
+                  matches={matches.map((m) => ({
+                    ...m,
+                    date: formatDutchDayShort(m.date),
+                  }))}
+                />
+              ))}
             </div>
-            <div>
-              <Label className="mb-2 block">Team</Label>
-              <Select value={selectedTeam ?? "all"} onValueChange={(v) => setSelectedTeam(v === "all" ? null : v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Alle teams" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle teams</SelectItem>
-                  {teamNames.map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          ) : (
+            <div className="text-center py-8 text-sm" style={{ color: 'var(--accent)' }}>
+              Geen wedstrijden gevonden met de huidige filters
             </div>
-          </div>
-          <ResponsiveScheduleTable
-            matches={filteredMatches.map((m) => ({
-              ...m,
-              date: formatDutchDayShort(m.date),
-            }))}
-          />
+          )}
         </CardContent>
       </Card>
       </section>
