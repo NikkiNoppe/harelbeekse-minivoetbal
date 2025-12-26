@@ -74,10 +74,18 @@ export const fetchUpcomingMatches = async (
         });
       }
 
-    if (error) {
-      console.error("[fetchUpcomingMatches] Error:", error);
-      throw error;
-    }
+      if (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error(`❌ Error fetching matches (${competitionType || 'all'}):`, error);
+          console.error('Error details:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
+        }
+        throw error;
+      }
 
     if (!allMatches) return [];
 

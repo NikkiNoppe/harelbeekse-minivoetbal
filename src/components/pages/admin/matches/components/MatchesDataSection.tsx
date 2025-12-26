@@ -37,7 +37,7 @@ const MatchInputField = React.memo<{
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       placeholder={placeholder}
-      className="input-login-style h-9"
+      className="input-login-style h-8 text-sm"
     />
   </div>
 ));
@@ -63,7 +63,7 @@ const RefereeSelector = React.memo<{
         onValueChange={onRefereeChange}
         disabled={disabled || loading}
       >
-        <SelectTrigger className="dropdown-login-style h-9 w-full md:w-auto">
+        <SelectTrigger className="dropdown-login-style h-8 text-sm w-full md:w-auto">
           <SelectValue placeholder={loading ? "Laden..." : selectedReferee || "Selecteer scheidsrechter"} />
         </SelectTrigger>
         <SelectContent className="dropdown-content-login-style z-modal bg-card" style={{ backgroundColor: 'white' }}>
@@ -156,14 +156,14 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
       <Collapsible open={isGegevensOpen} onOpenChange={setIsGegevensOpen}>
         <Card className="bg-card border-border">
           <CollapsibleTrigger asChild>
-            <CardHeader className="text-base font-semibold bg-white hover:bg-[var(--color-50)] px-5 py-4 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
+            <CardHeader className="text-sm font-semibold bg-white hover:bg-[var(--color-50)] px-4 py-3 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
+                <CardTitle className="flex items-center gap-2 text-sm">
                   Gegevens
                 </CardTitle>
                 <ChevronDown
                   className={cn(
-                    "h-5 w-5 text-muted-foreground transition-transform duration-200",
+                    "h-4 w-4 text-muted-foreground transition-transform duration-200",
                     isGegevensOpen && "transform rotate-180"
                   )}
                 />

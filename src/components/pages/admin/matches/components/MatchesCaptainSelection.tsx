@@ -52,7 +52,7 @@ const MatchesCaptainSelection: React.FC<MatchesCaptainSelectionProps> = ({
         onValueChange={handleCaptainChange}
         disabled={!canEdit || !hasPlayers}
       >
-        <SelectTrigger className="w-full h-9 mt-1 dropdown-login-style">
+        <SelectTrigger className="w-full h-8 text-sm mt-1 dropdown-login-style">
           <SelectValue placeholder={hasPlayers ? "Selecteer aanvoerder" : "Geen spelers beschikbaar"} />
         </SelectTrigger>
         <SelectContent className="dropdown-content-login-style z-[1000] bg-white">

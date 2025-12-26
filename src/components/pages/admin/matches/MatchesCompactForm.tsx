@@ -242,14 +242,14 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       <Collapsible open={isBoetesOpen} onOpenChange={setIsBoetesOpen}>
         <Card className="bg-card border-border">
           <CollapsibleTrigger asChild>
-            <CardHeader className="text-base font-semibold bg-white hover:bg-[var(--color-50)] px-5 py-4 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
+            <CardHeader className="text-sm font-semibold bg-white hover:bg-[var(--color-50)] px-4 py-3 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
+                <CardTitle className="flex items-center gap-2 text-sm">
                   Boetes
                 </CardTitle>
                 <ChevronDown
                   className={cn(
-                    "h-5 w-5 text-muted-foreground transition-transform duration-200",
+                    "h-4 w-4 text-muted-foreground transition-transform duration-200",
                     isBoetesOpen && "transform rotate-180"
                   )}
                 />
@@ -270,14 +270,14 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       <Collapsible open={isNotitiesOpen} onOpenChange={setIsNotitiesOpen}>
         <Card className="bg-card border-border">
           <CollapsibleTrigger asChild>
-            <CardHeader className="text-base font-semibold bg-white hover:bg-[var(--color-50)] px-5 py-4 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
+            <CardHeader className="text-sm font-semibold bg-white hover:bg-[var(--color-50)] px-4 py-3 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
+                <CardTitle className="flex items-center gap-2 text-sm">
                   Notities
                 </CardTitle>
                 <ChevronDown
                   className={cn(
-                    "h-5 w-5 text-muted-foreground transition-transform duration-200",
+                    "h-4 w-4 text-muted-foreground transition-transform duration-200",
                     isNotitiesOpen && "transform rotate-180"
                   )}
                 />
@@ -328,7 +328,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       />
 
       {/* Spelers */}
-      <h3 className="text-lg font-semibold  text-center text-purple-dark">Spelers</h3>
+      <h3 className="text-sm font-semibold text-center text-purple-dark">Spelers</h3>
       
       <PlayerSelectionSection
         match={match}
@@ -348,14 +348,14 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         <Collapsible open={isKaartenOpen} onOpenChange={setIsKaartenOpen}>
           <Card className="bg-card border-border">
             <CollapsibleTrigger asChild>
-              <CardHeader className="text-base font-semibold bg-white hover:bg-[var(--color-50)] px-5 py-4 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
+              <CardHeader className="text-sm font-semibold bg-white hover:bg-[var(--color-50)] px-4 py-3 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-lg">
+                  <CardTitle className="flex items-center gap-2 text-sm">
                     Kaarten
                   </CardTitle>
                   <ChevronDown
                     className={cn(
-                      "h-5 w-5 text-muted-foreground transition-transform duration-200",
+                      "h-4 w-4 text-muted-foreground transition-transform duration-200",
                       isKaartenOpen && "transform rotate-180"
                     )}
                   />

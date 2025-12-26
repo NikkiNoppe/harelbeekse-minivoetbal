@@ -163,7 +163,7 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
                 <div className="w-full md:w-1/3">
                   <Label className="text-xs">Team</Label>
                   <Select value={it.team} onValueChange={(v) => updateItem(idx, "team", v)} disabled={!canEdit}>
-                    <SelectTrigger className="dropdown-login-style h-9">
+                    <SelectTrigger className="dropdown-login-style h-8 text-sm">
                       <SelectValue placeholder="Selecteer team" />
                     </SelectTrigger>
                     <SelectContent className="dropdown-content-login-style z-50">
@@ -176,7 +176,7 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
                 <div className="w-full md:w-1/3">
                   <Label className="text-xs">Speler</Label>
                   <Select value={it.playerId ? String(it.playerId) : undefined} onValueChange={(v) => updateItem(idx, "playerId", parseInt(v))} disabled={!canEdit || !it.team}>
-                    <SelectTrigger className="dropdown-login-style h-9">
+                    <SelectTrigger className="dropdown-login-style h-8 text-sm">
                       <SelectValue placeholder={!it.team ? "Eerst team kiezen" : "Selecteer speler"} />
                     </SelectTrigger>
                     <SelectContent className="dropdown-content-login-style z-50">
@@ -192,7 +192,7 @@ const RefereeCardsSection: React.FC<MatchesRefereeCardsSectionProps> = ({ match,
                 <div className="w-full md:w-1/3">
                   <Label className="text-xs">Type kaart</Label>
                   <Select value={it.cardType} onValueChange={(v) => updateItem(idx, "cardType", v)} disabled={!canEdit}>
-                    <SelectTrigger className="dropdown-login-style h-9">
+                    <SelectTrigger className="dropdown-login-style h-8 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="dropdown-content-login-style z-50">

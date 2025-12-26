@@ -137,7 +137,7 @@ const PlayerRow = React.memo<{
             onValueChange={handlePlayerChange}
             disabled={!canEdit || loading}
           >
-            <SelectTrigger className="dropdown-login-style min-w-[100px] max-w-full">
+            <SelectTrigger className="dropdown-login-style min-w-[100px] max-w-full h-8 text-sm">
               <PlayerSelectValue 
                 placeholder={loading ? "Laden..." : "Selecteer speler"} 
                 selectedPlayerName={selection.playerName}
@@ -209,7 +209,7 @@ const PlayerRow = React.memo<{
             value={selection.jerseyNumber || ""}
             onChange={handleJerseyChange}
             disabled={!selection.playerId}
-            className="w-16 min-w-[64px] text-center text-sm py-1 px-2 input-login-style"
+            className="w-16 min-w-[64px] text-center text-xs py-1 px-2 input-login-style h-8"
           />
         ) : (
           <span className="text-xs">
@@ -351,7 +351,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                          }}
                          disabled={!canEdit || loading}
                        >
-                          <SelectTrigger className="dropdown-login-style w-full max-w-full h-9">
+                          <SelectTrigger className="dropdown-login-style w-full max-w-full h-8 text-sm">
                             <PlayerSelectValue 
                               placeholder={loading ? "Laden..." : "Selecteer speler"} 
                               selectedPlayerName={selection.playerName}
@@ -397,7 +397,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                        </Select>
                      </div>
                     ) : (
-                      <div className="min-w-0 text-sm h-9 flex items-center">
+                      <div className="min-w-0 text-xs h-8 flex items-center">
                         {selection.playerName || "-"}
                        {selection.isCaptain && (
                          <span className="ml-2 text-xs bg-secondary px-1 py-0.5 rounded font-semibold">(K)</span>
@@ -415,7 +415,7 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
                         value={selection.jerseyNumber || ""}
                         onChange={(e) => onPlayerSelection(index, 'jerseyNumber', e.target.value, false)}
                         disabled={!selection.playerId}
-                        className="w-full min-w-[64px] h-9 text-center text-sm py-1 px-2 input-login-style"
+                        className="w-full min-w-[64px] h-8 text-center text-xs py-1 px-2 input-login-style"
                       />
                     ) : (
                       <span className="block text-xs text-right">{selection.jerseyNumber && `#${selection.jerseyNumber}`}</span>
