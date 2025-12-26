@@ -31,16 +31,17 @@ const MatchesFormActions = forwardRef<HTMLButtonElement, MatchesFormActionsProps
     <div 
       className="sticky bottom-0 left-0 right-0 z-10 bg-[var(--color-100)] border-t border-[var(--color-300)] shadow-[0_-4px_12px_rgba(0,0,0,0.1)]"
       style={{
-        marginLeft: '-1.5rem',
-        marginRight: '-1.5rem',
+        marginLeft: '0px',
+        marginRight: '0px',
         marginTop: '0px',
         marginBottom: '0px',
         paddingLeft: '1.5rem',
         paddingRight: '1.5rem',
-        paddingTop: '12px',
-        paddingBottom: '12px',
+        paddingTop: '8px',
+        paddingBottom: '0px',
         borderTopWidth: '1px',
-        width: 'calc(100% + 3rem)',
+        width: '100%',
+        height: '70px',
       }}
     >
       <Button

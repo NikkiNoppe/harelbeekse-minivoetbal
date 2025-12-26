@@ -123,18 +123,18 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
       <div className="space-y-3">
         {/* Home Team Card */}
         <Collapsible open={homeTeamOpen} onOpenChange={setHomeTeamOpen}>
-          <Card className="bg-card border-border">
+          <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
             <CollapsibleTrigger asChild>
-              <CardHeader className="text-sm font-semibold bg-white hover:bg-[var(--color-50)] px-4 py-3 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-sm flex-1">
+              <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center' }}>
+                <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
+                  <CardTitle className="flex items-center gap-2 text-sm flex-1 m-0">
                     <Users className="h-4 w-4 text-primary" />
                     {match.homeTeamName}
                   </CardTitle>
-                  <span className="text-xs font-normal text-muted-foreground ml-auto mr-2">(Thuis)</span>
+                  <span className="text-sm font-normal text-muted-foreground ml-auto mr-2">(Thuis)</span>
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                      "h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180 shrink-0",
                       homeTeamOpen && "transform rotate-180"
                     )}
                   />
@@ -170,18 +170,18 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
 
         {/* Away Team Card */}
         <Collapsible open={awayTeamOpen} onOpenChange={setAwayTeamOpen}>
-          <Card className="bg-card border-border">
+          <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
             <CollapsibleTrigger asChild>
-              <CardHeader className="text-sm font-semibold bg-white hover:bg-[var(--color-50)] px-4 py-3 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-sm flex-1">
+              <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center' }}>
+                <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
+                  <CardTitle className="flex items-center gap-2 text-sm flex-1 m-0">
                     <Users className="h-4 w-4 text-primary" />
                     {match.awayTeamName}
                   </CardTitle>
-                  <span className="text-xs font-normal text-muted-foreground ml-auto mr-2">(Uit)</span>
+                  <span className="text-sm font-normal text-muted-foreground ml-auto mr-2">(Uit)</span>
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                      "h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180 shrink-0",
                       awayTeamOpen && "transform rotate-180"
                     )}
                   />

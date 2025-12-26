@@ -240,16 +240,16 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     <>
       {/* Boetes sectie */}
       <Collapsible open={isBoetesOpen} onOpenChange={setIsBoetesOpen}>
-        <Card className="bg-card border-border">
+        <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
           <CollapsibleTrigger asChild>
-            <CardHeader className="text-sm font-semibold bg-white hover:bg-[var(--color-50)] px-4 py-3 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-sm">
+            <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center' }}>
+              <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
+                <CardTitle className="flex items-center gap-2 text-sm m-0">
                   Boetes
                 </CardTitle>
                 <ChevronDown
                   className={cn(
-                    "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                    "h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180 shrink-0",
                     isBoetesOpen && "transform rotate-180"
                   )}
                 />
@@ -268,16 +268,16 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       </Collapsible>
       {/* Notities sectie */}
       <Collapsible open={isNotitiesOpen} onOpenChange={setIsNotitiesOpen}>
-        <Card className="bg-card border-border">
+        <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
           <CollapsibleTrigger asChild>
-            <CardHeader className="text-sm font-semibold bg-white hover:bg-[var(--color-50)] px-4 py-3 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-sm">
+            <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center' }}>
+              <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
+                <CardTitle className="flex items-center gap-2 text-sm m-0">
                   Notities
                 </CardTitle>
                 <ChevronDown
                   className={cn(
-                    "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                    "h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180 shrink-0",
                     isNotitiesOpen && "transform rotate-180"
                   )}
                 />
@@ -328,7 +328,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       />
 
       {/* Spelers */}
-      <h3 className="text-sm font-semibold text-center text-purple-dark">Spelers</h3>
+      <h3 className="text-xl font-semibold text-center text-purple-dark">Spelers</h3>
       
       <PlayerSelectionSection
         match={match}
@@ -343,19 +343,21 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
         isTeamManager={isTeamManager}
       />
 
-      {/* Kaarten - Hidden for team managers */}
+      {/* Kaarten, Boetes & Notities - Hidden for team managers */}
       {!isTeamManager && (
-        <Collapsible open={isKaartenOpen} onOpenChange={setIsKaartenOpen}>
-          <Card className="bg-card border-border">
+        <div className="space-y-3">
+          <h3 className="text-xl font-semibold text-center text-purple-dark">Wedstrijd</h3>
+          <Collapsible open={isKaartenOpen} onOpenChange={setIsKaartenOpen}>
+          <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
             <CollapsibleTrigger asChild>
-              <CardHeader className="text-sm font-semibold bg-white hover:bg-[var(--color-50)] px-4 py-3 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-sm">
+              <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center' }}>
+                <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
+                  <CardTitle className="flex items-center gap-2 text-sm m-0">
                     Kaarten
                   </CardTitle>
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                      "h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180 shrink-0",
                       isKaartenOpen && "transform rotate-180"
                     )}
                   />
@@ -377,10 +379,9 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
             </CollapsibleContent>
           </Card>
         </Collapsible>
+          {refereeFields}
+        </div>
       )}
-      
-      {/* Referee fields - Hidden for team managers */}
-      {!isTeamManager && refereeFields}
       
       {/* Hidden fields to preserve poll data */}
       <MatchesAdminHiddenFields match={match} />

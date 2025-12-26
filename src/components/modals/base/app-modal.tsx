@@ -154,59 +154,62 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Close Button */}
-          {showCloseButton && !persistent && (
-            <button
-              onClick={handleCloseClick}
-              style={{
-                position: 'absolute',
-                right: '1rem',
-                top: '1rem',
-                background: 'rgba(0, 0, 0, 0.05)',
-                border: 'none',
-                borderRadius: '50%',
-                width: '2rem',
-                height: '2rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                zIndex: 10,
-                transition: 'background 150ms'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
-              }}
-              aria-label="Sluiten"
-            >
-              <X size={16} />
-            </button>
-          )}
-
-
           {/* Header */}
           {title && (
             <div
+              className="sticky top-0 left-0 right-0 z-10 bg-[var(--color-100)] border-b border-[var(--color-300)] shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
               style={{
                 marginTop: '0px',
                 marginBottom: '0px',
-                paddingTop: '12px',
-                paddingBottom: '12px',
-                paddingLeft: '0.75rem',
-                paddingRight: '0.75rem',
-                borderBottom: '1px solid var(--color-300)',
+                marginLeft: '0px',
+                marginRight: '0px',
+                paddingTop: '8px',
+                paddingBottom: '8px',
+                paddingLeft: '1.5rem',
+                paddingRight: '1.5rem',
+                borderBottomWidth: '1px',
                 flexShrink: 0,
                 background: 'var(--color-100)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                position: 'relative',
-                minHeight: '4rem'
+                position: 'sticky',
+                height: '70px',
+                width: '100%'
               }}
             >
+              {/* Close Button */}
+              {showCloseButton && !persistent && (
+                <button
+                  onClick={handleCloseClick}
+                  style={{
+                    position: 'absolute',
+                    right: '1rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'rgba(0, 0, 0, 0.05)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '2rem',
+                    height: '2rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 20,
+                    transition: 'background 150ms'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
+                  }}
+                  aria-label="Sluiten"
+                >
+                  <X size={16} />
+                </button>
+              )}
               <h2
                 id="modal-title"
                 style={{

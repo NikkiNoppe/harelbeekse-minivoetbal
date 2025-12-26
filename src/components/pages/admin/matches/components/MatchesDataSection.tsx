@@ -154,16 +154,16 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
     <div className="space-y-4">
       {/* Gegevens - Collapsible */}
       <Collapsible open={isGegevensOpen} onOpenChange={setIsGegevensOpen}>
-        <Card className="bg-card border-border">
+        <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
           <CollapsibleTrigger asChild>
-            <CardHeader className="text-sm font-semibold bg-white hover:bg-[var(--color-50)] px-4 py-3 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-sm">
+            <CardHeader className="text-sm font-semibold px-5 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center' }}>
+              <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
+                <CardTitle className="flex items-center gap-2 text-sm m-0">
                   Gegevens
                 </CardTitle>
                 <ChevronDown
                   className={cn(
-                    "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                    "h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180 shrink-0",
                     isGegevensOpen && "transform rotate-180"
                   )}
                 />
