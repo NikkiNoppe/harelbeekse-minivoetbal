@@ -26,7 +26,6 @@ export interface AppModalProps {
   onOpenChange: (open: boolean) => void
   title?: string
   children: React.ReactNode
-  footer?: React.ReactNode
   primaryAction?: AppModalAction
   secondaryAction?: AppModalAction
   persistent?: boolean
@@ -54,7 +53,6 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
         onOpenChange,
         title,
         children,
-        footer,
         primaryAction,
         secondaryAction,
         persistent = false,
@@ -240,28 +238,6 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
           >
             {children}
           </div>
-
-          {/* Footer - Custom Sticky Footer */}
-          {footer && (
-            <div
-              style={{
-                marginTop: '0px',
-                marginBottom: '0px',
-                paddingTop: '12px',
-                paddingBottom: '12px',
-                paddingLeft: '0.75rem',
-                paddingRight: '0.75rem',
-                borderTop: '1px solid var(--color-300)',
-                flexShrink: 0,
-                background: 'var(--color-100)',
-                position: 'sticky',
-                bottom: 0,
-                zIndex: 10
-              }}
-            >
-              {footer}
-            </div>
-          )}
 
           {/* Footer - Actions */}
           {(primaryAction || secondaryAction) && (

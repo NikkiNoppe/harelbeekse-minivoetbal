@@ -8,7 +8,6 @@ interface MatchesFormActionsProps {
   isSubmitting: boolean;
   canActuallyEdit: boolean;
   isAdmin: boolean;
-  noWrapper?: boolean;
 }
 
 const MatchesFormActions = forwardRef<HTMLButtonElement, MatchesFormActionsProps>(({
@@ -16,7 +15,6 @@ const MatchesFormActions = forwardRef<HTMLButtonElement, MatchesFormActionsProps
   isSubmitting,
   canActuallyEdit,
   isAdmin,
-  noWrapper = false,
 }, ref) => {
   // Memoize the submit button text to prevent unnecessary re-renders
   const submitButtonText = useMemo(() => {
@@ -28,33 +26,6 @@ const MatchesFormActions = forwardRef<HTMLButtonElement, MatchesFormActionsProps
   const isSubmitDisabled = useMemo(() => {
     return isSubmitting || (!canActuallyEdit && !isAdmin);
   }, [isSubmitting, canActuallyEdit, isAdmin]);
-
-  const button = (
-    <Button
-      ref={ref}
-      onClick={onSubmit}
-      disabled={isSubmitDisabled}
-      className="btn btn--primary flex items-center justify-center gap-2 w-full"
-      style={{ 
-        minHeight: '52px', 
-        fontSize: '1rem', 
-        fontWeight: '600', 
-        borderRadius: 'var(--radius)', 
-        transition: 'all 150ms ease-in-out' 
-      }}
-    >
-      {isSubmitting ? (
-        <Loader2 className="h-5 w-5 animate-spin" />
-      ) : (
-        <Save className="h-5 w-5" />
-      )}
-      {submitButtonText}
-    </Button>
-  );
-
-  if (noWrapper) {
-    return button;
-  }
 
   return (
     <div 
@@ -72,7 +43,26 @@ const MatchesFormActions = forwardRef<HTMLButtonElement, MatchesFormActionsProps
         width: 'calc(100% + 3rem)',
       }}
     >
-      {button}
+      <Button
+        ref={ref}
+        onClick={onSubmit}
+        disabled={isSubmitDisabled}
+        className="btn btn--primary flex items-center justify-center gap-2 w-full"
+        style={{ 
+          minHeight: '52px', 
+          fontSize: '1rem', 
+          fontWeight: '600', 
+          borderRadius: 'var(--radius)', 
+          transition: 'all 150ms ease-in-out' 
+        }}
+      >
+        {isSubmitting ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <Save className="h-5 w-5" />
+        )}
+        {submitButtonText}
+      </Button>
     </div>
   );
 });

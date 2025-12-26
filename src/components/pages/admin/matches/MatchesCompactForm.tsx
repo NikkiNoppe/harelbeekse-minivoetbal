@@ -23,13 +23,6 @@ interface CompactMatchFormProps {
   isAdmin: boolean;
   isReferee: boolean;
   teamId: number;
-  renderFooter?: (props: {
-    onSubmit: () => void;
-    isSubmitting: boolean;
-    canActuallyEdit: boolean;
-    isAdmin: boolean;
-    submitButtonRef: React.RefObject<HTMLButtonElement>;
-  }) => React.ReactNode;
 }
 
 const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
@@ -37,8 +30,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   onComplete,
   isAdmin,
   isReferee,
-  teamId,
-  renderFooter
+  teamId
 }) => {
   const {
     homeScore,
@@ -393,23 +385,13 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       {/* Hidden fields to preserve poll data */}
       <MatchesAdminHiddenFields match={match} />
       
-      {renderFooter ? (
-        renderFooter({
-          onSubmit: handleSubmit,
-          isSubmitting,
-          canActuallyEdit: isTeamManager ? canTeamManagerEditMatch : canEdit,
-          isAdmin,
-          submitButtonRef
-        })
-      ) : (
-        <MatchesFormActions
-          ref={submitButtonRef}
-          onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
-          canActuallyEdit={isTeamManager ? canTeamManagerEditMatch : canEdit}
-          isAdmin={isAdmin}
-        />
-      )}
+      <MatchesFormActions
+        ref={submitButtonRef}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+        canActuallyEdit={isTeamManager ? canTeamManagerEditMatch : canEdit}
+        isAdmin={isAdmin}
+      />
       
       <MatchesPenaltyShootoutModal
         open={showPenaltyModal}
