@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import MatchesCard from "./components/MatchesCard";
 import { Lock, CheckCircle, Clock } from "lucide-react";
 import { MatchFormData } from "./types";
@@ -10,6 +10,7 @@ import {
   sortGroupKeys 
 } from "@/lib/matchSortingUtils";
 import { shouldAutoLockMatch } from "@/lib/matchLockUtils";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 interface MatchFormListProps {
   matches: MatchFormData[];
@@ -18,6 +19,7 @@ interface MatchFormListProps {
   searchTerm: string;
   dateFilter: string;
   matchdayFilter: string;
+  teamFilter?: string;
   sortBy?: string;
   hasElevatedPermissions?: boolean;
   userRole?: string;
@@ -54,11 +56,13 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   searchTerm,
   dateFilter,
   matchdayFilter,
+  teamFilter = "",
   sortBy,
   hasElevatedPermissions = false,
   userRole,
   teamId
 }) => {
+  const [openSpeeldagen, setOpenSpeeldagen] = useState<string[]>([]);
   const filteredMatches = useMemo(() => matches.filter(match => {
     const matchesSearch = searchTerm === "" || 
       match.uniqueNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -151,6 +155,44 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     return { sortedGroups, sortedGroupKeys, groupLabels };
   }, [filteredMatches, isCupMatchList, sortBy]);
 
+  // Find the first speeldag that is not fully completed (only for league matches)
+  const defaultOpenSpeeldag = useMemo(() => {
+    if (isCupMatchList) return undefined; // Don't auto-open for cup matches
+    
+    for (const groupKey of groupedMatches.sortedGroupKeys) {
+      const matchesInGroup = groupedMatches.sortedGroups[groupKey];
+      const isCompleted = matchesInGroup.every(match => 
+        match.homeScore !== undefined && 
+        match.homeScore !== null && 
+        match.awayScore !== undefined && 
+        match.awayScore !== null
+      );
+      if (!isCompleted && matchesInGroup.length > 0) {
+        return groupKey;
+      }
+    }
+    // If all are completed, return the first one
+    return groupedMatches.sortedGroupKeys.length > 0 ? groupedMatches.sortedGroupKeys[0] : undefined;
+  }, [groupedMatches, isCupMatchList]);
+
+  // Update open speeldagen based on team filter selection
+  useEffect(() => {
+    if (isCupMatchList) return; // Don't auto-open for cup matches
+    
+    if (teamFilter === "" || teamFilter === "all") {
+      // Default: only first incomplete speeldag
+      if (defaultOpenSpeeldag) {
+        setOpenSpeeldagen([defaultOpenSpeeldag]);
+      } else {
+        setOpenSpeeldagen([]);
+      }
+    } else {
+      // When a team is selected: open all speeldagen
+      const allSpeeldagen = groupedMatches.sortedGroupKeys;
+      setOpenSpeeldagen(allSpeeldagen);
+    }
+  }, [teamFilter, defaultOpenSpeeldag, groupedMatches.sortedGroupKeys, isCupMatchList]);
+
 const getGridClassName = (groupKey: string) => {
     if (!isCupMatchList) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
     
@@ -171,12 +213,20 @@ const getGridClassName = (groupKey: string) => {
     const status = getMatchStatus(match);
     const StatusIcon = status.icon;
     
+    // Use accent color only for "Open" status, keep original colors for others
+    const backgroundColor = status.label === "Open" 
+      ? 'var(--accent)' 
+      : undefined;
+    
     return (
       <span className="ml-auto flex items-center gap-2">
         <span className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 rounded">
           {match.uniqueNumber}
         </span>
-        <span className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1`}>
+        <span 
+          className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1`}
+          style={backgroundColor ? { backgroundColor } : undefined}
+        >
           <StatusIcon className="h-3 w-3 mr-1" />
           {status.label}
         </span>
@@ -204,50 +254,116 @@ const getGridClassName = (groupKey: string) => {
     );
   }
 
+  // For cup matches, use the old structure (no accordion)
+  if (isCupMatchList) {
+    return (
+      <div className="space-y-8">
+        {groupedMatches.sortedGroupKeys.map(groupKey => (
+          <div key={groupKey}>
+            <div className="flex items-center gap-2 mb-3 text-base text-purple-dark font-semibold pl-2">
+              {groupedMatches.groupLabels?.[groupKey] ?? groupKey}
+            </div>
+            
+            <div className={`grid gap-4 ${getGridClassName(groupKey)}`}>
+              {groupedMatches.sortedGroups[groupKey].map(match => {
+                const isTeamManager = userRole === 'player_manager';
+                const canAccess = hasElevatedPermissions || (isTeamManager && teamId && canTeamManagerAccessMatch(match, teamId));
+                
+                return (
+                  <button
+                    key={match.matchId}
+                    onClick={() => canAccess ? onSelectMatch(match) : null}
+                    disabled={!canAccess}
+                    className={`border-none bg-transparent p-0 transition-all duration-200 text-left w-full group ${
+                      canAccess 
+                        ? "hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer" 
+                        : "cursor-not-allowed opacity-50"
+                    }`}
+                    title={!canAccess ? "Alleen toegankelijk voor je eigen team" : undefined}
+                  >
+                    <MatchesCard
+                      id={undefined}
+                      home={match.homeTeamName}
+                      away={match.awayTeamName}
+                      homeScore={match.homeScore}
+                      awayScore={match.awayScore}
+                      date={match.date}
+                      time={match.time}
+                      location={match.location}
+                      status={undefined}
+                      badgeSlot={createBadgeSlot(match)}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // For league matches, use accordion structure
   return (
-    <div className="space-y-8">
+    <Accordion 
+      type="multiple" 
+      value={openSpeeldagen}
+      onValueChange={setOpenSpeeldagen}
+      className="space-y-3"
+    >
       {groupedMatches.sortedGroupKeys.map(groupKey => (
-        <div key={groupKey}>
-          <div className="flex items-center gap-2 mb-3 text-base text-purple-dark font-semibold pl-2">
-            {groupedMatches.groupLabels?.[groupKey] ?? groupKey}
-          </div>
-          
-          <div className={`grid gap-4 ${getGridClassName(groupKey)}`}>
-            {groupedMatches.sortedGroups[groupKey].map(match => {
-              const isTeamManager = userRole === 'player_manager';
-              const canAccess = hasElevatedPermissions || (isTeamManager && teamId && canTeamManagerAccessMatch(match, teamId));
-              
-              return (
-                <button
-                  key={match.matchId}
-                  onClick={() => canAccess ? onSelectMatch(match) : null}
-                  disabled={!canAccess}
-                  className={`border-none bg-transparent p-0 transition-all duration-200 text-left w-full group ${
-                    canAccess 
-                      ? "hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer" 
-                      : "cursor-not-allowed opacity-50"
-                  }`}
-                  title={!canAccess ? "Alleen toegankelijk voor je eigen team" : undefined}
-                >
-                  <MatchesCard
-                    id={undefined}
-                    home={match.homeTeamName}
-                    away={match.awayTeamName}
-                    homeScore={match.homeScore}
-                    awayScore={match.awayScore}
-                    date={match.date}
-                    time={match.time}
-                    location={match.location}
-                    status={undefined}
-                    badgeSlot={createBadgeSlot(match)}
-                  />
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <AccordionItem 
+          key={groupKey}
+          value={groupKey} 
+          className="border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white"
+        >
+          <AccordionTrigger 
+            className="text-base font-semibold px-5 py-4 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4"
+            style={{ color: 'var(--color-700)' }}
+          >
+            <span className="text-left flex-1">{groupedMatches.groupLabels?.[groupKey] ?? groupKey}</span>
+          </AccordionTrigger>
+          <AccordionContent 
+            className="px-5 pb-4 text-card-foreground border-t border-[var(--color-200)]" 
+            style={{ backgroundColor: 'white' }}
+          >
+            <div className={`grid gap-4 ${getGridClassName(groupKey)}`}>
+              {groupedMatches.sortedGroups[groupKey].map(match => {
+                const isTeamManager = userRole === 'player_manager';
+                const canAccess = hasElevatedPermissions || (isTeamManager && teamId && canTeamManagerAccessMatch(match, teamId));
+                
+                return (
+                  <button
+                    key={match.matchId}
+                    onClick={() => canAccess ? onSelectMatch(match) : null}
+                    disabled={!canAccess}
+                    className={`border-none bg-transparent p-0 transition-all duration-200 text-left w-full group ${
+                      canAccess 
+                        ? "hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer" 
+                        : "cursor-not-allowed opacity-50"
+                    }`}
+                    title={!canAccess ? "Alleen toegankelijk voor je eigen team" : undefined}
+                  >
+                    <MatchesCard
+                      id={undefined}
+                      home={match.homeTeamName}
+                      away={match.awayTeamName}
+                      homeScore={match.homeScore}
+                      awayScore={match.awayScore}
+                      date={match.date}
+                      time={match.time}
+                      location={match.location}
+                      status={undefined}
+                      badgeSlot={createBadgeSlot(match)}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
       ))}
-    </div>
+    </Accordion>
   );
 };
 

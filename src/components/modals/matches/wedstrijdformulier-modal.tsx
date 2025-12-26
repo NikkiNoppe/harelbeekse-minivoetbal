@@ -1734,7 +1734,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           marginBottom: '0px',
           paddingLeft: '1.5rem',
           paddingRight: '1.5rem',
-          paddingTop: '11px',
+          paddingTop: '18px',
           paddingBottom: '0px',
           borderTopWidth: '1px',
           width: '100%',
@@ -1751,7 +1751,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
             fontSize: '1rem', 
             fontWeight: '600', 
             borderRadius: 'var(--radius)', 
-            transition: 'all 150ms ease-in-out' 
+            transition: 'all 150ms ease-in-out',
+            paddingTop: '7px',
+            paddingBottom: '7px'
           }}
         >
           {isSubmitting ? (

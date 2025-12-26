@@ -9,6 +9,7 @@ import { useCompetitionData, Team, MatchData } from "@/hooks/useCompetitionData"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/layout";
 import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 
 // Uniform skeleton for standings table
@@ -118,19 +119,25 @@ const MatchGroup = memo(({ speeldag, matches }: {
   matches: MatchData[];
 }) => {
   return (
-    <div className="mb-4">
-      {/* Speeldag header */}
-      <div className="flex items-center justify-between px-3 py-2 mb-2 rounded-lg" style={{ backgroundColor: 'var(--accent)' }}>
-        <h4 className="text-sm font-semibold text-white">{speeldag}</h4>
-      </div>
-      
-      {/* Matches */}
-      <div className="rounded-lg overflow-hidden bg-card" style={{ backgroundColor: 'white' }}>
-        {matches.map((match) => (
-          <MatchListItem key={match.matchId} match={match} />
-        ))}
-      </div>
-    </div>
+    <AccordionItem 
+      value={speeldag} 
+      className="border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white mb-4"
+    >
+      <AccordionTrigger 
+        className="text-base font-semibold px-5 py-4 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4"
+        style={{ color: 'var(--color-700)' }}
+      >
+        <span className="text-left flex-1">{speeldag}</span>
+      </AccordionTrigger>
+      <AccordionContent className="px-0 py-0 text-card-foreground border-t border-[var(--color-200)]" style={{ backgroundColor: 'white' }}>
+        {/* Matches */}
+        <div className="rounded-lg overflow-hidden bg-card" style={{ backgroundColor: 'white' }}>
+          {matches.map((match) => (
+            <MatchListItem key={match.matchId} match={match} />
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
   );
 });
 MatchGroup.displayName = 'MatchGroup';
@@ -222,18 +229,16 @@ const CompetitiePage: React.FC = () => {
   const {
     teams,
     matches,
-    matchdays,
     teamNames,
     standingsLoading,
     matchesLoading,
   } = useCompetitionData();
 
-  const [selectedMatchday, setSelectedMatchday] = useState<string>("all");
   const [selectedTeam, setSelectedTeam] = useState<string>("all");
+  const [openSpeeldagen, setOpenSpeeldagen] = useState<string[]>([]);
 
   const filteredMatches = useMemo(() => {
     const filtered = matches.all.filter((m) => {
-      if (selectedMatchday !== "all" && m.matchday !== selectedMatchday) return false;
       if (selectedTeam !== "all" && m.homeTeamName !== selectedTeam && m.awayTeamName !== selectedTeam) return false;
       return true;
     });
@@ -242,7 +247,7 @@ const CompetitiePage: React.FC = () => {
       const bKey = `${b.date}T${b.time}`;
       return aKey.localeCompare(bKey);
     });
-  }, [matches.all, selectedMatchday, selectedTeam]);
+  }, [matches.all, selectedTeam]);
 
   // Group matches by speeldag
   const groupedMatches = useMemo(() => {
@@ -260,6 +265,39 @@ const CompetitiePage: React.FC = () => {
       return numA - numB;
     });
   }, [filteredMatches]);
+
+  // Find the first speeldag that is not fully completed (like beker)
+  const defaultOpenSpeeldag = useMemo(() => {
+    for (const [speeldag, matches] of groupedMatches) {
+      const isCompleted = matches.every(match => 
+        match.homeScore !== undefined && 
+        match.homeScore !== null && 
+        match.awayScore !== undefined && 
+        match.awayScore !== null
+      );
+      if (!isCompleted && matches.length > 0) {
+        return speeldag;
+      }
+    }
+    // If all are completed, return the last one
+    return groupedMatches.length > 0 ? groupedMatches[groupedMatches.length - 1][0] : undefined;
+  }, [groupedMatches]);
+
+  // Update open speeldagen based on team selection
+  React.useEffect(() => {
+    if (selectedTeam === "all") {
+      // Default: only first incomplete speeldag
+      if (defaultOpenSpeeldag) {
+        setOpenSpeeldagen([defaultOpenSpeeldag]);
+      } else {
+        setOpenSpeeldagen([]);
+      }
+    } else {
+      // When a team is selected: open all speeldagen
+      const allSpeeldagen = groupedMatches.map(([speeldag]) => speeldag);
+      setOpenSpeeldagen(allSpeeldagen);
+    }
+  }, [selectedTeam, defaultOpenSpeeldag, groupedMatches]);
 
   // Format: MA 01-09-25
   const formatDutchDayShort = (dateStr: string): string => {
@@ -306,16 +344,6 @@ const CompetitiePage: React.FC = () => {
           {/* Filters - Mobile-first with automatic responsive layout */}
           <FilterGroup columns={1} className="mb-4">
             <FilterSelect
-              label="Speeldag"
-              value={selectedMatchday}
-              onValueChange={setSelectedMatchday}
-              placeholder="Alle speeldagen"
-              options={[
-                { value: "all", label: "Alle speeldagen" },
-                ...matchdays.map(d => ({ value: d, label: d }))
-              ]}
-            />
-            <FilterSelect
               label="Team"
               value={selectedTeam}
               onValueChange={setSelectedTeam}
@@ -329,7 +357,12 @@ const CompetitiePage: React.FC = () => {
 
           {/* Grouped Matches */}
           {groupedMatches.length > 0 ? (
-            <div>
+              <Accordion 
+                type="multiple" 
+                value={openSpeeldagen}
+                onValueChange={setOpenSpeeldagen}
+                className="space-y-3"
+              >
               {groupedMatches.map(([speeldag, matches]) => (
                 <MatchGroup 
                   key={speeldag}
@@ -340,7 +373,7 @@ const CompetitiePage: React.FC = () => {
                   }))}
                 />
               ))}
-            </div>
+            </Accordion>
           ) : (
             <div className="text-center py-8 text-sm" style={{ color: 'var(--accent)' }}>
               Geen wedstrijden gevonden met de huidige filters

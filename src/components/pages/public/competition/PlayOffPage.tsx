@@ -6,6 +6,7 @@ import { AlertCircle, Trophy } from "lucide-react";
 import { usePublicPlayoffData, PlayoffTeam, PlayoffMatchData } from "@/hooks/usePublicPlayoffData";
 import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 import { PageHeader } from "@/components/layout";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 // Skeleton components
 const StandingsTableSkeleton = memo(() => (
@@ -272,24 +273,32 @@ const MatchGroup = memo(({ speeldag, matches, playoffType }: {
   playoffType: 'PO1' | 'PO2' | 'mixed';
 }) => {
   return (
-    <div className="mb-4">
-      {/* Speeldag header with playoff badge */}
-      <div className="flex items-center justify-between px-3 py-2 mb-2 rounded-lg" style={{ backgroundColor: 'var(--accent)' }}>
-        <h4 className="text-sm font-semibold text-white">{speeldag}</h4>
-        {playoffType !== 'mixed' && (
-          <Badge variant="outline" className="text-xs">
-            {playoffType}
-          </Badge>
-        )}
-      </div>
-      
-      {/* Matches */}
-      <div className="rounded-lg overflow-hidden bg-card" style={{ backgroundColor: 'white' }}>
-        {matches.map((match) => (
-          <MatchListItem key={match.matchId} match={match} />
-        ))}
-      </div>
-    </div>
+    <AccordionItem 
+      value={speeldag} 
+      className="border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white mb-4"
+    >
+      <AccordionTrigger 
+        className="text-base font-semibold px-5 py-4 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4"
+        style={{ color: 'var(--color-700)' }}
+      >
+        <div className="flex items-center justify-between flex-1">
+          <span className="text-left">{speeldag}</span>
+          {playoffType !== 'mixed' && (
+            <Badge variant="outline" className="text-xs mr-2">
+              {playoffType}
+            </Badge>
+          )}
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="px-0 py-0 text-card-foreground border-t border-[var(--color-200)]" style={{ backgroundColor: 'white' }}>
+        {/* Matches */}
+        <div className="rounded-lg overflow-hidden bg-card" style={{ backgroundColor: 'white' }}>
+          {matches.map((match) => (
+            <MatchListItem key={match.matchId} match={match} />
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
   );
 });
 MatchGroup.displayName = 'MatchGroup';
@@ -298,8 +307,8 @@ MatchGroup.displayName = 'MatchGroup';
 const PlayOffPage: React.FC = () => {
   const { data, isLoading, error, refetch } = usePublicPlayoffData();
   const [selectedDivision, setSelectedDivision] = useState<string>("all");
-  const [selectedSpeeldag, setSelectedSpeeldag] = useState<string>("all");
   const [selectedTeam, setSelectedTeam] = useState<string>("all");
+  const [openSpeeldagen, setOpenSpeeldagen] = useState<string[]>([]);
 
   // Convert matches to schedule format
   const scheduleMatches = useMemo(() => {
@@ -350,28 +359,14 @@ const PlayOffPage: React.FC = () => {
     });
   }, [scheduleMatches]);
 
-  // Get unique speeldagen for filter
-  const speeldagen = useMemo(() => {
-    const uniqueSpeeldagen = new Set<string>();
-    scheduleMatches.forEach(m => {
-      if (m.speeldagNumber) uniqueSpeeldagen.add(m.speeldagNumber);
-    });
-    return Array.from(uniqueSpeeldagen).sort((a, b) => {
-      const numA = parseInt(a.match(/\d+/)?.[0] || '0');
-      const numB = parseInt(b.match(/\d+/)?.[0] || '0');
-      return numA - numB;
-    });
-  }, [scheduleMatches]);
-
   // Filter matches
   const filteredMatches = useMemo(() => {
     return scheduleMatches.filter(m => {
       if (selectedDivision !== "all" && m.playoffType !== selectedDivision) return false;
-      if (selectedSpeeldag !== "all" && m.speeldagNumber !== selectedSpeeldag) return false;
       if (selectedTeam !== "all" && m.homeTeamName !== selectedTeam && m.awayTeamName !== selectedTeam) return false;
       return true;
     });
-  }, [scheduleMatches, selectedDivision, selectedSpeeldag, selectedTeam]);
+  }, [scheduleMatches, selectedDivision, selectedTeam]);
 
   // Group matches by speeldag
   const groupedMatches = useMemo(() => {
@@ -394,6 +389,39 @@ const PlayOffPage: React.FC = () => {
       return numA - numB;
     });
   }, [filteredMatches]);
+
+  // Find the first speeldag that is not fully completed (like beker and competitie)
+  const defaultOpenSpeeldag = useMemo(() => {
+    for (const [speeldag, { matches }] of groupedMatches) {
+      const isCompleted = matches.every(match => 
+        match.homeScore !== undefined && 
+        match.homeScore !== null && 
+        match.awayScore !== undefined && 
+        match.awayScore !== null
+      );
+      if (!isCompleted && matches.length > 0) {
+        return speeldag;
+      }
+    }
+    // If all are completed, return the last one
+    return groupedMatches.length > 0 ? groupedMatches[groupedMatches.length - 1][0] : undefined;
+  }, [groupedMatches]);
+
+  // Update open speeldagen based on team selection
+  React.useEffect(() => {
+    if (selectedTeam === "all") {
+      // Default: only first incomplete speeldag
+      if (defaultOpenSpeeldag) {
+        setOpenSpeeldagen([defaultOpenSpeeldag]);
+      } else {
+        setOpenSpeeldagen([]);
+      }
+    } else {
+      // When a team is selected: open all speeldagen
+      const allSpeeldagen = groupedMatches.map(([speeldag]) => speeldag);
+      setOpenSpeeldagen(allSpeeldagen);
+    }
+  }, [selectedTeam, defaultOpenSpeeldag, groupedMatches]);
 
   if (isLoading) {
     return <PlayoffLoading />;
@@ -453,16 +481,6 @@ const PlayOffPage: React.FC = () => {
             {/* Filters - Mobile-first with automatic responsive layout */}
             <FilterGroup columns={1} className="mb-4">
               <FilterSelect
-                label="Speeldag"
-                value={selectedSpeeldag}
-                onValueChange={setSelectedSpeeldag}
-                placeholder="Alle speeldagen"
-                options={[
-                  { value: "all", label: "Alle speeldagen" },
-                  ...speeldagen.map(s => ({ value: s, label: s }))
-                ]}
-              />
-              <FilterSelect
                 label="Divisie"
                 value={selectedDivision}
                 onValueChange={setSelectedDivision}
@@ -487,7 +505,12 @@ const PlayOffPage: React.FC = () => {
 
             {/* Grouped Matches */}
             {groupedMatches.length > 0 ? (
-              <div>
+              <Accordion 
+                type="multiple" 
+                value={openSpeeldagen}
+                onValueChange={setOpenSpeeldagen}
+                className="space-y-3"
+              >
                 {groupedMatches.map(([speeldag, { matches, playoffType }]) => (
                   <MatchGroup 
                     key={speeldag}
@@ -496,7 +519,7 @@ const PlayOffPage: React.FC = () => {
                     playoffType={playoffType}
                   />
                 ))}
-              </div>
+              </Accordion>
             ) : (
               <div className="text-center py-8 text-sm" style={{ color: 'var(--accent)' }}>
                 Geen wedstrijden gevonden met de huidige filters
