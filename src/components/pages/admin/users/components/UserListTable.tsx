@@ -202,10 +202,10 @@ const UserListTable: React.FC<UserListProps> = ({
                     )}
                   </TableRow>
                 ))
-              ) : users.length === 0 ? (
+              ) : !users || users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={editMode ? 5 : 4} className="text-center py-6">
-                    Geen gebruikers gevonden
+                    {loading ? 'Laden...' : 'Geen gebruikers gevonden'}
                   </TableCell>
                 </TableRow>
               ) : (

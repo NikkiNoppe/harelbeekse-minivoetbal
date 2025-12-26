@@ -1,18 +1,19 @@
 
 import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useUserManagement } from "./hooks/useUserManagement";
 import { UserModal } from "@/components/modals";
 import UserListTable from "./components/UserListTable";
-
-
-import { Plus } from "lucide-react";
+import { Plus, AlertCircle, RefreshCw } from "lucide-react";
 
 const AdminUserPage: React.FC = () => {
   const {
     users,
     teams,
     loading,
+    error,
+    refreshData,
     addingUser,
     updatingUser,
     deletingUser,
@@ -84,6 +85,25 @@ const AdminUserPage: React.FC = () => {
         <h1 className="text-2xl font-bold">Gebruikers Beheer</h1>
         <p className="text-muted-foreground">Beheer alle gebruikers in het systeem</p>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>{error}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshData}
+              className="ml-4"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Opnieuw proberen
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Users List */}
       <UserListTable 

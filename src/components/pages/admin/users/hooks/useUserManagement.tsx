@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DbUser, Team } from "../userTypes";
 import { useUserOperations } from "./useUserOperations";
@@ -19,6 +19,7 @@ export const useUserManagement = () => {
   const [users, setUsers] = useState<DbUser[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [addingUser, setAddingUser] = useState(false);
   const [updatingUser, setUpdatingUser] = useState(false);
   const [deletingUser, setDeletingUser] = useState(false);
@@ -34,88 +35,129 @@ export const useUserManagement = () => {
 
   // Fetch data service
   const fetchData = async () => {
-    try {
-      // Fetch users with their team relationships
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select(`
-          user_id,
-          username,
-          email,
-          role,
-          team_users!left (
+    // Fetch users with their team relationships
+    const { data: usersData, error: usersError } = await supabase
+      .from('users')
+      .select(`
+        user_id,
+        username,
+        email,
+        role,
+        team_users!left (
+          team_id,
+          teams!team_users_team_id_fkey (
             team_id,
-            teams!team_users_team_id_fkey (
-              team_id,
-              team_name
-            )
+            team_name
           )
-        `)
-        .order('username');
+        )
+      `)
+      .order('username');
 
-      if (usersError) {
-        throw usersError;
-      }
-
-      // Fetch teams
-      const { data: teamsData, error: teamsError } = await supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .order('team_name');
-
-      if (teamsError) {
-        throw teamsError;
-      }
-
-      // Transform users data to include team information
-      const transformedUsers: DbUser[] = (usersData || []).map(user => {
-        const teamUsers = user.team_users || [];
-        const teams = teamUsers.map(tu => ({
-          team_id: tu.teams?.team_id || 0,
-          team_name: tu.teams?.team_name || ''
-        })).filter(t => t.team_id > 0);
-        
-        return {
-          user_id: user.user_id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          team_id: teams.length > 0 ? teams[0].team_id : null,
-          team_name: teams.length > 0 ? teams[0].team_name : null,
-          teams: teams
-        };
-      });
-
-      return {
-        users: transformedUsers,
-        teams: teamsData as Team[] || []
-      };
-    } catch (error) {
-      console.error('Error in fetchData:', error);
-      return {
-        users: [],
-        teams: []
-      };
+    if (usersError) {
+      throw new Error(`Fout bij het ophalen van gebruikers: ${usersError.message}`);
     }
+
+    // Fetch teams
+    const { data: teamsData, error: teamsError } = await supabase
+      .from('teams')
+      .select('team_id, team_name')
+      .order('team_name');
+
+    if (teamsError) {
+      throw new Error(`Fout bij het ophalen van teams: ${teamsError.message}`);
+    }
+
+    // Transform users data to include team information
+    const transformedUsers: DbUser[] = (usersData || []).map(user => {
+      const teamUsers = user.team_users || [];
+      const teams = teamUsers.map(tu => ({
+        team_id: tu.teams?.team_id || 0,
+        team_name: tu.teams?.team_name || ''
+      })).filter(t => t.team_id > 0);
+      
+      return {
+        user_id: user.user_id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        team_id: teams.length > 0 ? teams[0].team_id : null,
+        team_name: teams.length > 0 ? teams[0].team_name : null,
+        teams: teams
+      };
+    });
+
+    return {
+      users: transformedUsers,
+      teams: (teamsData as Team[]) || []
+    };
   };
 
-  // Refresh data function
-  async function refreshData() {
+  // Refresh data function - wrapped in useCallback to prevent infinite loops
+  const refreshData = useCallback(async () => {
     setLoading(true);
+    setError(null);
+    
+    const startTime = Date.now();
+    const minDisplayTime = 250; // Minimum 250ms for smooth UX
+    const maxLoadTime = 5000; // Maximum 5 seconds timeout
+    
+    // Create a timeout promise that rejects after maxLoadTime
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout: Data laden duurt te lang')), maxLoadTime);
+    });
+    
     try {
-      const data = await fetchData();
-      setUsers(data.users);
-      setTeams(data.teams);
-    } catch (error) {
+      // Race between fetchData and timeout
+      const data = await Promise.race([
+        fetchData(),
+        timeoutPromise
+      ]) as { users: DbUser[]; teams: Team[] };
+      
+      // Calculate elapsed time
+      const elapsedTime = Date.now() - startTime;
+      
+      // Ensure minimum display time for smooth UX (250ms)
+      const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
+      
+      // Only update state if we got valid data
+      if (data && Array.isArray(data.users) && Array.isArray(data.teams)) {
+        setUsers(data.users);
+        setTeams(data.teams);
+        // Only show error if we expected data but got none (not if it's legitimately empty)
+        if (data.users.length === 0) {
+          console.log('Geen gebruikers gevonden in database');
+        }
+      } else {
+        throw new Error('Ongeldige data ontvangen van de server');
+      }
+    } catch (error: any) {
+      // Calculate elapsed time even on error
+      const elapsedTime = Date.now() - startTime;
+      
+      // Ensure minimum display time even on error
+      const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
+      
       console.error('Error refreshing data:', error);
+      setError(error?.message || 'Er is een fout opgetreden bij het laden van de gebruikers.');
+      // Don't clear existing data on error, keep what we have
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   // Filter users based on search term and filters
   const filteredUsers = useMemo(() => {
-    return users.filter(user => {
+    if (!users || users.length === 0) {
+      return [];
+    }
+    
+    const filtered = users.filter(user => {
       // Text search filter (case insensitive)
       const matchesSearch = searchTerm === "" || 
         user.username.toLowerCase().includes(searchTerm.toLowerCase());
@@ -132,6 +174,8 @@ export const useUserManagement = () => {
       
       return matchesSearch && matchesRole && matchesTeam;
     });
+    
+    return filtered;
   }, [users, searchTerm, roleFilter, teamFilter]);
 
   // User operations (add, update, delete)
@@ -140,7 +184,7 @@ export const useUserManagement = () => {
   // Fetch users and teams on component mount
   useEffect(() => {
     refreshData();
-  }, []);
+  }, [refreshData]);
 
   // Handle opening the edit dialog
   const handleOpenEditDialog = (user: DbUser) => {
@@ -199,6 +243,8 @@ export const useUserManagement = () => {
     users: filteredUsers,
     teams,
     loading,
+    error,
+    refreshData,
     addingUser,
     updatingUser,
     deletingUser,

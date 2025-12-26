@@ -118,7 +118,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
             key={player.player_id}
             className="hover:shadow-md transition-shadow duration-200 border border-[var(--color-200)]"
           >
-            <CardContent className="p-4">
+            <CardContent className="!p-4 !sm:p-4">
               <div className="flex items-center justify-between gap-3">
                 {/* Player Name - Left */}
                 <h3 className="font-semibold text-sm text-foreground truncate flex-1 min-w-0">
@@ -140,14 +140,13 @@ const PlayersList: React.FC<PlayersListProps> = ({
                       variant="outline"
                       size="icon"
                       className={cn(
-                        "h-9 px-3 gap-1.5 border-[var(--color-300)]",
-                        "hover:bg-[var(--color-100)] hover:border-[var(--color-400)]",
+                        "h-9 border-[var(--color-300)]",
+                        "bg-white hover:bg-purple-50 hover:border-[var(--color-400)]",
                         "text-[var(--color-700)] hover:text-[var(--color-900)]",
                         "transition-colors duration-150"
                       )}
                       style={{ 
                         color: 'var(--accent)',
-                        backgroundColor: 'var(--color-300)',
                         height: '32px',
                         width: '32px',
                         minHeight: '32px',
@@ -157,7 +156,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
                       }}
                       aria-label={`Bewerk ${getFullName(player)}`}
                     >
-                      <Edit2 size={14} />
+                      <Edit2 size={16} />
                     </Button>
                     <Button
                       onClick={(e) => handleDeleteClick(player, e)}
@@ -179,7 +178,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
                       }}
                       aria-label={`Verwijder ${getFullName(player)}`}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={16} />
                     </Button>
                     </div>
                   )}

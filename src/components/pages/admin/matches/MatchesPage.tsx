@@ -20,15 +20,6 @@ interface MatchFormTabProps {
 
 const TabContentSkeleton = memo(() => (
   <Card>
-    <CardHeader>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-2">
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-4 w-96" />
-        </div>
-        <Skeleton className="h-10 w-32" />
-      </div>
-    </CardHeader>
     <CardContent className="p-0">
       <div className="p-4 border-b">
         <Skeleton className="h-10 w-full" />
