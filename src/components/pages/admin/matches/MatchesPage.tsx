@@ -10,7 +10,7 @@ import { MatchFormData } from "./types";
 import MatchesFormFilter from "./MatchesFormFilter";
 import { useTeam } from "@/hooks/useTeams";
 import MatchesFormList from "./MatchesFormList";
-import { MatchesFormModal } from "@/components/modals";
+import { WedstrijdformulierModal } from "@/components/modals";
 
 interface MatchFormTabProps {
   teamId: number;
@@ -331,7 +331,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
       </section>
       
       {selectedMatchForm && (
-        <MatchesFormModal
+        <WedstrijdformulierModal
           open={isDialogOpen}
           onOpenChange={(open) => {
             setIsDialogOpen(open);
