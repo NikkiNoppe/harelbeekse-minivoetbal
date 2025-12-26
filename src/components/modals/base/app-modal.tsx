@@ -25,8 +25,8 @@ export interface AppModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title?: string
-  subtitle?: string
   children: React.ReactNode
+  footer?: React.ReactNode
   primaryAction?: AppModalAction
   secondaryAction?: AppModalAction
   persistent?: boolean
@@ -48,22 +48,22 @@ const sizeMap: Record<ModalSize, string> = {
 };
 
 export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
-  (
-    {
-      open,
-      onOpenChange,
-      title,
-      subtitle,
-      children,
-      primaryAction,
-      secondaryAction,
-      persistent = false,
-      size = "md",
-      showCloseButton = true,
-      onClose,
-    },
-    ref
-  ) => {
+    (
+      {
+        open,
+        onOpenChange,
+        title,
+        children,
+        footer,
+        primaryAction,
+        secondaryAction,
+        persistent = false,
+        size = "md",
+        showCloseButton = true,
+        onClose,
+      },
+      ref
+    ) => {
     // Body scroll lock
     React.useEffect(() => {
       if (open) {
@@ -135,7 +135,6 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}
-        aria-describedby={subtitle ? 'modal-subtitle' : undefined}
         data-modal-size={size}
       >
         <div 
@@ -190,50 +189,42 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
 
 
           {/* Header */}
-          {(title || subtitle) && (
+          {title && (
             <div
               style={{
-                padding: '0.75rem',
+                marginTop: '0px',
+                marginBottom: '0px',
+                paddingTop: '12px',
+                paddingBottom: '12px',
+                paddingLeft: '0.75rem',
+                paddingRight: '0.75rem',
                 borderBottom: '1px solid var(--color-300)',
                 flexShrink: 0,
-                background: 'var(--color-100)'
+                background: 'var(--color-100)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                minHeight: '4rem'
               }}
             >
-              {title && (
-                <h2
-                  id="modal-title"
-                  style={{
-                    fontSize: '1.25rem',
-                    fontWeight: 600,
-                    color: 'var(--color-700)',
-                    margin: 0,
-                    marginBottom: subtitle ? '0.25rem' : 0,
-                    minHeight: '2rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    paddingRight: showCloseButton && !persistent ? '3rem' : 0,
-                    textAlign: 'center'
-                  }}
-                >
-                  {title}
-                </h2>
-              )}
-              {subtitle && (
-                <p
-                  id="modal-subtitle"
-                  style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--accent)',
-                    margin: 0,
-                    marginTop: '0.5rem',
-                    lineHeight: 1.4,
-                    textAlign: 'center'
-                  }}
-                >
-                  {subtitle}
-                </p>
-              )}
+              <h2
+                id="modal-title"
+                style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 600,
+                  color: 'var(--color-700)',
+                  margin: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingRight: 0,
+                  textAlign: 'center',
+                  lineHeight: '2rem'
+                }}
+              >
+                {title}
+              </h2>
             </div>
           )}
 
@@ -249,6 +240,28 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
           >
             {children}
           </div>
+
+          {/* Footer - Custom Sticky Footer */}
+          {footer && (
+            <div
+              style={{
+                marginTop: '0px',
+                marginBottom: '0px',
+                paddingTop: '12px',
+                paddingBottom: '12px',
+                paddingLeft: '0.75rem',
+                paddingRight: '0.75rem',
+                borderTop: '1px solid var(--color-300)',
+                flexShrink: 0,
+                background: 'var(--color-100)',
+                position: 'sticky',
+                bottom: 0,
+                zIndex: 10
+              }}
+            >
+              {footer}
+            </div>
+          )}
 
           {/* Footer - Actions */}
           {(primaryAction || secondaryAction) && (

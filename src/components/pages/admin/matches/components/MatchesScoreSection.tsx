@@ -54,7 +54,7 @@ export const MatchesScoreSection: React.FC<MatchesScoreSectionProps> = ({
             <Label 
               htmlFor="home-score" 
               className="text-sm font-semibold text-center block"
-              style={{ color: 'var(--color-700)' }}
+              style={{ color: 'var(--accent)' }}
             >
               {homeTeamName}
             </Label>
@@ -101,7 +101,7 @@ export const MatchesScoreSection: React.FC<MatchesScoreSectionProps> = ({
             <Label 
               htmlFor="away-score" 
               className="text-sm font-semibold text-center block"
-              style={{ color: 'var(--color-700)' }}
+              style={{ color: 'var(--accent)' }}
             >
               {awayTeamName}
             </Label>

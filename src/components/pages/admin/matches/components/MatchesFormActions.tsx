@@ -8,6 +8,7 @@ interface MatchesFormActionsProps {
   isSubmitting: boolean;
   canActuallyEdit: boolean;
   isAdmin: boolean;
+  noWrapper?: boolean;
 }
 
 const MatchesFormActions = forwardRef<HTMLButtonElement, MatchesFormActionsProps>(({
@@ -15,6 +16,7 @@ const MatchesFormActions = forwardRef<HTMLButtonElement, MatchesFormActionsProps
   isSubmitting,
   canActuallyEdit,
   isAdmin,
+  noWrapper = false,
 }, ref) => {
   // Memoize the submit button text to prevent unnecessary re-renders
   const submitButtonText = useMemo(() => {
@@ -27,41 +29,50 @@ const MatchesFormActions = forwardRef<HTMLButtonElement, MatchesFormActionsProps
     return isSubmitting || (!canActuallyEdit && !isAdmin);
   }, [isSubmitting, canActuallyEdit, isAdmin]);
 
+  const button = (
+    <Button
+      ref={ref}
+      onClick={onSubmit}
+      disabled={isSubmitDisabled}
+      className="btn btn--primary flex items-center justify-center gap-2 w-full"
+      style={{ 
+        minHeight: '52px', 
+        fontSize: '1rem', 
+        fontWeight: '600', 
+        borderRadius: 'var(--radius)', 
+        transition: 'all 150ms ease-in-out' 
+      }}
+    >
+      {isSubmitting ? (
+        <Loader2 className="h-5 w-5 animate-spin" />
+      ) : (
+        <Save className="h-5 w-5" />
+      )}
+      {submitButtonText}
+    </Button>
+  );
+
+  if (noWrapper) {
+    return button;
+  }
+
   return (
     <div 
       className="sticky bottom-0 left-0 right-0 z-10 bg-[var(--color-100)] border-t border-[var(--color-300)] shadow-[0_-4px_12px_rgba(0,0,0,0.1)]"
       style={{
         marginLeft: '-1.5rem',
         marginRight: '-1.5rem',
-        marginBottom: '0rem',
+        marginTop: '0px',
+        marginBottom: '0px',
         paddingLeft: '1.5rem',
         paddingRight: '1.5rem',
-        paddingTop: '1rem',
-        paddingBottom: 'max(1rem, calc(1rem + env(safe-area-inset-bottom, 0)))',
+        paddingTop: '12px',
+        paddingBottom: '12px',
         borderTopWidth: '1px',
         width: 'calc(100% + 3rem)',
       }}
     >
-      <Button
-        ref={ref}
-        onClick={onSubmit}
-        disabled={isSubmitDisabled}
-        className="btn btn--primary flex items-center justify-center gap-2 w-full"
-        style={{ 
-          minHeight: '52px', 
-          fontSize: '1rem', 
-          fontWeight: '600', 
-          borderRadius: 'var(--radius)', 
-          transition: 'all 150ms ease-in-out' 
-        }}
-      >
-        {isSubmitting ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
-        ) : (
-          <Save className="h-5 w-5" />
-        )}
-        {submitButtonText}
-      </Button>
+      {button}
     </div>
   );
 });
