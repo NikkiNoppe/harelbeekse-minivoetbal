@@ -1,8 +1,6 @@
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
-import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect, useRef } from "react";
+import { useTeamPlayersQuery } from "@/hooks/useTeamPlayersQuery";
 
 export interface TeamPlayer {
   player_id: number;
@@ -77,183 +75,116 @@ export const useTeamPlayersWithSuspensions = (teamId: number, matchDate?: Date):
   };
 };
 
-// In-memory cache to prevent losing data during retries
-const playerCache = new Map<number, TeamPlayer[]>();
-
 export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
-  const { authContextReady } = useAuth();
-  const [players, setPlayers] = useState<TeamPlayer[] | undefined>(() => {
-    // Initialize from cache if available
-    return playerCache.get(teamId) || undefined;
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<any>(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const hasFetchedWithContext = useRef(false);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const previousTeamIdRef = useRef<number | null>(null);
-
-  const fetchPlayers = useCallback(async (attempt = 0) => {
-    const startTime = Date.now();
-    const MIN_LOADING_TIME = 250; // Minimum 250ms loading time for better UX
+  // Loading time management: minimum 250ms, maximum 5000ms timeout
+  const MIN_LOADING_TIME = 250; // Minimum 250ms for better UX
+  const MAX_LOADING_TIME = 5000; // Maximum 5000ms timeout
+  
+  const [minLoadingTimeElapsed, setMinLoadingTimeElapsed] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const loadingStartTimeRef = useRef<number | null>(null);
+  const minTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const maxTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Use React Query hook
+  const playersQuery = useTeamPlayersQuery(teamId);
+  
+  // Track when loading starts and enforce minimum/maximum loading time
+  useEffect(() => {
+    const isQueryLoading = playersQuery.isLoading;
     
-    if (!teamId) {
-      setPlayers(undefined);
-      setLoading(false);
-      return;
-    }
-
-    // Wait for auth context to be ready before fetching
-    // Check inside function, not in dependency array to avoid recreation
-    if (!authContextReady) {
-      console.log('⏳ Waiting for auth context to be ready before fetching players...');
-      setLoading(true);
-      return; // Will be triggered again when authContextReady changes via useEffect
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Enhanced retry delay with jitter for mobile stability
-      if (attempt > 0) {
-        const baseDelay = Math.min(1000 * Math.pow(2, attempt), 5000);
-        const jitter = Math.random() * 500; // Add randomness to prevent thundering herd
-        await new Promise(resolve => setTimeout(resolve, baseDelay + jitter));
-      }
-
-      // Use withUserContext to ensure proper RLS access for Team Managers
-      const { data, error: fetchError } = await withUserContext(async () => {
-        return await supabase
-          .from('players')
-          .select('player_id, first_name, last_name, team_id')
-          .eq('team_id', teamId)
-          .order('first_name')
-          .abortSignal(AbortSignal.timeout(10000)); // 10 second timeout for mobile
-      });
-
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      // Smart empty result handling: distinguish real empty from context-blocked
-      if (data?.length === 0 && !hasFetchedWithContext.current) {
-        console.log('⚠️ Empty result on first fetch - may be due to context timing');
-      }
-      
-      hasFetchedWithContext.current = true;
-      setPlayers(data || []);
-      // Cache the data to prevent losing it during retries
-      if (data && data.length > 0) {
-        playerCache.set(teamId, data);
-      }
-      setRetryCount(0);
-      
-      // Ensure minimum loading time for better UX
-      const elapsed = Date.now() - startTime;
-      const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
-      if (remainingTime > 0) {
-        setTimeout(() => {
-          setLoading(false);
-          console.log('✅ Players loaded');
-        }, remainingTime);
-      } else {
-        setLoading(false);
-        console.log('✅ Players loaded');
-      }
-    } catch (err) {
-      console.error(`Error fetching team players (attempt ${attempt + 1}):`, err);
-      setError(err);
-      
-      // Enhanced retry logic - up to 4 attempts for mobile
-      if (attempt < 3) {
-        setRetryCount(attempt + 1);
-        // Keep loading: true during retries
-        setLoading(true);
-        // Use exponential backoff with longer delays for mobile
-        const retryDelay = Math.min(1000 * Math.pow(2, attempt + 1), 8000);
+    if (isQueryLoading) {
+      // Loading started
+      if (loadingStartTimeRef.current === undefined || loadingStartTimeRef.current === null) {
+        loadingStartTimeRef.current = Date.now();
+        setMinLoadingTimeElapsed(false);
+        setLoadingTimeout(false);
         
-        // Clear previous timeout to prevent multiple retries
-        if (retryTimeoutRef.current) {
-          clearTimeout(retryTimeoutRef.current);
+        // Clear any existing timeouts
+        if (minTimeoutRef.current) {
+          clearTimeout(minTimeoutRef.current);
+          minTimeoutRef.current = null;
+        }
+        if (maxTimeoutRef.current) {
+          clearTimeout(maxTimeoutRef.current);
+          maxTimeoutRef.current = null;
         }
         
-        retryTimeoutRef.current = setTimeout(() => {
-          fetchPlayers(attempt + 1);
-        }, retryDelay);
-      } else {
-        // After all retries failed, use cached data if available
-        const cachedData = playerCache.get(teamId);
-        if (cachedData && cachedData.length > 0) {
-          console.log('Using cached player data after fetch failure');
-          setPlayers(cachedData);
-          setError(null); // Clear error since we have fallback data
-        } else {
-          setPlayers(undefined);
-        }
-        setRetryCount(0);
-        
-        // Ensure minimum loading time even on error
-        const elapsed = Date.now() - startTime;
+        // Set maximum timeout (5000ms) - show error if exceeded
+        maxTimeoutRef.current = setTimeout(() => {
+          setLoadingTimeout(true);
+          loadingStartTimeRef.current = null;
+          if (process.env.NODE_ENV === 'development') {
+            console.error(`❌ Loading timeout for team players after ${MAX_LOADING_TIME}ms`);
+          }
+        }, MAX_LOADING_TIME);
+      }
+    } else {
+      // Loading finished - check if minimum time has elapsed
+      if (loadingStartTimeRef.current !== undefined && loadingStartTimeRef.current !== null) {
+        const elapsed = Date.now() - loadingStartTimeRef.current;
         const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+        
+        // Clear maximum timeout since loading finished
+        if (maxTimeoutRef.current) {
+          clearTimeout(maxTimeoutRef.current);
+          maxTimeoutRef.current = null;
+        }
+        
         if (remainingTime > 0) {
-          setTimeout(() => {
-            setLoading(false);
+          // Clear any existing minimum timeout
+          if (minTimeoutRef.current) {
+            clearTimeout(minTimeoutRef.current);
+          }
+          // Set timeout to complete minimum loading time
+          minTimeoutRef.current = setTimeout(() => {
+            setMinLoadingTimeElapsed(true);
+            loadingStartTimeRef.current = null;
+            minTimeoutRef.current = null;
           }, remainingTime);
         } else {
-          setLoading(false);
+          // Already exceeded minimum time
+          setMinLoadingTimeElapsed(true);
+          loadingStartTimeRef.current = null;
+          if (minTimeoutRef.current) {
+            clearTimeout(minTimeoutRef.current);
+            minTimeoutRef.current = null;
+          }
         }
+      } else {
+        // No loading was tracked, ensure elapsed is true
+        setMinLoadingTimeElapsed(true);
       }
-    }
-  }, [teamId]); // ✅ FIXED: Removed authContextReady from dependencies to prevent unnecessary recreations
-
-  const refetch = useCallback(async () => {
-    setRetryCount(0);
-    hasFetchedWithContext.current = false;
-    // Clear any pending retries
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current);
-      retryTimeoutRef.current = null;
-    }
-    await fetchPlayers(0);
-  }, [fetchPlayers]);
-
-  const memoizedPlayers = useMemo(() => players, [players]);
-
-  // ✅ FIXED: Single useEffect that handles both teamId changes and auth context readiness
-  // Only fetch if auth is ready and we haven't fetched yet for this teamId
-  useEffect(() => {
-    // Reset fetch flag only when teamId actually changes
-    if (teamId !== previousTeamIdRef.current) {
-      hasFetchedWithContext.current = false;
-      previousTeamIdRef.current = teamId;
     }
     
-    // Only fetch if auth is ready and we haven't fetched yet
-    if (authContextReady && teamId && !hasFetchedWithContext.current) {
-      fetchPlayers(0);
-    }
-  }, [teamId, authContextReady, fetchPlayers]);
-
-  // ✅ FIXED: Cleanup timeout on unmount to prevent memory leaks
-  useEffect(() => {
+    // Cleanup timeouts on unmount
     return () => {
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-        retryTimeoutRef.current = null;
+      if (minTimeoutRef.current) {
+        clearTimeout(minTimeoutRef.current);
+      }
+      if (maxTimeoutRef.current) {
+        clearTimeout(maxTimeoutRef.current);
       }
     };
-  }, []);
-
+  }, [playersQuery.isLoading]);
+  
+  // Calculate final loading state: query loading OR minimum time not elapsed AND no timeout
+  const isLoading = !loadingTimeout && (playersQuery.isLoading || !minLoadingTimeElapsed);
+  
+  // Enhanced error handling - combine query errors with timeout errors
+  const error = playersQuery.error || (loadingTimeout ? new Error("Loading timeout") : null);
+  
+  const refetch = async () => {
+    await playersQuery.refetch();
+  };
+  
   return {
-    players: memoizedPlayers,
-    loading: loading || retryCount > 0,
-    error: retryCount >= 3 ? error : null, // Only show error after all retries
-    retryCount,
+    players: playersQuery.data,
+    loading: isLoading,
+    error: error,
+    retryCount: 0, // React Query handles retries internally
     refetch,
   };
 };
 
 export default useTeamPlayers;
-
-

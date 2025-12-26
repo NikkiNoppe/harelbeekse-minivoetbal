@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { fetchUpcomingMatches } from "@/components/pages/admin/matches/services/matchesFormService";
 import type { MatchFormData } from "@/components/pages/admin/matches/types";
@@ -20,81 +20,86 @@ export const useMatchFormsData = (
 ) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Loading time management: minimum 250ms, maximum 5000ms timeout
+  const MIN_LOADING_TIME = 250; // Minimum 250ms for better UX
+  const MAX_LOADING_TIME = 5000; // Maximum 5000ms timeout
+  
   const [minLoadingState, setMinLoadingState] = useState({
+    league: true, // Start as true, will be set to false when loading starts
+    cup: true,
+    playoff: true
+  });
+  const [loadingTimeout, setLoadingTimeout] = useState({
     league: false,
     cup: false,
     playoff: false
   });
-  const loadingStartTime = useRef<{ league?: number; cup?: number; playoff?: number }>({});
-  const MIN_LOADING_TIME = 250; // Minimum 250ms loading time for better UX
+  const loadingStartTimeRef = useRef<{ league?: number; cup?: number; playoff?: number }>({});
+  const minTimeoutRef = useRef<{ league?: NodeJS.Timeout; cup?: NodeJS.Timeout; playoff?: NodeJS.Timeout }>({});
+  const maxTimeoutRef = useRef<{ league?: NodeJS.Timeout; cup?: NodeJS.Timeout; playoff?: NodeJS.Timeout }>({});
 
-  // League matches query - Optimized for mobile stability
+  // League matches query
   const leagueQuery = useQuery({
     queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'league'],
     queryFn: async () => {
-      loadingStartTime.current.league = Date.now();
       return fetchUpcomingMatches(
         hasElevatedPermissions ? 0 : teamId, 
         hasElevatedPermissions, 
         'league'
       );
     },
-    staleTime: 15 * 60 * 1000, // 15 minutes - Extended for mobile stability
-    gcTime: 60 * 60 * 1000, // 1 hour cache - Keep data longer on mobile
-    retry: 3, // More retries for unstable connections
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
-    refetchOnWindowFocus: false, // Prevent blank dropdowns on tab focus
-    refetchOnReconnect: true, // Refetch when connection restored
+    staleTime: 0, // Always refetch immediately
+    gcTime: 10 * 60 * 1000, // 10 minutes cache
+    retry: 2, // Reduced retries
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
     refetchInterval: false,
-    refetchIntervalInBackground: false,
-    placeholderData: (previousData) => previousData, // Keep previous data while loading
-    networkMode: 'offlineFirst' // Use cache first on poor connections
+    placeholderData: undefined, // No placeholder data
+    networkMode: 'online' // Always fetch fresh data
   });
 
-  // Cup matches query - Optimized for mobile stability  
+  // Cup matches query
   const cupQuery = useQuery({
     queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'cup'],
     queryFn: async () => {
-      loadingStartTime.current.cup = Date.now();
       return fetchUpcomingMatches(
         hasElevatedPermissions ? 0 : teamId, 
         hasElevatedPermissions, 
         'cup'
       );
     },
-    staleTime: 15 * 60 * 1000, // 15 minutes - Extended for mobile stability
-    gcTime: 60 * 60 * 1000, // 1 hour cache - Keep data longer on mobile  
-    retry: 3, // More retries for unstable connections
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
-    refetchOnWindowFocus: false, // Prevent blank dropdowns on tab focus
-    refetchOnReconnect: true, // Refetch when connection restored
+    staleTime: 0, // Always refetch immediately
+    gcTime: 10 * 60 * 1000, // 10 minutes cache
+    retry: 2, // Reduced retries
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
     refetchInterval: false,
-    refetchIntervalInBackground: false,
-    placeholderData: (previousData) => previousData, // Keep previous data while loading
-    networkMode: 'offlineFirst' // Use cache first on poor connections
+    placeholderData: undefined, // No placeholder data
+    networkMode: 'online' // Always fetch fresh data
   });
 
-  // Playoff matches query - Optimized for mobile stability  
+  // Playoff matches query
   const playoffQuery = useQuery({
     queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'playoff'],
     queryFn: async () => {
-      loadingStartTime.current.playoff = Date.now();
       return fetchUpcomingMatches(
         hasElevatedPermissions ? 0 : teamId, 
         hasElevatedPermissions, 
         'playoff'
       );
     },
-    staleTime: 15 * 60 * 1000, // 15 minutes - Extended for mobile stability
-    gcTime: 60 * 60 * 1000, // 1 hour cache - Keep data longer on mobile  
-    retry: 3, // More retries for unstable connections
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
-    refetchOnWindowFocus: false, // Prevent blank dropdowns on tab focus
-    refetchOnReconnect: true, // Refetch when connection restored
+    staleTime: 0, // Always refetch immediately
+    gcTime: 10 * 60 * 1000, // 10 minutes cache
+    retry: 2, // Reduced retries
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
     refetchInterval: false,
-    refetchIntervalInBackground: false,
-    placeholderData: (previousData) => previousData, // Keep previous data while loading
-    networkMode: 'offlineFirst' // Use cache first on poor connections
+    placeholderData: undefined, // No placeholder data
+    networkMode: 'online' // Always fetch fresh data
   });
 
 
@@ -204,24 +209,72 @@ export const useMatchFormsData = (
     return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   };
 
-  // Manage minimum loading time for each query
+  // Track when loading starts and enforce minimum/maximum loading time for each query
   useEffect(() => {
     const checkLoading = (query: typeof leagueQuery, type: 'league' | 'cup' | 'playoff') => {
-      if (query.isLoading) {
-        setMinLoadingState(prev => ({ ...prev, [type]: true }));
-        loadingStartTime.current[type] = Date.now();
-      } else if (!query.isLoading && loadingStartTime.current[type]) {
-        const elapsed = Date.now() - (loadingStartTime.current[type] || 0);
-        const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
-        
-        if (remainingTime > 0) {
-          setTimeout(() => {
-            setMinLoadingState(prev => ({ ...prev, [type]: false }));
-            loadingStartTime.current[type] = undefined;
-          }, remainingTime);
-        } else {
+      const isQueryLoading = query.isLoading;
+      
+      if (isQueryLoading) {
+        // Loading started
+        if (loadingStartTimeRef.current[type] === undefined) {
+          loadingStartTimeRef.current[type] = Date.now();
           setMinLoadingState(prev => ({ ...prev, [type]: false }));
-          loadingStartTime.current[type] = undefined;
+          setLoadingTimeout(prev => ({ ...prev, [type]: false }));
+          
+          // Clear any existing timeouts
+          if (minTimeoutRef.current[type]) {
+            clearTimeout(minTimeoutRef.current[type]);
+            minTimeoutRef.current[type] = undefined;
+          }
+          if (maxTimeoutRef.current[type]) {
+            clearTimeout(maxTimeoutRef.current[type]);
+            maxTimeoutRef.current[type] = undefined;
+          }
+          
+          // Set maximum timeout (5000ms) - show error if exceeded
+          maxTimeoutRef.current[type] = setTimeout(() => {
+            setLoadingTimeout(prev => ({ ...prev, [type]: true }));
+            loadingStartTimeRef.current[type] = undefined;
+            if (process.env.NODE_ENV === 'development') {
+              console.error(`❌ Loading timeout for ${type} matches after ${MAX_LOADING_TIME}ms`);
+            }
+          }, MAX_LOADING_TIME);
+        }
+      } else {
+        // Loading finished - check if minimum time has elapsed
+        if (loadingStartTimeRef.current[type] !== undefined) {
+          const elapsed = Date.now() - (loadingStartTimeRef.current[type] || 0);
+          const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+          
+          // Clear maximum timeout since loading finished
+          if (maxTimeoutRef.current[type]) {
+            clearTimeout(maxTimeoutRef.current[type]);
+            maxTimeoutRef.current[type] = undefined;
+          }
+          
+          if (remainingTime > 0) {
+            // Clear any existing minimum timeout
+            if (minTimeoutRef.current[type]) {
+              clearTimeout(minTimeoutRef.current[type]);
+            }
+            // Set timeout to complete minimum loading time
+            minTimeoutRef.current[type] = setTimeout(() => {
+              setMinLoadingState(prev => ({ ...prev, [type]: true }));
+              loadingStartTimeRef.current[type] = undefined;
+              minTimeoutRef.current[type] = undefined;
+            }, remainingTime);
+          } else {
+            // Already exceeded minimum time
+            setMinLoadingState(prev => ({ ...prev, [type]: true }));
+            loadingStartTimeRef.current[type] = undefined;
+            if (minTimeoutRef.current[type]) {
+              clearTimeout(minTimeoutRef.current[type]);
+              minTimeoutRef.current[type] = undefined;
+            }
+          }
+        } else {
+          // No loading was tracked, ensure elapsed is true
+          setMinLoadingState(prev => ({ ...prev, [type]: true }));
         }
       }
     };
@@ -229,21 +282,82 @@ export const useMatchFormsData = (
     checkLoading(leagueQuery, 'league');
     checkLoading(cupQuery, 'cup');
     checkLoading(playoffQuery, 'playoff');
+    
+    // Cleanup timeouts on unmount
+    return () => {
+      Object.values(minTimeoutRef.current).forEach(timeout => {
+        if (timeout) clearTimeout(timeout);
+      });
+      Object.values(maxTimeoutRef.current).forEach(timeout => {
+        if (timeout) clearTimeout(timeout);
+      });
+    };
   }, [leagueQuery.isLoading, cupQuery.isLoading, playoffQuery.isLoading]);
+
+  // Enhanced error handling - combine query errors with timeout errors
+  const getError = useMemo(() => {
+    const errors: { league?: any; cup?: any; playoff?: any } = {};
+    
+    if (loadingTimeout.league) {
+      errors.league = {
+        message: 'Het laden van de competitie wedstrijden duurt te lang (>5 seconden). Dit kan betekenen dat de data niet correct is binnengehaald. Probeer de pagina te vernieuwen of controleer je internetverbinding.',
+        timeout: true
+      };
+    } else if (leagueQuery.error) {
+      errors.league = {
+        message: 'Er is een fout opgetreden bij het laden van de competitie wedstrijden. De data is mogelijk niet correct binnengehaald. Probeer het opnieuw of neem contact op met de beheerder.',
+        originalError: leagueQuery.error,
+        timeout: false
+      };
+    }
+    
+    if (loadingTimeout.cup) {
+      errors.cup = {
+        message: 'Het laden van de beker wedstrijden duurt te lang (>5 seconden). Dit kan betekenen dat de data niet correct is binnengehaald. Probeer de pagina te vernieuwen of controleer je internetverbinding.',
+        timeout: true
+      };
+    } else if (cupQuery.error) {
+      errors.cup = {
+        message: 'Er is een fout opgetreden bij het laden van de beker wedstrijden. De data is mogelijk niet correct binnengehaald. Probeer het opnieuw of neem contact op met de beheerder.',
+        originalError: cupQuery.error,
+        timeout: false
+      };
+    }
+    
+    if (loadingTimeout.playoff) {
+      errors.playoff = {
+        message: 'Het laden van de playoff wedstrijden duurt te lang (>5 seconden). Dit kan betekenen dat de data niet correct is binnengehaald. Probeer de pagina te vernieuwen of controleer je internetverbinding.',
+        timeout: true
+      };
+    } else if (playoffQuery.error) {
+      errors.playoff = {
+        message: 'Er is een fout opgetreden bij het laden van de playoff wedstrijden. De data is mogelijk niet correct binnengehaald. Probeer het opnieuw of neem contact op met de beheerder.',
+        originalError: playoffQuery.error,
+        timeout: false
+      };
+    }
+    
+    return Object.keys(errors).length > 0 ? errors : null;
+  }, [loadingTimeout, leagueQuery.error, cupQuery.error, playoffQuery.error]);
 
   // Get current tab data with filters
   const getTabData = (tabType: 'league' | 'cup' | 'playoff', filters: MatchFormsFilters) => {
     const query = tabType === 'cup' ? cupQuery : 
                   tabType === 'playoff' ? playoffQuery : leagueQuery;
     const filteredMatches = filterAndSortMatches(query.data || [], filters);
-    const isLoading = query.isLoading || minLoadingState[tabType];
+    
+    // Calculate final loading state: query loading OR minimum time not elapsed AND no timeout
+    const isLoading = !loadingTimeout[tabType] && (query.isLoading || !minLoadingState[tabType]);
+    
+    // Get error for this tab type
+    const error = getError?.[tabType] || null;
     
     return {
       matches: filteredMatches,
       allMatches: query.data || [],
       isLoading,
-      isError: query.isError,
-      error: query.error
+      isError: !!error || query.isError,
+      error: error || query.error
     };
   };
 
@@ -292,19 +406,19 @@ export const useMatchFormsData = (
     cupMatches: cupQuery.data || [],
     playoffMatches: playoffQuery.data || [],
     
-    // Loading states (with minimum loading time)
-    leagueLoading: leagueQuery.isLoading || minLoadingState.league,
-    cupLoading: cupQuery.isLoading || minLoadingState.cup,
-    playoffLoading: playoffQuery.isLoading || minLoadingState.playoff,
-    isLoading: (leagueQuery.isLoading || minLoadingState.league) || 
-               (cupQuery.isLoading || minLoadingState.cup) || 
-               (playoffQuery.isLoading || minLoadingState.playoff),
+    // Loading states (with minimum/maximum loading time)
+    leagueLoading: !loadingTimeout.league && (leagueQuery.isLoading || !minLoadingState.league),
+    cupLoading: !loadingTimeout.cup && (cupQuery.isLoading || !minLoadingState.cup),
+    playoffLoading: !loadingTimeout.playoff && (playoffQuery.isLoading || !minLoadingState.playoff),
+    isLoading: (!loadingTimeout.league && (leagueQuery.isLoading || !minLoadingState.league)) || 
+               (!loadingTimeout.cup && (cupQuery.isLoading || !minLoadingState.cup)) || 
+               (!loadingTimeout.playoff && (playoffQuery.isLoading || !minLoadingState.playoff)),
     
-    // Error states
-    leagueError: leagueQuery.error,
-    cupError: cupQuery.error,
-    playoffError: playoffQuery.error,
-    hasError: !!leagueQuery.error || !!cupQuery.error || !!playoffQuery.error,
+    // Error states (enhanced with timeout errors)
+    leagueError: getError?.league || leagueQuery.error,
+    cupError: getError?.cup || cupQuery.error,
+    playoffError: getError?.playoff || playoffQuery.error,
+    hasError: !!getError || !!leagueQuery.error || !!cupQuery.error || !!playoffQuery.error,
     
     // Statistics
     statistics,

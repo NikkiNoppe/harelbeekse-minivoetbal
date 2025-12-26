@@ -3,6 +3,7 @@ import { MatchFormData } from "../types";
 import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { cupService } from "@/services/match";
 import { sortCupMatches, sortLeagueMatches } from "@/lib/matchSortingUtils";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export const fetchUpcomingMatches = async (
   teamId: number,
@@ -10,42 +11,68 @@ export const fetchUpcomingMatches = async (
   competitionType?: 'league' | 'cup' | 'playoff'
 ): Promise<MatchFormData[]> => {
   try {
-    // Create base query
-    let query = supabase
-      .from("matches")
-      .select(`
-        match_id,
-        unique_number,
-        match_date,
-        location,
-        speeldag,
-        home_team_id,
-        away_team_id,
-        home_score,
-        away_score,
-        referee,
-        referee_notes,
-        is_submitted,
-        is_locked,
-        home_players,
-        away_players,
-        is_cup_match,
-        is_playoff_match,
-        assigned_referee_id,
-        poll_group_id,
-        poll_month,
-        teams_home:teams!home_team_id ( team_name ),
-        teams_away:teams!away_team_id ( team_name )
-      `)
-      .order("match_date", { ascending: true });
+    return await withUserContext(async () => {
+      // Verify context BEFORE query
+      if (process.env.NODE_ENV === 'development') {
+        const { data: roleBefore } = await supabase.rpc('get_current_user_role');
+        const { data: teamIdsBefore } = await supabase.rpc('get_current_user_team_ids');
+        console.log(`🔍 Context BEFORE query for matches (${competitionType || 'all'}):`, {
+          role: roleBefore,
+          teamIds: teamIdsBefore,
+          teamId,
+          hasElevatedPermissions,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // Create base query
+      let query = supabase
+        .from("matches")
+        .select(`
+          match_id,
+          unique_number,
+          match_date,
+          location,
+          speeldag,
+          home_team_id,
+          away_team_id,
+          home_score,
+          away_score,
+          referee,
+          referee_notes,
+          is_submitted,
+          is_locked,
+          home_players,
+          away_players,
+          is_cup_match,
+          is_playoff_match,
+          assigned_referee_id,
+          poll_group_id,
+          poll_month,
+          teams_home:teams!home_team_id ( team_name ),
+          teams_away:teams!away_team_id ( team_name )
+        `)
+        .order("match_date", { ascending: true });
 
-    // Apply team filter first if needed
-    if (!hasElevatedPermissions && teamId > 0) {
-      query = query.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
-    }
+      // Apply team filter first if needed
+      if (!hasElevatedPermissions && teamId > 0) {
+        query = query.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
+      }
 
-    // Execute query and filter competition type in JavaScript to avoid TypeScript issues
-    const { data: allMatches, error } = await query;
+      // Execute query and filter competition type in JavaScript to avoid TypeScript issues
+      const queryStartTime = Date.now();
+      const { data: allMatches, error } = await query;
+      const queryDuration = Date.now() - queryStartTime;
+      
+      // Verify context AFTER query
+      if (process.env.NODE_ENV === 'development') {
+        const { data: roleAfter } = await supabase.rpc('get_current_user_role');
+        console.log(`🔍 Context AFTER query for matches (${competitionType || 'all'}):`, {
+          role: roleAfter,
+          queryDuration: `${queryDuration}ms`,
+          matchesCount: allMatches?.length || 0
+        });
+      }
 
     if (error) {
       console.error("[fetchUpcomingMatches] Error:", error);
@@ -110,9 +137,12 @@ export const fetchUpcomingMatches = async (
       return sortLeagueMatches(matches);
     }
 
-    return matches;
+      return matches;
+    });
   } catch (error) {
-    console.error("[fetchUpcomingMatches] Error:", error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`❌ Error in fetchUpcomingMatches (${competitionType || 'all'}):`, error);
+    }
     throw error;
   }
 };

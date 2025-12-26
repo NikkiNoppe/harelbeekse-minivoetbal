@@ -3,6 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { VisuallyHidden } from "./visually-hidden"
 
 const Dialog = DialogPrimitive.Root
 
@@ -32,43 +33,49 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "app-modal app-modal-md",
-        "fixed left-1/2 top-1/2 z-modal -translate-x-1/2 -translate-y-1/2",
-        "data-[state=open]:animate-in data-[state=closed]:animate-out",
-        "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-        "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-        "transition-[opacity,transform]",
-        "sm:rounded-xl mx-4 border",
-        className
-      )}
-      style={{
-        transitionDuration: "var(--transition-fast)",
-        transitionTimingFunction: "var(--transition-timing)",
-        maxHeight: 'calc(100dvh - 2rem)',
-        maxWidth: 'calc(100vw - 2rem)',
-      }}
-      {...props}
-    >
-      <div className="app-modal-close">
-        <DialogPrimitive.Close asChild>
-          <button type="button" aria-label="Close">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </button>
-        </DialogPrimitive.Close>
-      </div>
-      <div className="app-modal-body p-4 sm:p-6">
-        {children}
-      </div>
-    </DialogPrimitive.Content>
-  </DialogPortal>
-))
+>(({ className, children, ...props }, ref) => {
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        ref={ref}
+        className={cn(
+          "app-modal app-modal-md",
+          "fixed left-1/2 top-1/2 z-modal -translate-x-1/2 -translate-y-1/2",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out",
+          "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+          "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          "transition-[opacity,transform]",
+          "sm:rounded-xl mx-4 border",
+          className
+        )}
+        style={{
+          transitionDuration: "var(--transition-fast)",
+          transitionTimingFunction: "var(--transition-timing)",
+          maxHeight: 'calc(100dvh - 2rem)',
+          maxWidth: 'calc(100vw - 2rem)',
+        }}
+        {...props}
+      >
+        {/* Always include a hidden DialogTitle for accessibility - Radix will use the first DialogTitle found */}
+        <VisuallyHidden>
+          <DialogPrimitive.Title>Dialog</DialogPrimitive.Title>
+        </VisuallyHidden>
+        <div className="app-modal-close">
+          <DialogPrimitive.Close asChild>
+            <button type="button" aria-label="Close">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </button>
+          </DialogPrimitive.Close>
+        </div>
+        <div className="app-modal-body p-4 sm:p-6">
+          {children}
+        </div>
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  );
+})
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
 const DialogHeader = ({

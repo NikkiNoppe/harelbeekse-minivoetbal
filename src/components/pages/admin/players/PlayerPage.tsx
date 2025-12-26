@@ -2,16 +2,17 @@ import React, { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Loader2 } from "lucide-react";
+import { Plus, Users, Loader2, AlertCircle } from "lucide-react";
 import PlayersList from "./components/PlayersList";
 import { PlayerModal } from "@/components/modals";
 import PlayerRegulations from "./components/PlayerRegulations";
-import { usePlayersUpdated } from "./hooks/usePlayersUpdated";
+import { usePlayersUpdatedWithQuery } from "./hooks/usePlayersUpdatedWithQuery";
 import { usePlayerListLock } from "./hooks/usePlayerListLock";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDateShort } from "@/lib/dateUtils";
 import { PageHeader } from "@/components/layout";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const PlayerPage: React.FC = () => {
   const { user: authUser } = useAuth();
@@ -35,8 +36,9 @@ const PlayerPage: React.FC = () => {
     handleRemovePlayer,
     formatDate,
     getFullName,
-    userTeamName
-  } = usePlayersUpdated();
+    userTeamName,
+    error
+  } = usePlayersUpdatedWithQuery();
   const { isLocked, lockDate, canEdit } = usePlayerListLock();
   
   // Memoized values to prevent unnecessary re-renders
@@ -69,19 +71,13 @@ const PlayerPage: React.FC = () => {
     }
   }, [setDialogOpen, setEditDialogOpen, setEditingPlayer, setNewPlayer]);
 
-  const [isTeamChanging, setIsTeamChanging] = useState(false);
-
   const handleTeamSelectChange = useCallback((value: string) => {
-    setIsTeamChanging(true);
     if (value === "all" || value === "") {
       handleTeamChange(null);
     } else {
       handleTeamChange(parseInt(value));
     }
-    // Reset loading state after a short delay to allow the actual loading to take over
-    setTimeout(() => {
-      setIsTeamChanging(false);
-    }, 100);
+    // React Query handles loading state automatically with debouncing
   }, [handleTeamChange]);
 
   // Memoized team options to prevent unnecessary re-renders
@@ -120,11 +116,11 @@ const PlayerPage: React.FC = () => {
               <Select 
                 value={selectedTeam?.toString() || "all"} 
                 onValueChange={handleTeamSelectChange}
-                disabled={loading || isTeamChanging}
+                disabled={loading}
               >
                 <SelectTrigger className={cn(
                   "dropdown-login-style w-full sm:min-w-[200px] sm:w-auto",
-                  (loading || isTeamChanging) && "opacity-70 cursor-not-allowed"
+                  loading && "opacity-70 cursor-not-allowed"
                 )}>
                   <SelectValue placeholder="Alle teams" />
                 </SelectTrigger>
@@ -132,13 +128,13 @@ const PlayerPage: React.FC = () => {
                   {teamOptions}
                 </SelectContent>
               </Select>
-              {(loading || isTeamChanging) && (
+              {loading && (
                 <div className="absolute right-10 top-1/2 -translate-y-1/2">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 </div>
               )}
             </div>
-            {(loading || isTeamChanging) && (
+            {loading && (
               <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 Spelers worden geladen...
@@ -177,8 +173,40 @@ const PlayerPage: React.FC = () => {
         )
       )}
 
+      {/* Error Message */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Fout bij laden spelerslijst</AlertTitle>
+          <AlertDescription>
+            <p className="mb-2">{error.message}</p>
+            {error.timeout && (
+              <Button
+                onClick={() => {
+                  // Invalidate queries and retry
+                  window.location.reload();
+                }}
+                variant="outline"
+                size="sm"
+                className="mt-2"
+              >
+                Pagina vernieuwen
+              </Button>
+            )}
+            {!error.timeout && error.originalError && (
+              <details className="mt-2 text-xs">
+                <summary className="cursor-pointer text-muted-foreground">Technische details</summary>
+                <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
+                  {JSON.stringify(error.originalError, null, 2)}
+                </pre>
+              </details>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Players Count */}
-      {!loading && players.length > 0 && (
+      {!loading && !error && players.length > 0 && (
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" />
           <Badge variant="outline" className="text-sm font-semibold">

@@ -100,47 +100,82 @@ export const withUserContext = async <T>(
       }
     }
     
-    // Only set context if it has changed
+    // Always set context before each operation to ensure it's fresh
+    // Database context can be lost between queries (new connections, session timeouts, etc.)
+    // Wait for any existing context setup to complete (serialize calls)
+    if (contextPromise) {
+      await contextPromise;
+    }
+    
+    // Check if we need to set context (optimization: only set if changed)
     const contextChanged = !lastContext || 
       lastContext.userId !== userId || 
       lastContext.role !== normalizedRole || 
       lastContext.teamIds !== teamIds;
     
-    if (contextChanged) {
-      // Wait for any existing context setup to complete (serialize calls)
-      if (contextPromise) {
-        await contextPromise;
-      }
-      
-      // Create new promise for this context setup
-      contextPromise = (async () => {
-        try {
-          // Set user context before the operation
-          await supabase.rpc('set_current_user_context', {
-            p_user_id: userId,
-            p_role: normalizedRole,
-            p_team_ids: teamIds
-          });
+    // Always set context, even if unchanged, to ensure it's fresh in the database
+    // This prevents RLS issues when context is lost between queries
+    contextPromise = (async () => {
+      try {
+        // Set user context before the operation
+        const { error: contextError } = await supabase.rpc('set_current_user_context', {
+          p_user_id: userId,
+          p_role: normalizedRole,
+          p_team_ids: teamIds
+        });
+        
+        if (contextError) {
+          console.error('❌ Error setting user context:', contextError);
+          throw contextError;
+        }
+        
+        // Verify context was set correctly (only in development and when changed)
+        if (process.env.NODE_ENV === 'development' && contextChanged) {
+          // Small delay to ensure context is propagated
+          await new Promise(resolve => setTimeout(resolve, 10));
           
-          // Update cache
-          lastContext = { userId, role: normalizedRole, teamIds };
+          const { data: verifyRole, error: verifyError } = await supabase.rpc('get_current_user_role');
+          const { data: verifyTeamIds } = await supabase.rpc('get_current_user_team_ids');
           
-          // Only log when context actually changes
+          if (verifyError) {
+            console.warn('⚠️ Could not verify user role after setting context:', verifyError);
+          } else {
+            console.log('✅ Context set and verified:', {
+              role: verifyRole,
+              expectedRole: normalizedRole,
+              teamIds: verifyTeamIds,
+              expectedTeamIds: teamIds,
+              roleMatch: verifyRole === normalizedRole
+            });
+            if (verifyRole !== normalizedRole) {
+              console.error('❌ Context mismatch! Expected role:', normalizedRole, 'but got:', verifyRole);
+              console.error('⚠️ Note: set_current_user_context() fetches role from database, ignoring client-provided role');
+              console.error('⚠️ Check if user role in database matches expected role');
+            }
+          }
+        }
+        
+        // Update cache
+        lastContext = { userId, role: normalizedRole, teamIds };
+        
+        // Only log when context actually changes
+        if (contextChanged) {
           console.log('✅ Context set for operation:', { userId, role: normalizedRole, teamIds });
           if (!teamIds && normalizedRole === 'player_manager') {
             console.warn('⚠️ No teamIds found for player_manager; RLS may block team data.');
           }
-        } catch (contextError) {
-          console.log('⚠️ Could not set context for operation:', contextError);
-          // Clear cache on error to force retry next time
-          lastContext = null;
-        } finally {
-          contextPromise = null;
         }
-      })();
-      
-      await contextPromise;
-    }
+      } catch (contextError) {
+        console.error('❌ Could not set context for operation:', contextError);
+        // Clear cache on error to force retry next time
+        lastContext = null;
+        // Don't throw - allow operation to continue (might work with cached context)
+      } finally {
+        contextPromise = null;
+      }
+    })();
+    
+    await contextPromise;
   }
   
   // Execute the operation
