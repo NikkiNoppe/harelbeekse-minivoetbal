@@ -1396,7 +1396,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                   </div>
 
                   {/* Administratieve gegevens */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="match-matchday" style={{ color: 'var(--accent)' }}>Speeldag</Label>
                       <Input
@@ -1409,35 +1409,33 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       />
                     </div>
                     
-                    <div className="w-full md:w-auto">
-                      <div className="space-y-2 w-full">
-                        <Label htmlFor="match-referee" style={{ color: 'var(--accent)' }}>Scheidsrechter</Label>
-                        <Select
-                          value={refereeSelectValue}
-                          onValueChange={setSelectedReferee}
-                          disabled={!canEdit || loadingReferees}
-                        >
-                          <SelectTrigger className="dropdown-login-style h-8 text-sm w-full md:w-auto">
-                            <SelectValue placeholder={loadingReferees ? "Laden..." : selectedReferee || "Selecteer scheidsrechter"} />
-                          </SelectTrigger>
-                          <SelectContent className="dropdown-content-login-style z-modal bg-card" style={{ backgroundColor: 'white' }}>
-                            {/* Show selected referee even if not in list yet (during loading or mismatch) */}
-                            {selectedReferee && !selectedRefereeExists && (
-                              <SelectItem 
-                                value={selectedReferee} 
-                                className="dropdown-item-login-style opacity-75"
-                              >
-                                {selectedReferee}
-                              </SelectItem>
-                            )}
-                            {memoizedReferees.map((referee) => (
-                              <SelectItem key={referee.user_id} value={referee.username} className="dropdown-item-login-style">
-                                {referee.username}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="match-referee" style={{ color: 'var(--accent)' }}>Scheidsrechter</Label>
+                      <Select
+                        value={refereeSelectValue}
+                        onValueChange={setSelectedReferee}
+                        disabled={!canEdit || loadingReferees}
+                      >
+                        <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
+                          <SelectValue placeholder={loadingReferees ? "Laden..." : selectedReferee || "Selecteer scheidsrechter"} />
+                        </SelectTrigger>
+                        <SelectContent className="dropdown-content-login-style z-modal bg-card" style={{ backgroundColor: 'white' }}>
+                          {/* Show selected referee even if not in list yet (during loading or mismatch) */}
+                          {selectedReferee && !selectedRefereeExists && (
+                            <SelectItem 
+                              value={selectedReferee} 
+                              className="dropdown-item-login-style opacity-75"
+                            >
+                              {selectedReferee}
+                            </SelectItem>
+                          )}
+                          {memoizedReferees.map((referee) => (
+                            <SelectItem key={referee.user_id} value={referee.username} className="dropdown-item-login-style">
+                              {referee.username}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </CardContent>

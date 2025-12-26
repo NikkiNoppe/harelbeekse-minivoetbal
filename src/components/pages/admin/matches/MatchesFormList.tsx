@@ -107,6 +107,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
         return groups;
       }
 
+      // Default to speeldag grouping for league matches
       const matchday = match.matchday || "Geen speeldag";
       if (!groups[matchday]) groups[matchday] = [];
       groups[matchday].push(match);
@@ -134,6 +135,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
 
     // Build display labels
     const groupLabels: Record<string, string> = {};
+    const groupDates: Record<string, string> = {}; // Store dates separately for right alignment
     if (useWeekGrouping) {
       const fmt = (d: Date) => `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       sortedGroupKeys.forEach((key) => {
@@ -143,16 +145,34 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
         const minD = dates[0];
         const maxD = dates[dates.length - 1];
         if (minD && maxD) {
-          groupLabels[key] = minD.getTime() === maxD.getTime()
-            ? `Speelweek ${weekNum} (${fmt(minD)})`
-            : `Speelweek ${weekNum} (${fmt(minD)} — ${fmt(maxD)})`;
+          groupLabels[key] = `Speelweek ${weekNum}`;
+          groupDates[key] = minD.getTime() === maxD.getTime()
+            ? fmt(minD)
+            : `${fmt(minD)} — ${fmt(maxD)}`;
         } else {
           groupLabels[key] = `Speelweek ${weekNum}`;
+          groupDates[key] = '';
+        }
+      });
+    } else {
+      // For speeldag grouping, add dates
+      const fmt = (d: Date) => `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      sortedGroupKeys.forEach((key) => {
+        groupLabels[key] = key; // Speeldag name
+        const dates = sortedGroups[key].map(m => new Date(m.date)).sort((a, b) => a.getTime() - b.getTime());
+        const minD = dates[0];
+        const maxD = dates[dates.length - 1];
+        if (minD && maxD) {
+          groupDates[key] = minD.getTime() === maxD.getTime()
+            ? fmt(minD)
+            : `${fmt(minD)} — ${fmt(maxD)}`;
+        } else {
+          groupDates[key] = '';
         }
       });
     }
 
-    return { sortedGroups, sortedGroupKeys, groupLabels };
+    return { sortedGroups, sortedGroupKeys, groupLabels, groupDates };
   }, [filteredMatches, isCupMatchList, sortBy]);
 
   // Find the first speeldag that is not fully completed (only for league matches)
@@ -176,8 +196,26 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   }, [groupedMatches, isCupMatchList]);
 
   // Update open speeldagen based on team filter selection
+  // Use a ref to track if we should allow manual changes
+  const isManualChangeRef = React.useRef(false);
+  const prevTeamFilterRef = React.useRef(teamFilter);
+  
   useEffect(() => {
     if (isCupMatchList) return; // Don't auto-open for cup matches
+    
+    // Only update if teamFilter actually changed
+    const teamFilterChanged = prevTeamFilterRef.current !== teamFilter;
+    
+    // Don't override manual changes unless filter actually changed
+    if (isManualChangeRef.current && !teamFilterChanged) {
+      isManualChangeRef.current = false;
+      return;
+    }
+    
+    // Update ref
+    if (teamFilterChanged) {
+      prevTeamFilterRef.current = teamFilter;
+    }
     
     if (teamFilter === "" || teamFilter === "all") {
       // Default: only first incomplete speeldag
@@ -191,7 +229,15 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
       const allSpeeldagen = groupedMatches.sortedGroupKeys;
       setOpenSpeeldagen(allSpeeldagen);
     }
-  }, [teamFilter, defaultOpenSpeeldag, groupedMatches.sortedGroupKeys, isCupMatchList]);
+    
+    isManualChangeRef.current = false;
+  }, [teamFilter, defaultOpenSpeeldag, isCupMatchList]);
+
+  // Handle manual accordion changes
+  const handleAccordionChange = (value: string[]) => {
+    isManualChangeRef.current = true;
+    setOpenSpeeldagen(value);
+  };
 
 const getGridClassName = (groupKey: string) => {
     if (!isCupMatchList) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
@@ -308,7 +354,7 @@ const getGridClassName = (groupKey: string) => {
     <Accordion 
       type="multiple" 
       value={openSpeeldagen}
-      onValueChange={setOpenSpeeldagen}
+      onValueChange={handleAccordionChange}
       className="space-y-3"
     >
       {groupedMatches.sortedGroupKeys.map(groupKey => (
@@ -322,6 +368,11 @@ const getGridClassName = (groupKey: string) => {
             style={{ color: 'var(--color-700)' }}
           >
             <span className="text-left flex-1">{groupedMatches.groupLabels?.[groupKey] ?? groupKey}</span>
+            {groupedMatches.groupDates?.[groupKey] && (
+              <span className="text-sm font-normal text-muted-foreground ml-auto mr-2">
+                {groupedMatches.groupDates[groupKey]}
+              </span>
+            )}
           </AccordionTrigger>
           <AccordionContent 
             className="px-5 pb-4 text-card-foreground border-t border-[var(--color-200)]" 

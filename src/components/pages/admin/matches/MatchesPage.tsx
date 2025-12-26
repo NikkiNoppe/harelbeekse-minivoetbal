@@ -165,7 +165,7 @@ const TabContent = memo(({
           />
         ) : (
           <div>
-            <div className="p-4 border-b">
+            <div className="px-0 py-4 border-b">
               <MatchesFormFilter 
                 dateFilter={filters.dateFilter}
                 onDateChange={(value) => onFiltersChange({ ...filters, dateFilter: value })}
@@ -186,7 +186,7 @@ const TabContent = memo(({
                   dateFilter: "",
                   matchdayFilter: "",
                   teamFilter: "",
-                  sortBy: "week",
+                  sortBy: "matchday",
                   sortOrder: "asc",
                   hideCompletedMatches: false
                 })}
@@ -232,7 +232,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
     dateFilter: "",
     matchdayFilter: "",
     teamFilter: "",
-    sortBy: "week",
+    sortBy: "matchday",
     sortOrder: "asc",
     hideCompletedMatches: false
   });
@@ -297,7 +297,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
             <FileText className="h-5 w-5" />
-            Wedstrijdformulieren
+            Competitieformulieren
           </h2>
         </div>
         <ErrorState onRetry={handleRetry} />
@@ -310,7 +310,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
           <FileText className="h-5 w-5" />
-          Wedstrijdformulieren
+          Competitieformulieren
         </h2>
       </div>
 

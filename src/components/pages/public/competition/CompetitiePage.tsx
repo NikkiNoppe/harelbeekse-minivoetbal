@@ -284,7 +284,25 @@ const CompetitiePage: React.FC = () => {
   }, [groupedMatches]);
 
   // Update open speeldagen based on team selection
+  // Use a ref to track if we should allow manual changes
+  const isManualChangeRef = React.useRef(false);
+  const prevSelectedTeamRef = React.useRef(selectedTeam);
+  
   React.useEffect(() => {
+    // Only update if selectedTeam actually changed
+    const selectedTeamChanged = prevSelectedTeamRef.current !== selectedTeam;
+    
+    // Don't override manual changes unless filter actually changed
+    if (isManualChangeRef.current && !selectedTeamChanged) {
+      isManualChangeRef.current = false;
+      return;
+    }
+    
+    // Update ref
+    if (selectedTeamChanged) {
+      prevSelectedTeamRef.current = selectedTeam;
+    }
+    
     if (selectedTeam === "all") {
       // Default: only first incomplete speeldag
       if (defaultOpenSpeeldag) {
@@ -297,7 +315,15 @@ const CompetitiePage: React.FC = () => {
       const allSpeeldagen = groupedMatches.map(([speeldag]) => speeldag);
       setOpenSpeeldagen(allSpeeldagen);
     }
-  }, [selectedTeam, defaultOpenSpeeldag, groupedMatches]);
+    
+    isManualChangeRef.current = false;
+  }, [selectedTeam, defaultOpenSpeeldag]);
+
+  // Handle manual accordion changes
+  const handleAccordionChange = React.useCallback((value: string[]) => {
+    isManualChangeRef.current = true;
+    setOpenSpeeldagen(value);
+  }, []);
 
   // Format: MA 01-09-25
   const formatDutchDayShort = (dateStr: string): string => {
@@ -360,7 +386,7 @@ const CompetitiePage: React.FC = () => {
               <Accordion 
                 type="multiple" 
                 value={openSpeeldagen}
-                onValueChange={setOpenSpeeldagen}
+                onValueChange={handleAccordionChange}
                 className="space-y-3"
               >
               {groupedMatches.map(([speeldag, matches]) => (

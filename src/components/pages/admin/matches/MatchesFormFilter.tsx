@@ -1,11 +1,7 @@
 import React from "react";
-import { Calendar, SortAsc, SortDesc, X } from "lucide-react";
-import FilterInput from "@/components/ui/filter-input";
-import { Button } from "@/components/ui/button";
+import { EyeOff } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { formatDateWithDay } from "@/lib/dateUtils";
 
 interface MatchFormFilterProps {
   dateFilter: string;
@@ -26,48 +22,30 @@ interface MatchFormFilterProps {
 }
 
 const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
-  dateFilter,
-  onDateChange,
   teamFilter,
   onTeamChange,
   teamOptions,
-  sortBy,
-  onSortChange,
-  sortOrder,
-  onSortOrderChange,
-  onClearFilters,
-  selfTeamToggle,
-  selfTeamName,
   hideCompletedMatches,
-  onHideCompletedChange,
-  isTeamManager
+  onHideCompletedChange
 }) => {
-  const ALL_TEAMS_VALUE = 'ALL_TEAMS';
-  const hasActiveFilters = dateFilter || teamFilter || sortBy !== 'week' || hideCompletedMatches;
+  // Build options array similar to /competitie page
+  const options = [
+    { value: "all", label: "Alle teams" },
+    ...teamOptions.map(team => ({ value: team, label: team }))
+  ];
 
-  // Helper function to format date for display
-  const formatDateForDisplay = (dateString: string): string => {
-    try {
-      if (dateString.includes('T')) {
-        // ISO format
-        return formatDateWithDay(dateString);
-      } else if (dateString.includes('-')) {
-        // YYYY-MM-DD format - convert to ISO first
-        const isoDate = new Date(dateString).toISOString();
-        return formatDateWithDay(isoDate);
-      } else {
-        // Try to parse as local date
-        return formatDateWithDay(new Date(dateString).toISOString());
-      }
-    } catch (error) {
-      return dateString; // Return original string if parsing fails
-    }
+  // Handle value conversion: empty string or "all" means "all"
+  const currentValue = !teamFilter || teamFilter === "all" ? "all" : teamFilter;
+
+  // Handle value change: convert "all" back to empty string
+  const handleValueChange = (value: string) => {
+    onTeamChange(value === "all" ? "" : value);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Hide Completed Matches Toggle */}
-      <div className="flex items-center gap-3 p-3 bg-card/50 rounded-lg" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+      <div className="flex items-center gap-2 p-2 bg-card/50 rounded-lg" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
         <Switch
           id="hide-completed"
           checked={hideCompletedMatches}
@@ -75,157 +53,30 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
         />
         <label 
           htmlFor="hide-completed" 
-          className="text-sm font-medium cursor-pointer select-none"
+          className="text-sm cursor-pointer select-none flex items-center gap-1.5"
         >
-          Verberg gespeelde wedstrijden
+          <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-sm">Verberg gespeelde speeldagen</span>
         </label>
       </div>
 
-      {/* Main Filter Row */}
-      <div className={`grid gap-3 ${isTeamManager ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
-        <FilterInput
-          type="date"
-          placeholder="Filter op datum"
-          value={dateFilter}
-          onChange={onDateChange}
-          icon={Calendar}
-        />
-
-        <div className="flex gap-2">
-          {isTeamManager && selfTeamName ? (
-            <Select 
-              value={teamFilter === selfTeamName ? 'my-team' : 'all-matches'} 
-              onValueChange={(v) => onTeamChange(v === 'my-team' ? selfTeamName : '')}
-            >
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Filter wedstrijden" />
-              </SelectTrigger>
-              <SelectContent className="z-[1100] bg-popover">
-                <SelectItem value="all-matches">Alle wedstrijden</SelectItem>
-                <SelectItem value="my-team">Mijn team ({selfTeamName})</SelectItem>
-              </SelectContent>
-            </Select>
-          ) : selfTeamToggle && selfTeamName ? (
-            <Button
-              variant={teamFilter === selfTeamName ? "default" : "outline"}
-              onClick={() => onTeamChange(teamFilter === selfTeamName ? '' : selfTeamName)}
-              aria-pressed={teamFilter === selfTeamName}
-              className={
-                "btn " +
-                (teamFilter === selfTeamName ? "btn--primary " : "btn--secondary ") +
-                "btn--block flex-1 justify-start"
-              }
-            >
-              {`Filter ${selfTeamName}`}
-            </Button>
-          ) : (
-            <Select value={teamFilter || ALL_TEAMS_VALUE} onValueChange={(v) => onTeamChange(v === ALL_TEAMS_VALUE ? '' : v)}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Filter op team" />
-              </SelectTrigger>
-              <SelectContent className="z-[1100] bg-popover">
-                <SelectItem value="ALL_TEAMS">Alle teams</SelectItem>
-                {teamOptions.map((team) => (
-                  <SelectItem key={team} value={team}>{team}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
-        <div className="flex gap-2">
-          <Select value={sortBy} onValueChange={onSortChange}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Sorteer op..." />
-            </SelectTrigger>
-            <SelectContent className="z-[1100] bg-popover">
-              <SelectItem value="date">Datum</SelectItem>
-              <SelectItem value="matchday">Speeldag</SelectItem>
-              <SelectItem value="week">Speelweek</SelectItem>
-              <SelectItem value="team">Team</SelectItem>
-              <SelectItem value="status">Status</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => onSortOrderChange(sortOrder === 'asc' ? 'desc' : 'asc')}
-            className="shrink-0"
-          >
-            {sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
-          </Button>
-        </div>
+      {/* Team Filter */}
+      <div className="w-full block">
+        <Select value={currentValue} onValueChange={handleValueChange}>
+          <SelectTrigger className="h-9 text-sm w-full">
+            <SelectValue placeholder="Alle teams" />
+          </SelectTrigger>
+          <SelectContent className="z-[1100] bg-popover">
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-
-      {/* Active Filters Display */}
-      {hasActiveFilters && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-muted-foreground">Actieve filters:</span>
-          
-          {dateFilter && (
-            <Badge variant="secondary" className="gap-1">
-              Datum: {formatDateForDisplay(dateFilter)}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto p-0 ml-1"
-                onClick={() => onDateChange("")}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
-
-          {teamFilter && (
-            <Badge variant="secondary" className="gap-1">
-              Team: {teamFilter}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto p-0 ml-1"
-                onClick={() => onTeamChange("")}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
-          
-          {hideCompletedMatches && (
-            <Badge variant="secondary" className="gap-1">
-              Gespeelde verborgen
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto p-0 ml-1"
-                onClick={() => onHideCompletedChange(false)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
-          
-          {sortBy !== 'week' && (
-            <Badge variant="secondary" className="gap-1">
-              Sorteer: {sortBy === 'date' ? 'Datum' :
-                        sortBy === 'matchday' ? 'Speeldag' : 
-                        sortBy === 'team' ? 'Team' : 'Status'} ({sortOrder === 'asc' ? 'Oplopend' : 'Aflopend'})
-            </Badge>
-          )}
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClearFilters}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-3 w-3 mr-1" />
-            Wis alle filters
-          </Button>
-        </div>
-      )}
     </div>
   );
 };
 
-export default MatchFormFilter;
+export default React.memo(MatchFormFilter);
