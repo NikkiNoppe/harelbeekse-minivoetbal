@@ -43,10 +43,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error generating schedule:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: errorMessage,
         matches: [],
         matchdays: [],
         validation_notes: ['Er is een fout opgetreden bij het genereren van het schema'],

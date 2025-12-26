@@ -25,6 +25,7 @@ export interface AppModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title?: string
+  subtitle?: string
   children: React.ReactNode
   primaryAction?: AppModalAction
   secondaryAction?: AppModalAction

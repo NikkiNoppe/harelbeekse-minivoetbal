@@ -279,10 +279,11 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error syncing card penalties:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ 
         success: false, 
-        message: `Fout bij synchroniseren kaartboetes: ${error.message}` 
+        message: `Fout bij synchroniseren kaartboetes: ${errorMessage}` 
       }),
       { 
         status: 500,
