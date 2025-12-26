@@ -89,7 +89,7 @@ export const MatchesScoreSection: React.FC<MatchesScoreSectionProps> = ({
           <div className="flex items-center justify-center pb-2">
             <span 
               className="text-2xl md:text-3xl font-bold"
-              style={{ color: 'var(--accent)' }}
+              style={{ color: 'var(--accent)', height: '44px' }}
               aria-label="tegen"
             >
               -

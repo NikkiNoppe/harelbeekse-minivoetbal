@@ -156,7 +156,7 @@ export const MatchDataSection: React.FC<MatchDataSectionProps> = ({
       <Collapsible open={isGegevensOpen} onOpenChange={setIsGegevensOpen}>
         <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
           <CollapsibleTrigger asChild>
-            <CardHeader className="text-sm font-semibold px-5 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center' }}>
+            <CardHeader className="text-sm font-semibold px-5 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isGegevensOpen ? 'var(--color-100)' : 'white' }}>
               <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
                 <CardTitle className="flex items-center gap-2 text-sm m-0">
                   Gegevens

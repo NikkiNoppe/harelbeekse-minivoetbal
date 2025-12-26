@@ -150,7 +150,8 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
             animation: isSmallModal ? 'fadeIn 250ms ease-out' : 'slideDown 250ms ease-out',
             boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2)',
             position: 'relative',
-            marginTop: 0
+            marginTop: 0,
+            overflow: 'hidden'
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -175,7 +176,9 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
                 justifyContent: 'center',
                 position: 'sticky',
                 height: '70px',
-                width: '100%'
+                width: '100%',
+                borderTopLeftRadius: '1rem',
+                borderTopRightRadius: '1rem'
               }}
             >
               {/* Close Button */}
@@ -253,7 +256,9 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
                 flexDirection: 'column-reverse',
                 gap: '0.875rem',
                 flexShrink: 0,
-                background: 'var(--color-50)'
+                background: 'var(--color-50)',
+                borderBottomLeftRadius: '1rem',
+                borderBottomRightRadius: '1rem'
               }}
             >
               {secondaryAction && (

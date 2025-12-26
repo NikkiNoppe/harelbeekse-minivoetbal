@@ -125,7 +125,7 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
         <Collapsible open={homeTeamOpen} onOpenChange={setHomeTeamOpen}>
           <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
             <CollapsibleTrigger asChild>
-              <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center' }}>
+              <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: homeTeamOpen ? 'var(--color-100)' : 'white' }}>
                 <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
                   <CardTitle className="flex items-center gap-2 text-sm flex-1 m-0">
                     <Users className="h-4 w-4 text-primary" />
@@ -172,7 +172,7 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
         <Collapsible open={awayTeamOpen} onOpenChange={setAwayTeamOpen}>
           <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
             <CollapsibleTrigger asChild>
-              <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center' }}>
+              <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: awayTeamOpen ? 'var(--color-100)' : 'white' }}>
                 <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
                   <CardTitle className="flex items-center gap-2 text-sm flex-1 m-0">
                     <Users className="h-4 w-4 text-primary" />

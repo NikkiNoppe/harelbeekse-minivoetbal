@@ -37,11 +37,11 @@ const MatchesFormActions = forwardRef<HTMLButtonElement, MatchesFormActionsProps
         marginBottom: '0px',
         paddingLeft: '1.5rem',
         paddingRight: '1.5rem',
-        paddingTop: '8px',
+        paddingTop: '11px',
         paddingBottom: '0px',
         borderTopWidth: '1px',
         width: '100%',
-        height: '70px',
+        height: '98px',
       }}
     >
       <Button
