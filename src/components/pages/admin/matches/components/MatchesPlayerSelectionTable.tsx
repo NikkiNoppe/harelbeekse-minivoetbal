@@ -2,6 +2,7 @@
 import React, { useMemo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 import MatchesCardIcon from "./MatchesCardIcon";
 import PlayerSelectValue from "./PlayerSelectValue";
 import { PlayerDataRefreshModal } from "@/components/modals";
@@ -68,19 +69,6 @@ const CardOption = React.memo<{
   </SelectItem>
 ));
 
-// Memoized team header component
-const TeamHeader = React.memo<{ teamLabel: string }>(({ teamLabel }) => (
-  <div
-    className="font-medium text-sm text-center p-2 rounded shadow border mb-2"
-    style={{
-      borderColor: "var(--purple-light)",
-      color: "var(--purple-light)",
-      background: "var(--color-white)"
-    }}
-  >
-    {teamLabel}
-  </div>
-));
 
 // Memoized player row component
 const PlayerRow = React.memo<{
@@ -170,8 +158,11 @@ const PlayerRow = React.memo<{
                ) : (
                  <>
                {/* Show fallback for selected player that might not be in current list */}
+               {/* Only show "niet beschikbaar" if players are loaded (not undefined) and player is not found */}
                {selection.playerId && selection.playerName && 
-                !players?.find(p => p.player_id === selection.playerId) && (
+                players !== undefined && 
+                !loading &&
+                !players.find(p => p.player_id === selection.playerId) && (
                  <SelectItem 
                    value={selection.playerId.toString()} 
                    className="dropdown-item-login-style opacity-75"
@@ -254,9 +245,9 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
     const retryMessage = retryCount && retryCount > 0 ? ` (Poging ${retryCount}/3...)` : '';
     return (
       <div className="space-y-3">
-        <div className="text-center py-3 text-purple-600 flex items-center justify-center gap-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
-          <span>Spelers laden...{retryMessage}</span>
+        <div className="flex flex-col items-center justify-center py-4 gap-2">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground">Spelers worden geladen...{retryMessage}</span>
         </div>
         <div className="animate-pulse space-y-2">
           <div className="h-10 bg-muted rounded-md"></div>
@@ -298,7 +289,6 @@ const PlayerSelectionTable: React.FC<PlayerSelectionTableProps> = ({
           teamLabel={teamLabel}
         />
       )}
-      <TeamHeader teamLabel={teamLabel} />
       {/* Desktop/tablet view */}
       <div className="hidden md:block rounded-md border bg-white pb-2">
         <table className="table min-w-full">

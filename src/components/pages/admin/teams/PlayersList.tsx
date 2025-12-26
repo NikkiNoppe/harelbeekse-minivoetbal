@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { usePlayerListLock } from "../players/hooks/usePlayerListLock";
-import { Lock } from "lucide-react";
+import { Lock, Loader2 } from "lucide-react";
 import { playerService, Player } from "@/services/core";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateShort } from "@/lib/dateUtils";
@@ -44,10 +44,14 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
   }, [teamId]);
 
   const loadPlayers = async () => {
+    const startTime = Date.now();
+    const MIN_LOADING_TIME = 250; // Minimum 250ms loading time for better UX
+    
     try {
       setLoading(true);
       const playersData = await playerService.getPlayersByTeam(teamId);
       setPlayers(playersData);
+      console.log(`✅ Loaded ${playersData.length} players for team ${teamId}`);
     } catch (error) {
       toast({
         title: "Fout bij laden spelers",
@@ -55,7 +59,16 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      // Ensure minimum loading time for better UX
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+      if (remainingTime > 0) {
+        setTimeout(() => {
+          setLoading(false);
+        }, remainingTime);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
@@ -162,7 +175,12 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center py-8">Spelers laden...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center py-8 gap-2">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <span className="text-sm text-muted-foreground">Spelers worden geladen...</span>
+      </div>
+    );
   }
 
   return (

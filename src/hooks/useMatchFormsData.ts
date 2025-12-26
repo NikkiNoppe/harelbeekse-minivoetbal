@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { fetchUpcomingMatches } from "@/components/pages/admin/matches/services/matchesFormService";
 import type { MatchFormData } from "@/components/pages/admin/matches/types";
@@ -19,15 +20,25 @@ export const useMatchFormsData = (
 ) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [minLoadingState, setMinLoadingState] = useState({
+    league: false,
+    cup: false,
+    playoff: false
+  });
+  const loadingStartTime = useRef<{ league?: number; cup?: number; playoff?: number }>({});
+  const MIN_LOADING_TIME = 250; // Minimum 250ms loading time for better UX
 
   // League matches query - Optimized for mobile stability
   const leagueQuery = useQuery({
     queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'league'],
-    queryFn: () => fetchUpcomingMatches(
-      hasElevatedPermissions ? 0 : teamId, 
-      hasElevatedPermissions, 
-      'league'
-    ),
+    queryFn: async () => {
+      loadingStartTime.current.league = Date.now();
+      return fetchUpcomingMatches(
+        hasElevatedPermissions ? 0 : teamId, 
+        hasElevatedPermissions, 
+        'league'
+      );
+    },
     staleTime: 15 * 60 * 1000, // 15 minutes - Extended for mobile stability
     gcTime: 60 * 60 * 1000, // 1 hour cache - Keep data longer on mobile
     retry: 3, // More retries for unstable connections
@@ -43,11 +54,14 @@ export const useMatchFormsData = (
   // Cup matches query - Optimized for mobile stability  
   const cupQuery = useQuery({
     queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'cup'],
-    queryFn: () => fetchUpcomingMatches(
-      hasElevatedPermissions ? 0 : teamId, 
-      hasElevatedPermissions, 
-      'cup'
-    ),
+    queryFn: async () => {
+      loadingStartTime.current.cup = Date.now();
+      return fetchUpcomingMatches(
+        hasElevatedPermissions ? 0 : teamId, 
+        hasElevatedPermissions, 
+        'cup'
+      );
+    },
     staleTime: 15 * 60 * 1000, // 15 minutes - Extended for mobile stability
     gcTime: 60 * 60 * 1000, // 1 hour cache - Keep data longer on mobile  
     retry: 3, // More retries for unstable connections
@@ -63,11 +77,14 @@ export const useMatchFormsData = (
   // Playoff matches query - Optimized for mobile stability  
   const playoffQuery = useQuery({
     queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'playoff'],
-    queryFn: () => fetchUpcomingMatches(
-      hasElevatedPermissions ? 0 : teamId, 
-      hasElevatedPermissions, 
-      'playoff'
-    ),
+    queryFn: async () => {
+      loadingStartTime.current.playoff = Date.now();
+      return fetchUpcomingMatches(
+        hasElevatedPermissions ? 0 : teamId, 
+        hasElevatedPermissions, 
+        'playoff'
+      );
+    },
     staleTime: 15 * 60 * 1000, // 15 minutes - Extended for mobile stability
     gcTime: 60 * 60 * 1000, // 1 hour cache - Keep data longer on mobile  
     retry: 3, // More retries for unstable connections
@@ -187,16 +204,44 @@ export const useMatchFormsData = (
     return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   };
 
+  // Manage minimum loading time for each query
+  useEffect(() => {
+    const checkLoading = (query: typeof leagueQuery, type: 'league' | 'cup' | 'playoff') => {
+      if (query.isLoading) {
+        setMinLoadingState(prev => ({ ...prev, [type]: true }));
+        loadingStartTime.current[type] = Date.now();
+      } else if (!query.isLoading && loadingStartTime.current[type]) {
+        const elapsed = Date.now() - (loadingStartTime.current[type] || 0);
+        const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+        
+        if (remainingTime > 0) {
+          setTimeout(() => {
+            setMinLoadingState(prev => ({ ...prev, [type]: false }));
+            loadingStartTime.current[type] = undefined;
+          }, remainingTime);
+        } else {
+          setMinLoadingState(prev => ({ ...prev, [type]: false }));
+          loadingStartTime.current[type] = undefined;
+        }
+      }
+    };
+
+    checkLoading(leagueQuery, 'league');
+    checkLoading(cupQuery, 'cup');
+    checkLoading(playoffQuery, 'playoff');
+  }, [leagueQuery.isLoading, cupQuery.isLoading, playoffQuery.isLoading]);
+
   // Get current tab data with filters
   const getTabData = (tabType: 'league' | 'cup' | 'playoff', filters: MatchFormsFilters) => {
     const query = tabType === 'cup' ? cupQuery : 
                   tabType === 'playoff' ? playoffQuery : leagueQuery;
     const filteredMatches = filterAndSortMatches(query.data || [], filters);
+    const isLoading = query.isLoading || minLoadingState[tabType];
     
     return {
       matches: filteredMatches,
       allMatches: query.data || [],
-      isLoading: query.isLoading,
+      isLoading,
       isError: query.isError,
       error: query.error
     };
@@ -247,11 +292,13 @@ export const useMatchFormsData = (
     cupMatches: cupQuery.data || [],
     playoffMatches: playoffQuery.data || [],
     
-    // Loading states
-    leagueLoading: leagueQuery.isLoading,
-    cupLoading: cupQuery.isLoading,
-    playoffLoading: playoffQuery.isLoading,
-    isLoading: leagueQuery.isLoading || cupQuery.isLoading || playoffQuery.isLoading,
+    // Loading states (with minimum loading time)
+    leagueLoading: leagueQuery.isLoading || minLoadingState.league,
+    cupLoading: cupQuery.isLoading || minLoadingState.cup,
+    playoffLoading: playoffQuery.isLoading || minLoadingState.playoff,
+    isLoading: (leagueQuery.isLoading || minLoadingState.league) || 
+               (cupQuery.isLoading || minLoadingState.cup) || 
+               (playoffQuery.isLoading || minLoadingState.playoff),
     
     // Error states
     leagueError: leagueQuery.error,

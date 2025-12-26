@@ -1,5 +1,5 @@
 
-import React, { useMemo } from "react";
+import React, { useMemo, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 
@@ -10,12 +10,12 @@ interface MatchesFormActionsProps {
   isAdmin: boolean;
 }
 
-const MatchesFormActions: React.FC<MatchesFormActionsProps> = ({
+const MatchesFormActions = forwardRef<HTMLButtonElement, MatchesFormActionsProps>(({
   onSubmit,
   isSubmitting,
   canActuallyEdit,
   isAdmin,
-}) => {
+}, ref) => {
   // Memoize the submit button text to prevent unnecessary re-renders
   const submitButtonText = useMemo(() => {
     if (isSubmitting) return "Bezig...";
@@ -28,13 +28,27 @@ const MatchesFormActions: React.FC<MatchesFormActionsProps> = ({
   }, [isSubmitting, canActuallyEdit, isAdmin]);
 
   return (
-    <div className="flex justify-end gap-4 mt-6">
+    <div 
+      className="sticky bottom-0 left-0 right-0 z-10 bg-[var(--color-100)] border-t border-[var(--color-300)] shadow-[0_-4px_12px_rgba(0,0,0,0.1)]"
+      style={{
+        marginLeft: '-1.5rem',
+        marginRight: '-1.5rem',
+        marginBottom: '0rem',
+        paddingLeft: '1.5rem',
+        paddingRight: '1.5rem',
+        paddingTop: '1rem',
+        paddingBottom: 'max(1rem, calc(1rem + env(safe-area-inset-bottom, 0)))',
+        borderTopWidth: '1px',
+        width: 'calc(100% + 3rem)',
+      }}
+    >
       <Button
+        ref={ref}
         onClick={onSubmit}
         disabled={isSubmitDisabled}
-        className="btn btn--primary flex items-center gap-2 w-full"
+        className="btn btn--primary flex items-center justify-center gap-2 w-full"
         style={{ 
-          minHeight: '48px', 
+          minHeight: '52px', 
           fontSize: '1rem', 
           fontWeight: '600', 
           borderRadius: 'var(--radius)', 
@@ -42,14 +56,16 @@ const MatchesFormActions: React.FC<MatchesFormActionsProps> = ({
         }}
       >
         {isSubmitting ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-5 w-5 animate-spin" />
         ) : (
-          <Save className="h-4 w-4" />
+          <Save className="h-5 w-5" />
         )}
         {submitButtonText}
       </Button>
     </div>
   );
-};
+});
+
+MatchesFormActions.displayName = "MatchesFormActions";
 
 export default React.memo(MatchesFormActions);

@@ -34,10 +34,15 @@ export const useTeamPlayersWithSuspensions = (teamId: number, matchDate?: Date):
 
   useEffect(() => {
     const loadSuspensions = async () => {
-      if (!baseHook.players?.length || !matchDate) {
+      // Always set players immediately (even if empty) so UI doesn't show "niet beschikbaar"
+      // If no players or no matchDate, just use base players without suspension check
+      if (!baseHook.players || baseHook.players.length === 0 || !matchDate) {
         setPlayersWithSuspensions(baseHook.players);
         return;
       }
+
+      // Set players immediately with default eligibility (true) to prevent "niet beschikbaar" during loading
+      setPlayersWithSuspensions(baseHook.players.map(p => ({ ...p, is_eligible: true })));
 
       setSuspensionLoading(true);
       try {
@@ -55,8 +60,8 @@ export const useTeamPlayersWithSuspensions = (teamId: number, matchDate?: Date):
         setPlayersWithSuspensions(playersWithEligibility);
       } catch (error) {
         console.error('Error loading suspensions:', error);
-        // Fallback: set all players as eligible
-        setPlayersWithSuspensions(baseHook.players?.map(p => ({ ...p, is_eligible: true })));
+        // Fallback: set all players as eligible (already set above, but update to be sure)
+        setPlayersWithSuspensions(baseHook.players.map(p => ({ ...p, is_eligible: true })));
       } finally {
         setSuspensionLoading(false);
       }
@@ -89,6 +94,9 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
   const previousTeamIdRef = useRef<number | null>(null);
 
   const fetchPlayers = useCallback(async (attempt = 0) => {
+    const startTime = Date.now();
+    const MIN_LOADING_TIME = 250; // Minimum 250ms loading time for better UX
+    
     if (!teamId) {
       setPlayers(undefined);
       setLoading(false);
@@ -140,7 +148,19 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
         playerCache.set(teamId, data);
       }
       setRetryCount(0);
-      setLoading(false); // Success - loading complete
+      
+      // Ensure minimum loading time for better UX
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+      if (remainingTime > 0) {
+        setTimeout(() => {
+          setLoading(false);
+          console.log('✅ Players loaded');
+        }, remainingTime);
+      } else {
+        setLoading(false);
+        console.log('✅ Players loaded');
+      }
     } catch (err) {
       console.error(`Error fetching team players (attempt ${attempt + 1}):`, err);
       setError(err);
@@ -172,7 +192,17 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
           setPlayers(undefined);
         }
         setRetryCount(0);
-        setLoading(false); // All retries failed - stop loading
+        
+        // Ensure minimum loading time even on error
+        const elapsed = Date.now() - startTime;
+        const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+        if (remainingTime > 0) {
+          setTimeout(() => {
+            setLoading(false);
+          }, remainingTime);
+        } else {
+          setLoading(false);
+        }
       }
     }
   }, [teamId]); // ✅ FIXED: Removed authContextReady from dependencies to prevent unnecessary recreations

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, Edit2, Calendar, User } from "lucide-react";
+import { Trash2, Edit2, Calendar, User, Loader2 } from "lucide-react";
 import { AppAlertModal } from "@/components/modals";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -24,18 +24,21 @@ interface PlayersListProps {
   getFullName: (player: Player) => string;
 }
 
-// Loading skeleton
+// Loading skeleton - matches actual card layout
 const PlayerCardSkeleton = () => (
-  <Card>
-    <CardContent className="p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-4 w-24" />
+  <Card className="border border-[var(--color-200)]">
+    <CardContent className="p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <Skeleton className="h-4 w-32 mb-2" />
+          <div className="flex items-center gap-1">
+            <Skeleton className="h-3 w-3 rounded" />
+            <Skeleton className="h-3 w-20" />
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-9 w-9 rounded-lg" />
-          <Skeleton className="h-9 w-9 rounded-lg" />
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <Skeleton className="h-8 w-8 rounded-md" />
+          <Skeleton className="h-8 w-8 rounded-md" />
         </div>
       </div>
     </CardContent>
@@ -91,8 +94,12 @@ const PlayersList: React.FC<PlayersListProps> = ({
 
   if (loading) {
     return (
-      <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
+      <div className="space-y-2">
+        <div className="flex items-center justify-center gap-2 py-4 mb-2">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground">Spelers worden geladen...</span>
+        </div>
+        {[1, 2, 3, 4].map((i) => (
           <PlayerCardSkeleton key={i} />
         ))}
       </div>
@@ -105,7 +112,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
 
   return (
     <>
-      <div className="space-y-3" role="region" aria-label="Spelerslijst">
+      <div className="space-y-2" role="region" aria-label="Spelerslijst">
         {players.map((player, index) => (
           <Card 
             key={player.player_id}
@@ -113,57 +120,70 @@ const PlayersList: React.FC<PlayersListProps> = ({
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-3">
-                {/* Player Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      #{index + 1}
-                    </span>
-                    <h3 className="font-semibold text-base text-foreground truncate">
-                      {getFullName(player)}
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="truncate">{formatDate(player.birth_date)}</span>
-                  </div>
-                </div>
+                {/* Player Name - Left */}
+                <h3 className="font-semibold text-sm text-foreground truncate flex-1 min-w-0">
+                  {getFullName(player)}
+                </h3>
 
-                {/* Action Buttons */}
-                {editMode && (
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                {/* Birth Date and Action Buttons - Right */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Calendar className="h-3 w-3" />
+                    <span className="whitespace-nowrap">{formatDate(player.birth_date)}</span>
+                  </div>
+
+                  {/* Action Buttons */}
+                  {editMode && (
+                    <div className="flex items-center gap-1.5">
                     <Button
                       onClick={() => onEditPlayer(player.player_id)}
                       variant="outline"
-                      size="sm"
+                      size="icon"
                       className={cn(
                         "h-9 px-3 gap-1.5 border-[var(--color-300)]",
                         "hover:bg-[var(--color-100)] hover:border-[var(--color-400)]",
                         "text-[var(--color-700)] hover:text-[var(--color-900)]",
                         "transition-colors duration-150"
                       )}
+                      style={{ 
+                        color: 'var(--accent)',
+                        backgroundColor: 'var(--color-300)',
+                        height: '32px',
+                        width: '32px',
+                        minHeight: '32px',
+                        maxHeight: '32px',
+                        minWidth: '32px',
+                        maxWidth: '32px'
+                      }}
                       aria-label={`Bewerk ${getFullName(player)}`}
                     >
                       <Edit2 size={14} />
-                      <span className="text-xs font-medium">Bewerk</span>
                     </Button>
                     <Button
                       onClick={(e) => handleDeleteClick(player, e)}
                       variant="outline"
-                      size="sm"
+                      size="icon"
                       className={cn(
-                        "h-9 px-3 gap-1.5 border-red-300",
+                        "!h-8 !w-8 !min-h-0 !max-h-8 !max-w-8 rounded-md border-red-300",
                         "hover:bg-red-50 hover:border-red-400",
                         "text-red-600 hover:text-red-700",
                         "transition-colors duration-150"
                       )}
+                      style={{ 
+                        height: '32px',
+                        width: '32px',
+                        minHeight: '32px',
+                        maxHeight: '32px',
+                        minWidth: '32px',
+                        maxWidth: '32px'
+                      }}
                       aria-label={`Verwijder ${getFullName(player)}`}
                     >
                       <Trash2 size={14} />
-                      <span className="text-xs font-medium">Verwijder</span>
                     </Button>
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

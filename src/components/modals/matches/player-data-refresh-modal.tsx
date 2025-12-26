@@ -22,31 +22,53 @@ export const PlayerDataRefreshModal: React.FC<PlayerDataRefreshModalProps> = ({
   const [showPopup, setShowPopup] = useState(false);
   const [refreshCount, setRefreshCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [hasShownInitially, setHasShownInitially] = useState(false);
+  const [loadStartTime, setLoadStartTime] = useState<number | null>(null);
 
-  // Show popup logic: only when players are undefined AND not loading AND not initial load
+  // Track when loading starts
   useEffect(() => {
-    const shouldShowPopup = 
-      !loading && 
-      (!players || players.length === 0) && 
-      hasShownInitially && 
-      refreshCount < 3;
-
-    setShowPopup(shouldShowPopup);
-  }, [players, loading, hasShownInitially, refreshCount]);
-
-  // Track initial load completion
-  useEffect(() => {
-    if (!loading && !hasShownInitially) {
-      setHasShownInitially(true);
+    if (loading) {
+      setLoadStartTime(Date.now());
     }
-  }, [loading, hasShownInitially]);
+  }, [loading]);
 
-  // Hide popup when players load successfully
+  // Show popup logic: only show when there's an actual error OR when players are undefined (not just empty array) after loading completes
   useEffect(() => {
-    if (players && players.length > 0) {
+    // Don't show during loading
+    if (loading) {
+      setShowPopup(false);
+      return;
+    }
+
+    // Only show if there's an actual error
+    if (error) {
+      setShowPopup(true);
+      return;
+    }
+
+    // Only show if players is undefined (not just empty array) AND enough time has passed since load started
+    // Empty array (players.length === 0) is OK - means team just has no players
+    // Undefined means something went wrong
+    if (players === undefined && loadStartTime) {
+      const timeSinceLoadStart = Date.now() - loadStartTime;
+      // Wait at least 2 seconds after loading completes before showing error
+      // This prevents showing popup too quickly
+      if (timeSinceLoadStart > 2000 && refreshCount < 3) {
+        setShowPopup(true);
+      } else {
+        setShowPopup(false);
+      }
+    } else {
+      // If players is defined (even if empty array), don't show popup
+      setShowPopup(false);
+    }
+  }, [players, loading, error, loadStartTime, refreshCount]);
+
+  // Hide popup when players load successfully (defined and has data)
+  useEffect(() => {
+    if (players !== undefined && players.length > 0) {
       setShowPopup(false);
       setRefreshCount(0); // Reset counter on success
+      setLoadStartTime(null);
     }
   }, [players]);
 

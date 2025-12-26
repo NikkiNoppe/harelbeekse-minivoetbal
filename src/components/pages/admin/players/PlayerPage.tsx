@@ -1,7 +1,8 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Users, Loader2 } from "lucide-react";
 import PlayersList from "./components/PlayersList";
 import { PlayerModal } from "@/components/modals";
 import PlayerRegulations from "./components/PlayerRegulations";
@@ -10,6 +11,7 @@ import { usePlayerListLock } from "./hooks/usePlayerListLock";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDateShort } from "@/lib/dateUtils";
 import { PageHeader } from "@/components/layout";
+import { cn } from "@/lib/utils";
 
 const PlayerPage: React.FC = () => {
   const { user: authUser } = useAuth();
@@ -67,12 +69,19 @@ const PlayerPage: React.FC = () => {
     }
   }, [setDialogOpen, setEditDialogOpen, setEditingPlayer, setNewPlayer]);
 
+  const [isTeamChanging, setIsTeamChanging] = useState(false);
+
   const handleTeamSelectChange = useCallback((value: string) => {
+    setIsTeamChanging(true);
     if (value === "all" || value === "") {
       handleTeamChange(null);
     } else {
       handleTeamChange(parseInt(value));
     }
+    // Reset loading state after a short delay to allow the actual loading to take over
+    setTimeout(() => {
+      setIsTeamChanging(false);
+    }, 100);
   }, [handleTeamChange]);
 
   // Memoized team options to prevent unnecessary re-renders
@@ -106,19 +115,36 @@ const PlayerPage: React.FC = () => {
       {/* Team Selector and Add Button for Admin */}
       {isAdmin ? (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex flex-col gap-2">
-            <Select 
-              value={selectedTeam?.toString() || "all"} 
-              onValueChange={handleTeamSelectChange}
-            >
-              <SelectTrigger className="dropdown-login-style min-w-[200px]">
-                <SelectValue placeholder="Alle teams" />
-              </SelectTrigger>
-              <SelectContent className="dropdown-content-login-style">
-                {teamOptions}
-              </SelectContent>
-            </Select>
-            {!hasTeams && (
+          <div className="flex flex-col gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-auto">
+              <Select 
+                value={selectedTeam?.toString() || "all"} 
+                onValueChange={handleTeamSelectChange}
+                disabled={loading || isTeamChanging}
+              >
+                <SelectTrigger className={cn(
+                  "dropdown-login-style w-full sm:min-w-[200px] sm:w-auto",
+                  (loading || isTeamChanging) && "opacity-70 cursor-not-allowed"
+                )}>
+                  <SelectValue placeholder="Alle teams" />
+                </SelectTrigger>
+                <SelectContent className="dropdown-content-login-style">
+                  {teamOptions}
+                </SelectContent>
+              </Select>
+              {(loading || isTeamChanging) && (
+                <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                </div>
+              )}
+            </div>
+            {(loading || isTeamChanging) && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Spelers worden geladen...
+              </p>
+            )}
+            {!hasTeams && !loading && (
               <span className="text-sm text-red-500 text-center">
                 Geen teams gevonden
               </span>
@@ -149,6 +175,16 @@ const PlayerPage: React.FC = () => {
             </Button>
           </div>
         )
+      )}
+
+      {/* Players Count */}
+      {!loading && players.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          <Badge variant="outline" className="text-sm font-semibold">
+            {players.length} {players.length === 1 ? 'speler' : 'spelers'}
+          </Badge>
+        </div>
       )}
 
       {/* Players List */}

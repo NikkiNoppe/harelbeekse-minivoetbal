@@ -392,23 +392,26 @@ p, .card-description, .text-muted-foreground {
 .btn--primary {
   background-color: var(--color-400);
   color: var(--color-white);
-  border-color: var(--color-400);
+  border-color: var(--color-300);
 }
 @media (hover: hover) and (pointer: fine) {
   .btn--primary:hover {
-    background-color: var(--color-500);
-    border-color: var(--color-500);
+    background-color: var(--color-100);
+    border-color: var(--primary);
+    color: var(--primary);
   }
 }
 .btn--primary:active,
 .btn--primary[aria-pressed="true"] {
-  background-color: var(--color-500);
-  border-color: var(--color-500);
+  background-color: var(--color-100);
+  border-color: var(--primary);
+  color: var(--primary);
   opacity: var(--active-opacity);
 }
 .btn--primary:focus-visible {
-  background-color: var(--color-500);
-  border-color: var(--color-500);
+  background-color: var(--color-100);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 /* Secondary Button */

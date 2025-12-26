@@ -193,8 +193,8 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
           {(title || subtitle) && (
             <div
               style={{
-                padding: '1.25rem 1.5rem',
-                borderBottom: 'none',
+                padding: '0.75rem',
+                borderBottom: '1px solid var(--color-300)',
                 flexShrink: 0,
                 background: 'var(--color-100)'
               }}
@@ -223,11 +223,11 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
                 <p
                   id="modal-subtitle"
                   style={{
-                    fontSize: '0.875rem',
-                    color: 'var(--color-600)',
+                    fontSize: '0.75rem',
+                    color: 'var(--accent)',
                     margin: 0,
-                    marginTop: '0.75rem',
-                    lineHeight: 1.5,
+                    marginTop: '0.5rem',
+                    lineHeight: 1.4,
                     textAlign: 'center'
                   }}
                 >

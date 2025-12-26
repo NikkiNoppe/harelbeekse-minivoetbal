@@ -33,9 +33,9 @@ const PlayerSelectionForm: React.FC<PlayerSelectionFormProps> = ({
   
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Spelersinformatie laden...</span>
+      <div className="flex flex-col items-center justify-center py-8 gap-2">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <span className="text-sm text-muted-foreground">Spelers worden geladen...</span>
       </div>
     );
   }

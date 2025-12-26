@@ -33,6 +33,7 @@ export const MatchesFormModal: React.FC<MatchFormDialogProps> = ({
       open={open}
       onOpenChange={onOpenChange}
       title="Wedstrijdformulier"
+      subtitle={`${match.homeTeamName} vs ${match.awayTeamName}`}
       size="lg"
       aria-describedby="match-form-description"
       showCloseButton={true}

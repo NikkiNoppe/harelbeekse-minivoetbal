@@ -121,6 +121,9 @@ export const usePlayersData = (authUser: User | null) => {
   };
 
   const refreshPlayers = async (overrideTeamId?: number) => {
+    const startTime = Date.now();
+    const MIN_LOADING_TIME = 250; // Minimum 250ms loading time for better UX
+    
     try {
       setLoading(true);
       // For admins: if no team selected, show all players. If team selected, show team players.
@@ -131,6 +134,7 @@ export const usePlayersData = (authUser: User | null) => {
         // Fetch team players
         const teamPlayers = await fetchPlayersByTeam(targetTeamId);
         setPlayers(teamPlayers);
+        console.log(`✅ Loaded ${teamPlayers.length} players for team ${targetTeamId}`);
         // For admins, also keep all players in allPlayers for reference (but don't block on it)
         if (authUser?.role === "admin") {
           // Fetch in background without blocking
@@ -146,6 +150,7 @@ export const usePlayersData = (authUser: User | null) => {
           const playersData = await fetchPlayers();
           setAllPlayers(playersData);
           setPlayers(playersData);
+          console.log(`✅ Loaded ${playersData.length} players (all teams)`);
         } else {
           // Player manager without team - shouldn't happen, but handle gracefully
           setPlayers([]);
@@ -157,17 +162,33 @@ export const usePlayersData = (authUser: User | null) => {
       // Set empty on error to prevent stuck state
       setPlayers([]);
     } finally {
-      setLoading(false);
+      // Ensure minimum loading time for better UX
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+      if (remainingTime > 0) {
+        setTimeout(() => {
+          setLoading(false);
+          console.log('✅ Loading complete');
+        }, remainingTime);
+      } else {
+        setLoading(false);
+        console.log('✅ Loading complete');
+      }
     }
   };
 
   const initializeData = async () => {
+    const startTime = Date.now();
+    const MIN_LOADING_TIME = 250; // Minimum 250ms loading time for better UX
+    
     try {
       setLoading(true);
+      console.log('🔄 Initializing player data...');
       
       // Fetch teams first (fast, no RLS issues)
       const teamsData = await fetchTeams();
       setTeams(teamsData);
+      console.log(`✅ Loaded ${teamsData.length} teams`);
 
       // Then fetch players based on role
       if (authUser?.role === "player_manager" && authUser.teamId) {
@@ -183,6 +204,7 @@ export const usePlayersData = (authUser: User | null) => {
         const teamPlayers = await fetchPlayersByTeam(authUser.teamId);
         setAllPlayers([]);
         setPlayers(teamPlayers);
+        console.log(`✅ Loaded ${teamPlayers.length} players for team ${authUser.teamId}`);
       } else if (authUser?.role === "admin") {
         // For admins: by default, show ALL players (no team filter)
         didSetInitialTeam.current = true;
@@ -191,11 +213,13 @@ export const usePlayersData = (authUser: User | null) => {
         const allPlayersData = await fetchPlayers();
         setAllPlayers(allPlayersData);
         setPlayers(allPlayersData);
+        console.log(`✅ Loaded ${allPlayersData.length} players (all teams)`);
         // Don't set selectedTeam - admin can optionally filter by team
       } else {
         // No user or unknown role - set empty
         setPlayers([]);
         setAllPlayers([]);
+        console.log('⚠️ No user or unknown role, setting empty players');
       }
     } catch (error) {
       console.error('❌ Error initializing data:', error);
@@ -203,7 +227,18 @@ export const usePlayersData = (authUser: User | null) => {
       setPlayers([]);
       setAllPlayers([]);
     } finally {
-      setLoading(false);
+      // Ensure minimum loading time for better UX
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+      if (remainingTime > 0) {
+        setTimeout(() => {
+          setLoading(false);
+          console.log('✅ Loading complete');
+        }, remainingTime);
+      } else {
+        setLoading(false);
+        console.log('✅ Loading complete');
+      }
     }
   };
 
@@ -247,12 +282,13 @@ export const usePlayersData = (authUser: User | null) => {
     
     // For admins: if team is selected, show team players. If null, show all players.
     // For player managers: always use their team
+    console.log('🔄 Team selection changed, refreshing players...', { selectedTeam, role: authUser.role });
     if (authUser.role === "admin") {
       refreshPlayers(selectedTeam || undefined);
     } else if (authUser.role === "player_manager" && authUser.teamId) {
       refreshPlayers(authUser.teamId);
     }
-  }, [selectedTeam]);
+  }, [selectedTeam, authUser]);
 
   // Safety fallback: if players empty after init and we have a user, try to refetch once
   useEffect(() => {

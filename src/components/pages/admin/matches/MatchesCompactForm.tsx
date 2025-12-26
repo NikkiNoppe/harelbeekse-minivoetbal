@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { MatchDataSection } from "./components/MatchesDataSection";
+import { MatchesScoreSection } from "./components/MatchesScoreSection";
 import { PlayerSelectionSection } from "./components/MatchesPlayerSelectionSection";
 import RefereeNotesSection from "./components/MatchesRefereeNotesSection";
 import MatchesFormActions from "./components/MatchesFormActions";
@@ -7,6 +8,10 @@ import RefereeCardsSection from "./components/MatchesRefereeCardsSection";
 import { RefereePenaltySection } from "./components/MatchesRefereePenaltySection";
 import { MatchesPenaltyShootoutModal } from "@/components/modals";
 import MatchesAdminHiddenFields from "./components/MatchesAdminHiddenFields";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { MatchFormData, PlayerSelection } from "./types";
 import { useMatchFormState } from "./hooks/useMatchFormState";
 import { useEnhancedMatchFormSubmission } from "./hooks/useEnhancedMatchFormSubmission";
@@ -53,6 +58,9 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
   const [pendingSubmission, setPendingSubmission] = React.useState<MatchFormData | null>(null);
   const [homeCardsOpen, setHomeCardsOpen] = React.useState(false);
   const [awayCardsOpen, setAwayCardsOpen] = React.useState(false);
+  const [isKaartenOpen, setIsKaartenOpen] = useState(false);
+  const [isBoetesOpen, setIsBoetesOpen] = useState(false);
+  const [isNotitiesOpen, setIsNotitiesOpen] = useState(false);
 
   const userRole = useMemo(() => (isAdmin ? "admin" : isReferee ? "referee" : "player_manager"), [isAdmin, isReferee]);
   const isTeamManager = useMemo(() => !isAdmin && !isReferee, [isAdmin, isReferee]);
@@ -191,34 +199,119 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
     }
   }, [pendingSubmission, isAdmin, userRole, isReferee, match, submitMatchForm, onComplete, setIsSubmitting]);
 
+  // Keyboard shortcut handler
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
+  const canActuallyEdit = useMemo(() => isTeamManager ? canTeamManagerEditMatch : canEdit, [isTeamManager, canTeamManagerEditMatch, canEdit]);
+  
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+S or Ctrl+S to save
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        if (canActuallyEdit && !isSubmitting) {
+          handleSubmit();
+        }
+      }
+      // Enter key to save (when not in input/textarea)
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        if (canActuallyEdit && !isSubmitting) {
+          handleSubmit();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canActuallyEdit, isSubmitting, handleSubmit]);
+
+  // Focus on first score input when modal opens (only if scores are empty)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const firstScoreInput = document.getElementById('home-score');
+      if (firstScoreInput && canActuallyEdit && !homeScore && !awayScore) {
+        firstScoreInput.focus();
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [canActuallyEdit, homeScore, awayScore]);
+
   const refereeFields = useMemo(() => showRefereeFields && (
     <>
       {/* Boetes sectie */}
-      <h3 className="text-lg font-semibold text-center text-purple-dark">Boetes</h3>
-      <RefereePenaltySection
-        match={match}
-        canEdit={canEdit}
-      />
+      <Collapsible open={isBoetesOpen} onOpenChange={setIsBoetesOpen}>
+        <Card className="bg-card border-border">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="text-base font-semibold bg-white hover:bg-[var(--color-50)] px-5 py-4 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  Boetes
+                </CardTitle>
+                <ChevronDown
+                  className={cn(
+                    "h-5 w-5 text-muted-foreground transition-transform duration-200",
+                    isBoetesOpen && "transform rotate-180"
+                  )}
+                />
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="border-t border-[var(--color-200)]">
+            <CardContent className="pt-4">
+              <RefereePenaltySection
+                match={match}
+                canEdit={canEdit}
+              />
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
       {/* Notities sectie */}
-      <h3 className="text-lg font-semibold text-center text-purple-dark">Notities</h3>
-      <RefereeNotesSection
-        notes={refereeNotes}
-        onNotesChange={setRefereeNotes}
-        canEdit={canEdit}
-      />
+      <Collapsible open={isNotitiesOpen} onOpenChange={setIsNotitiesOpen}>
+        <Card className="bg-card border-border">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="text-base font-semibold bg-white hover:bg-[var(--color-50)] px-5 py-4 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  Notities
+                </CardTitle>
+                <ChevronDown
+                  className={cn(
+                    "h-5 w-5 text-muted-foreground transition-transform duration-200",
+                    isNotitiesOpen && "transform rotate-180"
+                  )}
+                />
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="border-t border-[var(--color-200)]">
+            <CardContent className="pt-4">
+              <RefereeNotesSection
+                notes={refereeNotes}
+                onNotesChange={setRefereeNotes}
+                canEdit={canEdit}
+              />
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </>
-  ), [showRefereeFields, refereeNotes, setRefereeNotes, canEdit, match]);
+  ), [showRefereeFields, refereeNotes, setRefereeNotes, canEdit, match, isBoetesOpen, isNotitiesOpen]);
 
   return (
     <div className="space-y-6">
-      {/* Hoofdtitel en teams */}
-      <div className="space-y-1 text-center">
-        <h2 className="text-xl font-bold">Wedstrijdformulier</h2>
-        <div className="text-sm text-muted-foreground">{match.homeTeamName} vs {match.awayTeamName}</div>
-      </div>
+      {/* SCORE - PROMINENT BOVENAAN */}
+      <MatchesScoreSection
+        homeTeamName={match.homeTeamName}
+        awayTeamName={match.awayTeamName}
+        homeScore={homeScore}
+        awayScore={awayScore}
+        onHomeScoreChange={setHomeScore}
+        onAwayScoreChange={setAwayScore}
+        disabled={isTeamManager ? !canTeamManagerEditMatch : !canEdit}
+      />
 
-      {/* Gegevens + Score */}
-      <h3 className="text-lg font-semibold text-center text-purple-dark">Wedstrijdgegevens</h3>
+      {/* Basisgegevens */}
       <MatchDataSection
         match={{
           ...match,
@@ -227,11 +320,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
           location: matchData.location,
           matchday: matchData.matchday,
         }}
-        homeScore={homeScore}
-        awayScore={awayScore}
         selectedReferee={selectedReferee}
-        onHomeScoreChange={setHomeScore}
-        onAwayScoreChange={setAwayScore}
         onRefereeChange={setSelectedReferee}
         onMatchDataChange={handleMatchDataChange}
         canEdit={isTeamManager ? false : canEdit}
@@ -256,18 +345,38 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
 
       {/* Kaarten - Hidden for team managers */}
       {!isTeamManager && (
-        <>
-          <h3 className="text-lg font-semibold  text-center text-purple-dark">Kaarten</h3>
-          {showRefereeFields && (
-            <RefereeCardsSection
-              match={match}
-              homeSelections={homeTeamSelections}
-              awaySelections={awayTeamSelections}
-              onCardChange={handleCardChange}
-              canEdit={canEdit}
-            />
-          )}
-        </>
+        <Collapsible open={isKaartenOpen} onOpenChange={setIsKaartenOpen}>
+          <Card className="bg-card border-border">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="text-base font-semibold bg-white hover:bg-[var(--color-50)] px-5 py-4 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    Kaarten
+                  </CardTitle>
+                  <ChevronDown
+                    className={cn(
+                      "h-5 w-5 text-muted-foreground transition-transform duration-200",
+                      isKaartenOpen && "transform rotate-180"
+                    )}
+                  />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="border-t border-[var(--color-200)]">
+              <CardContent className="pt-4">
+                {showRefereeFields && (
+                  <RefereeCardsSection
+                    match={match}
+                    homeSelections={homeTeamSelections}
+                    awaySelections={awayTeamSelections}
+                    onCardChange={handleCardChange}
+                    canEdit={canEdit}
+                  />
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       )}
       
       {/* Referee fields - Hidden for team managers */}
@@ -277,6 +386,7 @@ const CompactMatchForm: React.FC<CompactMatchFormProps> = ({
       <MatchesAdminHiddenFields match={match} />
       
       <MatchesFormActions
+        ref={submitButtonRef}
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
         canActuallyEdit={isTeamManager ? canTeamManagerEditMatch : canEdit}

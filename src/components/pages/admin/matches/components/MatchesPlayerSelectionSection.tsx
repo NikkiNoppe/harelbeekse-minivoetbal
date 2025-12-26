@@ -127,10 +127,11 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             <CollapsibleTrigger asChild>
               <CardHeader className="text-base font-semibold bg-white hover:bg-[var(--color-50)] px-5 py-4 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-lg">
+                  <CardTitle className="flex items-center gap-2 text-lg flex-1">
                     <Users className="h-5 w-5 text-primary" />
-                    {match.homeTeamName} <span className="text-sm font-normal text-muted-foreground">(Thuis)</span>
+                    {match.homeTeamName}
                   </CardTitle>
+                  <span className="text-sm font-normal text-muted-foreground ml-auto mr-2">(Thuis)</span>
                   <ChevronDown
                     className={cn(
                       "h-5 w-5 text-muted-foreground transition-transform duration-200",
@@ -173,10 +174,11 @@ export const PlayerSelectionSection: React.FC<PlayerSelectionSectionProps> = ({
             <CollapsibleTrigger asChild>
               <CardHeader className="text-base font-semibold bg-white hover:bg-[var(--color-50)] px-5 py-4 rounded-lg border border-[var(--color-400)] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer data-[state=open]:bg-[var(--color-100)] data-[state=open]:text-[var(--color-900)]" style={{ color: 'var(--color-700)' }}>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-lg">
+                  <CardTitle className="flex items-center gap-2 text-lg flex-1">
                     <Users className="h-5 w-5 text-primary" />
-                    {match.awayTeamName} <span className="text-sm font-normal text-muted-foreground">(Uit)</span>
+                    {match.awayTeamName}
                   </CardTitle>
+                  <span className="text-sm font-normal text-muted-foreground ml-auto mr-2">(Uit)</span>
                   <ChevronDown
                     className={cn(
                       "h-5 w-5 text-muted-foreground transition-transform duration-200",
