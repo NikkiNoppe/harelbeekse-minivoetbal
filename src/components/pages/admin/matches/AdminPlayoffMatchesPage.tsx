@@ -6,7 +6,7 @@ import { Target, AlertCircle, Inbox } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import MatchesFormFilter from "./MatchesFormFilter";
 import MatchesFormList from "./MatchesFormList";
 import { WedstrijdformulierModal } from "@/components/modals";
@@ -126,26 +126,14 @@ const AdminPlayoffMatchesPage: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Target className="h-6 w-6 text-primary" />
-            Playoff Wedstrijdformulieren
+            Play-off formulieren
           </h2>
-          <p className="text-muted-foreground">
-            Beheer playoff wedstrijdformulieren - invullen van spelers, scores en wedstrijdgegevens
-          </p>
         </div>
       </div>
 
       <section>
         {playoffData.isLoading ? (
           <Card>
-            <CardHeader>
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-2">
-                  <Skeleton className="h-6 w-48" />
-                  <Skeleton className="h-4 w-96" />
-                </div>
-                <Skeleton className="h-10 w-32" />
-              </div>
-            </CardHeader>
             <CardContent className="p-0">
               <div className="p-4 border-b">
                 <Skeleton className="h-10 w-full" />
@@ -165,19 +153,6 @@ const AdminPlayoffMatchesPage: React.FC = () => {
           </Card>
         ) : (
           <Card>
-            <CardHeader>
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Playoffwedstrijden
-                  </CardTitle>
-                  <CardDescription>
-                    {playoffData.matches.length} van {playoffData.allMatches.length} wedstrijden weergegeven
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
             <CardContent className="p-0">
               {(!teamId && !hasElevatedPermissions) || playoffData.matches.length === 0 ? (
                 <div className="p-12 text-center">
@@ -191,7 +166,7 @@ const AdminPlayoffMatchesPage: React.FC = () => {
                 </div>
               ) : (
                 <div>
-                  <div className="p-4 border-b">
+                  <div className="px-0 py-4 border-b">
                     <MatchesFormFilter
                       dateFilter={filters.dateFilter}
                       onDateChange={(value) => handleFilterChange({ dateFilter: value })}

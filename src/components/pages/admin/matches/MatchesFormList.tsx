@@ -136,8 +136,9 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     // Build display labels
     const groupLabels: Record<string, string> = {};
     const groupDates: Record<string, string> = {}; // Store dates separately for right alignment
+    const fmt = (d: Date) => `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+    
     if (useWeekGrouping) {
-      const fmt = (d: Date) => `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       sortedGroupKeys.forEach((key) => {
         const [_, wStr] = key.split('-W');
         const weekNum = parseInt(wStr, 10) || 0;
@@ -155,10 +156,9 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
         }
       });
     } else {
-      // For speeldag grouping, add dates
-      const fmt = (d: Date) => `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      // For speeldag/cup/playoff grouping, add dates with year
       sortedGroupKeys.forEach((key) => {
-        groupLabels[key] = key; // Speeldag name
+        groupLabels[key] = key; // Speeldag/cup round name
         const dates = sortedGroups[key].map(m => new Date(m.date)).sort((a, b) => a.getTime() - b.getTime());
         const minD = dates[0];
         const maxD = dates[dates.length - 1];
@@ -175,10 +175,8 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     return { sortedGroups, sortedGroupKeys, groupLabels, groupDates };
   }, [filteredMatches, isCupMatchList, sortBy]);
 
-  // Find the first speeldag that is not fully completed (only for league matches)
+  // Find the first speeldag that is not fully completed
   const defaultOpenSpeeldag = useMemo(() => {
-    if (isCupMatchList) return undefined; // Don't auto-open for cup matches
-    
     for (const groupKey of groupedMatches.sortedGroupKeys) {
       const matchesInGroup = groupedMatches.sortedGroups[groupKey];
       const isCompleted = matchesInGroup.every(match => 
@@ -193,7 +191,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     }
     // If all are completed, return the first one
     return groupedMatches.sortedGroupKeys.length > 0 ? groupedMatches.sortedGroupKeys[0] : undefined;
-  }, [groupedMatches, isCupMatchList]);
+  }, [groupedMatches]);
 
   // Update open speeldagen based on team filter selection
   // Use a ref to track if we should allow manual changes
@@ -201,8 +199,6 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   const prevTeamFilterRef = React.useRef(teamFilter);
   
   useEffect(() => {
-    if (isCupMatchList) return; // Don't auto-open for cup matches
-    
     // Only update if teamFilter actually changed
     const teamFilterChanged = prevTeamFilterRef.current !== teamFilter;
     
@@ -231,7 +227,7 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
     }
     
     isManualChangeRef.current = false;
-  }, [teamFilter, defaultOpenSpeeldag, isCupMatchList]);
+  }, [teamFilter, defaultOpenSpeeldag, groupedMatches.sortedGroupKeys]);
 
   // Handle manual accordion changes
   const handleAccordionChange = (value: string[]) => {
@@ -240,19 +236,23 @@ const MatchFormList: React.FC<MatchFormListProps> = ({
   };
 
 const getGridClassName = (groupKey: string) => {
-    if (!isCupMatchList) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
-    
-    switch (groupKey) {
-      case 'Achtste Finales':
-      case 'Kwart Finales':
-        return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4';
-      case 'Halve Finales':
-        return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2';
-      case 'Finale':
-        return 'grid-cols-1 max-w-md mx-auto';
-      default:
-        return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+    // For cup matches, use specific grid layouts
+    if (isCupMatchList) {
+      switch (groupKey) {
+        case 'Achtste Finales':
+        case 'Kwart Finales':
+          return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4';
+        case 'Halve Finales':
+          return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2';
+        case 'Finale':
+          return 'grid-cols-1 max-w-md mx-auto';
+        default:
+          return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+      }
     }
+    
+    // Default grid for league and playoff matches
+    return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
   };
 
   const createBadgeSlot = (match: MatchFormData) => {
@@ -300,56 +300,7 @@ const getGridClassName = (groupKey: string) => {
     );
   }
 
-  // For cup matches, use the old structure (no accordion)
-  if (isCupMatchList) {
-    return (
-      <div className="space-y-8">
-        {groupedMatches.sortedGroupKeys.map(groupKey => (
-          <div key={groupKey}>
-            <div className="flex items-center gap-2 mb-3 text-base text-purple-dark font-semibold pl-2">
-              {groupedMatches.groupLabels?.[groupKey] ?? groupKey}
-            </div>
-            
-            <div className={`grid gap-4 ${getGridClassName(groupKey)}`}>
-              {groupedMatches.sortedGroups[groupKey].map(match => {
-                const isTeamManager = userRole === 'player_manager';
-                const canAccess = hasElevatedPermissions || (isTeamManager && teamId && canTeamManagerAccessMatch(match, teamId));
-                
-                return (
-                  <button
-                    key={match.matchId}
-                    onClick={() => canAccess ? onSelectMatch(match) : null}
-                    disabled={!canAccess}
-                    className={`border-none bg-transparent p-0 transition-all duration-200 text-left w-full group ${
-                      canAccess 
-                        ? "hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer" 
-                        : "cursor-not-allowed opacity-50"
-                    }`}
-                    title={!canAccess ? "Alleen toegankelijk voor je eigen team" : undefined}
-                  >
-                    <MatchesCard
-                      id={undefined}
-                      home={match.homeTeamName}
-                      away={match.awayTeamName}
-                      homeScore={match.homeScore}
-                      awayScore={match.awayScore}
-                      date={match.date}
-                      time={match.time}
-                      location={match.location}
-                      status={undefined}
-                      badgeSlot={createBadgeSlot(match)}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // For league matches, use accordion structure
+  // Use accordion structure for all match types (league, cup, playoff)
   return (
     <Accordion 
       type="multiple" 
@@ -369,7 +320,7 @@ const getGridClassName = (groupKey: string) => {
           >
             <span className="text-left flex-1">{groupedMatches.groupLabels?.[groupKey] ?? groupKey}</span>
             {groupedMatches.groupDates?.[groupKey] && (
-              <span className="text-sm font-normal text-muted-foreground ml-auto mr-2">
+              <span className="text-xs font-normal text-muted-foreground ml-auto mr-2">
                 {groupedMatches.groupDates[groupKey]}
               </span>
             )}

@@ -1,6 +1,6 @@
 import React, { useState, memo, useMemo, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 // Tabs UI removed (sidebar controls type)
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -143,19 +143,6 @@ const TabContent = memo(({
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <CardTitle className="text-lg flex items-center gap-2">
-              {isCup ? <Trophy className="h-4 w-4" /> : 
-               isPlayoff ? <Target className="h-4 w-4" /> : 
-               <Calendar className="h-4 w-4" />}
-              {title}
-            </CardTitle>
-            <CardDescription>{description}</CardDescription>
-          </div>
-        </div>
-      </CardHeader>
       <CardContent className="p-0">
         {isEmpty || (!hasTeam && !hasElevatedPermissions) ? (
           <EmptyState 
