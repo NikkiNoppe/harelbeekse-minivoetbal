@@ -178,10 +178,11 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error syncing match costs:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ 
         success: false, 
-        message: `Fout bij synchroniseren wedstrijdkosten: ${error.message}` 
+        message: `Fout bij synchroniseren wedstrijdkosten: ${errorMessage}` 
       }),
       { 
         status: 500,
