@@ -1015,6 +1015,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                           onChange={(e) => handlePlayerSelection(index, 'jerseyNumber', e.target.value, isHomeTeam)}
                           disabled={!selection.playerId}
                           className="w-16 min-w-[64px] text-center text-xs py-1 px-2 input-login-style h-8"
+                          style={{ fontSize: '16px' }}
                         />
                       ) : (
                         <span className="text-xs">
@@ -1137,6 +1138,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                             onChange={(e) => handlePlayerSelection(index, 'jerseyNumber', e.target.value, isHomeTeam)}
                             disabled={!selection.playerId}
                             className="w-full min-w-[64px] h-8 text-center text-xs py-1 px-2 input-login-style"
+                            style={{ fontSize: '16px' }}
                           />
                         ) : (
                           <span className="block text-xs text-right">{selection.jerseyNumber && `#${selection.jerseyNumber}`}</span>
