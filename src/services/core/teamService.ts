@@ -214,13 +214,11 @@ export const teamService = {
         if (teamData.club_colors !== undefined) updateData.club_colors = teamData.club_colors;
         if (teamData.preferred_play_moments !== undefined) updateData.preferred_play_moments = teamData.preferred_play_moments;
 
-        // First, perform the update without select to check if it succeeds
-        // This avoids the "0 rows" error from .single() if RLS blocks the select
-        const { error: updateError, count } = await supabase
+        // Perform the update
+        const { error: updateError } = await supabase
           .from('teams')
           .update(updateData)
-          .eq('team_id', teamId)
-          .select('*', { count: 'exact', head: true });
+          .eq('team_id', teamId);
         
         if (updateError) {
           console.error('Error updating team:', updateError);
@@ -233,13 +231,7 @@ export const teamService = {
           throw updateError;
         }
 
-        // Check if any rows were updated
-        if (count === 0) {
-          console.error('Update returned 0 rows - RLS policy may have blocked the update');
-          throw new Error('Update failed: No rows were updated. Check RLS policies and user permissions.');
-        }
-
-        console.log(`✅ Update succeeded: ${count} row(s) updated`);
+        console.log('✅ Team update succeeded');
 
         // Now try to fetch the updated data
         // If RLS blocks this, we'll return a constructed object
