@@ -99,8 +99,11 @@ const Layout: React.FC = () => {
     if (from && typeof from === 'string') {
       // Return to original location after successful login
       navigate(from, { replace: true });
+      return;
     }
-    // Otherwise stay on current page
+    
+    // Default redirect after login: all users go to profile page
+    navigate(ADMIN_ROUTES.profile, { replace: true });
   };
 
   // Check if active tab is visible (for tab visibility settings)

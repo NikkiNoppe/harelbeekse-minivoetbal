@@ -33,12 +33,17 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab }) => {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const isTeamManager = user?.role === "player_manager";
   const { isTabVisible } = useTabVisibility();
 
   const canSeeLeagueForms = isTabVisible("match-forms-league");
   const canSeeCupForms = isTabVisible("match-forms-cup");
   const canSeePlayoffForms = isTabVisible("match-forms-playoffs");
   const canSeeAnyForms = canSeeLeagueForms || canSeeCupForms || canSeePlayoffForms;
+  
+  // For team managers, use their teamId; for admins/referees use 0
+  const matchFormsTeamId = isTeamManager ? (user?.teamId || 0) : 0;
+  const matchFormsTeamName = isTeamManager ? "Team" : "Admin";
 
   return (
     <div className="w-full admin-dashboard">
@@ -48,7 +53,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
           <div className="animate-fade-in">
             <TabsContent value="match-forms" className="mt-0">
               {canSeeAnyForms ? (
-                <MatchesPage teamId={0} teamName="Admin" />
+                <MatchesPage teamId={matchFormsTeamId} teamName={matchFormsTeamName} />
               ) : (
                 user?.role === 'referee' ? <AlgemeenPage /> : <NotAvailable />
               )}
@@ -56,7 +61,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
             
             <TabsContent value="match-forms-league" className="mt-0">
               {canSeeLeagueForms ? (
-                <MatchesPage teamId={0} teamName="Admin" initialTab="league" />
+                <MatchesPage teamId={matchFormsTeamId} teamName={matchFormsTeamName} initialTab="league" />
               ) : (
                 user?.role === 'referee' ? <AlgemeenPage /> : <NotAvailable />
               )}
@@ -64,7 +69,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
             
             <TabsContent value="match-forms-cup" className="mt-0">
               {canSeeCupForms ? (
-                <MatchesPage teamId={0} teamName="Admin" initialTab="cup" />
+                <MatchesPage teamId={matchFormsTeamId} teamName={matchFormsTeamName} initialTab="cup" />
               ) : (
                 user?.role === 'referee' ? <AlgemeenPage /> : <NotAvailable />
               )}

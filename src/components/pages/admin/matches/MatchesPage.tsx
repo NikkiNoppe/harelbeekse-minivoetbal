@@ -11,6 +11,7 @@ import MatchesFormFilter from "./MatchesFormFilter";
 import { useTeam } from "@/hooks/useTeams";
 import MatchesFormList from "./MatchesFormList";
 import { WedstrijdformulierModal } from "@/components/modals";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface MatchFormTabProps {
   teamId: number;
@@ -93,6 +94,8 @@ const TabContent = memo(({
   hasElevatedPermissions,
   teamName,
   user,
+  teamId,
+  effectiveTeamId,
   filters,
   onFiltersChange,
   onSelectMatch
@@ -102,11 +105,23 @@ const TabContent = memo(({
   hasElevatedPermissions: boolean;
   teamName: string;
   user: any;
+  teamId: number;
+  effectiveTeamId: number;
   filters: MatchFormsFilters;
   onFiltersChange: (filters: MatchFormsFilters) => void;
   onSelectMatch: (match: MatchFormData) => void;
 }) => {
-  const hasTeam = !!user?.teamId;
+  // Use the effectiveTeamId passed from parent (which includes profileData fallback)
+  const hasTeam = !!effectiveTeamId;
+  
+  // Debug logging
+  console.log('🔍 TabContent - TeamId check:', {
+    userTeamId: user?.teamId,
+    propTeamId: teamId,
+    effectiveTeamId,
+    hasTeam,
+    userRole: user?.role
+  });
   const isEmpty = !tabData.isLoading && tabData.matches.length === 0;
   const isCup = tabType === 'cup';
   const isPlayoff = tabType === 'playoff';
@@ -129,7 +144,7 @@ const TabContent = memo(({
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [tabData.allMatches]);
 
-  const managerTeamId = !hasElevatedPermissions ? (user?.teamId || 0) : 0;
+  const managerTeamId = !hasElevatedPermissions ? effectiveTeamId : 0;
   const { data: managerTeam } = useTeam(managerTeamId);
 
   return (
@@ -181,7 +196,7 @@ const TabContent = memo(({
               sortBy={filters.sortBy}
               hasElevatedPermissions={hasElevatedPermissions}
               userRole={user?.role}
-              teamId={user?.teamId || 0}
+              teamId={effectiveTeamId}
             />
           </div>
         )}
@@ -194,6 +209,7 @@ TabContent.displayName = 'TabContent';
 
 const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTab }) => {
   const { user } = useAuth();
+  const { profileData } = useUserProfile();
   const [selectedMatchForm, setSelectedMatchForm] = useState<MatchFormData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab ?? "league");
@@ -218,6 +234,50 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
   const hasElevatedPermissions = user?.role === "admin" || user?.role === "referee";
   const isAdmin = user?.role === "admin";
   const isReferee = user?.role === "referee";
+  
+  // Get teamId from multiple sources: prop, user.teamId, or profileData
+  const effectiveTeamId = useMemo(() => {
+    const fromProp = teamId && teamId > 0 ? teamId : 0;
+    const fromUser = user?.teamId || 0;
+    const fromProfile = profileData?.teams?.[0]?.team_id || 0;
+    
+    const result = fromProp || fromUser || fromProfile;
+    
+    // Debug logging
+    console.log('🔍 MatchFormTab - TeamId resolution:', {
+      fromProp,
+      fromUser,
+      fromProfile,
+      result,
+      hasProfileData: !!profileData,
+      teamsCount: profileData?.teams?.length || 0,
+      userRole: user?.role,
+      profileTeams: profileData?.teams
+    });
+    
+    return result;
+  }, [teamId, user?.teamId, profileData?.teams]);
+  
+  // Update localStorage with teamId from profileData if found
+  useEffect(() => {
+    if (profileData?.teams?.[0]?.team_id && !user?.teamId && user?.role === 'player_manager') {
+      const foundTeamId = profileData.teams[0].team_id;
+      console.log('🔄 Found teamId in profileData, updating localStorage:', foundTeamId);
+      
+      // Update localStorage for future sessions
+      const storedAuth = localStorage.getItem('auth_data');
+      if (storedAuth && user) {
+        try {
+          const authData = JSON.parse(storedAuth);
+          authData.user = { ...user, teamId: foundTeamId };
+          localStorage.setItem('auth_data', JSON.stringify(authData));
+          console.log('✅ Updated localStorage with teamId');
+        } catch (e) {
+          console.warn('Could not update localStorage:', e);
+        }
+      }
+    }
+  }, [profileData?.teams, user]);
 
   const {
     leagueMatches,
@@ -228,7 +288,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
     getTabData,
     refreshInstantly,
     refetchAll
-  } = useMatchFormsData(teamId, hasElevatedPermissions);
+  } = useMatchFormsData(effectiveTeamId, hasElevatedPermissions);
 
   const leagueTabData = useMemo(() => 
     getTabData('league', filters), 
@@ -302,6 +362,8 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
             hasElevatedPermissions={hasElevatedPermissions}
             teamName={teamName}
             user={user}
+            teamId={teamId}
+            effectiveTeamId={effectiveTeamId}
             filters={filters}
             onFiltersChange={setFilters}
             onSelectMatch={handleSelectMatch}
@@ -322,7 +384,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
           match={selectedMatchForm}
           isAdmin={isAdmin}
           isReferee={isReferee}
-          teamId={user?.teamId || 0}
+          teamId={effectiveTeamId}
           onComplete={handleFormComplete}
         />
       )}
