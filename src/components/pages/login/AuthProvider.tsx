@@ -17,23 +17,21 @@ function normalizeRole(role: string): string {
   return role;
 }
 
-// Add: fetch teamId for the user (with error handling)
+// Add: fetch teamId for the user using SECURITY DEFINER RPC (bypasses RLS)
 async function fetchTeamIdForUser(userId: number): Promise<number | undefined> {
   try {
-    const { data, error } = await supabase
-      .from("team_users")
-      .select("team_id")
-      .eq("user_id", userId)
-      .limit(1);
+    const { data, error } = await supabase.rpc('get_user_team_ids_secure', {
+      p_user_id: userId
+    });
     
     if (error) {
-      console.warn("Could not fetch teamId for user (likely due to RLS):", error.message);
+      console.warn("Could not fetch teamId for user:", error.message);
       return undefined;
     }
     
-    // Return the team_id if found and a number
-    if (Array.isArray(data) && data.length > 0 && typeof data[0].team_id === "number") {
-      return data[0].team_id;
+    // Return the first team_id if found
+    if (Array.isArray(data) && data.length > 0 && typeof data[0] === "number") {
+      return data[0];
     }
     return undefined;
   } catch (error) {

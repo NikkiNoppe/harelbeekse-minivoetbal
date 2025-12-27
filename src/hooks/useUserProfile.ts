@@ -142,20 +142,20 @@ export const useUserProfile = () => {
             teams = teamDataWithContext;
             console.log('✅ Successfully fetched team with context:', teams);
           } else {
-            // Fallback: Use public view for at least team name
-            console.log('⚠️ Could not fetch full team data, trying public view');
+            // Fallback: Use teams table directly (has public read access via RLS)
+            console.log('⚠️ Could not fetch full team data, trying direct query');
             const { data: publicTeamData, error: publicError } = await supabase
-              .from('teams_public')
+              .from('teams')
               .select('team_id, team_name')
               .eq('team_id', effectiveTeamId)
-              .single();
+              .maybeSingle();
 
             if (!publicError && publicTeamData) {
               teams = [{
                 team_id: publicTeamData.team_id,
                 team_name: publicTeamData.team_name,
               }];
-              console.log('✅ Successfully fetched team from public view:', teams);
+              console.log('✅ Successfully fetched team:', teams);
             }
           }
         }

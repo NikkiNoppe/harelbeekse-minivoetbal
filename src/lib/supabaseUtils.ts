@@ -60,21 +60,18 @@ export const withUserContext = async <T>(
     })();
     let teamIds = options?.teamIds ?? (userData.teamId ? String(userData.teamId) : '');
     
-    // If teamIds are missing for player_manager, try to fetch them
+    // If teamIds are missing for player_manager, try to fetch them using SECURITY DEFINER RPC
     if (!teamIds && normalizedRole === 'player_manager') {
-      console.log('🔍 Missing teamIds for player_manager, fetching...');
+      console.log('🔍 Missing teamIds for player_manager, fetching via RPC...');
       try {
-        const { data, error } = await supabase
-          .from('team_users')
-          .select('team_id')
-          .eq('user_id', userId);
+        const { data, error } = await supabase.rpc('get_user_team_ids_secure', {
+          p_user_id: userId
+        });
 
         if (!error && Array.isArray(data) && data.length > 0) {
-          const teamIdList = data
-            .map((row: any) => Number(row.team_id))
-            .filter((id: number) => Number.isFinite(id));
+          const teamIdList = data.filter((id: number) => Number.isFinite(id));
           teamIds = teamIdList.join(',');
-          console.log('✅ Fetched missing teamIds:', teamIds);
+          console.log('✅ Fetched missing teamIds via RPC:', teamIds);
           
           // Update localStorage with the fetched teamId
           const authDataString = localStorage.getItem('auth_data');
