@@ -7,52 +7,73 @@
   <!-- Homepage -->
   <url>
     <loc>https://harelbekeminivoetbal.be/</loc>
-    <lastmod>2025-01-03</lastmod>
+    <lastmod>2024-12-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   
-  <!-- Main sections -->
+  <!-- Algemene informatie -->
+  <url>
+    <loc>https://harelbekeminivoetbal.be/algemeen</loc>
+    <lastmod>2024-12-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <!-- Competitie -->
   <url>
     <loc>https://harelbekeminivoetbal.be/competitie</loc>
-    <lastmod>2025-01-03</lastmod>
+    <lastmod>2024-12-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   
+  <!-- Beker -->
   <url>
     <loc>https://harelbekeminivoetbal.be/beker</loc>
-    <lastmod>2025-01-03</lastmod>
+    <lastmod>2024-12-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   
+  <!-- Playoff -->
   <url>
     <loc>https://harelbekeminivoetbal.be/playoff</loc>
-    <lastmod>2025-01-03</lastmod>
+    <lastmod>2024-12-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   
+  <!-- Teams -->
   <url>
     <loc>https://harelbekeminivoetbal.be/teams</loc>
-    <lastmod>2025-01-03</lastmod>
+    <lastmod>2024-12-27</lastmod>
     <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- Reglement -->
+  <url>
+    <loc>https://harelbekeminivoetbal.be/reglement</loc>
+    <lastmod>2024-12-27</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   
+  <!-- Schorsingen -->
   <url>
-    <loc>https://harelbekeminivoetbal.be/reglement</loc>
-    <lastmod>2025-01-03</lastmod>
-    <changefreq>monthly</changefreq>
+    <loc>https://harelbekeminivoetbal.be/schorsingen</loc>
+    <lastmod>2024-12-27</lastmod>
+    <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
+  <!-- Kaarten overzicht -->
   <url>
-    <loc>https://harelbekeminivoetbal.be/schorsingen</loc>
-    <lastmod>2025-01-03</lastmod>
+    <loc>https://harelbekeminivoetbal.be/kaarten</loc>
+    <lastmod>2024-12-27</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <priority>0.6</priority>
   </url>
   
 </urlset>

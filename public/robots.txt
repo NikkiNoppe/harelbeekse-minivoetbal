@@ -1,29 +1,11 @@
+# Robots.txt voor harelbekeminivoetbal.be
+
 User-agent: *
 Allow: /
-
-# Disallow admin routes for search engines
 Disallow: /admin/
 Disallow: /settings/
 Disallow: /financial/
+Disallow: /profile
 
-# Specifieke bots
-User-agent: Googlebot
-Allow: /
-Crawl-delay: 1
-
-User-agent: Bingbot
-Allow: /
-Crawl-delay: 2
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
-# Crawl-delay voor andere bots
-User-agent: *
-Crawl-delay: 5
-
-# Sitemap voor betere indexering
+# Sitemap locatie
 Sitemap: https://harelbekeminivoetbal.be/sitemap.xml
