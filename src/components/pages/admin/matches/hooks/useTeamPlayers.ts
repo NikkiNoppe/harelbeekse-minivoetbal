@@ -33,8 +33,14 @@ export const useTeamPlayersWithSuspensions = (teamId: number, matchDate?: Date):
   useEffect(() => {
     const loadSuspensions = async () => {
       // Always set players immediately (even if empty) so UI doesn't show "niet beschikbaar"
-      // If no players or no matchDate, just use base players without suspension check
-      if (!baseHook.players || baseHook.players.length === 0 || !matchDate) {
+      // If no players, just use base players (which could be undefined or empty array)
+      if (!baseHook.players) {
+        setPlayersWithSuspensions(undefined);
+        return;
+      }
+
+      // If no matchDate or empty players array, just use base players without suspension check
+      if (baseHook.players.length === 0 || !matchDate) {
         setPlayersWithSuspensions(baseHook.players);
         return;
       }

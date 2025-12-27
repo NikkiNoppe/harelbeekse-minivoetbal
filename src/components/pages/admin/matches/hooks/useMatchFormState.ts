@@ -28,9 +28,16 @@ export const useMatchFormState = (match: MatchFormData) => {
   
   // Initialize player selections with existing data
   const initializePlayerSelections = (players: PlayerSelection[]) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [useMatchFormState] Initializing player selections:', {
+        playersCount: players.length,
+        players: players.map(p => ({ playerId: p?.playerId, playerName: p?.playerName, jerseyNumber: p?.jerseyNumber }))
+      });
+    }
+    
     const selections = Array.from({ length: 8 }, (_, index) => {
       const existingPlayer = players[index];
-      if (existingPlayer) {
+      if (existingPlayer && (existingPlayer.playerId !== null && existingPlayer.playerId !== undefined)) {
         return existingPlayer;
       }
       return {
@@ -41,6 +48,13 @@ export const useMatchFormState = (match: MatchFormData) => {
         cardType: undefined
       };
     });
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [useMatchFormState] Initialized selections:', {
+        selections: selections.map(s => ({ playerId: s.playerId, playerName: s.playerName, jerseyNumber: s.jerseyNumber }))
+      });
+    }
+    
     return selections;
   };
   

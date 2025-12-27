@@ -396,17 +396,146 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     setMatchData(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const createUpdatedMatch = useCallback((homeScore: number | null, awayScore: number | null) => ({
-    ...match,
-    ...matchData, // Include updated match data fields
-    homeScore,
-    awayScore,
-    referee: selectedReferee,
-    refereeNotes,
-    isCompleted: homeScore != null && awayScore != null,
-    homePlayers: getHomeTeamSelectionsWithCards(),
-    awayPlayers: getAwayTeamSelectionsWithCards()
-  }), [match, matchData, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards]);
+  // Player selection logic (from PlayerSelectionSection)
+  const matchDate = useMemo(() => {
+    try {
+      return new Date(match.date);
+    } catch (error) {
+      console.error('Error parsing match date:', error, match.date);
+      return new Date();
+    }
+  }, [match.date]);
+
+  // Load players for both teams
+  const { 
+    playersWithSuspensions: homePlayersWithSuspensions, 
+    loading: homeLoading, 
+    error: homeError, 
+    suspensionLoading: homeSuspensionLoading, 
+    retryCount: homeRetryCount, 
+    refetch: homeRefetch 
+  } = useTeamPlayersWithSuspensions(match.homeTeamId, matchDate);
+
+  const { 
+    playersWithSuspensions: awayPlayersWithSuspensions, 
+    loading: awayLoading, 
+    error: awayError, 
+    suspensionLoading: awaySuspensionLoading, 
+    retryCount: awayRetryCount, 
+    refetch: awayRefetch 
+  } = useTeamPlayersWithSuspensions(match.awayTeamId, matchDate);
+
+  const homeIsLoading = homeLoading || homeSuspensionLoading;
+  const awayIsLoading = awayLoading || awaySuspensionLoading;
+
+  // Debug logging
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [WedstrijdformulierModal] Player loading status:', {
+        homeTeamId: match.homeTeamId,
+        awayTeamId: match.awayTeamId,
+        matchDate: matchDate?.toISOString(),
+        homeLoading: homeIsLoading,
+        awayLoading: awayIsLoading,
+        homePlayersCount: homePlayersWithSuspensions?.length || 0,
+        awayPlayersCount: awayPlayersWithSuspensions?.length || 0,
+        homeError: homeError?.message,
+        awayError: awayError?.message
+      });
+    }
+  }, [match.homeTeamId, match.awayTeamId, matchDate, homeIsLoading, awayIsLoading, homePlayersWithSuspensions, awayPlayersWithSuspensions, homeError, awayError]);
+
+  // Sync player names when players are loaded - this ensures playerName is always set correctly
+  useEffect(() => {
+    if (!homeIsLoading && homePlayersWithSuspensions && homePlayersWithSuspensions.length > 0) {
+      setHomeTeamSelections(prev => prev.map(selection => {
+        if (selection.playerId) {
+          const player = homePlayersWithSuspensions.find(p => p.player_id === selection.playerId);
+          if (player) {
+            const expectedName = `${player.first_name} ${player.last_name}`;
+            // Always update playerName to ensure it matches the loaded player data
+            return {
+              ...selection,
+              playerName: expectedName
+            };
+          }
+        }
+        return selection;
+      }));
+    }
+  }, [homePlayersWithSuspensions, homeIsLoading]);
+
+  useEffect(() => {
+    if (!awayIsLoading && awayPlayersWithSuspensions && awayPlayersWithSuspensions.length > 0) {
+      setAwayTeamSelections(prev => prev.map(selection => {
+        if (selection.playerId) {
+          const player = awayPlayersWithSuspensions.find(p => p.player_id === selection.playerId);
+          if (player) {
+            const expectedName = `${player.first_name} ${player.last_name}`;
+            // Always update playerName to ensure it matches the loaded player data
+            return {
+              ...selection,
+              playerName: expectedName
+            };
+          }
+        }
+        return selection;
+      }));
+    }
+  }, [awayPlayersWithSuspensions, awayIsLoading]);
+
+  const createUpdatedMatch = useCallback((homeScore: number | null, awayScore: number | null) => {
+    const homeSelections = getHomeTeamSelectionsWithCards();
+    const awaySelections = getAwayTeamSelectionsWithCards();
+    
+    // Ensure all selected players have playerName set
+    const homePlayersWithNames = homeSelections.map(selection => {
+      if (selection.playerId && (!selection.playerName || selection.playerName === '')) {
+        // Try to find the player name from loaded players
+        const player = homePlayersWithSuspensions?.find(p => p.player_id === selection.playerId);
+        if (player) {
+          return {
+            ...selection,
+            playerName: `${player.first_name} ${player.last_name}`
+          };
+        }
+      }
+      return selection;
+    });
+    
+    const awayPlayersWithNames = awaySelections.map(selection => {
+      if (selection.playerId && (!selection.playerName || selection.playerName === '')) {
+        // Try to find the player name from loaded players
+        const player = awayPlayersWithSuspensions?.find(p => p.player_id === selection.playerId);
+        if (player) {
+          return {
+            ...selection,
+            playerName: `${player.first_name} ${player.last_name}`
+          };
+        }
+      }
+      return selection;
+    });
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [WedstrijdformulierModal] Creating updated match with players:', {
+        homePlayers: homePlayersWithNames.filter(p => p.playerId !== null).map(p => ({ playerId: p.playerId, playerName: p.playerName })),
+        awayPlayers: awayPlayersWithNames.filter(p => p.playerId !== null).map(p => ({ playerId: p.playerId, playerName: p.playerName }))
+      });
+    }
+    
+    return {
+      ...match,
+      ...matchData, // Include updated match data fields
+      homeScore,
+      awayScore,
+      referee: selectedReferee,
+      refereeNotes,
+      isCompleted: homeScore != null && awayScore != null,
+      homePlayers: homePlayersWithNames,
+      awayPlayers: awayPlayersWithNames
+    };
+  }, [match, matchData, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards, homePlayersWithSuspensions, awayPlayersWithSuspensions]);
 
   const handleSubmit = useCallback(async () => {
     const parsedHomeScore = homeScore !== "" ? parseInt(homeScore) : null;
@@ -539,8 +668,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   );
 
   // Player selection logic (from PlayerSelectionSection)
-  const matchDate = useMemo(() => new Date(match.date), [match.date]);
-  
   const getSelectedPlayerIds = useCallback((selections: PlayerSelection[]) =>
     selections.map((sel) => sel.playerId).filter((id): id is number => id !== null), []);
   
@@ -636,27 +763,44 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     "disabled:border-[var(--color-300)] disabled:opacity-100"
   ), [awayScoreValid]);
 
-  // Load players for both teams
-  const { 
-    playersWithSuspensions: homePlayersWithSuspensions, 
-    loading: homeLoading, 
-    error: homeError, 
-    suspensionLoading: homeSuspensionLoading, 
-    retryCount: homeRetryCount, 
-    refetch: homeRefetch 
-  } = useTeamPlayersWithSuspensions(match.homeTeamId, matchDate);
+  // Sync player names when players are loaded - this ensures playerName is always set correctly
+  useEffect(() => {
+    if (!homeIsLoading && homePlayersWithSuspensions && homePlayersWithSuspensions.length > 0) {
+      setHomeTeamSelections(prev => prev.map(selection => {
+        if (selection.playerId) {
+          const player = homePlayersWithSuspensions.find(p => p.player_id === selection.playerId);
+          if (player) {
+            const expectedName = `${player.first_name} ${player.last_name}`;
+            // Always update playerName to ensure it matches the loaded player data
+            return {
+              ...selection,
+              playerName: expectedName
+            };
+          }
+        }
+        return selection;
+      }));
+    }
+  }, [homePlayersWithSuspensions, homeIsLoading]);
 
-  const { 
-    playersWithSuspensions: awayPlayersWithSuspensions, 
-    loading: awayLoading, 
-    error: awayError, 
-    suspensionLoading: awaySuspensionLoading, 
-    retryCount: awayRetryCount, 
-    refetch: awayRefetch 
-  } = useTeamPlayersWithSuspensions(match.awayTeamId, matchDate);
-
-  const homeIsLoading = homeLoading || homeSuspensionLoading;
-  const awayIsLoading = awayLoading || awaySuspensionLoading;
+  useEffect(() => {
+    if (!awayIsLoading && awayPlayersWithSuspensions && awayPlayersWithSuspensions.length > 0) {
+      setAwayTeamSelections(prev => prev.map(selection => {
+        if (selection.playerId) {
+          const player = awayPlayersWithSuspensions.find(p => p.player_id === selection.playerId);
+          if (player) {
+            const expectedName = `${player.first_name} ${player.last_name}`;
+            // Always update playerName to ensure it matches the loaded player data
+            return {
+              ...selection,
+              playerName: expectedName
+            };
+          }
+        }
+        return selection;
+      }));
+    }
+  }, [awayPlayersWithSuspensions, awayIsLoading]);
 
   const getPlayerSelectValueClassName = useCallback((playerName: string | null | undefined) => {
     if (!playerName) return 'truncate max-w-full';
@@ -668,6 +812,23 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const isPlayerSuspended = useCallback((playerId: number, players: TeamPlayer[] | undefined) => {
     const player = players?.find(p => p.player_id === playerId);
     return player ? !player.is_eligible : false;
+  }, []);
+
+  // Helper function to get player name from selection or players list
+  const getPlayerDisplayName = useCallback((
+    selection: PlayerSelection,
+    players: TeamPlayer[] | undefined
+  ): string | null => {
+    if (selection.playerName) {
+      return selection.playerName;
+    }
+    if (selection.playerId && players) {
+      const player = players.find(p => p.player_id === selection.playerId);
+      if (player) {
+        return `${player.first_name} ${player.last_name}`;
+      }
+    }
+    return null;
   }, []);
 
   // Helper function to render player selection table for a team (without hooks)
@@ -767,10 +928,12 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                           onValueChange={handlePlayerChange}
                           disabled={!canEditTeam || isLoading}
                         >
-                          <SelectTrigger className="dropdown-login-style min-w-[100px] max-w-full h-8 text-sm">
+                          <SelectTrigger className="dropdown-login-style w-full max-w-full min-h-[44px] text-sm">
                             <SelectValue 
-                              placeholder={isLoading ? "Laden..." : "Selecteer speler"} 
-                              className={getPlayerSelectValueClassName(selection.playerName)}
+                              placeholder={isLoading ? "Laden..." : "Selecteer speler"}
+                              className={getPlayerSelectValueClassName(
+                                getPlayerDisplayName(selection, memoizedPlayers) || undefined
+                              )}
                               style={{
                                 textOverflow: 'ellipsis',
                                 overflow: 'hidden',
@@ -902,10 +1065,12 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                             onValueChange={handlePlayerChangeMobile}
                             disabled={!canEditTeam || isLoading}
                           >
-                            <SelectTrigger className="dropdown-login-style w-full max-w-full h-8 text-sm">
+                            <SelectTrigger className="dropdown-login-style w-full max-w-full min-h-[44px] text-sm">
                               <SelectValue 
-                                placeholder={isLoading ? "Laden..." : "Selecteer speler"} 
-                                className={getPlayerSelectValueClassName(selection.playerName)}
+                                placeholder={isLoading ? "Laden..." : "Selecteer speler"}
+                                className={getPlayerSelectValueClassName(
+                                  getPlayerDisplayName(selection, memoizedPlayers) || undefined
+                                )}
                                 style={{
                                   textOverflow: 'ellipsis',
                                   overflow: 'hidden',

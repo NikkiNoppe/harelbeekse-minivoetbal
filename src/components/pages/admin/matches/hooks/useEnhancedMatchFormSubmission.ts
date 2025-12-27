@@ -14,10 +14,14 @@ export const useEnhancedMatchFormSubmission = () => {
     console.log('🟡 [useEnhancedMatchFormSubmission] Match data:', matchData);
     console.log('🟡 [useEnhancedMatchFormSubmission] isAdmin:', isAdmin, 'userRole:', userRole);
     
-    // Filter out empty player slots before sending to server
-    const filteredHomePlayers = matchData.homePlayers?.filter(p => p.playerId !== null) || [];
-    const filteredAwayPlayers = matchData.awayPlayers?.filter(p => p.playerId !== null) || [];
-    console.log('🟡 [useEnhancedMatchFormSubmission] Filtered players - Home:', filteredHomePlayers.length, 'Away:', filteredAwayPlayers.length);
+    // Keep all player slots (including empty ones) to preserve positions
+    // This ensures that when data is loaded, the positions are maintained
+    const homePlayersToSave = matchData.homePlayers || [];
+    const awayPlayersToSave = matchData.awayPlayers || [];
+    
+    console.log('🟡 [useEnhancedMatchFormSubmission] Players to save - Home:', homePlayersToSave.length, 'Away:', awayPlayersToSave.length);
+    console.log('🟡 [useEnhancedMatchFormSubmission] Home players data:', homePlayersToSave.map(p => ({ playerId: p?.playerId, playerName: p?.playerName, jerseyNumber: p?.jerseyNumber })));
+    console.log('🟡 [useEnhancedMatchFormSubmission] Away players data:', awayPlayersToSave.map(p => ({ playerId: p?.playerId, playerName: p?.playerName, jerseyNumber: p?.jerseyNumber })));
     
     const updateData = {
       homeScore: matchData.homeScore,
@@ -28,8 +32,8 @@ export const useEnhancedMatchFormSubmission = () => {
       location: matchData.location,
       date: matchData.date,
       time: matchData.time,
-      homePlayers: filteredHomePlayers,
-      awayPlayers: filteredAwayPlayers,
+      homePlayers: homePlayersToSave,
+      awayPlayers: awayPlayersToSave,
       isCompleted: matchData.isCompleted,
       isLocked: matchData.isLocked
     };
