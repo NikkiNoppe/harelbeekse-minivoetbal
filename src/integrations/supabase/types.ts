@@ -609,6 +609,10 @@ export type Database = {
           total_players: number
         }[]
       }
+      get_user_team_ids_secure: {
+        Args: { p_user_id: number }
+        Returns: number[]
+      }
       insert_transaction_with_auto_data:
         | {
             Args: {
