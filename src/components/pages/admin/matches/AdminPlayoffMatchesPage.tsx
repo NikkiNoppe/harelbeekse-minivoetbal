@@ -154,7 +154,7 @@ const AdminPlayoffMatchesPage: React.FC = () => {
         ) : (
           <Card>
             <CardContent className="p-0">
-              {(!teamId && !hasElevatedPermissions) || playoffData.matches.length === 0 ? (
+              {(!teamId && !hasElevatedPermissions) ? (
                 <div className="p-12 text-center">
                   <div className="flex flex-col items-center space-y-4">
                     <Inbox className="h-12 w-12 text-muted-foreground" />
@@ -191,18 +191,30 @@ const AdminPlayoffMatchesPage: React.FC = () => {
                       } as MatchFormsFilters)}
                     />
                   </div>
-                  <MatchesFormList
-                    matches={playoffData.matches}
-                    isLoading={playoffData.isLoading}
-                    onSelectMatch={handleMatchSelect}
-                    searchTerm={filters.searchTerm}
-                    dateFilter={filters.dateFilter}
-                    matchdayFilter={filters.matchdayFilter}
-                    sortBy={filters.sortBy}
-                    hasElevatedPermissions={hasElevatedPermissions}
-                    userRole={user?.role}
-                    teamId={teamId}
-                  />
+                  {playoffData.matches.length === 0 ? (
+                    <div className="p-12 text-center">
+                      <div className="flex flex-col items-center space-y-4">
+                        <Inbox className="h-12 w-12 text-muted-foreground" />
+                        <div className="space-y-2">
+                          <h3 className="font-semibold">Geen playoffwedstrijden</h3>
+                          <p className="text-muted-foreground">Er zijn momenteel geen playoffwedstrijden beschikbaar.</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <MatchesFormList
+                      matches={playoffData.matches}
+                      isLoading={playoffData.isLoading}
+                      onSelectMatch={handleMatchSelect}
+                      searchTerm={filters.searchTerm}
+                      dateFilter={filters.dateFilter}
+                      matchdayFilter={filters.matchdayFilter}
+                      sortBy={filters.sortBy}
+                      hasElevatedPermissions={hasElevatedPermissions}
+                      userRole={user?.role}
+                      teamId={teamId}
+                    />
+                  )}
                 </div>
               )}
             </CardContent>

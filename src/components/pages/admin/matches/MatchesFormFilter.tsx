@@ -49,11 +49,17 @@ const MatchFormFilter: React.FC<MatchFormFilterProps> = ({
         <Switch
           id="hide-completed"
           checked={hideCompletedMatches}
-          onCheckedChange={onHideCompletedChange}
+          onCheckedChange={(checked) => {
+            onHideCompletedChange(checked);
+          }}
         />
         <label 
           htmlFor="hide-completed" 
           className="text-sm cursor-pointer select-none flex items-center gap-1.5"
+          onClick={(e) => {
+            e.preventDefault();
+            onHideCompletedChange(!hideCompletedMatches);
+          }}
         >
           <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-sm">Verberg gespeelde speeldagen</span>

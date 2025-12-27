@@ -12,6 +12,9 @@ export interface UpcomingMatch {
   is_home: boolean;
   speeldag?: string;
   location?: string;
+  unique_number?: string;
+  is_locked?: boolean;
+  is_submitted?: boolean;
 }
 
 export const useUpcomingMatches = (teamId: number | null, limit: number = 5) => {
@@ -31,7 +34,9 @@ export const useUpcomingMatches = (teamId: number | null, limit: number = 5) => 
           away_team_id,
           speeldag,
           location,
+          unique_number,
           is_submitted,
+          is_locked,
           home_team:teams!matches_home_team_id_fkey(team_name),
           away_team:teams!matches_away_team_id_fkey(team_name)
         `)
@@ -55,7 +60,10 @@ export const useUpcomingMatches = (teamId: number | null, limit: number = 5) => 
           away_team_name: match.away_team?.team_name,
           is_home: isHome,
           speeldag: match.speeldag,
-          location: match.location
+          location: match.location,
+          unique_number: match.unique_number,
+          is_locked: match.is_locked,
+          is_submitted: match.is_submitted
         };
       });
     },

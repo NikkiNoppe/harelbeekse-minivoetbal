@@ -150,7 +150,8 @@ const TabContent = memo(({
   return (
     <Card>
       <CardContent className="p-0">
-        {isEmpty || (!hasTeam && !hasElevatedPermissions) ? (
+        {/* Always show filters, even when empty */}
+        {(!hasTeam && !hasElevatedPermissions) ? (
           <EmptyState 
             tabType={tabType}
             hasTeam={hasTeam}
@@ -185,19 +186,27 @@ const TabContent = memo(({
                 })}
               />
             </div>
-            <MatchesFormList 
-              matches={tabData.matches}
-              isLoading={tabData.isLoading}
-              onSelectMatch={onSelectMatch}
-              searchTerm={filters.searchTerm}
-              dateFilter={filters.dateFilter}
-              matchdayFilter={filters.matchdayFilter}
-              teamFilter={filters.teamFilter}
-              sortBy={filters.sortBy}
-              hasElevatedPermissions={hasElevatedPermissions}
-              userRole={user?.role}
-              teamId={effectiveTeamId}
-            />
+            {isEmpty ? (
+              <EmptyState 
+                tabType={tabType}
+                hasTeam={hasTeam}
+                hasPermissions={hasElevatedPermissions}
+              />
+            ) : (
+              <MatchesFormList 
+                matches={tabData.matches}
+                isLoading={tabData.isLoading}
+                onSelectMatch={onSelectMatch}
+                searchTerm={filters.searchTerm}
+                dateFilter={filters.dateFilter}
+                matchdayFilter={filters.matchdayFilter}
+                teamFilter={filters.teamFilter}
+                sortBy={filters.sortBy}
+                hasElevatedPermissions={hasElevatedPermissions}
+                userRole={user?.role}
+                teamId={effectiveTeamId}
+              />
+            )}
           </div>
         )}
       </CardContent>

@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export interface Team {
   team_id: number;
@@ -198,56 +199,86 @@ export const teamService = {
     };
   }): Promise<Team | null> {
     try {
-      // Prepare update data with only basic fields first
-      const updateData: any = {};
+      // Use withUserContext to ensure RLS policies work correctly
+      return await withUserContext(async () => {
+        // Prepare update data with only basic fields first
+        const updateData: any = {};
 
-      // Add basic fields
-      if (teamData.team_name !== undefined) updateData.team_name = teamData.team_name;
+        // Add basic fields
+        if (teamData.team_name !== undefined) updateData.team_name = teamData.team_name;
 
-      // Try to add new fields if they exist
-      if (teamData.contact_person !== undefined) updateData.contact_person = teamData.contact_person;
-      if (teamData.contact_phone !== undefined) updateData.contact_phone = teamData.contact_phone;
-      if (teamData.contact_email !== undefined) updateData.contact_email = teamData.contact_email;
-      if (teamData.club_colors !== undefined) updateData.club_colors = teamData.club_colors;
-      if (teamData.preferred_play_moments !== undefined) updateData.preferred_play_moments = teamData.preferred_play_moments;
+        // Try to add new fields if they exist
+        if (teamData.contact_person !== undefined) updateData.contact_person = teamData.contact_person;
+        if (teamData.contact_phone !== undefined) updateData.contact_phone = teamData.contact_phone;
+        if (teamData.contact_email !== undefined) updateData.contact_email = teamData.contact_email;
+        if (teamData.club_colors !== undefined) updateData.club_colors = teamData.club_colors;
+        if (teamData.preferred_play_moments !== undefined) updateData.preferred_play_moments = teamData.preferred_play_moments;
 
-      const { data, error } = await supabase
-        .from('teams')
-        .update(updateData)
-        .eq('team_id', teamId)
-        .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
-        .single();
-      
-      if (error) {
-        // If new columns don't exist, fall back to basic update
-        console.warn('New team columns not found, falling back to basic update:', error.message);
-        const basicUpdateData: any = {};
-        if (teamData.team_name !== undefined) basicUpdateData.team_name = teamData.team_name;
-
-        const { data: fallbackData, error: fallbackError } = await supabase
+        // First, perform the update without select to check if it succeeds
+        // This avoids the "0 rows" error from .single() if RLS blocks the select
+        const { error: updateError, count } = await supabase
           .from('teams')
-          .update(basicUpdateData)
+          .update(updateData)
           .eq('team_id', teamId)
-          .select('team_id, team_name')
-          .single();
+          .select('*', { count: 'exact', head: true });
         
-        if (fallbackError) {
-          console.error('Error updating team:', fallbackError);
-          throw fallbackError;
+        if (updateError) {
+          console.error('Error updating team:', updateError);
+          console.error('Error details:', {
+            message: updateError.message,
+            details: updateError.details,
+            hint: updateError.hint,
+            code: updateError.code
+          });
+          throw updateError;
+        }
+
+        // Check if any rows were updated
+        if (count === 0) {
+          console.error('Update returned 0 rows - RLS policy may have blocked the update');
+          throw new Error('Update failed: No rows were updated. Check RLS policies and user permissions.');
+        }
+
+        console.log(`✅ Update succeeded: ${count} row(s) updated`);
+
+        // Now try to fetch the updated data
+        // If RLS blocks this, we'll return a constructed object
+        const { data, error: selectError } = await supabase
+          .from('teams')
+          .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
+          .eq('team_id', teamId)
+          .maybeSingle();
+        
+        if (selectError) {
+          console.warn('Update succeeded but could not fetch updated data:', selectError);
+          // Return constructed object with updated values since update succeeded
+          return {
+            team_id: teamId,
+            team_name: teamData.team_name || '',
+            contact_person: teamData.contact_person || undefined,
+            contact_phone: teamData.contact_phone || undefined,
+            contact_email: teamData.contact_email || undefined,
+            club_colors: teamData.club_colors || undefined,
+            preferred_play_moments: teamData.preferred_play_moments || undefined
+          } as Team;
         }
         
-        // Map fallback data to Team interface with undefined new fields
-        return fallbackData ? {
-          ...fallbackData,
-          contact_person: undefined,
-          contact_phone: undefined,
-          contact_email: undefined,
-          club_colors: undefined,
-          preferred_play_moments: undefined
-        } as unknown as Team : null;
-      }
-      
-      return data as unknown as Team | null;
+        // If data is null, return constructed object
+        if (!data) {
+          console.warn('Update succeeded but select returned null - RLS may have blocked select');
+          return {
+            team_id: teamId,
+            team_name: teamData.team_name || '',
+            contact_person: teamData.contact_person || undefined,
+            contact_phone: teamData.contact_phone || undefined,
+            contact_email: teamData.contact_email || undefined,
+            club_colors: teamData.club_colors || undefined,
+            preferred_play_moments: teamData.preferred_play_moments || undefined
+          } as Team;
+        }
+        
+        return data as unknown as Team | null;
+      });
     } catch (error) {
       console.error('Error updating team:', error);
       throw error;

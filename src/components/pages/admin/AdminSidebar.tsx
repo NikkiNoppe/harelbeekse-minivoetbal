@@ -52,7 +52,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const wedstrijdformulierenItems = [
     { key: "match-forms-league", label: "Competitie", icon: Trophy, adminOnly: false },
     { key: "match-forms-cup", label: "Beker", icon: Award, adminOnly: false },
-    { key: "match-forms-playoffs", label: "Play-Off", icon: Target, adminOnly: true },
+    { key: "match-forms-playoffs", label: "Play-Off", icon: Target, adminOnly: false },
   ];
 
   // Beheer groep

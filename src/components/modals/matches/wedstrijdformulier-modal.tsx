@@ -459,7 +459,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [pendingSubmission, isAdmin, userRole, submitMatchForm, handleComplete, setIsSubmitting]);
 
   // Keyboard shortcut handler
-  const submitButtonRef = useRef<HTMLButtonElement>(null);
   const canActuallyEdit = useMemo(() => isTeamManager ? canTeamManagerEditMatch : canEdit, [isTeamManager, canTeamManagerEditMatch, canEdit]);
   
   useEffect(() => {
@@ -623,7 +622,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     homeScoreValid 
       ? "border-[var(--accent)] bg-[var(--color-50)]" 
       : "border-[var(--color-300)]",
-    "focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)] focus:ring-opacity-20"
+    "focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)] focus:ring-opacity-20",
+    "disabled:border-[var(--color-300)] disabled:opacity-100"
   ), [homeScoreValid]);
 
   const awayScoreClassName = useMemo(() => cn(
@@ -632,7 +632,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     awayScoreValid 
       ? "border-[var(--accent)] bg-[var(--color-50)]" 
       : "border-[var(--color-300)]",
-    "focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)] focus:ring-opacity-20"
+    "focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)] focus:ring-opacity-20",
+    "disabled:border-[var(--color-300)] disabled:opacity-100"
   ), [awayScoreValid]);
 
   // Load players for both teams
@@ -1242,6 +1243,13 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       size="lg"
       aria-describedby="match-form-description"
       showCloseButton={true}
+      primaryAction={{
+        label: isSubmitting ? "Bezig..." : "Opslaan",
+        onClick: handleSubmit,
+        disabled: isSubmitting || (!canActuallyEdit && !isAdmin),
+        loading: isSubmitting,
+        variant: "primary"
+      }}
     >
       <div id="match-form-description" className="sr-only">
         Vul scores, spelers en details van de wedstrijd in
@@ -1276,7 +1284,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                     max="99"
                     value={displayHomeScore}
                     onChange={(e) => setHomeScore(e.target.value)}
-                    disabled={isTeamManager ? !canTeamManagerEditMatch : !canEdit}
+                    disabled={!isAdmin && !isReferee}
                     className={homeScoreClassName}
                     style={{
                       fontSize: '2rem',
@@ -1316,7 +1324,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                     max="99"
                     value={displayAwayScore}
                     onChange={(e) => setAwayScore(e.target.value)}
-                    disabled={isTeamManager ? !canTeamManagerEditMatch : !canEdit}
+                    disabled={!isAdmin && !isReferee}
                     className={awayScoreClassName}
                     style={{
                       fontSize: '2rem',
@@ -1721,46 +1729,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           awayTeamName={match.awayTeamName}
           onPenaltyResult={handlePenaltyResult}
         />
-      </div>
-      
-      <div 
-        className="sticky bottom-0 left-0 right-0 z-10 bg-[var(--color-100)] border-t border-[var(--color-300)] shadow-[0_-4px_12px_rgba(0,0,0,0.1)]"
-        style={{
-          marginLeft: '0px',
-          marginRight: '0px',
-          marginTop: '0px',
-          marginBottom: '0px',
-          paddingLeft: '1.5rem',
-          paddingRight: '1.5rem',
-          paddingTop: '18px',
-          paddingBottom: '0px',
-          borderTopWidth: '1px',
-          width: '100%',
-          height: '98px',
-        }}
-      >
-        <Button
-          ref={submitButtonRef}
-          onClick={handleSubmit}
-          disabled={isSubmitting || (!canActuallyEdit && !isAdmin)}
-          className="btn btn--primary flex items-center justify-center gap-2 w-full"
-          style={{ 
-            minHeight: '52px', 
-            fontSize: '1rem', 
-            fontWeight: '600', 
-            borderRadius: 'var(--radius)', 
-            transition: 'all 150ms ease-in-out',
-            paddingTop: '7px',
-            paddingBottom: '7px'
-          }}
-        >
-          {isSubmitting ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Save className="h-5 w-5" />
-          )}
-          {isSubmitting ? "Bezig..." : "Opslaan"}
-        </Button>
       </div>
     </AppModal>
   );
