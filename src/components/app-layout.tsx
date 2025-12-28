@@ -94,15 +94,7 @@ const Layout: React.FC = () => {
 
   const handleLoginSuccess = () => {
     closeLoginModal();
-    // Check if there's a saved location from redirect and return there after login
-    const from = location.state?.from as string | undefined;
-    if (from && typeof from === 'string') {
-      // Return to original location after successful login
-      navigate(from, { replace: true });
-      return;
-    }
-    
-    // Default redirect after login: all users go to profile page
+    // Always redirect to profile page after login
     navigate(ADMIN_ROUTES.profile, { replace: true });
   };
 

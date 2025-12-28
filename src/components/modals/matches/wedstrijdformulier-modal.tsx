@@ -625,18 +625,40 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [open, canActuallyEdit, homeScore, awayScore]);
 
   // Load referees from database (from MatchDataSection)
+  // Always load when modal opens or when match changes to ensure fresh data
   useEffect(() => {
+    if (!open) {
+      // Reset loading state when modal closes
+      setLoadingReferees(false);
+      return;
+    }
+
     const loadReferees = async () => {
       const startTime = Date.now();
       const MIN_LOADING_TIME = 250; // Minimum 250ms loading time for better UX
       
       try {
         setLoadingReferees(true);
+        console.log('🔄 Loading referees from database...');
         const refereesData = await refereeService.getReferees();
-        setReferees(refereesData);
-        console.log(`✅ Loaded ${refereesData.length} referees`);
-      } catch (error) {
-        console.error('Error loading referees:', error);
+        
+        if (!refereesData || refereesData.length === 0) {
+          console.warn('⚠️ No referees found in database');
+          setReferees([]);
+        } else {
+          setReferees(refereesData);
+          console.log(`✅ Loaded ${refereesData.length} referees:`, refereesData.map(r => r.username));
+        }
+      } catch (error: any) {
+        console.error('❌ Error loading referees:', error);
+        // Show error toast to user
+        toast({
+          title: "Fout bij laden scheidsrechters",
+          description: error?.message || "Kon scheidsrechters niet laden. Probeer het opnieuw.",
+          variant: "destructive",
+        });
+        // Set empty array on error to prevent UI issues
+        setReferees([]);
       } finally {
         // Ensure minimum loading time for better UX
         const elapsed = Date.now() - startTime;
@@ -651,21 +673,29 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       }
     };
 
+    // Always load referees when modal opens
     loadReferees();
-  }, []);
+  }, [open, match.matchId, toast]);
 
   // Memoize referees for performance
   const memoizedReferees = useMemo(() => referees, [referees]);
   
   // Referee selector logic (from MatchDataSection)
   const selectedRefereeExists = useMemo(() => 
-    memoizedReferees.some(ref => ref.username === selectedReferee),
+    selectedReferee && memoizedReferees.some(ref => ref.username === selectedReferee),
     [memoizedReferees, selectedReferee]
   );
-  const refereeSelectValue = useMemo(() => 
-    selectedReferee && (selectedRefereeExists || !loadingReferees) ? selectedReferee : undefined,
-    [selectedReferee, selectedRefereeExists, loadingReferees]
-  );
+  
+  // Always show selectedReferee if it exists, even if not in the list yet (during loading or if referee was removed)
+  // Only show undefined if there's no selectedReferee at all
+  const refereeSelectValue = useMemo(() => {
+    if (selectedReferee) {
+      // If we have a selectedReferee, always use it (even if not in list yet)
+      return selectedReferee;
+    }
+    // Only return undefined if there's no selectedReferee
+    return undefined;
+  }, [selectedReferee]);
 
   // Player selection logic (from PlayerSelectionSection)
   const getSelectedPlayerIds = useCallback((selections: PlayerSelection[]) =>
@@ -928,9 +958,21 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                           onValueChange={handlePlayerChange}
                           disabled={!canEditTeam || isLoading}
                         >
-                          <SelectTrigger className="dropdown-login-style w-full max-w-full min-h-[44px] text-sm">
+                          <SelectTrigger 
+                            className={cn(
+                              "dropdown-login-style w-full max-w-full min-h-[44px] text-sm",
+                              isLoading && "opacity-75 cursor-wait"
+                            )}
+                            disabled={isLoading}
+                          >
                             <SelectValue 
-                              placeholder={isLoading ? "Laden..." : "Selecteer speler"}
+                              placeholder={
+                                isLoading 
+                                  ? "Spelers worden geladen uit database..." 
+                                  : error 
+                                    ? "Fout bij laden, probeer opnieuw" 
+                                    : "Selecteer speler"
+                              }
                               className={getPlayerSelectValueClassName(
                                 getPlayerDisplayName(selection, memoizedPlayers) || undefined
                               )}
@@ -941,16 +983,38 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                               }}
                             />
                             {isLoading && (
-                              <div className="absolute right-2 animate-spin rounded-full h-3 w-3 border-b-2 border-primary" aria-hidden="true"></div>
+                              <div className="absolute right-2 flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
+                              </div>
                             )}
                           </SelectTrigger>
                           <SelectContent className="dropdown-content-login-style z-[1001] bg-white">
-                            <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
+                            <SelectItem value="no-player" className="dropdown-item-login-style" disabled={isLoading}>
+                              Geen speler
+                            </SelectItem>
                             {isLoading ? (
                               <SelectItem value="loading" disabled className="dropdown-item-login-style text-center" aria-busy="true">
-                                <div className="flex items-center justify-center gap-2">
-                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary" aria-hidden="true"></div>
-                                  <span>Spelers laden...</span>
+                                <div className="flex items-center justify-center gap-2 py-2">
+                                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                  <span className="text-sm font-medium">Spelers worden geladen uit database...</span>
+                                </div>
+                              </SelectItem>
+                            ) : error ? (
+                              <SelectItem value="error" disabled className="dropdown-item-login-style text-center text-destructive">
+                                <div className="flex flex-col items-center justify-center gap-1 py-2">
+                                  <span className="text-sm font-medium">Fout bij laden spelers</span>
+                                  {refetch && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        refetch();
+                                      }}
+                                      className="text-xs text-primary hover:underline mt-1"
+                                    >
+                                      Probeer opnieuw
+                                    </button>
+                                  )}
                                 </div>
                               </SelectItem>
                             ) : (
@@ -1066,9 +1130,21 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                             onValueChange={handlePlayerChangeMobile}
                             disabled={!canEditTeam || isLoading}
                           >
-                            <SelectTrigger className="dropdown-login-style w-full max-w-full min-h-[44px] text-sm">
+                            <SelectTrigger 
+                              className={cn(
+                                "dropdown-login-style w-full max-w-full min-h-[44px] text-sm",
+                                isLoading && "opacity-75 cursor-wait"
+                              )}
+                              disabled={isLoading}
+                            >
                               <SelectValue 
-                                placeholder={isLoading ? "Laden..." : "Selecteer speler"}
+                                placeholder={
+                                  isLoading 
+                                    ? "Spelers worden geladen uit database..." 
+                                    : error 
+                                      ? "Fout bij laden, probeer opnieuw" 
+                                      : "Selecteer speler"
+                                }
                                 className={getPlayerSelectValueClassName(
                                   getPlayerDisplayName(selection, memoizedPlayers) || undefined
                                 )}
@@ -1079,16 +1155,38 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                                 }}
                               />
                               {isLoading && (
-                                <div className="absolute right-2 animate-spin rounded-full h-3 w-3 border-b-2 border-primary" aria-hidden="true"></div>
+                                <div className="absolute right-2 flex items-center gap-2">
+                                  <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
+                                </div>
                               )}
                             </SelectTrigger>
                             <SelectContent className="dropdown-content-login-style z-[1001] bg-white">
-                              <SelectItem value="no-player" className="dropdown-item-login-style">Geen speler</SelectItem>
+                              <SelectItem value="no-player" className="dropdown-item-login-style" disabled={isLoading}>
+                                Geen speler
+                              </SelectItem>
                               {isLoading ? (
                                 <SelectItem value="loading" disabled className="dropdown-item-login-style text-center" aria-busy="true">
-                                  <div className="flex items-center justify-center gap-2">
-                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary" aria-hidden="true"></div>
-                                    <span>Spelers laden...</span>
+                                  <div className="flex items-center justify-center gap-2 py-2">
+                                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                    <span className="text-sm font-medium">Spelers worden geladen uit database...</span>
+                                  </div>
+                                </SelectItem>
+                              ) : error ? (
+                                <SelectItem value="error" disabled className="dropdown-item-login-style text-center text-destructive">
+                                  <div className="flex flex-col items-center justify-center gap-1 py-2">
+                                    <span className="text-sm font-medium">Fout bij laden spelers</span>
+                                    {refetch && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          refetch();
+                                        }}
+                                        className="text-xs text-primary hover:underline mt-1"
+                                      >
+                                        Probeer opnieuw
+                                      </button>
+                                    )}
                                   </div>
                                 </SelectItem>
                               ) : (
@@ -1591,24 +1689,55 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         onValueChange={setSelectedReferee}
                         disabled={!canEdit || loadingReferees}
                       >
-                        <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
-                          <SelectValue placeholder={loadingReferees ? "Laden..." : selectedReferee || "Selecteer scheidsrechter"} />
+                        <SelectTrigger className="dropdown-login-style min-h-[44px] h-[44px] text-sm w-full">
+                          <SelectValue 
+                            placeholder={
+                              loadingReferees 
+                                ? "Scheidsrechters worden geladen..." 
+                                : selectedReferee 
+                                  ? selectedReferee 
+                                  : "Selecteer scheidsrechter"
+                            } 
+                          />
+                          {loadingReferees && (
+                            <div className="absolute right-2 flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
+                            </div>
+                          )}
                         </SelectTrigger>
                         <SelectContent className="dropdown-content-login-style z-modal bg-card" style={{ backgroundColor: 'white' }}>
-                          {/* Show selected referee even if not in list yet (during loading or mismatch) */}
-                          {selectedReferee && !selectedRefereeExists && (
-                            <SelectItem 
-                              value={selectedReferee} 
-                              className="dropdown-item-login-style opacity-75"
-                            >
-                              {selectedReferee}
+                          {loadingReferees ? (
+                            <SelectItem value="loading" disabled className="dropdown-item-login-style text-center" aria-busy="true">
+                              <div className="flex items-center justify-center gap-2 py-2">
+                                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                <span className="text-sm font-medium">Scheidsrechters worden geladen...</span>
+                              </div>
                             </SelectItem>
+                          ) : (
+                            <>
+                              {/* Always show selected referee first, even if not in list yet (during loading or if referee was removed) */}
+                              {selectedReferee && !selectedRefereeExists && (
+                                <SelectItem 
+                                  value={selectedReferee} 
+                                  className="dropdown-item-login-style opacity-75"
+                                >
+                                  {selectedReferee} {!loadingReferees && "(niet beschikbaar)"}
+                                </SelectItem>
+                              )}
+                              {/* Show all available referees */}
+                              {memoizedReferees.length > 0 ? (
+                                memoizedReferees.map((referee) => (
+                                  <SelectItem key={referee.user_id} value={referee.username} className="dropdown-item-login-style">
+                                    {referee.username}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="no-referees" disabled className="dropdown-item-login-style text-center text-muted-foreground">
+                                  Geen scheidsrechters beschikbaar
+                                </SelectItem>
+                              )}
+                            </>
                           )}
-                          {memoizedReferees.map((referee) => (
-                            <SelectItem key={referee.user_id} value={referee.username} className="dropdown-item-login-style">
-                              {referee.username}
-                            </SelectItem>
-                          ))}
                         </SelectContent>
                       </Select>
                     </div>

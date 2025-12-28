@@ -1,4 +1,4 @@
-import React, { memo, useState, useCallback, useRef, useEffect } from "react";
+import React, { memo, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -97,7 +97,7 @@ const ProfileError = memo(() => {
 });
 
 // Helper function to parse multiple colors from a string
-// Supports formats like: "#FF0000-#FFFFFF", "rood-wit", "#FF0000, #FFFFFF"
+// Supports formats like: "name-#HEX1-#HEX2", "#FF0000-#FFFFFF", "rood-wit", "#FF0000, #FFFFFF"
 const parseColors = (colorString: string): string[] => {
   if (!colorString) return [];
   
@@ -117,6 +117,27 @@ const parseColors = (colorString: string): string[] => {
     return '#000000';
   };
   
+  // Check if it's the new format: "name-#HEX1-#HEX2" or "name-#HEX1"
+  // Extract only hex colors (parts starting with #)
+  const parts = colorString.split('-').map(p => p.trim()).filter(p => p.length > 0);
+  const hexColors = parts.filter(part => part.startsWith('#') || /^#[0-9A-Fa-f]{6}$/i.test(part));
+  
+  // If we found hex colors in the new format, return only those
+  if (hexColors.length > 0) {
+    return hexColors.map(color => {
+      // Ensure it starts with #
+      if (color.startsWith('#')) {
+        return color;
+      }
+      // If it's a 6-digit hex without #, add it
+      if (/^[0-9A-Fa-f]{6}$/i.test(color)) {
+        return `#${color}`;
+      }
+      return getHexFromColor(color);
+    }).filter(c => c && c.length > 0);
+  }
+  
+  // Fallback to old format parsing
   // Try to split by common separators
   const separators = ['-', ',', ' ', '/'];
   let colors: string[] = [];
@@ -133,19 +154,20 @@ const parseColors = (colorString: string): string[] => {
     colors = [colorString.trim()];
   }
   
-  // Convert all to hex format for display
+  // Convert all to hex format for display, but filter out non-hex parts
   return colors.map(color => {
     // If it's already hex or rgb, use it
     if (color.startsWith('#') || color.startsWith('rgb')) {
       return getHexFromColor(color);
     }
     // Try to parse as hex (might be missing #)
-    if (/^[0-9A-Fa-f]{6}$/.test(color)) {
+    if (/^[0-9A-Fa-f]{6}$/i.test(color)) {
       return `#${color}`;
     }
-    // Otherwise, try to get hex from color name or return as is
-    return getHexFromColor(color) || color;
-  }).filter(c => c && c.length > 0);
+    // Skip non-hex color names in the new format
+    // Only return if it's a valid hex/rgb color
+    return null;
+  }).filter((c): c is string => c !== null && c.length > 0);
 };
 
 // Helper function to get color style for display (supports multiple colors)
@@ -168,7 +190,9 @@ const ColorPreview: React.FC<{
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }> = ({ clubColors, size = 'md', className = '' }) => {
-  const colors = parseColors(clubColors || '');
+  // Use useMemo to ensure colors are recalculated when clubColors changes
+  const colors = useMemo(() => parseColors(clubColors || ''), [clubColors]);
+  
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-10 h-10',
@@ -240,6 +264,16 @@ const UserTeamInfoCard: React.FC<{
   } | null;
   onTeamUpdate?: () => void;
 }> = memo(({ user, team, onTeamUpdate }) => {
+  // Debug: log when component receives new team data
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 UserTeamInfoCard received team update:', {
+        team_id: team?.team_id,
+        club_colors: team?.club_colors,
+        contact_person: team?.contact_person
+      });
+    }
+  }, [team?.team_id, team?.club_colors, team?.contact_person, team?.contact_email, team?.contact_phone]);
   const { user: authUser } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -335,6 +369,24 @@ const UserTeamInfoCard: React.FC<{
   const [colorName, setColorName] = useState('');
   const [colorHex1, setColorHex1] = useState('#000000');
   const [colorHex2, setColorHex2] = useState<string | null>(null); // null means no second color
+
+  // Sync form data and color states when team prop changes (e.g., after save)
+  useEffect(() => {
+    if (team) {
+      setEditFormData({
+        contact_person: team.contact_person || '',
+        contact_email: team.contact_email || '',
+        contact_phone: team.contact_phone || '',
+        club_colors: team.club_colors || '',
+      });
+      
+      // Also update color states when team changes
+      const parsed = parseClubColors(team.club_colors || '');
+      setColorName(parsed.name);
+      setColorHex1(parsed.hexColors[0] || '#000000');
+      setColorHex2(parsed.hexColors[1] || null);
+    }
+  }, [team?.club_colors, team?.contact_person, team?.contact_email, team?.contact_phone]);
 
 
   const handleColorNameClick = () => {
@@ -454,8 +506,10 @@ const UserTeamInfoCard: React.FC<{
           description: "Team gegevens zijn bijgewerkt.",
         });
         setIsEditModalOpen(false);
-        // Invalidate queries to refresh data
+        // Invalidate queries to refresh data - use exact match to ensure refresh
         queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+        // Also refetch immediately to ensure UI updates
+        queryClient.refetchQueries({ queryKey: ['userProfile'] });
         if (onTeamUpdate) onTeamUpdate();
       } else {
         throw new Error('Update returned null');
@@ -495,7 +549,8 @@ const UserTeamInfoCard: React.FC<{
                 </div>
               </div>
             </div>
-            {team && (
+            {/* Only show edit button for team managers with a team, not for admins */}
+            {team && user.role === 'player_manager' && (
               <Button
                 variant="outline"
                 size="icon"
@@ -543,60 +598,115 @@ const UserTeamInfoCard: React.FC<{
           </div>
 
           {/* Team Info Section */}
-          {team ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-3">
-                <Trophy className="h-4 w-4 text-primary" />
-                <h3 className="text-base sm:text-lg font-semibold text-foreground">
-                  {team.team_name}
-                </h3>
-                {team.club_colors && (
-                  <ColorPreview 
-                    clubColors={team.club_colors}
-                    size="sm"
-                    className="rounded-full"
-                  />
-                )}
+          {/* For admins: only show team section if they have a team */}
+          {/* For non-admins: show team section or "Geen team gekoppeld" message */}
+          {user.role === 'admin' ? (
+            // Admin: only show if team exists
+            team ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Trophy className="h-4 w-4 text-primary" />
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground">
+                    {team.team_name}
+                  </h3>
+                  {team.club_colors && (
+                    <ColorPreview 
+                      clubColors={team.club_colors}
+                      size="sm"
+                      className="rounded-full"
+                    />
+                  )}
+                </div>
+                
+                <div className="space-y-2.5">
+                  {team.contact_person && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-foreground">{team.contact_person}</span>
+                    </div>
+                  )}
+                  {team.contact_email && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <a 
+                        href={`mailto:${team.contact_email}`}
+                        className="text-primary hover:underline truncate"
+                      >
+                        {team.contact_email}
+                      </a>
+                    </div>
+                  )}
+                  {team.contact_phone && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <a 
+                        href={`tel:${team.contact_phone}`}
+                        className="text-primary hover:underline"
+                      >
+                        {team.contact_phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
               </div>
-              
-              <div className="space-y-2.5">
-                {team.contact_person && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span className="text-foreground">{team.contact_person}</span>
-                  </div>
-                )}
-                {team.contact_email && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <a 
-                      href={`mailto:${team.contact_email}`}
-                      className="text-primary hover:underline truncate"
-                    >
-                      {team.contact_email}
-                    </a>
-                  </div>
-                )}
-                {team.contact_phone && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <a 
-                      href={`tel:${team.contact_phone}`}
-                      className="text-primary hover:underline"
-                    >
-                      {team.contact_phone}
-                    </a>
-                  </div>
-                )}
-              </div>
-            </div>
+            ) : null // Admin without team: show nothing
           ) : (
-            <div className="text-center py-4">
-              <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-              <p className="text-sm text-muted-foreground">
-                Geen team gekoppeld
-              </p>
-            </div>
+            // Non-admin: show team info or "Geen team gekoppeld" message
+            team ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Trophy className="h-4 w-4 text-primary" />
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground">
+                    {team.team_name}
+                  </h3>
+                  {team.club_colors && (
+                    <ColorPreview 
+                      clubColors={team.club_colors}
+                      size="sm"
+                      className="rounded-full"
+                    />
+                  )}
+                </div>
+                
+                <div className="space-y-2.5">
+                  {team.contact_person && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-foreground">{team.contact_person}</span>
+                    </div>
+                  )}
+                  {team.contact_email && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <a 
+                        href={`mailto:${team.contact_email}`}
+                        className="text-primary hover:underline truncate"
+                      >
+                        {team.contact_email}
+                      </a>
+                    </div>
+                  )}
+                  {team.contact_phone && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <a 
+                        href={`tel:${team.contact_phone}`}
+                        className="text-primary hover:underline"
+                      >
+                        {team.contact_phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+                <p className="text-sm text-muted-foreground">
+                  Geen team gekoppeld
+                </p>
+              </div>
+            )
           )}
         </CardContent>
       </Card>
@@ -800,6 +910,53 @@ const UserTeamInfoCard: React.FC<{
   );
 });
 
+// Custom comparison function for memo to ensure re-render when team data changes
+const areTeamInfoEqual = (
+  prevProps: {
+    user: { username: string; role: string; email?: string };
+    team: { team_id: number; team_name: string; club_colors?: string; contact_person?: string; contact_email?: string; contact_phone?: string } | null;
+    onTeamUpdate?: () => void;
+  },
+  nextProps: {
+    user: { username: string; role: string; email?: string };
+    team: { team_id: number; team_name: string; club_colors?: string; contact_person?: string; contact_email?: string; contact_phone?: string } | null;
+    onTeamUpdate?: () => void;
+  }
+): boolean => {
+  // Compare user
+  if (prevProps.user.username !== nextProps.user.username ||
+      prevProps.user.role !== nextProps.user.role ||
+      prevProps.user.email !== nextProps.user.email) {
+    return false;
+  }
+  
+  // Compare team - check all relevant fields, especially club_colors
+  if (prevProps.team?.team_id !== nextProps.team?.team_id ||
+      prevProps.team?.team_name !== nextProps.team?.team_name ||
+      prevProps.team?.club_colors !== nextProps.team?.club_colors ||
+      prevProps.team?.contact_person !== nextProps.team?.contact_person ||
+      prevProps.team?.contact_email !== nextProps.team?.contact_email ||
+      prevProps.team?.contact_phone !== nextProps.team?.contact_phone) {
+    return false;
+  }
+  
+  // If both are null, they're equal
+  if (prevProps.team === null && nextProps.team === null) {
+    return true;
+  }
+  
+  // If one is null and the other isn't, they're not equal
+  if (prevProps.team === null || nextProps.team === null) {
+    return false;
+  }
+  
+  return true;
+};
+
+// Create memoized version with custom comparison
+const MemoizedUserTeamInfoCard = memo(UserTeamInfoCard, areTeamInfoEqual);
+MemoizedUserTeamInfoCard.displayName = 'MemoizedUserTeamInfoCard';
+
 UserTeamInfoCard.displayName = 'UserTeamInfoCard';
 
 // Next Match Card Component - Wrapper with title
@@ -988,12 +1145,13 @@ const UserProfilePage: React.FC = () => {
       {/* Mobile-first layout: Stack cards vertically on mobile */}
       <div className="space-y-4 sm:space-y-6">
         {/* Combined User & Team Info Card */}
-        <UserTeamInfoCard 
+        <MemoizedUserTeamInfoCard 
           user={user} 
           team={teams[0] || null}
           onTeamUpdate={() => {
-            // Refresh profile data
+            // Refresh profile data immediately
             queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+            queryClient.refetchQueries({ queryKey: ['userProfile'] });
           }}
         />
 

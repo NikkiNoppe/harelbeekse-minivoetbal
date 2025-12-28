@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export interface Referee {
   user_id: number;
@@ -10,18 +11,21 @@ export const refereeService = {
   // Get all users with referee role
   async getReferees(): Promise<Referee[]> {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('user_id, username, email')
-        .eq('role', 'referee')
-        .order('username');
+      // Use withUserContext to ensure RLS policies work correctly
+      return await withUserContext(async () => {
+        const { data, error } = await supabase
+          .from('users')
+          .select('user_id, username, email')
+          .eq('role', 'referee')
+          .order('username');
 
-      if (error) {
-        console.error('Error fetching referees:', error);
-        throw error;
-      }
+        if (error) {
+          console.error('Error fetching referees:', error);
+          throw error;
+        }
 
-      return data || [];
+        return data || [];
+      });
     } catch (error) {
       console.error('Error in refereeService.getReferees:', error);
       throw error;
@@ -31,19 +35,22 @@ export const refereeService = {
   // Get referee by ID
   async getRefereeById(userId: number): Promise<Referee | null> {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('user_id, username, email')
-        .eq('user_id', userId)
-        .eq('role', 'referee')
-        .single();
+      // Use withUserContext to ensure RLS policies work correctly
+      return await withUserContext(async () => {
+        const { data, error } = await supabase
+          .from('users')
+          .select('user_id, username, email')
+          .eq('user_id', userId)
+          .eq('role', 'referee')
+          .single();
 
-      if (error) {
-        console.error('Error fetching referee by ID:', error);
-        throw error;
-      }
+        if (error) {
+          console.error('Error fetching referee by ID:', error);
+          throw error;
+        }
 
-      return data;
+        return data;
+      });
     } catch (error) {
       console.error('Error in refereeService.getRefereeById:', error);
       throw error;

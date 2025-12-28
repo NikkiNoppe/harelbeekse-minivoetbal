@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { MatchFormData, PlayerSelection } from "../types";
 
 export const useMatchFormState = (match: MatchFormData) => {
@@ -65,6 +65,23 @@ export const useMatchFormState = (match: MatchFormData) => {
   const [awayTeamSelections, setAwayTeamSelections] = useState<PlayerSelection[]>(
     initializePlayerSelections(match.awayPlayers || [])
   );
+
+  // Sync state with match prop when it changes (e.g., when modal reopens with updated data)
+  useEffect(() => {
+    setHomeScore(match.homeScore?.toString() || "");
+    setAwayScore(match.awayScore?.toString() || "");
+    setSelectedReferee(match.referee || "");
+    setRefereeNotes(match.refereeNotes || "");
+    
+    // Sync player cards
+    const allPlayers = [...(match.homePlayers || []), ...(match.awayPlayers || [])];
+    const updatedCards = initializePlayerCards(allPlayers);
+    setPlayerCards(updatedCards);
+    
+    // Sync player selections
+    setHomeTeamSelections(initializePlayerSelections(match.homePlayers || []));
+    setAwayTeamSelections(initializePlayerSelections(match.awayPlayers || []));
+  }, [match.matchId, match.homeScore, match.awayScore, match.referee, match.refereeNotes, match.homePlayers, match.awayPlayers]);
 
   // Helper function to merge card data into player selections
   const mergeCardDataIntoSelections = useMemo(() => (selections: PlayerSelection[]) => {
