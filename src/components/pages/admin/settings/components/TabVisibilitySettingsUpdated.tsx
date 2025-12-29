@@ -82,7 +82,7 @@ const TAB_DISPLAY_NAMES: Record<string, string> = {
   'players': 'Spelers',
   'scheidsrechters': 'Scheidsrechters',
   'schorsingen': 'Schorsingen',
-  'teams-admin': 'Teams (Admin)',
+  'teams-admin': 'Teams',
   'users': 'Gebruikers',
   'financial': 'Financieel',
   'format-competition': 'Competitie',

@@ -60,6 +60,21 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       );
     }
 
+    // Admin tabs that require login and check visibility settings directly
+    const adminTabs = ['teams-admin', 'users', 'players', 'scheidsrechters', 'schorsingen', 'financial', 'settings', 'blog-management', 'notification-management', 'format-competition', 'format-cup', 'format-playoffs'];
+    
+    if (adminTabs.includes(tab)) {
+      // Require login for admin tabs
+      if (!user) return false;
+      
+      const setting = settings.find(s => s.setting_name === tab);
+      if (!setting) return false;
+      
+      // Check role-specific visibility
+      const userRole = getUserRole(user.role);
+      return setting.visibility?.[userRole] ?? false;
+    }
+
     // Essential public tabs that should always be visible as fallback
     const alwaysVisiblePublicTabs = ['algemeen', 'competitie', 'beker', 'reglement', 'teams'];
 

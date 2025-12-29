@@ -141,6 +141,10 @@ export const useTabVisibilitySettings = () => {
         )
       );
 
+      // Immediately refetch to ensure all components get the latest data
+      // This ensures the Header and other components update immediately
+      await fetchSettings();
+
       toast({
         title: "Instelling bijgewerkt",
         description: `Zichtbaarheid voor "${settingName}" is aangepast`,

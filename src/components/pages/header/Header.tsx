@@ -123,10 +123,10 @@ const Header: React.FC<HeaderProps> = ({
 
   const beheerItems = [
     { key: "players", label: "Spelers", icon: <Users size={18} />, adminOnly: false },
+    { key: "teams-admin", label: "Teams", icon: <Shield size={18} />, adminOnly: true },
     { key: "scheidsrechters", label: "Scheidsrechters", icon: <Shield size={18} />, adminOnly: false },
     { key: "schorsingen", label: "Mijn Schorsingen", icon: <Ban size={18} />, adminOnly: false, teamManagerOnly: true },
     { key: "schorsingen", label: "Schorsingen", icon: <Shield size={18} />, adminOnly: true },
-    { key: "teams-admin", label: "Teams (Admin)", icon: <Shield size={18} />, adminOnly: true },
     { key: "users", label: "Gebruikers", icon: <User size={18} />, adminOnly: true },
   ];
 
@@ -201,8 +201,16 @@ const Header: React.FC<HeaderProps> = ({
               style={{ backgroundColor: 'var(--color-100)' }}
             >
               <SheetHeader className="border-b border-gray-200 pb-4 mb-4 flex-shrink-0 pr-16 sm:pr-14">
+                {/* Always include SheetTitle and SheetDescription for accessibility */}
+                <SheetTitle className={isAuthenticated ? "sr-only" : "text-2xl font-bold text-purple-800 text-left"}>
+                  {isAuthenticated ? "Navigatie" : "Navigatie"}
+                </SheetTitle>
+                <SheetDescription className="sr-only">
+                  Navigeer door de verschillende secties van de website
+                </SheetDescription>
+                
                 {/* User Info Section - Moved to header */}
-                {isAuthenticated ? (
+                {isAuthenticated && (
                   <button
                     type="button"
                     className="w-full p-4 bg-purple-200 rounded-xl shadow-sm border border-purple-200 text-left hover:bg-purple-300/80 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
@@ -225,15 +233,6 @@ const Header: React.FC<HeaderProps> = ({
                       </div>
                     </div>
                   </button>
-                ) : (
-                  <>
-                    <SheetTitle className="text-2xl font-bold text-purple-800 text-left">
-                      Navigatie
-                    </SheetTitle>
-                    <SheetDescription className="sr-only">
-                      Navigeer door de verschillende secties van de website
-                    </SheetDescription>
-                  </>
                 )}
               </SheetHeader>
 

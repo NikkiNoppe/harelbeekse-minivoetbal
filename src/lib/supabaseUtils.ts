@@ -137,17 +137,41 @@ export const withUserContext = async <T>(
           if (verifyError) {
             console.warn('⚠️ Could not verify user role after setting context:', verifyError);
           } else {
-            console.log('✅ Context set and verified:', {
-              role: verifyRole,
-              expectedRole: normalizedRole,
-              teamIds: verifyTeamIds,
-              expectedTeamIds: teamIds,
-              roleMatch: verifyRole === normalizedRole
-            });
-            if (verifyRole !== normalizedRole) {
-              console.error('❌ Context mismatch! Expected role:', normalizedRole, 'but got:', verifyRole);
-              console.error('⚠️ Note: set_current_user_context() fetches role from database, ignoring client-provided role');
-              console.error('⚠️ Check if user role in database matches expected role');
+            const roleMatch = verifyRole === normalizedRole;
+            if (roleMatch) {
+              console.log('✅ Context set and verified:', {
+                role: verifyRole,
+                teamIds: verifyTeamIds,
+                expectedTeamIds: teamIds
+              });
+            } else {
+              // Role hierarchy: admin > player_manager > referee > public
+              // If database role is higher than expected, it's not a problem (more permissions)
+              // Only warn if database role is lower than expected (potential security issue)
+              const roleHierarchy: Record<string, number> = {
+                'admin': 3,
+                'player_manager': 2,
+                'referee': 1,
+                'public': 0
+              };
+              const dbRoleLevel = roleHierarchy[verifyRole || ''] ?? -1;
+              const expectedRoleLevel = roleHierarchy[normalizedRole] ?? -1;
+              
+              if (dbRoleLevel < expectedRoleLevel) {
+                // Database role is lower than expected - potential security issue
+                console.warn('⚠️ Context mismatch (potential security issue):', {
+                  expectedRole: normalizedRole,
+                  databaseRole: verifyRole,
+                  message: 'Database role is lower than expected. This may cause access issues.'
+                });
+              } else {
+                // Database role is higher than expected - not a problem, just informational
+                console.debug('ℹ️ Context role differs (not a problem):', {
+                  expectedRole: normalizedRole,
+                  databaseRole: verifyRole,
+                  message: 'Database role has more permissions than expected. This is fine.'
+                });
+              }
             }
           }
         }
