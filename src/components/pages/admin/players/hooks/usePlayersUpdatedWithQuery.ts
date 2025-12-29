@@ -36,9 +36,9 @@ export const usePlayersUpdatedWithQuery = () => {
   const teamsQuery = useTeamsQuery();
   const { invalidateAll, invalidateTeam } = useInvalidatePlayers();
   
-  // Loading time management: minimum 250ms, maximum 5000ms timeout
+  // Loading time management: minimum 250ms, maximum 15000ms timeout
   const MIN_LOADING_TIME = 250; // Minimum 250ms for better UX
-  const MAX_LOADING_TIME = 5000; // Maximum 5000ms timeout
+  const MAX_LOADING_TIME = 15000; // Maximum 15000ms timeout for slow connections
   
   const [minLoadingTimeElapsed, setMinLoadingTimeElapsed] = useState(true);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -325,6 +325,9 @@ export const usePlayersUpdatedWithQuery = () => {
     getFullName: memoizedGetFullName,
     userTeamName,
     refreshPlayers, // For backward compatibility
+    // New: expose refetch and failure info for inline retry
+    refetch: playersQuery.refetch,
+    failureCount: playersQuery.failureCount,
   };
 };
 

@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { refereeService, type Referee } from "@/services/core";
+import { type Referee } from "@/services/core";
+import { useRefereesQuery } from "@/hooks/useRefereesQuery";
 import { Loader2, Users, Trash2, Plus, X, Save, RefreshCw, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTeamPlayersWithSuspensions, type TeamPlayer } from "@/components/pages/admin/matches/hooks/useTeamPlayers";
@@ -72,8 +73,14 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const [isBoetesOpen, setIsBoetesOpen] = useState(false);
   const [isNotitiesOpen, setIsNotitiesOpen] = useState(false);
   const [isGegevensOpen, setIsGegevensOpen] = useState(false);
-  const [referees, setReferees] = useState<Referee[]>([]);
-  const [loadingReferees, setLoadingReferees] = useState(true);
+  // Referee query with robust retry logic
+  const { 
+    data: referees = [], 
+    isLoading: loadingReferees, 
+    error: refereesError,
+    refetch: refetchReferees,
+    failureCount: refereesFailureCount
+  } = useRefereesQuery({ enabled: open });
   const [homeTeamOpen, setHomeTeamOpen] = useState(false);
   const [awayTeamOpen, setAwayTeamOpen] = useState(false);
   const [isSubmittingPlayers, setIsSubmittingPlayers] = useState(false);
@@ -670,60 +677,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     return () => clearTimeout(timer);
   }, [open, canActuallyEdit, homeScore, awayScore]);
 
-  // Load referees from database (from MatchDataSection)
-  // Always load when modal opens or when match changes to ensure fresh data
-  useEffect(() => {
-    if (!open) {
-      // Reset loading state when modal closes
-      setLoadingReferees(false);
-      return;
-    }
-
-    const loadReferees = async () => {
-      const startTime = Date.now();
-      const MIN_LOADING_TIME = 250; // Minimum 250ms loading time for better UX
-      
-      try {
-        setLoadingReferees(true);
-        console.log('🔄 Loading referees from database...');
-        const refereesData = await refereeService.getReferees();
-        
-        if (!refereesData || refereesData.length === 0) {
-          console.warn('⚠️ No referees found in database');
-          setReferees([]);
-        } else {
-          setReferees(refereesData);
-          console.log(`✅ Loaded ${refereesData.length} referees:`, refereesData.map(r => r.username));
-        }
-      } catch (error: any) {
-        console.error('❌ Error loading referees:', error);
-        // Show error toast to user
-        toast({
-          title: "Fout bij laden scheidsrechters",
-          description: error?.message || "Kon scheidsrechters niet laden. Probeer het opnieuw.",
-          variant: "destructive",
-        });
-        // Set empty array on error to prevent UI issues
-        setReferees([]);
-      } finally {
-        // Ensure minimum loading time for better UX
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
-        if (remainingTime > 0) {
-          setTimeout(() => {
-            setLoadingReferees(false);
-          }, remainingTime);
-        } else {
-          setLoadingReferees(false);
-        }
-      }
-    };
-
-    // Always load referees when modal opens
-    loadReferees();
-  }, [open, match.matchId, toast]);
-
-  // Memoize referees for performance
+  // Memoize referees for performance (now using useRefereesQuery hook above)
   const memoizedReferees = useMemo(() => referees, [referees]);
   
   // Referee selector logic (from MatchDataSection)
@@ -994,7 +948,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
             onRetry={refetch}
             isLoading={isLoading}
             error={error}
-            playersCount={memoizedPlayers?.length || 0}
+            itemCount={memoizedPlayers?.length || 0}
+            emptyMessage="Geen spelers gevonden"
             className="mb-3"
           />
         )}
@@ -1825,6 +1780,17 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                           )}
                         </SelectContent>
                       </Select>
+                      {/* Inline retry for referees when empty */}
+                      {!loadingReferees && memoizedReferees.length === 0 && (
+                        <InlinePlayerRetry
+                          onRetry={async () => { await refetchReferees(); }}
+                          isLoading={loadingReferees}
+                          error={refereesError}
+                          itemCount={memoizedReferees.length}
+                          emptyMessage="Geen scheidsrechters gevonden"
+                          className="mt-2"
+                        />
+                      )}
                     </div>
                   </div>
                 </CardContent>
