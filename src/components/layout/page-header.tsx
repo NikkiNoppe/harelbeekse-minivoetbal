@@ -34,7 +34,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   return (
     <div className={cn("mb-6", className)}>
       {/* Back button row */}
-      <div className="flex items-center justify-between mb-2">
+      <div className={cn(
+        "mb-2",
+        backPath !== undefined ? "flex items-center justify-between" : rightAction ? "w-full" : ""
+      )}>
         {backPath !== undefined ? (
           <Button
             variant="ghost"
@@ -45,12 +48,12 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             <ArrowLeft size={16} className="mr-1" />
             <span className="text-sm">{backLabel}</span>
           </Button>
-        ) : (
-          <div />
-        )}
+        ) : null}
         
         {rightAction && (
-          <div>{rightAction}</div>
+          <div className={backPath === undefined ? "w-full" : ""}>
+            {rightAction}
+          </div>
         )}
       </div>
 

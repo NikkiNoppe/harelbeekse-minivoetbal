@@ -1,16 +1,11 @@
 import React from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, User, Phone, Mail, Palette, Clock, MapPin } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-// Removed local AlertDialog in favor of centralized ConfirmDeleteModal in parent
+import { Edit, Trash2, User, Phone, Mail, Users } from "lucide-react";
+import { ColorPreview } from "@/components/common/ColorPreview";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Team {
   team_id: number;
@@ -32,106 +27,198 @@ interface TeamsListProps {
   teams: Team[];
   onEdit: (team: Team) => void;
   onDelete: (team: Team) => void;
+  loading?: boolean;
 }
 
-const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete }) => {
+// Loading skeleton - matches actual card layout
+const TeamCardSkeleton = () => (
+  <Card className="border border-[var(--color-200)]">
+    <CardContent className="p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0 space-y-3">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <Skeleton className="h-8 w-8 rounded-md" />
+          <Skeleton className="h-8 w-8 rounded-md" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// Empty state
+const EmptyState = () => (
+  <Card>
+    <CardContent className="py-12 px-6 sm:px-8">
+      <div className="text-center">
+        <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+        <h3 className="text-lg font-semibold mb-2 text-foreground">Geen teams</h3>
+        <p className="text-muted-foreground">
+          Er zijn nog geen teams toegevoegd aan de competitie.
+        </p>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete, loading = false }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+
   const handleDeleteClick = (team: Team) => {
     // Delegate opening of the delete confirmation to the parent
     onDelete(team);
   };
 
-  const formatPreferences = (preferences?: Team['preferred_play_moments']) => {
-    if (!preferences) return "-";
-    const parts = [];
-    if (preferences.days?.length) {
-      parts.push(preferences.days.join(', '));
-    }
-    if (preferences.timeslots?.length) {
-      parts.push(preferences.timeslots.join(', '));
-    }
-    if (preferences.venues?.length) {
-      parts.push('Locatie ID(s): ' + preferences.venues.join(', '));
-    }
-    return parts.length > 0 ? parts.join(" | ") : "-";
+  const getColorName = (clubColors?: string) => {
+    if (!clubColors) return null;
+    const name = clubColors.split('-').find(part => !part.startsWith('#'));
+    return name || null;
   };
 
-  return (
-    <>
-      <div className="w-full">
-        <div>
-          <div
-            className="table-no-inner-scroll-mobile"
-            role="region"
-            aria-label="Teams lijst"
-          >
-          <Table className="table w-full text-sm md:text-base">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="min-w-[120px] sticky top-0 bg-inherit z-10">Team</TableHead>
-                <TableHead className="min-w-[120px] sticky top-0 bg-inherit z-10 hidden sm:table-cell">Contactpersoon</TableHead>
-                <TableHead className="min-w-[120px] sticky top-0 bg-inherit z-10 hidden md:table-cell">Telefoon</TableHead>
-                <TableHead className="min-w-[150px] sticky top-0 bg-inherit z-10 hidden md:table-cell">Email</TableHead>
-                <TableHead className="min-w-[100px] sticky top-0 bg-inherit z-10 hidden lg:table-cell">Clubkleuren</TableHead>
-                <TableHead className="min-w-[200px] sticky top-0 bg-inherit z-10 hidden lg:table-cell">Speelmoment voorkeuren</TableHead>
-                <TableHead className="text-center min-w-[100px] sticky top-0 bg-inherit z-10">Acties</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {teams.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-4">
-                    Geen teams gevonden
-                  </TableCell>
-                </TableRow>
-              ) : (
-                teams.map((team) => (
-                  <TableRow key={team.team_id}>
-                    <TableCell className="font-medium whitespace-normal break-words">{team.team_name}</TableCell>
-                    <TableCell className="whitespace-normal break-words hidden sm:table-cell">{team.contact_person || <span className="text-muted-foreground">-</span>}</TableCell>
-                    <TableCell className="whitespace-normal break-words hidden md:table-cell">{team.contact_phone || <span className="text-muted-foreground">-</span>}</TableCell>
-                    <TableCell className="whitespace-normal break-words hidden md:table-cell">{team.contact_email || <span className="text-muted-foreground">-</span>}</TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      {team.club_colors ? (
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <Palette size={12} />
-                          {team.club_colors}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="max-w-[200px] hidden lg:table-cell">
-                      <div className="truncate" title={formatPreferences(team.preferred_play_moments)}>
-                        {formatPreferences(team.preferred_play_moments)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center gap-1 justify-center">
-                        <Button
-                          onClick={() => onEdit(team)}
-                          className="btn btn--icon btn--edit"
-                        >
-                          <Edit size={15} />
-                        </Button>
-                        <Button
-                          onClick={() => handleDeleteClick(team)}
-                          className="btn btn--icon btn--danger"
-                        >
-                          <Trash2 size={15} />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-          </div>
-        </div>
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        {[1, 2, 3, 4].map((i) => (
+          <TeamCardSkeleton key={i} />
+        ))}
       </div>
+    );
+  }
 
-      {/* Delete confirmation is handled by parent via ConfirmDeleteModal */}
-    </>
+  if (teams.length === 0) {
+    return <EmptyState />;
+  }
+
+  return (
+    <div className="space-y-2" role="region" aria-label="Teams lijst">
+      {teams.map((team) => {
+        const colorName = getColorName(team.club_colors);
+        const hasContactInfo = team.contact_person || team.contact_phone || team.contact_email;
+        
+        return (
+          <Card 
+            key={team.team_id}
+            className="hover:shadow-md transition-shadow duration-200 border border-[var(--color-200)]"
+          >
+            <CardContent className="!p-4 !sm:p-5">
+              <div className="flex items-start justify-between gap-4">
+                {/* Left side - Team info */}
+                <div className="flex-1 min-w-0 space-y-3">
+                  {/* Team name with colors */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-base text-foreground truncate">
+                        {team.team_name}
+                      </h3>
+                      {(colorName || team.club_colors) && (
+                        <div className="flex items-center gap-2 mt-1">
+                          {colorName && (
+                            <p className="text-xs text-muted-foreground">
+                              {colorName}
+                            </p>
+                          )}
+                          {team.club_colors && (
+                            <ColorPreview 
+                              clubColors={team.club_colors} 
+                              size="sm" 
+                              className="flex-shrink-0" 
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contact information */}
+                  {hasContactInfo && (
+                    <div className="space-y-1.5 text-sm">
+                      {team.contact_person && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <User className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="truncate">{team.contact_person}</span>
+                        </div>
+                      )}
+                      {team.contact_phone && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Phone className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="truncate">{team.contact_phone}</span>
+                        </div>
+                      )}
+                      {team.contact_email && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="truncate break-all">{team.contact_email}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                </div>
+
+                {/* Right side - Action buttons (only visible for admins) */}
+                {isAdmin && (
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <Button
+                      onClick={() => onEdit(team)}
+                      variant="outline"
+                      size="icon"
+                      className={cn(
+                        "h-8 w-8 border-[var(--color-300)]",
+                        "bg-white hover:bg-purple-50 hover:border-[var(--color-400)]",
+                        "text-[var(--color-700)] hover:text-[var(--color-900)]",
+                        "transition-colors duration-150"
+                      )}
+                      style={{ 
+                        height: '32px',
+                        width: '32px',
+                        minHeight: '32px',
+                        maxHeight: '32px',
+                        minWidth: '32px',
+                        maxWidth: '32px'
+                      }}
+                      aria-label={`Bewerk ${team.team_name}`}
+                    >
+                      <Edit size={16} />
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteClick(team)}
+                      variant="outline"
+                      size="icon"
+                      className={cn(
+                        "!h-8 !w-8 !min-h-0 !max-h-8 !max-w-8 rounded-md border-red-300",
+                        "hover:bg-red-50 hover:border-red-400",
+                        "text-red-600 hover:text-red-700",
+                        "transition-colors duration-150"
+                      )}
+                      style={{ 
+                        height: '32px',
+                        width: '32px',
+                        minHeight: '32px',
+                        maxHeight: '32px',
+                        minWidth: '32px',
+                        maxWidth: '32px'
+                      }}
+                      aria-label={`Verwijder ${team.team_name}`}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
   );
 };
 

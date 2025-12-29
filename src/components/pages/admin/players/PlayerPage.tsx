@@ -87,16 +87,14 @@ const PlayerPage: React.FC = () => {
   const teamOptions = useMemo(() => [
     <SelectItem 
       key="all" 
-      value="all" 
-      className="dropdown-item-login-style"
+      value="all"
     >
       Alle teams
     </SelectItem>,
     ...teams.map(team => (
       <SelectItem 
         key={team.team_id} 
-        value={team.team_id.toString()} 
-        className="dropdown-item-login-style"
+        value={team.team_id.toString()}
       >
         {team.team_name}
       </SelectItem>
@@ -122,12 +120,12 @@ const PlayerPage: React.FC = () => {
                 disabled={loading}
               >
                 <SelectTrigger className={cn(
-                  "dropdown-login-style w-full min-h-[44px]",
+                  "w-full min-h-[44px]",
                   loading && "opacity-70 cursor-not-allowed"
                 )}>
                   <SelectValue placeholder="Alle teams" />
                 </SelectTrigger>
-                <SelectContent className="dropdown-content-login-style">
+                <SelectContent>
                   {teamOptions}
                 </SelectContent>
               </Select>

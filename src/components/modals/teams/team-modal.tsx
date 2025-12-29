@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/modals/base/app-modal";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 // Removed Textarea import as extra notes are no longer used
 import { Checkbox } from "@/components/ui/checkbox";
+import { Palette, X } from "lucide-react";
 import { seasonService } from "@/services";
+import { cn } from "@/lib/utils";
 
 interface TeamModalProps {
   open: boolean;
@@ -26,6 +29,8 @@ interface TeamModalProps {
   onSave: () => void;
   formData: any;
   loading: boolean;
+  hideTeamName?: boolean;
+  hidePreferences?: boolean;
 }
 
 interface LocalPreferences {
@@ -42,7 +47,9 @@ export const TeamModal: React.FC<TeamModalProps> = ({
   formData,
   onFormChange,
   onSave,
-  loading
+  loading,
+  hideTeamName = false,
+  hidePreferences = false
 }) => {
   // State management
   const [availableDays, setAvailableDays] = useState<string[]>([]);
@@ -57,20 +64,78 @@ export const TeamModal: React.FC<TeamModalProps> = ({
     notes: ""
   });
 
+  // Color picker state and refs
+  const colorNameInputRef = useRef<HTMLInputElement>(null);
+  const colorHexInputRef = useRef<HTMLInputElement>(null);
+  const [colorName, setColorName] = useState('');
+  const [colorHex1, setColorHex1] = useState('#000000');
+  const [colorHex2, setColorHex2] = useState<string | null>(null);
+
+  // Helper functions for color handling
+  const getHexFromColor = useCallback((color: string): string => {
+    if (color.startsWith('#')) {
+      return color;
+    }
+    if (color.startsWith('rgb')) {
+      const result = /rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(color);
+      if (!result) return '#000000';
+      const r = parseInt(result[1], 10);
+      const g = parseInt(result[2], 10);
+      const b = parseInt(result[3], 10);
+      return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    }
+    return '#000000';
+  }, []);
+
+  const isLightColor = useCallback((hex: string): boolean => {
+    if (!hex || !hex.startsWith('#')) return false;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.5;
+  }, []);
+
+  const parseClubColors = useCallback((clubColors: string) => {
+    if (!clubColors) return { name: '', hexColors: [] };
+    const parts = clubColors.split('-').map(p => p.trim()).filter(p => p.length > 0);
+    if (parts.length === 0) return { name: '', hexColors: [] };
+    
+    const hexColors: string[] = [];
+    const nameParts: string[] = [];
+    
+    for (const part of parts) {
+      if (part.match(/^#[0-9A-Fa-f]{6}$/i) || part.match(/^rgb\(/i)) {
+        const hex = getHexFromColor(part);
+        if (hex) hexColors.push(hex);
+      } else {
+        nameParts.push(part);
+      }
+    }
+    
+    return {
+      name: nameParts.join(' ').trim(),
+      hexColors: hexColors
+    };
+  }, [getHexFromColor]);
+
   // Memoized computed values
   const isEditMode = useMemo(() => !!editingTeam, [editingTeam]);
   const modalTitle = useMemo(() => 
-    isEditMode ? "Team bewerken" : "Nieuw team toevoegen", 
+    isEditMode ? "Team gegevens bewerken" : "Nieuw team toevoegen", 
     [isEditMode]
   );
   const saveButtonText = useMemo(() => {
     if (isLoading) return "Opslaan...";
     return isEditMode ? "Opslaan" : "Team toevoegen";
   }, [isLoading, isEditMode]);
-  const isFormValid = useMemo(() => 
-    !!(formData.name?.trim()), 
-    [formData.name]
-  );
+  const isFormValid = useMemo(() => {
+    if (hideTeamName) {
+      // If team name is hidden, form is always valid (for profile page)
+      return true;
+    }
+    return !!(formData.name?.trim());
+  }, [formData.name, hideTeamName]);
 
   // Memoized lookup maps for better performance
   const venueMap = useMemo(() => 
@@ -144,7 +209,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
     loadSeasonData();
   }, [open, seasonDataLoaded]);
 
-  // Initialize preferences when editing team
+  // Initialize preferences and colors when editing team or when formData changes
   useEffect(() => {
     if (!open) return;
 
@@ -165,6 +230,36 @@ export const TeamModal: React.FC<TeamModalProps> = ({
       });
     }
   }, [editingTeam, open]);
+
+  // Sync formData with editingTeam when modal opens to ensure all data is displayed
+  useEffect(() => {
+    if (!open || !editingTeam) return;
+
+    // Always sync from editingTeam when modal opens to ensure data is fresh
+    // This ensures that even if formData was set before, we use the latest editingTeam data
+    // Only sync fields that are visible (not hidden by hideTeamName or hidePreferences)
+    onFormChange('contact_person', editingTeam.contact_person || '');
+    onFormChange('contact_email', editingTeam.contact_email || '');
+    onFormChange('contact_phone', editingTeam.contact_phone || '');
+    onFormChange('club_colors', editingTeam.club_colors || '');
+    if (!hideTeamName) {
+      onFormChange('name', editingTeam.team_name || '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editingTeam?.team_id, editingTeam?.contact_person, editingTeam?.contact_email, editingTeam?.contact_phone, editingTeam?.club_colors, editingTeam?.team_name, hideTeamName]);
+
+  // Sync colors from formData when modal opens or formData changes
+  useEffect(() => {
+    if (!open) return;
+
+    // Use formData.club_colors if available, otherwise fall back to editingTeam.club_colors
+    // This ensures colors are always initialized when modal opens
+    const clubColorsToParse = formData?.club_colors || editingTeam?.club_colors || '';
+    const parsed = parseClubColors(clubColorsToParse);
+    setColorName(parsed.name);
+    setColorHex1(parsed.hexColors[0] || '#000000');
+    setColorHex2(parsed.hexColors[1] || null);
+  }, [open, formData?.club_colors, editingTeam?.club_colors, editingTeam?.team_id, parseClubColors]);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -237,9 +332,36 @@ export const TeamModal: React.FC<TeamModalProps> = ({
 
   // Optimized save handler
   const handleSave = useCallback(() => {
-    onFormChange('preferred_play_moments', localPreferences);
-    onSave();
-  }, [localPreferences, onFormChange, onSave]);
+    // Calculate latest club_colors from current color state
+    const parts: string[] = [];
+    if (colorName.trim()) parts.push(colorName.trim());
+    if (colorHex1) parts.push(colorHex1);
+    if (colorHex2) parts.push(colorHex2);
+    const clubColors = parts.join('-');
+    
+    // Sync all data immediately before saving
+    // Sync preferred_play_moments
+    if (!hidePreferences) {
+      onFormChange('preferred_play_moments', localPreferences);
+    }
+    
+    // Sync club_colors from current color state to ensure latest changes are saved
+    // This is critical because color changes might not have been synced to formData yet
+    // Call onFormChange to update the ref immediately
+    onFormChange('club_colors', clubColors);
+    
+    // Use a small delay to ensure the ref update is processed
+    // The ref is updated synchronously in handleFormChange, but we need to ensure
+    // React has processed the state update before calling onSave
+    setTimeout(() => {
+      // Call onFormChange again to ensure ref is definitely updated
+      onFormChange('club_colors', clubColors);
+      // Then call onSave after a tiny delay to ensure ref is synced
+      setTimeout(() => {
+        onSave();
+      }, 10);
+    }, 10);
+  }, [localPreferences, colorName, colorHex1, colorHex2, hidePreferences, onFormChange, onSave]);
 
   // Optimized close handler
   const handleClose = useCallback(() => {
@@ -260,77 +382,341 @@ export const TeamModal: React.FC<TeamModalProps> = ({
     </div>
   ), [formData.name, handleInputChange, isLoading]);
 
-  const contactSection = useMemo(() => (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  // Color change handlers
+  const handleColorNameChange = useCallback((value: string) => {
+    setColorName(value);
+    updateClubColors(value, colorHex1, colorHex2);
+  }, [colorHex1, colorHex2]);
+
+  const handleColorHex1Change = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newHex1 = e.target.value;
+    setColorHex1(newHex1);
+    updateClubColors(colorName, newHex1, colorHex2);
+  }, [colorName, colorHex2]);
+
+  const handleColorHex2Change = useCallback((value: string) => {
+    setColorHex2(value);
+    updateClubColors(colorName, colorHex1, value);
+  }, [colorName, colorHex1]);
+
+  const handleColorHex2Remove = useCallback(() => {
+    setColorHex2(null);
+    updateClubColors(colorName, colorHex1, null);
+  }, [colorName, colorHex1]);
+
+  const updateClubColors = useCallback((name: string, hex1: string, hex2: string | null) => {
+    const parts: string[] = [];
+    if (name.trim()) parts.push(name.trim());
+    if (hex1) parts.push(hex1);
+    if (hex2) parts.push(hex2);
+    const clubColors = parts.join('-');
+    handleInputChange('club_colors', clubColors);
+  }, [handleInputChange]);
+
+  const handleColorHex1Click = useCallback(() => {
+    colorHexInputRef.current?.click();
+  }, []);
+
+  const handleColorHex2Click = useCallback(() => {
+    const secondInput = document.createElement('input');
+    secondInput.type = 'color';
+    secondInput.value = colorHex2 || colorHex1;
+    secondInput.onchange = (e) => {
+      const target = e.target as HTMLInputElement;
+      handleColorHex2Change(target.value);
+    };
+    secondInput.click();
+  }, [colorHex1, colorHex2, handleColorHex2Change]);
+
+  const handleAddSecondColor = useCallback(() => {
+    const secondInput = document.createElement('input');
+    secondInput.type = 'color';
+    secondInput.value = colorHex1;
+    secondInput.onchange = (e) => {
+      const target = e.target as HTMLInputElement;
+      handleColorHex2Change(target.value);
+    };
+    secondInput.click();
+  }, [colorHex1, handleColorHex2Change]);
+
+  const contactSection = useMemo(() => {
+    // Use formData if available, otherwise fall back to editingTeam
+    const contactPerson = formData?.contact_person ?? editingTeam?.contact_person ?? '';
+    const contactPhone = formData?.contact_phone ?? editingTeam?.contact_phone ?? '';
+    const contactEmail = formData?.contact_email ?? editingTeam?.contact_email ?? '';
+    
+    return (
+      <>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-purple-dark font-medium">Contactpersoon</label>
+            <Input
+              placeholder="Naam contactpersoon"
+              className="modal__input"
+              value={contactPerson}
+              onChange={(e) => handleInputChange('contact_person', e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-purple-dark font-medium">Telefoon</label>
+            <Input
+              placeholder="Telefoonnummer"
+              className="modal__input"
+              value={contactPhone}
+              onChange={(e) => handleInputChange('contact_phone', e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+        </div>
+
         <div className="space-y-2">
-          <label className="text-purple-dark font-medium">Contactpersoon</label>
+          <label className="text-purple-dark font-medium">Email</label>
           <Input
-            placeholder="Naam contactpersoon"
+            placeholder="Email adres"
             className="modal__input"
-            value={formData.contact_person || ''}
-            onChange={(e) => handleInputChange('contact_person', e.target.value)}
+            value={contactEmail}
+            onChange={(e) => handleInputChange('contact_email', e.target.value)}
+            disabled={isLoading}
+          />
+        </div>
+      </>
+    );
+  }, [formData, editingTeam, handleInputChange, isLoading]);
+
+  const clubColorsSection = useMemo(() => (
+    <div className="space-y-2">
+      <Label htmlFor="club_colors" className="text-purple-dark font-medium">Clubkleuren</Label>
+      <div className="flex items-center gap-3">
+        {/* Color name input (left) */}
+        <div className="flex items-center gap-2 flex-1">
+          <Input
+            ref={colorNameInputRef}
+            id="color_name"
+            value={colorName}
+            onChange={(e) => handleColorNameChange(e.target.value)}
+            placeholder="bijv. blauw"
+            className="flex-1"
             disabled={isLoading}
           />
         </div>
         
-        <div className="space-y-2">
-          <label className="text-purple-dark font-medium">Telefoon</label>
-          <Input
-            placeholder="Telefoonnummer"
-            className="modal__input"
-            value={formData.contact_phone || ''}
-            onChange={(e) => handleInputChange('contact_phone', e.target.value)}
-            disabled={isLoading}
-          />
+        {/* Color hex pickers (right) */}
+        <div className="flex items-center gap-2">
+          {/* First hex color picker */}
+          <div className="flex items-center">
+            <button
+              type="button"
+              onClick={handleColorHex1Click}
+              className={cn(
+                "w-10 h-10 rounded border border-primary/30 shadow-sm flex-shrink-0 relative overflow-hidden",
+                "hover:border-primary/50 hover:shadow-md transition-all duration-200",
+                "cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2",
+                isLoading && "opacity-50 cursor-not-allowed"
+              )}
+              style={{ backgroundColor: colorHex1 }}
+              title="Klik om eerste kleur te kiezen"
+              aria-label="Eerste kleur kiezer openen"
+              disabled={isLoading}
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Palette className="h-4 w-4 text-white drop-shadow-md opacity-80" />
+              </div>
+            </button>
+            <input
+              ref={colorHexInputRef}
+              type="color"
+              value={colorHex1}
+              onChange={handleColorHex1Change}
+              className="hidden"
+              disabled={isLoading}
+            />
+          </div>
+          
+          {/* Divider and second color picker if second color exists */}
+          {colorHex2 && colorHex2 !== colorHex1 && (
+            <>
+              <div className="w-[2px] h-10 bg-primary/30 flex-shrink-0" />
+              {/* Second hex color picker with integrated remove button */}
+              <div className="relative group flex items-center">
+                <button
+                  type="button"
+                  onClick={handleColorHex2Click}
+                  className={cn(
+                    "w-10 h-10 rounded border border-primary/30 shadow-sm flex-shrink-0 relative overflow-hidden",
+                    "hover:border-primary/50 hover:shadow-md transition-all duration-200",
+                    "cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2",
+                    isLoading && "opacity-50 cursor-not-allowed"
+                  )}
+                  style={{ backgroundColor: colorHex2 }}
+                  title="Klik om tweede kleur te kiezen"
+                  aria-label="Tweede kleur kiezer openen"
+                  disabled={isLoading}
+                >
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Palette 
+                      className={cn(
+                        "h-4 w-4 drop-shadow-md opacity-80",
+                        isLightColor(colorHex2) ? "text-gray-900" : "text-white"
+                      )} 
+                    />
+                  </div>
+                </button>
+                {/* Remove button overlay - visible on hover, positioned outside the color picker button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleColorHex2Remove();
+                  }}
+                  className={cn(
+                    "absolute top-0 right-0 w-4 h-4 rounded-bl-sm bg-red-500/90 hover:bg-red-600",
+                    "flex items-center justify-center opacity-0 group-hover:opacity-100",
+                    "transition-opacity duration-200 cursor-pointer z-10",
+                    "shadow-sm border border-red-600/50",
+                    isLoading && "opacity-50 cursor-not-allowed"
+                  )}
+                  style={{ 
+                    top: '-2px',
+                    right: '-2px'
+                  }}
+                  title="Verwijder tweede kleur"
+                  aria-label="Verwijder tweede kleur"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  disabled={isLoading}
+                >
+                  <X 
+                    className={cn(
+                      "h-2.5 w-2.5",
+                      "text-white"
+                    )} 
+                    strokeWidth={2.5} 
+                  />
+                </button>
+              </div>
+            </>
+          )}
+          
+          {/* Add second color button if no second color exists */}
+          {!colorHex2 && (
+            <button
+              type="button"
+              onClick={handleAddSecondColor}
+              className={cn(
+                "w-10 h-10 rounded border-2 border-dashed border-primary/30 shadow-sm flex-shrink-0",
+                "hover:border-primary/50 hover:shadow-md transition-all duration-200",
+                "cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2",
+                "bg-muted flex items-center justify-center",
+                isLoading && "opacity-50 cursor-not-allowed"
+              )}
+              title="Klik om tweede kleur toe te voegen"
+              aria-label="Tweede kleur toevoegen"
+              disabled={isLoading}
+            >
+              <span className="text-primary/50 text-xl font-bold">+</span>
+            </button>
+          )}
         </div>
       </div>
-
-      <div className="space-y-2">
-        <label className="text-purple-dark font-medium">Email</label>
-        <Input
-          placeholder="Email adres"
-          className="modal__input"
-          value={formData.contact_email || ''}
-          onChange={(e) => handleInputChange('contact_email', e.target.value)}
-          disabled={isLoading}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-purple-dark font-medium">Clubkleuren</label>
-        <Input
-          placeholder="Bijv. Rood-Wit-Blauw"
-          className="modal__input"
-          value={formData.club_colors || ''}
-          onChange={(e) => handleInputChange('club_colors', e.target.value)}
-          disabled={isLoading}
-        />
-      </div>
-    </>
-  ), [formData, handleInputChange, isLoading]);
+      <p className="text-xs text-muted-foreground">
+        Kies één of twee kleuren.
+      </p>
+    </div>
+  ), [colorName, colorHex1, colorHex2, isLoading, handleColorNameChange, handleColorHex1Click, handleColorHex1Change, handleColorHex2Click, handleColorHex2Remove, handleAddSecondColor, isLightColor]);
 
   const preferencesSection = useMemo(() => (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-purple-dark">Speelmoment voorkeuren</h3>
+    <div className="space-y-6 pt-2">
+      <div>
+        <h3 className="text-purple-dark font-medium mb-1">Speelmoment voorkeuren</h3>
+        <p className="text-xs text-muted-foreground">Selecteer je voorkeuren voor speeldagen, tijdsloten en locaties</p>
+      </div>
       
       {/* Days */}
       {availableDays.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label className="text-purple-dark font-medium">Voorkeur dagen</label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {availableDays.map((day) => {
               const selected = isPreferenceSelected('days', day);
               return (
-                <label key={day} htmlFor={`day-${day}`} className="select-chip">
-                  <Checkbox
-                    id={`day-${day}`}
-                    className="select-box"
-                    checked={selected}
-                    onCheckedChange={(checked) => handlePreferenceChange('days', day, checked as boolean)}
-                    disabled={isLoading}
-                  />
-                  <span className="select-chip__label">{day}</span>
+                <label 
+                  key={day} 
+                  htmlFor={`day-${day}`} 
+                  className={cn(
+                    "relative flex items-center gap-3 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer",
+                    "min-h-[48px] touch-manipulation",
+                    selected 
+                      ? "bg-accent/10 border-accent shadow-sm" 
+                      : "bg-white border-[var(--color-200)] hover:border-accent/50 hover:bg-accent/5",
+                    isLoading && "opacity-50 cursor-not-allowed"
+                  )}
+                  style={selected ? {
+                    borderColor: 'var(--accent)',
+                    backgroundColor: 'var(--accent)',
+                    backgroundColor: 'color-mix(in srgb, var(--accent) 10%, white)'
+                  } : {}}
+                >
+                  <div className="relative flex-shrink-0 flex items-center justify-center">
+                    <Checkbox
+                      id={`day-${day}`}
+                      className={cn(
+                        "rounded border-2 transition-all [&>svg]:hidden [&_[data-radix-checkbox-indicator]]:hidden",
+                        selected 
+                          ? "border-accent bg-accent data-[state=checked]:bg-accent data-[state=checked]:border-accent data-[state=checked]:text-white" 
+                          : "border-[var(--color-300)] bg-white"
+                      )}
+                      style={selected ? {
+                        borderColor: 'var(--accent)',
+                        backgroundColor: 'var(--accent)',
+                        color: 'white',
+                        width: '20px',
+                        height: '20px',
+                        minWidth: '20px',
+                        minHeight: '20px'
+                      } : {
+                        width: '20px',
+                        height: '20px',
+                        minWidth: '20px',
+                        minHeight: '20px'
+                      }}
+                      checked={selected}
+                      onCheckedChange={(checked) => handlePreferenceChange('days', day, checked as boolean)}
+                      disabled={isLoading}
+                    />
+                    {selected && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                        <svg 
+                          width="12" 
+                          height="12" 
+                          viewBox="0 0 20 20" 
+                          fill="none" 
+                          xmlns="http://www.w3.org/2000/svg"
+                          style={{ color: 'white' }}
+                        >
+                          <path 
+                            d="M16.7071 5.29289C17.0976 5.68342 17.0976 6.31658 16.7071 6.70711L8.70711 14.7071C8.31658 15.0976 7.68342 15.0976 7.29289 14.7071L3.29289 10.7071C2.90237 10.3166 2.90237 9.68342 3.29289 9.29289C3.68342 8.90237 4.31658 8.90237 4.70711 9.29289L8 12.5858L15.2929 5.29289C15.6834 4.90237 16.3166 4.90237 16.7071 5.29289Z" 
+                            fill="white"
+                            stroke="white"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <span className={cn(
+                    "text-sm font-medium flex-1",
+                    selected ? "text-foreground" : "text-foreground"
+                  )}
+                  style={selected ? { color: 'var(--accent)' } : {}}
+                  >
+                    {day}
+                  </span>
+                  {selected && (
+                    <div 
+                      className="absolute top-1 right-1 w-2 h-2 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: 'var(--accent)' }}
+                    />
+                  )}
                 </label>
               );
             })}
@@ -340,21 +726,88 @@ export const TeamModal: React.FC<TeamModalProps> = ({
 
       {/* Timeslots */}
       {availableTimeslots.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label className="text-purple-dark font-medium">Voorkeur tijdsloten</label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {availableTimeslots.map((timeslot) => {
               const selected = isPreferenceSelected('timeslots', timeslot.id);
               return (
-                <label key={timeslot.id} htmlFor={`timeslot-${timeslot.id}`} className="select-chip">
-                  <Checkbox
-                    id={`timeslot-${timeslot.id}`}
-                    className="select-box"
-                    checked={selected}
-                    onCheckedChange={(checked) => handlePreferenceChange('timeslots', timeslot.id, checked as boolean)}
-                    disabled={isLoading}
-                  />
-                  <span className="select-chip__label">{timeslot.label}</span>
+                <label 
+                  key={timeslot.id} 
+                  htmlFor={`timeslot-${timeslot.id}`}
+                  className={cn(
+                    "relative flex items-center gap-3 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer",
+                    "min-h-[48px] touch-manipulation",
+                    selected 
+                      ? "bg-accent/10 border-accent shadow-sm" 
+                      : "bg-white border-[var(--color-200)] hover:border-accent/50 hover:bg-accent/5",
+                    isLoading && "opacity-50 cursor-not-allowed"
+                  )}
+                  style={selected ? {
+                    borderColor: 'var(--accent)',
+                    backgroundColor: 'color-mix(in srgb, var(--accent) 10%, white)'
+                  } : {}}
+                >
+                  <div className="relative flex-shrink-0 flex items-center justify-center">
+                    <Checkbox
+                      id={`timeslot-${timeslot.id}`}
+                      className={cn(
+                        "rounded border-2 transition-all [&>svg]:hidden [&_[data-radix-checkbox-indicator]]:hidden",
+                        selected 
+                          ? "border-accent bg-accent data-[state=checked]:bg-accent data-[state=checked]:border-accent data-[state=checked]:text-white" 
+                          : "border-[var(--color-300)] bg-white"
+                      )}
+                      style={selected ? {
+                        borderColor: 'var(--accent)',
+                        backgroundColor: 'var(--accent)',
+                        color: 'white',
+                        width: '20px',
+                        height: '20px',
+                        minWidth: '20px',
+                        minHeight: '20px'
+                      } : {
+                        width: '20px',
+                        height: '20px',
+                        minWidth: '20px',
+                        minHeight: '20px'
+                      }}
+                      checked={selected}
+                      onCheckedChange={(checked) => handlePreferenceChange('timeslots', timeslot.id, checked as boolean)}
+                      disabled={isLoading}
+                    />
+                    {selected && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                        <svg 
+                          width="12" 
+                          height="12" 
+                          viewBox="0 0 20 20" 
+                          fill="none" 
+                          xmlns="http://www.w3.org/2000/svg"
+                          style={{ color: 'white' }}
+                        >
+                          <path 
+                            d="M16.7071 5.29289C17.0976 5.68342 17.0976 6.31658 16.7071 6.70711L8.70711 14.7071C8.31658 15.0976 7.68342 15.0976 7.29289 14.7071L3.29289 10.7071C2.90237 10.3166 2.90237 9.68342 3.29289 9.29289C3.68342 8.90237 4.31658 8.90237 4.70711 9.29289L8 12.5858L15.2929 5.29289C15.6834 4.90237 16.3166 4.90237 16.7071 5.29289Z" 
+                            fill="white"
+                            stroke="white"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <span className={cn(
+                    "text-sm font-medium flex-1",
+                    selected ? "text-foreground" : "text-foreground"
+                  )}
+                  style={selected ? { color: 'var(--accent)' } : {}}
+                  >
+                    {timeslot.label}
+                  </span>
+                  {selected && (
+                    <div 
+                      className="absolute top-1 right-1 w-2 h-2 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: 'var(--accent)' }}
+                    />
+                  )}
                 </label>
               );
             })}
@@ -364,29 +817,106 @@ export const TeamModal: React.FC<TeamModalProps> = ({
 
       {/* Venues */}
       {availableVenues.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label className="text-purple-dark font-medium">Voorkeur locaties</label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {availableVenues.map((venue) => {
               const selected = isPreferenceSelected('venues', venue.venue_id);
               return (
-                <label key={venue.venue_id} htmlFor={`venue-${venue.venue_id}`} className="select-chip">
-                  <Checkbox
-                    id={`venue-${venue.venue_id}`}
-                    className="select-box"
-                    checked={selected}
-                    onCheckedChange={(checked) => handlePreferenceChange('venues', venue.venue_id, checked as boolean)}
-                    disabled={isLoading}
-                  />
-                  <span className="select-chip__label">{venue.name}</span>
+                <label 
+                  key={venue.venue_id} 
+                  htmlFor={`venue-${venue.venue_id}`}
+                  className={cn(
+                    "relative flex items-start gap-3 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer",
+                    "min-h-[48px] touch-manipulation",
+                    selected 
+                      ? "bg-accent/10 border-accent shadow-sm" 
+                      : "bg-white border-[var(--color-200)] hover:border-accent/50 hover:bg-accent/5",
+                    isLoading && "opacity-50 cursor-not-allowed"
+                  )}
+                  style={selected ? {
+                    borderColor: 'var(--accent)',
+                    backgroundColor: 'color-mix(in srgb, var(--accent) 10%, white)'
+                  } : {}}
+                >
+                  <div className="relative flex-shrink-0 flex items-center justify-center mt-0.5">
+                    <Checkbox
+                      id={`venue-${venue.venue_id}`}
+                      className={cn(
+                        "rounded border-2 transition-all [&>svg]:hidden [&_[data-radix-checkbox-indicator]]:hidden",
+                        selected 
+                          ? "border-accent bg-accent data-[state=checked]:bg-accent data-[state=checked]:border-accent data-[state=checked]:text-white" 
+                          : "border-[var(--color-300)] bg-white"
+                      )}
+                      style={selected ? {
+                        borderColor: 'var(--accent)',
+                        backgroundColor: 'var(--accent)',
+                        color: 'white',
+                        width: '20px',
+                        height: '20px',
+                        minWidth: '20px',
+                        minHeight: '20px'
+                      } : {
+                        width: '20px',
+                        height: '20px',
+                        minWidth: '20px',
+                        minHeight: '20px'
+                      }}
+                      checked={selected}
+                      onCheckedChange={(checked) => handlePreferenceChange('venues', venue.venue_id, checked as boolean)}
+                      disabled={isLoading}
+                    />
+                    {selected && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                        <svg 
+                          width="12" 
+                          height="12" 
+                          viewBox="0 0 20 20" 
+                          fill="none" 
+                          xmlns="http://www.w3.org/2000/svg"
+                          style={{ color: 'white' }}
+                        >
+                          <path 
+                            d="M16.7071 5.29289C17.0976 5.68342 17.0976 6.31658 16.7071 6.70711L8.70711 14.7071C8.31658 15.0976 7.68342 15.0976 7.29289 14.7071L3.29289 10.7071C2.90237 10.3166 2.90237 9.68342 3.29289 9.29289C3.68342 8.90237 4.31658 8.90237 4.70711 9.29289L8 12.5858L15.2929 5.29289C15.6834 4.90237 16.3166 4.90237 16.7071 5.29289Z" 
+                            fill="white"
+                            stroke="white"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className={cn(
+                      "text-sm font-medium block",
+                      selected ? "text-foreground" : "text-foreground"
+                    )}
+                    style={selected ? { color: 'var(--accent)' } : {}}
+                    >
+                      {venue.name}
+                    </span>
+                    {venue.address && (
+                      <span className={cn(
+                        "text-xs block mt-0.5",
+                        selected ? "text-muted-foreground" : "text-muted-foreground"
+                      )}
+                      style={selected ? { color: 'var(--accent)', opacity: 0.8 } : {}}
+                      >
+                        {venue.address}
+                      </span>
+                    )}
+                  </div>
+                  {selected && (
+                    <div 
+                      className="absolute top-1 right-1 w-2 h-2 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: 'var(--accent)' }}
+                    />
+                  )}
                 </label>
               );
             })}
           </div>
         </div>
       )}
-
-      {/* Notes removed */}
     </div>
   ), [availableDays, availableTimeslots, availableVenues, isPreferenceSelected, handlePreferenceChange, isLoading]);
 
@@ -395,7 +925,9 @@ export const TeamModal: React.FC<TeamModalProps> = ({
       open={open}
       onOpenChange={onOpenChange}
       title={modalTitle}
-      subtitle="Vul de details van het team in. Alle velden zijn verplicht."
+      subtitle={hideTeamName && hidePreferences 
+        ? "Bewerk de contactgegevens en clubkleuren van je team." 
+        : "Vul de details van het team in. Alle velden zijn verplicht."}
       size="lg"
       primaryAction={{
         label: saveButtonText,
@@ -412,9 +944,10 @@ export const TeamModal: React.FC<TeamModalProps> = ({
       }}
     >
       <form className="space-y-4">
-        {teamNameSection}
+        {!hideTeamName && teamNameSection}
         {contactSection}
-        {preferencesSection}
+        {clubColorsSection}
+        {!hidePreferences && preferencesSection}
       </form>
     </AppModal>
   );

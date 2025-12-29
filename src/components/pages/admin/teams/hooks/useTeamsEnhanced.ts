@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeamOperations } from "./useTeamOperations";
@@ -56,6 +56,14 @@ export function useTeamsEnhanced() {
     },
     balance: "0"
   });
+  
+  // Use ref to track latest formData value for save operations
+  const formDataRef = useRef(formData);
+  
+  // Keep ref in sync with formData
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
 
   const refreshData = () => {
     fetchTeams();
@@ -136,31 +144,48 @@ export function useTeamsEnhanced() {
   const handleFormChange = (field: keyof TeamFormData, value: any) => {
     if (field === 'preferred_play_moments') {
       // Use a more stable approach to prevent infinite loops
-      setFormData(prevData => ({
-        ...prevData,
-        preferred_play_moments: {
-          days: prevData.preferred_play_moments?.days || [],
-          timeslots: prevData.preferred_play_moments?.timeslots || [],
-          venues: prevData.preferred_play_moments?.venues || [],
-          notes: prevData.preferred_play_moments?.notes || "",
-          ...value
-        }
-      }));
+      setFormData(prevData => {
+        const updated = {
+          ...prevData,
+          preferred_play_moments: {
+            days: prevData.preferred_play_moments?.days || [],
+            timeslots: prevData.preferred_play_moments?.timeslots || [],
+            venues: prevData.preferred_play_moments?.venues || [],
+            notes: prevData.preferred_play_moments?.notes || "",
+            ...value
+          }
+        };
+        formDataRef.current = updated; // Update ref immediately
+        return updated;
+      });
     } else {
-      setFormData(prevData => ({...prevData, [field]: value}));
+      setFormData(prevData => {
+        const updated = {...prevData, [field]: value};
+        formDataRef.current = updated; // Update ref immediately
+        return updated;
+      });
     }
   };
 
   const handleSaveTeam = async () => {
+    // Use ref to get the latest formData value, as state updates might be batched
+    // Also wait a tiny bit to ensure any pending state updates are processed
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const currentFormData = formDataRef.current;
+    
     if (editingTeam) {
-      const updatedTeam = await updateTeam(editingTeam.team_id, formData);
+      const updatedTeam = await updateTeam(editingTeam.team_id, currentFormData);
       if (updatedTeam) {
         setDialogOpen(false);
+        // Refresh teams list to show updated data
+        fetchTeams();
       }
     } else {
-      const newTeam = await createTeam(formData);
+      const newTeam = await createTeam(currentFormData);
       if (newTeam) {
         setDialogOpen(false);
+        // Refresh teams list to show new team
+        fetchTeams();
       }
     }
   };

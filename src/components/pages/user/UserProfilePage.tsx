@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { 
   User, Mail, Shield, Users, Trophy, Award, Phone, 
-  AlertCircle, MapPin, Palette, Calendar, Clock, ArrowRight,
+  AlertCircle, MapPin, Calendar, Clock, ArrowRight,
   CheckCircle, Lock, Edit2, Save, X, Loader2
 } from "lucide-react";
 import { PageHeader } from "@/components/layout";
@@ -20,10 +20,8 @@ import { shouldAutoLockMatch } from "@/lib/matchLockUtils";
 import MatchesCard from "@/components/pages/admin/matches/components/MatchesCard";
 import { WedstrijdformulierModal } from "@/components/modals/matches/wedstrijdformulier-modal";
 import { MatchFormData } from "@/components/pages/admin/matches/types";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AppModal } from "@/components/modals/base/app-modal";
+import { TeamModal } from "@/components/modals";
 import { useToast } from "@/hooks/use-toast";
 import { teamService } from "@/services/core";
 import { useQueryClient } from "@tanstack/react-query";
@@ -279,219 +277,75 @@ const UserTeamInfoCard: React.FC<{
   const { user: authUser } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [editFormData, setEditFormData] = useState({
+  const [formData, setFormData] = useState({
+    name: team?.team_name || '',
     contact_person: team?.contact_person || '',
     contact_email: team?.contact_email || '',
     contact_phone: team?.contact_phone || '',
     club_colors: team?.club_colors || '',
   });
-  const colorNameInputRef = useRef<HTMLInputElement>(null);
-  const colorHexInputRef = useRef<HTMLInputElement>(null);
+  const formDataRef = useRef(formData);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Helper function to convert hex to rgb
-  const hexToRgb = (hex: string): string | null => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? `rgb(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)})`
-      : null;
-  };
-
-  // Helper function to convert rgb to hex
-  const rgbToHex = (rgb: string): string | null => {
-    const result = /rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(rgb);
-    if (!result) return null;
-    const r = parseInt(result[1], 10);
-    const g = parseInt(result[2], 10);
-    const b = parseInt(result[3], 10);
-    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
-  };
-
-  // Helper function to get hex value from any color format
-  const getHexFromColor = (color: string): string => {
-    if (color.startsWith('#')) {
-      return color;
-    }
-    if (color.startsWith('rgb')) {
-      const hex = rgbToHex(color);
-      return hex || '#000000';
-    }
-    return '#000000';
-  };
   
-  // Helper function to determine if a color is light (returns true) or dark (returns false)
-  const isLightColor = (hex: string): boolean => {
-    if (!hex || !hex.startsWith('#')) return false;
-    
-    // Remove # and convert to RGB
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    
-    // Calculate relative luminance (using the formula from WCAG)
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    
-    // If luminance is greater than 0.5, it's a light color
-    return luminance > 0.5;
-  };
-  
-  // Parse existing club_colors to extract name and hex colors
-  const parseClubColors = (clubColors: string) => {
-    if (!clubColors) return { name: '', hexColors: [] };
-    
-    // Split by '-' to get parts
-    const parts = clubColors.split('-').map(p => p.trim()).filter(p => p.length > 0);
-    
-    if (parts.length === 0) return { name: '', hexColors: [] };
-    
-    // Find hex colors (starting with # or rgb)
-    const hexColors: string[] = [];
-    const nameParts: string[] = [];
-    
-    for (const part of parts) {
-      if (part.match(/^#[0-9A-Fa-f]{6}$/i) || part.match(/^rgb\(/i)) {
-        // It's a hex or rgb color - accept all colors including #000000
-        const hex = getHexFromColor(part);
-        if (hex) {
-          hexColors.push(hex);
-        }
-      } else {
-        // It's a name part
-        nameParts.push(part);
-      }
-    }
-    
-    return {
-      name: nameParts.join(' ').trim(),
-      hexColors: hexColors
-    };
-  };
-  
-  const [colorName, setColorName] = useState('');
-  const [colorHex1, setColorHex1] = useState('#000000');
-  const [colorHex2, setColorHex2] = useState<string | null>(null); // null means no second color
+  // Keep ref in sync with formData
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
 
-  // Sync form data and color states when team prop changes (e.g., after save)
+  // Sync form data when team prop changes
   useEffect(() => {
     if (team) {
-      setEditFormData({
+      setFormData({
+        name: team.team_name || '',
         contact_person: team.contact_person || '',
         contact_email: team.contact_email || '',
         contact_phone: team.contact_phone || '',
         club_colors: team.club_colors || '',
       });
-      
-      // Also update color states when team changes
-      const parsed = parseClubColors(team.club_colors || '');
-      setColorName(parsed.name);
-      setColorHex1(parsed.hexColors[0] || '#000000');
-      setColorHex2(parsed.hexColors[1] || null);
     }
-  }, [team?.club_colors, team?.contact_person, team?.contact_email, team?.contact_phone]);
-
-
-  const handleColorNameClick = () => {
-    colorNameInputRef.current?.focus();
-  };
-  
-  const handleColorHex1Click = () => {
-    colorHexInputRef.current?.click();
-  };
-  
-  const handleColorHex1Change = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setColorHex1(e.target.value);
-  };
-  
-  const handleColorHex2Change = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setColorHex2(e.target.value);
-  };
+  }, [team?.team_name, team?.club_colors, team?.contact_person, team?.contact_email, team?.contact_phone]);
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (team) {
-      const parsed = parseClubColors(team.club_colors || '');
-      console.log('📋 Parsing club colors:', team.club_colors, '->', parsed);
-      
-      // Set color states first
-      setColorName(parsed.name);
-      setColorHex1(parsed.hexColors[0] || '#000000');
-      setColorHex2(parsed.hexColors[1] || null); // null means no second color
-      
-      // Reset form data (club_colors will be updated by useEffect)
-      setEditFormData({
+      // Update formData and ref immediately before opening modal
+      const newFormData = {
+        name: team.team_name || '',
         contact_person: team.contact_person || '',
         contact_email: team.contact_email || '',
         contact_phone: team.contact_phone || '',
-        club_colors: '', // Will be set by useEffect
-      });
-      
+        club_colors: team.club_colors || '',
+      };
+      setFormData(newFormData);
+      formDataRef.current = newFormData; // Update ref immediately
       setIsEditModalOpen(true);
     }
   };
-  
-  // Update club_colors when color inputs change
-  useEffect(() => {
-    // Skip if modal is not open (to avoid unnecessary updates)
-    if (!isEditModalOpen) return;
-    
-    const parts: string[] = [];
-    
-    // Add name if present
-    if (colorName.trim()) {
-      parts.push(colorName.trim());
-    }
-    
-    // Add first hex color (always add if present, even if #000000)
-    if (colorHex1) {
-      parts.push(colorHex1);
-    }
-    
-    // Add second hex color if present and different from first
-    if (colorHex2 && colorHex2 !== colorHex1) {
-      parts.push(colorHex2);
-    }
-    
-    const newClubColors = parts.join('-');
-    console.log('🔄 Updating club_colors:', { colorName, colorHex1, colorHex2, newClubColors });
-    
-    setEditFormData(prev => ({
-      ...prev,
-      club_colors: newClubColors
-    }));
-  }, [colorName, colorHex1, colorHex2, isEditModalOpen]);
+
+  const handleFormChange = useCallback((field: string, value: any) => {
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      formDataRef.current = updated; // Update ref immediately
+      return updated;
+    });
+  }, []);
 
   const handleSave = async () => {
     if (!team) return;
     
     setIsSaving(true);
     try {
-      // Build club_colors from current state to ensure it's up to date
-      const parts: string[] = [];
-      if (colorName.trim()) {
-        parts.push(colorName.trim());
-      }
-      if (colorHex1) {
-        parts.push(colorHex1);
-      }
-      if (colorHex2 && colorHex2 !== colorHex1) {
-        parts.push(colorHex2);
-      }
-      const clubColors = parts.join('-');
+      // Use ref to get the latest formData value, as state updates might be batched
+      const currentFormData = formDataRef.current;
       
-      console.log('🔄 Updating team:', team.team_id, { ...editFormData, club_colors: clubColors });
-      console.log('🔄 User context:', { userId: authUser?.id, role: authUser?.role, teamId: team.team_id });
-      console.log('🔄 Color states:', { colorName, colorHex1, colorHex2, clubColors });
-      
-      // teamService.updateTeam already uses withUserContext internally
-      // We wrap it with explicit teamIds to ensure the context is set correctly
       const updated = await withUserContext(
         async () => {
           return await teamService.updateTeam(team.team_id, {
-            contact_person: editFormData.contact_person.trim() || null,
-            contact_email: editFormData.contact_email.trim() || null,
-            contact_phone: editFormData.contact_phone.trim() || null,
-            club_colors: clubColors || null,
+            contact_person: currentFormData.contact_person?.trim() || null,
+            contact_email: currentFormData.contact_email?.trim() || null,
+            contact_phone: currentFormData.contact_phone?.trim() || null,
+            club_colors: currentFormData.club_colors || null,
           });
         },
         {
@@ -502,15 +356,12 @@ const UserTeamInfoCard: React.FC<{
       );
 
       if (updated) {
-        console.log('✅ Team updated successfully:', updated);
         toast({
           title: "Succesvol opgeslagen",
           description: "Team gegevens zijn bijgewerkt.",
         });
         setIsEditModalOpen(false);
-        // Invalidate queries to refresh data - use exact match to ensure refresh
         queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-        // Also refetch immediately to ensure UI updates
         queryClient.refetchQueries({ queryKey: ['userProfile'] });
         if (onTeamUpdate) onTeamUpdate();
       } else {
@@ -719,198 +570,17 @@ const UserTeamInfoCard: React.FC<{
 
       {/* Edit Team Modal */}
       {team && (
-        <AppModal
+        <TeamModal
           open={isEditModalOpen}
           onOpenChange={setIsEditModalOpen}
-          title="Team gegevens bewerken"
-          size="md"
-          primaryAction={{
-            label: isSaving ? "Opslaan..." : "Opslaan",
-            onClick: handleSave,
-            disabled: isSaving,
-            loading: isSaving,
-            variant: "primary"
-          }}
-          secondaryAction={{
-            label: "Annuleren",
-            onClick: () => setIsEditModalOpen(false),
-            disabled: isSaving,
-            variant: "secondary"
-          }}
-        >
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="contact_person">Contactpersoon</Label>
-              <Input
-                id="contact_person"
-                value={editFormData.contact_person}
-                onChange={(e) => setEditFormData({ ...editFormData, contact_person: e.target.value })}
-                placeholder="Naam van contactpersoon"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contact_email">E-mailadres</Label>
-              <Input
-                id="contact_email"
-                type="email"
-                value={editFormData.contact_email}
-                onChange={(e) => setEditFormData({ ...editFormData, contact_email: e.target.value })}
-                placeholder="team@voorbeeld.nl"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contact_phone">Telefoonnummer</Label>
-              <Input
-                id="contact_phone"
-                type="tel"
-                value={editFormData.contact_phone}
-                onChange={(e) => setEditFormData({ ...editFormData, contact_phone: e.target.value })}
-                placeholder="0472 12 34 56"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="club_colors">Clubkleuren</Label>
-              <div className="flex items-center gap-3">
-                {/* Color name input (left) */}
-                <div className="flex items-center gap-2 flex-1">
-                  <Input
-                    ref={colorNameInputRef}
-                    id="color_name"
-                    value={colorName}
-                    onChange={(e) => setColorName(e.target.value)}
-                    placeholder="bijv. blauw"
-                    className="flex-1"
-                  />
-                </div>
-                
-                {/* Color hex pickers (right) */}
-                <div className="flex items-center gap-2">
-                  {/* First hex color picker */}
-                  <div className="flex items-center">
-                    <button
-                      type="button"
-                      onClick={handleColorHex1Click}
-                      className={cn(
-                        "w-10 h-10 rounded border border-primary/30 shadow-sm flex-shrink-0 relative overflow-hidden",
-                        "hover:border-primary/50 hover:shadow-md transition-all duration-200",
-                        "cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
-                      )}
-                      style={{ backgroundColor: colorHex1 }}
-                      title="Klik om eerste kleur te kiezen"
-                      aria-label="Eerste kleur kiezer openen"
-                    >
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Palette className="h-4 w-4 text-white drop-shadow-md opacity-80" />
-                      </div>
-                    </button>
-                    <input
-                      ref={colorHexInputRef}
-                      type="color"
-                      value={colorHex1}
-                      onChange={handleColorHex1Change}
-                      className="hidden"
-                    />
-                  </div>
-                  
-                  {/* Divider and second color picker if second color exists */}
-                  {colorHex2 && colorHex2 !== colorHex1 && (
-                    <>
-                      <div className="w-[2px] h-10 bg-primary/30 flex-shrink-0" />
-                      {/* Second hex color picker with integrated remove button */}
-                      <div className="relative group flex items-center">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const secondInput = document.createElement('input');
-                            secondInput.type = 'color';
-                            secondInput.value = colorHex2;
-                            secondInput.onchange = (e) => {
-                              const target = e.target as HTMLInputElement;
-                              setColorHex2(target.value);
-                            };
-                            secondInput.click();
-                          }}
-                          className={cn(
-                            "w-10 h-10 rounded border border-primary/30 shadow-sm flex-shrink-0 relative overflow-hidden",
-                            "hover:border-primary/50 hover:shadow-md transition-all duration-200",
-                            "cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
-                          )}
-                          style={{ backgroundColor: colorHex2 }}
-                          title="Klik om tweede kleur te kiezen"
-                          aria-label="Tweede kleur kiezer openen"
-                        >
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <Palette 
-                              className={cn(
-                                "h-4 w-4 drop-shadow-md opacity-80",
-                                isLightColor(colorHex2) ? "text-gray-900" : "text-white"
-                              )} 
-                            />
-                          </div>
-                          {/* Remove button overlay - visible on hover */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setColorHex2(null);
-                            }}
-                            className={cn(
-                              "absolute top-0 right-0 w-4 h-4 rounded-bl-sm bg-red-500/90 hover:bg-red-600",
-                              "flex items-center justify-center opacity-0 group-hover:opacity-100",
-                              "transition-opacity duration-200 cursor-pointer",
-                              "shadow-sm border border-red-600/50"
-                            )}
-                            title="Verwijder tweede kleur"
-                            aria-label="Verwijder tweede kleur"
-                            onMouseDown={(e) => e.stopPropagation()}
-                          >
-                            <X 
-                              className={cn(
-                                "h-2.5 w-2.5",
-                                isLightColor(colorHex2) ? "text-gray-900" : "text-white"
-                              )} 
-                              strokeWidth={2.5} 
-                            />
-                          </button>
-                        </button>
-                      </div>
-                    </>
-                  )}
-                  
-                  {/* Add second color button if no second color exists */}
-                  {!colorHex2 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const secondInput = document.createElement('input');
-                        secondInput.type = 'color';
-                        secondInput.value = colorHex1;
-                        secondInput.onchange = (e) => {
-                          const target = e.target as HTMLInputElement;
-                          setColorHex2(target.value);
-                        };
-                        secondInput.click();
-                      }}
-                      className={cn(
-                        "w-10 h-10 rounded border-2 border-dashed border-primary/30 shadow-sm flex-shrink-0",
-                        "hover:border-primary/50 hover:shadow-md transition-all duration-200",
-                        "cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2",
-                        "bg-muted flex items-center justify-center"
-                      )}
-                      title="Klik om tweede kleur toe te voegen"
-                      aria-label="Tweede kleur toevoegen"
-                    >
-                      <span className="text-primary/50 text-xl font-bold">+</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Kies één of twee kleuren.
-              </p>
-            </div>
-          </div>
-        </AppModal>
+          editingTeam={team}
+          formData={formData}
+          onFormChange={handleFormChange}
+          onSave={handleSave}
+          loading={isSaving}
+          hideTeamName={true}
+          hidePreferences={true}
+        />
       )}
     </>
   );

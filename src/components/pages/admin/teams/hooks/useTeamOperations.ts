@@ -82,7 +82,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
           contact_person: formData.contact_person.trim() || null,
           contact_phone: formData.contact_phone.trim() || null,
           contact_email: formData.contact_email.trim() || null,
-          club_colors: formData.club_colors.trim() || null,
+          club_colors: formData.club_colors?.trim() || null,
           preferred_play_moments: formData.preferred_play_moments
         })
         .select()
@@ -177,10 +177,10 @@ export const useTeamOperations = (onSuccess: () => void) => {
         .from('teams')
         .update({
           team_name: formData.name.trim(),
-          contact_person: formData.contact_person.trim() || null,
-          contact_phone: formData.contact_phone.trim() || null,
-          contact_email: formData.contact_email.trim() || null,
-          club_colors: formData.club_colors.trim() || null,
+          contact_person: formData.contact_person?.trim() || null,
+          contact_phone: formData.contact_phone?.trim() || null,
+          contact_email: formData.contact_email?.trim() || null,
+          club_colors: formData.club_colors?.trim() || null,
           preferred_play_moments: formData.preferred_play_moments
         })
         .eq('team_id', teamId)
@@ -203,7 +203,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
             contact_person: formData.contact_person.trim() || null,
             contact_phone: formData.contact_phone.trim() || null,
             contact_email: formData.contact_email.trim() || null,
-            club_colors: formData.club_colors.trim() || null,
+            club_colors: formData.club_colors?.trim() || null,
             preferred_play_moments: formData.preferred_play_moments
           })
           .eq('team_id', teamId)
@@ -227,7 +227,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
             contact_person: formData.contact_person.trim() || null,
             contact_phone: formData.contact_phone.trim() || null,
             contact_email: formData.contact_email.trim() || null,
-            club_colors: formData.club_colors.trim() || null,
+            club_colors: formData.club_colors?.trim() || null,
             preferred_play_moments: formData.preferred_play_moments
           })
           .eq('team_id', teamId);

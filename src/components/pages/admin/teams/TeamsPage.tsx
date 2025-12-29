@@ -1,11 +1,16 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { useTeamsEnhanced } from "./hooks/useTeamsEnhanced";
 import TeamsList from "./components/TeamsList";
 import { TeamModal, ConfirmDeleteModal } from "@/components/modals";
+import { PageHeader } from "@/components/layout";
+import { useAuth } from "@/hooks/useAuth";
 
 const AdminTeamPage: React.FC = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  
   const {
     teams,
     loading,
@@ -28,19 +33,13 @@ const AdminTeamPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">
-              Team Beheer
-            </h1>
-            <p className="text-muted-foreground">
-              Beheer alle teams in de competitie
-            </p>
-          </div>
-        </div>
+      <div className="space-y-6 animate-slide-up">
+        <PageHeader 
+          title="Team Beheer"
+          subtitle="Beheer alle teams in de competitie"
+        />
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" aria-hidden="true"></div>
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
           <p className="mt-2 text-muted-foreground">Teams laden...</p>
         </div>
       </div>
@@ -48,33 +47,30 @@ const AdminTeamPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-slide-up">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">
-            Team Beheer
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Beheer alle teams in de competitie ({teams.length} teams)
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={handleAddNew}
-            className="btn btn--outline flex items-center gap-2"
-          >
-            <Plus size={16} />
-            Nieuw Team
-          </Button>
-        </div>
-      </div>
+      <PageHeader 
+        title="Team Beheer"
+        subtitle={`Beheer alle teams in de competitie (${teams.length} teams)`}
+        rightAction={
+          isAdmin ? (
+            <Button
+              onClick={handleAddNew}
+              className="btn btn--outline btn--block"
+            >
+              <Plus size={16} />
+              <span>Nieuw Team</span>
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Teams List */}
       <TeamsList
         teams={teams}
         onEdit={handleEditTeam}
         onDelete={confirmDelete}
+        loading={false}
       />
 
       {/* Team Dialog */}

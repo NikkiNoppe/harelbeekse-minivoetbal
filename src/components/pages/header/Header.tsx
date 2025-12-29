@@ -67,6 +67,7 @@ const Header: React.FC<HeaderProps> = ({
     'match-forms-cup': ADMIN_ROUTES['match-forms-cup'],
     'match-forms-playoffs': ADMIN_ROUTES['match-forms-playoffs'],
     players: ADMIN_ROUTES.players,
+    'teams-admin': ADMIN_ROUTES.teams,
     users: ADMIN_ROUTES.users,
     competition: ADMIN_ROUTES.competition,
     playoffs: ADMIN_ROUTES.playoffs,
@@ -125,7 +126,7 @@ const Header: React.FC<HeaderProps> = ({
     { key: "scheidsrechters", label: "Scheidsrechters", icon: <Shield size={18} />, adminOnly: false },
     { key: "schorsingen", label: "Mijn Schorsingen", icon: <Ban size={18} />, adminOnly: false, teamManagerOnly: true },
     { key: "schorsingen", label: "Schorsingen", icon: <Shield size={18} />, adminOnly: true },
-    { key: "teams", label: "Teams (Admin)", icon: <Shield size={18} />, adminOnly: true },
+    { key: "teams-admin", label: "Teams (Admin)", icon: <Shield size={18} />, adminOnly: true },
     { key: "users", label: "Gebruikers", icon: <User size={18} />, adminOnly: true },
   ];
 
