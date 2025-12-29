@@ -517,6 +517,18 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       return selection;
     });
     
+    const processedRefereeNotes = refereeNotes !== undefined && refereeNotes !== null ? refereeNotes : "";
+    
+    console.log('🔍 [WedstrijdformulierModal] createUpdatedMatch - Referee notes:', {
+      originalRefereeNotes: refereeNotes,
+      processedRefereeNotes: processedRefereeNotes,
+      type: typeof processedRefereeNotes,
+      length: processedRefereeNotes?.length || 0,
+      isUndefined: refereeNotes === undefined,
+      isNull: refereeNotes === null,
+      isEmpty: processedRefereeNotes === ""
+    });
+    
     if (process.env.NODE_ENV === 'development') {
       console.log('🔍 [WedstrijdformulierModal] Creating updated match with players:', {
         homePlayers: homePlayersWithNames.filter(p => p.playerId !== null).map(p => ({ playerId: p.playerId, playerName: p.playerName })),
@@ -524,17 +536,26 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       });
     }
     
-    return {
+    const updatedMatch = {
       ...match,
       ...matchData, // Include updated match data fields
       homeScore,
       awayScore,
       referee: selectedReferee,
-      refereeNotes,
+      refereeNotes: processedRefereeNotes,
       isCompleted: homeScore != null && awayScore != null,
       homePlayers: homePlayersWithNames,
       awayPlayers: awayPlayersWithNames
     };
+    
+    console.log('🔍 [WedstrijdformulierModal] createUpdatedMatch - Final match object:', {
+      matchId: updatedMatch.matchId,
+      refereeNotes: updatedMatch.refereeNotes,
+      refereeNotesType: typeof updatedMatch.refereeNotes,
+      refereeNotesLength: updatedMatch.refereeNotes?.length || 0
+    });
+    
+    return updatedMatch;
   }, [match, matchData, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards, homePlayersWithSuspensions, awayPlayersWithSuspensions]);
 
   const handleSubmit = useCallback(async () => {
@@ -550,13 +571,33 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     
     setIsSubmitting(true);
     try {
+      console.log('💾 [WedstrijdformulierModal] handleSubmit - Before createUpdatedMatch:', {
+        refereeNotes: refereeNotes,
+        refereeNotesType: typeof refereeNotes,
+        refereeNotesLength: refereeNotes?.length || 0
+      });
+      
       const updatedMatch = createUpdatedMatch(parsedHomeScore, parsedAwayScore);
+      
+      console.log('💾 [WedstrijdformulierModal] handleSubmit - After createUpdatedMatch:', {
+        matchId: updatedMatch.matchId,
+        refereeNotes: updatedMatch.refereeNotes,
+        refereeNotesType: typeof updatedMatch.refereeNotes,
+        refereeNotesLength: updatedMatch.refereeNotes?.length || 0
+      });
+      
       const result = await submitMatchForm(updatedMatch, isAdmin, userRole);
+      
+      console.log('💾 [WedstrijdformulierModal] handleSubmit - After submitMatchForm:', {
+        success: result.success,
+        error: result.error
+      });
+      
       if (result.success) {
         handleComplete();
       }
     } catch (error) {
-      console.error('Error submitting match form:', error);
+      console.error('❌ [WedstrijdformulierModal] Error submitting match form:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -791,7 +832,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const displayAwayScore = useMemo(() => awayScore || "", [awayScore]);
 
   const homeScoreClassName = useMemo(() => cn(
-    "input-login-style text-center text-3xl font-bold h-16 md:h-20",
+    "input-login-style text-center text-3xl font-bold h-16",
     "border-2 transition-all",
     homeScoreValid 
       ? "border-[var(--accent)] bg-[var(--color-50)]" 
@@ -801,7 +842,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   ), [homeScoreValid]);
 
   const awayScoreClassName = useMemo(() => cn(
-    "input-login-style text-center text-3xl font-bold h-16 md:h-20",
+    "input-login-style text-center text-3xl font-bold h-16",
     "border-2 transition-all",
     awayScoreValid 
       ? "border-[var(--accent)] bg-[var(--color-50)]" 
@@ -1503,7 +1544,16 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                   <Textarea
                     id="referee-notes"
                     value={refereeNotes}
-                    onChange={(e) => setRefereeNotes(e.target.value)}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      console.log('📝 [WedstrijdformulierModal] Referee notes onChange:', {
+                        oldValue: refereeNotes,
+                        newValue: newValue,
+                        length: newValue.length,
+                        type: typeof newValue
+                      });
+                      setRefereeNotes(newValue);
+                    }}
                     disabled={!canEdit}
                     placeholder="Voeg hier eventuele notities toe..."
                     className="min-h-[120px] input-login-style"
@@ -1579,10 +1629,14 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
               </div>
 
               {/* Score Separator */}
-              <div className="flex items-center justify-center pb-2">
+              <div className="flex items-center justify-center pb-2 md:pb-2" style={{ marginTop: '-2rem' }}>
                 <span 
-                  className="text-2xl md:text-3xl font-bold"
-                  style={{ color: 'var(--accent)', height: '47px' }}
+                  className="text-2xl font-bold flex items-center justify-center"
+                  style={{ 
+                    color: 'var(--accent)', 
+                    height: '47px',
+                    lineHeight: '47px'
+                  }}
                   aria-label="tegen"
                 >
                   -

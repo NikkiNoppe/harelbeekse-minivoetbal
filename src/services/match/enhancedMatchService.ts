@@ -125,18 +125,43 @@ export const enhancedMatchService = {
       // Build update object with all provided values
       const updateObject: any = {};
       
-      // Add late submission penalty if applicable
+      console.log('💾 [enhancedMatchService] Processing referee notes:', {
+        matchId: matchId,
+        refereeNotes: updateData.refereeNotes,
+        refereeNotesType: typeof updateData.refereeNotes,
+        refereeNotesLength: updateData.refereeNotes?.length || 0,
+        isUndefined: updateData.refereeNotes === undefined,
+        isNull: updateData.refereeNotes === null,
+        isEmpty: updateData.refereeNotes === "",
+        isLateSubmission: isLateSubmission
+      });
+      
+      // Handle referee notes - add late submission penalty if applicable, otherwise use provided value
       if (isLateSubmission) {
+        // Add penalty to existing notes
         updateObject.referee_notes = (updateData.refereeNotes || '') + 
           (updateData.refereeNotes ? '\n\n' : '') + 
           '⚠️ BOETE: Wedstrijdblad te laat ingevuld - €5.00';
+        console.log('💾 [enhancedMatchService] Added late submission penalty:', {
+          finalRefereeNotes: updateObject.referee_notes
+        });
+      } else if (updateData.refereeNotes !== undefined) {
+        // Only set referee_notes if not already set by late submission penalty
+        // Preserve empty strings, only convert undefined/null to null
+        updateObject.referee_notes = updateData.refereeNotes !== null && updateData.refereeNotes !== undefined ? updateData.refereeNotes : null;
+        console.log('💾 [enhancedMatchService] Set referee_notes:', {
+          finalRefereeNotes: updateObject.referee_notes,
+          finalType: typeof updateObject.referee_notes,
+          finalLength: updateObject.referee_notes?.length || 0
+        });
+      } else {
+        console.log('💾 [enhancedMatchService] refereeNotes is undefined, not setting');
       }
 
       // Handle scores - allow null values to clear scores
       if (updateData.homeScore !== undefined) updateObject.home_score = updateData.homeScore;
       if (updateData.awayScore !== undefined) updateObject.away_score = updateData.awayScore;
       if (updateData.referee !== undefined) updateObject.referee = updateData.referee;
-      if (updateData.refereeNotes !== undefined) updateObject.referee_notes = updateData.refereeNotes;
       if (updateData.matchday !== undefined) updateObject.speeldag = updateData.matchday;
       if (updateData.location !== undefined) updateObject.location = updateData.location;
       if (updateData.date !== undefined && updateData.time !== undefined) {

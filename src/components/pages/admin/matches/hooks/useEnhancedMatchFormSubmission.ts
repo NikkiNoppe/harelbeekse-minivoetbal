@@ -23,11 +23,24 @@ export const useEnhancedMatchFormSubmission = () => {
     console.log('🟡 [useEnhancedMatchFormSubmission] Home players data:', homePlayersToSave.map(p => ({ playerId: p?.playerId, playerName: p?.playerName, jerseyNumber: p?.jerseyNumber })));
     console.log('🟡 [useEnhancedMatchFormSubmission] Away players data:', awayPlayersToSave.map(p => ({ playerId: p?.playerId, playerName: p?.playerName, jerseyNumber: p?.jerseyNumber })));
     
+    const processedRefereeNotes = matchData.refereeNotes !== undefined && matchData.refereeNotes !== null ? matchData.refereeNotes : "";
+    
+    console.log('🟡 [useEnhancedMatchFormSubmission] Processing referee notes:', {
+      original: matchData.refereeNotes,
+      originalType: typeof matchData.refereeNotes,
+      originalLength: matchData.refereeNotes?.length || 0,
+      isUndefined: matchData.refereeNotes === undefined,
+      isNull: matchData.refereeNotes === null,
+      processed: processedRefereeNotes,
+      processedType: typeof processedRefereeNotes,
+      processedLength: processedRefereeNotes?.length || 0
+    });
+    
     const updateData = {
       homeScore: matchData.homeScore,
       awayScore: matchData.awayScore,
       referee: matchData.referee,
-      refereeNotes: matchData.refereeNotes,
+      refereeNotes: processedRefereeNotes,
       matchday: matchData.matchday,
       location: matchData.location,
       date: matchData.date,
@@ -37,6 +50,13 @@ export const useEnhancedMatchFormSubmission = () => {
       isCompleted: matchData.isCompleted,
       isLocked: matchData.isLocked
     };
+    
+    console.log('🟡 [useEnhancedMatchFormSubmission] Final updateData:', {
+      matchId: matchData.matchId,
+      refereeNotes: updateData.refereeNotes,
+      refereeNotesType: typeof updateData.refereeNotes,
+      refereeNotesLength: updateData.refereeNotes?.length || 0
+    });
 
     // Validate required data
     console.log('🟡 [useEnhancedMatchFormSubmission] Validating match ID...');

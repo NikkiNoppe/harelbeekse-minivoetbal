@@ -127,8 +127,11 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
           alignItems: isSmallModal ? 'center' : 'flex-start',
           justifyContent: 'center',
           animation: 'fadeIn 200ms ease-out',
-          padding: isSmallModal ? '1rem' : '0',
-          paddingTop: isSmallModal ? '1rem' : 'env(safe-area-inset-top, 0)'
+          padding: isSmallModal ? '1rem' : '0 0 0 0',
+          paddingTop: isSmallModal ? '1rem' : 'max(env(safe-area-inset-top, 1rem), 1rem)',
+          paddingLeft: isSmallModal ? '1rem' : '1rem',
+          paddingRight: isSmallModal ? '1rem' : '1rem',
+          paddingBottom: isSmallModal ? '1rem' : '0'
         }}
         onClick={handleOverlayClick}
         role="dialog"
@@ -141,7 +144,7 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
           style={{
             background: 'var(--color-100)',
             borderRadius: '1rem',
-            maxWidth: `min(${sizeMap[size]}, calc(100vw - 2rem))`,
+            maxWidth: isSmallModal ? `min(${sizeMap[size]}, calc(100vw - 2rem))` : 'calc(100vw - 2rem)',
             width: isSmallModal ? `min(${sizeMap[size]}, calc(100vw - 2rem))` : 'calc(100vw - 2rem)',
             minWidth: 'auto',
             maxHeight: '85vh',
@@ -316,29 +319,7 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
               }
             }
 
-            /* Desktop: Altijd gecentreerd met ronde hoeken */
-            @media (min-width: 640px) {
-              [role="dialog"] {
-                align-items: center !important;
-                padding: 2rem !important;
-              }
-              [role="dialog"] > div {
-                border-radius: 1rem !important;
-                margin-top: 0 !important;
-                width: ${sizeMap[size]} !important;
-                max-width: ${sizeMap[size]} !important;
-                min-width: auto !important;
-              }
-              /* Desktop: Buttons naast elkaar */
-              [role="dialog"] > div > div:last-of-type {
-                flex-direction: row !important;
-                gap: 1rem !important;
-              }
-              [role="dialog"] > div > div:last-of-type button {
-                flex: 1 !important;
-                min-width: 120px !important;
-              }
-            }
+            /* Desktop styling verwijderd - gebruik mobile styling op alle formaten */
 
             /* Mobile: Kleine modals (xs, sm) centraal */
             @media (max-width: 639px) {

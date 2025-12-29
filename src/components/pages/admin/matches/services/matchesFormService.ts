@@ -112,6 +112,22 @@ export const fetchUpcomingMatches = async (
         matchdayDisplay = `🏆 ${matchdayDisplay}`;
       }
 
+      const processedRefereeNotes = row.referee_notes || "";
+      
+      if (row.match_id && row.referee_notes) {
+        console.log('📥 [matchesFormService] fetchUpcomingMatches - Loading referee notes:', {
+          matchId: row.match_id,
+          referee_notes: row.referee_notes,
+          referee_notesType: typeof row.referee_notes,
+          referee_notesLength: row.referee_notes?.length || 0,
+          isNull: row.referee_notes === null,
+          isEmpty: row.referee_notes === "",
+          processed: processedRefereeNotes,
+          processedType: typeof processedRefereeNotes,
+          processedLength: processedRefereeNotes?.length || 0
+        });
+      }
+      
       return {
         matchId: row.match_id,
         uniqueNumber: row.unique_number || "",
@@ -128,7 +144,7 @@ export const fetchUpcomingMatches = async (
         homeScore: row.home_score ?? undefined,
         awayScore: row.away_score ?? undefined,
         referee: row.referee,
-        refereeNotes: row.referee_notes,
+        refereeNotes: processedRefereeNotes,
         homePlayers: row.home_players && Array.isArray(row.home_players) ? row.home_players : [],
         awayPlayers: row.away_players && Array.isArray(row.away_players) ? row.away_players : [],
         // Poll-related fields (backward compatible)
@@ -173,34 +189,62 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
     const wasAlreadySubmitted = existingMatch?.is_submitted;
     const isBeingCompleted = matchData.isCompleted && !wasAlreadySubmitted;
 
+    const processedRefereeNotes = matchData.refereeNotes !== undefined && matchData.refereeNotes !== null ? matchData.refereeNotes : null;
+    
+    console.log('💾 [matchesFormService] updateMatchForm - Referee notes:', {
+      matchId: matchData.matchId,
+      original: matchData.refereeNotes,
+      originalType: typeof matchData.refereeNotes,
+      originalLength: matchData.refereeNotes?.length || 0,
+      isUndefined: matchData.refereeNotes === undefined,
+      isNull: matchData.refereeNotes === null,
+      isEmpty: matchData.refereeNotes === "",
+      processed: processedRefereeNotes,
+      processedType: typeof processedRefereeNotes
+    });
+
     // Update the match
+    const updatePayload = {
+      match_date: localDateTimeToISO(matchData.date, matchData.time),
+      home_team_id: matchData.homeTeamId,
+      away_team_id: matchData.awayTeamId,
+      location: matchData.location,
+      speeldag: matchData.matchday,
+      home_score: matchData.homeScore,
+      away_score: matchData.awayScore,
+      referee: matchData.referee,
+      referee_notes: processedRefereeNotes,
+      is_submitted: matchData.isCompleted,
+      is_locked: matchData.isLocked,
+      home_players: matchData.homePlayers as any,
+      away_players: matchData.awayPlayers as any,
+      // Preserve poll data if present
+      assigned_referee_id: (matchData as any).assignedRefereeId || null,
+      poll_group_id: (matchData as any).pollGroupId || null,
+      poll_month: (matchData as any).pollMonth || null
+    };
+    
+    console.log('💾 [matchesFormService] updateMatchForm - Update payload:', {
+      matchId: matchData.matchId,
+      referee_notes: updatePayload.referee_notes,
+      referee_notesType: typeof updatePayload.referee_notes,
+      referee_notesLength: updatePayload.referee_notes?.length || 0
+    });
+    
     const { error } = await supabase
       .from('matches')
-      .update({
-        match_date: localDateTimeToISO(matchData.date, matchData.time),
-        home_team_id: matchData.homeTeamId,
-        away_team_id: matchData.awayTeamId,
-        location: matchData.location,
-        speeldag: matchData.matchday,
-        home_score: matchData.homeScore,
-        away_score: matchData.awayScore,
-        referee: matchData.referee,
-        referee_notes: matchData.refereeNotes,
-        is_submitted: matchData.isCompleted,
-        is_locked: matchData.isLocked,
-        home_players: matchData.homePlayers as any,
-        away_players: matchData.awayPlayers as any,
-        // Preserve poll data if present
-        assigned_referee_id: (matchData as any).assignedRefereeId || null,
-        poll_group_id: (matchData as any).pollGroupId || null,
-        poll_month: (matchData as any).pollMonth || null
-      })
+      .update(updatePayload)
       .eq('match_id', matchData.matchId);
 
     if (error) {
-      console.error('Error updating match:', error);
+      console.error('❌ [matchesFormService] Error updating match:', error);
       throw error;
     }
+    
+    console.log('✅ [matchesFormService] Match updated successfully:', {
+      matchId: matchData.matchId,
+      referee_notes: processedRefereeNotes
+    });
 
     // If this is a cup match with scores, check for winner advancement (both new completions and score changes)
     if (isCupMatch && matchData.isCompleted && 

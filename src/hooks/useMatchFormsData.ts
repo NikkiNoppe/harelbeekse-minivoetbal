@@ -371,12 +371,10 @@ export const useMatchFormsData = (
         cupQuery.refetch(),
         playoffQuery.refetch()
       ]);
-
-      toast({
-        title: "Succes",
-        description: "Wedstrijdformulieren zijn succesvol bijgewerkt."
-      });
+      // Note: Toast notifications are handled by the submission hooks (e.g., useEnhancedMatchFormSubmission)
+      // to avoid duplicate notifications
     } catch (error) {
+      // Only show error toast if refresh fails, not success toast
       toast({
         title: "Fout",
         description: "Er is een fout opgetreden bij het bijwerken.",

@@ -68,10 +68,29 @@ export const useMatchFormState = (match: MatchFormData) => {
 
   // Sync state with match prop when it changes (e.g., when modal reopens with updated data)
   useEffect(() => {
+    console.log('🔄 [useMatchFormState] Syncing state with match prop:', {
+      matchId: match.matchId,
+      refereeNotes: match.refereeNotes,
+      refereeNotesType: typeof match.refereeNotes,
+      refereeNotesLength: match.refereeNotes?.length || 0,
+      isUndefined: match.refereeNotes === undefined,
+      isNull: match.refereeNotes === null,
+      isEmpty: match.refereeNotes === "",
+      currentRefereeNotes: refereeNotes
+    });
+    
     setHomeScore(match.homeScore?.toString() || "");
     setAwayScore(match.awayScore?.toString() || "");
     setSelectedReferee(match.referee || "");
-    setRefereeNotes(match.refereeNotes || "");
+    
+    const processedRefereeNotes = match.refereeNotes || "";
+    console.log('🔄 [useMatchFormState] Setting refereeNotes:', {
+      original: match.refereeNotes,
+      processed: processedRefereeNotes,
+      processedType: typeof processedRefereeNotes,
+      processedLength: processedRefereeNotes?.length || 0
+    });
+    setRefereeNotes(processedRefereeNotes);
     
     // Sync player cards
     const allPlayers = [...(match.homePlayers || []), ...(match.awayPlayers || [])];
