@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { RefreshCw, AlertTriangle } from "lucide-react";
+import { RefreshCw, AlertTriangle, Loader2 } from "lucide-react";
 import { TeamPlayer } from "@/components/pages/admin/matches/hooks/useTeamPlayers";
 
 interface PlayerDataRefreshModalProps {
@@ -10,6 +10,8 @@ interface PlayerDataRefreshModalProps {
   error: any;
   onRefresh: () => Promise<void>;
   teamLabel: string;
+  /** If true, shows popup for empty arrays (suspected RLS issue) */
+  showForEmptyArray?: boolean;
 }
 
 export const PlayerDataRefreshModal: React.FC<PlayerDataRefreshModalProps> = ({
@@ -17,12 +19,14 @@ export const PlayerDataRefreshModal: React.FC<PlayerDataRefreshModalProps> = ({
   loading,
   error,
   onRefresh,
-  teamLabel
+  teamLabel,
+  showForEmptyArray = false
 }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [refreshCount, setRefreshCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadStartTime, setLoadStartTime] = useState<number | null>(null);
+  const MAX_RETRIES = 5; // Increased from 3 to 5 for slow connections
 
   // Track when loading starts
   useEffect(() => {
@@ -31,7 +35,7 @@ export const PlayerDataRefreshModal: React.FC<PlayerDataRefreshModalProps> = ({
     }
   }, [loading]);
 
-  // Show popup logic: only show when there's an actual error OR when players are undefined (not just empty array) after loading completes
+  // Show popup logic: only show when there's an actual error OR when players are undefined/empty after loading completes
   useEffect(() => {
     // Don't show during loading
     if (loading) {
@@ -45,23 +49,24 @@ export const PlayerDataRefreshModal: React.FC<PlayerDataRefreshModalProps> = ({
       return;
     }
 
-    // Only show if players is undefined (not just empty array) AND enough time has passed since load started
-    // Empty array (players.length === 0) is OK - means team just has no players
-    // Undefined means something went wrong
-    if (players === undefined && loadStartTime) {
+    // Show if players is undefined (something went wrong)
+    // OR if showForEmptyArray is true and players is empty (possible RLS issue)
+    const hasNoPlayers = players === undefined || (showForEmptyArray && Array.isArray(players) && players.length === 0);
+    
+    if (hasNoPlayers && loadStartTime) {
       const timeSinceLoadStart = Date.now() - loadStartTime;
-      // Wait at least 2 seconds after loading completes before showing error
+      // Wait at least 3 seconds after loading completes before showing error
       // This prevents showing popup too quickly
-      if (timeSinceLoadStart > 2000 && refreshCount < 3) {
+      if (timeSinceLoadStart > 3000 && refreshCount < MAX_RETRIES) {
         setShowPopup(true);
       } else {
         setShowPopup(false);
       }
     } else {
-      // If players is defined (even if empty array), don't show popup
+      // If players is defined and has data, don't show popup
       setShowPopup(false);
     }
-  }, [players, loading, error, loadStartTime, refreshCount]);
+  }, [players, loading, error, loadStartTime, refreshCount, showForEmptyArray]);
 
   // Hide popup when players load successfully (defined and has data)
   useEffect(() => {
@@ -73,7 +78,7 @@ export const PlayerDataRefreshModal: React.FC<PlayerDataRefreshModalProps> = ({
   }, [players]);
 
   const handleRefresh = async () => {
-    if (refreshCount >= 3) return;
+    if (refreshCount >= MAX_RETRIES) return;
     
     setIsRefreshing(true);
     try {
@@ -90,47 +95,53 @@ export const PlayerDataRefreshModal: React.FC<PlayerDataRefreshModalProps> = ({
 
   return (
     <div className="fixed top-4 right-4 z-[1002] max-w-sm">
-      <Card className="border-orange-200 bg-orange-50 shadow-lg">
+      <Card className="border-amber-200 bg-amber-50 shadow-lg">
         <CardContent className="p-4">
           <div className="flex items-start space-x-3">
-            <AlertTriangle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-orange-800">
+              <p className="text-sm font-medium text-amber-800">
                 Spelers niet geladen
               </p>
-              <p className="text-xs text-orange-700 mt-1">
-                Kan spelers voor {teamLabel} niet laden. Probeer opnieuw?
+              <p className="text-xs text-amber-700 mt-1">
+                Kan spelers voor {teamLabel} niet laden. 
+                {error?.message?.includes('timeout') && ' Slechte verbinding gedetecteerd.'}
               </p>
               <div className="mt-3 flex items-center justify-between">
                 <Button
                   onClick={handleRefresh}
-                  disabled={isRefreshing || refreshCount >= 3}
+                  disabled={isRefreshing || refreshCount >= MAX_RETRIES}
                   size="sm"
                   variant="outline"
-                  className="text-xs border-orange-300 text-orange-700 hover:bg-orange-100"
+                  className="text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
                 >
                   {isRefreshing ? (
                     <>
-                      <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                       Laden...
                     </>
                   ) : (
                     <>
                       <RefreshCw className="h-3 w-3 mr-1" />
-                      Probeer opnieuw
+                      Opnieuw laden
                     </>
                   )}
                 </Button>
-                <span className="text-xs text-orange-600">
-                  {refreshCount}/3
+                <span className="text-xs text-amber-600">
+                  {refreshCount}/{MAX_RETRIES}
                 </span>
               </div>
+              {refreshCount >= MAX_RETRIES && (
+                <p className="text-xs text-amber-600 mt-2">
+                  Maximum pogingen bereikt. Controleer je verbinding.
+                </p>
+              )}
             </div>
             <Button
               onClick={() => setShowPopup(false)}
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0 text-orange-600 hover:bg-orange-200"
+              className="h-6 w-6 p-0 text-amber-600 hover:bg-amber-200"
             >
               ×
             </Button>
@@ -140,4 +151,3 @@ export const PlayerDataRefreshModal: React.FC<PlayerDataRefreshModalProps> = ({
     </div>
   );
 };
-

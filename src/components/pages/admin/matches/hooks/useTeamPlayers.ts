@@ -82,12 +82,13 @@ export const useTeamPlayersWithSuspensions = (teamId: number, matchDate?: Date):
 };
 
 export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
-  // Loading time management: minimum 250ms, maximum 5000ms timeout
+  // Loading time management: minimum 250ms, maximum 15000ms timeout for slow connections
   const MIN_LOADING_TIME = 250; // Minimum 250ms for better UX
-  const MAX_LOADING_TIME = 5000; // Maximum 5000ms timeout
+  const MAX_LOADING_TIME = 15000; // Maximum 15000ms timeout (15s for 3G/4G)
   
   const [minLoadingTimeElapsed, setMinLoadingTimeElapsed] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [hasAutoRetried, setHasAutoRetried] = useState(false);
   const loadingStartTimeRef = useRef<number | null>(null);
   const minTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const maxTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -97,7 +98,7 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
   
   // Track when loading starts and enforce minimum/maximum loading time
   useEffect(() => {
-    const isQueryLoading = playersQuery.isLoading;
+    const isQueryLoading = playersQuery.isLoading || playersQuery.isFetching;
     
     if (isQueryLoading) {
       // Loading started
@@ -116,12 +117,21 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
           maxTimeoutRef.current = null;
         }
         
-        // Set maximum timeout (5000ms) - show error if exceeded
+        // Set maximum timeout (15000ms) - show error if exceeded
         maxTimeoutRef.current = setTimeout(() => {
           setLoadingTimeout(true);
           loadingStartTimeRef.current = null;
           if (process.env.NODE_ENV === 'development') {
             console.error(`❌ Loading timeout for team players after ${MAX_LOADING_TIME}ms`);
+          }
+          
+          // Auto-retry once on timeout if not already tried
+          if (!hasAutoRetried) {
+            setHasAutoRetried(true);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('🔄 Auto-retrying after timeout...');
+            }
+            playersQuery.refetch();
           }
         }, MAX_LOADING_TIME);
       }
@@ -172,15 +182,23 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
         clearTimeout(maxTimeoutRef.current);
       }
     };
-  }, [playersQuery.isLoading]);
+  }, [playersQuery.isLoading, playersQuery.isFetching, hasAutoRetried]);
+
+  // Reset auto-retry flag when teamId changes
+  useEffect(() => {
+    setHasAutoRetried(false);
+    setLoadingTimeout(false);
+  }, [teamId]);
   
   // Calculate final loading state: query loading OR minimum time not elapsed AND no timeout
-  const isLoading = !loadingTimeout && (playersQuery.isLoading || !minLoadingTimeElapsed);
+  const isLoading = !loadingTimeout && (playersQuery.isLoading || playersQuery.isFetching || !minLoadingTimeElapsed);
   
   // Enhanced error handling - combine query errors with timeout errors
-  const error = playersQuery.error || (loadingTimeout ? new Error("Loading timeout") : null);
+  const error = playersQuery.error || (loadingTimeout && !playersQuery.data ? new Error("Loading timeout - slechte verbinding") : null);
   
   const refetch = async () => {
+    setLoadingTimeout(false);
+    setHasAutoRetried(false);
     await playersQuery.refetch();
   };
   
@@ -188,7 +206,7 @@ export const useTeamPlayers = (teamId: number): UseTeamPlayersReturn => {
     players: playersQuery.data,
     loading: isLoading,
     error: error,
-    retryCount: 0, // React Query handles retries internally
+    retryCount: playersQuery.failureCount || 0,
     refetch,
   };
 };
