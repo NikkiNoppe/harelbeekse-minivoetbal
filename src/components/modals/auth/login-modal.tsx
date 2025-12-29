@@ -82,7 +82,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
             </Button>
             <Button 
               type="submit" 
-              variant="default"
               loading={isLoading}
               disabled={isLoading}
               className="btn btn--primary"
@@ -92,7 +91,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
                 fontSize: '1rem',
                 fontWeight: '600',
                 borderRadius: 'var(--radius)',
-                transition: 'all 150ms ease-in-out'
+                transition: 'all 150ms ease-in-out',
+                backgroundColor: 'var(--color-400)',
+                color: 'var(--color-white)',
+                borderColor: 'var(--color-300)'
               }}
             >
               Inloggen

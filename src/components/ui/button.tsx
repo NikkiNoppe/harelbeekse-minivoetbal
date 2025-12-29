@@ -65,9 +65,15 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       },
     };
 
+    // If btn--primary class is present, override variant styling
+    const hasBtnPrimary = className?.includes('btn--primary');
+    const finalClassName = hasBtnPrimary 
+      ? cn(className, size && buttonVariants({ size }))
+      : cn(buttonVariants({ variant, size, className }));
+    
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={finalClassName}
         ref={ref}
         {...enhancedProps}
       >
