@@ -87,12 +87,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
               <PlayerPage />
             </TabsContent>
             
+            {/* Teams page - visible based on tab visibility settings */}
+            {isTabVisible("teams") && (
+              <TabsContent value="teams" className="mt-0">
+                <TeamsPage />
+              </TabsContent>
+            )}
+            
             {isAdmin && (
               <>
-                <TabsContent value="teams" className="mt-0">
-                  <TeamsPage />
-                </TabsContent>
-                
                 <TabsContent value="suspensions" className="mt-0">
                   <AdminSuspensionsPage />
                 </TabsContent>

@@ -10,7 +10,6 @@ import PublicBekerPage from "./public/competition/PublicBekerPage";
 
 import KaartenPage from "./public/information/KaartenPage";
 import ReglementPage from "./public/information/ReglementPage";
-import TeamsPage from "./admin/teams/TeamsPage";
 import ScheidsrechtersPage from "./admin/scheidsrechter/ScheidsrechtersPage";
 
 interface MainPagesProps {
@@ -47,7 +46,6 @@ const MemoizedBekerPage = memo(PublicBekerPage);
 
 const MemoizedKaartenPage = memo(KaartenPage);
 const MemoizedReglementPage = memo(ReglementPage);
-const MemoizedTeamsPage = memo(TeamsPage);
 const MemoizedScheidsrechtersPage = memo(ScheidsrechtersPage);
 
 MemoizedAlgemeenPage.displayName = 'MemoizedAlgemeenPage';
@@ -57,7 +55,6 @@ MemoizedBekerPage.displayName = 'MemoizedBekerPage';
 
 MemoizedKaartenPage.displayName = 'MemoizedKaartenPage';
 MemoizedReglementPage.displayName = 'MemoizedReglementPage';
-MemoizedTeamsPage.displayName = 'MemoizedTeamsPage';
 MemoizedScheidsrechtersPage.displayName = 'MemoizedScheidsrechtersPage';
 
 // Tab content wrapper with animation
@@ -123,14 +120,6 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
       </TabsContent>
     ),
     
-    
-    teams: isTabVisible("teams") && (
-      <TabsContent value="teams" className="mt-0" key="teams">
-        <TabContentWrapper>
-          <MemoizedTeamsPage />
-        </TabContentWrapper>
-      </TabsContent>
-    ),
     scheidsrechters: isTabVisible("scheidsrechters") && (
       <TabsContent value="scheidsrechters" className="mt-0" key="scheidsrechters">
         <TabContentWrapper>

@@ -67,11 +67,6 @@ const App = () => (
                         <Index />
                       </Suspense>
                     } />
-                    <Route path={PUBLIC_ROUTES.teams} element={
-                      <Suspense fallback={<LoadingSpinner />}>
-                        <Index />
-                      </Suspense>
-                    } />
                     <Route path={PUBLIC_ROUTES.scheidsrechters} element={
                       <Suspense fallback={<LoadingSpinner />}>
                         <Index />
@@ -115,7 +110,7 @@ const App = () => (
                       </ProtectedRoute>
                     } />
                     <Route path={ADMIN_ROUTES.teams} element={
-                      <ProtectedRoute requireAdmin>
+                      <ProtectedRoute>
                         <Suspense fallback={<LoadingSpinner />}>
                           <Index />
                         </Suspense>

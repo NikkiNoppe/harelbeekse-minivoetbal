@@ -178,9 +178,9 @@ export const ROUTE_GUARDS = {
   // Routes die auth vereisen
   requiresAuth: Object.values(ADMIN_ROUTES),
   // Routes die admin rol vereisen
+  // Note: teams is removed from here - access is now controlled by tab visibility settings
   requiresAdmin: [
     ADMIN_ROUTES.users,
-    ADMIN_ROUTES.teams,
     ADMIN_ROUTES.competition,
     ADMIN_ROUTES.playoffs,
     ADMIN_ROUTES.cup,
@@ -289,12 +289,6 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   [PUBLIC_ROUTES.kaarten]: {
     title: 'Kaarten',
     description: 'Overzicht van kaarten en schorsingen',
-    requiresAuth: false,
-    requiresAdmin: false,
-  },
-  [PUBLIC_ROUTES.teams]: {
-    title: 'Teams',
-    description: 'Overzicht van alle teams',
     requiresAuth: false,
     requiresAdmin: false,
   },

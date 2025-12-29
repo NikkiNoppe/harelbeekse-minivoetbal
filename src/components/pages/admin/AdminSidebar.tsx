@@ -14,7 +14,17 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const { user, logout } = useAuth();
-  const normalizedRole = String(user?.role || '').toLowerCase();
+  
+  // Normalize role - map team_manager variants to player_manager
+  const normalizeRole = (role: string): string => {
+    const r = String(role || '').toLowerCase();
+    if (['team', 'manager', 'team_manager', 'player-manager'].includes(r)) {
+      return 'player_manager';
+    }
+    return r;
+  };
+  
+  const normalizedRole = normalizeRole(user?.role || '');
   const isAdmin = normalizedRole === "admin";
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -122,16 +132,24 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const visibleSpeelformatenItems = speelformatenItems.filter(() => isAdmin);
 
   // Wedstrijdformulieren: filter op basis van tab visibility en admin permissions
-  const visibleWedstrijdformulierenItems = wedstrijdformulierenItems.filter(item => 
-    (!item.adminOnly || isAdmin) && isTabVisible(item.key)
-  );
-
-  const visibleBeheerItems = beheerItems.filter(item => {
-    // First check admin-only permission
+  // Tab visibility takes priority - toggles can override adminOnly
+  const visibleWedstrijdformulierenItems = wedstrijdformulierenItems.filter(item => {
+    // First check tab visibility from settings
+    if (!isTabVisible(item.key)) return false;
+    
+    // Then check adminOnly only if tab visibility allows it
     if (item.adminOnly && !isAdmin) return false;
     
-    // Check tab visibility from settings
+    return true;
+  });
+
+  const visibleBeheerItems = beheerItems.filter(item => {
+    // First check tab visibility from settings - this takes priority
+    // This allows toggles to override adminOnly restrictions
     if (!isTabVisible(item.key)) return false;
+    
+    // Then check admin-only permission only if tab visibility allows it
+    if (item.adminOnly && !isAdmin) return false;
     
     // Hide players tab for referees
     if (item.key === 'players' && user?.role === 'referee') return false;
@@ -142,13 +160,25 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
     return true;
   });
 
-  const visibleFinancieelItems = financieelItems.filter(item => 
-    (!item.adminOnly || isAdmin)
-  );
+  const visibleFinancieelItems = financieelItems.filter(item => {
+    // First check tab visibility from settings - this takes priority
+    if (!isTabVisible(item.key)) return false;
+    
+    // Then check adminOnly only if tab visibility allows it
+    if (item.adminOnly && !isAdmin) return false;
+    
+    return true;
+  });
 
-  const visibleSysteemItems = systeemItems.filter(item => 
-    (!item.adminOnly || isAdmin)
-  );
+  const visibleSysteemItems = systeemItems.filter(item => {
+    // First check tab visibility from settings - this takes priority
+    if (!isTabVisible(item.key)) return false;
+    
+    // Then check adminOnly only if tab visibility allows it
+    if (item.adminOnly && !isAdmin) return false;
+    
+    return true;
+  });
 
   return (
     <div 

@@ -33,14 +33,35 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
 
     if (isMatchFormTab) {
       // Require login for match forms
-      if (!user) return false;
+      if (!user) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[TabVisibility] Match form tab "${tab}" requires login`);
+        }
+        return false;
+      }
       
       const setting = settings.find(s => s.setting_name === tab);
-      if (!setting) return false;
+      if (!setting) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[TabVisibility] No setting found for match form tab: ${tab}`);
+        }
+        return false;
+      }
       
       // Check role-specific visibility
       const userRole = getUserRole(user.role);
-      return setting.visibility?.[userRole] ?? true;
+      const roleVisibility = setting.visibility?.[userRole];
+      const isVisible = roleVisibility === true;
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[TabVisibility] Match form tab "${tab}" for role "${userRole}":`, {
+          settingFound: !!setting,
+          roleVisibility,
+          isVisible,
+        });
+      }
+      
+      return isVisible;
     }
 
     // Special case for match-forms - check if any match forms are visible
@@ -61,18 +82,102 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     // Admin tabs that require login and check visibility settings directly
-    const adminTabs = ['teams-admin', 'users', 'players', 'scheidsrechters', 'schorsingen', 'financial', 'settings', 'blog-management', 'notification-management', 'format-competition', 'format-cup', 'format-playoffs'];
+    // Note: 'teams' is now only used for admin teams page (/admin/teams)
+    const adminTabs = ['teams', 'users', 'players', 'scheidsrechters', 'schorsingen', 'financial', 'settings', 'blog-management', 'notification-management', 'format-competition', 'format-cup', 'format-playoffs'];
+    
+    // Special handling for 'teams': admin teams page only
+    if (tab === 'teams') {
+      // Require login for admin teams page
+      if (!user) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[TabVisibility] Admin teams tab requires login`);
+        }
+        return false;
+      }
+      
+      // Admin teams page - check for 'teams' setting (preferred) or 'teams-admin' (backward compatibility)
+      let setting = settings.find(s => s.setting_name === 'teams');
+      if (!setting) {
+        // Fallback to teams-admin for backward compatibility
+        setting = settings.find(s => s.setting_name === 'teams-admin');
+      }
+      
+      if (!setting) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[TabVisibility] No setting found for admin teams tab`, {
+            availableSettings: settings.map(s => s.setting_name),
+          });
+        }
+        return false;
+      }
+      
+      const userRole = getUserRole(user.role);
+      
+      if (!setting.visibility || typeof setting.visibility !== 'object') {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[TabVisibility] Setting "teams" has invalid visibility structure:`, setting);
+        }
+        return false;
+      }
+      
+      const roleVisibility = setting.visibility[userRole];
+      const isVisible = roleVisibility === true;
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[TabVisibility] Checking admin teams tab for role "${userRole}":`, {
+          settingFound: !!setting,
+          settingName: setting.setting_name,
+          roleVisibility,
+          isVisible,
+        });
+      }
+      
+      return isVisible;
+    }
     
     if (adminTabs.includes(tab)) {
       // Require login for admin tabs
-      if (!user) return false;
+      if (!user) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[TabVisibility] Admin tab "${tab}" requires login`);
+        }
+        return false;
+      }
       
       const setting = settings.find(s => s.setting_name === tab);
-      if (!setting) return false;
+      if (!setting) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[TabVisibility] No setting found for tab: ${tab}`, {
+            availableSettings: settings.map(s => s.setting_name),
+          });
+        }
+        return false;
+      }
       
       // Check role-specific visibility
       const userRole = getUserRole(user.role);
-      return setting.visibility?.[userRole] ?? false;
+      
+      // Check if visibility object exists and has the role
+      if (!setting.visibility || typeof setting.visibility !== 'object') {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[TabVisibility] Setting "${tab}" has invalid visibility structure:`, setting);
+        }
+        return false;
+      }
+      
+      const roleVisibility = setting.visibility[userRole];
+      const isVisible = roleVisibility === true; // Explicitly check for true, not just truthy
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[TabVisibility] Checking tab "${tab}" for role "${userRole}":`, {
+          settingFound: !!setting,
+          settingName: setting.setting_name,
+          roleVisibility,
+          isVisible,
+        });
+      }
+      
+      return isVisible;
     }
 
     // Essential public tabs that should always be visible as fallback
@@ -112,12 +217,18 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
 };
 
 // Helper function to map user role to RoleKey
+// Normalizes various role names (team_manager, team, manager, etc.) to player_manager
 function getUserRole(role: string): RoleKey {
-  switch (role) {
+  const normalizedRole = String(role || '').toLowerCase();
+  
+  // Normalize team manager variants to player_manager
+  if (['team', 'manager', 'team_manager', 'player-manager', 'player_manager'].includes(normalizedRole)) {
+    return 'player_manager';
+  }
+  
+  switch (normalizedRole) {
     case 'admin':
       return 'admin';
-    case 'player_manager':
-      return 'player_manager';
     case 'referee':
       return 'referee';
     default:

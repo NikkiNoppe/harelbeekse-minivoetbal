@@ -37,7 +37,7 @@ const Layout: React.FC = () => {
   // Main public tabs that use MainPages component
   const publicTabs = [
     "algemeen", "beker", "competitie", "playoff", 
-    "kaarten", "reglement", "teams", "scheidsrechters"
+    "kaarten", "reglement", "scheidsrechters"
   ];
 
   // Determine active tab from URL (single source of truth)

@@ -57,7 +57,6 @@ const Header: React.FC<HeaderProps> = ({
     beker: PUBLIC_ROUTES.beker,
     competitie: PUBLIC_ROUTES.competitie,
     playoff: PUBLIC_ROUTES.playoff,
-    teams: PUBLIC_ROUTES.teams,
     reglement: PUBLIC_ROUTES.reglement,
     kaarten: PUBLIC_ROUTES.kaarten,
     scheidsrechters: PUBLIC_ROUTES.scheidsrechters,
@@ -67,7 +66,7 @@ const Header: React.FC<HeaderProps> = ({
     'match-forms-cup': ADMIN_ROUTES['match-forms-cup'],
     'match-forms-playoffs': ADMIN_ROUTES['match-forms-playoffs'],
     players: ADMIN_ROUTES.players,
-    'teams-admin': ADMIN_ROUTES.teams,
+    teams: ADMIN_ROUTES.teams, // Admin teams page - takes priority over public
     users: ADMIN_ROUTES.users,
     competition: ADMIN_ROUTES.competition,
     playoffs: ADMIN_ROUTES.playoffs,
@@ -91,7 +90,16 @@ const Header: React.FC<HeaderProps> = ({
     { key: "playoff", label: "Play-off", icon: <Target size={18} /> },
   ];
 
-  const normalizedRole = String(user?.role || '').toLowerCase();
+  // Normalize role - map team_manager variants to player_manager
+  const normalizeRole = (role: string): string => {
+    const r = String(role || '').toLowerCase();
+    if (['team', 'manager', 'team_manager', 'player-manager'].includes(r)) {
+      return 'player_manager';
+    }
+    return r;
+  };
+  
+  const normalizedRole = normalizeRole(user?.role || '');
   const isAdmin = normalizedRole === "admin";
   const roleLabel = isAdmin
     ? 'Administrator'
@@ -118,12 +126,12 @@ const Header: React.FC<HeaderProps> = ({
   const wedstrijdformulierenItems = [
     { key: "match-forms-league", label: "Competitie", icon: <Trophy size={18} />, adminOnly: false },
     { key: "match-forms-cup", label: "Beker", icon: <Award size={18} />, adminOnly: false },
-    { key: "match-forms-playoffs", label: "Play-off", icon: <Target size={18} />, adminOnly: true },
+    { key: "match-forms-playoffs", label: "Play-off", icon: <Target size={18} />, adminOnly: false },
   ];
 
   const beheerItems = [
     { key: "players", label: "Spelers", icon: <Users size={18} />, adminOnly: false },
-    { key: "teams-admin", label: "Teams", icon: <Shield size={18} />, adminOnly: true },
+    { key: "teams", label: "Teams", icon: <Shield size={18} />, adminOnly: true },
     { key: "scheidsrechters", label: "Scheidsrechters", icon: <Shield size={18} />, adminOnly: false },
     { key: "schorsingen", label: "Mijn Schorsingen", icon: <Ban size={18} />, adminOnly: false, teamManagerOnly: true },
     { key: "schorsingen", label: "Schorsingen", icon: <Shield size={18} />, adminOnly: true },
@@ -142,29 +150,157 @@ const Header: React.FC<HeaderProps> = ({
 
   // Visibility filtering similar to AdminSidebar
   const visibleSpeelformatenItems = isAuthenticated && isAdmin ? speelformatenItems : [];
-  const visibleWedstrijdformulierenItems = isAuthenticated ? wedstrijdformulierenItems.filter(item => 
-    (!item.adminOnly || isAdmin) && isTabVisible(item.key)
-  ) : [];
+  const visibleWedstrijdformulierenItems = isAuthenticated ? wedstrijdformulierenItems.filter(item => {
+    // First check tab visibility from settings - this takes priority
+    if (!isTabVisible(item.key)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Header] Filtering out "${item.key}" - tab visibility check failed`);
+      }
+      return false;
+    }
+    
+    // Then check adminOnly only if tab visibility allows it
+    // This allows toggles to override adminOnly restrictions
+    if (item.adminOnly && !isAdmin) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Header] Filtering out "${item.key}" - adminOnly check failed (isAdmin: ${isAdmin})`);
+      }
+      return false;
+    }
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Header] Including "${item.key}" in visibleWedstrijdformulierenItems`);
+    }
+    return true;
+  }) : [];
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[Header] visibleWedstrijdformulierenItems result:`, {
+      isAuthenticated,
+      isAdmin,
+      totalItems: wedstrijdformulierenItems.length,
+      visibleCount: visibleWedstrijdformulierenItems.length,
+      visibleItems: visibleWedstrijdformulierenItems.map(i => i.key),
+    });
+  }
   const visibleBeheerItems = (isAuthenticated ? beheerItems : [])
     .filter(item => {
-      // First check admin-only permission
-      if (item.adminOnly && !isAdmin) return false;
+      // First check tab visibility from settings - this takes priority
+      // If tab visibility is enabled via toggles, it overrides adminOnly restrictions
+      const tabVisible = isTabVisible(item.key);
+      if (!tabVisible) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Header] Filtering out "${item.key}" - tab visibility check failed`);
+        }
+        return false;
+      }
       
-      // Check tab visibility from settings
-      if (!isTabVisible(item.key)) return false;
+      // If tab visibility is true, it means the admin has explicitly enabled it via toggles
+      // So we should show it regardless of adminOnly flag
+      // Only check adminOnly if tab visibility is false (fallback to default behavior)
       
       // Show scheidsrechters for both admin and referee
-      if (item.key === 'scheidsrechters' && !(isAdmin || normalizedRole === 'referee')) return false;
+      if (item.key === 'scheidsrechters' && !(isAdmin || normalizedRole === 'referee')) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Header] Filtering out "${item.key}" - scheidsrechters check failed (isAdmin: ${isAdmin}, normalizedRole: ${normalizedRole})`);
+        }
+        return false;
+      }
       
       // Show "Mijn Schorsingen" for team managers only (teamManagerOnly flag)
-      if (item.teamManagerOnly && normalizedRole !== 'player_manager') return false;
+      if (item.teamManagerOnly && normalizedRole !== 'player_manager') {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Header] Filtering out "${item.key}" - teamManagerOnly check failed (normalizedRole: ${normalizedRole})`);
+        }
+        return false;
+      }
       
+      // Tab visibility is true, so show it (toggles override adminOnly)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Header] Including "${item.key}" in visibleBeheerItems`);
+      }
       return true;
     });
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[Header] visibleBeheerItems result:`, {
+      isAuthenticated,
+      isAdmin,
+      normalizedRole,
+      totalItems: beheerItems.length,
+      visibleCount: visibleBeheerItems.length,
+      visibleItems: visibleBeheerItems.map(i => i.key),
+    });
+  }
   const visibleFinancieelItems = (isAuthenticated ? financieelItems : [])
-    .filter(item => (!item.adminOnly || isAdmin));
+    .filter(item => {
+      // First check tab visibility from settings - this takes priority
+      // This allows toggles to override adminOnly restrictions
+      if (!isTabVisible(item.key)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Header] Filtering out "${item.key}" - tab visibility check failed`);
+        }
+        return false;
+      }
+      
+      // Then check admin-only permission only if tab visibility allows it
+      if (item.adminOnly && !isAdmin) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Header] Filtering out "${item.key}" - adminOnly check failed (isAdmin: ${isAdmin})`);
+        }
+        return false;
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Header] Including "${item.key}" in visibleFinancieelItems`);
+      }
+      return true;
+    });
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[Header] visibleFinancieelItems result:`, {
+      isAuthenticated,
+      isAdmin,
+      totalItems: financieelItems.length,
+      visibleCount: visibleFinancieelItems.length,
+      visibleItems: visibleFinancieelItems.map(i => i.key),
+    });
+  }
+  
   const visibleSysteemItems = (isAuthenticated ? systeemItems : [])
-    .filter(item => (!item.adminOnly || isAdmin));
+    .filter(item => {
+      // First check tab visibility from settings - this takes priority
+      // This allows toggles to override adminOnly restrictions
+      if (!isTabVisible(item.key)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Header] Filtering out "${item.key}" - tab visibility check failed`);
+        }
+        return false;
+      }
+      
+      // Then check admin-only permission only if tab visibility allows it
+      if (item.adminOnly && !isAdmin) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Header] Filtering out "${item.key}" - adminOnly check failed (isAdmin: ${isAdmin})`);
+        }
+        return false;
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Header] Including "${item.key}" in visibleSysteemItems`);
+      }
+      return true;
+    });
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[Header] visibleSysteemItems result:`, {
+      isAuthenticated,
+      isAdmin,
+      totalItems: systeemItems.length,
+      visibleCount: visibleSysteemItems.length,
+      visibleItems: visibleSysteemItems.map(i => i.key),
+    });
+  }
 
   return (
     <header className="bg-purple-900 shadow-lg sticky top-0 z-50 backdrop-blur-sm">
@@ -298,15 +434,19 @@ const Header: React.FC<HeaderProps> = ({
                       </AccordionItem>
                     )}
 
-                    {visibleBeheerItems.length > 0 && (
-                      <AccordionItem value="beheer" className="border-none">
-                        <AccordionTrigger className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-2 py-2 hover:no-underline">
-                          Beheer
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-2 pt-2">
-                          {visibleBeheerItems.map((item) => (
+                    {(() => {
+                      if (process.env.NODE_ENV === 'development') {
+                        console.log(`[Header] Rendering ${visibleBeheerItems.length} beheer items:`, visibleBeheerItems.map(i => ({ key: i.key, label: i.label })));
+                      }
+                      return visibleBeheerItems.length > 0 && (
+                        <AccordionItem value="beheer" className="border-none">
+                          <AccordionTrigger className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-2 py-2 hover:no-underline">
+                            Beheer
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-2 pt-2">
+                            {visibleBeheerItems.map((item, index) => (
                             <button
-                              key={item.key}
+                              key={`${item.key}-${index}`}
                               onClick={() => {
                                 setIsSheetOpen(false);
                                 const path = routeMap[item.key] || getPathFromTab(item.key);
@@ -326,7 +466,8 @@ const Header: React.FC<HeaderProps> = ({
                           ))}
                         </AccordionContent>
                       </AccordionItem>
-                    )}
+                      );
+                    })()}
 
                     {visibleFinancieelItems.length > 0 && (
                       <AccordionItem value="financieel" className="border-none">

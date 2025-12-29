@@ -44,7 +44,7 @@ const TAB_GROUPS = [
     title: 'Beheer',
     description: "Beheer pagina's voor teams, spelers en gebruikers",
     icon: Settings,
-    tabs: ['players', 'scheidsrechters', 'schorsingen', 'teams-admin', 'users'],
+    tabs: ['players', 'scheidsrechters', 'schorsingen', 'teams', 'users'],
   },
   {
     id: 'financieel',
@@ -82,7 +82,7 @@ const TAB_DISPLAY_NAMES: Record<string, string> = {
   'players': 'Spelers',
   'scheidsrechters': 'Scheidsrechters',
   'schorsingen': 'Schorsingen',
-  'teams-admin': 'Teams',
+  'teams': 'Teams',
   'users': 'Gebruikers',
   'financial': 'Financieel',
   'format-competition': 'Competitie',
@@ -94,13 +94,33 @@ const TAB_DISPLAY_NAMES: Record<string, string> = {
 };
 
 const TabVisibilitySettingsUpdated: React.FC = () => {
-  const { settings, loading, updateRoleVisibility } = useTabVisibilitySettings();
+  const { settings, loading, updateRoleVisibility, isUpdating } = useTabVisibilitySettings();
 
   const handleToggle = (settingName: string, role: RoleKey, currentValue: boolean) => {
-    updateRoleVisibility(settingName, role, !currentValue);
+    // Prevent toggling if already updating
+    if (isUpdating(settingName, role)) {
+      console.log(`[TabVisibilitySettings] Toggle blocked - update in progress for ${settingName}-${role}`);
+      return;
+    }
+    
+    // For 'teams', use the actual setting name from database (could be 'teams' or 'teams-admin')
+    const actualSettingName = settingName === 'teams' 
+      ? (getSettingForTab('teams')?.setting_name || 'teams')
+      : settingName;
+    
+    updateRoleVisibility(actualSettingName, role, !currentValue);
   };
 
   const getSettingForTab = (tabKey: string) => {
+    // For 'teams', check both 'teams' and 'teams-admin' (backward compatibility)
+    if (tabKey === 'teams') {
+      let setting = settings.find(s => s.setting_name === 'teams');
+      if (!setting) {
+        // Fallback to teams-admin for backward compatibility
+        setting = settings.find(s => s.setting_name === 'teams-admin');
+      }
+      return setting;
+    }
     return settings.find(s => s.setting_name === tabKey);
   };
 
@@ -138,12 +158,13 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
               </TableCell>
               {ROLES.map(role => {
                 const isVisible = setting?.visibility?.[role.key] ?? false;
+                const isCurrentlyUpdating = isUpdating(key, role.key);
                 return (
                   <TableCell key={role.key} className="text-center">
                     <Switch
                       checked={isVisible}
                       onCheckedChange={() => setting && handleToggle(key, role.key, isVisible)}
-                      disabled={!setting}
+                      disabled={!setting || isCurrentlyUpdating}
                     />
                   </TableCell>
                 );
@@ -176,6 +197,7 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
             <div className="grid grid-cols-2 gap-1.5">
               {ROLES.map(role => {
                 const isVisible = setting?.visibility?.[role.key] ?? false;
+                const isCurrentlyUpdating = isUpdating(key, role.key);
                 return (
                   <div key={role.key} className="flex items-center justify-between bg-purple-50 rounded px-1.5 py-1">
                     <div className="flex items-center gap-1">
@@ -185,7 +207,7 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
                     <Switch
                       checked={isVisible}
                       onCheckedChange={() => setting && handleToggle(key, role.key, isVisible)}
-                      disabled={!setting}
+                      disabled={!setting || isCurrentlyUpdating}
                       className="scale-75"
                     />
                   </div>

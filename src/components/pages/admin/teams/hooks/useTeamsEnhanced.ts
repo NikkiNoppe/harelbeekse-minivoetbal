@@ -74,12 +74,25 @@ export function useTeamsEnhanced() {
   const fetchTeams = async () => {
     try {
       setLoading(true);
+      
+      // Fetch all teams - RLS policies will control access
+      // For team_managers, the new policy allows reading all teams when tab visibility is enabled
       const { data, error } = await supabase
         .from('teams')
         .select('*')
         .order('team_name');
       
       if (error) {
+        // Log detailed error for debugging
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[TeamsPage] Error fetching teams:', {
+            error,
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+          });
+        }
         throw error;
       }
       
@@ -87,13 +100,15 @@ export function useTeamsEnhanced() {
         ...team, 
         preferred_play_moments: team.preferred_play_moments as any
       })));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching teams:', error);
       toast({
         title: "Fout bij laden",
-        description: "Er is een fout opgetreden bij het laden van de teams.",
+        description: error?.message || "Er is een fout opgetreden bij het laden van de teams.",
         variant: "destructive",
       });
+      // Set empty array on error to prevent UI issues
+      setTeams([]);
     } finally {
       setLoading(false);
     }
