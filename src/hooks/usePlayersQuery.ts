@@ -324,13 +324,18 @@ export const usePlayersQuery = (teamId: number | null = null) => {
     enabled: shouldFetch, // Only fetch when auth is ready
     staleTime: 0, // Always consider data stale - refetch on every request to ensure fresh data
     gcTime: 10 * 60 * 1000, // 10 minutes cache
-    retry: 2, // Retry 2 times on error
-    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000), // Exponential backoff, max 5s
+    retry: 4, // 4 retries for better reliability on slow connections
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff with jitter, max 10 seconds
+      const baseDelay = 1500 * Math.pow(2, attemptIndex);
+      const jitter = Math.random() * 500;
+      return Math.min(baseDelay + jitter, 10000);
+    },
     refetchOnWindowFocus: false, // Don't refetch on tab focus
     refetchOnReconnect: true, // Refetch when connection restored
     refetchInterval: false, // No polling
     placeholderData: undefined, // Don't use placeholder
-    networkMode: 'online', // Always fetch fresh data
+    networkMode: 'offlineFirst', // Try cache first for better offline support
   });
 };
 

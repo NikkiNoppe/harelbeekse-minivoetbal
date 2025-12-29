@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Loader2, AlertCircle } from "lucide-react";
+import { Plus, Users, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import PlayersList from "./components/PlayersList";
 import { PlayerModal } from "@/components/modals";
 import PlayerRegulations from "./components/PlayerRegulations";
@@ -13,6 +13,7 @@ import { formatDateShort } from "@/lib/dateUtils";
 import { PageHeader } from "@/components/layout";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { InlineRetry } from "@/components/modals/matches/inline-player-retry";
 
 const PlayerPage: React.FC = () => {
   const { user: authUser } = useAuth();
@@ -37,7 +38,9 @@ const PlayerPage: React.FC = () => {
     formatDate,
     getFullName,
     userTeamName,
-    error
+    error,
+    refetch,
+    refreshPlayers
   } = usePlayersUpdatedWithQuery();
   const { isLocked, lockDate, canEdit } = usePlayerListLock();
   
@@ -203,6 +206,20 @@ const PlayerPage: React.FC = () => {
             )}
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* Inline retry for empty player list (not when truly empty team or still loading) */}
+      {!loading && !error && players.length === 0 && selectedTeam && (
+        <InlineRetry
+          onRetry={async () => { 
+            if (refetch) await refetch();
+            else await refreshPlayers();
+          }}
+          isLoading={loading}
+          itemCount={players.length}
+          emptyMessage="Geen spelers gevonden voor dit team"
+          className="mt-4"
+        />
       )}
 
       {/* Players Count */}
