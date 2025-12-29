@@ -110,16 +110,16 @@ const PlayerPage: React.FC = () => {
 
       {/* Team Selector and Add Button for Admin */}
       {isAdmin ? (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex flex-col gap-2 w-full sm:w-auto">
-            <div className="relative w-full sm:w-auto">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1 sm:flex-[0.5] min-w-0">
               <Select 
                 value={selectedTeam?.toString() || "all"} 
                 onValueChange={handleTeamSelectChange}
                 disabled={loading}
               >
                 <SelectTrigger className={cn(
-                  "dropdown-login-style w-full sm:min-w-[200px] sm:w-auto",
+                  "dropdown-login-style w-full min-h-[44px]",
                   loading && "opacity-70 cursor-not-allowed"
                 )}>
                   <SelectValue placeholder="Alle teams" />
@@ -129,32 +129,32 @@ const PlayerPage: React.FC = () => {
                 </SelectContent>
               </Select>
               {loading && (
-                <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                <div className="absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 </div>
               )}
             </div>
-            {loading && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Spelers worden geladen...
-              </p>
-            )}
-            {!hasTeams && !loading && (
-              <span className="text-sm text-red-500 text-center">
-                Geen teams gevonden
-              </span>
+            {showAddButton && (
+              <Button
+                onClick={handleOpenAddDialog}
+                className="btn btn--outline flex items-center justify-center gap-2 whitespace-nowrap min-h-[44px] px-4 flex-1 sm:flex-[0.5]"
+              >
+                <Plus size={16} />
+                <span className="hidden sm:inline">Speler toevoegen</span>
+                <span className="sm:hidden">Toevoegen</span>
+              </Button>
             )}
           </div>
-          {showAddButton && (
-            <Button
-              onClick={handleOpenAddDialog}
-              className="btn btn--outline flex items-center justify-center gap-2 whitespace-nowrap min-h-[44px] px-4"
-            >
-              <Plus size={16} />
-              <span className="hidden sm:inline">Speler toevoegen</span>
-              <span className="sm:hidden">Toevoegen</span>
-            </Button>
+          {loading && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Spelers worden geladen...
+            </p>
+          )}
+          {!hasTeams && !loading && (
+            <span className="text-sm text-red-500 text-center">
+              Geen teams gevonden
+            </span>
           )}
         </div>
       ) : (

@@ -891,10 +891,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [awayPlayersWithSuspensions, awayIsLoading]);
 
   const getPlayerSelectValueClassName = useCallback((playerName: string | null | undefined) => {
-    if (!playerName) return 'truncate max-w-full';
-    if (playerName.length > 15) return 'truncate max-w-full text-xs';
-    if (playerName.length > 10) return 'truncate max-w-full text-sm';
-    return 'truncate max-w-full';
+    // Always use truncate - let CSS handle text overflow with ellipsis
+    // Font size will only reduce when text actually exceeds container width
+    return 'truncate max-w-full min-w-0';
   }, []);
 
   const isPlayerSuspended = useCallback((playerId: number, players: TeamPlayer[] | undefined) => {
@@ -974,7 +973,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     // Check if we have an empty result that might be a loading issue (not just an empty team)
     const hasEmptyResult = !isLoading && !error && memoizedPlayers !== undefined && memoizedPlayers.length === 0;
     
-    const TABLE_COLUMNS = { speler: "w-[60%]", rugnr: "w-[40%]" } as const;
+    const TABLE_COLUMNS = { speler: "w-[80%]", rugnr: "w-[20%]" } as const;
 
     return (
       <div>
@@ -1051,7 +1050,10 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                               style={{
                                 textOverflow: 'ellipsis',
                                 overflow: 'hidden',
-                                whiteSpace: 'nowrap'
+                                whiteSpace: 'nowrap',
+                                minWidth: 0,
+                                maxWidth: '100%',
+                                display: 'block'
                               }}
                             />
                             {isLoading && (
@@ -1108,14 +1110,13 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                                     const alreadySelected = memoizedSelectedPlayerIds.includes(playerIdNum) && selection.playerId !== playerIdNum;
                                     const suspended = isPlayerSuspended(playerIdNum, memoizedPlayers);
                                     const fullName = `${player.first_name} ${player.last_name}`;
-                                    const fontSize = fullName.length > 15 ? 'text-xs' : fullName.length > 10 ? 'text-sm' : '';
                                     
                                     return (
                                       <SelectItem
                                         key={playerIdNum}
                                         value={playerIdNum.toString()}
                                         disabled={alreadySelected || suspended}
-                                        className={`dropdown-item-login-style ${fontSize} ${alreadySelected || suspended ? "opacity-50 text-gray-400" : ""}`}
+                                        className={`dropdown-item-login-style ${alreadySelected || suspended ? "opacity-50 text-gray-400" : ""}`}
                                         style={{ 
                                           textOverflow: 'ellipsis', 
                                           overflow: 'hidden',
@@ -1194,7 +1195,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
                 return (
                   <div key={`${selection.playerId}-${index}`} className="p-2">
-                    <div className="grid grid-cols-[3fr_1fr] gap-2 min-w-0">
+                    <div className="grid grid-cols-[4fr_1fr] gap-2 min-w-0">
                       {canEditTeam ? (
                         <div className="min-w-0">
                           <Select
@@ -1223,7 +1224,10 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                                 style={{
                                   textOverflow: 'ellipsis',
                                   overflow: 'hidden',
-                                  whiteSpace: 'nowrap'
+                                  whiteSpace: 'nowrap',
+                                  minWidth: 0,
+                                  maxWidth: '100%',
+                                  display: 'block'
                                 }}
                               />
                               {isLoading && (
@@ -1266,14 +1270,13 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                                   const playerIdNum = player.player_id;
                                   const alreadySelected = memoizedSelectedPlayerIds.includes(playerIdNum) && selection.playerId !== playerIdNum;
                                   const fullName = `${player.first_name} ${player.last_name}`;
-                                  const fontSize = fullName.length > 15 ? 'text-xs' : fullName.length > 10 ? 'text-sm' : '';
                                   
                                   return (
                                     <SelectItem 
                                       key={playerIdNum} 
                                       value={playerIdNum.toString()} 
                                       disabled={alreadySelected} 
-                                      className={`dropdown-item-login-style ${fontSize}`}
+                                      className="dropdown-item-login-style"
                                       style={{ 
                                         textOverflow: 'ellipsis', 
                                         overflow: 'hidden',
