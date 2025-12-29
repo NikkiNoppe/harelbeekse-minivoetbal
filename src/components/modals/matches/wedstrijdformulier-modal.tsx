@@ -11,10 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { refereeService, type Referee } from "@/services/core";
-import { Loader2, Users, Trash2, Plus, X, Save } from "lucide-react";
+import { Loader2, Users, Trash2, Plus, X, Save, RefreshCw, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTeamPlayersWithSuspensions, type TeamPlayer } from "@/components/pages/admin/matches/hooks/useTeamPlayers";
-import { PlayerDataRefreshModal } from "@/components/modals";
+import { PlayerDataRefreshModal, InlinePlayerRetry } from "@/components/modals";
 import MatchesCardIcon from "@/components/pages/admin/matches/components/MatchesCardIcon";
 import { costSettingsService, financialService } from "@/domains/financial";
 import { getCurrentDate } from "@/lib/dateUtils";
@@ -971,6 +971,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       );
     }
 
+    // Check if we have an empty result that might be a loading issue (not just an empty team)
+    const hasEmptyResult = !isLoading && !error && memoizedPlayers !== undefined && memoizedPlayers.length === 0;
+    
     const TABLE_COLUMNS = { speler: "w-[60%]", rugnr: "w-[40%]" } as const;
 
     return (
@@ -982,6 +985,17 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
             error={error}
             onRefresh={refetch}
             teamLabel={teamLabel}
+            showForEmptyArray={true}
+          />
+        )}
+        {/* Inline retry for empty results */}
+        {hasEmptyResult && refetch && (
+          <InlinePlayerRetry
+            onRetry={refetch}
+            isLoading={isLoading}
+            error={error}
+            playersCount={memoizedPlayers?.length || 0}
+            className="mb-3"
           />
         )}
         {/* Desktop/tablet view */}

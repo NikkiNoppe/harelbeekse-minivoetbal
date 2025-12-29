@@ -136,7 +136,7 @@ export const useTeamPlayersQuery = (teamId: number | null) => {
   
   return useQuery({
     queryKey,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (process.env.NODE_ENV === 'development') {
         console.log('📡 useTeamPlayersQuery queryFn called:', {
           teamId,
@@ -148,22 +148,48 @@ export const useTeamPlayersQuery = (teamId: number | null) => {
         return [];
       }
       
-      const result = await fetchTeamPlayers(teamId);
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ Query result for team ${teamId}:`, result.length, 'players');
+      // Create timeout for slow connections (15 seconds)
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error('Request timeout - slow connection'));
+        }, 15000);
+        
+        // Clean up timeout if signal aborts
+        signal?.addEventListener('abort', () => clearTimeout(timeoutId));
+      });
+      
+      try {
+        const result = await Promise.race([
+          fetchTeamPlayers(teamId),
+          timeoutPromise
+        ]);
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`✅ Query result for team ${teamId}:`, result.length, 'players');
+        }
+        return result;
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error(`❌ Query failed for team ${teamId}:`, error);
+        }
+        throw error;
       }
-      return result;
     },
     enabled: shouldFetch,
     staleTime: 0, // Always consider data stale - refetch on every request to ensure fresh data
     gcTime: 10 * 60 * 1000, // 10 minutes cache
-    retry: 2, // Retry 2 times on error
-    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000), // Exponential backoff, max 5s
+    retry: 4, // 4 retries for unreliable connections (3G/4G)
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff with jitter: 1.5s, 3s, 6s, 10s (max)
+      const baseDelay = Math.min(1500 * Math.pow(2, attemptIndex), 10000);
+      const jitter = Math.random() * 500; // Add up to 500ms jitter
+      return baseDelay + jitter;
+    },
     refetchOnWindowFocus: false, // Don't refetch on tab focus
     refetchOnReconnect: true, // Refetch when connection restored
     refetchInterval: false, // No polling
     placeholderData: undefined, // Don't use placeholder
-    networkMode: 'online', // Always fetch fresh data
+    networkMode: 'offlineFirst', // Try cache first, then network (better for slow connections)
   });
 };
 
