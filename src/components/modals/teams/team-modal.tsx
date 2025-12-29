@@ -653,7 +653,6 @@ export const TeamModal: React.FC<TeamModalProps> = ({
                   )}
                   style={selected ? {
                     borderColor: 'var(--accent)',
-                    backgroundColor: 'var(--accent)',
                     backgroundColor: 'color-mix(in srgb, var(--accent) 10%, white)'
                   } : {}}
                 >
