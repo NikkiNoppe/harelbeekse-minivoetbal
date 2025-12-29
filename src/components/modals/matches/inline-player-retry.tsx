@@ -2,36 +2,38 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertTriangle, Loader2 } from "lucide-react";
 
-interface InlinePlayerRetryProps {
+interface InlineRetryProps {
   onRetry: () => Promise<void>;
   isLoading?: boolean;
   error?: any;
-  playersCount?: number;
+  itemCount?: number;
+  emptyMessage?: string;
   className?: string;
 }
 
 /**
- * Inline retry button for player dropdowns
- * Shows when players fail to load or list is unexpectedly empty
+ * Generic inline retry button for data that failed to load
+ * Shows when data fails to load or list is unexpectedly empty
  */
-export const InlinePlayerRetry: React.FC<InlinePlayerRetryProps> = ({
+export const InlineRetry: React.FC<InlineRetryProps> = ({
   onRetry,
   isLoading = false,
   error,
-  playersCount = 0,
+  itemCount = 0,
+  emptyMessage = "Geen items gevonden",
   className = ""
 }) => {
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 5;
 
-  // Don't show if loading or has players
-  if (isLoading || playersCount > 0) {
+  // Don't show if loading or has items
+  if (isLoading || itemCount > 0) {
     return null;
   }
 
   // Only show if there's an error or empty result (after loading finished)
-  const shouldShow = error || playersCount === 0;
+  const shouldShow = error || itemCount === 0;
   if (!shouldShow) return null;
 
   const handleRetry = async () => {
@@ -59,7 +61,7 @@ export const InlinePlayerRetry: React.FC<InlinePlayerRetryProps> = ({
           ? "Slechte verbinding" 
           : error 
             ? "Laden mislukt" 
-            : "Geen spelers gevonden"
+            : emptyMessage
         }
       </span>
       <Button 
@@ -84,3 +86,6 @@ export const InlinePlayerRetry: React.FC<InlinePlayerRetryProps> = ({
     </div>
   );
 };
+
+// Backward compatibility alias
+export const InlinePlayerRetry = InlineRetry;
