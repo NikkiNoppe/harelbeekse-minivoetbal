@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUpcomingMatches } from "@/hooks/useUpcomingMatches";
+import { useRefereeMatches } from "@/hooks/useRefereeMatches";
 import { formatDateWithDay, formatTimeForDisplay, isoToLocalDateTime } from "@/lib/dateUtils";
 import { shouldAutoLockMatch } from "@/lib/matchLockUtils";
 import MatchesCard from "@/components/pages/admin/matches/components/MatchesCard";
@@ -21,6 +22,7 @@ import { WedstrijdformulierModal } from "@/components/modals/matches/wedstrijdfo
 import { MatchFormData } from "@/components/pages/admin/matches/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { useToast } from "@/hooks/use-toast";
 import { teamService } from "@/services/core";
@@ -700,12 +702,16 @@ const UserTeamInfoCard: React.FC<{
                 </div>
               </div>
             ) : (
-              <div className="text-center py-4">
-                <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-                <p className="text-sm text-muted-foreground">
-                  Geen team gekoppeld
-                </p>
-              </div>
+              // Only show "Geen team gekoppeld" for team managers without a team
+              // Admins and referees don't need to see this message
+              user.role === 'player_manager' && (
+                <div className="text-center py-4">
+                  <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+                  <p className="text-sm text-muted-foreground">
+                    Geen team gekoppeld
+                  </p>
+                </div>
+              )
             )
           )}
         </CardContent>
@@ -1075,6 +1081,227 @@ const NextMatchCard: React.FC<{
 });
 NextMatchCard.displayName = 'NextMatchCard';
 
+// Referee Upcoming Matches Component
+const RefereeUpcomingMatches: React.FC<{
+  refereeUsername: string;
+  onSelectMatch: (match: MatchFormData) => void;
+}> = memo(({ refereeUsername, onSelectMatch }) => {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1; // 1-12
+  const currentYear = now.getFullYear();
+  
+  // Calculate next month and year
+  const nextMonthDate = new Date(currentYear, currentMonth, 1); // Next month
+  const nextMonth = nextMonthDate.getMonth() + 1;
+  const nextMonthYear = nextMonthDate.getFullYear();
+  
+  // State for selected month (default to current month)
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  
+  // Update selected month/year when current month changes (e.g., when month rolls over)
+  // This ensures that when we move to a new month, the available options update automatically
+  useEffect(() => {
+    const checkAndUpdate = () => {
+      const newNow = new Date();
+      const newCurrentMonth = newNow.getMonth() + 1;
+      const newCurrentYear = newNow.getFullYear();
+      
+      // If we're viewing a month that's in the past, automatically switch to current month
+      if (selectedYear < newCurrentYear || (selectedYear === newCurrentYear && selectedMonth < newCurrentMonth)) {
+        setSelectedMonth(newCurrentMonth);
+        setSelectedYear(newCurrentYear);
+      }
+    };
+    
+    // Check on mount and set up interval to check periodically (every hour)
+    checkAndUpdate();
+    const interval = setInterval(checkAndUpdate, 60 * 60 * 1000); // Check every hour
+    
+    return () => clearInterval(interval);
+  }, [selectedMonth, selectedYear]);
+  
+  const { data: refereeMatches, isLoading: matchesLoading } = useRefereeMatches(
+    refereeUsername,
+    selectedMonth,
+    selectedYear
+  );
+
+  // Get month names in Dutch
+  const monthNames = [
+    'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
+    'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'
+  ];
+
+  // Get available months (current and next month only)
+  const availableMonths = useMemo(() => {
+    const months = [
+      { month: currentMonth, year: currentYear, label: `${monthNames[currentMonth - 1]} ${currentYear}` },
+      { month: nextMonth, year: nextMonthYear, label: `${monthNames[nextMonth - 1]} ${nextMonthYear}` }
+    ];
+    return months;
+  }, [currentMonth, currentYear, nextMonth, nextMonthYear]);
+
+  // Convert referee match to MatchFormData
+  const convertToMatchFormData = useCallback((match: any): MatchFormData => {
+    const { date, time } = isoToLocalDateTime(match.match_date);
+    return {
+      matchId: match.match_id,
+      uniqueNumber: match.unique_number || '',
+      date,
+      time,
+      homeTeamId: match.home_team_id,
+      homeTeamName: match.home_team_name || 'Onbekend',
+      awayTeamId: match.away_team_id,
+      awayTeamName: match.away_team_name || 'Onbekend',
+      location: match.location || 'Te bepalen',
+      matchday: match.speeldag || 'Te bepalen',
+      isCompleted: false, // These matches don't have scores yet
+      isLocked: !!(match.is_locked || shouldAutoLockMatch(date, time)),
+      homeScore: match.home_score,
+      awayScore: match.away_score,
+      referee: match.referee,
+      refereeNotes: match.referee_notes,
+      homePlayers: [],
+      awayPlayers: [],
+    };
+  }, []);
+
+  // Determine match status
+  const getMatchStatus = useCallback((match: any) => {
+    const { date, time } = isoToLocalDateTime(match.match_date);
+    if (match.is_submitted) {
+      return { label: "Gespeeld", color: "bg-green-500", icon: CheckCircle };
+    }
+    const isAutoLocked = shouldAutoLockMatch(date, time);
+    if (match.is_locked || isAutoLocked) {
+      return { label: "Gesloten", color: "bg-red-400", icon: Lock };
+    }
+    return { label: "Open", color: "bg-muted", icon: Clock };
+  }, []);
+
+  return (
+    <div className="space-y-3 sm:space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
+          <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
+          Komende Wedstrijden
+        </h2>
+        {/* Month Filter - Only current and next month */}
+        <div className="flex items-center gap-2">
+          <Select
+            value={`${selectedMonth}-${selectedYear}`}
+            onValueChange={(value) => {
+              const [month, year] = value.split('-').map(Number);
+              setSelectedMonth(month);
+              setSelectedYear(year);
+            }}
+          >
+            <SelectTrigger className="h-8 min-h-[44px] w-[180px] text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableMonths.map((option) => (
+                <SelectItem key={`${option.month}-${option.year}`} value={`${option.month}-${option.year}`}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {matchesLoading ? (
+        <div className="space-y-3">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      ) : refereeMatches && refereeMatches.length > 0 ? (
+        (() => {
+          // Filter to only show "Open" matches (not locked, not submitted, not auto-locked)
+          const openMatches = refereeMatches.filter((match) => {
+            const { date, time } = isoToLocalDateTime(match.match_date);
+            // Exclude matches that are submitted
+            if (match.is_submitted) return false;
+            // Exclude matches that are manually locked
+            if (match.is_locked) return false;
+            // Exclude matches that are auto-locked (within 5 minutes of start or in the past)
+            const isAutoLocked = shouldAutoLockMatch(date, time);
+            if (isAutoLocked) return false;
+            // Only include "Open" matches
+            return true;
+          });
+
+          return openMatches.length > 0 ? (
+            <div className="space-y-3">
+              {openMatches.map((match) => {
+                const status = getMatchStatus(match);
+                const StatusIcon = status.icon;
+                const { date, time } = isoToLocalDateTime(match.match_date);
+                
+                return (
+                  <button
+                    key={match.match_id}
+                    onClick={() => onSelectMatch(convertToMatchFormData(match))}
+                    className="border-none bg-transparent p-0 transition-all duration-200 text-left w-full group hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer"
+                  >
+                    <MatchesCard
+                      id={undefined}
+                      home={match.home_team_name || 'Onbekend'}
+                      away={match.away_team_name || 'Onbekend'}
+                      homeScore={match.home_score}
+                      awayScore={match.away_score}
+                      date={match.match_date}
+                      time={time}
+                      location={match.location || 'Te bepalen'}
+                      status={undefined}
+                      badgeSlot={
+                        <span className="ml-auto flex items-center gap-2">
+                          {match.unique_number && (
+                            <span className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 rounded">
+                              {match.unique_number}
+                            </span>
+                          )}
+                          <span 
+                            className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1`}
+                            style={status.label === "Open" ? { backgroundColor: 'var(--accent)' } : undefined}
+                          >
+                            <StatusIcon className="h-3 w-3 mr-1" />
+                            {status.label}
+                          </span>
+                        </span>
+                      }
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="py-6 text-center">
+                <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+                <p className="text-sm text-muted-foreground">
+                  Geen open wedstrijden meer voor {availableMonths.find(m => m.month === selectedMonth && m.year === selectedYear)?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`}
+                </p>
+              </CardContent>
+            </Card>
+          );
+        })()
+      ) : (
+        <Card>
+          <CardContent className="py-6 text-center">
+            <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+                <p className="text-sm text-muted-foreground">
+                  Geen komende wedstrijden meer voor {availableMonths.find(m => m.month === selectedMonth && m.year === selectedYear)?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`}
+                </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+});
+RefereeUpcomingMatches.displayName = 'RefereeUpcomingMatches';
+
 // Main profile page component
 const UserProfilePage: React.FC = () => {
   const { user: authUser } = useAuth();
@@ -1112,8 +1339,12 @@ const UserProfilePage: React.FC = () => {
   
   // Handle form complete
   const handleFormComplete = useCallback(() => {
+    // Invalidate queries to refresh data after match is saved
+    queryClient.invalidateQueries({ queryKey: ['upcomingMatches'] });
+    queryClient.invalidateQueries({ queryKey: ['refereeMatches'] });
+    queryClient.invalidateQueries({ queryKey: ['teamMatches'] });
     handleDialogClose(true);
-  }, [handleDialogClose]);
+  }, [handleDialogClose, queryClient]);
   
   const hasElevatedPermissions = authUser?.role === "admin" || authUser?.role === "referee";
   const isAdmin = authUser?.role === "admin";
@@ -1160,6 +1391,14 @@ const UserProfilePage: React.FC = () => {
           <NextMatchCard 
             match={nextMatch} 
             teamName={firstTeam.team_name}
+            onSelectMatch={handleSelectMatch}
+          />
+        )}
+
+        {/* Referee Upcoming Matches - Show if user is a referee */}
+        {isReferee && authUser?.username && (
+          <RefereeUpcomingMatches
+            refereeUsername={authUser.username}
             onSelectMatch={handleSelectMatch}
           />
         )}

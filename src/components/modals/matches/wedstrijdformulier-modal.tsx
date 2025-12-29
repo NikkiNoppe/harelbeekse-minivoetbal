@@ -587,8 +587,13 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     }
   }, [pendingSubmission, isAdmin, userRole, submitMatchForm, handleComplete, setIsSubmitting]);
 
-  // Keyboard shortcut handler
-  const canActuallyEdit = useMemo(() => isTeamManager ? canTeamManagerEditMatch : canEdit, [isTeamManager, canTeamManagerEditMatch, canEdit]);
+  // Keyboard shortcut handler - referees and admins can always edit, team managers need to check their team
+  const canActuallyEdit = useMemo(() => {
+    if (isAdmin || isReferee) {
+      return canEdit;
+    }
+    return isTeamManager ? canTeamManagerEditMatch : canEdit;
+  }, [isAdmin, isReferee, isTeamManager, canTeamManagerEditMatch, canEdit]);
   
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -708,18 +713,28 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     getSelectedPlayerIds(awayTeamSelections), [awayTeamSelections, getSelectedPlayerIds]);
 
   const canEditHome = useMemo(() => {
+    // Admins and referees can always edit both teams (like scores)
+    if (isAdmin || isReferee) {
+      return canEdit;
+    }
+    // Team managers can only edit their own team
     if (isTeamManager) {
       return canTeamManagerEdit(match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId) && match.homeTeamId === teamId;
     }
-    return isTeamManager ? canTeamManagerEditMatch : canEdit;
-  }, [isTeamManager, match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, canEdit, canTeamManagerEditMatch]);
+    return canTeamManagerEditMatch;
+  }, [isAdmin, isReferee, isTeamManager, match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, canEdit, canTeamManagerEditMatch]);
   
   const canEditAway = useMemo(() => {
+    // Admins and referees can always edit both teams (like scores)
+    if (isAdmin || isReferee) {
+      return canEdit;
+    }
+    // Team managers can only edit their own team
     if (isTeamManager) {
       return canTeamManagerEdit(match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId) && match.awayTeamId === teamId;
     }
-    return isTeamManager ? canTeamManagerEditMatch : canEdit;
-  }, [isTeamManager, match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, canEdit, canTeamManagerEditMatch]);
+    return canTeamManagerEditMatch;
+  }, [isAdmin, isReferee, isTeamManager, match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, canEdit, canTeamManagerEditMatch]);
 
   const handleCaptainChange = useCallback((captainPlayerId: string, isHomeTeam: boolean) => {
     const selections = isHomeTeam ? homeTeamSelections : awayTeamSelections;
@@ -730,7 +745,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [homeTeamSelections, awayTeamSelections, handlePlayerSelection]);
 
   const handleSavePlayerSelection = useCallback(async () => {
-    if (!isTeamManager || !canEdit) return;
+    // Referees and admins can always save (if canEdit is true), team managers can only save their own team
+    if (!canEdit) return;
+    if (isTeamManager && !canTeamManagerEditMatch) return;
     
     setIsSubmittingPlayers(true);
     try {
@@ -758,7 +775,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     } finally {
       setIsSubmittingPlayers(false);
     }
-  }, [isTeamManager, canEdit, match, homeTeamSelections, awayTeamSelections, submitMatchForm, toast]);
+  }, [isTeamManager, canEdit, canTeamManagerEditMatch, match, homeTeamSelections, awayTeamSelections, submitMatchForm, toast]);
 
   // Score validation and display logic (from MatchesScoreSection)
   const isValidScore = useCallback((score: string) => {
@@ -1839,8 +1856,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
             </Collapsible>
           </div>
           
-          {/* Save button for team managers */}
-          {isTeamManager && canEdit && (
+          {/* Save button for team managers, referees, and admins */}
+          {(isTeamManager || isReferee || isAdmin) && canEdit && (
             <div className="flex justify-center mt-4">
               {/* PlayerSelectionActions is empty, so no button needed */}
             </div>
