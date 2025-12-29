@@ -35,7 +35,7 @@ const AdminTeamPage: React.FC = () => {
     return (
       <div className="space-y-6 animate-slide-up">
         <PageHeader 
-          title="Team Beheer"
+          title="Teams"
           subtitle="Beheer alle teams in de competitie"
         />
         <div className="text-center py-8">
@@ -50,7 +50,7 @@ const AdminTeamPage: React.FC = () => {
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
       <PageHeader 
-        title="Team Beheer"
+        title="Teams"
         subtitle={`Beheer alle teams in de competitie (${teams.length} teams)`}
         rightAction={
           isAdmin ? (

@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { AppModal, AppModalHeader, AppModalTitle } from "@/components/modals/base/app-modal";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AppModal } from "@/components/modals/base/app-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { costSettingsService } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2, ChevronDown } from "lucide-react";
+import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2, ChevronDown, Loader2 } from "lucide-react";
 import { formatDateShort, getCurrentDate } from "@/lib/dateUtils";
 import { TransactionEditModal } from "./transaction-edit-modal";
 import {
@@ -18,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 interface Team {
   team_id: number;
@@ -271,6 +271,73 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
     }
   };
 
+  // Group transactions by match_id
+  const groupTransactionsByMatch = () => {
+    if (!transactions) return [];
+    
+    const grouped: Array<{
+      match_id: number | null;
+      match_info?: { unique_number: string; match_date: string };
+      transactions: any[];
+      totalAmount: number;
+      transaction_date: string;
+    }> = [];
+    
+    const matchGroups = new Map<number | string, any[]>();
+    const standaloneTransactions: any[] = [];
+    
+    // Separate transactions with match_id from those without
+    transactions.forEach(transaction => {
+      if (transaction.match_id) {
+        const key = transaction.match_id;
+        if (!matchGroups.has(key)) {
+          matchGroups.set(key, []);
+        }
+        matchGroups.get(key)!.push(transaction);
+      } else {
+        standaloneTransactions.push(transaction);
+      }
+    });
+    
+    // Create grouped entries for matches
+    matchGroups.forEach((transactions, matchId) => {
+      const firstTransaction = transactions[0];
+      const totalAmount = transactions.reduce((sum, t) => {
+        const amount = Math.abs(t.amount);
+        return t.transaction_type === 'deposit' ? sum + amount : sum - amount;
+      }, 0);
+      
+      grouped.push({
+        match_id: typeof matchId === 'number' ? matchId : null,
+        match_info: firstTransaction.matches,
+        transactions: transactions.sort((a, b) => 
+          (a.cost_settings?.name || '').localeCompare(b.cost_settings?.name || '')
+        ),
+        totalAmount,
+        transaction_date: firstTransaction.transaction_date
+      });
+    });
+    
+    // Add standalone transactions as individual groups
+    standaloneTransactions.forEach(transaction => {
+      grouped.push({
+        match_id: null,
+        transactions: [transaction],
+        totalAmount: transaction.transaction_type === 'deposit' 
+          ? Math.abs(transaction.amount) 
+          : -Math.abs(transaction.amount),
+        transaction_date: transaction.transaction_date
+      });
+    });
+    
+    // Sort by date (newest first)
+    return grouped.sort((a, b) => 
+      new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
+    );
+  };
+
+  const groupedTransactions = groupTransactionsByMatch();
+
   if (!team) return null;
 
   return (
@@ -278,48 +345,54 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
       <AppModal
         open={open}
         onOpenChange={onOpenChange}
+        title={`${team.team_name} - Financieel Detail`}
+        subtitle={`Financieel overzicht en transacties voor ${team.team_name}`}
         size="lg"
-        className="max-w-6xl"
       >
-        <AppModalHeader>
-          <AppModalTitle className="flex items-center gap-2">
-            <Euro className="h-5 w-5" />
-            {team?.team_name} - Financieel Detail
-          </AppModalTitle>
-          <p className="app-modal-subtitle sr-only">
-            Financieel overzicht en transacties voor {team?.team_name}
-          </p>
-        </AppModalHeader>
-        <div className="space-y-6">
-            {/* 1. Current Balance */}
-            <div className="bg-muted rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold">Huidig Saldo</h3>
-                  <p className="text-sm text-card-foreground">Team: {team.team_name}</p>
+        <div className="space-y-4">
+          {/* Current Balance Card */}
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-semibold text-purple-900 mb-1">Huidig Saldo</h3>
+                  <p className="text-sm text-purple-700 truncate">{team.team_name}</p>
                 </div>
-                <div className={`text-2xl font-bold ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div className={cn(
+                  "text-2xl sm:text-3xl font-bold whitespace-nowrap",
+                  currentBalance >= 0 ? 'text-green-600' : 'text-red-600'
+                )}>
                   {formatCurrency(currentBalance)}
                 </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* 2. Action with Dropdown */}
-            <div className="border rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Transactie Toevoegen</h3>
+          {/* Add Transaction Section */}
+          <Card>
+            <CardContent className="p-4 space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <h3 className="text-base font-semibold">Transactie Toevoegen</h3>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button 
-                      className="btn btn--secondary flex items-center gap-2"
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto flex items-center justify-center gap-2"
                       disabled={loadingCostSettings || !costSettings || costSettings.length === 0}
                     >
-                      <Plus className="h-4 w-4" />
-                      {loadingCostSettings ? 'Laden...' : 'Kosten Selecteren'}
+                      {loadingCostSettings ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                      <span>{loadingCostSettings ? 'Laden...' : 'Kosten Selecteren'}</span>
                       <ChevronDown className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-80 max-h-96 overflow-y-auto z-[60] bg-card border border-border shadow-xl" style={{ backgroundColor: 'white' }}>
+                  <DropdownMenuContent 
+                    align="end"
+                    className="w-[calc(100vw-2rem)] sm:w-80 max-h-96 overflow-y-auto z-[60]"
+                  >
                     {loadingCostSettings ? (
                       <div className="p-4 text-center text-muted-foreground">
                         Kosten laden...
@@ -329,20 +402,22 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                         <DropdownMenuItem
                           key={cost.id}
                           onClick={() => handleCostSelection(cost)}
-                          className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50"
+                          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 cursor-pointer"
                         >
-                          <div className="flex-1">
-                            <div className="font-medium">{cost.name}</div>
-                            <div className="text-sm text-muted-foreground">{cost.description}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{cost.name}</div>
+                            {cost.description && (
+                              <div className="text-xs text-muted-foreground truncate">{cost.description}</div>
+                            )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Badge variant="outline" className="text-xs whitespace-nowrap">
                               {cost.category === 'match_cost' ? 'Wedstrijd' : 
                                cost.category === 'penalty' ? 'Boete' : 
                                cost.category === 'deposit' ? 'Storting' : 'Overig'}
                             </Badge>
-                            <span className="font-semibold text-green-600">
-                              {cost.category === 'deposit' ? 'Handmatig' : `€${cost.amount}`}
+                            <span className="font-semibold text-sm whitespace-nowrap">
+                              {cost.category === 'deposit' ? 'Handmatig' : formatCurrency(cost.amount)}
                             </span>
                           </div>
                         </DropdownMenuItem>
@@ -358,24 +433,28 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
 
               {/* Transaction Form */}
               {showAddTransaction && selectedCost && (
-                <div className="bg-muted rounded-lg p-4">
-                  <div className="space-y-4">
+                <Card className="bg-muted/50 border-2 border-purple-200">
+                  <CardContent className="p-4 space-y-4">
                     <div>
-                      <Label>Geselecteerde Kosten</Label>
-                      <div className="p-3 bg-white rounded border">
-                        <div className="font-medium">{selectedCost.name}</div>
-                        <div className="text-sm text-muted-foreground">{selectedCost.description}</div>
-                        <div className="text-sm text-card-foreground mt-1">
-                          Categorie: {selectedCost.category === 'match_cost' ? 'Wedstrijd' : 
-                                     selectedCost.category === 'penalty' ? 'Boete' : 
-                                     selectedCost.category === 'deposit' ? 'Storting' : 'Overig'}
-                        </div>
+                      <Label className="text-sm font-medium mb-2 block">Geselecteerde Kosten</Label>
+                      <div className="p-3 bg-card rounded-lg border border-border">
+                        <div className="font-medium text-sm mb-1">{selectedCost.name}</div>
+                        {selectedCost.description && (
+                          <div className="text-xs text-muted-foreground mb-2">{selectedCost.description}</div>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          {selectedCost.category === 'match_cost' ? 'Wedstrijd' : 
+                           selectedCost.category === 'penalty' ? 'Boete' : 
+                           selectedCost.category === 'deposit' ? 'Storting' : 'Overig'}
+                        </Badge>
                       </div>
                     </div>
 
                     {selectedCost.category === 'deposit' && (
                       <div>
-                        <Label htmlFor="custom-amount">Bedrag (€)</Label>
+                        <Label htmlFor="custom-amount" className="text-sm font-medium mb-2 block">
+                          Bedrag (€)
+                        </Label>
                         <Input
                           id="custom-amount"
                           type="number"
@@ -383,116 +462,207 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                           min="0"
                           value={customAmount}
                           onChange={(e) => setCustomAmount(e.target.value)}
-                          placeholder="Voer bedrag in..."
-                          className="modal__input"
+                          placeholder="0.00"
+                          className="w-full"
                         />
                       </div>
                     )}
 
-                    <div className="flex gap-2">
-                      <button 
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button
                         onClick={handleAddTransaction}
-                        className="btn btn--primary"
+                        className="flex-1"
                         disabled={isSubmitting || (selectedCost.category === 'deposit' && (!customAmount || parseFloat(customAmount) <= 0))}
                       >
-                        {isSubmitting ? 'Bezig...' : 'Transactie Toevoegen'}
-                      </button>
-                      <button 
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Bezig...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Transactie Toevoegen
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
                         onClick={() => {
                           setShowAddTransaction(false);
                           setSelectedCost(null);
                           setCustomAmount('');
                         }}
-                        className="btn btn--secondary"
                         disabled={isSubmitting}
+                        className="flex-1 sm:flex-initial"
                       >
                         Annuleren
-                      </button>
+                      </Button>
                     </div>
-                  </div>
+                  </CardContent>
+                </Card>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Transaction History */}
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="text-base font-semibold mb-3">Transactie Geschiedenis</h3>
+              
+              {loadingTransactions ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <span className="ml-2 text-sm text-muted-foreground">Laden...</span>
+                </div>
+              ) : groupedTransactions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">Geen transacties gevonden</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {groupedTransactions.map((group, groupIndex) => {
+                    const isMatchGroup = group.match_id !== null && group.transactions.length > 1;
+                    
+                    return (
+                      <Card 
+                        key={group.match_id || `standalone-${group.transactions[0].id}`}
+                        className="border transition-all duration-150 hover:shadow-sm"
+                        style={{
+                          borderColor: 'var(--accent)',
+                          borderWidth: '1px',
+                          borderStyle: 'solid'
+                        }}
+                      >
+                        <CardContent className="p-3">
+                          {/* Compact Match Header */}
+                          {isMatchGroup && group.match_info && (
+                            <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-border/60">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 border-blue-200 shrink-0">
+                                  #{group.match_info.unique_number}
+                                </Badge>
+                                <span className="text-[11px] text-muted-foreground truncate">
+                                  {formatDateShort(group.match_info.match_date || group.transaction_date)}
+                                </span>
+                              </div>
+                              <div className={cn(
+                                "text-xs font-semibold whitespace-nowrap shrink-0",
+                                group.totalAmount >= 0 ? 'text-green-600' : 'text-red-600'
+                              )}>
+                                {group.totalAmount >= 0 ? '+' : ''}{formatCurrency(Math.abs(group.totalAmount))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Compact Transactions List */}
+                          <div className="space-y-1.5">
+                            {group.transactions.map((transaction, idx) => (
+                              <div 
+                                key={transaction.id}
+                                className={cn(
+                                  "flex items-center justify-between gap-2 py-1.5",
+                                  isMatchGroup && idx < group.transactions.length - 1 && "border-b border-border/30"
+                                )}
+                              >
+                                {/* Left: Type & Description */}
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={cn(
+                                      "text-[10px] px-1.5 py-0 h-5 shrink-0",
+                                      getTransactionColor(transaction.transaction_type)
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      {getTransactionIcon(transaction.transaction_type)}
+                                    </div>
+                                  </Badge>
+                                  <div className="flex flex-col min-w-0 flex-1">
+                                    {!isMatchGroup && (
+                                      <span className="text-[10px] text-muted-foreground leading-tight">
+                                        {formatDateShort(transaction.transaction_date)}
+                                      </span>
+                                    )}
+                                    <p className="text-xs font-medium truncate leading-tight">
+                                      {transaction.description || 
+                                       transaction.cost_settings?.name || 
+                                       transaction.matches?.unique_number || 
+                                       '-'}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Right: Amount & Actions */}
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <div className={cn(
+                                    "text-sm font-bold whitespace-nowrap",
+                                    transaction.transaction_type === 'deposit' ? 'text-green-600' : 'text-red-600'
+                                  )}>
+                                    {transaction.transaction_type === 'deposit' ? '+' : '-'}
+                                    {formatCurrency(Math.abs(transaction.amount))}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => handleEditTransaction(transaction)}
+                                      className={cn(
+                                        "h-7 w-7 border-[var(--color-300)]",
+                                        "bg-white hover:bg-purple-50 hover:border-[var(--color-400)]",
+                                        "text-[var(--color-700)] hover:text-[var(--color-900)]",
+                                        "transition-colors duration-150"
+                                      )}
+                                      style={{ 
+                                        height: '28px',
+                                        width: '28px',
+                                        minHeight: '28px',
+                                        maxHeight: '28px',
+                                        minWidth: '28px',
+                                        maxWidth: '28px'
+                                      }}
+                                      disabled={isSubmitting}
+                                      aria-label="Bewerk transactie"
+                                    >
+                                      <Edit2 size={14} />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => handleDeleteTransaction(transaction)}
+                                      className={cn(
+                                        "!h-7 !w-7 !min-h-0 !max-h-7 !max-w-7 rounded-md border-red-300",
+                                        "hover:bg-red-50 hover:border-red-400",
+                                        "text-red-600 hover:text-red-700",
+                                        "transition-colors duration-150"
+                                      )}
+                                      style={{ 
+                                        height: '28px',
+                                        width: '28px',
+                                        minHeight: '28px',
+                                        maxHeight: '28px',
+                                        minWidth: '28px',
+                                        maxWidth: '28px'
+                                      }}
+                                      disabled={isSubmitting}
+                                      aria-label="Verwijder transactie"
+                                    >
+                                      <Trash2 size={14} />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
-            </div>
-
-            {/* 3. Transaction History */}
-            <div className="border rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4">Transactie Geschiedenis</h3>
-              <div className="overflow-x-auto">
-                <Table className="table min-w-full">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-32 lg:w-40">Datum</TableHead>
-                      <TableHead className="w-32 lg:w-40">Type</TableHead>
-                      <TableHead className="min-w-48 lg:min-w-64">Beschrijving</TableHead>
-                      <TableHead className="text-right w-32 lg:w-40">Bedrag</TableHead>
-                      <TableHead className="text-center w-24 lg:w-32">Acties</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loadingTransactions ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center">Laden...</TableCell>
-                      </TableRow>
-                    ) : transactions?.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
-                          Geen transacties gevonden
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      transactions?.map((transaction) => (
-                        <TableRow key={transaction.id}>
-                          <TableCell>
-                            {formatDateShort(transaction.transaction_date)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getTransactionColor(transaction.transaction_type)}>
-                              <div className="flex items-center gap-1">
-                                {getTransactionIcon(transaction.transaction_type)}
-                                {getTransactionLabel(transaction.transaction_type)}
-                              </div>
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {transaction.description || 
-                             transaction.cost_settings?.name || 
-                             transaction.matches?.unique_number || 
-                             '-'}
-                          </TableCell>
-                          <TableCell className={`text-right font-semibold ${
-                            transaction.transaction_type === 'deposit' ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {transaction.transaction_type === 'deposit' ? '+' : '-'}
-                            {formatCurrency(Math.abs(transaction.amount))}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex gap-1 justify-center">
-                              <Button
-                                size="sm"
-                                onClick={() => handleEditTransaction(transaction)}
-                                className="btn btn--icon btn--edit"
-                                disabled={isSubmitting}
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleDeleteTransaction(transaction)}
-                                className="btn btn--outline text-red-600 hover:text-red-700 hover:bg-red-50"
-                                disabled={isSubmitting}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+        </div>
       </AppModal>
 
       <TransactionEditModal

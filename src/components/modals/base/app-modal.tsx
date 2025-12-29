@@ -167,10 +167,10 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
                 marginBottom: '0px',
                 marginLeft: '0px',
                 marginRight: '0px',
-                paddingTop: '8px',
-                paddingBottom: '8px',
-                paddingLeft: '1.5rem',
-                paddingRight: '1.5rem',
+                paddingTop: '12px',
+                paddingBottom: '12px',
+                paddingLeft: '12px',
+                paddingRight: '12px',
                 borderBottomWidth: '1px',
                 flexShrink: 0,
                 background: 'var(--color-100)',
@@ -239,7 +239,7 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
           {/* Body - Scrollable */}
           <div
             style={{
-              padding: '1.5rem',
+              padding: '12px',
               overflowY: 'auto',
               flex: 1,
               minHeight: 0,
@@ -253,7 +253,7 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
           {(primaryAction || secondaryAction) && (
             <div
               style={{
-                padding: '1.25rem 1.5rem',
+                padding: '12px',
                 borderTop: '1px solid var(--color-200)',
                 display: 'flex',
                 flexDirection: 'column-reverse',

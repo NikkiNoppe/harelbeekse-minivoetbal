@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Euro, TrendingDown, TrendingUp, List, Calendar, ChevronRight } from "lucide-react";
+import { Loader2, Euro, TrendingDown, TrendingUp, List, Calendar, ChevronRight, RefreshCw } from "lucide-react";
 import { FinancialTeamDetailModal, FinancialSettingsModal } from "@/components/modals";
 import { FinancialMonthlyReportsModal } from "@/components/modals";
 import { costSettingsService } from "@/services/financial";
+import { matchCostService } from "@/services/financial/matchCostService";
+import { useToast } from "@/hooks/use-toast";
 
 interface Team {
   team_id: number;
@@ -30,10 +32,13 @@ interface SubmittedMatch {
 }
 
 const AdminFinancialPage: React.FC = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [costListModalOpen, setCostListModalOpen] = useState(false);
   const [monthlyReportsModalOpen, setMonthlyReportsModalOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   // Fetch teams (without balance since we calculate it real-time)
   const {
@@ -175,7 +180,7 @@ const AdminFinancialPage: React.FC = () => {
       <section>
         <Card>
           <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <CardTitle className="text-lg">
                   Teams Financieel Overzicht
@@ -184,102 +189,76 @@ const AdminFinancialPage: React.FC = () => {
                   Klik op een team voor details en transacties.
                 </CardDescription>
               </div>
-              <div className="flex gap-2 flex-shrink-0">
-                <button onClick={() => setCostListModalOpen(true)} className="btn btn--outline flex items-center gap-2">
-                  <List className="h-4 w-4 mr-2" />
+              <div className="flex gap-2 flex-shrink-0 w-full flex-wrap">
+                <button 
+                  onClick={async () => {
+                    setSyncing(true);
+                    const result = await matchCostService.syncAllMatchCosts();
+                    setSyncing(false);
+                    toast({
+                      title: result.success ? "Synchronisatie voltooid" : "Fout bij synchroniseren",
+                      description: result.message,
+                      variant: result.success ? "default" : "destructive",
+                    });
+                    // Refresh data
+                    queryClient.invalidateQueries({ queryKey: ['all-team-transactions'] });
+                    queryClient.invalidateQueries({ queryKey: ['submitted-matches'] });
+                  }}
+                  disabled={syncing}
+                  className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px]"
+                >
+                  {syncing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  {syncing ? "Synchroniseren..." : "Sync Kosten"}
+                </button>
+                <button onClick={() => setCostListModalOpen(true)} className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px]">
+                  <List className="h-4 w-4" />
                   Kostenlijst
                 </button>
-                <button onClick={() => setMonthlyReportsModalOpen(true)} className="btn btn--outline flex items-center gap-2">
-                  <Calendar className="h-4 w-4 mr-2" />
+                <button onClick={() => setMonthlyReportsModalOpen(true)} className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px]">
+                  <Calendar className="h-4 w-4" />
                   Maandrapport
                 </button>
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {/* Mobile Card Layout */}
-            <div className="block md:hidden">
-              <div className="divide-y divide-border">
-                {teams?.map(team => {
-                  const finances = calculateTeamFinances(team.team_id);
-                  const isNegative = finances.currentBalance < 0;
-                  return (
-                    <div 
-                      key={team.team_id}
-                      className="p-4 cursor-pointer hover:bg-muted/50 active:bg-muted transition-colors"
-                      onClick={() => handleTeamClick(team)}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{team.team_name}</p>
-                          <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                            <span>Veld: <span className="text-destructive">-{formatCurrency(finances.fieldCosts)}</span></span>
-                            <span>Boetes: <span className="text-destructive">-{formatCurrency(finances.fines)}</span></span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className={`text-right ${isNegative ? 'text-destructive' : 'text-green-600'}`}>
-                            <div className="flex items-center gap-1">
-                              {isNegative ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
-                              <span className="font-bold text-sm">{formatCurrency(finances.currentBalance)}</span>
-                            </div>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            {/* Mobile Card Layout - Always visible */}
+            <div className="divide-y divide-border">
+              {teams?.map(team => {
+                const finances = calculateTeamFinances(team.team_id);
+                const isNegative = finances.currentBalance < 0;
+                return (
+                  <div 
+                    key={team.team_id}
+                    className="p-4 cursor-pointer hover:bg-muted/50 active:bg-muted transition-colors"
+                    onClick={() => handleTeamClick(team)}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{team.team_name}</p>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                          <span>Veld: <span className="text-destructive">{formatCurrency(finances.fieldCosts)}</span></span>
+                          <span>Scheids: <span className="text-destructive">{formatCurrency(finances.refereeCosts)}</span></span>
+                          <span>Boetes: <span className="text-destructive">{formatCurrency(finances.fines)}</span></span>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`text-right ${isNegative ? 'text-destructive' : 'text-green-600'}`}>
+                          <div className="flex items-center gap-1">
+                            {isNegative ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
+                            <span className="font-bold text-sm">{formatCurrency(finances.currentBalance)}</span>
+                          </div>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Desktop Table Layout */}
-            <div className="hidden md:block w-full overflow-x-auto">
-              <div className="min-w-0 lg:min-w-[900px] table-no-inner-scroll-mobile">
-                <Table className="table w-full text-sm md:text-base">
-                  <TableHeader>
-                    <TableRow className="h-11 md:h-12">
-                      <TableHead className="min-w-[160px]">Team</TableHead>
-                      <TableHead className="text-center min-w-[100px]">Veld</TableHead>
-                      <TableHead className="text-center min-w-[100px]">Scheids</TableHead>
-                      <TableHead className="text-center min-w-[100px]">Boetes</TableHead>
-                      <TableHead className="text-right min-w-[140px]">Saldo</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {teams?.map(team => {
-                      const finances = calculateTeamFinances(team.team_id);
-                      const isNegative = finances.currentBalance < 0;
-                      return (
-                        <TableRow 
-                          key={team.team_id} 
-                          className="cursor-pointer hover:bg-muted/50 transition-colors h-11 md:h-12" 
-                          onClick={() => handleTeamClick(team)}
-                        >
-                          <TableCell className="font-medium truncate whitespace-nowrap max-w-[220px] text-sm">
-                            {team.team_name}
-                          </TableCell>
-                          <TableCell className="text-center text-destructive text-sm whitespace-nowrap">
-                            -{formatCurrency(finances.fieldCosts)}
-                          </TableCell>
-                          <TableCell className="text-center text-destructive text-sm whitespace-nowrap">
-                            -{formatCurrency(finances.refereeCosts)}
-                          </TableCell>
-                          <TableCell className="text-center text-destructive text-sm whitespace-nowrap">
-                            -{formatCurrency(finances.fines)}
-                          </TableCell>
-                          <TableCell className={`text-right font-semibold pr-4 whitespace-nowrap text-sm ${isNegative ? 'text-destructive' : 'text-green-600'}`}>
-                            <div className="flex items-center justify-end gap-1">
-                              {isNegative ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
-                              <span className="truncate">{formatCurrency(finances.currentBalance)}</span>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

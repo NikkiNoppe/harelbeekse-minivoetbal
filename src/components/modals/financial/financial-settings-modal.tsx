@@ -179,10 +179,10 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
           </AppModalTitle>
           <p className="app-modal-subtitle">Beheer alle kosten en boetes voor het systeem</p>
         </AppModalHeader>
-        <div className="space-y-6">
-            <div className="border rounded-lg p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">
+        <div className="space-y-3">
+            <div className="border rounded-lg p-3">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-base font-semibold">
                   {showAddForm ? (editingItem ? 'Tarief Bewerken' : 'Nieuw Tarief Toevoegen') : 'Acties'}
                 </h3>
                 <button 
@@ -196,9 +196,9 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
               </div>
 
               {showAddForm && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="font-medium">Naam *</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Naam *</Label>
                     <Input
                       value={formData.name}
                       onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
@@ -208,8 +208,8 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="font-medium">Categorie *</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Categorie *</Label>
                     <Select 
                       value={formData.category} 
                       onValueChange={value => setFormData(f => ({ ...f, category: value as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost' }))}
@@ -228,8 +228,8 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="font-medium">Bedrag (€) *</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Bedrag (€) *</Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -242,8 +242,8 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                     />
                   </div>
 
-                  <div className="space-y-2 md:col-span-1">
-                    <Label className="font-medium">Beschrijving</Label>
+                  <div className="space-y-1.5 md:col-span-1">
+                    <Label className="text-sm font-medium">Beschrijving</Label>
                     <Textarea
                       value={formData.description}
                       onChange={e => setFormData(f => ({ ...f, description: e.target.value }))}
@@ -254,7 +254,7 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                     />
                   </div>
 
-                  <div className="md:col-span-2 modal__actions pt-2">
+                  <div className="md:col-span-2 modal__actions pt-3">
                     <button 
                       onClick={handleSave}
                       className="btn btn--primary"
@@ -275,12 +275,12 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
             </div>
 
             <div className="border rounded-lg overflow-hidden">
-              <div className="p-4 bg-muted border-b">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
+              <div className="p-3 bg-muted border-b">
+                <h3 className="text-base font-semibold flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
                   Huidige Tarieven
                   {costSettings && (
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="text-xs">
                       {costSettings.length} items
                     </Badge>
                   )}
