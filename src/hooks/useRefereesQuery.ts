@@ -7,7 +7,6 @@ import { useAuth } from "@/hooks/useAuth";
 export interface Referee {
   user_id: number;
   username: string;
-  email?: string;
 }
 
 // In-memory cache for fallback
@@ -46,7 +45,7 @@ const fetchReferees = async (signal?: AbortSignal): Promise<Referee[]> => {
         
         const { data, error } = await supabase
           .from('users')
-          .select('user_id, username, email')
+          .select('user_id, username')
           .eq('role', 'referee')
           .order('username');
         
