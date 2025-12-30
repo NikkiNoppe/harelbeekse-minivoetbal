@@ -25,7 +25,8 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
   const [formData, setFormData] = useState({
     name: '',
     amount: '',
-    category: 'penalty' as 'match_cost' | 'penalty' | 'other'
+    category: 'penalty' as 'match_cost' | 'penalty' | 'other',
+    description: ''
   });
 
   const { data: costSettings, isLoading } = useQuery({
@@ -106,7 +107,8 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
     setFormData({
       name: '',
       amount: '',
-      category: 'penalty'
+      category: 'penalty',
+      description: ''
     });
     setShowAddForm(false);
     setEditingItem(null);

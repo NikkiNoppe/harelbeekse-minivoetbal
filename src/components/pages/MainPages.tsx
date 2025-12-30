@@ -137,7 +137,6 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
         'beker',
         'competitie',
         'playoff',
-        'teams',
         'kaarten',
         'reglement',
         'scheidsrechters',
@@ -181,7 +180,6 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
           {tabContents.beker}
           {tabContents.competitie}
           {tabContents.playoff}
-          {tabContents.teams}
           {tabContents.kaarten}
           {tabContents.reglement}
           {tabContents.scheidsrechters}
