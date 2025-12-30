@@ -18,9 +18,9 @@ export const SuspensionFilters: React.FC<SuspensionFiltersProps> = ({
   const { data: teams } = useTeams();
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4">
+    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
       <Select value={selectedTeam} onValueChange={onTeamChange}>
-        <SelectTrigger className="w-full sm:w-[200px]">
+        <SelectTrigger className="w-full sm:w-[200px] min-h-[44px]">
           <SelectValue placeholder="Alle teams" />
         </SelectTrigger>
         <SelectContent>
@@ -34,7 +34,7 @@ export const SuspensionFilters: React.FC<SuspensionFiltersProps> = ({
       </Select>
 
       <Select value={selectedStatus} onValueChange={onStatusChange}>
-        <SelectTrigger className="w-full sm:w-[200px]">
+        <SelectTrigger className="w-full sm:w-[200px] min-h-[44px]">
           <SelectValue placeholder="Alle statussen" />
         </SelectTrigger>
         <SelectContent>

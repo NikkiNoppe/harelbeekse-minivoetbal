@@ -1730,7 +1730,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       <Select
                         value={refereeSelectValue}
                         onValueChange={setSelectedReferee}
-                        disabled={!canEdit || loadingReferees}
+                        disabled={isTeamManager || !canEdit || loadingReferees}
                       >
                         <SelectTrigger className="dropdown-login-style min-h-[44px] h-[44px] text-sm w-full">
                           <SelectValue 

@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SuspensionBadge } from "./SuspensionBadge";
 import type { PlayerCard } from "@/domains/cards-suspensions";
@@ -10,32 +10,29 @@ interface PlayerCardsTableProps {
   isLoading?: boolean;
 }
 
-const TableSkeleton = memo(() => (
-  <Table>
-    <TableHeader>
-      <TableRow className="table-header-row">
-        <TableHead>Speler</TableHead>
-        <TableHead>Team</TableHead>
-        <TableHead className="text-center">Geel</TableHead>
-        <TableHead className="text-center">Rood</TableHead>
-        <TableHead>Status</TableHead>
-      </TableRow>
-    </TableHeader>
-    <TableBody>
-      {[...Array(5)].map((_, i) => (
-        <TableRow key={i}>
-          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-          <TableCell><Skeleton className="h-6 w-8 mx-auto" /></TableCell>
-          <TableCell><Skeleton className="h-6 w-8 mx-auto" /></TableCell>
-          <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-        </TableRow>
-      ))}
-    </TableBody>
-  </Table>
+// Card Skeleton
+const CardSkeleton = memo(() => (
+  <div className="space-y-2">
+    {[...Array(3)].map((_, i) => (
+      <Card key={i} className="border border-[var(--color-200)]">
+        <CardContent className="p-[12px] pt-[12px] bg-transparent">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-24 mt-0.5" />
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Skeleton className="h-6 w-12" />
+              <Skeleton className="h-6 w-12" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    ))}
+  </div>
 ));
 
-TableSkeleton.displayName = 'PlayerCardsTableSkeleton';
+CardSkeleton.displayName = 'CardSkeleton';
 
 const getStatusBadge = (card: PlayerCard) => {
   if (card.redCards > 0) {
@@ -50,13 +47,54 @@ const getStatusBadge = (card: PlayerCard) => {
   return null;
 };
 
+// Mobile Card View
+const PlayerCardCard = memo(({ 
+  card, 
+  showTeam 
+}: { 
+  card: PlayerCard; 
+  showTeam: boolean;
+}) => {
+  const statusBadge = getStatusBadge(card);
+  
+  return (
+    <Card className="border border-[var(--color-200)] hover:shadow-md transition-shadow duration-200">
+      <CardContent className="p-[12px] pt-[12px] bg-transparent">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm text-foreground truncate">
+              {card.playerName}
+            </h3>
+            {showTeam && (
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                {card.teamName}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <SuspensionBadge type="yellow" count={card.yellowCards} />
+            <SuspensionBadge type="red" count={card.redCards} />
+            {statusBadge && (
+              <div className="flex-shrink-0">
+                {statusBadge}
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
+
+PlayerCardCard.displayName = 'PlayerCardCard';
+
 export const PlayerCardsTable: React.FC<PlayerCardsTableProps> = memo(({ 
   playerCards, 
   showTeam = true,
   isLoading = false 
 }) => {
   if (isLoading) {
-    return <TableSkeleton />;
+    return <CardSkeleton />;
   }
 
   if (playerCards.length === 0) {
@@ -67,34 +105,24 @@ export const PlayerCardsTable: React.FC<PlayerCardsTableProps> = memo(({
     );
   }
 
+  // Sort by team name, then by player name
+  const sortedCards = [...playerCards].sort((a, b) => {
+    // First sort by team name
+    const teamCompare = a.teamName.localeCompare(b.teamName, 'nl', { sensitivity: 'base' });
+    if (teamCompare !== 0) return teamCompare;
+    // Then sort by player name within the same team
+    return a.playerName.localeCompare(b.playerName, 'nl', { sensitivity: 'base' });
+  });
+
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow className="table-header-row">
-            <TableHead>Speler</TableHead>
-            {showTeam && <TableHead>Team</TableHead>}
-            <TableHead className="text-center">Geel</TableHead>
-            <TableHead className="text-center">Rood</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {playerCards.map((card) => (
-            <TableRow key={card.playerId}>
-              <TableCell className="font-medium">{card.playerName}</TableCell>
-              {showTeam && <TableCell className="text-muted-foreground">{card.teamName}</TableCell>}
-              <TableCell className="text-center">
-                <SuspensionBadge type="yellow" count={card.yellowCards} />
-              </TableCell>
-              <TableCell className="text-center">
-                <SuspensionBadge type="red" count={card.redCards} />
-              </TableCell>
-              <TableCell>{getStatusBadge(card)}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <div className="space-y-2" role="region" aria-label="Kaarten lijst">
+      {sortedCards.map((card) => (
+        <PlayerCardCard
+          key={card.playerId}
+          card={card}
+          showTeam={showTeam}
+        />
+      ))}
     </div>
   );
 });

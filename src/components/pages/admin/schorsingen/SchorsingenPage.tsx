@@ -73,43 +73,31 @@ const AdminView: React.FC = memo(() => {
       <PageHeader 
         title="Schorsingen & Kaarten"
         subtitle="Beheer alle schorsingen en bekijk kaartenstatistieken"
-        rightAction={
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={handleRefresh}
-              size="sm"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Vernieuwen</span>
-            </Button>
-            <Button 
-              onClick={() => setShowAddModal(true)}
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Schorsing Toevoegen</span>
-              <span className="sm:hidden">Toevoegen</span>
-            </Button>
-          </div>
-        }
       />
 
       {/* Filters */}
-      <div className="mb-6">
+      <div className="mb-6 space-y-3">
         <SuspensionFilters
           selectedTeam={teamFilter}
           onTeamChange={setTeamFilter}
           selectedStatus={statusFilter}
           onStatusChange={setStatusFilter}
         />
+        <Button 
+          onClick={() => setShowAddModal(true)}
+          className="btn btn--primary min-h-[44px] w-full sm:w-auto"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">Schorsing Toevoegen</span>
+          <span className="sm:hidden">Toevoegen</span>
+        </Button>
       </div>
 
       {/* Active Suspensions */}
-      <section className="mb-6">
-        <Card>
+      <section role="region" aria-labelledby="suspensions-heading" className="mb-6">
+        <Card className="border border-[var(--color-200)]">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle id="suspensions-heading" className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-destructive" />
               Actieve Schorsingen
             </CardTitle>
@@ -117,13 +105,13 @@ const AdminView: React.FC = memo(() => {
               Overzicht van alle actieve en wachtende schorsingen
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-[12px] bg-transparent">
             {filteredSuspensions.length === 0 && !isLoading ? (
-              <div className="text-center py-12">
+              <div className="text-center py-12 px-4">
                 <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Shield className="h-8 w-8 text-green-600 dark:text-green-400" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Geen actieve schorsingen</h3>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Geen actieve schorsingen</h3>
                 <p className="text-sm text-muted-foreground">Alle spelers kunnen deelnemen aan wedstrijden.</p>
               </div>
             ) : (
@@ -139,10 +127,10 @@ const AdminView: React.FC = memo(() => {
       </section>
 
       {/* Player Cards Overview */}
-      <section>
-        <Card>
+      <section role="region" aria-labelledby="cards-heading">
+        <Card className="border border-[var(--color-200)]">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle id="cards-heading" className="flex items-center gap-2">
               <Trophy className="h-5 w-5" />
               Kaarten Overzicht
             </CardTitle>
@@ -150,13 +138,13 @@ const AdminView: React.FC = memo(() => {
               Alle spelers met gele of rode kaarten
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-[12px] bg-transparent">
             {filteredPlayerCards.length === 0 && !isLoading ? (
-              <div className="text-center py-12">
+              <div className="text-center py-12 px-4">
                 <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Geen kaarten geregistreerd</h3>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Geen kaarten geregistreerd</h3>
                 <p className="text-sm text-muted-foreground">Er zijn nog geen gele of rode kaarten uitgedeeld.</p>
               </div>
             ) : (
@@ -236,18 +224,23 @@ const TeamManagerView: React.FC<{ teamIds: number[] }> = memo(({ teamIds }) => {
         title={`Schorsingen & Kaarten – ${teamName}`}
         subtitle="Overzicht van schorsingen en kaarten voor jouw team"
         rightAction={
-          <Button variant="outline" onClick={handleRefresh} size="sm">
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh} 
+            className="btn btn--outline min-h-[44px] w-full sm:w-auto"
+          >
             <RefreshCw className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Vernieuwen</span>
+            <span className="sm:hidden">Vernieuw</span>
           </Button>
         }
       />
 
       {/* Active Suspensions */}
-      <section className="mb-6">
-        <Card>
+      <section role="region" aria-labelledby="team-suspensions-heading" className="mb-6">
+        <Card className="border border-[var(--color-200)]">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle id="team-suspensions-heading" className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-destructive" />
               Actieve Schorsingen
             </CardTitle>
@@ -255,13 +248,13 @@ const TeamManagerView: React.FC<{ teamIds: number[] }> = memo(({ teamIds }) => {
               Schorsingen voor spelers van {teamName}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-[12px] bg-transparent">
             {teamSuspensions.length === 0 && !isLoading ? (
-              <div className="text-center py-12">
+              <div className="text-center py-12 px-4">
                 <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Shield className="h-8 w-8 text-green-600 dark:text-green-400" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Geen actieve schorsingen</h3>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Geen actieve schorsingen</h3>
                 <p className="text-sm text-muted-foreground">Alle spelers van jouw team kunnen deelnemen.</p>
               </div>
             ) : (
@@ -277,10 +270,10 @@ const TeamManagerView: React.FC<{ teamIds: number[] }> = memo(({ teamIds }) => {
       </section>
 
       {/* Player Cards Overview */}
-      <section>
-        <Card>
+      <section role="region" aria-labelledby="team-cards-heading">
+        <Card className="border border-[var(--color-200)]">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle id="team-cards-heading" className="flex items-center gap-2">
               <Trophy className="h-5 w-5" />
               Kaarten Overzicht
             </CardTitle>
@@ -288,13 +281,13 @@ const TeamManagerView: React.FC<{ teamIds: number[] }> = memo(({ teamIds }) => {
               Gele en rode kaarten voor spelers van {teamName}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-[12px] bg-transparent">
             {teamPlayerCards.length === 0 && !isLoading ? (
-              <div className="text-center py-12">
+              <div className="text-center py-12 px-4">
                 <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Geen kaarten</h3>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Geen kaarten</h3>
                 <p className="text-sm text-muted-foreground">Er zijn nog geen kaarten geregistreerd voor jouw team.</p>
               </div>
             ) : (
