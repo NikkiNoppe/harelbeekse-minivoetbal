@@ -149,7 +149,7 @@ export const monthlyReportsService = {
         .from('team_costs')
         .select(`
           *,
-          costs(name, description, category),
+          costs(name, category),
           matches(unique_number, match_date, referee)
         `)
         .gte('transaction_date', filterStartDate.toISOString().split('T')[0])
@@ -208,10 +208,9 @@ export const monthlyReportsService = {
 
         const category = transaction.costs?.category;
         const costName = transaction.costs?.name?.toLowerCase() || '';
-        const costDescription = transaction.costs?.description?.toLowerCase() || '';
 
         // Field costs
-        if (category === 'match_cost' && (costName.includes('veld') || costDescription.includes('veld'))) {
+        if (category === 'match_cost' && costName.includes('veld')) {
           const key = (month && year) ? monthKey : 'season-total';
           if (!fieldCostsByMonth[key]) {
             fieldCostsByMonth[key] = {
@@ -280,8 +279,9 @@ export const monthlyReportsService = {
         }
         
         // Add match info
+        // Each team pays 7€, so per match it's 14€ total (7€ from home team + 7€ from away team)
         refereeCostsByReferee[refereeKey].matchCount++;
-        refereeCostsByReferee[refereeKey].totalCost += refereeCostPerMatch;
+        refereeCostsByReferee[refereeKey].totalCost += refereeCostPerMatch * 2;
         refereeCostsByReferee[refereeKey].matches?.push({
           match_id: match.match_id,
           unique_number: match.unique_number || `#${match.match_id}`,
@@ -371,8 +371,9 @@ export const monthlyReportsService = {
           };
         }
         
+        // Each team pays 7€, so per match it's 14€ total (7€ from home team + 7€ from away team)
         refereePayments[referee].matchCount++;
-        refereePayments[referee].totalCost += refereeCostPerMatch;
+        refereePayments[referee].totalCost += refereeCostPerMatch * 2;
         refereePayments[referee].matches.push({
           match_id: match.match_id,
           unique_number: match.unique_number || `#${match.match_id}`,

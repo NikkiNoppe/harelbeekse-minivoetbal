@@ -24,7 +24,6 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
   const [editingItem, setEditingItem] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
     amount: '',
     category: 'penalty' as 'match_cost' | 'penalty' | 'other'
   });
@@ -46,7 +45,6 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
 
     const settingData = {
       name: formData.name,
-      description: formData.description || null,
       amount: parseFloat(formData.amount),
       category: formData.category,
       is_active: true
@@ -107,7 +105,6 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
   const resetForm = () => {
     setFormData({
       name: '',
-      description: '',
       amount: '',
       category: 'penalty'
     });
@@ -268,7 +265,6 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
                   <TableHeader>
                     <TableRow>
                       <TableHead>Naam</TableHead>
-                      <TableHead>Beschrijving</TableHead>
                       <TableHead className="text-right">Bedrag</TableHead>
                       <TableHead className="text-center">Acties</TableHead>
                     </TableRow>
@@ -277,9 +273,6 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
                     {settings.map((setting) => (
                       <TableRow key={setting.id}>
                         <TableCell className="font-medium">{setting.name}</TableCell>
-                        <TableCell className="text-card-foreground">
-                          {setting.description || '-'}
-                        </TableCell>
                         <TableCell className="text-right font-semibold">
                           {formatCurrency(setting.amount)}
                         </TableCell>

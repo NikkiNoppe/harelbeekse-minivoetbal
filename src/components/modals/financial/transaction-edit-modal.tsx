@@ -23,7 +23,6 @@ interface Transaction {
   cost_setting_id?: number | null;
   cost_settings?: {
     name: string;
-    description: string;
     category: string;
   };
 }

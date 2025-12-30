@@ -32,7 +32,6 @@ interface TeamTransaction {
   transaction_date: string;
   cost_settings?: {
     name?: string;
-    description?: string;
     category?: string;
   };
   matches?: {
@@ -131,7 +130,7 @@ export const useFinancialData = () => {
         .from('team_costs')
         .select(`
           *,
-          costs(name, description, category),
+          costs(name, category),
           matches(unique_number, match_date)
         `)
         .order('transaction_date', { ascending: false });
@@ -143,7 +142,7 @@ export const useFinancialData = () => {
         team_id: transaction.team_id,
         transaction_type: transaction.costs?.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment' || 'adjustment',
         amount: (transaction.costs as any)?.amount || 0,
-        description: transaction.costs?.description || null,
+        description: transaction.costs?.name || null,
         cost_setting_id: transaction.cost_setting_id,
         penalty_type_id: null,
         match_id: transaction.match_id,
@@ -151,7 +150,6 @@ export const useFinancialData = () => {
         created_at: new Date().toISOString(),
         cost_settings: transaction.costs ? {
           name: transaction.costs.name,
-          description: transaction.costs.description,
           category: transaction.costs.category
         } : undefined,
         matches: transaction.matches ? {

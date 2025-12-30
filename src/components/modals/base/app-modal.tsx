@@ -240,11 +240,22 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
           <div
             style={{
               padding: '12px',
+              paddingTop: '12px',
+              paddingBottom: '12px',
+              paddingLeft: '12px',
+              paddingRight: '12px',
+              marginTop: '0px',
+              marginBottom: '0px',
               overflowY: 'auto',
-              flex: 1,
+              overflowX: 'hidden',
+              flex: '1 1 0%',
               minHeight: 0,
-              background: 'var(--color-100)'
+              backgroundColor: 'unset',
+              background: 'unset',
+              WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+              overscrollBehavior: 'contain' // Prevent scroll chaining
             }}
+            className="modal-body"
           >
             {children}
           </div>
@@ -319,7 +330,17 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
               }
             }
 
-            /* Desktop styling verwijderd - gebruik mobile styling op alle formaten */
+            /* Mobile-optimized modal body */
+            .modal-body {
+              /* Responsive padding: smaller on mobile, larger on desktop */
+              padding: 12px !important;
+            }
+
+            @media (min-width: 640px) {
+              .modal-body {
+                padding: 16px !important;
+              }
+            }
 
             /* Mobile: Kleine modals (xs, sm) centraal */
             @media (max-width: 639px) {
@@ -327,6 +348,8 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
               [role="dialog"][data-modal-size="sm"] {
                 align-items: center !important;
                 padding: 1rem !important;
+                padding-top: max(env(safe-area-inset-top, 1rem), 1rem) !important;
+                padding-bottom: max(env(safe-area-inset-bottom, 1rem), 1rem) !important;
               }
               [role="dialog"][data-modal-size="xs"] > div,
               [role="dialog"][data-modal-size="sm"] > div {
@@ -334,6 +357,7 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
                 width: calc(100vw - 2rem) !important;
                 min-width: auto !important;
                 max-width: calc(100vw - 2rem) !important;
+                max-height: calc(100vh - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
               }
             }
 
@@ -344,6 +368,7 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
                 align-items: flex-start !important;
                 padding: 1rem !important;
                 padding-top: max(env(safe-area-inset-top, 1rem), 1rem) !important;
+                padding-bottom: max(env(safe-area-inset-bottom, 1rem), 1rem) !important;
               }
               [role="dialog"][data-modal-size="md"] > div,
               [role="dialog"][data-modal-size="lg"] > div {
@@ -351,6 +376,7 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
                 max-width: calc(100vw - 2rem) !important;
                 min-width: auto !important;
                 border-radius: 1rem !important;
+                max-height: calc(100vh - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
               }
             }
 

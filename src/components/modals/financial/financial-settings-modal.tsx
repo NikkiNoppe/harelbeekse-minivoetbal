@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { enhancedCostSettingsService } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Plus, Edit, Trash2, Euro } from "lucide-react";
+import { Settings, Plus, Edit, Trash2, Euro, X } from "lucide-react";
 
 interface FinancialSettingsModalProps {
   open: boolean;
@@ -31,7 +33,6 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
   
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
     amount: '',
     category: 'penalty' as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost'
   });
@@ -44,7 +45,6 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
   const resetForm = useCallback(() => {
     setFormData({
       name: '',
-      description: '',
       amount: '',
       category: 'penalty'
     });
@@ -73,7 +73,6 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
     setIsSubmitting(true);
     const settingData = {
       name: formData.name.trim(),
-      description: formData.description.trim() || null,
       amount: amount,
       category: formData.category,
       is_active: true
@@ -128,7 +127,6 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
     setEditingItem(item);
     setFormData({
       name: item.name,
-      description: item.description || '',
       amount: item.amount.toString(),
       category: item.category
     });
@@ -148,6 +146,7 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
       case 'penalty': return 'Boete';
       case 'field_cost': return 'Veldkosten';
       case 'referee_cost': return 'Scheidsrechterkosten';
+      case 'deposit': return 'Storting';
       case 'other': return 'Overig';
       default: return category;
     }
@@ -159,6 +158,7 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
       case 'penalty': return 'bg-red-100 text-red-800';
       case 'field_cost': return 'bg-green-100 text-green-800';
       case 'referee_cost': return 'bg-purple-100 text-purple-800';
+      case 'deposit': return '!bg-green-50 !text-green-700 !border-green-200 hover:!bg-green-100 hover:!border-green-300';
       case 'other': return 'bg-muted text-card-foreground';
       default: return 'bg-muted text-card-foreground';
     }
@@ -172,31 +172,78 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
         size="lg"
         className="max-w-6xl"
       >
-        <AppModalHeader>
-          <AppModalTitle className="flex items-center gap-2">
-            <Euro className="h-5 w-5" />
-            Kostenlijst Beheer
-          </AppModalTitle>
-          <p className="app-modal-subtitle">Beheer alle kosten en boetes voor het systeem</p>
+        <AppModalHeader
+          style={{
+            marginTop: '0px',
+            marginBottom: '0px',
+            backgroundColor: 'unset',
+            background: 'unset',
+            position: 'relative',
+            padding: '12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <h2
+              className="flex items-center gap-2"
+              style={{
+                marginTop: '0px',
+                marginBottom: '0px',
+                backgroundColor: 'unset',
+                background: 'unset',
+                fontSize: '1.25rem',
+                fontWeight: 600,
+                color: 'var(--color-700)'
+              }}
+            >
+              <Euro className="h-5 w-5" />
+              Kostenlijst Beheer
+            </h2>
+            <button
+              onClick={() => onOpenChange(false)}
+              style={{
+                background: 'rgba(0, 0, 0, 0.05)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '2rem',
+                height: '2rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'background 150ms',
+                flexShrink: 0
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
+              }}
+              aria-label="Sluiten"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </AppModalHeader>
-        <div className="space-y-3">
-            <div className="border rounded-lg p-3">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-base font-semibold">
-                  {showAddForm ? (editingItem ? 'Tarief Bewerken' : 'Nieuw Tarief Toevoegen') : 'Acties'}
-                </h3>
-                <button 
-                  onClick={() => showAddForm ? resetForm() : setShowAddForm(true)}
-                  className="btn btn--secondary flex items-center gap-2"
-                  disabled={isSubmitting}
-                >
-                  <Plus className="h-4 w-4" />
-                  {showAddForm ? 'Annuleren' : 'Nieuw Tarief'}
-                </button>
-              </div>
-
-              {showAddForm && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-4">
+          {/* Form Section */}
+          <Card className="border transition-all duration-150 hover:shadow-sm" style={{ borderColor: 'var(--accent)', borderWidth: '1px', borderStyle: 'solid' }}>
+            {showAddForm && (
+              <CardContent 
+                className="!bg-transparent"
+                style={{ 
+                  paddingTop: '12px', 
+                  paddingBottom: '12px', 
+                  paddingLeft: '12px', 
+                  paddingRight: '12px',
+                  backgroundColor: 'unset',
+                  background: 'unset'
+                }}
+              >
+                <div className="space-y-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Naam *</Label>
                     <Input
@@ -242,118 +289,158 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                     />
                   </div>
 
-                  <div className="space-y-1.5 md:col-span-1">
-                    <Label className="text-sm font-medium">Beschrijving</Label>
-                    <Textarea
-                      value={formData.description}
-                      onChange={e => setFormData(f => ({ ...f, description: e.target.value }))}
-                      placeholder="Optionele beschrijving..."
-                      rows={3}
-                      className="modal__input resize-none"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-
-                  <div className="md:col-span-2 modal__actions pt-3">
+                  <div className="flex flex-col gap-2 pt-2">
                     <button 
                       onClick={handleSave}
-                      className="btn btn--primary"
+                      className="btn btn--primary w-full"
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? 'Bezig...' : (editingItem ? 'Bijwerken' : 'Toevoegen')}
                     </button>
                     <button 
                       onClick={resetForm}
-                      className="btn btn--secondary"
+                      className="btn btn--secondary w-full"
                       disabled={isSubmitting}
                     >
                       Annuleren
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
+              </CardContent>
+            )}
+          </Card>
+          
+          {/* Nieuw Tarief Button */}
+          <button 
+            onClick={() => showAddForm ? resetForm() : setShowAddForm(true)}
+            className="btn btn--secondary flex items-center justify-center gap-2 w-full"
+            disabled={isSubmitting}
+          >
+            <Plus className="h-4 w-4" />
+            {showAddForm ? 'Annuleren' : 'Nieuw Tarief'}
+          </button>
 
-            <div className="border rounded-lg overflow-hidden">
-              <div className="p-3 bg-muted border-b">
-                <h3 className="text-base font-semibold flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Huidige Tarieven
-                  {costSettings && (
-                    <Badge variant="secondary" className="text-xs">
-                      {costSettings.length} items
-                    </Badge>
-                  )}
-                </h3>
-              </div>
-              
-              <div className="overflow-x-auto min-w-full">
-                <Table className="table min-w-full">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Naam</TableHead>
-                      <TableHead>Categorie</TableHead>
-                      <TableHead>Beschrijving</TableHead>
-                      <TableHead className="text-right">Bedrag</TableHead>
-                      <TableHead className="text-center">Acties</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          Tarieven laden...
-                        </TableCell>
-                      </TableRow>
-                    ) : costSettings && costSettings.length > 0 ? (
-                      costSettings.map((setting) => (
-                        <TableRow key={setting.id} className="hover:bg-muted">
-                          <TableCell className="font-medium">
-                            {setting.name}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getCategoryColor(setting.category)}>
-                              {getCategoryLabel(setting.category)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="max-w-xs">
-                            <div className="truncate">
-                              {setting.description || '-'}
+          {/* Settings List */}
+          <Card>
+            <CardHeader className="p-4">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Huidige Tarieven
+                {costSettings && (
+                  <Badge variant="secondary" className="text-xs">
+                    {costSettings.length} items
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              {isLoading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Tarieven laden...
+                </div>
+              ) : costSettings && costSettings.length > 0 ? (
+                <div className="space-y-1.5">
+                  {costSettings.map((setting) => (
+                    <Card 
+                      key={setting.id}
+                      className="border transition-all duration-150 hover:shadow-sm"
+                      style={{
+                        borderColor: 'var(--accent)',
+                        borderWidth: '1px',
+                        borderStyle: 'solid'
+                      }}
+                    >
+                      <CardContent 
+                        className="!bg-transparent"
+                        style={{ 
+                          paddingTop: '12px', 
+                          paddingBottom: '12px', 
+                          paddingLeft: '12px', 
+                          paddingRight: '12px',
+                          backgroundColor: 'unset',
+                          background: 'unset'
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate">
+                                {setting.name}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge className={getCategoryColor(setting.category)}>
+                                  {getCategoryLabel(setting.category)}
+                                </Badge>
+                                <span 
+                                  className="text-xs font-semibold whitespace-nowrap"
+                                  style={{ color: 'var(--accent)' }}
+                                >
+                                  {formatCurrency(setting.amount)}
+                                </span>
+                              </div>
                             </div>
-                          </TableCell>
-                          <TableCell className="text-right font-semibold">
-                            {formatCurrency(setting.amount)}
-                          </TableCell>
-                          <TableCell className="flex gap-2 justify-center">
-                            <button
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              variant="outline"
+                              size="icon"
                               onClick={() => handleEdit(setting)}
-                              className="btn btn--outline p-2"
+                              className={cn(
+                                "h-7 w-7 border-[var(--color-300)]",
+                                "bg-white hover:bg-purple-50 hover:border-[var(--color-400)]",
+                                "text-[var(--color-700)] hover:text-[var(--color-900)]",
+                                "transition-colors duration-150"
+                              )}
+                              style={{ 
+                                height: '28px',
+                                width: '28px',
+                                minHeight: '28px',
+                                maxHeight: '28px',
+                                minWidth: '28px',
+                                maxWidth: '28px'
+                              }}
                               disabled={isSubmitting}
+                              aria-label="Bewerk tarief"
                             >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
+                              <Edit size={14} />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
                               onClick={() => setDeletingItem(setting)}
-                              className="btn btn--danger p-2"
+                              className={cn(
+                                "!h-7 !w-7 !min-h-0 !max-h-7 !max-w-7 rounded-md border-red-300",
+                                "hover:bg-red-50 hover:border-red-400",
+                                "text-red-600 hover:text-red-700",
+                                "transition-colors duration-150"
+                              )}
+                              style={{ 
+                                height: '28px',
+                                width: '28px',
+                                minHeight: '28px',
+                                maxHeight: '28px',
+                                minWidth: '28px',
+                                maxWidth: '28px'
+                              }}
                               disabled={isSubmitting}
+                              aria-label="Verwijder tarief"
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          Nog geen tarieven gedefinieerd
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          </div>
+                              <Trash2 size={14} />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nog geen tarieven gedefinieerd
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </AppModal>
 
       <AppAlertModal

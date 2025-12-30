@@ -82,12 +82,10 @@ Deno.serve(async (req) => {
 
     // Find field and referee cost settings
     const fieldCost = costSettings.find(cs => 
-      cs.name?.toLowerCase().includes('veld') || 
-      cs.description?.toLowerCase().includes('veld')
+      cs.name?.toLowerCase().includes('veld')
     );
     const refereeCost = costSettings.find(cs => 
-      cs.name?.toLowerCase().includes('scheids') || 
-      cs.description?.toLowerCase().includes('scheids')
+      cs.name?.toLowerCase().includes('scheids')
     );
 
     if (!fieldCost || !refereeCost) {

@@ -155,11 +155,6 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
       subtitle="Bekijk seizoen/maandelijkse kosten, scheidsrechterbetalingen en boetes voor teams"
       size="lg"
       className="max-w-6xl max-h-[80vh] overflow-y-auto"
-      secondaryAction={{
-        label: "Sluiten",
-        onClick: () => onOpenChange(false),
-        variant: "secondary",
-      }}
     >
 
         <div className="space-y-6">
@@ -173,101 +168,176 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {/* Filters - only show if seasons are available */}
           {availableSeasons && availableSeasons.length > 0 && (
-            <div className="flex flex-wrap gap-4 items-end">
-              <div>
-                <label className="text-sm font-medium mb-2 block text-purple-dark">Seizoen</label>
-                <Select value={selectedSeasonYear.toString()} onValueChange={(value) => setSelectedSeasonYear(parseInt(value))}>
-                  <SelectTrigger className="w-40 dropdown-login-style">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="dropdown-content-login-style z-[1002]">
-                    {seasons.map(season => (
-                      <SelectItem key={season.year} value={season.year.toString()} className="dropdown-item-login-style">
-                        {season.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <>
+              <div className="filters-row">
+                <div className="filter-item filter-select">
+                  <label className="text-sm font-medium mb-2 block text-purple-dark">Seizoen</label>
+                  <Select value={selectedSeasonYear.toString()} onValueChange={(value) => setSelectedSeasonYear(parseInt(value))}>
+                    <SelectTrigger className="w-full dropdown-login-style">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="dropdown-content-login-style z-[1002]">
+                      {seasons.map(season => (
+                        <SelectItem key={season.year} value={season.year.toString()} className="dropdown-item-login-style">
+                          {season.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block text-purple-dark">Maand (optioneel)</label>
-                <Select value={selectedMonth?.toString() || "all"} onValueChange={(value) => setSelectedMonth(value === "all" ? null : parseInt(value))}>
-                  <SelectTrigger className="w-40 dropdown-login-style">
-                    <SelectValue placeholder="Alle maanden" />
-                  </SelectTrigger>
-                  <SelectContent className="dropdown-content-login-style z-[1002]">
-                    <SelectItem value="all" className="dropdown-item-login-style">Alle maanden</SelectItem>
-                    {seasonMonths.map(month => (
-                      <SelectItem key={month.value} value={month.value.toString()} className="dropdown-item-login-style">
-                        {month.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="filter-item filter-select">
+                  <label className="text-sm font-medium mb-2 block text-purple-dark">Maand</label>
+                  <Select value={selectedMonth?.toString() || "all"} onValueChange={(value) => setSelectedMonth(value === "all" ? null : parseInt(value))}>
+                    <SelectTrigger className="w-full dropdown-login-style">
+                      <SelectValue placeholder="Alle maanden" />
+                    </SelectTrigger>
+                    <SelectContent className="dropdown-content-login-style z-[1002]">
+                      <SelectItem value="all" className="dropdown-item-login-style">Alle maanden</SelectItem>
+                      {seasonMonths.map(month => (
+                        <SelectItem key={month.value} value={month.value.toString()} className="dropdown-item-login-style">
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <Button className="btn btn--secondary flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-            </div>
+                <div className="filter-item filter-button">
+                  <label className="text-sm font-medium mb-2 block text-purple-dark opacity-0 pointer-events-none">Export</label>
+                  <Button className="btn btn--secondary flex items-center justify-center gap-2 w-full">
+                    <Download className="h-4 w-4" />
+                    Export
+                  </Button>
+                </div>
+              </div>
+              <style>{`
+                .filters-row {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 1rem;
+                  width: 100%;
+                  align-items: flex-end;
+                }
+
+                .filter-item {
+                  flex: 1 1 auto;
+                  min-width: 0;
+                }
+
+                /* Mobile: Seizoen en Maand elk 50%, Export op nieuwe regel 100% */
+                .filter-select {
+                  flex-basis: calc(50% - 0.5rem);
+                  min-width: min(200px, 100%);
+                }
+
+                .filter-button {
+                  flex-basis: 100%;
+                  min-width: min(200px, 100%);
+                }
+
+              `}</style>
+            </>
           )}
 
           {/* Summary Cards - only show if data available */}
           {report && availableSeasons && availableSeasons.length > 0 && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <Card className="border-purple-light">
-                <CardHeader className="bg-muted p-3 md:p-4">
-                  <CardTitle className="text-xs md:text-sm flex items-center gap-2 text-purple-light">
-                    <Users className="h-3 w-3 md:h-4 md:w-4" />
+                <CardHeader 
+                  className="bg-muted p-3"
+                  style={{ 
+                    marginTop: 0, 
+                    marginBottom: 0, 
+                    backgroundColor: 'unset', 
+                    background: 'unset',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
+                    <Users className="h-3 w-3" />
                     Wedstrijden
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white p-3 md:p-4">
-                  <div className="text-xl md:text-2xl font-bold text-purple-dark">
+                <CardContent className="bg-white p-3">
+                  <div className="text-xl font-bold text-purple-dark text-center">
                     {report.totalMatches}
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-purple-light">
-                <CardHeader className="bg-muted p-3 md:p-4">
-                  <CardTitle className="text-xs md:text-sm flex items-center gap-2 text-purple-light">
-                    <Euro className="h-3 w-3 md:h-4 md:w-4" />
+                <CardHeader 
+                  className="bg-muted p-3"
+                  style={{ 
+                    marginTop: 0, 
+                    marginBottom: 0, 
+                    backgroundColor: 'unset', 
+                    background: 'unset',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
+                    <Euro className="h-3 w-3" />
                     Veldkosten
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white p-3 md:p-4">
-                  <div className="text-lg md:text-2xl font-bold text-purple-dark">
+                <CardContent className="bg-white p-3">
+                  <div className="text-lg font-bold text-purple-dark text-center">
                     {formatCurrency(report.totalFieldCosts)}
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-purple-light">
-                <CardHeader className="bg-muted p-3 md:p-4">
-                  <CardTitle className="text-xs md:text-sm flex items-center gap-2 text-purple-light">
-                    <Euro className="h-3 w-3 md:h-4 md:w-4" />
+                <CardHeader 
+                  className="bg-muted p-3"
+                  style={{ 
+                    marginTop: 0, 
+                    marginBottom: 0, 
+                    backgroundColor: 'unset', 
+                    background: 'unset',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
+                    <Euro className="h-3 w-3" />
                     Scheidsrechters
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white p-3 md:p-4">
-                  <div className="text-lg md:text-2xl font-bold text-purple-dark">
+                <CardContent className="bg-white p-3">
+                  <div className="text-lg font-bold text-purple-dark text-center">
                     {formatCurrency(report.totalRefereeCosts)}
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-purple-light">
-                <CardHeader className="bg-muted p-3 md:p-4">
-                  <CardTitle className="text-xs md:text-sm flex items-center gap-2 text-purple-light">
-                    <Euro className="h-3 w-3 md:h-4 md:w-4" />
+                <CardHeader 
+                  className="bg-muted p-3"
+                  style={{ 
+                    marginTop: 0, 
+                    marginBottom: 0, 
+                    backgroundColor: 'unset', 
+                    background: 'unset',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
+                    <Euro className="h-3 w-3" />
                     Boetes
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white p-3 md:p-4">
-                  <div className="text-lg md:text-2xl font-bold text-purple-dark">
+                <CardContent className="bg-white p-3">
+                  <div className="text-lg font-bold text-purple-dark text-center">
                     {formatCurrency(report.totalFines)}
                   </div>
                 </CardContent>
@@ -286,7 +356,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
               </CardHeader>
               <CardContent className="bg-white p-0">
                 {/* Mobile: Collapsible cards */}
-                <div className="block md:hidden divide-y divide-border">
+                <div className="block divide-y divide-border">
                   {report.refereeCosts.map((referee, index) => (
                     <Collapsible 
                       key={index}
@@ -344,8 +414,8 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                   </div>
                 </div>
 
-                {/* Desktop: Table with expandable rows */}
-                <div className="hidden md:block">
+                {/* Desktop: Table with expandable rows - removed for mobile-only */}
+                <div className="hidden">
                   <Table className="table">
                     <TableHeader>
                       <TableRow className="bg-muted">

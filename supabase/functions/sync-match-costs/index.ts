@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // Load match_cost settings (active) for field and referee costs
     const { data: matchCosts, error: costErr } = await supabaseServiceRole
       .from('costs')
-      .select('id, name, amount, description')
+      .select('id, name, amount')
       .eq('category', 'match_cost')
       .eq('is_active', true);
 
@@ -74,8 +74,7 @@ Deno.serve(async (req) => {
       
       return costSettings.find(cs => {
         const name = (cs.name || '').toLowerCase();
-        const desc = (cs.description || '').toLowerCase();
-        return searchTerms.some(term => name.includes(term) || desc.includes(term));
+        return searchTerms.some(term => name.includes(term));
       });
     };
 

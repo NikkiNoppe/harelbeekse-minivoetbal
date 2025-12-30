@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 export interface CostSetting {
   id: number;
   name: string;
-  description: string | null;
   amount: number;
   category: 'match_cost' | 'penalty' | 'other' | 'deposit';
   is_active: boolean;
@@ -25,7 +24,6 @@ export interface TeamTransaction {
   created_at?: string;
   cost_settings?: {
     name: string;
-    description: string;
     category: string;
   };
   matches?: {
@@ -145,8 +143,15 @@ export const costSettingsService = {
         .from('team_costs')
         .select(`
           *,
-          costs(name, description, category),
-          matches(unique_number, match_date)
+          costs(name, category),
+          matches(
+            unique_number, 
+            match_date,
+            home_team_id,
+            away_team_id,
+            teams_home:teams!home_team_id(team_name),
+            teams_away:teams!away_team_id(team_name)
+          )
         `)
         .eq('team_id', teamId)
         .order('transaction_date', { ascending: false });
@@ -158,7 +163,7 @@ export const costSettingsService = {
         team_id: transaction.team_id,
         transaction_type: transaction.costs?.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment' || 'adjustment',
         amount: transaction.amount !== null ? transaction.amount : ((transaction.costs as any)?.amount || 0),
-        description: transaction.costs?.description || null,
+        description: transaction.costs?.name || null,
         cost_setting_id: transaction.cost_setting_id,
         penalty_type_id: null,
         match_id: transaction.match_id,
@@ -166,12 +171,15 @@ export const costSettingsService = {
         created_at: new Date().toISOString(),
         cost_settings: transaction.costs ? {
           name: transaction.costs.name,
-          description: transaction.costs.description,
           category: transaction.costs.category
         } : undefined,
         matches: transaction.matches ? {
           unique_number: transaction.matches.unique_number,
-          match_date: transaction.matches.match_date
+          match_date: transaction.matches.match_date,
+          home_team_id: transaction.matches.home_team_id,
+          away_team_id: transaction.matches.away_team_id,
+          teams_home: transaction.matches.teams_home,
+          teams_away: transaction.matches.teams_away
         } : undefined
       }));
     } catch (error) {
@@ -204,7 +212,6 @@ export const costSettingsService = {
             .from('costs')
             .insert([{
               name: 'Storting',
-              description: 'Team storting',
               amount: 0, // Individual amounts are stored in team_costs.amount
               category: 'deposit',
               is_active: true
@@ -250,7 +257,6 @@ export const costSettingsService = {
         .from('costs')
         .insert([{
           name: transaction.description || `Transactie ${new Date(transaction.transaction_date).toLocaleDateString('nl-NL')}`,
-          description: transaction.description || 'Transactie',
           amount: transaction.amount,
           category: transaction.transaction_type === 'penalty' ? 'penalty' : 
                    transaction.transaction_type === 'match_cost' ? 'match_cost' : 'other',

@@ -62,6 +62,11 @@ const PageHeader: React.FC<PageHeaderProps> = ({
         <h1 className="text-2xl font-bold leading-tight" style={{ color: 'var(--primary)' }}>
           {title}
         </h1>
+        {subtitle && (
+          <p className="text-sm text-muted-foreground mt-1">
+            {subtitle}
+          </p>
+        )}
       </div>
     </div>
   );

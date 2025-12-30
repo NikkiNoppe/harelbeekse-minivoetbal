@@ -185,34 +185,51 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
 
   // Handle delete transaction
   const handleDeleteTransaction = async (transaction: any) => {
-    if (!team) return;
+    if (!team) {
+      toast({
+        title: "Fout",
+        description: "Team niet gevonden",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    const confirmed = window.confirm("Weet je zeker dat je deze transactie wilt verwijderen?");
+    const confirmed = window.confirm(
+      `Weet je zeker dat je deze transactie wilt verwijderen?\n\n` +
+      `Bedrag: ${formatCurrency(Math.abs(transaction.amount))}\n` +
+      `Type: ${transaction.description || transaction.cost_settings?.name || 'Onbekend'}\n\n` +
+      `Deze actie kan niet ongedaan gemaakt worden.`
+    );
+    
     if (!confirmed) return;
 
     setIsSubmitting(true);
 
     try {
+      console.log('Deleting transaction:', transaction.id);
       const result = await costSettingsService.deleteTransaction(transaction.id);
 
       if (result.success) {
         toast({
-          title: "Succes",
-          description: result.message
+          title: "Succesvol verwijderd",
+          description: "De transactie is succesvol verwijderd uit de database."
         });
-        queryClient.invalidateQueries({ queryKey: ['team-transactions', team.team_id] });
+        // Invalidate queries to refresh the list
+        await queryClient.invalidateQueries({ queryKey: ['team-transactions', team.team_id] });
+        await queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
       } else {
         toast({
           title: "Fout",
-          description: result.message,
+          description: result.message || "Er is een fout opgetreden bij het verwijderen van de transactie",
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error('Error deleting transaction:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Onbekende fout';
       toast({
         title: "Fout",
-        description: "Er is een fout opgetreden bij het verwijderen van de transactie",
+        description: `Er is een fout opgetreden: ${errorMessage}`,
         variant: "destructive"
       });
     } finally {
@@ -277,7 +294,14 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
     
     const grouped: Array<{
       match_id: number | null;
-      match_info?: { unique_number: string; match_date: string };
+      match_info?: { 
+        unique_number: string; 
+        match_date: string;
+        home_team_id?: number;
+        away_team_id?: number;
+        teams_home?: { team_name: string };
+        teams_away?: { team_name: string };
+      };
       transactions: any[];
       totalAmount: number;
       transaction_date: string;
@@ -406,9 +430,6 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                         >
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm truncate">{cost.name}</div>
-                            {cost.description && (
-                              <div className="text-xs text-muted-foreground truncate">{cost.description}</div>
-                            )}
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <Badge variant="outline" className="text-xs whitespace-nowrap">
@@ -439,9 +460,6 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                       <Label className="text-sm font-medium mb-2 block">Geselecteerde Kosten</Label>
                       <div className="p-3 bg-card rounded-lg border border-border">
                         <div className="font-medium text-sm mb-1">{selectedCost.name}</div>
-                        {selectedCost.description && (
-                          <div className="text-xs text-muted-foreground mb-2">{selectedCost.description}</div>
-                        )}
                         <Badge variant="outline" className="text-xs">
                           {selectedCost.category === 'match_cost' ? 'Wedstrijd' : 
                            selectedCost.category === 'penalty' ? 'Boete' : 
@@ -520,7 +538,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                   <p className="text-sm">Geen transacties gevonden</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {groupedTransactions.map((group, groupIndex) => {
                     const isMatchGroup = group.match_id !== null && group.transactions.length > 1;
                     
@@ -534,50 +552,66 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                           borderStyle: 'solid'
                         }}
                       >
-                        <CardContent className="p-3">
+                        <CardContent 
+                          className="!bg-transparent"
+                          style={{ 
+                            paddingTop: '12px', 
+                            paddingBottom: '12px', 
+                            paddingLeft: '12px', 
+                            paddingRight: '12px',
+                            backgroundColor: 'unset',
+                            background: 'unset'
+                          }}
+                        >
                           {/* Compact Match Header */}
-                          {isMatchGroup && group.match_info && (
-                            <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-border/60">
+                          {isMatchGroup && group.match_info && (() => {
+                            // Determine opponent team name
+                            const opponentTeam = team && group.match_info.home_team_id && group.match_info.away_team_id
+                              ? (group.match_info.home_team_id === team.team_id 
+                                  ? group.match_info.teams_away?.team_name 
+                                  : group.match_info.teams_home?.team_name)
+                              : null;
+                            
+                            return (
+                            <div className="flex items-center justify-between gap-2 mb-1.5 pb-1.5 border-b border-border/60">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 border-blue-200 shrink-0">
-                                  #{group.match_info.unique_number}
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-[10px] px-1.5 py-0.5 shrink-0"
+                                  style={{ 
+                                    backgroundColor: 'var(--accent)', 
+                                    color: 'white',
+                                    borderColor: 'var(--accent)'
+                                  }}
+                                >
+                                  {opponentTeam || `#${group.match_info.unique_number}`}
                                 </Badge>
                                 <span className="text-[11px] text-muted-foreground truncate">
                                   {formatDateShort(group.match_info.match_date || group.transaction_date)}
                                 </span>
                               </div>
-                              <div className={cn(
-                                "text-xs font-semibold whitespace-nowrap shrink-0",
-                                group.totalAmount >= 0 ? 'text-green-600' : 'text-red-600'
-                              )}>
+                              <div 
+                                className="text-base font-semibold whitespace-nowrap shrink-0"
+                                style={{ color: 'var(--accent)' }}
+                              >
                                 {group.totalAmount >= 0 ? '+' : ''}{formatCurrency(Math.abs(group.totalAmount))}
                               </div>
                             </div>
-                          )}
+                            );
+                          })()}
                           
                           {/* Compact Transactions List */}
-                          <div className="space-y-1.5">
+                          <div className="space-y-1">
                             {group.transactions.map((transaction, idx) => (
                               <div 
                                 key={transaction.id}
                                 className={cn(
-                                  "flex items-center justify-between gap-2 py-1.5",
+                                  "flex items-center justify-between gap-2 py-1",
                                   isMatchGroup && idx < group.transactions.length - 1 && "border-b border-border/30"
                                 )}
                               >
                                 {/* Left: Type & Description */}
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                                  <Badge 
-                                    variant="outline" 
-                                    className={cn(
-                                      "text-[10px] px-1.5 py-0 h-5 shrink-0",
-                                      getTransactionColor(transaction.transaction_type)
-                                    )}
-                                  >
-                                    <div className="flex items-center gap-1">
-                                      {getTransactionIcon(transaction.transaction_type)}
-                                    </div>
-                                  </Badge>
                                   <div className="flex flex-col min-w-0 flex-1">
                                     {!isMatchGroup && (
                                       <span className="text-[10px] text-muted-foreground leading-tight">
@@ -595,10 +629,10 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
 
                                 {/* Right: Amount & Actions */}
                                 <div className="flex items-center gap-2 shrink-0">
-                                  <div className={cn(
-                                    "text-sm font-bold whitespace-nowrap",
-                                    transaction.transaction_type === 'deposit' ? 'text-green-600' : 'text-red-600'
-                                  )}>
+                                  <div 
+                                    className="text-xs font-semibold whitespace-nowrap"
+                                    style={{ color: 'var(--accent)' }}
+                                  >
                                     {transaction.transaction_type === 'deposit' ? '+' : '-'}
                                     {formatCurrency(Math.abs(transaction.amount))}
                                   </div>

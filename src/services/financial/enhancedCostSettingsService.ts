@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 export interface CostSetting {
   id: number;
   name: string;
-  description: string | null;
   amount: number;
   category: 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost';
   is_active: boolean;
@@ -22,7 +21,6 @@ export interface TeamTransaction {
   created_at: string;
   cost_settings?: {
     name: string;
-    description: string;
     category: string;
   };
   matches?: {
@@ -289,7 +287,7 @@ export const enhancedCostSettingsService = {
         .from('team_costs')
         .select(`
           *,
-          costs(name, description, category),
+          costs(name, category),
           matches(unique_number, match_date)
         `)
         .eq('team_id', teamId)
@@ -307,14 +305,13 @@ export const enhancedCostSettingsService = {
         team_id: transaction.team_id,
         transaction_type: transaction.costs?.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment' || 'adjustment',
         amount: transaction.amount || (transaction.costs as any)?.amount || 0, // Use individual amount or fallback to cost setting amount
-        description: transaction.costs?.description || null,
+        description: transaction.costs?.name || null,
         cost_setting_id: transaction.cost_setting_id,
         match_id: transaction.match_id,
         transaction_date: transaction.transaction_date,
         created_at: new Date().toISOString(),
         cost_settings: transaction.costs ? {
           name: transaction.costs.name,
-          description: transaction.costs.description,
           category: transaction.costs.category
         } : undefined,
         matches: transaction.matches ? {
@@ -365,7 +362,7 @@ export const enhancedCostSettingsService = {
         .from('team_costs')
         .select(`
           *,
-          costs(name, description, category),
+          costs(name, category),
           matches(unique_number, match_date)
         `)
         .eq('cost_setting_id', costSettingId)
@@ -383,14 +380,13 @@ export const enhancedCostSettingsService = {
         team_id: transaction.team_id,
         transaction_type: transaction.costs?.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment' || 'adjustment',
         amount: transaction.amount || (transaction.costs as any)?.amount || 0,
-        description: transaction.costs?.description || null,
+        description: transaction.costs?.name || null,
         cost_setting_id: transaction.cost_setting_id,
         match_id: transaction.match_id,
         transaction_date: transaction.transaction_date,
         created_at: new Date().toISOString(),
         cost_settings: transaction.costs ? {
           name: transaction.costs.name,
-          description: transaction.costs.description,
           category: transaction.costs.category
         } : undefined,
         matches: transaction.matches ? {

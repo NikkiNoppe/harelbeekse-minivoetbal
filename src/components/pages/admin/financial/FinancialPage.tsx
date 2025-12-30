@@ -1,15 +1,14 @@
-import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect, useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Euro, TrendingDown, TrendingUp, List, Calendar, ChevronRight, RefreshCw } from "lucide-react";
+import { Loader2, Euro, TrendingDown, TrendingUp, List, Calendar, ChevronRight } from "lucide-react";
 import { FinancialTeamDetailModal, FinancialSettingsModal } from "@/components/modals";
 import { FinancialMonthlyReportsModal } from "@/components/modals";
 import { costSettingsService } from "@/services/financial";
 import { matchCostService } from "@/services/financial/matchCostService";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface Team {
   team_id: number;
@@ -38,7 +37,7 @@ const AdminFinancialPage: React.FC = () => {
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [costListModalOpen, setCostListModalOpen] = useState(false);
   const [monthlyReportsModalOpen, setMonthlyReportsModalOpen] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+  const hasSyncedRef = useRef(false);
 
   // Fetch teams (without balance since we calculate it real-time)
   const {
@@ -101,7 +100,7 @@ const AdminFinancialPage: React.FC = () => {
       const {
         data,
         error
-      } = await supabase.from('team_costs').select('*, costs(name, description, category, amount), matches(unique_number, match_date)');
+      } = await supabase.from('team_costs').select('*, costs(name, category, amount), matches(unique_number, match_date)');
       if (error) throw error;
       return (data || []).map(transaction => ({
         id: transaction.id,
@@ -110,10 +109,9 @@ const AdminFinancialPage: React.FC = () => {
         cost_setting_id: transaction.cost_setting_id,
         match_id: transaction.match_id,
         transaction_date: transaction.transaction_date,
-        description: transaction.costs?.description || null,
+        description: transaction.costs?.name || null,
         cost_settings: transaction.costs ? {
           name: transaction.costs.name,
-          description: transaction.costs.description,
           category: transaction.costs.category
         } : undefined,
         matches: transaction.matches ? {
@@ -123,6 +121,43 @@ const AdminFinancialPage: React.FC = () => {
       }));
     }
   });
+
+  // Automatische sync van kosten bij het mounten van de component
+  useEffect(() => {
+    // Voorkom meerdere syncs tijdens dezelfde sessie
+    if (hasSyncedRef.current) return;
+    
+    // Wacht tot de data geladen is voordat we syncen
+    if (loadingTeams || loadingMatches || loadingTransactions) return;
+
+    hasSyncedRef.current = true;
+    
+    // Voer sync uit in de achtergrond (fire-and-forget)
+    matchCostService.syncAllMatchCosts()
+      .then((result) => {
+        if (result.success) {
+          // Refresh data na succesvolle sync
+          queryClient.invalidateQueries({ queryKey: ['all-team-transactions'] });
+          queryClient.invalidateQueries({ queryKey: ['submitted-matches'] });
+          
+          // Toon alleen een toast als er daadwerkelijk iets gesynchroniseerd is
+          if (result.syncedCount && result.syncedCount > 0) {
+            toast({
+              title: "Kosten gesynchroniseerd",
+              description: result.message,
+              variant: "default",
+            });
+          }
+        } else {
+          // Toon alleen een foutmelding als de sync echt faalt
+          console.error('Automatische sync mislukt:', result.message);
+        }
+      })
+      .catch((error) => {
+        console.error('Fout bij automatische sync:', error);
+        // Geen toast bij achtergrond sync fouten om de gebruiker niet te storen
+      });
+  }, [loadingTeams, loadingMatches, loadingTransactions, queryClient, toast]);
 
   // Bereken per team de financiële data in-memory
   const calculateTeamFinances = (teamId: number) => {
@@ -135,8 +170,8 @@ const AdminFinancialPage: React.FC = () => {
     };
     const teamTransactions = allTransactions.filter((t: any) => t.team_id === teamId);
     const startCapital = teamTransactions.filter(t => t.cost_settings?.category === 'deposit').reduce((sum, t) => sum + Number(t.amount), 0);
-    const fieldCosts = teamTransactions.filter(t => t.cost_settings?.category === 'match_cost' && (t.cost_settings?.name?.toLowerCase().includes('veld') || t.cost_settings?.description?.toLowerCase().includes('veld') || (t.description?.toLowerCase() || '').includes('veld'))).reduce((sum, t) => sum + Number(t.amount), 0);
-    const refereeCosts = teamTransactions.filter(t => t.cost_settings?.category === 'match_cost' && (t.cost_settings?.name?.toLowerCase().includes('scheids') || t.cost_settings?.description?.toLowerCase().includes('scheids') || (t.description?.toLowerCase() || '').includes('scheids'))).reduce((sum, t) => sum + Number(t.amount), 0);
+    const fieldCosts = teamTransactions.filter(t => t.cost_settings?.category === 'match_cost' && (t.cost_settings?.name?.toLowerCase().includes('veld') || (t.description?.toLowerCase() || '').includes('veld'))).reduce((sum, t) => sum + Number(t.amount), 0);
+    const refereeCosts = teamTransactions.filter(t => t.cost_settings?.category === 'match_cost' && (t.cost_settings?.name?.toLowerCase().includes('scheids') || (t.description?.toLowerCase() || '').includes('scheids'))).reduce((sum, t) => sum + Number(t.amount), 0);
     const fines = teamTransactions.filter(t => t.cost_settings?.category === 'penalty').reduce((sum, t) => sum + Number(t.amount), 0);
     const adjustments = teamTransactions.filter(t => t.cost_settings?.category === 'adjustment' || t.cost_settings?.category === 'other').reduce((sum, t) => sum + Number(t.amount), 0);
     const currentBalance = startCapital - fieldCosts - refereeCosts - fines + adjustments;
@@ -173,77 +208,82 @@ const AdminFinancialPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
           <Euro className="h-5 w-5" />
-          Financieel Beheer
+          € Financieel
         </h2>
       </div>
 
       <section>
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col justify-between gap-4">
-              <div className="flex-1 min-w-0">
+        <Card className="!bg-transparent !shadow-none" style={{ backgroundColor: 'transparent', boxShadow: 'none' }}>
+          <CardHeader className="max-w-full" style={{ marginTop: 0, marginBottom: 0, backgroundColor: 'unset', background: 'unset' }}>
+            <div className="flex flex-col justify-between gap-4 max-w-full w-full">
+              <div className="flex-1 min-w-0 max-w-full w-full">
                 <CardTitle className="text-lg">
                   Teams Financieel Overzicht
                 </CardTitle>
-                <CardDescription>
-                  Klik op een team voor details en transacties.
-                </CardDescription>
               </div>
-              <div className="flex gap-2 flex-shrink-0 w-full flex-wrap">
+              <div className="flex gap-2 flex-shrink-0 w-full flex-wrap max-w-full">
                 <button 
-                  onClick={async () => {
-                    setSyncing(true);
-                    const result = await matchCostService.syncAllMatchCosts();
-                    setSyncing(false);
-                    toast({
-                      title: result.success ? "Synchronisatie voltooid" : "Fout bij synchroniseren",
-                      description: result.message,
-                      variant: result.success ? "default" : "destructive",
-                    });
-                    // Refresh data
-                    queryClient.invalidateQueries({ queryKey: ['all-team-transactions'] });
-                    queryClient.invalidateQueries({ queryKey: ['submitted-matches'] });
-                  }}
-                  disabled={syncing}
-                  className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px]"
+                  onClick={() => setCostListModalOpen(true)} 
+                  className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px] max-w-full w-full"
+                  style={{ maxWidth: '100%', width: '100%' }}
                 >
-                  {syncing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                  {syncing ? "Synchroniseren..." : "Sync Kosten"}
-                </button>
-                <button onClick={() => setCostListModalOpen(true)} className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px]">
                   <List className="h-4 w-4" />
                   Kostenlijst
                 </button>
-                <button onClick={() => setMonthlyReportsModalOpen(true)} className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px]">
+                <button 
+                  onClick={() => setMonthlyReportsModalOpen(true)} 
+                  className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px] max-w-full w-full"
+                  style={{ maxWidth: '100%', width: '100%' }}
+                >
                   <Calendar className="h-4 w-4" />
                   Maandrapport
                 </button>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="!bg-transparent max-w-full w-full" style={{ backgroundColor: 'unset', background: 'unset', paddingTop: '12px', paddingBottom: '12px', paddingLeft: '0px', paddingRight: '0px' }}>
             {/* Mobile Card Layout - Always visible */}
-            <div className="divide-y divide-border">
-              {teams?.map(team => {
+            <div className="space-y-4 max-w-full w-full">
+              {teams?.map((team, index) => {
                 const finances = calculateTeamFinances(team.team_id);
                 const isNegative = finances.currentBalance < 0;
                 return (
                   <div 
                     key={team.team_id}
-                    className="p-4 cursor-pointer hover:bg-muted/50 active:bg-muted transition-colors"
+                    className="p-4 cursor-pointer hover:bg-muted/50 active:bg-muted transition-all bg-card border border-border shadow-md hover:shadow-lg max-w-full w-full"
+                    style={{ 
+                      paddingLeft: '16px', 
+                      paddingRight: '16px',
+                      paddingTop: '16px',
+                      paddingBottom: '16px',
+                      marginTop: '12px', 
+                      marginBottom: '12px',
+                      '--hover-border-color': 'var(--primary)'
+                    } as React.CSSProperties & { '--hover-border-color': string }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--primary)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '';
+                    }}
                     onClick={() => handleTeamClick(team)}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{team.team_name}</p>
-                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                          <span>Veld: <span className="text-destructive">{formatCurrency(finances.fieldCosts)}</span></span>
-                          <span>Scheids: <span className="text-destructive">{formatCurrency(finances.refereeCosts)}</span></span>
-                          <span>Boetes: <span className="text-destructive">{formatCurrency(finances.fines)}</span></span>
+                        <h3 className="font-semibold text-sm text-foreground truncate mb-2">{team.team_name}</h3>
+                        <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-xs">
+                          <div className="flex flex-col">
+                            <span className="text-muted-foreground">Veld</span>
+                            <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.fieldCosts)}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-muted-foreground">Scheids</span>
+                            <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.refereeCosts)}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-muted-foreground">Boetes</span>
+                            <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.fines)}</span>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">

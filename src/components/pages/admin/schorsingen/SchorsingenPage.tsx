@@ -1,13 +1,14 @@
-import React, { memo, useMemo, useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { memo, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Shield, Trophy, Users } from "lucide-react";
+import { AlertCircle, Shield, Trophy, Users, RefreshCw } from "lucide-react";
 import { useSuspensionsData, type Suspension, type PlayerCard } from "@/domains/cards-suspensions";
 import { useAuth } from "@/hooks/useAuth";
+import { PageHeader } from "@/components/layout";
 
 // Loading skeleton components
 const SuspensionsTableSkeleton = memo(() => (
@@ -104,36 +105,14 @@ const SchorsingenPage: React.FC = memo(() => {
     }
   };
 
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('nl-NL', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
-
-  // Get next match date (simplified - you might want to implement proper logic)
-  const getNextMatchDate = (suspension: Suspension) => {
-    // This is a placeholder - you'd need to implement logic to get the next match date
-    // based on your competition schedule
-    return "Te bepalen";
-  };
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
-              <Shield className="h-6 w-6 text-primary" />
-              Schorsingen - Mijn Team
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Overzicht van schorsingen en kaarten voor jouw team
-            </p>
-          </div>
-        </div>
+      <div className="space-y-6 animate-slide-up">
+        <PageHeader 
+          title="Schorsingen"
+          subtitle="Overzicht van schorsingen en kaarten voor jouw team"
+        />
 
         <Card>
           <CardHeader>
@@ -164,22 +143,15 @@ const SchorsingenPage: React.FC = memo(() => {
 
   if (playerCardsError || suspensionsError) {
     return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
-              <Shield className="h-6 w-6 text-primary" />
-              Schorsingen - Mijn Team
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Overzicht van schorsingen en kaarten voor jouw team
-            </p>
-          </div>
-        </div>
+      <div className="space-y-6 animate-slide-up">
+        <PageHeader 
+          title="Schorsingen"
+          subtitle="Overzicht van schorsingen en kaarten voor jouw team"
+        />
 
-        <Alert className="border-red-200 bg-red-50">
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription className="text-red-800">
+          <AlertDescription>
             Er is een fout opgetreden bij het laden van de schorsingen: {(playerCardsError || suspensionsError)?.message}
             <Button 
               variant="outline" 
@@ -188,7 +160,7 @@ const SchorsingenPage: React.FC = memo(() => {
                 refetchPlayerCards();
                 refetchSuspensions();
               }} 
-              className="ml-4"
+              className="ml-4 mt-2"
             >
               Opnieuw proberen
             </Button>
@@ -199,126 +171,137 @@ const SchorsingenPage: React.FC = memo(() => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
-            <Shield className="h-6 w-6 text-primary" />
-            Schorsingen - Mijn Team
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Overzicht van schorsingen en kaarten voor jouw team
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => {
-          refetchPlayerCards();
-          refetchSuspensions();
-        }}>
-          Vernieuwen
-        </Button>
-      </div>
+    <div className="space-y-6 animate-slide-up">
+      <PageHeader 
+        title="Schorsingen"
+        subtitle="Overzicht van schorsingen en kaarten voor jouw team"
+        rightAction={
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              refetchPlayerCards();
+              refetchSuspensions();
+            }}
+            className="btn btn--outline"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Vernieuwen</span>
+            <span className="sm:hidden">Vernieuw</span>
+          </Button>
+        }
+      />
 
       {/* Active Suspensions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            Actieve Schorsingen
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {teamSuspensions.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="h-8 w-8 text-green-600" />
+      <section role="region" aria-labelledby="suspensions-heading">
+        <Card className="border border-[var(--color-200)]">
+          <CardHeader>
+            <CardTitle id="suspensions-heading" className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Actieve Schorsingen
+            </CardTitle>
+            <CardDescription>
+              Overzicht van alle actieve schorsingen voor jouw team
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {teamSuspensions.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Geen actieve schorsingen</h3>
+                <p className="text-sm text-muted-foreground">Alle spelers van jouw team kunnen spelen.</p>
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Geen actieve schorsingen</h3>
-              <p className="text-muted-foreground">Alle spelers van jouw team kunnen spelen.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="table-header-row">
-                    <TableHead>Speler</TableHead>
-                    <TableHead>Reden</TableHead>
-                    <TableHead>Aantal Wedstrijden</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Volgende Speeldag</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {teamSuspensions.map((suspension) => (
-                    <TableRow key={suspension.playerId}>
-                      <TableCell className="font-medium">
-                        {suspension.playerName}
-                      </TableCell>
-                      <TableCell>{suspension.reason}</TableCell>
-                      <TableCell>{suspension.matches}</TableCell>
-                      <TableCell>{getSuspensionStatusBadge(suspension)}</TableCell>
-                      <TableCell>N/A</TableCell>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="table-header-row">
+                      <TableHead>Speler</TableHead>
+                      <TableHead>Reden</TableHead>
+                      <TableHead>Aantal Wedstrijden</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Volgende Speeldag</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {teamSuspensions.map((suspension) => (
+                      <TableRow key={suspension.playerId}>
+                        <TableCell className="font-medium">
+                          {suspension.playerName}
+                        </TableCell>
+                        <TableCell>{suspension.reason}</TableCell>
+                        <TableCell>{suspension.matches}</TableCell>
+                        <TableCell>{getSuspensionStatusBadge(suspension)}</TableCell>
+                        <TableCell className="text-muted-foreground">N/A</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
 
       {/* Player Cards Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5" />
-            Kaarten Overzicht
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {teamPlayerCards.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-blue-600" />
+      <section role="region" aria-labelledby="cards-heading">
+        <Card className="border border-[var(--color-200)]">
+          <CardHeader>
+            <CardTitle id="cards-heading" className="flex items-center gap-2">
+              <Trophy className="h-5 w-5" />
+              Kaarten Overzicht
+            </CardTitle>
+            <CardDescription>
+              Overzicht van gele en rode kaarten voor alle spelers van jouw team
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {teamPlayerCards.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="h-8 w-8 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Geen kaarten data</h3>
+                <p className="text-sm text-muted-foreground">Er zijn nog geen kaarten geregistreerd voor jouw team.</p>
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Geen kaarten data</h3>
-              <p className="text-muted-foreground">Er zijn nog geen kaarten geregistreerd voor jouw team.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="table-header-row">
-                    <TableHead>Speler</TableHead>
-                    <TableHead>Geel</TableHead>
-                    <TableHead>Rood</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {teamPlayerCards.map((card) => (
-                    <TableRow key={card.playerId}>
-                      <TableCell className="font-medium">
-                        {card.playerName}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={card.yellowCards >= 3 ? "secondary" : "outline"}>
-                          {card.yellowCards}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={card.redCards > 0 ? "destructive" : "outline"}>
-                          {card.redCards}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{getCardStatusBadge(card)}</TableCell>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="table-header-row">
+                      <TableHead>Speler</TableHead>
+                      <TableHead>Geel</TableHead>
+                      <TableHead>Rood</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {teamPlayerCards.map((card) => (
+                      <TableRow key={card.playerId}>
+                        <TableCell className="font-medium">
+                          {card.playerName}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={card.yellowCards >= 3 ? "secondary" : "outline"}>
+                            {card.yellowCards}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={card.redCards > 0 ? "destructive" : "outline"}>
+                            {card.redCards}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{getCardStatusBadge(card)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 });
