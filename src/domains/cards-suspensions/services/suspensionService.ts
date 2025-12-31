@@ -369,14 +369,13 @@ export const suspensionService = {
         if (!matchesData) return undefined;
         
         for (const match of matchesData) {
-          const allPlayers = [
-            ...(match.home_players || []),
-            ...(match.away_players || [])
-          ];
+          const homePlayers = Array.isArray(match.home_players) ? match.home_players : [];
+          const awayPlayers = Array.isArray(match.away_players) ? match.away_players : [];
+          const allPlayers = [...homePlayers, ...awayPlayers];
           
           for (const p of allPlayers) {
-            if (p?.playerId === playerId) {
-              const cardTypeValue = p?.cardType?.toLowerCase();
+            if (p && typeof p === 'object' && 'playerId' in p && p.playerId === playerId) {
+              const cardTypeValue = (p as { cardType?: string }).cardType?.toLowerCase();
               if (
                 (cardType === 'yellow' && (cardTypeValue === 'yellow' || cardTypeValue === 'geel')) ||
                 (cardType === 'red' && (cardTypeValue === 'red' || cardTypeValue === 'rood' || cardTypeValue === 'double_yellow'))

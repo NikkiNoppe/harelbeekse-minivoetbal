@@ -1,5 +1,5 @@
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useCallback } from "react";
 import Header from "@/components/pages/header/Header";
 import { useLocation, useNavigate } from "react-router-dom";
 import Footer from "@/components/pages/footer/Footer";
@@ -15,6 +15,8 @@ import { getTabFromPath, getPathFromTab, PUBLIC_ROUTES, ADMIN_ROUTES } from "@/c
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 import { useRouteMeta } from "@/hooks/useRouteMeta";
 import { useIsMobile } from "@/hooks/use-mobile";
+import PullToRefreshWrapper from "@/components/common/PullToRefreshWrapper";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Layout: React.FC = () => {
   const { user } = useAuth();
@@ -24,9 +26,17 @@ const Layout: React.FC = () => {
   const { isTabVisible, loading: tabLoading } = useTabVisibility();
   const previousActiveTab = useRef<string | null>(null);
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
   
   // Update document title and meta tags based on current route
   useRouteMeta();
+
+  // Pull-to-refresh handler - invalidates all queries
+  const handleRefresh = useCallback(async () => {
+    await queryClient.invalidateQueries();
+    // Small delay to let the UI update
+    await new Promise(resolve => setTimeout(resolve, 300));
+  }, [queryClient]);
 
   // Admin sections die sidebar gebruiken
   const adminTabs = [
@@ -155,43 +165,45 @@ const Layout: React.FC = () => {
 
   // Publieke layout met Header hamburgermenu
   return (
-    <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
-      <Header 
-        onLogoClick={handleLogoClick} 
-        onLoginClick={handleLoginClick}
-        onTabChange={handleTabChange}
-        activeTab={activeTab}
-        isAuthenticated={!!user}
-        user={user}
-      />
-      <main className="flex-1 w-full bg-purple-100 pt-6">
-        {isProfilePage ? (
-          <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-            <div className="max-w-7xl mx-auto">
-              <UserProfilePage />
+    <PullToRefreshWrapper onRefresh={handleRefresh} disabled={!isMobile}>
+      <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
+        <Header 
+          onLogoClick={handleLogoClick} 
+          onLoginClick={handleLoginClick}
+          onTabChange={handleTabChange}
+          activeTab={activeTab}
+          isAuthenticated={!!user}
+          user={user}
+        />
+        <main className="flex-1 w-full bg-purple-100 pt-6">
+          {isProfilePage ? (
+            <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+              <div className="max-w-7xl mx-auto">
+                <UserProfilePage />
+              </div>
             </div>
-          </div>
-        ) : isPublicSection ? (
-          <MainPages activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
-        ) : (
-          <MainPages activeTab="algemeen" setActiveTab={setActiveTab} />
-        )}
-      </main>
-      <Footer />
-      <NotificationPopup />
-      
-      {/* Global Login Modal */}
-      <AppModal
-        open={isLoginModalOpen}
-        onOpenChange={closeLoginModal}
-        title="Inloggen"
-        subtitle="Log in op je account om toegang te krijgen tot het systeem"
-        size="sm"
-        showCloseButton={true}
-      >
-        <LoginModal onLoginSuccess={handleLoginSuccess} />
-      </AppModal>
-    </div>
+          ) : isPublicSection ? (
+            <MainPages activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
+          ) : (
+            <MainPages activeTab="algemeen" setActiveTab={setActiveTab} />
+          )}
+        </main>
+        <Footer />
+        <NotificationPopup />
+        
+        {/* Global Login Modal */}
+        <AppModal
+          open={isLoginModalOpen}
+          onOpenChange={closeLoginModal}
+          title="Inloggen"
+          subtitle="Log in op je account om toegang te krijgen tot het systeem"
+          size="sm"
+          showCloseButton={true}
+        >
+          <LoginModal onLoginSuccess={handleLoginSuccess} />
+        </AppModal>
+      </div>
+    </PullToRefreshWrapper>
   );
 };
 
