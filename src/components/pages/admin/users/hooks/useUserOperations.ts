@@ -61,18 +61,16 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
         throw new Error('No user data returned from creation');
       }
       
-      // Send welcome email if email provided
-      if (newUser.email && newUser.email.includes('@')) {
+      // Send welcome email with password setup link (no plaintext password)
+      if (newUser.email && newUser.email.includes('@') && data?.user_id) {
         try {
-          // Use Supabase Edge Functions invoke for portability (local/dev/prod)
           const origin = window.location.origin;
           await supabase.functions.invoke('send-welcome-email', {
             body: {
               email: newUser.email,
               username: newUser.username,
               loginUrl: origin,
-              plainPassword: newUser.password,
-              passwordNote: (newUser as any).passwordNote || undefined
+              userId: data.user_id // Pass user ID to generate reset token
             }
           });
         } catch (e) {
