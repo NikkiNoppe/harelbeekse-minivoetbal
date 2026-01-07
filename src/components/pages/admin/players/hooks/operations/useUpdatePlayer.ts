@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePlayerValidation } from "../usePlayerValidation";
 import { useAuth } from "@/hooks/useAuth";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -75,17 +76,19 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      // Now try the update
-      console.log('🔄 Attempting update...');
-      const { data: updateResult, error: updateError } = await supabase
-        .from('players')
-        .update({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          birth_date: birthDate
-        })
-        .eq('player_id', playerId)
-        .select();
+      // Now try the update with RLS context
+      console.log('🔄 Attempting update with RLS context...');
+      const { data: updateResult, error: updateError } = await withUserContext(async () => {
+        return await supabase
+          .from('players')
+          .update({
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            birth_date: birthDate
+          })
+          .eq('player_id', playerId)
+          .select();
+      });
 
       if (updateError) {
         console.error('❌ Update failed:', updateError);

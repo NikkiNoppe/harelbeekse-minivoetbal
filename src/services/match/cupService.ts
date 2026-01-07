@@ -5,6 +5,7 @@ import { teamService } from "@/services/core/teamService";
 import { normalizeTeamsPreferences, scoreTeamForDetails, TeamPreferencesNormalized } from "@/services/core/teamPreferencesService";
 import { localDateTimeToISO } from "@/lib/dateUtils";
 import { normalizeVenueName } from "@/lib/utils";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export interface CupMatch {
   match_id: number;
@@ -70,10 +71,12 @@ export const bekerService = {
         updateData.away_team_id = teamId;
       }
 
-      const { error: updateError } = await supabase
-        .from('matches')
-        .update(updateData)
-        .eq('match_id', match.match_id);
+      const { error: updateError } = await withUserContext(async () => {
+        return await supabase
+          .from('matches')
+          .update(updateData)
+          .eq('match_id', match.match_id);
+      });
 
       if (updateError) throw updateError;
 
@@ -112,7 +115,9 @@ export const bekerService = {
         if (qf.home_team_id != null && !participants.has(qf.home_team_id)) payload.home_team_id = null;
         if (qf.away_team_id != null && !participants.has(qf.away_team_id)) payload.away_team_id = null;
         if (Object.keys(payload).length > 0) {
-          await supabase.from('matches').update(payload).eq('match_id', qf.match_id).eq('is_cup_match', true);
+          await withUserContext(async () => {
+            return await supabase.from('matches').update(payload).eq('match_id', qf.match_id).eq('is_cup_match', true);
+          });
         }
       }
       return { success: true, message: 'Kwartfinales gereconcilieerd' };
@@ -692,11 +697,13 @@ export const bekerService = {
       // Remove any existing cup matches with the same unique_numbers to avoid duplicate key errors
       const uniqueNumbers = plan.map(p => p.unique_number);
       if (uniqueNumbers.length > 0) {
-        const { error: delError } = await supabase
-          .from('matches')
-          .delete()
-          .in('unique_number', uniqueNumbers)
-          .eq('is_cup_match', true);
+        const { error: delError } = await withUserContext(async () => {
+          return await supabase
+            .from('matches')
+            .delete()
+            .in('unique_number', uniqueNumbers)
+            .eq('is_cup_match', true);
+        });
         if (delError) {
           // Not fatal; continue, insert will fail if truly conflicting
           console.warn('Warning: could not clear existing matches before import', delError);
@@ -713,7 +720,9 @@ export const bekerService = {
         p.venue
       ));
 
-      const { error } = await supabase.from('matches').insert(cupMatches);
+      const { error } = await withUserContext(async () => {
+        return await supabase.from('matches').insert(cupMatches);
+      });
       if (error) throw error;
       return { success: true, message: 'Beker schema geïmporteerd' };
     } catch (error) {
@@ -812,9 +821,11 @@ export const bekerService = {
       cupMatches.push(...final);
 
       // Insert all matches
-      const { error } = await supabase
-        .from('matches')
-        .insert(cupMatches);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('matches')
+          .insert(cupMatches);
+      });
 
       if (error) throw error;
 

@@ -22,6 +22,7 @@ import { Lock, Loader2 } from "lucide-react";
 import { playerService, Player } from "@/services/core";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateShort } from "@/lib/dateUtils";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 interface PlayersListProps {
   teamId: number;
@@ -113,14 +114,16 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
     }
 
     try {
-      const { error } = await supabase
-        .from('players')
-        .insert({
-          first_name: newPlayerFirstName,
-          last_name: newPlayerLastName,
-          birth_date: newPlayerBirthDate,
-          team_id: teamId
-        });
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('players')
+          .insert({
+            first_name: newPlayerFirstName,
+            last_name: newPlayerLastName,
+            birth_date: newPlayerBirthDate,
+            team_id: teamId
+          });
+      });
 
       if (error) throw error;
 
@@ -151,10 +154,12 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
     }
 
     try {
-      const { error } = await supabase
-        .from('players')
-        .delete()
-        .eq('player_id', playerId);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('players')
+          .delete()
+          .eq('player_id', playerId);
+      });
 
       if (error) throw error;
 

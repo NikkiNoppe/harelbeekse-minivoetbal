@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { withUserContext } from '@/lib/supabaseUtils';
 
 export interface NotificationData {
   id?: number;
@@ -99,9 +100,11 @@ export const notificationService = {
         updated_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('application_settings')
-        .insert([data]);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .insert([data]);
+      });
 
       if (error) throw error;
     } catch (error) {
@@ -118,10 +121,12 @@ export const notificationService = {
         updated_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('application_settings')
-        .update(data)
-        .eq('id', id);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .update(data)
+          .eq('id', id);
+      });
 
       if (error) throw error;
     } catch (error) {
@@ -133,10 +138,12 @@ export const notificationService = {
   // Delete notification
   async deleteNotification(id: number): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('application_settings')
-        .delete()
-        .eq('id', id);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .delete()
+          .eq('id', id);
+      });
 
       if (error) throw error;
     } catch (error) {
@@ -148,13 +155,15 @@ export const notificationService = {
   // Toggle notification active status
   async toggleNotificationStatus(id: number, isActive: boolean): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('application_settings')
-        .update({ 
-          is_active: isActive,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .update({ 
+            is_active: isActive,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id);
+      });
 
       if (error) throw error;
     } catch (error) {
