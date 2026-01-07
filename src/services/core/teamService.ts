@@ -278,10 +278,12 @@ export const teamService = {
   },
 
   async deleteTeam(teamId: number): Promise<boolean> {
-    const { error } = await supabase
-      .from('teams')
-      .delete()
-      .eq('team_id', teamId);
+    const { error } = await withUserContext(async () => {
+      return await supabase
+        .from('teams')
+        .delete()
+        .eq('team_id', teamId);
+    });
     
     if (error) {
       console.error('Error deleting team:', error);

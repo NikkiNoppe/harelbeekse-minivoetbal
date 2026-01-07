@@ -3,6 +3,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { suspensionRulesService } from "./suspensionRulesService";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export interface PlayerCard {
   playerId: number;
@@ -198,22 +199,24 @@ export const suspensionService = {
 
   async applySuspension(playerId: number, reason: string, matches: number, notes?: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('application_settings')
-        .insert({
-          setting_category: 'manual_suspensions',
-          setting_name: playerId.toString(),
-          setting_value: {
-            reason,
-            matches,
-            start_date: new Date().toISOString(),
-            end_date: new Date(Date.now() + (matches * 7 * 24 * 60 * 60 * 1000)).toISOString(), // Rough estimate
-            notes,
-            created_by: 'admin', // Could be dynamic based on current user
-            type: 'manual'
-          },
-          is_active: true
-        });
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .insert({
+            setting_category: 'manual_suspensions',
+            setting_name: playerId.toString(),
+            setting_value: {
+              reason,
+              matches,
+              start_date: new Date().toISOString(),
+              end_date: new Date(Date.now() + (matches * 7 * 24 * 60 * 60 * 1000)).toISOString(), // Rough estimate
+              notes,
+              created_by: 'admin', // Could be dynamic based on current user
+              type: 'manual'
+            },
+            is_active: true
+          });
+      });
 
       if (error) {
         console.error('Error applying suspension:', error);
@@ -267,13 +270,15 @@ export const suspensionService = {
 
   async updateSuspension(suspensionId: number, updates: any): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('application_settings')
-        .update({
-          setting_value: updates,
-          is_active: updates.isActive
-        })
-        .eq('id', suspensionId);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .update({
+            setting_value: updates,
+            is_active: updates.isActive
+          })
+          .eq('id', suspensionId);
+      });
 
       if (error) {
         console.error('Error updating suspension:', error);
@@ -287,10 +292,12 @@ export const suspensionService = {
 
   async deleteSuspension(suspensionId: number): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('application_settings')
-        .delete()
-        .eq('id', suspensionId);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .delete()
+          .eq('id', suspensionId);
+      });
 
       if (error) {
         console.error('Error deleting suspension:', error);

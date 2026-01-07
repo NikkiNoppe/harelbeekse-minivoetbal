@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { delay, refreshWithRetry } from "../utils/playerCRUDUtils";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export const useRemovePlayer = (refreshPlayers: () => Promise<void>) => {
   const [isRemoving, setIsRemoving] = useState(false);
@@ -49,12 +50,14 @@ export const useRemovePlayer = (refreshPlayers: () => Promise<void>) => {
 
       console.log('📝 Found player to remove:', currentPlayer);
 
-      // Perform the real delete
-      console.log('🗑️ Executing database DELETE...');
-      const { error: deleteError } = await supabase
-        .from('players')
-        .delete()
-        .eq('player_id', playerId);
+      // Perform the real delete with RLS context
+      console.log('🗑️ Executing database DELETE with RLS context...');
+      const { error: deleteError } = await withUserContext(async () => {
+        return await supabase
+          .from('players')
+          .delete()
+          .eq('player_id', playerId);
+      });
 
       if (deleteError) {
         console.error('❌ Database DELETE error:', deleteError);
