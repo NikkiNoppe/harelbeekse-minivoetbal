@@ -26,7 +26,7 @@ export const useRemovePlayer = (refreshPlayers: () => Promise<void>) => {
         .from('players')
         .select('player_id, first_name, last_name, team_id, birth_date')
         .eq('player_id', playerId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) {
         console.error('❌ Error fetching current player:', fetchError);
