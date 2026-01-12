@@ -3,6 +3,7 @@ import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { updateMatchForm } from "@/components/pages/admin/matches/services/matchesFormService";
 import { MatchFormData } from "@/components/pages/admin/matches/types";
 import { scheduleBackgroundSideEffects } from "@/services/match/backgroundSideEffects";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 interface MatchUpdateData {
   homeScore?: number | null;
@@ -186,12 +187,14 @@ export const enhancedMatchService = {
       // Debug: Log what we're sending
       console.log('🟢 [enhancedMatchService] SENDING UPDATE:', { matchId, updateObject });
       
-      // Direct database update (no select to reduce payload)
-      const { data, error } = await supabase
-        .from('matches')
-        .update(updateObject)
-        .eq('match_id', matchId)
-        ;
+      // Wrap update in withUserContext for proper RLS context
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('matches')
+          .update(updateObject)
+          .eq('match_id', matchId)
+          .select('match_id');
+      });
         
       if (error) {
         console.error('❌ [enhancedMatchService] DATABASE ERROR:', {
@@ -204,7 +207,16 @@ export const enhancedMatchService = {
         throw new Error(`Database error (${error.code}): ${error.message}. Details: ${JSON.stringify(error.details)}`);
       }
       
-      console.log('✅ [enhancedMatchService] UPDATE SUCCESS');
+      // CRITICAL: Check if RLS silently blocked the update (0 rows affected)
+      if (!data || data.length === 0) {
+        console.error('❌ [enhancedMatchService] UPDATE returned 0 rows - RLS likely blocked the update');
+        return {
+          success: false,
+          message: "Geen toegang om deze wedstrijd bij te werken. Controleer of je rechten hebt voor dit team."
+        };
+      }
+      
+      console.log('✅ [enhancedMatchService] UPDATE SUCCESS, rows affected:', data.length);
 
       // Prepare success message immediately
       const successMessage = isLateSubmission 
@@ -256,18 +268,27 @@ export const enhancedMatchService = {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('matches')
-        .update({ 
-          is_locked: true
-        })
-        .eq('match_id', matchId)
-        .select();
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('matches')
+          .update({ 
+            is_locked: true
+          })
+          .eq('match_id', matchId)
+          .select('match_id');
+      });
 
       if (error) {
         return {
           success: false,
           message: `Fout bij vergrendelen wedstrijd: ${error.message}`
+        };
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          success: false,
+          message: "Geen toegang om deze wedstrijd te vergrendelen."
         };
       }
 
@@ -295,18 +316,27 @@ export const enhancedMatchService = {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('matches')
-        .update({ 
-          is_locked: false
-        })
-        .eq('match_id', matchId)
-        .select();
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('matches')
+          .update({ 
+            is_locked: false
+          })
+          .eq('match_id', matchId)
+          .select('match_id');
+      });
 
       if (error) {
         return {
           success: false,
           message: `Fout bij ontgrendelen wedstrijd: ${error.message}`
+        };
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          success: false,
+          message: "Geen toegang om deze wedstrijd te ontgrendelen."
         };
       }
 

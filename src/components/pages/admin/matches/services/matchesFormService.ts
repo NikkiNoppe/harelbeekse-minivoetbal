@@ -231,19 +231,29 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
       referee_notesLength: updatePayload.referee_notes?.length || 0
     });
     
-    const { error } = await supabase
-      .from('matches')
-      .update(updatePayload)
-      .eq('match_id', matchData.matchId);
+    const { data, error } = await withUserContext(async () => {
+      return await supabase
+        .from('matches')
+        .update(updatePayload)
+        .eq('match_id', matchData.matchId)
+        .select('match_id');
+    });
 
     if (error) {
       console.error('❌ [matchesFormService] Error updating match:', error);
       throw error;
     }
     
+    // CRITICAL: Check if RLS silently blocked the update (0 rows affected)
+    if (!data || data.length === 0) {
+      console.error('❌ [matchesFormService] UPDATE returned 0 rows - RLS likely blocked the update');
+      throw new Error("Geen toegang om deze wedstrijd bij te werken. Controleer of je rechten hebt voor dit team.");
+    }
+    
     console.log('✅ [matchesFormService] Match updated successfully:', {
       matchId: matchData.matchId,
-      referee_notes: processedRefereeNotes
+      referee_notes: processedRefereeNotes,
+      rowsAffected: data.length
     });
 
     // If this is a cup match with scores, check for winner advancement (both new completions and score changes)
@@ -307,16 +317,23 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
 
 export const lockMatchForm = async (matchId: number): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('matches')
-      .update({
-        is_locked: true
-      })
-      .eq('match_id', matchId);
+    const { data, error } = await withUserContext(async () => {
+      return await supabase
+        .from('matches')
+        .update({
+          is_locked: true
+        })
+        .eq('match_id', matchId)
+        .select('match_id');
+    });
 
     if (error) {
       console.error('Error locking match:', error);
       throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      throw new Error("Geen toegang om deze wedstrijd te vergrendelen.");
     }
   } catch (error) {
     console.error('Error in lockMatchForm:', error);
