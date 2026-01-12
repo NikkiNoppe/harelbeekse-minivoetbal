@@ -231,29 +231,45 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
       referee_notesLength: updatePayload.referee_notes?.length || 0
     });
     
-    const { data, error } = await withUserContext(async () => {
-      return await supabase
-        .from('matches')
-        .update(updatePayload)
-        .eq('match_id', matchData.matchId)
-        .select('match_id');
+    // Get user ID from localStorage
+    const authDataString = localStorage.getItem('auth_data');
+    let userId: number | null = null;
+    if (authDataString) {
+      try {
+        const authData = JSON.parse(authDataString);
+        userId = authData?.user?.id;
+      } catch (e) {
+        console.warn('Could not parse auth_data');
+      }
+    }
+    
+    if (!userId) {
+      throw new Error("Niet ingelogd. Log opnieuw in om wijzigingen op te slaan.");
+    }
+    
+    // Use SECURITY DEFINER RPC for atomic context + update
+    const { data, error } = await supabase.rpc('update_match_with_context', {
+      p_user_id: userId,
+      p_match_id: matchData.matchId,
+      p_update_data: updatePayload
     });
 
     if (error) {
-      console.error('❌ [matchesFormService] Error updating match:', error);
+      console.error('❌ [matchesFormService] RPC Error updating match:', error);
       throw error;
     }
     
-    // CRITICAL: Check if RLS silently blocked the update (0 rows affected)
-    if (!data || data.length === 0) {
-      console.error('❌ [matchesFormService] UPDATE returned 0 rows - RLS likely blocked the update');
-      throw new Error("Geen toegang om deze wedstrijd bij te werken. Controleer of je rechten hebt voor dit team.");
+    // Check RPC result for success/failure
+    const result = Array.isArray(data) ? data[0] : data;
+    if (!result || !result.success) {
+      console.error('❌ [matchesFormService] RPC returned failure:', result);
+      throw new Error(result?.message || "Geen toegang om deze wedstrijd bij te werken.");
     }
     
-    console.log('✅ [matchesFormService] Match updated successfully:', {
+    console.log('✅ [matchesFormService] Match updated successfully via RPC:', {
       matchId: matchData.matchId,
       referee_notes: processedRefereeNotes,
-      rowsAffected: data.length
+      result
     });
 
     // If this is a cup match with scores, check for winner advancement (both new completions and score changes)

@@ -184,39 +184,57 @@ export const enhancedMatchService = {
         };
       }
       
-      // Debug: Log what we're sending
-      console.log('🟢 [enhancedMatchService] SENDING UPDATE:', { matchId, updateObject });
+      // Get user ID from localStorage
+      const authDataString = localStorage.getItem('auth_data');
+      let userId: number | null = null;
+      if (authDataString) {
+        try {
+          const authData = JSON.parse(authDataString);
+          userId = authData?.user?.id;
+        } catch (e) {
+          console.warn('Could not parse auth_data');
+        }
+      }
       
-      // Wrap update in withUserContext for proper RLS context
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('matches')
-          .update(updateObject)
-          .eq('match_id', matchId)
-          .select('match_id');
+      if (!userId) {
+        return {
+          success: false,
+          message: "Niet ingelogd. Log opnieuw in om wijzigingen op te slaan."
+        };
+      }
+      
+      // Debug: Log what we're sending
+      console.log('🟢 [enhancedMatchService] SENDING UPDATE via RPC:', { matchId, updateObject, userId });
+      
+      // Use SECURITY DEFINER RPC for atomic context + update
+      const { data, error } = await supabase.rpc('update_match_with_context', {
+        p_user_id: userId,
+        p_match_id: matchId,
+        p_update_data: updateObject
       });
         
       if (error) {
-        console.error('❌ [enhancedMatchService] DATABASE ERROR:', {
+        console.error('❌ [enhancedMatchService] RPC ERROR:', {
           code: error.code,
           message: error.message,
           details: error.details,
           hint: error.hint,
           fullError: JSON.stringify(error, null, 2)
         });
-        throw new Error(`Database error (${error.code}): ${error.message}. Details: ${JSON.stringify(error.details)}`);
+        throw new Error(`Database error (${error.code}): ${error.message}`);
       }
       
-      // CRITICAL: Check if RLS silently blocked the update (0 rows affected)
-      if (!data || data.length === 0) {
-        console.error('❌ [enhancedMatchService] UPDATE returned 0 rows - RLS likely blocked the update');
+      // Check RPC result for success/failure
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result || !result.success) {
+        console.error('❌ [enhancedMatchService] RPC returned failure:', result);
         return {
           success: false,
-          message: "Geen toegang om deze wedstrijd bij te werken. Controleer of je rechten hebt voor dit team."
+          message: result?.message || "Geen toegang om deze wedstrijd bij te werken."
         };
       }
       
-      console.log('✅ [enhancedMatchService] UPDATE SUCCESS, rows affected:', data.length);
+      console.log('✅ [enhancedMatchService] UPDATE SUCCESS via RPC:', result);
 
       // Prepare success message immediately
       const successMessage = isLateSubmission 
