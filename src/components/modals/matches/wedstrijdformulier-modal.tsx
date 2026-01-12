@@ -759,6 +759,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           title: "Spelers opgeslagen",
           description: "De spelersselectie is succesvol opgeslagen.",
         });
+        handleComplete(); // Sluit modal na succes
       }
     } catch (error) {
       console.error('Error saving player selection:', error);
