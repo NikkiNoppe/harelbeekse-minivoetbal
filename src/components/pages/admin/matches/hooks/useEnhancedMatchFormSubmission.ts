@@ -127,13 +127,10 @@ export const useEnhancedMatchFormSubmission = () => {
           description: result.message
         });
 
-        // DEFERRED: Query invalidation runs after user sees success (500ms delay)
-        // This ensures UI feels snappy while data refreshes in background
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['teamMatches'] });
-          queryClient.invalidateQueries({ queryKey: ['match', matchData.matchId] });
-          console.log('🔄 [useEnhancedMatchFormSubmission] Deferred query invalidation complete');
-        }, 500);
+        // IMMEDIATE: Invalidate queries so fresh data is available when reopening
+        await queryClient.invalidateQueries({ queryKey: ['teamMatches'] });
+        await queryClient.invalidateQueries({ queryKey: ['match', matchData.matchId] });
+        console.log('🔄 [useEnhancedMatchFormSubmission] Query invalidation complete');
 
         return { success: true };
       } else {
