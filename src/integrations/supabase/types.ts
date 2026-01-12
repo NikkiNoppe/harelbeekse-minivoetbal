@@ -679,6 +679,14 @@ export type Database = {
         Args: never
         Returns: undefined
       }
+      update_match_with_context: {
+        Args: { p_match_id: number; p_update_data: Json; p_user_id: number }
+        Returns: {
+          match_id: number
+          message: string
+          success: boolean
+        }[]
+      }
       update_player_cards: { Args: never; Returns: undefined }
       update_team_balances: { Args: never; Returns: undefined }
       update_user_password: {
