@@ -15,6 +15,12 @@ export interface UpcomingMatch {
   unique_number?: string;
   is_locked?: boolean;
   is_submitted?: boolean;
+  home_players?: any[];
+  away_players?: any[];
+  home_score?: number | null;
+  away_score?: number | null;
+  referee?: string;
+  referee_notes?: string;
 }
 
 export const useUpcomingMatches = (teamId: number | null, limit: number = 5) => {
@@ -37,6 +43,12 @@ export const useUpcomingMatches = (teamId: number | null, limit: number = 5) => 
           unique_number,
           is_submitted,
           is_locked,
+          home_players,
+          away_players,
+          home_score,
+          away_score,
+          referee,
+          referee_notes,
           home_team:teams!matches_home_team_id_fkey(team_name),
           away_team:teams!matches_away_team_id_fkey(team_name)
         `)
@@ -63,7 +75,13 @@ export const useUpcomingMatches = (teamId: number | null, limit: number = 5) => 
           location: match.location,
           unique_number: match.unique_number,
           is_locked: match.is_locked,
-          is_submitted: match.is_submitted
+          is_submitted: match.is_submitted,
+          home_players: match.home_players || [],
+          away_players: match.away_players || [],
+          home_score: match.home_score,
+          away_score: match.away_score,
+          referee: match.referee,
+          referee_notes: match.referee_notes
         };
       });
     },
