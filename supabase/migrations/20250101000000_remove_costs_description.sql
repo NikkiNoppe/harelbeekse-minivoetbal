@@ -27,3 +27,4 @@ WHERE table_schema = 'public'
 AND table_name = 'costs'
 ORDER BY ordinal_position;
 
+
