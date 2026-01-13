@@ -58,7 +58,9 @@ export const financialService = {
         id: transaction.id,
         team_id: transaction.team_id,
         transaction_type: transaction.costs?.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment' || 'adjustment',
-        amount: transaction.amount || (transaction.costs as any)?.amount || 0,
+        amount: transaction.amount !== null && transaction.amount !== undefined 
+          ? transaction.amount 
+          : ((transaction.costs as any)?.amount || 0),
         description: transaction.costs?.name || null,
         penalty_type_id: null,
         cost_setting_id: transaction.cost_setting_id,
