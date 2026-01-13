@@ -939,7 +939,7 @@ const AdminPlayoffPage: React.FC = () => {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-2">
-                <Button onClick={() => setConfirmAction('finalize')} disabled={actionLoading} className="flex-1 h-11 bg-green-600 hover:bg-green-700 text-white">
+                <Button variant="default" onClick={() => setConfirmAction('finalize')} disabled={actionLoading} className="flex-1 h-11">
                   {actionLoading && confirmAction === 'finalize' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
                   Finaliseer
                 </Button>
