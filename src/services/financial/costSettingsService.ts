@@ -223,15 +223,16 @@ export const costSettingsService = {
           depositCostId = newDeposit.id;
         }
 
-        // Insert into team_costs with individual amount
-        const { error: linkError } = await supabase
-          .from('team_costs')
-          .insert([{
-            team_id: transaction.team_id,
-            cost_setting_id: depositCostId,
-            amount: transaction.amount,
-            transaction_date: transaction.transaction_date
-          }]);
+      // Insert into team_costs with individual amount
+      const { error: linkError } = await supabase
+        .from('team_costs')
+        .insert([{
+          team_id: transaction.team_id,
+          cost_setting_id: depositCostId,
+          amount: transaction.amount,
+          transaction_date: transaction.transaction_date,
+          match_id: transaction.match_id || null
+        }]);
 
         if (linkError) throw linkError;
         return { success: true, message: 'Storting succesvol toegevoegd' };
@@ -245,7 +246,8 @@ export const costSettingsService = {
             team_id: transaction.team_id,
             cost_setting_id: transaction.cost_setting_id,
             amount: transaction.amount,
-            transaction_date: transaction.transaction_date
+            transaction_date: transaction.transaction_date,
+            match_id: transaction.match_id || null
           }]);
 
         if (error) throw error;
@@ -273,7 +275,8 @@ export const costSettingsService = {
           team_id: transaction.team_id,
           cost_setting_id: costData.id,
           amount: transaction.amount,
-          transaction_date: transaction.transaction_date
+          transaction_date: transaction.transaction_date,
+          match_id: transaction.match_id || null
         }]);
 
       if (linkError) throw linkError;

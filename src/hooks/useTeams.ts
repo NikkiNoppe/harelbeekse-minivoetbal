@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { teamService } from '@/services/core/teamService';
+import { withUserContext } from '@/lib/supabaseUtils';
 
 export interface Team {
   team_id: number;
@@ -108,10 +109,12 @@ export const useUpdateTeam = () => {
 
   return useMutation({
     mutationFn: async ({ teamId, data }: { teamId: number; data: Partial<Team> }) => {
-      const { error } = await supabase
-        .from('teams')
-        .update(data)
-        .eq('team_id', teamId);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('teams')
+          .update(data)
+          .eq('team_id', teamId);
+      });
 
       if (error) throw error;
       return { teamId, data };
@@ -130,10 +133,12 @@ export const useDeleteTeam = () => {
 
   return useMutation({
     mutationFn: async (teamId: number) => {
-      const { error } = await supabase
-        .from('teams')
-        .delete()
-        .eq('team_id', teamId);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('teams')
+          .delete()
+          .eq('team_id', teamId);
+      });
 
       if (error) throw error;
       return teamId;
@@ -143,4 +148,4 @@ export const useDeleteTeam = () => {
       queryClient.invalidateQueries({ queryKey: teamQueryKeys.lists() });
     },
   });
-}; 
+};

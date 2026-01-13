@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export interface CostSetting {
   id: number;
@@ -256,11 +256,13 @@ export const enhancedCostSettingsService = {
   async deleteCostSetting(id: number): Promise<{ success: boolean; message: string }> {
     logOperation('deleteCostSetting - START', { id });
     try {
-      const { data, error } = await supabase
-        .from('costs')
-        .delete()
-        .eq('id', id)
-        .select();
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('costs')
+          .delete()
+          .eq('id', id)
+          .select();
+      });
 
       logOperation('deleteCostSetting - QUERY RESULT', { data, error });
 

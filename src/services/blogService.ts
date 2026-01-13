@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { withUserContext } from '@/lib/supabaseUtils';
 
 export interface BlogPostData {
   id?: number;
@@ -101,9 +102,11 @@ export const blogService = {
         updated_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('application_settings')
-        .insert([data]);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .insert([data]);
+      });
 
       if (error) throw error;
     } catch (error) {
@@ -120,10 +123,12 @@ export const blogService = {
         updated_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('application_settings')
-        .update(data)
-        .eq('id', id);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .update(data)
+          .eq('id', id);
+      });
 
       if (error) throw error;
     } catch (error) {
@@ -135,10 +140,12 @@ export const blogService = {
   // Delete blog post
   async deleteBlogPost(id: number): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('application_settings')
-        .delete()
-        .eq('id', id);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .delete()
+          .eq('id', id);
+      });
 
       if (error) throw error;
     } catch (error) {
@@ -166,13 +173,15 @@ export const blogService = {
         published_at: published ? new Date().toISOString() : null
       });
 
-      const { error } = await supabase
-        .from('application_settings')
-        .update({ 
-          setting_value: updatedSettingValue,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .update({ 
+            setting_value: updatedSettingValue,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id);
+      });
 
       if (error) throw error;
     } catch (error) {

@@ -5,6 +5,7 @@ import { seasonService } from "@/services/seasonService";
 import { priorityOrderService } from "@/services/priorityOrderService";
 import { teamService } from "@/services/core/teamService";
 import { normalizeTeamsPreferences, scoreTeamForDetails } from "@/services/core/teamPreferencesService";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export interface PlayoffMatch {
   match_id: number;
@@ -455,7 +456,9 @@ export const playoffService = {
         }
       }
 
-      const { error } = await supabase.from('matches').insert(matchInserts);
+      const { error } = await withUserContext(async () => {
+        return await supabase.from('matches').insert(matchInserts);
+      });
       if (error) return { success: false, message: `Fout bij opslaan: ${error.message}` };
       
       return { 
@@ -499,14 +502,16 @@ export const playoffService = {
           continue;
         }
 
-        const { error: updateError } = await supabase
-          .from('matches')
-          .update({
-            home_team_id: homeTeamId,
-            away_team_id: awayTeamId,
-            is_playoff_finalized: true
-          })
-          .eq('match_id', match.match_id);
+        const { error: updateError } = await withUserContext(async () => {
+          return await supabase
+            .from('matches')
+            .update({
+              home_team_id: homeTeamId,
+              away_team_id: awayTeamId,
+              is_playoff_finalized: true
+            })
+            .eq('match_id', match.match_id);
+        });
 
         if (updateError) {
           console.error(`Fout bij updaten match ${match.match_id}:`, updateError);
@@ -706,7 +711,9 @@ export const playoffService = {
         counter++;
       }
 
-      const { error } = await supabase.from('matches').insert(matchInserts);
+      const { error } = await withUserContext(async () => {
+        return await supabase.from('matches').insert(matchInserts);
+      });
       if (error) return { success: false, message: `Fout bij opslaan: ${error.message}` };
       return { success: true, message: `${matchInserts.length} playoff wedstrijden succesvol aangemaakt.` };
     } catch (e) {
@@ -718,10 +725,12 @@ export const playoffService = {
     try {
       // Get playoff match IDs
       // team_costs worden automatisch verwijderd door CASCADE constraint
-      const { error } = await supabase
-        .from('matches')
-        .delete()
-        .eq('is_playoff_match', true);
+      const { error } = await withUserContext(async () => {
+        return await supabase
+          .from('matches')
+          .delete()
+          .eq('is_playoff_match', true);
+      });
         
       if (error) return { success: false, message: `Fout bij verwijderen: ${error.message}` };
       return { success: true, message: "Playoff wedstrijden succesvol verwijderd" };

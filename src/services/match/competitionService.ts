@@ -8,6 +8,7 @@ import { playoffService } from "@/services/match/playoffService";
 import { bekerService as cupService } from "./cupService";
 import { localDateTimeToISO } from "@/lib/dateUtils";
 import { normalizeVenueName } from "@/lib/utils";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export interface CompetitionMatch {
   match_id: number;
@@ -1303,11 +1304,13 @@ export const competitionService = {
       const filteredPlan = plan.filter(p => p.away_team_id !== null);
       const uniqueNumbers = filteredPlan.map(p => p.unique_number);
       if (uniqueNumbers.length > 0) {
-        const { error: delError } = await supabase
-          .from('matches')
-          .delete()
-          .in('unique_number', uniqueNumbers)
-          .eq('is_cup_match', false);
+        const { error: delError } = await withUserContext(async () => {
+          return await supabase
+            .from('matches')
+            .delete()
+            .in('unique_number', uniqueNumbers)
+            .eq('is_cup_match', false);
+        });
         if (delError) console.warn('Warning: could not clear competition matches before import', delError);
       }
 
@@ -1320,7 +1323,9 @@ export const competitionService = {
         p.venue
       ));
 
-      const { error } = await supabase.from('matches').insert(rows);
+      const { error } = await withUserContext(async () => {
+        return await supabase.from('matches').insert(rows);
+      });
       if (error) throw error;
       return { success: true, message: 'Competitieplan geïmporteerd' };
     } catch (e) {
@@ -1464,9 +1469,11 @@ export const competitionService = {
       const allMatches = [...regularSeasonMatches, ...playoffMatches];
       
       try {
-        const { error } = await supabase
-          .from('matches')
-          .insert(allMatches);
+        const { error } = await withUserContext(async () => {
+          return await supabase
+            .from('matches')
+            .insert(allMatches);
+        });
 
         if (error) {
           console.error('❌ Fout bij opslaan wedstrijden:', error);
@@ -1797,7 +1804,9 @@ export const competitionService = {
         counter++;
       }
 
-      const { error } = await supabase.from('matches').insert(matchInserts);
+      const { error } = await withUserContext(async () => {
+        return await supabase.from('matches').insert(matchInserts);
+      });
       if (error) {
         console.error('Fout bij opslaan playoff wedstrijden:', error);
         return { success: false, message: `Fout bij opslaan: ${error.message}` };

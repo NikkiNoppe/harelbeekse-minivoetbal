@@ -231,19 +231,45 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
       referee_notesLength: updatePayload.referee_notes?.length || 0
     });
     
-    const { error } = await supabase
-      .from('matches')
-      .update(updatePayload)
-      .eq('match_id', matchData.matchId);
+    // Get user ID from localStorage
+    const authDataString = localStorage.getItem('auth_data');
+    let userId: number | null = null;
+    if (authDataString) {
+      try {
+        const authData = JSON.parse(authDataString);
+        userId = authData?.user?.id;
+      } catch (e) {
+        console.warn('Could not parse auth_data');
+      }
+    }
+    
+    if (!userId) {
+      throw new Error("Niet ingelogd. Log opnieuw in om wijzigingen op te slaan.");
+    }
+    
+    // Use SECURITY DEFINER RPC for atomic context + update
+    const { data, error } = await supabase.rpc('update_match_with_context', {
+      p_user_id: userId,
+      p_match_id: matchData.matchId,
+      p_update_data: updatePayload
+    });
 
     if (error) {
-      console.error('❌ [matchesFormService] Error updating match:', error);
+      console.error('❌ [matchesFormService] RPC Error updating match:', error);
       throw error;
     }
     
-    console.log('✅ [matchesFormService] Match updated successfully:', {
+    // Check RPC result for success/failure
+    const result = Array.isArray(data) ? data[0] : data;
+    if (!result || !result.success) {
+      console.error('❌ [matchesFormService] RPC returned failure:', result);
+      throw new Error(result?.message || "Geen toegang om deze wedstrijd bij te werken.");
+    }
+    
+    console.log('✅ [matchesFormService] Match updated successfully via RPC:', {
       matchId: matchData.matchId,
-      referee_notes: processedRefereeNotes
+      referee_notes: processedRefereeNotes,
+      result
     });
 
     // If this is a cup match with scores, check for winner advancement (both new completions and score changes)
@@ -307,16 +333,23 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
 
 export const lockMatchForm = async (matchId: number): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('matches')
-      .update({
-        is_locked: true
-      })
-      .eq('match_id', matchId);
+    const { data, error } = await withUserContext(async () => {
+      return await supabase
+        .from('matches')
+        .update({
+          is_locked: true
+        })
+        .eq('match_id', matchId)
+        .select('match_id');
+    });
 
     if (error) {
       console.error('Error locking match:', error);
       throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      throw new Error("Geen toegang om deze wedstrijd te vergrendelen.");
     }
   } catch (error) {
     console.error('Error in lockMatchForm:', error);

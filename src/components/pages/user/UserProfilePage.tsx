@@ -651,6 +651,12 @@ const NextMatchCard: React.FC<{
     is_submitted?: boolean;
     home_team_id: number;
     away_team_id: number;
+    home_players?: any[];
+    away_players?: any[];
+    home_score?: number | null;
+    away_score?: number | null;
+    referee?: string;
+    referee_notes?: string;
   };
   teamName: string;
   onSelectMatch: (match: MatchFormData) => void;
@@ -695,12 +701,12 @@ const NextMatchCard: React.FC<{
       matchday: match.speeldag || 'Te bepalen',
       isCompleted: !!match.is_submitted,
       isLocked: !!(match.is_locked || shouldAutoLockMatch(date, time)),
-      homeScore: undefined,
-      awayScore: undefined,
-      referee: undefined,
-      refereeNotes: undefined,
-      homePlayers: [],
-      awayPlayers: [],
+      homeScore: match.home_score ?? undefined,
+      awayScore: match.away_score ?? undefined,
+      referee: match.referee ?? undefined,
+      refereeNotes: match.referee_notes ?? undefined,
+      homePlayers: match.home_players || [],
+      awayPlayers: match.away_players || [],
     };
     onSelectMatch(matchFormData);
   }, [match, homeTeam, awayTeam, date, time, onSelectMatch]);

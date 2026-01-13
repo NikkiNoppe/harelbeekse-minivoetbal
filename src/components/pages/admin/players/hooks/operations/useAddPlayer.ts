@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePlayerValidation } from "../usePlayerValidation";
 import { refreshWithRetry } from "../utils/playerCRUDUtils";
 import { formatDateShort } from "@/lib/dateUtils";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
   const [isAdding, setIsAdding] = useState(false);
@@ -63,7 +64,7 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
       
-      console.log('📝 Executing database INSERT...');
+      console.log('📝 Executing database INSERT with user context...');
       const insertData = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -72,10 +73,15 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
       };
       console.log('📊 Insert data:', insertData);
 
-      const { data, error } = await supabase
-        .from('players')
-        .insert(insertData)
-        .select();
+      // Use withUserContext to ensure RLS context is set before insert
+      const result = await withUserContext(async () => {
+        return await supabase
+          .from('players')
+          .insert(insertData)
+          .select();
+      });
+      
+      const { data, error } = result;
       
       if (error) {
         console.error('❌ Database INSERT error:', error);

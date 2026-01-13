@@ -3,6 +3,7 @@ import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { updateMatchForm } from "@/components/pages/admin/matches/services/matchesFormService";
 import { MatchFormData } from "@/components/pages/admin/matches/types";
 import { scheduleBackgroundSideEffects } from "@/services/match/backgroundSideEffects";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 interface MatchUpdateData {
   homeScore?: number | null;
@@ -183,28 +184,57 @@ export const enhancedMatchService = {
         };
       }
       
-      // Debug: Log what we're sending
-      console.log('🟢 [enhancedMatchService] SENDING UPDATE:', { matchId, updateObject });
+      // Get user ID from localStorage
+      const authDataString = localStorage.getItem('auth_data');
+      let userId: number | null = null;
+      if (authDataString) {
+        try {
+          const authData = JSON.parse(authDataString);
+          userId = authData?.user?.id;
+        } catch (e) {
+          console.warn('Could not parse auth_data');
+        }
+      }
       
-      // Direct database update (no select to reduce payload)
-      const { data, error } = await supabase
-        .from('matches')
-        .update(updateObject)
-        .eq('match_id', matchId)
-        ;
+      if (!userId) {
+        return {
+          success: false,
+          message: "Niet ingelogd. Log opnieuw in om wijzigingen op te slaan."
+        };
+      }
+      
+      // Debug: Log what we're sending
+      console.log('🟢 [enhancedMatchService] SENDING UPDATE via RPC:', { matchId, updateObject, userId });
+      
+      // Use SECURITY DEFINER RPC for atomic context + update
+      const { data, error } = await supabase.rpc('update_match_with_context', {
+        p_user_id: userId,
+        p_match_id: matchId,
+        p_update_data: updateObject
+      });
         
       if (error) {
-        console.error('❌ [enhancedMatchService] DATABASE ERROR:', {
+        console.error('❌ [enhancedMatchService] RPC ERROR:', {
           code: error.code,
           message: error.message,
           details: error.details,
           hint: error.hint,
           fullError: JSON.stringify(error, null, 2)
         });
-        throw new Error(`Database error (${error.code}): ${error.message}. Details: ${JSON.stringify(error.details)}`);
+        throw new Error(`Database error (${error.code}): ${error.message}`);
       }
       
-      console.log('✅ [enhancedMatchService] UPDATE SUCCESS');
+      // Check RPC result for success/failure
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result || !result.success) {
+        console.error('❌ [enhancedMatchService] RPC returned failure:', result);
+        return {
+          success: false,
+          message: result?.message || "Geen toegang om deze wedstrijd bij te werken."
+        };
+      }
+      
+      console.log('✅ [enhancedMatchService] UPDATE SUCCESS via RPC:', result);
 
       // Prepare success message immediately
       const successMessage = isLateSubmission 
@@ -256,18 +286,27 @@ export const enhancedMatchService = {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('matches')
-        .update({ 
-          is_locked: true
-        })
-        .eq('match_id', matchId)
-        .select();
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('matches')
+          .update({ 
+            is_locked: true
+          })
+          .eq('match_id', matchId)
+          .select('match_id');
+      });
 
       if (error) {
         return {
           success: false,
           message: `Fout bij vergrendelen wedstrijd: ${error.message}`
+        };
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          success: false,
+          message: "Geen toegang om deze wedstrijd te vergrendelen."
         };
       }
 
@@ -295,18 +334,27 @@ export const enhancedMatchService = {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('matches')
-        .update({ 
-          is_locked: false
-        })
-        .eq('match_id', matchId)
-        .select();
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('matches')
+          .update({ 
+            is_locked: false
+          })
+          .eq('match_id', matchId)
+          .select('match_id');
+      });
 
       if (error) {
         return {
           success: false,
           message: `Fout bij ontgrendelen wedstrijd: ${error.message}`
+        };
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          success: false,
+          message: "Geen toegang om deze wedstrijd te ontgrendelen."
         };
       }
 
