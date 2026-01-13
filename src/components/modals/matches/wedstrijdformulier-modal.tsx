@@ -152,12 +152,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [match.matchId, match.homeTeamId, match.awayTeamId, match.homeTeamName, match.awayTeamName]);
 
   const addPenalty = useCallback(() => {
-    // Force immediate state update to open collapsible - this triggers useMemo recalculation
+    // Batch both state updates together synchronously for immediate UI response
     flushSync(() => {
       setIsBoetesOpen(true);
-    });
-    // Add penalty after the render cycle completes
-    requestAnimationFrame(() => {
       setPenalties(prev => {
         // Remove any empty penalties (those without both teamId and costSettingId)
         const validPenalties = prev.filter(p => p.teamId && p.costSettingId);
