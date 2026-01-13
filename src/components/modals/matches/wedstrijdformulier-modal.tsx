@@ -175,7 +175,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         if (penalty.costSettingId && penalty.teamId) {
           const costSetting = availablePenalties.find(cs => cs.id === penalty.costSettingId);
           if (costSetting) {
-            await financialService.addTransaction({
+            const result = await financialService.addTransaction({
               team_id: penalty.teamId,
               amount: costSetting.amount,
               description: null,
@@ -185,6 +185,12 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
               penalty_type_id: null,
               cost_setting_id: penalty.costSettingId
             });
+            
+            // Check for errors from the service
+            if (!result.success) {
+              throw new Error(result.message || 'Kon boete niet opslaan');
+            }
+            
             const teamName = penaltyTeamOptions.find(t => t.id === penalty.teamId)?.name || 'Team';
             savedThis.push({ teamName, penaltyName: costSetting.name, amount: costSetting.amount });
           }
@@ -193,16 +199,16 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
       toast({
         title: "Boetes opgeslagen",
-        description: "De boetes zijn succesvol toegevoegd aan de teamtransacties.",
+        description: `${savedThis.length} boete(s) succesvol toegevoegd aan de teamtransacties.`,
       });
 
       setPenalties([]);
       setSavedPenalties(prev => [...savedThis, ...prev].slice(0, 10));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving penalties:', error);
       toast({
-        title: "Fout",
-        description: "Er is een fout opgetreden bij het opslaan van de boetes.",
+        title: "Fout bij opslaan boetes",
+        description: error.message || "Er is een fout opgetreden bij het opslaan van de boetes.",
         variant: "destructive",
       });
     } finally {
