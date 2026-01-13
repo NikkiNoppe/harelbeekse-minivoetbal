@@ -614,18 +614,18 @@ p, .card-description, .text-muted-foreground {
 
 .btn--icon.btn--danger { 
   color: var(--color-destructive); 
-  border-color: var(--color-400); 
+  border-color: var(--color-destructive-border); 
 }
 @media (hover: hover) and (pointer: fine) {
   .btn--icon.btn--danger:hover {
-    background-color: var(--color-destructive-light); 
+    background-color: #fee2e2; 
     color: var(--color-destructive-dark); 
     border-color: var(--color-destructive-border);
   }
 }
 .btn--icon.btn--danger:active,
 .btn--icon.btn--danger[aria-pressed="true"] {
-  background-color: var(--color-destructive-light);
+  background-color: #fee2e2;
   color: var(--color-destructive-dark);
   border-color: var(--color-destructive-border);
   opacity: var(--active-opacity);

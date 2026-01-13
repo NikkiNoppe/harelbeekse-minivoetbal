@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { MatchesPenaltyShootoutModal } from "@/components/modals";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
@@ -101,8 +102,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   // Penalty management state (from MatchesRefereePenaltySection)
   interface PenaltyItem {
     id?: number;
-    costSettingId: number;
-    teamId: number;
+    costSettingId: number | null;
+    teamId: number | null;
   }
   const [penalties, setPenalties] = useState<PenaltyItem[]>([]);
   const [availablePenalties, setAvailablePenalties] = useState<any[]>([]);
@@ -151,49 +152,89 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [match.matchId, match.homeTeamId, match.awayTeamId, match.homeTeamName, match.awayTeamName]);
 
   const addPenalty = useCallback(() => {
-    setPenalties(prev => [...prev, {
-      costSettingId: 0,
-      teamId: match.homeTeamId,
-    }]);
-  }, [match.homeTeamId]);
+    // Force immediate state update to open collapsible - this triggers useMemo recalculation
+    flushSync(() => {
+      setIsBoetesOpen(true);
+    });
+    // Add penalty after the render cycle completes
+    requestAnimationFrame(() => {
+      setPenalties(prev => {
+        // Remove any empty penalties (those without both teamId and costSettingId)
+        const validPenalties = prev.filter(p => p.teamId && p.costSettingId);
+        // Add one new empty penalty
+        return [...validPenalties, {
+          costSettingId: null,
+          teamId: null,
+        }];
+      });
+    });
+  }, []);
 
   const updatePenalty = useCallback((index: number, field: keyof PenaltyItem, value: any) => {
-    setPenalties(prev => prev.map((penalty, i) => 
-      i === index ? { ...penalty, [field]: value } : penalty
-    ));
+    setPenalties(prev => {
+      const updated = prev.map((penalty, i) => {
+        if (i === index) {
+          // When team changes, reset costSettingId to allow new selection
+          if (field === 'teamId') {
+            return { ...penalty, [field]: value, costSettingId: null };
+          }
+          return { ...penalty, [field]: value };
+        }
+        return penalty;
+      });
+      
+      // Clean up multiple empty penalties - ensure only one empty penalty exists at a time
+      const validPenalties = updated.filter(p => p.teamId && p.costSettingId);
+      const emptyPenalties = updated.filter(p => !p.teamId || !p.costSettingId);
+      
+      // If there are multiple empty penalties, keep only one
+      if (emptyPenalties.length > 1) {
+        return [...validPenalties, emptyPenalties[0]];
+      }
+      
+      return updated;
+    });
   }, []);
 
   const savePenalties = useCallback(async () => {
-    if (penalties.length === 0) return;
+    // Filter only valid penalties (with both teamId and costSettingId)
+    const validPenalties = penalties.filter(p => p.costSettingId && p.teamId);
+    
+    if (validPenalties.length === 0) {
+      toast({
+        title: "Geen geldige boetes",
+        description: "Vul ten minste één boete volledig in (team en type) voordat je opslaat.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsLoadingPenalties(true);
     try {
       const currentDate = getCurrentDate();
       const savedThis: Array<{ teamName: string; penaltyName: string; amount: number }> = [];
       
-      for (const penalty of penalties) {
-        if (penalty.costSettingId && penalty.teamId) {
-          const costSetting = availablePenalties.find(cs => cs.id === penalty.costSettingId);
-          if (costSetting) {
-            const result = await financialService.addTransaction({
-              team_id: penalty.teamId,
-              amount: costSetting.amount,
-              description: null,
-              transaction_type: 'penalty',
-              transaction_date: currentDate,
-              match_id: match.matchId,
-              penalty_type_id: null,
-              cost_setting_id: penalty.costSettingId
-            });
-            
-            // Check for errors from the service
-            if (!result.success) {
-              throw new Error(result.message || 'Kon boete niet opslaan');
-            }
-            
-            const teamName = penaltyTeamOptions.find(t => t.id === penalty.teamId)?.name || 'Team';
-            savedThis.push({ teamName, penaltyName: costSetting.name, amount: costSetting.amount });
+      for (const penalty of validPenalties) {
+        const costSetting = availablePenalties.find(cs => cs.id === penalty.costSettingId);
+        if (costSetting) {
+          const result = await financialService.addTransaction({
+            team_id: penalty.teamId,
+            amount: costSetting.amount,
+            description: null,
+            transaction_type: 'penalty',
+            transaction_date: currentDate,
+            match_id: match.matchId,
+            penalty_type_id: null,
+            cost_setting_id: penalty.costSettingId
+          });
+          
+          // Check for errors from the service
+          if (!result.success) {
+            throw new Error(result.message || 'Kon boete niet opslaan');
           }
+          
+          const teamName = penaltyTeamOptions.find(t => t.id === penalty.teamId)?.name || 'Team';
+          savedThis.push({ teamName, penaltyName: costSetting.name, amount: costSetting.amount });
         }
       }
 
@@ -202,7 +243,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         description: `${savedThis.length} boete(s) succesvol toegevoegd aan de teamtransacties.`,
       });
 
-      setPenalties([]);
+      // Remove only the saved penalties, keep any invalid ones
+      setPenalties(prev => prev.filter(p => !p.costSettingId || !p.teamId));
       setSavedPenalties(prev => [...savedThis, ...prev].slice(0, 10));
     } catch (error: any) {
       console.error('Error saving penalties:', error);
@@ -276,11 +318,16 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [match.homePlayers, match.awayPlayers]);
 
   const addCardItem = useCallback(() => {
+    setIsKaartenOpen(true);
     setCardItems(prev => [...prev, { team: "", playerId: null, cardType: "yellow" }]);
   }, []);
 
   const updateCardItem = useCallback((index: number, field: keyof CardItem, value: any) => {
     setCardItems(prev => prev.map((it, i) => i === index ? { ...it, [field]: value, ...(field === "team" ? { playerId: null } : {}) } : it));
+  }, []);
+
+  const removeCardItem = useCallback((index: number) => {
+    setCardItems(prev => prev.filter((_, i) => i !== index));
   }, []);
 
 
@@ -294,8 +341,10 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [canEdit, isLoadingPenalties]);
 
   const isSavePenaltyButtonDisabled = useMemo(() => {
-    return penalties.length === 0 || isLoadingPenalties || !canEdit;
-  }, [penalties.length, isLoadingPenalties, canEdit]);
+    // Button is enabled if there's at least one valid penalty (with both teamId and costSettingId)
+    const hasValidPenalty = penalties.some(p => p.teamId && p.costSettingId);
+    return !hasValidPenalty || isLoadingPenalties || !canEdit;
+  }, [penalties, isLoadingPenalties, canEdit]);
   const hideInlineCardSelectors = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
   const isCupMatch = useMemo(() => match.matchday?.includes('🏆'), [match.matchday]);
   const canTeamManagerEditMatch = useMemo(() => 
@@ -1361,16 +1410,16 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     <>
       {/* Boetes sectie */}
       <Collapsible open={isBoetesOpen} onOpenChange={setIsBoetesOpen}>
-        <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
+        <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
           <CollapsibleTrigger asChild>
-            <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isBoetesOpen ? 'var(--color-100)' : 'white' }}>
+            <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isBoetesOpen ? 'var(--color-100)' : 'white' }}>
               <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
                 <CardTitle className="flex items-center gap-2 text-sm m-0">
                   Boetes
                 </CardTitle>
                 <ChevronDown
                   className={cn(
-                    "h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180 shrink-0",
+                    "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out [&[data-state=open]]:rotate-180 shrink-0",
                     isBoetesOpen && "transform rotate-180"
                   )}
                 />
@@ -1378,116 +1427,227 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent className="border-t border-[var(--color-200)]">
-            <CardContent className="pt-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-center gap-4">
-                  <Button
-                    onClick={addPenalty}
-                    disabled={isAddPenaltyButtonDisabled}
-                    className="btn btn--secondary"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Boete Toevoegen
-                  </Button>
-                </div>
+            <CardContent className="pt-3">
+              <div className="space-y-3">
+                {/* Empty State - Improved */}
+                {penalties.length === 0 && savedPenalties.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-6 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted mb-2.5">
+                      <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Nog geen boetes toegevoegd</p>
+                    <p className="text-xs text-muted-foreground/70 text-center max-w-xs mb-3">
+                      Klik op de knop hieronder om een boete toe te voegen
+                    </p>
+                    {canEdit && (
+                      <Button onClick={addPenalty} className="btn btn--primary h-8 px-3 text-sm">
+                        <Plus className="h-3.5 w-3.5 mr-1.5" />
+                        Eerste boete toevoegen
+                      </Button>
+                    )}
+                  </div>
+                )}
 
+                {/* New Penalties Section */}
                 {penalties.length > 0 && (
-                  <div className="relative space-y-4">
-                    <button
-                      type="button"
-                      className="btn--close absolute top-2 right-2 w-3 h-3 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                      aria-label="Sluiten"
-                      onClick={() => setPenalties([])}
-                    >
-                      <X className="w-2.5 h-2.5" />
-                    </button>
-                    {penalties.map((penalty, index) => (
-                      <div key={`penalty-${index}`} className="flex flex-col md:flex-row md:items-center gap-4 p-4 border rounded-lg bg-gray-50">
-                        <div className="flex-1">
-                          <Label htmlFor={`penalty-team-${index}`}>Team</Label>
-                          <Select
-                            value={penalty.teamId.toString()}
-                            onValueChange={(v) => updatePenalty(index, 'teamId', parseInt(v))}
-                            disabled={!canEdit}
-                          >
-                            <SelectTrigger className="dropdown-login-style">
-                              <SelectValue placeholder="Selecteer team" />
-                            </SelectTrigger>
-                            <SelectContent className="dropdown-content-login-style z-50">
-                              {penaltyTeamOptions.map((team) => (
-                                <SelectItem
-                                  key={team.id}
-                                  value={team.id.toString()}
-                                  className="dropdown-item-login-style"
-                                >
-                                  {team.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="flex-1">
-                          <Label htmlFor={`penalty-cost-${index}`}>Type Boete</Label>
-                          <Select
-                            value={penalty.costSettingId.toString()}
-                            onValueChange={(v) => updatePenalty(index, 'costSettingId', parseInt(v))}
-                            disabled={!canEdit}
-                          >
-                            <SelectTrigger className="dropdown-login-style">
-                              <SelectValue placeholder="Selecteer boete type" />
-                            </SelectTrigger>
-                            <SelectContent className="dropdown-content-login-style z-50">
-                              {availablePenalties.map((costSetting) => (
-                                <SelectItem
-                                  key={costSetting.id}
-                                  value={costSetting.id.toString()}
-                                  className="dropdown-item-login-style"
-                                >
-                                  {costSetting.name} - €{costSetting.amount}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-semibold text-foreground">Nieuwe boetes</span>
+                        <span className="text-xs text-muted-foreground bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                          {penalties.length} {penalties.length === 1 ? 'boete' : 'boetes'}
+                        </span>
                       </div>
-                    ))}
-                    
-                    <div className="flex justify-end">
-                      <Button
-                        onClick={savePenalties}
-                        disabled={isSavePenaltyButtonDisabled}
-                        className="btn btn--primary"
+                      {penalties.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPenalties([])}
+                          className="h-6 px-1.5 text-xs text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-3 w-3 mr-0.5" />
+                          Alles wissen
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      {penalties.map((penalty, index) => {
+                        const isValid = penalty.teamId && penalty.costSettingId;
+                        return (
+                          <div 
+                            key={`penalty-${index}`} 
+                            className={cn(
+                              "relative flex flex-col gap-1.5 p-2.5 border rounded-lg transition-all duration-200",
+                              isValid 
+                                ? "border-primary/30 bg-primary/5 shadow-sm" 
+                                : "border-border bg-muted/50"
+                            )}
+                          >
+                            {/* Delete button for individual penalty - show for all penalties when editable */}
+                            {canEdit && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPenalties(prev => prev.filter((_, i) => i !== index));
+                                }}
+                                className="absolute top-2 right-2 w-8 h-8 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md bg-background border border-border shadow-sm hover:bg-destructive/10 hover:border-destructive/30 text-muted-foreground hover:text-destructive transition-all duration-150 z-10"
+                                aria-label="Boete verwijderen"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 pr-10">
+                              <div className="space-y-0.5">
+                                <Label htmlFor={`penalty-team-${index}`} className="text-xs font-medium">Team</Label>
+                                <Select
+                                  value={penalty.teamId ? penalty.teamId.toString() : undefined}
+                                  onValueChange={(v) => updatePenalty(index, 'teamId', parseInt(v))}
+                                  disabled={!canEdit}
+                                >
+                                  <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
+                                    <SelectValue placeholder="Selecteer team" />
+                                  </SelectTrigger>
+                                  <SelectContent className="dropdown-content-login-style z-50">
+                                    {penaltyTeamOptions.map((team) => (
+                                      <SelectItem
+                                        key={team.id}
+                                        value={team.id.toString()}
+                                        className="dropdown-item-login-style"
+                                      >
+                                        {team.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-0.5">
+                                <Label htmlFor={`penalty-cost-${index}`} className="text-xs font-medium">Type Boete</Label>
+                                <Select
+                                  value={penalty.costSettingId ? penalty.costSettingId.toString() : undefined}
+                                  onValueChange={(v) => updatePenalty(index, 'costSettingId', parseInt(v))}
+                                  disabled={!canEdit || !penalty.teamId}
+                                >
+                                  <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
+                                    <SelectValue placeholder={!penalty.teamId ? "Eerst team kiezen" : "Selecteer boete type"} />
+                                  </SelectTrigger>
+                                  <SelectContent className="dropdown-content-login-style z-50">
+                                    {availablePenalties.map((costSetting) => (
+                                      <SelectItem
+                                        key={costSetting.id}
+                                        value={costSetting.id.toString()}
+                                        className="dropdown-item-login-style"
+                                      >
+                                        {costSetting.name} - €{costSetting.amount}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Action buttons - full width on mobile */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 pt-1.5 border-t border-border">
+                      {/* Only show "Nog een boete" button if there's no blank penalty */}
+                      {penalties.every(p => p.teamId && p.costSettingId) && (
+                        <Button 
+                          onClick={addPenalty} 
+                          variant="outline" 
+                          size="sm"
+                          className="btn btn--secondary h-8 px-3 w-full sm:w-auto"
+                          disabled={!canEdit || isAddPenaltyButtonDisabled}
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1.5" />
+                          Nog een boete
+                        </Button>
+                      )}
+                      <Button 
+                        onClick={savePenalties} 
+                        className={cn(
+                          "btn btn--primary h-8 px-4",
+                          penalties.every(p => p.teamId && p.costSettingId) ? "w-full sm:w-auto" : "w-full"
+                        )}
+                        disabled={isSavePenaltyButtonDisabled || isLoadingPenalties}
                       >
-                        {isLoadingPenalties ? "Bezig..." : "Boetes Opslaan"}
+                        {isLoadingPenalties ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                            Opslaan...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-3.5 w-3.5 mr-1.5" />
+                            Boetes opslaan
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
                 )}
 
-                {penalties.length === 0 && savedPenalties.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>Nog geen boetes toegevoegd</p>
-                    <p className="text-sm">Klik op "Boete Toevoegen" om een boete toe te voegen</p>
+                {/* Add button when there are saved penalties but no new penalties */}
+                {penalties.length === 0 && savedPenalties.length > 0 && canEdit && (
+                  <div className="pt-1.5">
+                    <Button onClick={addPenalty} disabled={isAddPenaltyButtonDisabled} className="btn btn--secondary h-8 px-3 w-full">
+                      <Plus className="h-3.5 w-3.5 mr-1.5" />
+                      Boete toevoegen
+                    </Button>
                   </div>
                 )}
 
+                {/* Saved Penalties Section - Improved */}
                 {savedPenalties.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="text-xs font-semibold text-muted-foreground">Toegevoegd (sessie)</div>
-                    <div className="space-y-1">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 pt-2 border-t border-border">
+                      <span className="text-sm font-semibold text-foreground">Opgeslagen boetes</span>
+                      <span className="text-xs font-medium text-muted-foreground bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
+                        {savedPenalties.length} {savedPenalties.length === 1 ? 'boete' : 'boetes'}
+                      </span>
+                    </div>
+                    <div className="space-y-2.5">
                       {savedPenalties.map((p, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm border rounded px-2 py-1.5 bg-white">
-                          <div className="truncate">
-                            <span className="font-medium">{p.teamName}</span>
+                        <div 
+                          key={i} 
+                          className="flex items-center justify-between gap-3 p-3.5 text-sm border rounded-lg bg-white shadow-sm hover:shadow-md hover:bg-muted/20 transition-all duration-150"
+                          style={{ borderColor: 'var(--color-400)' }}
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="flex items-center justify-center w-11 h-11 rounded-lg border border-border bg-muted/80 shrink-0 shadow-sm">
+                              <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <span className="text-sm font-semibold text-foreground truncate">
+                                  {p.teamName}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                                  {p.penaltyName}
+                                </span>
+                                <span className="text-xs font-semibold text-foreground">
+                                  €{p.amount}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span>{p.penaltyName}</span>
-                            <span className="text-muted-foreground">€{p.amount}</span>
-                            <Button type="button" variant="outline" onClick={() => removeSavedPenalty(i)} className="btn btn--icon btn--danger" aria-label="Verwijderen">
+                          {canEdit && (
+                            <Button 
+                              type="button" 
+                              onClick={() => removeSavedPenalty(i)} 
+                              className="btn btn--icon btn--danger shrink-0" 
+                              aria-label="Boete verwijderen"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                          </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1500,16 +1660,16 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       </Collapsible>
       {/* Notities sectie */}
       <Collapsible open={isNotitiesOpen} onOpenChange={setIsNotitiesOpen}>
-        <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
+        <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
           <CollapsibleTrigger asChild>
-            <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isNotitiesOpen ? 'var(--color-100)' : 'white' }}>
+            <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isNotitiesOpen ? 'var(--color-100)' : 'white' }}>
               <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
                 <CardTitle className="flex items-center gap-2 text-sm m-0">
                   Notities
                 </CardTitle>
                 <ChevronDown
                   className={cn(
-                    "h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180 shrink-0",
+                    "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out [&[data-state=open]]:rotate-180 shrink-0",
                     isNotitiesOpen && "transform rotate-180"
                   )}
                 />
@@ -1658,16 +1818,16 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         <div className="space-y-4">
           {/* Gegevens - Collapsible */}
           <Collapsible open={isGegevensOpen} onOpenChange={setIsGegevensOpen}>
-            <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
+            <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
               <CollapsibleTrigger asChild>
-                <CardHeader className="text-sm font-semibold px-5 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isGegevensOpen ? 'var(--color-100)' : 'white' }}>
+                <CardHeader className="text-sm font-semibold px-5 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isGegevensOpen ? 'var(--color-100)' : 'white' }}>
                   <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
                     <CardTitle className="flex items-center gap-2 text-sm m-0">
                       Gegevens
                     </CardTitle>
                     <ChevronDown
                       className={cn(
-                        "h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180 shrink-0",
+                        "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out [&[data-state=open]]:rotate-180 shrink-0",
                         isGegevensOpen && "transform rotate-180"
                       )}
                     />
@@ -1817,9 +1977,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           <div className="space-y-3">
             {/* Home Team Card */}
             <Collapsible open={homeTeamOpen} onOpenChange={setHomeTeamOpen}>
-              <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
+              <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
                 <CollapsibleTrigger asChild>
-                  <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: homeTeamOpen ? 'var(--color-100)' : 'white' }}>
+                  <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: homeTeamOpen ? 'var(--color-100)' : 'white' }}>
                     <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
                       <CardTitle className="flex items-center gap-2 text-sm flex-1 m-0">
                         <Users className="h-4 w-4 text-primary" />
@@ -1828,7 +1988,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       <span className="text-sm font-normal text-muted-foreground ml-auto mr-2">(Thuis)</span>
                       <ChevronDown
                         className={cn(
-                          "h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180 shrink-0",
+                          "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out [&[data-state=open]]:rotate-180 shrink-0",
                           homeTeamOpen && "transform rotate-180"
                         )}
                       />
@@ -1859,9 +2019,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
             {/* Away Team Card */}
             <Collapsible open={awayTeamOpen} onOpenChange={setAwayTeamOpen}>
-              <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
+              <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
                 <CollapsibleTrigger asChild>
-                  <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: awayTeamOpen ? 'var(--color-100)' : 'white' }}>
+                  <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: awayTeamOpen ? 'var(--color-100)' : 'white' }}>
                     <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
                       <CardTitle className="flex items-center gap-2 text-sm flex-1 m-0">
                         <Users className="h-4 w-4 text-primary" />
@@ -1870,7 +2030,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       <span className="text-sm font-normal text-muted-foreground ml-auto mr-2">(Uit)</span>
                       <ChevronDown
                         className={cn(
-                          "h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180 shrink-0",
+                          "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out [&[data-state=open]]:rotate-180 shrink-0",
                           awayTeamOpen && "transform rotate-180"
                         )}
                       />
@@ -1913,16 +2073,16 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           <div className="space-y-3">
             <h3 className="text-xl font-semibold text-center text-purple-dark">Wedstrijd</h3>
             <Collapsible open={isKaartenOpen} onOpenChange={setIsKaartenOpen}>
-            <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white">
+            <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
               <CollapsibleTrigger asChild>
-                <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isKaartenOpen ? 'var(--color-100)' : 'white' }}>
+                <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isKaartenOpen ? 'var(--color-100)' : 'white' }}>
                   <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
                     <CardTitle className="flex items-center gap-2 text-sm m-0">
                       Kaarten
                     </CardTitle>
                     <ChevronDown
                       className={cn(
-                        "h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180 shrink-0",
+                        "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out [&[data-state=open]]:rotate-180 shrink-0",
                         isKaartenOpen && "transform rotate-180"
                       )}
                     />
@@ -1930,123 +2090,253 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent className="border-t border-[var(--color-200)]">
-                <CardContent className="pt-4">
+                <CardContent className="pt-3">
                   {showRefereeFields && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-center">
-                        {canEdit && (
-                          <Button onClick={addCardItem} className="btn btn--secondary h-8 px-3">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Kaart toevoegen
-                          </Button>
-                        )}
-                      </div>
+                    <div className="space-y-3">
+                      {/* Empty State - Improved */}
+                      {!isLoadingCards && cardItems.length === 0 && savedCards.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-6 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted mb-2.5">
+                            <MatchesCardIcon type="yellow" size={20} />
+                          </div>
+                          <p className="text-sm font-medium text-muted-foreground mb-1">Nog geen kaarten toegevoegd</p>
+                          <p className="text-xs text-muted-foreground/70 text-center max-w-xs mb-3">
+                            Klik op de knop hieronder om een kaart toe te voegen
+                          </p>
+                          {canEdit && (
+                            <Button onClick={addCardItem} className="btn btn--primary h-8 px-3 text-sm">
+                              <Plus className="h-3.5 w-3.5 mr-1.5" />
+                              Eerste kaart toevoegen
+                            </Button>
+                          )}
+                        </div>
+                      )}
 
+                      {/* Loading State */}
+                      {isLoadingCards && (
+                        <div className="flex items-center justify-center py-6">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
+                          <span className="text-sm text-muted-foreground">Kaarten laden...</span>
+                        </div>
+                      )}
+
+                      {/* New Cards Section */}
                       {cardItems.length > 0 && (
-                        <div className="relative space-y-3">
-                          <button
-                            type="button"
-                            className="btn--close absolute top-2 right-2 w-3 h-3 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                            aria-label="Sluiten"
-                            onClick={() => setCardItems([])}
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                          {cardItems.map((it, idx) => {
-                            const teamPlayers = it.team === "home" ? playersByTeam.home : it.team === "away" ? playersByTeam.away : [];
-                            return (
-                              <div key={idx} className="flex flex-col md:flex-row md:items-center gap-3 p-3 border border-border rounded-lg bg-muted">
-                                <div className="w-full md:w-1/3">
-                                  <Label className="text-xs">Team</Label>
-                                  <Select value={it.team} onValueChange={(v) => updateCardItem(idx, "team", v)} disabled={!canEdit}>
-                                    <SelectTrigger className="dropdown-login-style h-8 text-sm">
-                                      <SelectValue placeholder="Selecteer team" />
-                                    </SelectTrigger>
-                                    <SelectContent className="dropdown-content-login-style z-50">
-                                      <SelectItem value="home" className="dropdown-item-login-style">Thuis — {match.homeTeamName}</SelectItem>
-                                      <SelectItem value="away" className="dropdown-item-login-style">Uit — {match.awayTeamName}</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-semibold text-foreground">Nieuwe kaarten</span>
+                              <span className="text-xs text-muted-foreground bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                                {cardItems.length} {cardItems.length === 1 ? 'kaart' : 'kaarten'}
+                              </span>
+                            </div>
+                            {cardItems.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setCardItems([])}
+                                className="h-6 px-1.5 text-xs text-muted-foreground hover:text-destructive"
+                              >
+                                <X className="h-3 w-3 mr-0.5" />
+                                Alles wissen
+                              </Button>
+                            )}
+                          </div>
 
-                                <div className="w-full md:w-1/3">
-                                  <Label className="text-xs">Speler</Label>
-                                  <Select value={it.playerId ? String(it.playerId) : undefined} onValueChange={(v) => updateCardItem(idx, "playerId", parseInt(v))} disabled={!canEdit || !it.team}>
-                                    <SelectTrigger className="dropdown-login-style h-8 text-sm">
-                                      <SelectValue placeholder={!it.team ? "Eerst team kiezen" : "Selecteer speler"} />
-                                    </SelectTrigger>
-                                    <SelectContent className="dropdown-content-login-style z-50">
-                                      {teamPlayers.map(sel => (
-                                        <SelectItem key={sel.playerId!} value={String(sel.playerId!)} className="dropdown-item-login-style">
-                                          {sel.playerName || `Speler #${sel.playerId}`}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
+                          <div className="space-y-2">
+                            {cardItems.map((it, idx) => {
+                              const teamPlayers = it.team === "home" ? playersByTeam.home : it.team === "away" ? playersByTeam.away : [];
+                              const isValid = it.team && it.playerId && it.cardType;
+                              return (
+                                <div 
+                                  key={idx} 
+                                  className={cn(
+                                    "relative flex flex-col gap-1.5 p-2.5 border rounded-lg transition-all duration-200",
+                                    isValid 
+                                      ? "border-primary/30 bg-primary/5 shadow-sm" 
+                                      : "border-border bg-muted/50"
+                                  )}
+                                >
+                                  {/* Delete button for individual card - only show when card is valid */}
+                                  {canEdit && isValid && (
+                                    <button
+                                      type="button"
+                                      onClick={() => removeCardItem(idx)}
+                                      className="absolute top-2 right-2 w-8 h-8 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md bg-background border border-border shadow-sm hover:bg-destructive/10 hover:border-destructive/30 text-muted-foreground hover:text-destructive transition-all duration-150 z-10"
+                                      aria-label="Kaart verwijderen"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  )}
 
-                                <div className="w-full md:w-1/3">
-                                  <Label className="text-xs">Type kaart</Label>
-                                  <Select value={it.cardType} onValueChange={(v) => updateCardItem(idx, "cardType", v)} disabled={!canEdit}>
-                                    <SelectTrigger className="dropdown-login-style h-8 text-sm">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="dropdown-content-login-style z-50">
-                                      {CARD_OPTIONS.map(opt => (
-                                        <SelectItem key={opt.value} value={opt.value} className="dropdown-item-login-style">
-                                          <span className="flex items-center">
-                                            <MatchesCardIcon type={opt.value as any} />
-                                            <span className="ml-1">{opt.label}</span>
-                                          </span>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                            );
-                          })}
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5 pr-10">
+                                    <div className="space-y-0.5">
+                                      <Label className="text-xs font-medium">Team</Label>
+                                      <Select value={it.team} onValueChange={(v) => updateCardItem(idx, "team", v)} disabled={!canEdit}>
+                                        <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
+                                          <SelectValue placeholder="Selecteer team" />
+                                        </SelectTrigger>
+                                        <SelectContent className="dropdown-content-login-style z-50">
+                                          <SelectItem value="home" className="dropdown-item-login-style">Thuis — {match.homeTeamName}</SelectItem>
+                                          <SelectItem value="away" className="dropdown-item-login-style">Uit — {match.awayTeamName}</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
 
-                          <div className="flex justify-end">
-                            <Button className="btn btn--primary h-8 px-3" onClick={saveCardItems} disabled={isSavingCards}>Kaarten opslaan</Button>
+                                    <div className="space-y-0.5">
+                                      <Label className="text-xs font-medium">Speler</Label>
+                                      <Select value={it.playerId ? String(it.playerId) : undefined} onValueChange={(v) => updateCardItem(idx, "playerId", parseInt(v))} disabled={!canEdit || !it.team}>
+                                        <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
+                                          <SelectValue placeholder={!it.team ? "Eerst team kiezen" : "Selecteer speler"} />
+                                        </SelectTrigger>
+                                        <SelectContent className="dropdown-content-login-style z-50">
+                                          {teamPlayers.map(sel => (
+                                            <SelectItem key={sel.playerId!} value={String(sel.playerId!)} className="dropdown-item-login-style">
+                                              {sel.playerName || `Speler #${sel.playerId}`}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+
+                                    <div className="space-y-0.5">
+                                      <Label className="text-xs font-medium">Type kaart</Label>
+                                      <Select value={it.cardType} onValueChange={(v) => updateCardItem(idx, "cardType", v)} disabled={!canEdit}>
+                                        <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="dropdown-content-login-style z-50">
+                                          {CARD_OPTIONS.map(opt => (
+                                            <SelectItem key={opt.value} value={opt.value} className="dropdown-item-login-style">
+                                              <span className="flex items-center">
+                                                <MatchesCardIcon type={opt.value as any} />
+                                                <span className="ml-1">{opt.label}</span>
+                                              </span>
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Action buttons - full width on mobile */}
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 pt-1.5 border-t border-border">
+                            <Button 
+                              onClick={addCardItem} 
+                              variant="outline" 
+                              size="sm"
+                              className="btn btn--secondary h-8 px-3 w-full sm:w-auto"
+                              disabled={!canEdit}
+                            >
+                              <Plus className="h-3.5 w-3.5 mr-1.5" />
+                              Nog een kaart
+                            </Button>
+                            <Button 
+                              onClick={saveCardItems} 
+                              className="btn btn--primary h-8 px-4 w-full sm:w-auto"
+                              disabled={isSavingCards || cardItems.every(it => !it.team || !it.playerId || !it.cardType)}
+                            >
+                              {isSavingCards ? (
+                                <>
+                                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                                  Opslaan...
+                                </>
+                              ) : (
+                                <>
+                                  <Save className="h-3.5 w-3.5 mr-1.5" />
+                                  Kaarten opslaan
+                                </>
+                              )}
+                            </Button>
                           </div>
                         </div>
                       )}
 
-                      {isLoadingCards && (
-                        <div className="text-center py-6 text-gray-500 text-sm">Kaarten laden...</div>
+                      {/* Add button when there are saved cards but no new cards */}
+                      {!isLoadingCards && cardItems.length === 0 && savedCards.length > 0 && canEdit && (
+                        <div className="pt-1.5">
+                          <Button onClick={addCardItem} className="btn btn--secondary h-8 px-3 w-full">
+                            <Plus className="h-3.5 w-3.5 mr-1.5" />
+                            Kaart toevoegen
+                          </Button>
+                        </div>
                       )}
 
-                      {!isLoadingCards && cardItems.length === 0 && savedCards.length === 0 && (
-                        <div className="text-center py-6 text-gray-500 text-sm">Nog geen kaarten toegevoegd</div>
-                      )}
-
+                      {/* Saved Cards Section - Improved */}
                       {savedCards.length > 0 && (
-                        <div className="space-y-2">
-                          <div className="space-y-1">
-                            {savedCards.map((c, i) => (
-                              <div key={i} className="flex items-center justify-between text-sm border rounded px-2 py-1.5 bg-white">
-                                <div className="truncate">
-                                  <span className="font-medium">{c.team === 'home' ? 'Thuis' : 'Uit'}</span>
-                                  <span className="mx-1">-</span>
-                                  <span className="truncate inline-block max-w-[13rem] align-middle">{c.playerName}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="flex items-center gap-1">
-                                    <MatchesCardIcon type={c.cardType as any} />
-                                    <span>{c.cardType === 'yellow' ? 'Geel' : c.cardType === 'double_yellow' ? '2x Geel' : 'Rood'}</span>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 pt-2 border-t border-border">
+                            <span className="text-sm font-semibold text-foreground">Opgeslagen kaarten</span>
+                            <span className="text-xs font-medium text-muted-foreground bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
+                              {savedCards.length} {savedCards.length === 1 ? 'kaart' : 'kaarten'}
+                            </span>
+                          </div>
+                          <div className="space-y-2.5">
+                            {savedCards.map((c, i) => {
+                              const teamName = c.team === 'home' ? match.homeTeamName : match.awayTeamName;
+                              
+                              const iconBgClass =
+                                c.cardType === 'yellow'
+                                  ? 'bg-yellow-50 border-yellow-200'
+                                  : c.cardType === 'double_yellow'
+                                  ? 'bg-yellow-100 border-yellow-300'
+                                  : 'bg-red-50 border-red-200';
+                              
+                              const cardTypeLabel = c.cardType === 'yellow' ? 'Geel' : c.cardType === 'double_yellow' ? '2x Geel' : 'Rood';
+                              
+                              return (
+                              <div 
+                                key={i} 
+                                className="flex items-center justify-between gap-3 p-3.5 text-sm border rounded-lg bg-white shadow-sm hover:shadow-md hover:bg-muted/20 transition-all duration-150"
+                                style={{ borderColor: 'var(--color-400)' }}
+                              >
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <div className={cn(
+                                    "flex items-center justify-center w-11 h-11 rounded-lg border shrink-0 shadow-sm",
+                                    iconBgClass
+                                  )}>
+                                    <MatchesCardIcon type={c.cardType as any} size={20} />
                                   </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                      <span className="text-sm font-semibold text-foreground truncate">
+                                        {teamName}
+                                      </span>
+                                      <span className="text-muted-foreground">•</span>
+                                      <span className="truncate text-foreground font-medium text-sm">{c.playerName}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className={cn(
+                                        "text-xs font-semibold px-2 py-0.5 rounded-md",
+                                        c.cardType === 'yellow' 
+                                          ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                                          : c.cardType === 'double_yellow'
+                                          ? 'bg-yellow-200 text-yellow-900 border border-yellow-300'
+                                          : 'bg-red-100 text-red-800 border border-red-200'
+                                      )}>
+                                        {cardTypeLabel}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                {canEdit && (
                                   <Button
                                     type="button"
                                     onClick={() => removeSavedCard(i)}
-                                    className="btn btn--icon btn--danger"
-                                    aria-label="Verwijderen"
+                                    className="btn btn--icon btn--danger shrink-0"
+                                    aria-label="Kaart verwijderen"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
-                                </div>
+                                )}
                               </div>
-                            ))}
+                            );
+                            })}
                           </div>
                         </div>
                       )}
