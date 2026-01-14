@@ -2,7 +2,8 @@ import React, { memo, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Trophy } from "lucide-react";
+import { Link } from "react-router-dom";
 import MatchesCard from "../../admin/matches/components/MatchesCard";
 import ResponsiveStandingsTable from "@/components/tables/ResponsiveStandingsTable";
 import { useCompetitionData, Team, MatchData } from "@/hooks/useCompetitionData";
@@ -10,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PageHeader } from "@/components/layout";
 import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Uniform skeleton for standings table
 const StandingsTableSkeleton = memo(() => (
@@ -349,6 +350,20 @@ const CompetitiePage: React.FC = () => {
         title="Competitiestand" 
         subtitle="Seizoen 2025/2026"
       />
+
+      {/* Competitie afgelopen melding */}
+      <Alert className="border-primary/30 bg-primary/5">
+        <Trophy className="h-4 w-4 text-primary" />
+        <AlertDescription className="text-foreground">
+          <strong>Reguliere competitie afgelopen!</strong> De eindstand is bepaald en de play-offs zijn gestart.{' '}
+          <Link 
+            to="/playoff" 
+            className="text-primary font-medium hover:underline"
+          >
+            Bekijk de play-offs →
+          </Link>
+        </AlertDescription>
+      </Alert>
 
       <section role="region" aria-labelledby="standings-heading">
         <h2 id="standings-heading" className="sr-only">Competitiestand</h2>
