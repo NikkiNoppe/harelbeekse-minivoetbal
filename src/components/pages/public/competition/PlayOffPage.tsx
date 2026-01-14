@@ -471,13 +471,6 @@ const PlayOffPage: React.FC = () => {
         subtitle="Seizoen 2025-2026"
       />
 
-      {/* Warning message */}
-      <Alert className="border-amber-200 bg-amber-50">
-        <AlertCircle className="h-4 w-4 text-amber-600" />
-        <AlertDescription className="text-amber-800">
-          <strong>Let op:</strong> Aangezien er nog 1 speeldag moet worden gespeeld, is dit nog geen officiële eindstand. De huidige stand is voorlopig en kan nog wijzigen na de resterende wedstrijden.
-        </AlertDescription>
-      </Alert>
 
       {/* Play-Off 1 Standings */}
       <section role="region" aria-labelledby="po1-heading">
