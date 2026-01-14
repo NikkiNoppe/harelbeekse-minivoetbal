@@ -498,8 +498,18 @@ export const playoffService = {
         const awayTeamId = standingsMap.get(match.away_position);
 
         if (!homeTeamId || !awayTeamId) {
-          console.warn(`Kon geen team vinden voor positie ${match.home_position} of ${match.away_position}`);
-          continue;
+          const missingPositions: string[] = [];
+          if (!homeTeamId) missingPositions.push(`thuis positie ${match.home_position}`);
+          if (!awayTeamId) missingPositions.push(`uit positie ${match.away_position}`);
+          
+          console.error(`Match ${match.match_id}: Ontbrekende team mapping voor: ${missingPositions.join(', ')}`);
+          console.error('Beschikbare posities in standingsMap:', Array.from(standingsMap.keys()).sort((a, b) => a - b));
+          
+          // Stop finalisatie - dit is een kritieke fout die opgelost moet worden
+          return { 
+            success: false, 
+            message: `Finalisatie mislukt: Kon ${missingPositions.join(' en ')} niet mappen naar teams. Controleer of alle 15 teams in de stand staan.` 
+          };
         }
 
         const { error: updateError } = await withUserContext(async () => {
