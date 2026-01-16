@@ -333,6 +333,7 @@ const PlayOffPage: React.FC = () => {
         playoffType: poLabel,
         speeldagNumber: speeldagClean,
         date: dateStr,
+        rawDate: match.match_date.split('T')[0], // YYYY-MM-DD for downloads
         time: match.time,
         homeTeamName: match.home_team_name,
         awayTeamName: match.away_team_name,
@@ -538,7 +539,7 @@ const PlayOffPage: React.FC = () => {
                     matchId: m.matchId,
                     homeTeamName: m.homeTeamName,
                     awayTeamName: m.awayTeamName,
-                    date: m.date,
+                    date: m.rawDate, // Use rawDate (YYYY-MM-DD) for downloads
                     time: m.time,
                     location: m.location,
                     matchday: m.matchday,
