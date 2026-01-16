@@ -399,7 +399,16 @@ const CompetitiePage: React.FC = () => {
                 />
               </div>
               <DownloadScheduleButton 
-                matches={filteredMatches}
+                matches={filteredMatches.map(m => ({
+                  matchId: m.matchId,
+                  homeTeamName: m.homeTeamName,
+                  awayTeamName: m.awayTeamName,
+                  date: m.date, // Already YYYY-MM-DD from useCompetitionData
+                  time: m.time,
+                  location: m.location,
+                  matchday: m.matchday,
+                  uniqueNumber: m.uniqueNumber,
+                }))}
                 filename={selectedTeam !== "all" ? `competitie-${selectedTeam.toLowerCase().replace(/\s+/g, '-')}` : "competitie-schema"}
                 calendarName={selectedTeam !== "all" ? `Competitie - ${selectedTeam}` : "Competitie Speelschema"}
                 competitionType="competitie"
