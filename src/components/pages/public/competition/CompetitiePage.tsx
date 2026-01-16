@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/layout";
 import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import DownloadScheduleButton from "@/components/common/DownloadScheduleButton";
 
 // Uniform skeleton for standings table
 const StandingsTableSkeleton = memo(() => (
@@ -384,16 +385,26 @@ const CompetitiePage: React.FC = () => {
         <CardContent className="p-4 pt-0">
           {/* Filters - Mobile-first with automatic responsive layout */}
           <FilterGroup columns={1} className="mb-4">
-            <FilterSelect
-              label="Team"
-              value={selectedTeam}
-              onValueChange={setSelectedTeam}
-              placeholder="Alle teams"
-              options={[
-                { value: "all", label: "Alle teams" },
-                ...teamNames.map(t => ({ value: t, label: t }))
-              ]}
-            />
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <FilterSelect
+                  label="Team"
+                  value={selectedTeam}
+                  onValueChange={setSelectedTeam}
+                  placeholder="Alle teams"
+                  options={[
+                    { value: "all", label: "Alle teams" },
+                    ...teamNames.map(t => ({ value: t, label: t }))
+                  ]}
+                />
+              </div>
+              <DownloadScheduleButton 
+                matches={filteredMatches}
+                filename={selectedTeam !== "all" ? `competitie-${selectedTeam.toLowerCase().replace(/\s+/g, '-')}` : "competitie-schema"}
+                calendarName={selectedTeam !== "all" ? `Competitie - ${selectedTeam}` : "Competitie Speelschema"}
+                competitionType="competitie"
+              />
+            </div>
           </FilterGroup>
 
           {/* Grouped Matches */}

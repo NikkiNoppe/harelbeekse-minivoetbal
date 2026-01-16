@@ -8,6 +8,7 @@ import { usePublicPlayoffData, PlayoffTeam, PlayoffMatchData } from "@/hooks/use
 import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 import { PageHeader } from "@/components/layout";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import DownloadScheduleButton from "@/components/common/DownloadScheduleButton";
 
 // Skeleton components
 const StandingsTableSkeleton = memo(() => (
@@ -508,27 +509,57 @@ const PlayOffPage: React.FC = () => {
           <CardContent className="p-4 pt-0">
             {/* Filters - Mobile-first with automatic responsive layout */}
             <FilterGroup columns={1} className="mb-4">
-              <FilterSelect
-                label="Divisie"
-                value={selectedDivision}
-                onValueChange={setSelectedDivision}
-                placeholder="Alle divisies"
-                options={[
-                  { value: "all", label: "Alle divisies" },
-                  { value: "PO1", label: "Play-Off 1" },
-                  { value: "PO2", label: "Play-Off 2" }
-                ]}
-              />
-              <FilterSelect
-                label="Team"
-                value={selectedTeam}
-                onValueChange={setSelectedTeam}
-                placeholder="Alle teams"
-                options={[
-                  { value: "all", label: "Alle teams" },
-                  ...teamNames.map(t => ({ value: t, label: t }))
-                ]}
-              />
+              <div className="flex items-center gap-2">
+                <div className="flex-1 grid grid-cols-2 gap-2">
+                  <FilterSelect
+                    label="Divisie"
+                    value={selectedDivision}
+                    onValueChange={setSelectedDivision}
+                    placeholder="Alle divisies"
+                    options={[
+                      { value: "all", label: "Alle divisies" },
+                      { value: "PO1", label: "Play-Off 1" },
+                      { value: "PO2", label: "Play-Off 2" }
+                    ]}
+                  />
+                  <FilterSelect
+                    label="Team"
+                    value={selectedTeam}
+                    onValueChange={setSelectedTeam}
+                    placeholder="Alle teams"
+                    options={[
+                      { value: "all", label: "Alle teams" },
+                      ...teamNames.map(t => ({ value: t, label: t }))
+                    ]}
+                  />
+                </div>
+                <DownloadScheduleButton 
+                  matches={filteredMatches.map(m => ({
+                    matchId: m.matchId,
+                    homeTeamName: m.homeTeamName,
+                    awayTeamName: m.awayTeamName,
+                    date: m.date,
+                    time: m.time,
+                    location: m.location,
+                    matchday: m.matchday,
+                  }))}
+                  filename={
+                    selectedTeam !== "all" 
+                      ? `playoff-${selectedTeam.toLowerCase().replace(/\s+/g, '-')}`
+                      : selectedDivision !== "all"
+                        ? `playoff-${selectedDivision.toLowerCase()}`
+                        : "playoff-schema"
+                  }
+                  calendarName={
+                    selectedTeam !== "all"
+                      ? `Play-Off - ${selectedTeam}`
+                      : selectedDivision !== "all"
+                        ? `Play-Off ${selectedDivision}`
+                        : "Play-Off Speelschema"
+                  }
+                  competitionType="playoff"
+                />
+              </div>
             </FilterGroup>
 
             {/* Grouped Matches */}
