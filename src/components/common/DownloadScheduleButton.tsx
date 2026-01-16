@@ -1,5 +1,5 @@
 import { memo, useCallback } from "react";
-import { CalendarPlus, Download, Share2 } from "lucide-react";
+import { CalendarPlus, Download, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,7 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { downloadICalFile, shareICalFile, type ICalEvent } from "@/lib/icalUtils";
+import { downloadICalFile, downloadCSVFile, type ICalEvent } from "@/lib/icalUtils";
 import { toast } from "sonner";
 
 export interface ScheduleMatch {
@@ -52,7 +52,7 @@ const matchToICalEvent = (match: ScheduleMatch, competitionType: string): ICalEv
 
 /**
  * Subtle download button for schedule export
- * Supports iCal download and native sharing on mobile
+ * Supports iCal download for calendars and CSV for Excel
  */
 const DownloadScheduleButton = memo(({ 
   matches, 
@@ -65,41 +65,50 @@ const DownloadScheduleButton = memo(({
   // Filter out matches without valid dates
   const validMatches = matches.filter(m => m.date && m.homeTeamName && m.awayTeamName);
   
-  const handleDownload = useCallback(() => {
+  const handleDownloadAgenda = useCallback(() => {
     if (validMatches.length === 0) {
       toast.error("Geen wedstrijden om te downloaden");
       return;
     }
     
     const events = validMatches.map(m => matchToICalEvent(m, competitionType));
-    downloadICalFile(events, filename, calendarName || "Speelschema");
+    const success = downloadICalFile(events, filename, calendarName || "Speelschema");
     
-    toast.success(`${validMatches.length} wedstrijd${validMatches.length === 1 ? '' : 'en'} gedownload`, {
-      description: "Open het .ics bestand om toe te voegen aan je agenda"
-    });
+    if (success) {
+      toast.success(`${validMatches.length} wedstrijd${validMatches.length === 1 ? '' : 'en'} gedownload`, {
+        description: "Open het bestand om toe te voegen aan je agenda"
+      });
+    } else {
+      toast.error("Kon geen agenda bestand aanmaken", {
+        description: "Controleer of de wedstrijden geldige datums hebben"
+      });
+    }
   }, [validMatches, filename, calendarName, competitionType]);
   
-  const handleShare = useCallback(async () => {
+  const handleDownloadExcel = useCallback(() => {
     if (validMatches.length === 0) {
-      toast.error("Geen wedstrijden om te delen");
+      toast.error("Geen wedstrijden om te downloaden");
       return;
     }
     
     const events = validMatches.map(m => matchToICalEvent(m, competitionType));
-    const shared = await shareICalFile(events, filename, calendarName || "Speelschema");
+    const success = downloadCSVFile(events, filename);
     
-    if (shared) {
-      toast.success("Speelschema klaar om te delen");
+    if (success) {
+      toast.success(`${validMatches.length} wedstrijd${validMatches.length === 1 ? '' : 'en'} geëxporteerd`, {
+        description: "Open het CSV bestand in Excel"
+      });
+    } else {
+      toast.error("Kon geen Excel bestand aanmaken", {
+        description: "Controleer of de wedstrijden geldige datums hebben"
+      });
     }
-  }, [validMatches, filename, calendarName, competitionType]);
+  }, [validMatches, filename, competitionType]);
   
   // Don't render if no valid matches
   if (validMatches.length === 0) {
     return null;
   }
-  
-  // Check if native sharing is available
-  const canShare = typeof navigator !== 'undefined' && 'share' in navigator;
   
   return (
     <TooltipProvider>
@@ -122,18 +131,16 @@ const DownloadScheduleButton = memo(({
           </TooltipContent>
         </Tooltip>
         
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={handleDownload} className="cursor-pointer">
+        <DropdownMenuContent align="end" className="w-48 bg-popover">
+          <DropdownMenuItem onClick={handleDownloadAgenda} className="cursor-pointer">
             <Download className="mr-2 h-4 w-4" />
-            <span>Download iCal</span>
+            <span>Download agenda</span>
           </DropdownMenuItem>
           
-          {canShare && (
-            <DropdownMenuItem onClick={handleShare} className="cursor-pointer">
-              <Share2 className="mr-2 h-4 w-4" />
-              <span>Deel via...</span>
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem onClick={handleDownloadExcel} className="cursor-pointer">
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            <span>Download Excel</span>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </TooltipProvider>
