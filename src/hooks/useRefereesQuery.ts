@@ -43,10 +43,10 @@ const fetchReferees = async (signal?: AbortSignal): Promise<Referee[]> => {
           console.log('📡 Executing Supabase query for referees...');
         }
         
+        // Use referees_public view instead of users table to prevent email exposure
         const { data, error } = await supabase
-          .from('users')
+          .from('referees_public' as 'users')
           .select('user_id, username')
-          .eq('role', 'referee')
           .order('username');
         
         if (error) {
@@ -60,7 +60,8 @@ const fetchReferees = async (signal?: AbortSignal): Promise<Referee[]> => {
           console.log(`✅ fetchReferees result: ${data?.length || 0} referees`);
         }
         
-        return (data || []) as Referee[];
+        // Cast to Referee[] - view returns same structure as users table subset
+        return (data as unknown as Referee[]) || [];
       }),
       timeoutPromise
     ]);

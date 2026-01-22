@@ -420,6 +420,13 @@ export type Database = {
             foreignKeyName: "team_managers_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "referees_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "team_managers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
           },
@@ -529,6 +536,24 @@ export type Database = {
             referencedColumns: ["team_id"]
           },
         ]
+      }
+      referees_public: {
+        Row: {
+          role: Database["public"]["Enums"]["user_role"] | null
+          user_id: number | null
+          username: string | null
+        }
+        Insert: {
+          role?: Database["public"]["Enums"]["user_role"] | null
+          user_id?: number | null
+          username?: string | null
+        }
+        Update: {
+          role?: Database["public"]["Enums"]["user_role"] | null
+          user_id?: number | null
+          username?: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {

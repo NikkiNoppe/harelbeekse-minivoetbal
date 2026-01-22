@@ -91,7 +91,8 @@ const AdminView = () => {
       // Fetch matches and referees in parallel
       const [monthMatches, referees] = await Promise.all([
         scheidsrechterService.getMonthMatches(selectedMonth),
-        supabase.from('users').select('user_id, username').eq('role', 'referee')
+        // Use referees_public view to prevent email exposure
+        supabase.from('referees_public' as any).select('user_id, username')
       ]);
 
       setMatches(monthMatches);
