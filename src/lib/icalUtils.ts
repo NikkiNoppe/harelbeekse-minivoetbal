@@ -10,7 +10,7 @@ export interface ICalEvent {
   time: string;      // HH:MM format
   location: string;
   description?: string;
-  duration?: number; // Duration in minutes (default: 90)
+  duration?: number; // Duration in minutes (default: 60)
 }
 
 // ============================================================================
@@ -127,7 +127,7 @@ const generateVTimezone = (): string => {
  * Generates a single iCal event (VEVENT)
  */
 const generateICalEvent = (event: ICalEvent, domain: string = 'harelbeekse-minivoetbal.be'): string => {
-  const duration = event.duration || 90;
+  const duration = event.duration || 60;
   const endTime = calculateEndTime(event.time, duration);
   const timestamp = getICalTimestamp();
   
@@ -266,7 +266,7 @@ export const generateCSVFile = (events: ICalEvent[]): string => {
   const header = 'Onderwerp,Begin datum,Begin tijd,Eind datum,Eind tijd,Locatie,Beschrijving';
   
   const rows = validEvents.map(event => {
-    const duration = event.duration || 90;
+    const duration = event.duration || 60;
     const endTime = calculateEndTime(event.time, duration);
     const formattedDate = formatDateForCSV(event.date);
     
