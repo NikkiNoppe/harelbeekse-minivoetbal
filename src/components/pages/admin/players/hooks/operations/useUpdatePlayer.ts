@@ -51,13 +51,23 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
         .from('players')
         .select('player_id, first_name, last_name, birth_date, team_id')
         .eq('player_id', playerId)
-        .single();
+        .maybeSingle();
 
       if (readError) {
         console.error('❌ Cannot read player:', readError);
         toast({
           title: "Fout bij lezen",
           description: `Kan speler niet lezen: ${readError.message}`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (!currentPlayer) {
+        console.error('❌ Player not found or no access');
+        toast({
+          title: "Speler niet gevonden",
+          description: "De speler bestaat niet of u heeft geen toegang",
           variant: "destructive",
         });
         return false;
@@ -111,7 +121,7 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
           .from('players')
           .select('player_id, first_name, last_name, birth_date')
           .eq('player_id', playerId)
-          .single();
+          .maybeSingle();
 
         if (verifyError) {
           console.error('❌ Cannot verify update:', verifyError);
@@ -158,7 +168,7 @@ export const useUpdatePlayer = (refreshPlayers: () => Promise<void>) => {
         .from('players')
         .select('player_id, first_name, last_name, birth_date')
         .eq('player_id', playerId)
-        .single();
+        .maybeSingle();
 
       if (finalVerifyError) {
         console.error('❌ Cannot verify final update:', finalVerifyError);
