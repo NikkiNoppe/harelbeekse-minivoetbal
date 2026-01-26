@@ -27,8 +27,8 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
       }
 
       // Get user ID from localStorage
-      const authData = localStorage.getItem('auth_data');
-      const userId = authData ? JSON.parse(authData)?.user?.user_id : null;
+      const authDataString = localStorage.getItem('auth_data');
+      const userId = authDataString ? JSON.parse(authDataString)?.user?.id : null;
 
       if (!userId) {
         toast({
