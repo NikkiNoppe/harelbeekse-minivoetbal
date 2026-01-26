@@ -2,24 +2,15 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePlayerValidation } from "../usePlayerValidation";
-import { refreshWithRetry } from "../utils/playerCRUDUtils";
-import { formatDateShort } from "@/lib/dateUtils";
-import { withUserContext } from "@/lib/supabaseUtils";
 
 export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
   const [isAdding, setIsAdding] = useState(false);
   const { toast } = useToast();
-  const { checkPlayerExists, checkNameExists, validatePlayerData } = usePlayerValidation();
+  const { validatePlayerData } = usePlayerValidation();
 
   const addPlayer = async (firstName: string, lastName: string, birthDate: string, teamId: number) => {
-    console.log('🎯 ADD PLAYER OPERATION START - DETAILED DEBUG');
-    console.log('📊 Add parameters:', {
-      firstName,
-      lastName,
-      birthDate,
-      teamId,
-      timestamp: new Date().toISOString()
-    });
+    console.log('🎯 ADD PLAYER OPERATION START - Using RPC');
+    console.log('📊 Add parameters:', { firstName, lastName, birthDate, teamId });
 
     if (isAdding) return false;
     setIsAdding(true);
@@ -35,56 +26,32 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      // Check if exact player already exists
-      console.log('🔍 Checking if player exists...');
-      const existingPlayer = await checkPlayerExists(firstName, lastName, birthDate);
-      
-      if (existingPlayer) {
-        console.warn('⚠️ Player already exists:', existingPlayer);
-        const teamName = existingPlayer.teams?.team_name || 'onbekend team';
+      // Get user ID from localStorage
+      const authData = localStorage.getItem('auth_data');
+      const userId = authData ? JSON.parse(authData)?.user?.user_id : null;
+
+      if (!userId) {
         toast({
-          title: "Speler bestaat al",
-          description: `${firstName} ${lastName} met deze geboortedatum is al ingeschreven bij ${teamName}`,
+          title: "Niet ingelogd",
+          description: "Log opnieuw in om spelers toe te voegen",
           variant: "destructive",
         });
         return false;
       }
 
-      // Check if name already exists with different birth date
-      console.log('🔍 Checking if name exists...');
-      const existingName = await checkNameExists(firstName, lastName);
-      if (existingName) {
-        console.warn('⚠️ Name already exists:', existingName);
-        const teamName = existingName.teams?.team_name || 'onbekend team';
-        toast({
-          title: "Naam bestaat al",
-          description: `${firstName} ${lastName} bestaat al bij ${teamName} met geboortedatum ${formatDateShort(existingName.birth_date)}`,
-          variant: "destructive",
-        });
-        return false;
-      }
+      console.log('📝 Executing RPC insert_player_with_context...');
       
-      console.log('📝 Executing database INSERT with user context...');
-      const insertData = {
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        birth_date: birthDate,
-        team_id: teamId
-      };
-      console.log('📊 Insert data:', insertData);
-
-      // Use withUserContext to ensure RLS context is set before insert
-      const result = await withUserContext(async () => {
-        return await supabase
-          .from('players')
-          .insert(insertData)
-          .select();
+      // Use SECURITY DEFINER function for atomic authorization + insert
+      const { data, error } = await supabase.rpc('insert_player_with_context', {
+        p_user_id: userId,
+        p_first_name: firstName.trim(),
+        p_last_name: lastName.trim(),
+        p_birth_date: birthDate,
+        p_team_id: teamId
       });
       
-      const { data, error } = result;
-      
       if (error) {
-        console.error('❌ Database INSERT error:', error);
+        console.error('❌ RPC error:', error);
         toast({
           title: "Database fout",
           description: `Kon speler niet toevoegen: ${error.message}`,
@@ -93,9 +60,22 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      console.log('✅ Database INSERT successful:', data);
+      // Check RPC response
+      const result = Array.isArray(data) ? data[0] : data;
       
-      // Single refresh after successful insert
+      if (!result?.success) {
+        console.warn('⚠️ RPC returned failure:', result?.message);
+        toast({
+          title: "Kon speler niet toevoegen",
+          description: result?.message || "Onbekende fout",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      console.log('✅ Player inserted successfully:', result);
+      
+      // Refresh player data
       console.log('🔄 Refreshing player data...');
       await refreshPlayers();
       console.log('✅ Refresh completed');

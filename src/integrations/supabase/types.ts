@@ -638,6 +638,20 @@ export type Database = {
         Args: { p_user_id: number }
         Returns: number[]
       }
+      insert_player_with_context: {
+        Args: {
+          p_birth_date: string
+          p_first_name: string
+          p_last_name: string
+          p_team_id: number
+          p_user_id: number
+        }
+        Returns: {
+          message: string
+          player_id: number
+          success: boolean
+        }[]
+      }
       insert_transaction_with_auto_data:
         | {
             Args: {
