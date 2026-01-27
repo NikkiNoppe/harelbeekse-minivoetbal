@@ -1,57 +1,129 @@
 
-# Plan: SECURITY DEFINER RPC voor Wedstrijdformulier Spelerslijsten
+# Plan: Fix Scheidsrechter Wedstrijdformulieren Zichtbaarheid
 
-## Probleem
+## Probleem Analyse
 
-De `useTeamPlayersQuery` hook (gebruikt door wedstrijdformulieren) haalt spelers nog steeds op via directe tabel queries met `withUserContext`. Dit kan RLS context verlies veroorzaken door connection pooling - hetzelfde probleem dat we net hebben opgelost voor de `/admin/players` pagina.
+Scheidsrechters zien geen wedstrijden op de `/admin/match-forms/playoffs` (en andere match forms) pagina's door twee problemen:
 
-## Huidige Situatie
-
-```text
-usePlayersQuery (admin/players)     →  get_players_for_team RPC  ✅ (Net gefixt)
-useTeamPlayersQuery (match forms)   →  Direct table query         ❌ (Nog te fixen)
+### Probleem 1: Foutieve TeamId Check
+In `AdminPlayoffMatchesPage.tsx` op regel 117:
+```typescript
+if (!isAdmin && !teamId) {
+  return <EmptyState message="Geen team toegewezen" />;
+}
 ```
 
-## Oplossing
+Deze check blokkeert scheidsrechters omdat:
+- Scheidsrechters zijn geen admin (`!isAdmin = true`)
+- Scheidsrechters hebben geen teamId (`!teamId = true`) - ze beheren geen teams
 
-De bestaande `get_players_for_team` RPC kan direct hergebruikt worden. We hoeven alleen `useTeamPlayersQuery` aan te passen om deze RPC te gebruiken in plaats van de directe query.
+### Probleem 2: Ontbrekende Scheidsrechter Filtering
+De `matchesFormService` behandelt scheidsrechters hetzelfde als admins:
+- Bij `hasElevatedPermissions = true` worden ALLE wedstrijden opgehaald
+- Er is geen filter voor scheidsrechter-specifieke wedstrijden
+- Dit betekent dat scheidsrechters alle wedstrijden zien (of geen, afhankelijk van de check)
 
-## Technische Wijzigingen
+## Technische Oplossing
 
-### Wijziging 1: useTeamPlayersQuery.ts aanpassen
+### Wijziging 1: AdminPlayoffMatchesPage.tsx - Fix TeamId Check
 
-**Bestand**: `src/hooks/useTeamPlayersQuery.ts`
+**Bestand**: `src/components/pages/admin/matches/AdminPlayoffMatchesPage.tsx`
 
-De `fetchTeamPlayers` functie wordt vervangen door een RPC-aanroep:
+**Huidige code (regel 116-119)**:
+```typescript
+// No team selected for non-admin users
+if (!isAdmin && !teamId) {
+  return <EmptyState message="Geen team toegewezen" />;
+}
+```
+
+**Nieuwe code**:
+```typescript
+// No team selected for team managers only (admins and referees don't need teamId)
+if (!isAdmin && !isReferee && !teamId) {
+  return <EmptyState message="Geen team toegewezen" />;
+}
+```
+
+**Reden**: Scheidsrechters moeten niet geblokkeerd worden door ontbrekende teamId - ze hebben toegang via hun scheidsrechter toewijzing.
+
+### Wijziging 2: matchesFormService.ts - Voeg Scheidsrechter Filter Toe
+
+**Bestand**: `src/components/pages/admin/matches/services/matchesFormService.ts`
+
+Voeg een nieuw parameter toe voor scheidsrechter filtering en pas de query aan:
 
 ```typescript
-// Nieuwe implementatie
-const fetchTeamPlayers = async (teamId: number): Promise<TeamPlayer[]> => {
-  const userId = getUserIdFromStorage();
+export const fetchUpcomingMatches = async (
+  teamId: number,
+  hasElevatedPermissions: boolean = false,
+  competitionType?: 'league' | 'cup' | 'playoff',
+  refereeFilter?: { userId: number; username: string } // NIEUW
+): Promise<MatchFormData[]> => {
+  // ...bestaande code...
   
-  if (!userId) {
-    console.error('No user ID found for team player fetch');
-    return [];
+  // Apply filters based on user type
+  if (!hasElevatedPermissions && teamId > 0) {
+    // Team manager: filter op team
+    query = query.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
+  } else if (refereeFilter) {
+    // Scheidsrechter: filter op toegewezen wedstrijden
+    query = query.or(
+      `assigned_referee_id.eq.${refereeFilter.userId},referee.eq.${refereeFilter.username}`
+    );
   }
-  
-  const { data, error } = await supabase.rpc('get_players_for_team', {
-    p_user_id: userId,
-    p_team_id: teamId
-  });
-  
-  if (error) throw error;
-  return (data || []) as TeamPlayer[];
-};
+  // Admin: geen filter, alle wedstrijden
 ```
 
-Daarnaast:
-- Verwijder de `withUserContext` wrapper (niet meer nodig met RPC)
-- Voeg `staleTime: 2 * 60 * 1000` toe (2 minuten cache, zoals usePlayersQuery)
-- Voeg `placeholderData: (previousData) => previousData` toe voor betere UX
+### Wijziging 3: useMatchFormsData.ts - Doorgeven Scheidsrechter Info
 
-### Wijziging 2: Debug logging opschonen
+**Bestand**: `src/hooks/useMatchFormsData.ts`
 
-De uitgebreide debug logging in development mode kan vereenvoudigd worden nu de RPC de context-verificatie intern afhandelt.
+Update de hook om scheidsrechter informatie door te geven:
+
+```typescript
+export const useMatchFormsData = (
+  teamId: number,
+  hasElevatedPermissions: boolean,
+  refereeFilter?: { userId: number; username: string } // NIEUW
+) => {
+  // ...in query functies...
+  queryFn: async () => {
+    return fetchUpcomingMatches(
+      hasElevatedPermissions ? 0 : teamId, 
+      hasElevatedPermissions, 
+      'league',
+      refereeFilter // Doorgeven aan service
+    );
+  },
+```
+
+### Wijziging 4: AdminPlayoffMatchesPage.tsx - Scheidsrechter Filter Meegeven
+
+**Bestand**: `src/components/pages/admin/matches/AdminPlayoffMatchesPage.tsx`
+
+```typescript
+// Scheidsrechter filter voor wedstrijdformulieren
+const refereeFilter = useMemo(() => {
+  if (isReferee && user?.id && user?.username) {
+    return { userId: user.id, username: user.username };
+  }
+  return undefined;
+}, [isReferee, user?.id, user?.username]);
+
+// Fetch playoff matches data met scheidsrechter filter
+const matchFormsData = useMatchFormsData(
+  teamId, 
+  isAdmin || isReferee,
+  isReferee ? refereeFilter : undefined // Alleen voor scheidsrechters
+);
+```
+
+### Wijziging 5: MatchesPage.tsx - Zelfde Aanpassing
+
+**Bestand**: `src/components/pages/admin/matches/MatchesPage.tsx`
+
+Dezelfde scheidsrechter filter logica toepassen voor league en cup wedstrijden.
 
 ---
 
@@ -59,23 +131,31 @@ De uitgebreide debug logging in development mode kan vereenvoudigd worden nu de 
 
 | Bestand | Actie | Beschrijving |
 |---------|-------|--------------|
-| `src/hooks/useTeamPlayersQuery.ts` | Aanpassen | Gebruik RPC i.p.v. directe query, verwijder `withUserContext` |
-
----
-
-## Voordelen
-
-1. **Geen database wijziging nodig** - We hergebruiken de bestaande `get_players_for_team` RPC
-2. **Consistentie** - Alle spelerslijsten gebruiken dezelfde atomaire aanpak
-3. **Betrouwbaarheid** - Elimineert RLS context verlies in wedstrijdformulieren
-4. **Betere caching** - 2 minuten staleTime voorkomt onnodige requests
-5. **Eenvoudiger code** - Minder debug logging en geen `withUserContext` nodig
+| `src/components/pages/admin/matches/AdminPlayoffMatchesPage.tsx` | Aanpassen | Fix teamId check, voeg scheidsrechter filter toe |
+| `src/components/pages/admin/matches/services/matchesFormService.ts` | Aanpassen | Voeg refereeFilter parameter toe |
+| `src/hooks/useMatchFormsData.ts` | Aanpassen | Doorgeef scheidsrechter filter naar service |
+| `src/components/pages/admin/matches/MatchesPage.tsx` | Aanpassen | Zelfde scheidsrechter filter logica |
 
 ---
 
 ## Verwacht Resultaat
 
 Na implementatie:
-- Wedstrijdformulier spelerslijsten laden even betrouwbaar als de admin players pagina
-- Geen "niet beschikbaar" berichten meer door RLS context verlies
-- Snellere herhaalde laadtijden door 2 minuten cache
+
+1. **Scheidsrechters worden niet meer geblokkeerd** door de `!teamId` check
+2. **Scheidsrechters zien alleen hun toegewezen wedstrijden** (via `assigned_referee_id` OF `referee` veld)
+3. **Admins blijven alle wedstrijden zien**
+4. **Team managers blijven alleen hun team wedstrijden zien**
+5. **Consistentie** over alle wedstrijdformulieren pagina's (league, cup, playoffs)
+
+---
+
+## Technische Overwegingen
+
+### Waarom beide velden checken (assigned_referee_id EN referee)?
+De database data toont dat sommige wedstrijden alleen een `referee` (username) hebben ingevuld, terwijl andere ook een `assigned_referee_id` hebben. Door beide te checken met een OR, worden alle toegewezen wedstrijden correct gevonden.
+
+### Backward Compatibility
+- Admins: geen verandering in gedrag
+- Team managers: geen verandering in gedrag  
+- Scheidsrechters: gefixte functionaliteit die eerder niet werkte
