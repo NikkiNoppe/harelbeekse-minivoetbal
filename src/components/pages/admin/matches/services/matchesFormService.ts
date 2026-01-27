@@ -8,7 +8,8 @@ import { withUserContext } from "@/lib/supabaseUtils";
 export const fetchUpcomingMatches = async (
   teamId: number,
   hasElevatedPermissions: boolean = false,
-  competitionType?: 'league' | 'cup' | 'playoff'
+  competitionType?: 'league' | 'cup' | 'playoff',
+  refereeFilter?: { userId: number; username: string }
 ): Promise<MatchFormData[]> => {
   try {
     return await withUserContext(async () => {
@@ -54,10 +55,15 @@ export const fetchUpcomingMatches = async (
         `)
         .order("match_date", { ascending: true });
 
-      // Apply team filter first if needed
-      if (!hasElevatedPermissions && teamId > 0) {
+      // Apply filters based on user type
+      if (refereeFilter) {
+        // Referee: filter on assigned matches (by ID or username)
+        query = query.or(`assigned_referee_id.eq.${refereeFilter.userId},referee.eq.${refereeFilter.username}`);
+      } else if (!hasElevatedPermissions && teamId > 0) {
+        // Team manager: filter on team
         query = query.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
       }
+      // Admin (hasElevatedPermissions without refereeFilter): no filter, all matches
 
       // Execute query and filter competition type in JavaScript to avoid TypeScript issues
       const queryStartTime = Date.now();
