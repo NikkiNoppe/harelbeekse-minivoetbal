@@ -634,6 +634,16 @@ export type Database = {
           total_players: number
         }[]
       }
+      get_players_for_team: {
+        Args: { p_team_id?: number; p_user_id: number }
+        Returns: {
+          birth_date: string
+          first_name: string
+          last_name: string
+          player_id: number
+          team_id: number
+        }[]
+      }
       get_user_team_ids_secure: {
         Args: { p_user_id: number }
         Returns: number[]

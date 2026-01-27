@@ -1,10 +1,23 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { Player, Team } from "../types";
 import { User } from "@/types/auth";
+
+/**
+ * Helper to get user ID from localStorage
+ */
+const getUserIdFromStorage = (): number | null => {
+  try {
+    const authDataString = localStorage.getItem('auth_data');
+    if (!authDataString) return null;
+    const authData = JSON.parse(authDataString);
+    return authData?.user?.id ?? null;
+  } catch {
+    return null;
+  }
+};
 
 export const usePlayersData = (authUser: User | null) => {
   const { authContextReady } = useAuth();
@@ -40,84 +53,34 @@ export const usePlayersData = (authUser: User | null) => {
     }
   };
 
-  const fetchPlayers = async (retryCount = 0): Promise<Player[]> => {
-    try {
-      const result = await withUserContext(async () => {
-        const { data, error } = await supabase
-          .from('players')
-          .select(`
-            player_id,
-            first_name,
-            last_name,
-            birth_date,
-            team_id,
-            teams (
-              team_id,
-              team_name
-            )
-          `)
-          .order('last_name')
-          .order('first_name');
-        
-        if (error) {
-          console.error('Error fetching players:', error);
-          // Retry once if it's a context/RLS error
-          if (retryCount === 0 && (error.message?.includes('RLS') || error.message?.includes('policy'))) {
-            console.log('🔄 Retrying players fetch after context error...');
-            // Small delay before retry
-            await new Promise(resolve => setTimeout(resolve, 300));
-            return fetchPlayers(1);
-          }
-          return [];
-        }
-        return data || [];
-      });
-      return result;
-    } catch (error) {
-      console.error('Error in fetchPlayers:', error);
-      // Retry once on error
-      if (retryCount === 0) {
-        console.log('🔄 Retrying players fetch after error...');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        return fetchPlayers(1);
-      }
+  /**
+   * Fetch players using atomic SECURITY DEFINER RPC
+   * This eliminates RLS context loss issues from connection pooling
+   */
+  const fetchPlayersViaRPC = async (teamId: number | null): Promise<Player[]> => {
+    const userId = getUserIdFromStorage();
+    
+    if (!userId) {
+      console.error('❌ No user ID found for player fetch');
       return [];
     }
-  };
-
-  const fetchPlayersByTeam = async (teamId: number, retryCount = 0): Promise<Player[]> => {
-    try {
-      const result = await withUserContext(async () => {
-        const { data, error } = await supabase
-          .from('players')
-          .select('player_id, first_name, last_name, birth_date, team_id')
-          .eq('team_id', teamId)
-          .order('last_name')
-          .order('first_name');
-
-        if (error) {
-          console.error('Error fetching players by team:', error);
-          // Retry once if it's a context/RLS error
-          if (retryCount === 0 && (error.message?.includes('RLS') || error.message?.includes('policy'))) {
-            console.log('🔄 Retrying team players fetch after context error...');
-            await new Promise(resolve => setTimeout(resolve, 300));
-            return fetchPlayersByTeam(teamId, 1);
-          }
-          return [];
-        }
-        return data || [];
-      });
-      return result;
-    } catch (error) {
-      console.error('Error in fetchPlayersByTeam:', error);
-      // Retry once on error
-      if (retryCount === 0) {
-        console.log('🔄 Retrying team players fetch after error...');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        return fetchPlayersByTeam(teamId, 1);
-      }
-      return [];
+    
+    console.log('📡 Fetching players via RPC:', { userId, teamId });
+    
+    const { data, error } = await supabase.rpc('get_players_for_team', {
+      p_user_id: userId,
+      p_team_id: teamId
+    });
+    
+    if (error) {
+      console.error('❌ Error fetching players via RPC:', error);
+      throw error;
     }
+    
+    const players = (data || []) as Player[];
+    console.log(`✅ RPC returned ${players.length} players`);
+    
+    return players;
   };
 
   const refreshPlayers = async (overrideTeamId?: number) => {
@@ -131,14 +94,14 @@ export const usePlayersData = (authUser: User | null) => {
       const targetTeamId = overrideTeamId ?? (authUser?.role === "player_manager" ? authUser.teamId : selectedTeam);
       
       if (targetTeamId) {
-        // Fetch team players
-        const teamPlayers = await fetchPlayersByTeam(targetTeamId);
+        // Fetch team players via atomic RPC
+        const teamPlayers = await fetchPlayersViaRPC(targetTeamId);
         setPlayers(teamPlayers);
         console.log(`✅ Loaded ${teamPlayers.length} players for team ${targetTeamId}`);
         // For admins, also keep all players in allPlayers for reference (but don't block on it)
         if (authUser?.role === "admin") {
           // Fetch in background without blocking
-          fetchPlayers().then(allPlayersData => {
+          fetchPlayersViaRPC(null).then(allPlayersData => {
             setAllPlayers(allPlayersData);
           }).catch(err => {
             console.warn('Could not fetch all players for reference:', err);
@@ -147,7 +110,7 @@ export const usePlayersData = (authUser: User | null) => {
       } else {
         // No team selected - for admins, show all players
         if (authUser?.role === "admin") {
-          const playersData = await fetchPlayers();
+          const playersData = await fetchPlayersViaRPC(null);
           setAllPlayers(playersData);
           setPlayers(playersData);
           console.log(`✅ Loaded ${playersData.length} players (all teams)`);
@@ -200,8 +163,8 @@ export const usePlayersData = (authUser: User | null) => {
           setUserTeamName(userTeam.team_name);
         }
         
-        // Fetch team players
-        const teamPlayers = await fetchPlayersByTeam(authUser.teamId);
+        // Fetch team players via atomic RPC
+        const teamPlayers = await fetchPlayersViaRPC(authUser.teamId);
         setAllPlayers([]);
         setPlayers(teamPlayers);
         console.log(`✅ Loaded ${teamPlayers.length} players for team ${authUser.teamId}`);
@@ -209,8 +172,8 @@ export const usePlayersData = (authUser: User | null) => {
         // For admins: by default, show ALL players (no team filter)
         didSetInitialTeam.current = true;
         
-        // Fetch all players (parallel with teams if possible, but teams already done)
-        const allPlayersData = await fetchPlayers();
+        // Fetch all players via atomic RPC
+        const allPlayersData = await fetchPlayersViaRPC(null);
         setAllPlayers(allPlayersData);
         setPlayers(allPlayersData);
         console.log(`✅ Loaded ${allPlayersData.length} players (all teams)`);
