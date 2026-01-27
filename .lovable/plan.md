@@ -1,51 +1,89 @@
 
 
-## Fix: Admin kan geen spelers toevoegen (RLS violation)
+# Plan: Robuust Spelerslijst Laden voor /admin/players
 
-### Probleem Diagnose
+## Probleem Samenvatting
 
-Het probleem ontstaat door de manier waarop Supabase's connection pooling werkt:
+De huidige spelerslijst op `/admin/players` heeft meerdere problemen:
 
-1. **Huidige flow**:
-   - `withUserContext()` roept `set_current_user_context` RPC aan → Zet sessievariabelen
-   - Daarna wordt `supabase.from('players').insert()` uitgevoerd
-   - **Maar**: Dit zijn 2 aparte HTTP requests die verschillende database connecties kunnen gebruiken
-   - De sessievariabelen zijn verloren op de nieuwe connectie
+1. **Race condition bij retry**: De "Opnieuw" knop heeft geen debounce/cooldown waardoor meerdere rapid-fire requests de database overbelasten
+2. **RLS context verlies**: Door Supabase connection pooling kan de RLS context verloren gaan tussen de `set_current_user_context` RPC en de SELECT query
+3. **Inconsistente UX**: Lege resultaten worden getoond terwijl data eigenlijk wel bestaat (RLS blokkeert ten onrechte)
+4. **Verschil met publieke pagina's**: Blog/competitie laden vlot omdat ze geen RLS context nodig hebben
 
-2. **RLS Policy check**:
-   - `get_current_user_role()` retourneert lege string (geen context)
-   - Geen enkele policy matcht → INSERT geweigerd
+## Architectuur Vergelijking
 
 ```text
-┌─────────────────────┐     ┌─────────────────────┐
-│  RPC: set_context   │     │  INSERT players     │
-│  (Connection A)     │ ──► │  (Connection B)     │
-│  Context: admin     │     │  Context: LEEG!     │
-└─────────────────────┘     └─────────────────────┘
+HUIDIGE FLOW (Admin Players):
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ set_context RPC │───►│ SELECT players  │───►│ RLS check       │
+│ (Connection A)  │    │ (Connection B?) │    │ Context: ???    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                       ↑
+                       └── Connection pooling kan context verliezen!
+
+PUBLIEKE PAGINA'S (Blog/Competitie):
+┌─────────────────┐    ┌─────────────────┐
+│ SELECT data     │───►│ RLS: public OK  │
+│ Geen context    │    │ Geen check      │
+└─────────────────┘    └─────────────────┘
+
+GEWENSTE FLOW (SECURITY DEFINER):
+┌─────────────────────────────────────────┐
+│ RPC: get_players_with_context           │
+│ ├── Check role in database              │
+│ ├── Check team access                   │
+│ └── RETURN players (1 atomaire operatie)│
+└─────────────────────────────────────────┘
 ```
 
-### Oplossing
+## Oplossing Overzicht
 
-Creëer een `SECURITY DEFINER` functie die autorisatie en insert in dezelfde transactie uitvoert (zoals al bestaat voor matches: `update_match_with_context`).
+De oplossing bestaat uit 3 onderdelen:
+
+### Onderdeel 1: SECURITY DEFINER functie voor lezen
+
+Maak een database functie `get_players_for_team(p_user_id, p_team_id)` die:
+- Autorisatie EN data ophalen combineert in één atomaire operatie
+- Geen afhankelijkheid heeft van sessievariabelen
+- Direct de correcte spelers retourneert
+
+### Onderdeel 2: Verbeterde InlineRetry component
+
+Voeg toe aan de "Opnieuw" knop:
+- **Debounce**: 500ms minimum tussen clicks
+- **Exponential backoff**: 1s, 2s, 4s wachttijd na elke retry
+- **Duidelijke feedback**: Toon wanneer volgende retry mogelijk is
+
+### Onderdeel 3: Cache strategie verbetering
+
+Pas `usePlayersQuery` aan:
+- `staleTime: 2 * 60 * 1000` (2 minuten, zoals blog/competitie)
+- Gebruik `placeholderData: previousData` voor smoother UX
+- Voeg `refetchOnMount: false` toe om onnodige fetches te voorkomen
 
 ---
 
+## Technische Wijzigingen
+
 ### Wijziging 1: Database Migratie
 
-**Bestand**: `supabase/migrations/[timestamp]_add_player_crud_functions.sql`
+**Nieuw bestand**: `supabase/migrations/[timestamp]_add_get_players_function.sql`
 
-Maak nieuwe SECURITY DEFINER functies voor player CRUD operaties:
+Creëer een SECURITY DEFINER functie die spelers ophaalt met ingebouwde autorisatie:
 
 ```sql
--- Insert player met context validatie
-CREATE OR REPLACE FUNCTION public.insert_player_with_context(
+CREATE OR REPLACE FUNCTION public.get_players_for_team(
   p_user_id INTEGER,
-  p_first_name VARCHAR,
-  p_last_name VARCHAR,
-  p_birth_date DATE,
-  p_team_id INTEGER
+  p_team_id INTEGER DEFAULT NULL
 )
-RETURNS TABLE(player_id INTEGER, success BOOLEAN, message TEXT)
+RETURNS TABLE(
+  player_id INTEGER,
+  first_name VARCHAR,
+  last_name VARCHAR,
+  birth_date DATE,
+  team_id INTEGER
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path TO 'public'
@@ -53,100 +91,126 @@ AS $$
 DECLARE
   v_role TEXT;
   v_team_ids INTEGER[];
-  v_new_player_id INTEGER;
 BEGIN
-  -- 1. Haal ACTUELE role uit database
+  -- 1. Haal role direct uit database
   SELECT role::text INTO v_role FROM users WHERE user_id = p_user_id;
   
   -- 2. Haal team IDs op
-  SELECT array_agg(team_id) INTO v_team_ids 
-  FROM team_users WHERE user_id = p_user_id;
+  SELECT array_agg(tu.team_id) INTO v_team_ids 
+  FROM team_users tu WHERE tu.user_id = p_user_id;
   
-  -- 3. Check toegangsrechten
-  IF v_role IS NULL THEN
-    RETURN QUERY SELECT NULL::INTEGER, FALSE, 'Gebruiker niet gevonden'::TEXT;
+  -- 3. Admin: mag alles zien
+  IF v_role = 'admin' THEN
+    IF p_team_id IS NULL THEN
+      -- Alle spelers
+      RETURN QUERY SELECT p.player_id, p.first_name, p.last_name, p.birth_date, p.team_id
+        FROM players p ORDER BY p.last_name, p.first_name;
+    ELSE
+      -- Specifiek team
+      RETURN QUERY SELECT p.player_id, p.first_name, p.last_name, p.birth_date, p.team_id
+        FROM players p WHERE p.team_id = p_team_id ORDER BY p.last_name, p.first_name;
+    END IF;
     RETURN;
   END IF;
   
-  IF v_role = 'admin' THEN
-    -- Admin mag alle teams
-    NULL;
-  ELSIF v_role = 'player_manager' THEN
-    -- Team manager alleen eigen team
-    IF v_team_ids IS NULL OR NOT (p_team_id = ANY(v_team_ids)) THEN
-      RETURN QUERY SELECT NULL::INTEGER, FALSE, 'Geen toegang tot dit team'::TEXT;
+  -- 4. Player manager: alleen eigen team(s)
+  IF v_role = 'player_manager' THEN
+    IF p_team_id IS NOT NULL AND NOT (p_team_id = ANY(v_team_ids)) THEN
+      -- Geen toegang tot dit team
       RETURN;
     END IF;
-  ELSE
-    RETURN QUERY SELECT NULL::INTEGER, FALSE, 'Onvoldoende rechten'::TEXT;
+    
+    IF p_team_id IS NULL THEN
+      -- Alle teams van deze manager
+      RETURN QUERY SELECT p.player_id, p.first_name, p.last_name, p.birth_date, p.team_id
+        FROM players p WHERE p.team_id = ANY(v_team_ids) ORDER BY p.last_name, p.first_name;
+    ELSE
+      -- Specifiek team (al gevalideerd hierboven)
+      RETURN QUERY SELECT p.player_id, p.first_name, p.last_name, p.birth_date, p.team_id
+        FROM players p WHERE p.team_id = p_team_id ORDER BY p.last_name, p.first_name;
+    END IF;
     RETURN;
   END IF;
   
-  -- 4. Check duplicaat
-  IF EXISTS (
-    SELECT 1 FROM players 
-    WHERE first_name = p_first_name 
-    AND last_name = p_last_name 
-    AND birth_date = p_birth_date
-  ) THEN
-    RETURN QUERY SELECT NULL::INTEGER, FALSE, 'Speler bestaat al'::TEXT;
-    RETURN;
-  END IF;
-  
-  -- 5. Insert
-  INSERT INTO players (first_name, last_name, birth_date, team_id)
-  VALUES (p_first_name, p_last_name, p_birth_date, p_team_id)
-  RETURNING players.player_id INTO v_new_player_id;
-  
-  RETURN QUERY SELECT v_new_player_id, TRUE, 'Speler toegevoegd'::TEXT;
+  -- 5. Andere rollen: geen toegang
+  RETURN;
 END;
 $$;
+
+-- Grant execute to authenticated users
+GRANT EXECUTE ON FUNCTION public.get_players_for_team TO authenticated;
 ```
 
----
+### Wijziging 2: usePlayersQuery.ts aanpassen
 
-### Wijziging 2: useAddPlayer.ts
+**Bestand**: `src/hooks/usePlayersQuery.ts`
 
-**Bestand**: `src/components/pages/admin/players/hooks/operations/useAddPlayer.ts`
-
-Vervang de directe insert door de RPC call:
+Vervang de `fetchPlayersByTeam` en `fetchAllPlayers` functies om de nieuwe RPC te gebruiken:
 
 ```typescript
-// Vervang regels 76-82:
-const result = await withUserContext(async () => {
-  return await supabase
-    .from('players')
-    .insert(insertData)
-    .select();
-});
-
-// Door:
-const authData = localStorage.getItem('auth_data');
-const userId = authData ? JSON.parse(authData)?.user?.id : null;
-
-if (!userId) {
-  toast({
-    title: "Niet ingelogd",
-    description: "Log opnieuw in om spelers toe te voegen",
-    variant: "destructive",
+// Nieuwe fetch functie via RPC
+const fetchPlayersViaRPC = async (teamId: number | null): Promise<Player[]> => {
+  // Haal user ID uit localStorage
+  const authDataString = localStorage.getItem('auth_data');
+  const userId = authDataString ? JSON.parse(authDataString)?.user?.id : null;
+  
+  if (!userId) {
+    console.error('❌ No user ID found for player fetch');
+    return [];
+  }
+  
+  const { data, error } = await supabase.rpc('get_players_for_team', {
+    p_user_id: userId,
+    p_team_id: teamId
   });
-  return false;
-}
-
-const { data, error } = await supabase.rpc('insert_player_with_context', {
-  p_user_id: userId,
-  p_first_name: firstName.trim(),
-  p_last_name: lastName.trim(),
-  p_birth_date: birthDate,
-  p_team_id: teamId
-});
+  
+  if (error) {
+    console.error('❌ Error fetching players via RPC:', error);
+    throw error;
+  }
+  
+  return (data || []) as Player[];
+};
 ```
 
-Update ook de error handling om de RPC response te verwerken.
+Pas ook de query configuratie aan:
+- `staleTime`: van 0 naar `2 * 60 * 1000` (2 minuten)
+- Voeg `placeholderData: (previousData) => previousData` toe
 
----
+### Wijziging 3: InlineRetry component verbeteren
 
-### Wijziging 3: Update TypeScript Types
+**Bestand**: `src/components/modals/matches/inline-player-retry.tsx`
+
+Voeg debounce en cooldown toe:
+
+```typescript
+const [cooldownSeconds, setCooldownSeconds] = useState(0);
+const [lastRetryTime, setLastRetryTime] = useState(0);
+
+const handleRetry = async () => {
+  const now = Date.now();
+  const timeSinceLastRetry = now - lastRetryTime;
+  const minInterval = 1000 * Math.pow(2, retryCount); // Exponential: 1s, 2s, 4s, 8s
+  
+  if (timeSinceLastRetry < minInterval) {
+    // Te snel, toon cooldown
+    setCooldownSeconds(Math.ceil((minInterval - timeSinceLastRetry) / 1000));
+    return;
+  }
+  
+  // ... bestaande retry logica
+  setLastRetryTime(now);
+};
+```
+
+Toon de cooldown in de UI:
+```typescript
+{cooldownSeconds > 0 && (
+  <span className="text-xs text-amber-500">Wacht {cooldownSeconds}s...</span>
+)}
+```
+
+### Wijziging 4: TypeScript types updaten
 
 **Bestand**: `src/integrations/supabase/types.ts`
 
@@ -154,35 +218,39 @@ Voeg de nieuwe RPC functie toe aan de Functions sectie.
 
 ---
 
-### Technisch Overzicht
+## Bestanden Overzicht
 
-| Aspect | Oud | Nieuw |
-|--------|-----|-------|
-| Context scope | Transaction-local (verloren) | N.v.t. (SECURITY DEFINER) |
-| Autorisatie | Via sessievariabelen | Direct in functie |
-| HTTP requests | 2 (context + insert) | 1 (RPC) |
-| Atomiciteit | Niet gegarandeerd | Gegarandeerd |
-
----
-
-### Bestanden te wijzigen
-
-1. **Nieuwe migratie** - `supabase/migrations/[timestamp]_add_player_crud_functions.sql`
-   - `insert_player_with_context` functie
-   
-2. **`src/components/pages/admin/players/hooks/operations/useAddPlayer.ts`**
-   - Vervang directe insert door RPC call
-   - Update error handling
-   
-3. **`src/integrations/supabase/types.ts`**
-   - Voeg RPC functie type definitie toe
+| Bestand | Actie | Beschrijving |
+|---------|-------|--------------|
+| `supabase/migrations/[timestamp]_add_get_players_function.sql` | Nieuw | SECURITY DEFINER functie voor atomair spelers ophalen |
+| `src/hooks/usePlayersQuery.ts` | Aanpassen | Gebruik RPC i.p.v. directe query, betere cache settings |
+| `src/components/modals/matches/inline-player-retry.tsx` | Aanpassen | Debounce, cooldown, exponential backoff |
+| `src/integrations/supabase/types.ts` | Aanpassen | RPC type definitie toevoegen |
 
 ---
 
-### Verwacht Resultaat
+## Verwacht Resultaat
 
-- Admin kan spelers toevoegen zonder RLS fouten
-- Team managers kunnen spelers toevoegen aan hun eigen team
-- Consistente autorisatie via database-level validatie
-- Patroon consistent met bestaande `update_match_with_context`
+Na implementatie:
+
+1. **Geen race conditions**: RPC combineert auth + data in één atomaire operatie
+2. **Betere UX**: Cache voorkomt onnodige laadtijd, placeholder data toont vorige resultaten
+3. **Robuuste retry**: Exponential backoff voorkomt database overbelasting
+4. **Consistentie**: Zelfde laadpatroon als blog/competitie pagina's
+5. **Geen context verlies**: Geen afhankelijkheid van sessievariabelen meer
+
+---
+
+## Alternatieve Opties (Niet Aanbevolen)
+
+### Optie: JWT Custom Claims
+Supabase ondersteunt custom claims in JWT tokens (role, team_ids). Dit zou RLS kunnen laten werken zonder `set_current_user_context`. Echter:
+- Vereist auth.users metadata setup
+- Complexer om te implementeren
+- Token refresh nodig bij role/team wijzigingen
+
+### Optie: Client-side cookies voor caching
+Zou de symptomen maskeren maar niet het onderliggende RLS probleem oplossen. Data in cookies is ook niet geschikt voor dynamische spelerslijsten.
+
+De **SECURITY DEFINER RPC aanpak** is de meest robuuste en consistente oplossing, passend bij het bestaande patroon (`insert_player_with_context`).
 
