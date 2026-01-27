@@ -1,7 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
 import { useAuth } from "@/hooks/useAuth";
 
 export interface TeamPlayer {
@@ -9,7 +8,7 @@ export interface TeamPlayer {
   first_name: string;
   last_name: string;
   team_id?: number;
-  is_eligible?: boolean; // Added for suspension status
+  is_eligible?: boolean;
 }
 
 // Centralized Query Keys
@@ -19,115 +18,57 @@ export const teamPlayerQueryKeys = {
   list: (teamId: number) => [...teamPlayerQueryKeys.lists(), teamId] as const,
 };
 
-// Fetch function
+// Helper to get user ID from localStorage
+const getUserIdFromStorage = (): number | null => {
+  try {
+    const authDataString = localStorage.getItem('auth_data');
+    if (!authDataString) return null;
+    const authData = JSON.parse(authDataString);
+    return authData?.user?.id ?? authData?.user?.user_id ?? null;
+  } catch {
+    return null;
+  }
+};
+
+// Fetch function using SECURITY DEFINER RPC
 const fetchTeamPlayers = async (teamId: number): Promise<TeamPlayer[]> => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`🔍 fetchTeamPlayers called for teamId: ${teamId}`);
+  const userId = getUserIdFromStorage();
+  
+  if (!userId) {
+    console.error('❌ No user ID found for team player fetch');
+    return [];
   }
   
-  try {
-    const result = await withUserContext(async () => {
-      // Verify context BEFORE query
-      if (process.env.NODE_ENV === 'development') {
-        const { data: roleBefore } = await supabase.rpc('get_current_user_role');
-        const { data: teamIdsBefore } = await supabase.rpc('get_current_user_team_ids');
-        console.log(`🔍 Context BEFORE query for team ${teamId}:`, {
-          role: roleBefore,
-          teamIds: teamIdsBefore,
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      const queryStartTime = Date.now();
-      const { data, error, count } = await supabase
-        .from('players')
-        .select('player_id, first_name, last_name, team_id', { count: 'exact' })
-        .eq('team_id', teamId)
-        .order('first_name')
-        .order('last_name');
-      const queryDuration = Date.now() - queryStartTime;
-      
-      // Verify context AFTER query
-      if (process.env.NODE_ENV === 'development') {
-        const { data: roleAfter } = await supabase.rpc('get_current_user_role');
-        console.log(`🔍 Context AFTER query for team ${teamId}:`, {
-          role: roleAfter,
-          queryDuration: `${queryDuration}ms`
-        });
-      }
-      
-      if (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error(`❌ Error fetching team players for team ${teamId}:`, error);
-          console.error('Error details:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          });
-        }
-        throw error;
-      }
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ fetchTeamPlayers result for team ${teamId}:`, {
-          dataLength: data?.length || 0,
-          count: count,
-          hasError: !!error,
-          queryDuration: `${queryDuration}ms`
-        });
-        
-        if (data && data.length === 0 && count !== null && count > 0) {
-          console.error(`❌ RLS ISSUE: Count shows ${count} players but query returned 0 - RLS is blocking!`);
-        } else if (data && data.length === 0 && (count === null || count === 0)) {
-          console.warn(`⚠️ No players found for team ${teamId} (count is 0)`);
-        } else {
-          console.log(`✅ Successfully fetched ${data?.length || 0} players for team ${teamId}`);
-        }
-      }
-      
-      return (data || []) as TeamPlayer[];
-    });
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔍 fetchTeamPlayers END for team ${teamId} - returned ${result.length} players`);
-    }
-    
-    return result;
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error(`💥 Exception in fetchTeamPlayers for team ${teamId}:`, error);
-    }
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🔍 fetchTeamPlayers via RPC for teamId: ${teamId}, userId: ${userId}`);
+  }
+  
+  const { data, error } = await supabase.rpc('get_players_for_team', {
+    p_user_id: userId,
+    p_team_id: teamId
+  });
+  
+  if (error) {
+    console.error(`❌ Error fetching team players via RPC for team ${teamId}:`, error);
     throw error;
   }
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`✅ Fetched ${data?.length || 0} players for team ${teamId} via RPC`);
+  }
+  
+  return (data || []) as TeamPlayer[];
 };
 
 /**
  * Hook for fetching team players using React Query
- * Uses React Query for automatic caching, retry logic, and request cancellation
+ * Uses SECURITY DEFINER RPC for atomic authorization + data fetching
  */
 export const useTeamPlayersQuery = (teamId: number | null) => {
   const { user, authContextReady } = useAuth();
   
   // Determine if we should fetch
   const shouldFetch = !!user && authContextReady && teamId !== null && teamId > 0;
-  
-  // Only log in development and only when query state actually changes
-  const prevState = useRef<{ teamId: number | null; shouldFetch: boolean } | null>(null);
-  if (process.env.NODE_ENV === 'development') {
-    const currentState = { teamId, shouldFetch };
-    
-    if (!prevState.current || 
-        prevState.current.teamId !== currentState.teamId || 
-        prevState.current.shouldFetch !== currentState.shouldFetch) {
-      console.log('🔍 useTeamPlayersQuery setup:', {
-        teamId,
-        shouldFetch,
-        willFetch: shouldFetch ? `team ${teamId}` : 'DISABLED'
-      });
-      prevState.current = currentState;
-    }
-  }
   
   // Create a stable query key
   const queryKey = useMemo(() => {
@@ -137,13 +78,6 @@ export const useTeamPlayersQuery = (teamId: number | null) => {
   return useQuery({
     queryKey,
     queryFn: async ({ signal }) => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('📡 useTeamPlayersQuery queryFn called:', {
-          teamId,
-          timestamp: new Date().toISOString()
-        });
-      }
-      
       if (teamId === null || teamId <= 0) {
         return [];
       }
@@ -154,42 +88,31 @@ export const useTeamPlayersQuery = (teamId: number | null) => {
           reject(new Error('Request timeout - slow connection'));
         }, 15000);
         
-        // Clean up timeout if signal aborts
         signal?.addEventListener('abort', () => clearTimeout(timeoutId));
       });
       
-      try {
-        const result = await Promise.race([
-          fetchTeamPlayers(teamId),
-          timeoutPromise
-        ]);
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`✅ Query result for team ${teamId}:`, result.length, 'players');
-        }
-        return result;
-      } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error(`❌ Query failed for team ${teamId}:`, error);
-        }
-        throw error;
-      }
+      const result = await Promise.race([
+        fetchTeamPlayers(teamId),
+        timeoutPromise
+      ]);
+      
+      return result;
     },
     enabled: shouldFetch,
-    staleTime: 0, // Always consider data stale - refetch on every request to ensure fresh data
-    gcTime: 10 * 60 * 1000, // 10 minutes cache
-    retry: 4, // 4 retries for unreliable connections (3G/4G)
+    staleTime: 2 * 60 * 1000, // 2 minutes cache
+    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
+    retry: 4,
     retryDelay: (attemptIndex) => {
       // Exponential backoff with jitter: 1.5s, 3s, 6s, 10s (max)
       const baseDelay = Math.min(1500 * Math.pow(2, attemptIndex), 10000);
-      const jitter = Math.random() * 500; // Add up to 500ms jitter
+      const jitter = Math.random() * 500;
       return baseDelay + jitter;
     },
-    refetchOnWindowFocus: false, // Don't refetch on tab focus
-    refetchOnReconnect: true, // Refetch when connection restored
-    refetchInterval: false, // No polling
-    placeholderData: undefined, // Don't use placeholder
-    networkMode: 'offlineFirst', // Try cache first, then network (better for slow connections)
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchInterval: false,
+    placeholderData: (previousData) => previousData,
+    networkMode: 'offlineFirst',
   });
 };
 
@@ -214,4 +137,3 @@ export const useInvalidateTeamPlayers = () => {
     },
   };
 };
-
