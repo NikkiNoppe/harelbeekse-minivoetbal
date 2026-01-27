@@ -1,7 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
 import { useAuth } from "@/hooks/useAuth";
 
 export interface Player {
@@ -30,218 +29,64 @@ export const playerQueryKeys = {
   detail: (id: number) => [...playerQueryKeys.details(), id] as const,
 };
 
-// Fetch Functions
-const fetchAllPlayers = async (): Promise<Player[]> => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 fetchAllPlayers called');
-  }
-  
+/**
+ * Helper to get user ID from localStorage
+ */
+const getUserIdFromStorage = (): number | null => {
   try {
-    const result = await withUserContext(async () => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('📡 Executing Supabase query for all players...');
-      }
-      
-      // Verify context is set before querying
-      if (process.env.NODE_ENV === 'development') {
-        const { data: roleCheck } = await supabase.rpc('get_current_user_role');
-        console.log('🔍 Current role in context before query:', roleCheck);
-      }
-      
-      const { data, error, count } = await supabase
-        .from('players')
-        .select(`
-          player_id,
-          first_name,
-          last_name,
-          birth_date,
-          team_id,
-          teams (
-            team_id,
-            team_name
-          )
-        `, { count: 'exact' })
-        .order('last_name')
-        .order('first_name');
-      
-      if (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('❌ Error fetching all players:', error);
-          console.error('Error details:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          });
-        }
-        throw error;
-      }
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ fetchAllPlayers result:`, {
-          dataLength: data?.length || 0,
-          count: count,
-          hasError: !!error,
-          firstPlayer: data?.[0] || null
-        });
-        
-        if (data && data.length === 0 && count !== null && count > 0) {
-          console.error('❌ RLS ISSUE: Query returned 0 players but count shows', count, 'players - RLS is blocking!');
-        } else if (data && data.length === 0 && (count === null || count === 0)) {
-          console.warn('⚠️ No players found in database (count is 0)');
-        }
-      }
-      
-      return (data || []) as Player[];
-    });
-    
-    return result;
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('💥 Exception in fetchAllPlayers:', error);
-    }
-    throw error;
-  }
-};
-
-const fetchPlayersByTeam = async (teamId: number): Promise<Player[]> => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`🔍 fetchPlayersByTeam START for team ${teamId} at ${new Date().toISOString()}`);
-  }
-  
-  try {
-    const result = await withUserContext(async () => {
-      // Verify context BEFORE query
-      if (process.env.NODE_ENV === 'development') {
-        const { data: roleBefore, error: roleErrorBefore } = await supabase.rpc('get_current_user_role');
-        const { data: teamIdsBefore } = await supabase.rpc('get_current_user_team_ids');
-        console.log(`🔍 Context BEFORE query for team ${teamId}:`, {
-          role: roleBefore,
-          teamIds: teamIdsBefore,
-          roleError: roleErrorBefore,
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      const queryStartTime = Date.now();
-      const { data, error, count } = await supabase
-        .from('players')
-        .select('player_id, first_name, last_name, birth_date, team_id', { count: 'exact' })
-        .eq('team_id', teamId)
-        .order('last_name')
-        .order('first_name');
-      const queryDuration = Date.now() - queryStartTime;
-      
-      // Verify context AFTER query
-      if (process.env.NODE_ENV === 'development') {
-        const { data: roleAfter, error: roleErrorAfter } = await supabase.rpc('get_current_user_role');
-        console.log(`🔍 Context AFTER query for team ${teamId}:`, {
-          role: roleAfter,
-          roleError: roleErrorAfter,
-          queryDuration: `${queryDuration}ms`
-        });
-      }
-      
-      if (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error(`❌ Error fetching players for team ${teamId}:`, error);
-          console.error('Error details:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          });
-        }
-        throw error;
-      }
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ fetchPlayersByTeam result for team ${teamId}:`, {
-          dataLength: data?.length || 0,
-          count: count,
-          hasError: !!error,
-          queryDuration: `${queryDuration}ms`
-        });
-        
-        if (data && data.length === 0) {
-          console.warn(`⚠️ No players found for team ${teamId}`);
-          
-          // Check if team exists
-          const { data: teamCheck, error: teamError } = await supabase
-            .from('teams')
-            .select('team_id, team_name')
-            .eq('team_id', teamId)
-            .single();
-          
-          if (teamError) {
-            console.warn(`⚠️ Could not verify if team ${teamId} exists:`, teamError.message);
-          } else if (teamCheck) {
-            console.log(`✅ Team ${teamId} (${teamCheck.team_name}) exists in database`);
-            
-            // Check if there are players for this team - use same context
-            // Note: This count query also respects RLS, so if it shows players but select doesn't,
-            // it means the RLS context is not set correctly for the select query
-            const countStartTime = Date.now();
-            const { count: totalCount, error: countError } = await supabase
-              .from('players')
-              .select('*', { count: 'exact', head: true })
-              .eq('team_id', teamId);
-            const countDuration = Date.now() - countStartTime;
-            
-            if (countError) {
-              console.warn(`⚠️ Could not check total count for team ${teamId}:`, countError.message);
-            } else {
-              console.log(`📊 Total players for team ${teamId} (by count, ${countDuration}ms):`, totalCount || 0);
-              if (totalCount && totalCount > 0 && data.length === 0) {
-                console.error(`❌ RLS ISSUE DETECTED for team ${teamId}:`);
-                console.error(`   - Count query shows: ${totalCount} players`);
-                console.error(`   - Select query shows: 0 players`);
-                console.error(`   - This indicates RLS is blocking the select query`);
-                console.error(`   - Context role should be 'admin' but may have been lost`);
-                
-                // Double-check context one more time
-                const { data: finalRoleCheck } = await supabase.rpc('get_current_user_role');
-                console.error(`   - Final role check: ${finalRoleCheck}`);
-              }
-            }
-          } else {
-            console.warn(`⚠️ Team ${teamId} does not exist in database`);
-          }
-        } else {
-          console.log(`✅ Successfully fetched ${data?.length || 0} players for team ${teamId}`);
-        }
-      }
-      
-      return (data || []) as Player[];
-    });
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔍 fetchPlayersByTeam END for team ${teamId} - returned ${result.length} players`);
-    }
-    
-    return result;
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error(`💥 Exception in fetchPlayersByTeam for team ${teamId}:`, error);
-    }
-    throw error;
+    const authDataString = localStorage.getItem('auth_data');
+    if (!authDataString) return null;
+    const authData = JSON.parse(authDataString);
+    return authData?.user?.id ?? null;
+  } catch {
+    return null;
   }
 };
 
 /**
+ * Fetch players using atomic SECURITY DEFINER RPC
+ * This eliminates RLS context loss issues from connection pooling
+ */
+const fetchPlayersViaRPC = async (teamId: number | null): Promise<Player[]> => {
+  const userId = getUserIdFromStorage();
+  
+  if (!userId) {
+    console.error('❌ No user ID found for player fetch');
+    return [];
+  }
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log('📡 Fetching players via RPC:', { userId, teamId });
+  }
+  
+  const { data, error } = await supabase.rpc('get_players_for_team', {
+    p_user_id: userId,
+    p_team_id: teamId
+  });
+  
+  if (error) {
+    console.error('❌ Error fetching players via RPC:', error);
+    throw error;
+  }
+  
+  const players = (data || []) as Player[];
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`✅ RPC returned ${players.length} players for ${teamId ? `team ${teamId}` : 'all teams'}`);
+  }
+  
+  return players;
+};
+
+/**
  * Main hook for fetching players
- * Uses React Query for automatic caching, retry logic, and request cancellation
+ * Uses React Query with atomic RPC for reliable data loading
  */
 export const usePlayersQuery = (teamId: number | null = null) => {
   const { user, authContextReady } = useAuth();
   const isAdmin = user?.role === "admin";
   
   // Determine what to fetch based on teamId and user role
-  // Query should be enabled when:
-  // 1. User exists
-  // 2. Auth context is ready
-  // 3. For player managers: they have a teamId
-  // 4. For admins: always enabled (can be null for all teams)
   const shouldFetch = !!user && authContextReady && (isAdmin || (user.teamId !== undefined && user.teamId !== null));
   
   // Only log in development and only when query state actually changes
@@ -262,8 +107,7 @@ export const usePlayersQuery = (teamId: number | null = null) => {
     }
   }
   
-  // Create a stable query key - don't include user role to avoid unnecessary cache separation
-  // The teamId is enough to differentiate queries
+  // Create a stable query key
   const queryKey = useMemo(() => {
     return playerQueryKeys.list(teamId);
   }, [teamId]);
@@ -275,45 +119,24 @@ export const usePlayersQuery = (teamId: number | null = null) => {
         console.log('📡 usePlayersQuery queryFn called:', {
           teamId,
           isAdmin,
-          userTeamId: user?.teamId,
-          willFetch: teamId !== null ? `team ${teamId}` : isAdmin ? 'all players' : `team ${user?.teamId}`
+          userTeamId: user?.teamId
         });
       }
       
+      // Use atomic RPC for all cases
       // If teamId is provided, fetch that team
       if (teamId !== null) {
-        const result = await fetchPlayersByTeam(teamId);
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`✅ Query result for team ${teamId}:`, result.length, 'players');
-          if (result.length === 0) {
-            console.warn(`⚠️ Team ${teamId} returned 0 players`);
-          }
-        }
-        return result;
+        return fetchPlayersViaRPC(teamId);
       }
       
-      // If admin and no teamId, fetch all players
+      // If admin and no teamId, fetch all players (pass null)
       if (isAdmin) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('📥 Fetching all players (admin view)');
-        }
-        const result = await fetchAllPlayers();
-        if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Query result (all players):', result.length, 'players');
-        }
-        return result;
+        return fetchPlayersViaRPC(null);
       }
       
-      // Player manager: fetch their team (teamId is null, so use user's teamId)
+      // Player manager: fetch their team
       if (user?.teamId) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`📥 Fetching players for player manager team: ${user.teamId}`);
-        }
-        const result = await fetchPlayersByTeam(user.teamId);
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`✅ Query result for player manager team ${user.teamId}:`, result.length, 'players');
-        }
-        return result;
+        return fetchPlayersViaRPC(user.teamId);
       }
       
       if (process.env.NODE_ENV === 'development') {
@@ -321,21 +144,21 @@ export const usePlayersQuery = (teamId: number | null = null) => {
       }
       return [];
     },
-    enabled: shouldFetch, // Only fetch when auth is ready
-    staleTime: 0, // Always consider data stale - refetch on every request to ensure fresh data
+    enabled: shouldFetch,
+    staleTime: 2 * 60 * 1000, // 2 minutes - matches blog/competition caching
     gcTime: 10 * 60 * 1000, // 10 minutes cache
-    retry: 4, // 4 retries for better reliability on slow connections
+    retry: 4,
     retryDelay: (attemptIndex) => {
       // Exponential backoff with jitter, max 10 seconds
       const baseDelay = 1500 * Math.pow(2, attemptIndex);
       const jitter = Math.random() * 500;
       return Math.min(baseDelay + jitter, 10000);
     },
-    refetchOnWindowFocus: false, // Don't refetch on tab focus
-    refetchOnReconnect: true, // Refetch when connection restored
-    refetchInterval: false, // No polling
-    placeholderData: undefined, // Don't use placeholder
-    networkMode: 'offlineFirst', // Try cache first for better offline support
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchInterval: false,
+    placeholderData: (previousData) => previousData, // Show previous data while loading
+    networkMode: 'offlineFirst',
   });
 };
 
