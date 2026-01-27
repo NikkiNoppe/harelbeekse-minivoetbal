@@ -64,8 +64,20 @@ const AdminPlayoffMatchesPage: React.FC = () => {
   const [selectedMatch, setSelectedMatch] = useState<MatchFormData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Fetch playoff matches data
-  const matchFormsData = useMatchFormsData(teamId, isAdmin || isReferee);
+  // Referee filter for match forms - referees see only their assigned matches
+  const refereeFilter = useMemo(() => {
+    if (isReferee && user?.id && user?.username) {
+      return { userId: user.id, username: user.username };
+    }
+    return undefined;
+  }, [isReferee, user?.id, user?.username]);
+
+  // Fetch playoff matches data with referee filter
+  const matchFormsData = useMatchFormsData(
+    teamId, 
+    isAdmin || isReferee,
+    isReferee ? refereeFilter : undefined
+  );
 
   // Get filtered playoff matches
   const playoffData = useMemo(() => 
@@ -113,8 +125,8 @@ const AdminPlayoffMatchesPage: React.FC = () => {
     return <ErrorState error={playoffData.error} onRetry={() => matchFormsData.refetchPlayoff()} />;
   }
 
-  // No team selected for non-admin users
-  if (!isAdmin && !teamId) {
+  // No team selected for team managers only (admins and referees don't need teamId)
+  if (!isAdmin && !isReferee && !teamId) {
     return <EmptyState message="Geen team toegewezen" />;
   }
 

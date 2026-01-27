@@ -16,7 +16,8 @@ export interface MatchFormsFilters {
 
 export const useMatchFormsData = (
   teamId: number,
-  hasElevatedPermissions: boolean
+  hasElevatedPermissions: boolean,
+  refereeFilter?: { userId: number; username: string }
 ) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -41,12 +42,13 @@ export const useMatchFormsData = (
 
   // League matches query
   const leagueQuery = useQuery({
-    queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'league'],
+    queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'league', refereeFilter?.userId],
     queryFn: async () => {
       return fetchUpcomingMatches(
         hasElevatedPermissions ? 0 : teamId, 
         hasElevatedPermissions, 
-        'league'
+        'league',
+        refereeFilter
       );
     },
     staleTime: 0, // Always refetch immediately
@@ -62,12 +64,13 @@ export const useMatchFormsData = (
 
   // Cup matches query
   const cupQuery = useQuery({
-    queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'cup'],
+    queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'cup', refereeFilter?.userId],
     queryFn: async () => {
       return fetchUpcomingMatches(
         hasElevatedPermissions ? 0 : teamId, 
         hasElevatedPermissions, 
-        'cup'
+        'cup',
+        refereeFilter
       );
     },
     staleTime: 0, // Always refetch immediately
@@ -83,12 +86,13 @@ export const useMatchFormsData = (
 
   // Playoff matches query
   const playoffQuery = useQuery({
-    queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'playoff'],
+    queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'playoff', refereeFilter?.userId],
     queryFn: async () => {
       return fetchUpcomingMatches(
         hasElevatedPermissions ? 0 : teamId, 
         hasElevatedPermissions, 
-        'playoff'
+        'playoff',
+        refereeFilter
       );
     },
     staleTime: 0, // Always refetch immediately

@@ -288,6 +288,14 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
     }
   }, [profileData?.teams, user]);
 
+  // Referee filter for match forms - referees see only their assigned matches
+  const refereeFilter = useMemo(() => {
+    if (isReferee && user?.id && user?.username) {
+      return { userId: user.id, username: user.username };
+    }
+    return undefined;
+  }, [isReferee, user?.id, user?.username]);
+
   const {
     leagueMatches,
     cupMatches,
@@ -297,7 +305,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
     getTabData,
     refreshInstantly,
     refetchAll
-  } = useMatchFormsData(effectiveTeamId, hasElevatedPermissions);
+  } = useMatchFormsData(effectiveTeamId, hasElevatedPermissions, isReferee ? refereeFilter : undefined);
 
   const leagueTabData = useMemo(() => 
     getTabData('league', filters), 
