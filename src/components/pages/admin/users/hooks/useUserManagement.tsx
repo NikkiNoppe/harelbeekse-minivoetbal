@@ -33,31 +33,25 @@ export const useUserManagement = () => {
   const [roleFilter, setRoleFilter] = useState("all");
   const [teamFilter, setTeamFilter] = useState("all");
 
-  // Fetch data service
+  // Fetch data service - using SECURITY DEFINER RPC for reliable admin access
   const fetchData = async () => {
-    // Fetch users with their team relationships
+    // Get user ID from localStorage for RPC call
+    const authDataString = localStorage.getItem('auth_data');
+    const userId = authDataString ? JSON.parse(authDataString)?.user?.id : null;
+    
+    if (!userId) {
+      throw new Error('Niet ingelogd');
+    }
+    
+    // Use SECURITY DEFINER RPC to fetch users with proper authorization
     const { data: usersData, error: usersError } = await supabase
-      .from('users')
-      .select(`
-        user_id,
-        username,
-        email,
-        role,
-        team_users!left (
-          team_id,
-          teams!team_users_team_id_fkey (
-            team_id,
-            team_name
-          )
-        )
-      `)
-      .order('username');
+      .rpc('get_all_users_for_admin', { p_user_id: userId });
 
     if (usersError) {
       throw new Error(`Fout bij het ophalen van gebruikers: ${usersError.message}`);
     }
 
-    // Fetch teams
+    // Fetch teams (publicly accessible)
     const { data: teamsData, error: teamsError } = await supabase
       .from('teams')
       .select('team_id, team_name')
@@ -67,13 +61,9 @@ export const useUserManagement = () => {
       throw new Error(`Fout bij het ophalen van teams: ${teamsError.message}`);
     }
 
-    // Transform users data to include team information
-    const transformedUsers: DbUser[] = (usersData || []).map(user => {
-      const teamUsers = user.team_users || [];
-      const teams = teamUsers.map(tu => ({
-        team_id: tu.teams?.team_id || 0,
-        team_name: tu.teams?.team_name || ''
-      })).filter(t => t.team_id > 0);
+    // Transform users data (team_users is already JSONB from RPC)
+    const transformedUsers: DbUser[] = (usersData || []).map((user: any) => {
+      const teams = user.team_users || [];
       
       return {
         user_id: user.user_id,
