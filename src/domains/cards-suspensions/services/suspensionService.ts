@@ -349,7 +349,7 @@ export const suspensionService = {
       // Get dynamic suspension rules
       const rules = await suspensionRulesService.getSuspensionRules();
 
-      // Fetch all cards to get card dates
+      // Fetch submitted matches to get card dates (cards only come from played matches)
       const { data: matchesData, error: matchesError } = await supabase
         .from('matches')
         .select(`
@@ -367,6 +367,23 @@ export const suspensionService = {
 
       if (matchesError) {
         console.error('Error fetching matches for card dates:', matchesError);
+      }
+
+      // Fetch ALL matches (including unplayed) for "next match after card" calculation
+      const { data: allMatchesData, error: allMatchesError } = await supabase
+        .from('matches')
+        .select(`
+          match_id,
+          match_date,
+          home_team_id,
+          away_team_id,
+          teams_home:teams!home_team_id ( team_name ),
+          teams_away:teams!away_team_id ( team_name )
+        `)
+        .order('match_date', { ascending: true });
+
+      if (allMatchesError) {
+        console.error('Error fetching all matches:', allMatchesError);
       }
 
       // Helper function to get last card date for a player
@@ -398,12 +415,12 @@ export const suspensionService = {
         teamId: number, 
         afterDate: string
       ): { date: string; opponent: string } | undefined => {
-        if (!matchesData || !afterDate) return undefined;
+        if (!allMatchesData || !afterDate) return undefined;  // Use allMatchesData (includes unplayed matches)
         
         const afterDateTime = new Date(afterDate).getTime();
         
-        // Filter matches for this team that are AFTER the card date
-        const teamMatches = matchesData
+        // Filter ALL matches for this team that are AFTER the card date
+        const teamMatches = allMatchesData
           .filter(match => 
             (match.home_team_id === teamId || match.away_team_id === teamId) &&
             new Date(match.match_date).getTime() > afterDateTime
