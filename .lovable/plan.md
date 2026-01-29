@@ -1,61 +1,58 @@
 
 
-# Fix Schorsing Datum Berekening
+# Fix: Schorsing Wedstrijd Berekening
 
-## Probleem Samenvatting
+## Probleem
 
-De "Actieve schorsingen" tabel toont verkeerde datums voor het veld "Geschorst voor wedstrijd". Het voorbeeld:
-- **Speler**: Dieter Verbeke
-- **Kaartdatum**: 15 september 2025 (rode kaart)
-- **Weergegeven**: "Geschorst voor: 2 februari 2026"
-- **Verwacht**: De eerste wedstrijd NA 15 september 2025
+De schorsing toont de verkeerde wedstrijd omdat:
 
-## Oorzaak
+1. **matchesData bevat alleen gespeelde wedstrijden** - De query filtert op `is_submitted = true`
+2. **De volgende wedstrijd moet uit ALLE wedstrijden komen** - Zowel gespeelde als toekomstige
 
-In `suspensionService.ts` wordt de volgende wedstrijd gezocht op basis van de **huidige datum**:
+Als Dieter Verbeke op 15 september een rode kaart krijgt, moet de schorsing gelden voor de eerste wedstrijd NA 15 september, ongeacht of die al gespeeld is.
 
-```typescript
-// Regel 412 - PROBLEEM
-.gte('match_date', new Date().toISOString())
-```
-
-Dit betekent dat de code altijd zoekt naar wedstrijden na vandaag (29 jan 2026), terwijl de schorsing geldt voor wedstrijden na de kaartdatum (15 sept 2025).
-
-## Oplossing
-
-De logica moet per speler de volgende wedstrijd(en) NA de kaartdatum berekenen, in plaats van één generieke "volgende wedstrijd" per team.
-
----
-
-## Technische Wijzigingen
+## Technische Oplossing
 
 ### Bestand: `src/domains/cards-suspensions/services/suspensionService.ts`
 
-#### Wijziging 1: Verwijder de generieke "nextMatchesMap" benadering
+**Wijziging: Aparte query voor alle wedstrijden (niet alleen submitted)**
 
-De huidige code haalt één keer alle toekomstige wedstrijden op en maakt een map per team. Dit werkt niet omdat elke speler een andere kaartdatum kan hebben.
-
-#### Wijziging 2: Bereken "suspendedForMatch" per speler op basis van cardDate
-
-Nieuwe logica:
-1. Haal de kaartdatum van de speler op
-2. Zoek de eerste wedstrijd NA die kaartdatum voor dat team
-3. Gebruik die wedstrijd als "suspendedForMatch"
-
-Gerefactoreerde code (regels 396-460):
+Voeg een tweede query toe die ALLE wedstrijden ophaalt voor de "volgende wedstrijd" berekening:
 
 ```typescript
-// Helper function to get next match AFTER a specific date for a team
+// Bestaande query voor kaartdatums (blijft is_submitted = true)
+const { data: matchesData } = await supabase
+  .from('matches')
+  .select('...')
+  .eq('is_submitted', true);  // Kaarten komen alleen uit gespeelde wedstrijden
+
+// NIEUWE query voor alle wedstrijden (voor "volgende wedstrijd" berekening)
+const { data: allMatchesData } = await supabase
+  .from('matches')
+  .select(`
+    match_id,
+    match_date,
+    home_team_id,
+    away_team_id,
+    teams_home:teams!home_team_id ( team_name ),
+    teams_away:teams!away_team_id ( team_name )
+  `)
+  .order('match_date', { ascending: true });  // Geen is_submitted filter!
+```
+
+Vervolgens `getNextMatchAfterDate` aanpassen om `allMatchesData` te gebruiken:
+
+```typescript
 const getNextMatchAfterDate = (
   teamId: number, 
   afterDate: string
 ): { date: string; opponent: string } | undefined => {
-  if (!matchesData || !afterDate) return undefined;
+  if (!allMatchesData || !afterDate) return undefined;  // Gebruik allMatchesData
   
   const afterDateTime = new Date(afterDate).getTime();
   
-  // Sort matches by date ascending and find first match after the card date
-  const teamMatches = matchesData
+  // Filter matches for this team that are AFTER the card date
+  const teamMatches = allMatchesData
     .filter(match => 
       (match.home_team_id === teamId || match.away_team_id === teamId) &&
       new Date(match.match_date).getTime() > afterDateTime
@@ -64,102 +61,22 @@ const getNextMatchAfterDate = (
       new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
     );
   
-  if (teamMatches.length === 0) return undefined;
-  
-  const firstMatch = teamMatches[0];
-  const isHome = firstMatch.home_team_id === teamId;
-  const opponent = isHome 
-    ? (firstMatch.teams_away as any)?.team_name || 'Onbekend'
-    : (firstMatch.teams_home as any)?.team_name || 'Onbekend';
-  
-  // Use local date components to avoid timezone shifts
-  const matchDate = new Date(firstMatch.match_date);
-  const year = matchDate.getUTCFullYear();
-  const month = String(matchDate.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(matchDate.getUTCDate()).padStart(2, '0');
-  
-  return {
-    date: `${year}-${month}-${day}`,
-    opponent
-  };
+  // ... rest blijft hetzelfde
 };
 ```
-
-#### Wijziging 3: Update de player processing loop
-
-Bij het verwerken van elke speler:
-
-```typescript
-// Voor gele kaarten
-if (player.yellowCards >= 2) {
-  const cardDate = getLastCardDate(player.playerId, 'yellow');
-  const suspendedForMatch = cardDate && player.teamId 
-    ? getNextMatchAfterDate(player.teamId, cardDate) 
-    : undefined;
-  
-  suspensions.push({
-    // ...existing fields...
-    cardDate,
-    suspendedForMatch
-  });
-}
-
-// Voor rode kaarten
-if (player.redCards > 0) {
-  const cardDate = getLastCardDate(player.playerId, 'red');
-  const suspendedForMatch = cardDate && player.teamId 
-    ? getNextMatchAfterDate(player.teamId, cardDate) 
-    : undefined;
-  
-  suspensions.push({
-    // ...existing fields...
-    cardDate,
-    suspendedForMatch
-  });
-}
-```
-
----
-
-## Datum Formattering
-
-Volgens de lovable-stack-overflow richtlijnen moet de datum correct worden geformatteerd om timezone shifts te voorkomen:
-
-```typescript
-// CORRECT: gebruik locale date componenten
-const year = matchDate.getUTCFullYear();
-const month = String(matchDate.getUTCMonth() + 1).padStart(2, '0');
-const day = String(matchDate.getUTCDate()).padStart(2, '0');
-return `${year}-${month}-${day}`;
-
-// FOUT: vermijd toISOString() voor display dates
-// Dit kan timezone shifts veroorzaken
-```
-
----
-
-## Verwacht Resultaat
-
-Na implementatie:
-- **Dieter Verbeke** (rode kaart 15 sept 2025): Geschorst voor de wedstrijd op 30 september 2025 (eerste wedstrijd NA kaartdatum)
-- Alle schorsingen tonen de correcte "geschorst voor" datum gebaseerd op wanneer de kaart daadwerkelijk is gegeven
-- Geen timezone-gerelateerde datum verschuivingen meer
 
 ---
 
 ## Bestanden
 
-| Bestand | Actie | Beschrijving |
-|---------|-------|--------------|
-| `src/domains/cards-suspensions/services/suspensionService.ts` | Aanpassen | Fix datum berekening voor suspendedForMatch |
+| Bestand | Actie |
+|---------|-------|
+| `src/domains/cards-suspensions/services/suspensionService.ts` | Aanpassen |
 
 ---
 
-## Optionele Verbetering
+## Verwacht Resultaat
 
-Overweeg om ook de **status** van de schorsing correct te berekenen:
-- Als de kaartdatum + schorsingsperiode in het verleden ligt → status: 'completed'
-- Als de speler nog wedstrijden moet uitzitten → status: 'active'
-
-Dit kan in een follow-up worden geïmplementeerd.
+- **Dieter Verbeke** (rode kaart 15 sept 2025): Geschorst voor de wedstrijd op ~22 september 2025 (eerste wedstrijd NA kaartdatum, ongeacht of die al gespeeld is)
+- Schorsingen tonen altijd de correcte "volgende wedstrijd" na de kaartdatum
 
