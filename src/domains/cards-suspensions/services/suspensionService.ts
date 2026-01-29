@@ -33,31 +33,29 @@ export interface Suspension {
 export const suspensionService = {
   async getPlayerCards(): Promise<PlayerCard[]> {
     try {
-      const { data, error } = await supabase
-        .from('players')
-        .select(`
-          player_id,
-          first_name,
-          last_name,
-          team_id,
-          yellow_cards,
-          red_cards,
-          suspended_matches_remaining,
-          teams:team_id (
-            team_name
-          )
-        `)
-        .order('yellow_cards', { ascending: false });
+      // Get user ID from localStorage for RPC call
+      const authDataString = localStorage.getItem('auth_data');
+      const userId = authDataString ? JSON.parse(authDataString)?.user?.id : null;
+      
+      if (!userId) {
+        console.error('No user ID found for player cards fetch');
+        return [];
+      }
+      
+      // Use SECURITY DEFINER RPC for reliable admin/manager access
+      const { data, error } = await supabase.rpc('get_player_cards_for_admin', {
+        p_user_id: userId
+      });
 
       if (error) {
-        console.error('Error fetching player cards:', error);
+        console.error('Error fetching player cards via RPC:', error);
         throw error;
       }
 
-      return data.map(player => ({
+      return (data || []).map((player: any) => ({
         playerId: player.player_id,
         playerName: `${player.first_name} ${player.last_name}`,
-        teamName: player.teams?.team_name || 'Onbekend Team',
+        teamName: player.team_name || 'Onbekend Team',
         teamId: player.team_id,
         yellowCards: player.yellow_cards || 0,
         redCards: player.red_cards || 0,

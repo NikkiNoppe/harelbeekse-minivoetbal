@@ -623,6 +623,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_all_users_for_admin: {
+        Args: { p_user_id: number }
+        Returns: {
+          email: string
+          role: string
+          team_users: Json
+          user_id: number
+          username: string
+        }[]
+      }
       get_current_user_role: { Args: never; Returns: string }
       get_current_user_team_ids: { Args: never; Returns: number[] }
       get_match_statistics: {
@@ -632,6 +642,19 @@ export type Database = {
           cards_count: number
           home_players_count: number
           total_players: number
+        }[]
+      }
+      get_player_cards_for_admin: {
+        Args: { p_user_id: number }
+        Returns: {
+          first_name: string
+          last_name: string
+          player_id: number
+          red_cards: number
+          suspended_matches_remaining: number
+          team_id: number
+          team_name: string
+          yellow_cards: number
         }[]
       }
       get_players_for_team: {
