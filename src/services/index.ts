@@ -6,8 +6,6 @@ export { refereeService, type Referee } from './core/refereeService';
 export { playerService, type Player } from './core/playerService';
 export { teamService, type Team } from './core/teamService';
 
-
-
 // Admin Services - Administrative operations
 export { adminService, type AdminUser } from './admin/adminService';
 
@@ -22,6 +20,21 @@ export { matchService } from './match/matchService';
 export { enhancedMatchService } from './match/enhancedMatchService';
 export { fetchCompetitionMatches, fetchAllCards, type MatchData, type CardData } from './match/matchDataService';
 export { bekerService as cupService, type CupMatch } from './match/cupService';
+
+// Scheidsrechter Services - Referee management, availability, and assignments
+export { 
+  scheidsrechterService,
+  pollService,
+  refereeAvailabilityService,
+  assignmentService,
+  type MonthlyPoll,
+  type PollStatus,
+  type PollMatchDate,
+  type RefereeAssignment,
+  type AssignmentStatus,
+  type AvailableReferee,
+  type RefereeWithAvailability
+} from './scheidsrechter';
 
 // Individual services that don't fit in categories
 export { blogService, fetchBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost, type BlogPostData, type BlogPost } from './blogService';

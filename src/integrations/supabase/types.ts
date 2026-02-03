@@ -217,6 +217,54 @@ export type Database = {
           },
         ]
       }
+      monthly_polls: {
+        Row: {
+          created_at: string | null
+          created_by: number | null
+          deadline: string | null
+          id: number
+          notes: string | null
+          poll_month: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: number | null
+          deadline?: string | null
+          id?: number
+          notes?: string | null
+          poll_month: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: number | null
+          deadline?: string | null
+          id?: number
+          notes?: string | null
+          poll_month?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_polls_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "referees_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "monthly_polls_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       password_reset_tokens: {
         Row: {
           created_at: string
@@ -288,14 +336,130 @@ export type Database = {
           },
         ]
       }
+      poll_match_dates: {
+        Row: {
+          created_at: string | null
+          id: number
+          location: string | null
+          match_count: number | null
+          match_date: string
+          poll_id: number
+          time_slot: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          location?: string | null
+          match_count?: number | null
+          match_date: string
+          poll_id: number
+          time_slot?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          location?: string | null
+          match_count?: number | null
+          match_date?: string
+          poll_id?: number
+          time_slot?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_match_dates_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referee_assignments: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: number | null
+          confirmed_at: string | null
+          id: number
+          match_id: number
+          notes: string | null
+          referee_id: number
+          status: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: number | null
+          confirmed_at?: string | null
+          id?: number
+          match_id: number
+          notes?: string | null
+          referee_id: number
+          status?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: number | null
+          confirmed_at?: string | null
+          id?: number
+          match_id?: number
+          notes?: string | null
+          referee_id?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referee_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "referees_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referee_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referee_assignments_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "referee_assignments_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches_with_poll_info"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "referee_assignments_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "referees_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referee_assignments_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       referee_availability: {
         Row: {
           created_at: string | null
           id: number
           is_available: boolean
           match_id: number | null
+          notes: string | null
           poll_group_id: string
           poll_month: string
+          updated_at: string | null
           user_id: number
         }
         Insert: {
@@ -303,8 +467,10 @@ export type Database = {
           id?: number
           is_available?: boolean
           match_id?: number | null
+          notes?: string | null
           poll_group_id: string
           poll_month: string
+          updated_at?: string | null
           user_id: number
         }
         Update: {
@@ -312,8 +478,10 @@ export type Database = {
           id?: number
           is_available?: boolean
           match_id?: number | null
+          notes?: string | null
           poll_group_id?: string
           poll_month?: string
+          updated_at?: string | null
           user_id?: number
         }
         Relationships: [
@@ -602,6 +770,10 @@ export type Database = {
           player_id: number
         }[]
       }
+      check_referee_conflict: {
+        Args: { p_match_id: number; p_referee_id: number }
+        Returns: boolean
+      }
       create_user_with_hashed_password: {
         Args: {
           email_param: string
@@ -629,6 +801,15 @@ export type Database = {
           email: string
           role: string
           team_users: Json
+          user_id: number
+          username: string
+        }[]
+      }
+      get_available_referees_for_match: {
+        Args: { p_match_id: number }
+        Returns: {
+          has_conflict: boolean
+          is_available: boolean
           user_id: number
           username: string
         }[]
