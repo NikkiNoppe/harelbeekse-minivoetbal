@@ -36,6 +36,16 @@ export default {
 					DEFAULT: 'hsl(var(--destructive))',
 					foreground: 'hsl(var(--destructive-foreground))'
 				},
+				success: {
+					DEFAULT: 'var(--color-success)',
+					foreground: 'var(--color-success-light)',
+					dark: 'var(--color-success-dark)'
+				},
+				warning: {
+					DEFAULT: 'var(--color-warning)',
+					foreground: 'var(--color-warning-light)',
+					dark: 'var(--color-warning-dark)'
+				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
 					foreground: 'hsl(var(--muted-foreground))'

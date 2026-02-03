@@ -14,6 +14,7 @@ import {
   scheidsrechterService, 
   PollMatch
 } from '@/services/scheidsrechter/scheidsrechterService';
+import { RefereeDashboard } from '@/components/pages/public/scheidsrechters';
 
 // Helper: Generate month options for dropdown
 const getMonthOptions = () => {
@@ -43,20 +44,7 @@ const ScheidsrechtersPage = () => {
   }, []);
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Scheidsrechter Schema</h1>
-          <p className="text-muted-foreground mt-1">
-            {isLoadingRole 
-              ? 'Gebruikersgegevens laden...' 
-              : userRole === 'admin' 
-                ? 'Beheer scheidsrechter toewijzingen per maand'
-                : 'Bekijk open wedstrijden'}
-          </p>
-        </div>
-      </div>
-
+    <div className="space-y-6 p-4 sm:p-6">
       {isLoadingRole ? (
         <Card>
           <CardContent className="p-8 text-center">
@@ -69,9 +57,30 @@ const ScheidsrechtersPage = () => {
           </CardContent>
         </Card>
       ) : userRole === 'admin' ? (
-        <AdminView />
+        <>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold">Scheidsrechter Schema</h1>
+              <p className="text-muted-foreground mt-1">
+                Beheer scheidsrechter toewijzingen per maand
+              </p>
+            </div>
+          </div>
+          <AdminView />
+        </>
       ) : (
-        <RefereeView />
+        // For referees and other roles - show the simplified read-only view
+        <>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold">Scheidsrechter Schema</h1>
+              <p className="text-muted-foreground mt-1">
+                Bekijk wedstrijdschema
+              </p>
+            </div>
+          </div>
+          <RefereeView />
+        </>
       )}
     </div>
   );

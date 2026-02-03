@@ -152,6 +152,11 @@
     --color-success-light: var(--color-white);
     --color-success-dark: #15803d;
     
+    /* Warning Kleuren (oranje) */
+    --color-warning: #f59e0b;
+    --color-warning-light: var(--color-white);
+    --color-warning-dark: #b45309;
+    
     /* Shadow Kleuren - Destructive (rood - NIET aanpassen) */
     --color-shadow-destructive-07: rgba(220, 38, 38, 0.07);
     --color-shadow-destructive-15: rgba(220, 38, 38, 0.15);
