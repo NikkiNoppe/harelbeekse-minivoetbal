@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -6,29 +6,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClipboardList, Users, ShieldAlert } from 'lucide-react';
 import { RefereeDashboard } from '@/components/pages/public/scheidsrechters';
 import { PollManagement, AssignmentManagement } from './components';
+import { useAuth } from '@/hooks/useAuth';
 
 // Main component
 const ScheidsrechtersPage = () => {
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [isLoadingRole, setIsLoadingRole] = useState(true);
+  const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<'polls' | 'assignments'>('assignments');
 
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      try {
-        const user = JSON.parse(userData);
-        setUserRole(user.role);
-      } catch (e) {
-        console.error('Error parsing user data:', e);
-        setUserRole(null);
-      }
-    }
-    setIsLoadingRole(false);
-  }, []);
+  const userRole = user?.role || null;
 
   // Loading state
-  if (isLoadingRole) {
+  if (loading) {
     return (
       <div className="space-y-6 p-4 sm:p-6">
         <Card>
