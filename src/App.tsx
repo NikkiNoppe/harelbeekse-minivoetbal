@@ -67,11 +67,6 @@ const App = () => (
                         <Index />
                       </Suspense>
                     } />
-                    <Route path={PUBLIC_ROUTES.scheidsrechters} element={
-                      <Suspense fallback={<LoadingSpinner />}>
-                        <Index />
-                      </Suspense>
-                    } />
                     
                     {/* Admin routes - Protected with authentication - Lazy loaded with Suspense */}
                     <Route path={ADMIN_ROUTES['match-forms']} element={

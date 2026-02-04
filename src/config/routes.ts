@@ -47,7 +47,6 @@ export const MATCHES_ROUTES = {
 export const TEAMS_PLAYERS_ROUTES = {
   public: {
     teams: '/teams',
-    referees: '/scheidsrechters',
   },
   admin: {
     players: '/admin/players',
@@ -118,7 +117,6 @@ export const PUBLIC_ROUTES = {
   reglement: SYSTEM_ROUTES.public.regulations,
   kaarten: CARDS_SUSPENSIONS_ROUTES.public.cards,
   teams: TEAMS_PLAYERS_ROUTES.public.teams,
-  scheidsrechters: TEAMS_PLAYERS_ROUTES.public.referees,
 } as const;
 
 // Admin routes (legacy format)
@@ -289,12 +287,6 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   [PUBLIC_ROUTES.kaarten]: {
     title: 'Kaarten',
     description: 'Overzicht van kaarten en schorsingen',
-    requiresAuth: false,
-    requiresAdmin: false,
-  },
-  [PUBLIC_ROUTES.scheidsrechters]: {
-    title: 'Scheidsrechters',
-    description: 'Overzicht van scheidsrechters',
     requiresAuth: false,
     requiresAdmin: false,
   },
