@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { nl } from 'date-fns/locale';
 import { MapPin, Clock, AlertTriangle, UserCheck, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +8,7 @@ import { toast } from 'sonner';
 import { assignmentService } from '@/services/scheidsrechter/assignmentService';
 import type { AvailableReferee, RefereeAssignment } from '@/services/scheidsrechter/types';
 import { cn } from '@/lib/utils';
+import { formatTimeForDisplay } from '@/lib/dateUtils';
 
 interface MatchData {
   match_id: number;
@@ -102,7 +101,6 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     }
   };
 
-  const matchDate = new Date(match.match_date);
   const isAssigned = !!match.assigned_referee_id || !!match.current_referee_name;
 
   // Filter and sort referees
@@ -125,10 +123,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
-              <span className="font-medium">
-                {format(matchDate, 'EEE d MMM', { locale: nl })}
-              </span>
-              <span>{format(matchDate, 'HH:mm')}</span>
+              <span>{formatTimeForDisplay(match.match_date)}</span>
             </div>
             {isAssigned ? (
               <Badge className="bg-success text-success-foreground">

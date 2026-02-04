@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import { RefreshCw, Filter, UserCheck, Users } from 'lucide-react';
+import { RefreshCw, Filter, UserCheck, Users, MapPin, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { assignmentService } from '@/services/scheidsrechter/assignmentService';
 import { refereeAvailabilityService } from '@/services/scheidsrechter/refereeAvailabilityService';
 import type { RefereeAssignmentStats } from '@/services/scheidsrechter/types';
 import AssignmentCard from './AssignmentCard';
+import { formatDateWithDay, formatTimeForDisplay } from '@/lib/dateUtils';
 
 interface MatchWithAssignment {
   match_id: number;
@@ -151,11 +152,47 @@ const AssignmentManagement: React.FC = () => {
   }, [fetchData]);
 
   // Filter matches
-  const filteredMatches = matches.filter(m => {
-    if (statusFilter === 'assigned') return !!m.assigned_referee_id || !!m.current_referee_name;
-    if (statusFilter === 'unassigned') return !m.assigned_referee_id && !m.current_referee_name;
-    return true;
-  });
+  const filteredMatches = useMemo(() => {
+    return matches.filter(m => {
+      if (statusFilter === 'assigned') return !!m.assigned_referee_id || !!m.current_referee_name;
+      if (statusFilter === 'unassigned') return !m.assigned_referee_id && !m.current_referee_name;
+      return true;
+    });
+  }, [matches, statusFilter]);
+
+  // Group matches by speeldag (date + location)
+  const groupedMatches = useMemo(() => {
+    const groups: Map<string, { 
+      dateKey: string; 
+      date: string; 
+      location: string; 
+      matches: MatchWithAssignment[] 
+    }> = new Map();
+
+    filteredMatches.forEach(match => {
+      // Extract date (YYYY-MM-DD) from ISO string
+      const dateOnly = match.match_date.split('T')[0];
+      const location = match.location || 'Onbekende locatie';
+      const groupKey = `${dateOnly}__${location}`;
+
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          dateKey: dateOnly,
+          date: match.match_date,
+          location,
+          matches: []
+        });
+      }
+      groups.get(groupKey)!.matches.push(match);
+    });
+
+    // Sort groups by date, then by location
+    return Array.from(groups.values()).sort((a, b) => {
+      const dateCompare = a.dateKey.localeCompare(b.dateKey);
+      if (dateCompare !== 0) return dateCompare;
+      return a.location.localeCompare(b.location);
+    });
+  }, [filteredMatches]);
 
   const assignedCount = matches.filter(m => m.assigned_referee_id || m.current_referee_name).length;
   const unassignedCount = matches.length - assignedCount;
@@ -280,17 +317,23 @@ const AssignmentManagement: React.FC = () => {
         </Button>
       </div>
 
-      {/* Matches Grid */}
+      {/* Matches grouped by speeldag */}
       {loading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <Card key={i}>
-              <CardContent className="p-4 space-y-3">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-8 w-full" />
-              </CardContent>
-            </Card>
+        <div className="space-y-6">
+          {[1, 2].map(i => (
+            <div key={i} className="space-y-3">
+              <Skeleton className="h-6 w-48" />
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card><CardContent className="p-4 space-y-3">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-5 w-full" />
+                </CardContent></Card>
+                <Card><CardContent className="p-4 space-y-3">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-5 w-full" />
+                </CardContent></Card>
+              </div>
+            </div>
           ))}
         </div>
       ) : filteredMatches.length === 0 ? (
@@ -308,13 +351,35 @@ const AssignmentManagement: React.FC = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredMatches.map(match => (
-            <AssignmentCard
-              key={match.match_id}
-              match={match}
-              onAssignmentChange={fetchData}
-            />
+        <div className="space-y-6">
+          {groupedMatches.map((group) => (
+            <div key={`${group.dateKey}__${group.location}`} className="space-y-3">
+              {/* Speeldag header */}
+              <div className="flex items-center gap-3 pb-2 border-b border-border/50">
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <span>{formatDateWithDay(group.date)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  <span>{group.location}</span>
+                </div>
+                <Badge variant="outline" className="ml-auto">
+                  {group.matches.length} {group.matches.length === 1 ? 'wedstrijd' : 'wedstrijden'}
+                </Badge>
+              </div>
+
+              {/* Matches in this speeldag */}
+              <div className="grid gap-4 md:grid-cols-2">
+                {group.matches.map(match => (
+                  <AssignmentCard
+                    key={match.match_id}
+                    match={match}
+                    onAssignmentChange={fetchData}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
