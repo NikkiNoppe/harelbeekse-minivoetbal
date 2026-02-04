@@ -52,11 +52,14 @@ const AssignmentManagement: React.FC = () => {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    console.log('[AssignmentManagement] Fetching data for month:', selectedMonth);
     try {
       const [year, monthNum] = selectedMonth.split('-').map(Number);
       const nextMonth = monthNum === 12 
         ? `${year + 1}-01` 
         : `${year}-${String(monthNum + 1).padStart(2, '0')}`;
+
+      console.log('[AssignmentManagement] Date range:', `${selectedMonth}-01`, 'to', `${nextMonth}-01`);
 
       // Fetch matches for month
       const { data: matchesData, error: matchesError } = await supabase
@@ -74,7 +77,12 @@ const AssignmentManagement: React.FC = () => {
         .lt('match_date', `${nextMonth}-01`)
         .order('match_date', { ascending: true });
 
-      if (matchesError) throw matchesError;
+      if (matchesError) {
+        console.error('[AssignmentManagement] Matches error:', matchesError);
+        throw matchesError;
+      }
+
+      console.log('[AssignmentManagement] Fetched matches:', matchesData?.length || 0);
 
       // Get team names
       const teamIds = new Set<number>();
@@ -92,12 +100,20 @@ const AssignmentManagement: React.FC = () => {
 
       // Get assignments for these matches
       const matchIds = (matchesData || []).map(m => m.match_id);
-      const { data: assignments } = await (supabase
-        .from('referee_assignments' as any)
-        .select('*')
-        .in('match_id', matchIds) as any);
-
-      const assignmentMap = new Map((assignments || []).map(a => [a.match_id, a]));
+      let assignmentMap = new Map();
+      
+      if (matchIds.length > 0) {
+        const { data: assignments, error: assignmentsError } = await (supabase
+          .from('referee_assignments' as any)
+          .select('*')
+          .in('match_id', matchIds) as any);
+        
+        if (assignmentsError) {
+          console.warn('[AssignmentManagement] Assignments fetch error:', assignmentsError);
+        } else {
+          assignmentMap = new Map((assignments || []).map(a => [a.match_id, a]));
+        }
+      }
 
       // Combine data
       const enrichedMatches: MatchWithAssignment[] = (matchesData || []).map(m => ({
@@ -111,6 +127,7 @@ const AssignmentManagement: React.FC = () => {
         current_assignment: assignmentMap.get(m.match_id)
       }));
 
+      console.log('[AssignmentManagement] Enriched matches:', enrichedMatches.length);
       setMatches(enrichedMatches);
 
       // Fetch stats
@@ -122,7 +139,7 @@ const AssignmentManagement: React.FC = () => {
       setStats(assignmentStats);
       setAvailabilityStats(availStats);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('[AssignmentManagement] Error fetching data:', error);
       toast.error('Fout bij ophalen gegevens');
     } finally {
       setLoading(false);
