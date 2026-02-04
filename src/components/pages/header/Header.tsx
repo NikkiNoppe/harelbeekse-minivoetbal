@@ -59,7 +59,6 @@ const Header: React.FC<HeaderProps> = ({
     playoff: PUBLIC_ROUTES.playoff,
     reglement: PUBLIC_ROUTES.reglement,
     kaarten: PUBLIC_ROUTES.kaarten,
-    scheidsrechters: PUBLIC_ROUTES.scheidsrechters,
     // Admin
     'match-forms': ADMIN_ROUTES['match-forms'],
     'match-forms-league': ADMIN_ROUTES['match-forms-league'],
@@ -73,7 +72,7 @@ const Header: React.FC<HeaderProps> = ({
     cup: ADMIN_ROUTES.cup,
     financial: ADMIN_ROUTES.financial,
     settings: ADMIN_ROUTES.settings,
-    'admin-scheidsrechters': ADMIN_ROUTES.scheidsrechters,
+    scheidsrechters: ADMIN_ROUTES.scheidsrechters,
   };
 
   const handleLogout = () => {
