@@ -913,7 +913,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     selection: PlayerSelection,
     players: TeamPlayer[] | undefined
   ): string | null => {
-    if (selection.playerName) {
+    // If playerName exists but is "(niet beschikbaar)", try to resolve from loaded players first
+    if (selection.playerName && selection.playerName !== '(niet beschikbaar)') {
       return selection.playerName;
     }
     if (selection.playerId && players) {
@@ -921,6 +922,10 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       if (player) {
         return `${player.first_name} ${player.last_name}`;
       }
+    }
+    // Return existing playerName as last resort (could be "(niet beschikbaar)")
+    if (selection.playerName) {
+      return selection.playerName;
     }
     return null;
   }, []);
