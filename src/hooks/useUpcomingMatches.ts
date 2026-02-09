@@ -54,7 +54,7 @@ export const useUpcomingMatches = (teamId: number | null, limit: number = 5) => 
         `)
         .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
         .or(`match_date.gte.${now},and(home_score.is.null,away_score.is.null)`)
-        .eq('is_cup_match', false)
+        
         .order('match_date', { ascending: true })
         .limit(limit);
 
