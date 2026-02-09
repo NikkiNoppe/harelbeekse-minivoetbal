@@ -60,8 +60,7 @@ const Footer: React.FC = () => {
         <div className="mt-4 sm:mt-3 pt-3 sm:pt-2 border-t border-purple-light text-center">
           <p className="text-xs sm:text-[10px] text-white/80">
             © {new Date().getFullYear()} Harelbeekse Minivoetbal Competitie. Alle rechten voorbehouden.{" "}
-            <span className="opacity-60">v1.260110
-
+            <span className="opacity-60">v1.260209
           </span>
           </p>
         </div>
