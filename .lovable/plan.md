@@ -1,33 +1,20 @@
 
 
-## Komende wedstrijden: ook gesloten wedstrijden zonder score tonen
+## Playoff/beker wedstrijden tonen op /profile
 
-### Huidige situatie
-De `useUpcomingMatches` hook filtert nu alleen op wedstrijden met een datum in de toekomst (`.gte('match_date', now)`). Hierdoor worden wedstrijden die al gespeeld zijn maar nog geen score hebben (bv. gesloten/locked wedstrijden) niet getoond.
+### Probleem
+De query in `useUpcomingMatches.ts` bevat op regel 57 een filter `.eq('is_cup_match', false)` dat alle playoff- en bekerwedstrijden uitsluit. De wedstrijd "PO-25-1766492793564-wzle" is een playoff-wedstrijd en wordt daardoor niet getoond.
 
-### Gewenste situatie
-Alle wedstrijden tonen die:
-- In de toekomst liggen, **OF**
-- Nog geen score hebben (ongeacht of ze gesloten/locked zijn)
+### Oplossing
+Verwijder het `is_cup_match` filter zodat zowel competitie-, playoff- als bekerwedstrijden getoond worden op de profielpagina, zolang ze geen score hebben of in de toekomst liggen.
 
 ### Aanpassing
 
 **Bestand: `src/hooks/useUpcomingMatches.ts`**
 
-De huidige filter:
+Regel 57 verwijderen:
 ```
-.gte('match_date', now)
-```
-
-Wordt vervangen door een gecombineerde filter die ook wedstrijden zonder score meeneemt:
-```
-.or(`match_date.gte.${now},and(home_score.is.null,away_score.is.null)`)
+.eq('is_cup_match', false)
 ```
 
-Dit zorgt ervoor dat:
-- Toekomstige wedstrijden altijd getoond worden
-- Wedstrijden in het verleden zonder ingevulde score ook getoond worden (bv. gesloten maar nog niet afgewerkt)
-- Wedstrijden met een ingevulde score uit het verleden verdwijnen uit de lijst
-
-Geen andere bestanden hoeven gewijzigd te worden.
-
+Dit is de enige wijziging die nodig is. Alle andere logica (sortering, naamresolutie, limiet) blijft ongewijzigd.
