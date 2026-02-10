@@ -595,9 +595,11 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       });
     }
     
+    // Only include matchData (date, time, location, matchday) for admin/referee
+    // Team managers should NOT overwrite these fields to prevent data corruption
     const updatedMatch = {
       ...match,
-      ...matchData, // Include updated match data fields
+      ...(isAdmin || isReferee ? matchData : {}),
       homeScore,
       awayScore,
       referee: selectedReferee,
