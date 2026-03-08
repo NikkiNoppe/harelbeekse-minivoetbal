@@ -743,6 +743,15 @@ export type Database = {
         Args: { match_id_param: number }
         Returns: undefined
       }
+      assign_referee_to_match: {
+        Args: {
+          p_match_id: number
+          p_notes?: string
+          p_referee_id: number
+          p_user_id: number
+        }
+        Returns: Json
+      }
       calculate_team_balance: {
         Args: { team_id_param: number }
         Returns: number
@@ -914,6 +923,10 @@ export type Database = {
           p_user_id?: number
         }
         Returns: undefined
+      }
+      remove_referee_assignment: {
+        Args: { p_assignment_id: number; p_user_id: number }
+        Returns: Json
       }
       reset_password_with_token: {
         Args: { p_new_password: string; p_token: string }

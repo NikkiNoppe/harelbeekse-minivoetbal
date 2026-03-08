@@ -220,9 +220,10 @@ const AvailabilityMatrix: React.FC = () => {
     setAssigning(cellKey);
 
     try {
+      const userId = parseInt(localStorage.getItem('userId') || '0');
       const result = await assignmentService.assignReferee(
         { match_id: targetMatch.match_id, referee_id: refereeId },
-        user?.id || 0
+        userId
       );
 
       if (result.success) {
