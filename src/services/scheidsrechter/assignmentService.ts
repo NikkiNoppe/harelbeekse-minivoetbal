@@ -20,62 +20,24 @@ export const assignmentService = {
     assignedBy: number
   ): Promise<{ success: boolean; assignment?: RefereeAssignment; error?: string }> {
     try {
-      return await withUserContext(async () => {
-        // Check op conflict (scheidsrechter al toegewezen op dezelfde dag)
-        const { data: hasConflict } = await supabase
-          .rpc('check_referee_conflict', {
-            p_referee_id: input.referee_id,
-            p_match_id: input.match_id
-          });
-
-        if (hasConflict) {
-          return { 
-            success: false, 
-            error: 'Scheidsrechter is al toegewezen aan een andere wedstrijd op deze dag' 
-          };
-        }
-
-        // Maak toewijzing aan
-        const { data: assignment, error: assignError } = await supabase
-          .from('referee_assignments' as any)
-          .insert({
-            match_id: input.match_id,
-            referee_id: input.referee_id,
-            assigned_by: assignedBy,
-            status: 'pending' as AssignmentStatus,
-            notes: input.notes || null
-          })
-          .select()
-          .single();
-
-        if (assignError) {
-          // Check voor unique constraint violation (wedstrijd al toegewezen)
-          if (assignError.code === '23505') {
-            return { success: false, error: 'Wedstrijd heeft al een scheidsrechter toegewezen' };
-          }
-          console.error('Error creating assignment:', assignError);
-          return { success: false, error: 'Kon toewijzing niet aanmaken' };
-        }
-
-        // Update ook de legacy referee velden in matches tabel
-        const { data: referee } = await supabase
-          .from('users')
-          .select('username')
-          .eq('user_id', input.referee_id)
-          .single();
-
-        if (referee) {
-          await supabase
-            .from('matches')
-            .update({
-              assigned_referee_id: input.referee_id,
-              referee: referee.username
-            })
-            .eq('match_id', input.match_id);
-        }
-
-        return { success: true, assignment: assignment as unknown as RefereeAssignment };
+      const { data, error } = await supabase.rpc('assign_referee_to_match', {
+        p_user_id: assignedBy,
+        p_match_id: input.match_id,
+        p_referee_id: input.referee_id,
+        p_notes: input.notes || null
       });
+
+      if (error) {
+        console.error('Error in assign_referee_to_match RPC:', error);
+        return { success: false, error: 'Kon toewijzing niet aanmaken' };
+      }
+
+      const result = data as any;
+      if (!result?.success) {
+        return { success: false, error: result?.error || 'Toewijzing mislukt' };
+      }
+
+      return { success: true };
     } catch (error) {
       console.error('Error in assignReferee:', error);
       return { success: false, error: 'Onverwachte fout bij toewijzen' };
