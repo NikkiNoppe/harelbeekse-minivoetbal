@@ -3,15 +3,15 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ClipboardList, Users, ShieldAlert } from 'lucide-react';
+import { ClipboardList, Users, ShieldAlert, LayoutGrid } from 'lucide-react';
 import { RefereeDashboard } from '@/components/pages/public/scheidsrechters';
-import { PollManagement, AssignmentManagement } from './components';
+import { PollManagement, AssignmentManagement, AvailabilityMatrix } from './components';
 import { useAuth } from '@/hooks/useAuth';
 
 // Main component
 const ScheidsrechtersPage = () => {
   const { user, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<'polls' | 'assignments'>('assignments');
+  const [activeTab, setActiveTab] = useState<'overview' | 'assignments' | 'polls'>('overview');
 
   const userRole = user?.role || null;
 
@@ -64,8 +64,13 @@ const ScheidsrechtersPage = () => {
         </div>
         
         {/* Admin Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'polls' | 'assignments')}>
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'assignments' | 'polls')}>
+          <TabsList className="grid w-full grid-cols-3 max-w-lg">
+            <TabsTrigger value="overview" className="gap-2">
+              <LayoutGrid className="h-4 w-4" />
+              <span className="hidden sm:inline">Overzicht</span>
+              <span className="sm:hidden">Matrix</span>
+            </TabsTrigger>
             <TabsTrigger value="assignments" className="gap-2">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Toewijzingen</span>
@@ -77,6 +82,10 @@ const ScheidsrechtersPage = () => {
               <span className="sm:hidden">Polls</span>
             </TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="overview" className="mt-6">
+            <AvailabilityMatrix />
+          </TabsContent>
           
           <TabsContent value="assignments" className="mt-6">
             <AssignmentManagement />

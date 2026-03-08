@@ -5,3 +5,4 @@ export { default as PollManagement } from './PollManagement';
 export { default as AssignmentCard } from './AssignmentCard';
 export { default as AssignmentManagement } from './AssignmentManagement';
 export { default as AvailabilityModal } from './AvailabilityModal';
+export { default as AvailabilityMatrix } from './AvailabilityMatrix';
