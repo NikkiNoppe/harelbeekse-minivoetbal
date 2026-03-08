@@ -52,16 +52,17 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     fetchAvailable();
   }, [match.match_id]);
 
-  const handleAssign = async () => {
-    if (!selectedReferee) return;
+  const handleAssign = async (refereeId: string) => {
+    if (!refereeId) return;
 
     setAssigning(true);
+    setSelectedReferee(refereeId);
     try {
       const userId = parseInt(localStorage.getItem('userId') || '0');
       const result = await assignmentService.assignReferee(
         { 
           match_id: match.match_id, 
-          referee_id: parseInt(selectedReferee) 
+          referee_id: parseInt(refereeId) 
         },
         userId
       );
@@ -72,10 +73,12 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
         onAssignmentChange();
       } else {
         toast.error(result.error || 'Fout bij toewijzen');
+        setSelectedReferee('');
       }
     } catch (error) {
       console.error('Error assigning referee:', error);
       toast.error('Onverwachte fout');
+      setSelectedReferee('');
     } finally {
       setAssigning(false);
     }
@@ -178,11 +181,11 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
           <div className="space-y-2">
             <Select
               value={selectedReferee}
-              onValueChange={setSelectedReferee}
-              disabled={loading}
+              onValueChange={(value) => handleAssign(value)}
+              disabled={loading || assigning}
             >
               <SelectTrigger>
-                <SelectValue placeholder={loading ? "Laden..." : "Selecteer scheidsrechter"} />
+                <SelectValue placeholder={loading ? "Laden..." : assigning ? "Toewijzen..." : "Selecteer scheidsrechter"} />
               </SelectTrigger>
               <SelectContent>
                 {sortedReferees.map(referee => (
@@ -214,14 +217,6 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
                 )}
               </SelectContent>
             </Select>
-
-            <Button
-              onClick={handleAssign}
-              disabled={!selectedReferee || assigning}
-              className="w-full"
-            >
-              {assigning ? 'Toewijzen...' : 'Toewijzen'}
-            </Button>
           </div>
         )}
 
