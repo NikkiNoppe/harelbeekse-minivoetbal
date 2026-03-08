@@ -222,7 +222,7 @@ const AvailabilityMatrix: React.FC = () => {
     try {
       const result = await assignmentService.assignReferee(
         { match_id: targetMatch.match_id, referee_id: refereeId },
-        user?.userId || 0
+        user?.id || 0
       );
 
       if (result.success) {
