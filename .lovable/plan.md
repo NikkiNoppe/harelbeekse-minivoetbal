@@ -1,47 +1,72 @@
 
 
-## Probleem: Playoff data corruptie + preventie
+## Beschikbaarheidsmatrix voor Scheidsrechter Toewijzingen
 
-### 1. Data Herstel
+### Wat wordt gebouwd
 
-Er is momenteel 1 beschadigde wedstrijd gevonden:
+Een nieuw **matrix/grid overzicht** als derde tab "Overzicht" op de /admin/scheidsrechters pagina, geïnspireerd op het Excel-screenshot. Dit geeft de admin een spreadsheet-achtige weergave met:
 
-| Match | Huidig | Moet zijn |
-|-------|--------|-----------|
-| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
+- **Rijen** = sessies (datum + locatie + tijdslot), gegroepeerd per week
+- **Kolommen** = alle scheidsrechters
+- **Groene cel** = scheidsrechter is beschikbaar (poll-data)
+- **"✕" markering** = scheidsrechter is effectief toegewezen
+- **Klik op groene cel** = wijs scheidsrechter direct toe aan die sessie
 
-Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
-
-**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
-- `speeldag` terug naar "Playoff Speeldag 4"
-- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
-
-### 2. Bug Fix: Voorkom toekomstige corruptie
-
-**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
-
-**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
-
-In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
-- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
-- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
-
-### Technische Details
-
-**Bestanden die gewijzigd worden:**
-
-1. **Nieuwe SQL-migratie** - Herstel PO-22:
-```
-UPDATE matches 
-SET speeldag = 'Playoff Speeldag 4', 
-    match_date = '2026-02-10 18:30:00+00'
-WHERE match_id = 2197 
-AND unique_number = 'PO-22-1766492793564-7079';
+### Desktop weergave
+```text
+┌──────────────────────┬──────────┬──────────┬──────────┬──────────┐
+│ Datum / Locatie / Uur │ Marc D.  │ Franky V.│ Kenneth M│ Kevin V. │
+├──────────────────────┼──────────┼──────────┼──────────┼──────────┤
+│ ma 2 mrt Harelbeke   │  [groen] │          │          │          │
+│   19u00-21u00        │    ✕     │          │          │          │
+├──────────────────────┼──────────┼──────────┼──────────┼──────────┤
+│ ma 2 mrt Bavikhove   │          │          │ [groen]  │          │
+│   19u00-21u00        │          │          │          │          │
+└──────────────────────┴──────────┴──────────┴──────────┴──────────┘
 ```
 
-2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
-   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
-   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
-   - Voor team managers wordt `matchData` weggelaten uit het update-object
+### Mobile weergave
 
-Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.
+Op mobile past een matrix met 8+ kolommen niet. In plaats daarvan wordt **per sessie een kaart** getoond met daarin de scheidsrechters als horizontale chips:
+- Groene chip = beschikbaar
+- Chip met "✕" = toegewezen
+- Tik op groene chip = toewijzen
+
+### Technische aanpak
+
+**1. Nieuw component: `src/components/pages/admin/scheidsrechter/components/AvailabilityMatrix.tsx`**
+
+Dit component:
+- Haalt voor de geselecteerde maand op: alle matches (gegroepeerd per sessie), alle referees, alle beschikbaarheidsdata uit `referee_availability`, en alle huidige toewijzingen
+- Bouwt een matrix: rijen = sessies (datum+locatie+tijdslot), kolommen = referees
+- Cellen tonen: leeg (niet beschikbaar/geen reactie), groen (beschikbaar), ✕ in groene cel (toegewezen)
+- Klik op een groene cel roept `assignmentService.assignReferee()` aan en refresht
+- Desktop: horizontaal scrollbare tabel met sticky eerste kolom
+- Mobile: kaart-per-sessie layout met chips
+
+**2. Tab toevoegen in `ScheidsrechtersPage.tsx`**
+
+Nieuwe tab "Overzicht" met een grid/matrix icoon, als eerste tab (standaard actief). De bestaande "Toewijzingen" en "Polls" tabs blijven ongewijzigd.
+
+**3. Data ophalen**
+
+Het component combineert:
+- `supabase.from('matches')` gefilterd op maand (reeds bestaand patroon uit AssignmentManagement)
+- `refereeAvailabilityService.getAvailabilityForPoll(month)` voor beschikbaarheidsdata per referee
+- `supabase.from('users').eq('role', 'referee')` voor de kolomkoppen
+- `assignmentService` functies voor toewijzing/verwijdering
+
+**4. Interactie**
+
+- Klik op beschikbare (groene) cel → bevestigingspopup → toewijzen
+- Klik op toegewezen (✕) cel → verwijder toewijzing
+- Maandfilter bovenaan (hergebruik bestaande `getMonthOptions`)
+
+### Bestanden die gewijzigd/aangemaakt worden
+
+| Bestand | Actie |
+|---------|-------|
+| `src/components/pages/admin/scheidsrechter/components/AvailabilityMatrix.tsx` | **Nieuw** - Matrix component |
+| `src/components/pages/admin/scheidsrechter/components/index.ts` | Export toevoegen |
+| `src/components/pages/admin/scheidsrechter/ScheidsrechtersPage.tsx` | Derde tab "Overzicht" toevoegen |
+
