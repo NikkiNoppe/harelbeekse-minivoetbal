@@ -3,15 +3,15 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ClipboardList, Users, ShieldAlert } from 'lucide-react';
+import { ClipboardList, Users, ShieldAlert, LayoutGrid } from 'lucide-react';
 import { RefereeDashboard } from '@/components/pages/public/scheidsrechters';
-import { PollManagement, AssignmentManagement } from './components';
+import { PollManagement, AssignmentManagement, AvailabilityMatrix } from './components';
 import { useAuth } from '@/hooks/useAuth';
 
 // Main component
 const ScheidsrechtersPage = () => {
   const { user, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<'polls' | 'assignments'>('assignments');
+  const [activeTab, setActiveTab] = useState<'overview' | 'assignments' | 'polls'>('overview');
 
   const userRole = user?.role || null;
 
