@@ -64,8 +64,13 @@ const ScheidsrechtersPage = () => {
         </div>
         
         {/* Admin Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'polls' | 'assignments')}>
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'assignments' | 'polls')}>
+          <TabsList className="grid w-full grid-cols-3 max-w-lg">
+            <TabsTrigger value="overview" className="gap-2">
+              <LayoutGrid className="h-4 w-4" />
+              <span className="hidden sm:inline">Overzicht</span>
+              <span className="sm:hidden">Matrix</span>
+            </TabsTrigger>
             <TabsTrigger value="assignments" className="gap-2">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Toewijzingen</span>
@@ -77,6 +82,10 @@ const ScheidsrechtersPage = () => {
               <span className="sm:hidden">Polls</span>
             </TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="overview" className="mt-6">
+            <AvailabilityMatrix />
+          </TabsContent>
           
           <TabsContent value="assignments" className="mt-6">
             <AssignmentManagement />
