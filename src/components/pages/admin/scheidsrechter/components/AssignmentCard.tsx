@@ -181,11 +181,11 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
           <div className="space-y-2">
             <Select
               value={selectedReferee}
-              onValueChange={setSelectedReferee}
-              disabled={loading}
+              onValueChange={(value) => handleAssign(value)}
+              disabled={loading || assigning}
             >
               <SelectTrigger>
-                <SelectValue placeholder={loading ? "Laden..." : "Selecteer scheidsrechter"} />
+                <SelectValue placeholder={loading ? "Laden..." : assigning ? "Toewijzen..." : "Selecteer scheidsrechter"} />
               </SelectTrigger>
               <SelectContent>
                 {sortedReferees.map(referee => (
@@ -217,14 +217,6 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
                 )}
               </SelectContent>
             </Select>
-
-            <Button
-              onClick={handleAssign}
-              disabled={!selectedReferee || assigning}
-              className="w-full"
-            >
-              {assigning ? 'Toewijzen...' : 'Toewijzen'}
-            </Button>
           </div>
         )}
 
