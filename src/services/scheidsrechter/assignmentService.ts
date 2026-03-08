@@ -189,39 +189,19 @@ export const assignmentService = {
    */
   async removeAssignment(assignmentId: number): Promise<boolean> {
     try {
-      return await withUserContext(async () => {
-        // Haal assignment op om match_id te krijgen
-        const { data: assignment } = await supabase
-          .from('referee_assignments' as any)
-          .select('match_id')
-          .eq('id', assignmentId)
-          .single();
-
-        const assignmentData = assignment as any;
-        if (!assignmentData) return false;
-
-        // Verwijder assignment
-        const { error } = await supabase
-          .from('referee_assignments' as any)
-          .delete()
-          .eq('id', assignmentId);
-
-        if (error) {
-          console.error('Error removing assignment:', error);
-          return false;
-        }
-
-        // Clear legacy referee velden
-        await supabase
-          .from('matches')
-          .update({
-            assigned_referee_id: null,
-            referee: null
-          })
-          .eq('match_id', assignmentData.match_id);
-
-        return true;
+      const userId = parseInt(localStorage.getItem('userId') || '0');
+      const { data, error } = await supabase.rpc('remove_referee_assignment', {
+        p_user_id: userId,
+        p_assignment_id: assignmentId
       });
+
+      if (error) {
+        console.error('Error in remove_referee_assignment RPC:', error);
+        return false;
+      }
+
+      const result = data as any;
+      return result?.success || false;
     } catch (error) {
       console.error('Error in removeAssignment:', error);
       return false;
