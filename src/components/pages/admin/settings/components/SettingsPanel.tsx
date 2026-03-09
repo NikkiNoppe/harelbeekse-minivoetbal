@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Settings, Trophy, Building, Clock, Calendar } from "lucide-react";
+import { Settings, Trophy, Building, Clock, Calendar, Palette } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TabVisibilitySettingsUpdated from "@/components/pages/admin/settings/components/TabVisibilitySettingsUpdated";
 import PlayerListLockSettings from "@/components/pages/admin/settings/components/PlayerListLockSettings";
@@ -9,6 +9,7 @@ import VenuesSettings from "@/components/pages/admin/settings/components/VenuesS
 import TimeslotsSettings from "@/components/pages/admin/settings/components/TimeslotsSettings";
 import VacationsSettings from "@/components/pages/admin/settings/components/VacationsSettings";
 import SeasonDataSettings from "@/components/pages/admin/settings/components/SeasonDataSettings";
+import ThemeColorsSettings from "@/components/pages/admin/settings/components/ThemeColorsSettings";
 
 const AdminSettingsPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState("tab-visibility");
@@ -47,6 +48,14 @@ const AdminSettingsPanel: React.FC = () => {
               <Calendar className="h-4 w-4" />
               Seizoensdata
             </TabsTrigger>
+            <TabsTrigger value="colors" className="flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              Kleuren
+            </TabsTrigger>
+            <TabsTrigger value="season" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Seizoensdata
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="tab-visibility">
@@ -75,6 +84,10 @@ const AdminSettingsPanel: React.FC = () => {
           
           <TabsContent value="season">
             <SeasonDataSettings />
+          </TabsContent>
+          
+          <TabsContent value="colors">
+            <ThemeColorsSettings />
           </TabsContent>
         </Tabs>
       </section>
