@@ -242,7 +242,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {/* Summary Cards - only show if data available */}
           {report && availableSeasons && availableSeasons.length > 0 && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <Card className="border-purple-light">
                 <CardHeader 
                   className="bg-muted p-3"
@@ -314,6 +314,31 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                 <CardContent className="bg-white p-3">
                   <div className="text-lg font-bold text-purple-dark text-center">
                     {formatCurrency(report.totalRefereeCosts)}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-purple-light">
+                <CardHeader 
+                  className="bg-muted p-3"
+                  style={{ 
+                    marginTop: 0, 
+                    marginBottom: 0, 
+                    backgroundColor: 'unset', 
+                    background: 'unset',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
+                    <Euro className="h-3 w-3" />
+                    Administratie
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="bg-white p-3">
+                  <div className="text-lg font-bold text-purple-dark text-center">
+                    {formatCurrency(report.totalAdminCosts)}
                   </div>
                 </CardContent>
               </Card>

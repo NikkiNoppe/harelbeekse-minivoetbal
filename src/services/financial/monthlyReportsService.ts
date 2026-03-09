@@ -46,10 +46,12 @@ export interface SeasonData {
 export interface MonthlyReport {
   fieldCosts: MonthlyFieldCosts[];
   refereeCosts: MonthlyRefereeCosts[];
+  adminCosts: MonthlyFieldCosts[];
   fines: MonthlyFines[];
   matchStats: MonthlyMatchStats[];
   totalFieldCosts: number;
   totalRefereeCosts: number;
+  totalAdminCosts: number;
   totalFines: number;
   totalMatches: number;
 }
@@ -194,6 +196,7 @@ export const monthlyReportsService = {
 
       // Group data by month
       const fieldCostsByMonth: Record<string, MonthlyFieldCosts> = {};
+      const adminCostsByMonth: Record<string, MonthlyFieldCosts> = {};
       const finesByMonth: Record<string, MonthlyFines> = {};
       const matchStatsByMonth: Record<string, MonthlyMatchStats> = {};
 
@@ -222,6 +225,21 @@ export const monthlyReportsService = {
           }
           fieldCostsByMonth[key].totalCost += Number(transaction.amount || 0);
           fieldCostsByMonth[key].matchCount++;
+        }
+
+        // Admin costs
+        if (category === 'match_cost' && costName.includes('administratie')) {
+          const key = (month && year) ? monthKey : 'season-total';
+          if (!adminCostsByMonth[key]) {
+            adminCostsByMonth[key] = {
+              month: monthName,
+              season,
+              totalCost: 0,
+              matchCount: 0
+            };
+          }
+          adminCostsByMonth[key].totalCost += Number(transaction.amount || 0);
+          adminCostsByMonth[key].matchCount++;
         }
 
         // Penalties/Fines
@@ -292,6 +310,7 @@ export const monthlyReportsService = {
       });
 
       const fieldCosts = Object.values(fieldCostsByMonth);
+      const adminCosts = Object.values(adminCostsByMonth);
       const refereeCosts = Object.values(refereeCostsByReferee).sort((a, b) => b.matchCount - a.matchCount);
       const fines = Object.values(finesByMonth);
       const matchStats = Object.values(matchStatsByMonth);
@@ -299,10 +318,12 @@ export const monthlyReportsService = {
       return {
         fieldCosts,
         refereeCosts,
+        adminCosts,
         fines,
         matchStats,
         totalFieldCosts: fieldCosts.reduce((sum, item) => sum + item.totalCost, 0),
         totalRefereeCosts: refereeCosts.reduce((sum, item) => sum + item.totalCost, 0),
+        totalAdminCosts: adminCosts.reduce((sum, item) => sum + item.totalCost, 0),
         totalFines: fines.reduce((sum, item) => sum + item.totalFines, 0),
         totalMatches: matchStats.reduce((sum, item) => sum + item.totalMatches, 0)
       };
