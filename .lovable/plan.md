@@ -1,47 +1,61 @@
 
 
-## Probleem: Playoff data corruptie + preventie
+## Uniforme sortering: datum → locatie (Harelbeke eerst) → tijdstip
 
-### 1. Data Herstel
+### Probleem
 
-Er is momenteel 1 beschadigde wedstrijd gevonden:
+De sortering is inconsistent over de hele applicatie. Locatie wordt nergens meegenomen als sorteercriterium, en waar het wel voorkomt (scheidsrechters) is het alfabetisch (Bavikhove voor Harelbeke). De gewenste volgorde is:
 
-| Match | Huidig | Moet zijn |
-|-------|--------|-----------|
-| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
+1. **Datum** (chronologisch)
+2. **Locatie** (Harelbeke - Dageraad eerst, daarna Bavikhove - Vlasschaard)
+3. **Tijdstip** (vroegste eerst)
 
-Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
+### Aanpak
 
-**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
-- `speeldag` terug naar "Playoff Speeldag 4"
-- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
+**Eén centrale aanpassing** in `src/lib/matchSortingUtils.ts` — de locatie-prioriteit toevoegen aan alle sortfuncties. Alle consumers erven dit automatisch.
 
-### 2. Bug Fix: Voorkom toekomstige corruptie
+### Wijzigingen
 
-**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
+| Bestand | Wat |
+|---------|-----|
+| `src/lib/matchSortingUtils.ts` | Nieuwe helper `getLocationOrder()` toevoegen. Inbouwen in `sortMatchesByDateAndTime`, `sortCupMatches`, `sortLeagueMatches`, en `sortMatchesWithinGroups` |
+| `src/components/pages/admin/scheidsrechter/components/AssignmentManagement.tsx` | Locatiesortering aanpassen van alfabetisch naar Harelbeke-eerst |
+| `src/components/pages/admin/scheidsrechter/components/AvailabilityMatrix.tsx` | Idem — sessiesortering aanpassen |
+| `src/services/match/matchDataService.ts` | Geen wijziging nodig — gebruikt al `sortMatchesByDateAndTime` |
 
-**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
+### Technisch detail
 
-In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
-- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
-- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
+Nieuwe helper in `matchSortingUtils.ts`:
 
-### Technische Details
-
-**Bestanden die gewijzigd worden:**
-
-1. **Nieuwe SQL-migratie** - Herstel PO-22:
-```
-UPDATE matches 
-SET speeldag = 'Playoff Speeldag 4', 
-    match_date = '2026-02-10 18:30:00+00'
-WHERE match_id = 2197 
-AND unique_number = 'PO-22-1766492793564-7079';
+```typescript
+const getLocationOrder = (location: string): number => {
+  const loc = location.toLowerCase();
+  if (loc.includes('harelbeke') || loc.includes('dageraad')) return 1;
+  if (loc.includes('bavikhove') || loc.includes('vlasschaard')) return 2;
+  return 3;
+};
 ```
 
-2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
-   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
-   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
-   - Voor team managers wordt `matchData` weggelaten uit het update-object
+Deze wordt ingebouwd in alle sort-functies zodat na datum eerst op locatie wordt gesorteerd, daarna pas op tijdstip. De generieke `sortMatchesByDateAndTime` krijgt een optionele `location`-property:
 
-Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.
+```typescript
+export const sortMatchesByDateAndTime = <T extends { date: string; time: string; location?: string }>(
+  matches: T[]
+): T[] => {
+  return matches.sort((a, b) => {
+    // 1. Datum
+    const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (dateCompare !== 0) return dateCompare;
+    // 2. Locatie (Harelbeke eerst)
+    if (a.location && b.location) {
+      const locCompare = getLocationOrder(a.location) - getLocationOrder(b.location);
+      if (locCompare !== 0) return locCompare;
+    }
+    // 3. Tijdstip
+    return a.time.localeCompare(b.time);
+  });
+};
+```
+
+Voor de scheidsrechter-componenten die op `dateOnly + location` string sorteren, wordt `localeCompare` vervangen door `getLocationOrder`.
+
