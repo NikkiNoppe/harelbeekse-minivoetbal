@@ -14,11 +14,18 @@ import { PUBLIC_ROUTES, ADMIN_ROUTES } from "./config/routes";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ScrollRestore } from "@/components/common/ScrollRestore";
+import { useThemeColorsInit } from "@/hooks/useThemeColors";
 
 // Lazy load main components
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+
+/** Initializes dynamic theme colors from DB */
+function ThemeColorsInitializer({ children }: { children: React.ReactNode }) {
+  useThemeColorsInit();
+  return <>{children}</>;
+}
 
 const App = () => (
   <ErrorBoundary>
