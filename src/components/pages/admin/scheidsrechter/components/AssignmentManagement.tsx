@@ -369,16 +369,12 @@ const AssignmentManagement: React.FC = () => {
                 </Badge>
               </div>
 
-              {/* Matches in this speeldag */}
-              <div className="grid gap-4 md:grid-cols-2">
-                {group.matches.map(match => (
-                  <AssignmentCard
-                    key={match.match_id}
-                    match={match}
-                    onAssignmentChange={fetchData}
-                  />
-                ))}
-              </div>
+              {/* One assignment card per session group */}
+              <AssignmentCard
+                key={`${group.dateKey}__${group.location}`}
+                matches={group.matches}
+                onAssignmentChange={fetchData}
+              />
             </div>
           ))}
         </div>

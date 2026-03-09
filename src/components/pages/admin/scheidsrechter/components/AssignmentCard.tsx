@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, AlertTriangle, UserCheck, X } from 'lucide-react';
+import { Clock, AlertTriangle, UserCheck, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { assignmentService } from '@/services/scheidsrechter/assignmentService';
-import type { AvailableReferee, RefereeAssignment } from '@/services/scheidsrechter/types';
+import type { AvailableReferee } from '@/services/scheidsrechter/types';
 import { cn } from '@/lib/utils';
 import { formatTimeForDisplay } from '@/lib/dateUtils';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,16 +19,16 @@ interface MatchData {
   away_team_name: string;
   assigned_referee_id: number | null;
   current_referee_name?: string;
-  current_assignment?: RefereeAssignment | null;
+  current_assignment?: any;
 }
 
-interface AssignmentCardProps {
-  match: MatchData;
+interface SessionAssignmentCardProps {
+  matches: MatchData[];
   onAssignmentChange: () => void;
 }
 
-const AssignmentCard: React.FC<AssignmentCardProps> = ({
-  match,
+const AssignmentCard: React.FC<SessionAssignmentCardProps> = ({
+  matches,
   onAssignmentChange
 }) => {
   const { user } = useAuth();
@@ -37,12 +37,20 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   const [assigning, setAssigning] = useState(false);
   const [selectedReferee, setSelectedReferee] = useState<string>('');
 
-  // Fetch available referees when card loads
+  // Check if session is assigned (any match has a referee)
+  const assignedMatch = matches.find(m => m.assigned_referee_id || m.current_referee_name);
+  const isAssigned = !!assignedMatch;
+  const refereeName = assignedMatch?.current_referee_name;
+  const assignmentStatus = assignedMatch?.current_assignment?.status;
+
+  // Use first match to fetch available referees
+  const firstMatch = matches[0];
+
   useEffect(() => {
     const fetchAvailable = async () => {
       setLoading(true);
       try {
-        const referees = await assignmentService.getAvailableRefereesForMatch(match.match_id);
+        const referees = await assignmentService.getAvailableRefereesForMatch(firstMatch.match_id);
         setAvailableReferees(referees);
       } catch (error) {
         console.error('Error fetching available referees:', error);
@@ -50,27 +58,23 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
         setLoading(false);
       }
     };
-
     fetchAvailable();
-  }, [match.match_id]);
+  }, [firstMatch.match_id]);
 
   const handleAssign = async (refereeId: string) => {
     if (!refereeId) return;
-
     setAssigning(true);
     setSelectedReferee(refereeId);
     try {
       const userId = user?.id || 0;
-      const result = await assignmentService.assignReferee(
-        { 
-          match_id: match.match_id, 
-          referee_id: parseInt(refereeId) 
-        },
+      const result = await assignmentService.assignRefereeToSession(
+        firstMatch.match_id,
+        parseInt(refereeId),
         userId
       );
 
       if (result.success) {
-        toast.success('Scheidsrechter toegewezen');
+        toast.success(`Scheidsrechter toegewezen aan ${result.count || matches.length} wedstrijd(en)`);
         setSelectedReferee('');
         onAssignmentChange();
       } else {
@@ -78,7 +82,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
         setSelectedReferee('');
       }
     } catch (error) {
-      console.error('Error assigning referee:', error);
+      console.error('Error assigning referee to session:', error);
       toast.error('Onverwachte fout');
       setSelectedReferee('');
     } finally {
@@ -87,33 +91,27 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   };
 
   const handleRemoveAssignment = async () => {
-    if (!match.current_assignment?.id) return;
-
     setAssigning(true);
     try {
-      const success = await assignmentService.removeAssignment(match.current_assignment.id, user?.id);
+      const userId = user?.id || 0;
+      const success = await assignmentService.removeSessionAssignment(firstMatch.match_id, userId);
       if (success) {
-        toast.success('Toewijzing verwijderd');
+        toast.success('Toewijzingen verwijderd voor deze sessie');
         onAssignmentChange();
       } else {
-        toast.error('Kon toewijzing niet verwijderen');
+        toast.error('Kon toewijzingen niet verwijderen');
       }
     } catch (error) {
-      console.error('Error removing assignment:', error);
+      console.error('Error removing session assignment:', error);
       toast.error('Onverwachte fout');
     } finally {
       setAssigning(false);
     }
   };
 
-  const isAssigned = !!match.assigned_referee_id || !!match.current_referee_name;
-
-  // Filter and sort referees
   const sortedReferees = [...availableReferees].sort((a, b) => {
-    // Available first
     if (a.is_available && !b.is_available) return -1;
     if (!a.is_available && b.is_available) return 1;
-    // Then by name
     return a.username.localeCompare(b.username);
   });
 
@@ -123,46 +121,37 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
       isAssigned && "border-primary/50 bg-primary/5"
     )}>
       <CardContent className="p-4">
-        {/* Match Info */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>{formatTimeForDisplay(match.match_date)}</span>
+        {/* Match list */}
+        <div className="space-y-2 mb-4">
+          {matches.map(match => (
+            <div key={match.match_id} className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground min-w-[3rem]">
+                  <Clock className="h-3 w-3" />
+                  <span>{formatTimeForDisplay(match.match_date)}</span>
+                </div>
+                <span className="font-medium text-sm">
+                  {match.home_team_name} vs {match.away_team_name}
+                </span>
+              </div>
             </div>
-            {isAssigned ? (
-              <Badge className="bg-success text-success-foreground">
-                <UserCheck className="h-3 w-3 mr-1" />
-                Toegewezen
-              </Badge>
-            ) : (
-              <Badge variant="secondary">Open</Badge>
-            )}
-          </div>
-
-          <h3 className="font-semibold text-base">
-            {match.home_team_name} vs {match.away_team_name}
-          </h3>
-
-          {match.location && (
-            <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              {match.location}
-            </div>
-          )}
+          ))}
         </div>
 
         {/* Current Assignment */}
-        {isAssigned && match.current_referee_name && (
+        {isAssigned && refereeName && (
           <div className="flex items-center justify-between p-2 rounded-md bg-primary/10 mb-3">
             <div className="flex items-center gap-2">
               <UserCheck className="h-4 w-4 text-primary" />
-              <span className="font-medium">{match.current_referee_name}</span>
-              {match.current_assignment?.status && (
+              <span className="font-medium">{refereeName}</span>
+              <Badge variant="outline" className="text-xs">
+                {matches.length} {matches.length === 1 ? 'wedstrijd' : 'wedstrijden'}
+              </Badge>
+              {assignmentStatus && (
                 <Badge variant="outline" className="text-xs">
-                  {match.current_assignment.status === 'confirmed' && '✅ Bevestigd'}
-                  {match.current_assignment.status === 'pending' && '⏳ In afwachting'}
-                  {match.current_assignment.status === 'declined' && '❌ Afgewezen'}
+                  {assignmentStatus === 'confirmed' && '✅ Bevestigd'}
+                  {assignmentStatus === 'pending' && '⏳ In afwachting'}
+                  {assignmentStatus === 'declined' && '❌ Afgewezen'}
                 </Badge>
               )}
             </div>
@@ -187,7 +176,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
               disabled={loading || assigning}
             >
               <SelectTrigger>
-                <SelectValue placeholder={loading ? "Laden..." : assigning ? "Toewijzen..." : "Selecteer scheidsrechter"} />
+                <SelectValue placeholder={loading ? "Laden..." : assigning ? "Toewijzen..." : `Selecteer scheidsrechter (${matches.length} wedstrijden)`} />
               </SelectTrigger>
               <SelectContent>
                 {sortedReferees.map(referee => (
