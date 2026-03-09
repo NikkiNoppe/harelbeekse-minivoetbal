@@ -194,14 +194,13 @@ export function applyThemeToCSS(theme: ThemeColors): void {
 
   for (const [name, colors] of Object.entries(semantic)) {
     root.style.setProperty(`--color-${name}`, colors.base);
-    root.style.setProperty(`--color-${name}-dark`, colors.dark);
+    root.style.setProperty(`--color-${name}-dark`, colors.base);
     root.style.setProperty(`--color-${name}-bg`, colors.bg);
     if (colors.border) {
       root.style.setProperty(`--color-${name}-border`, colors.border);
     }
-    // Shadow variants for destructive
     if (name === 'destructive') {
-      const [dr, dg, db] = hexToRgb(colors.dark);
+      const [dr, dg, db] = hexToRgb(colors.base);
       root.style.setProperty(`--color-shadow-destructive-07`, `rgba(${dr}, ${dg}, ${db}, 0.07)`);
       root.style.setProperty(`--color-shadow-destructive-15`, `rgba(${dr}, ${dg}, ${db}, 0.15)`);
     }
