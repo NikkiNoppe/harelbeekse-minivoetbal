@@ -118,7 +118,7 @@ const ThemeColorsSettings: React.FC = () => {
           Kleurenpalet Beheer
         </h3>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleReset} disabled={isSaving}>
+          <Button className="btn--secondary" size="sm" onClick={handleReset} disabled={isSaving}>
             <RotateCcw className="h-4 w-4 mr-1" />
             Standaard
           </Button>
