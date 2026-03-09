@@ -227,6 +227,21 @@ export const monthlyReportsService = {
           fieldCostsByMonth[key].matchCount++;
         }
 
+        // Admin costs
+        if (category === 'match_cost' && costName.includes('administratie')) {
+          const key = (month && year) ? monthKey : 'season-total';
+          if (!adminCostsByMonth[key]) {
+            adminCostsByMonth[key] = {
+              month: monthName,
+              season,
+              totalCost: 0,
+              matchCount: 0
+            };
+          }
+          adminCostsByMonth[key].totalCost += Number(transaction.amount || 0);
+          adminCostsByMonth[key].matchCount++;
+        }
+
         // Penalties/Fines
         if (category === 'penalty') {
           const key = (month && year) ? monthKey : 'season-total';
