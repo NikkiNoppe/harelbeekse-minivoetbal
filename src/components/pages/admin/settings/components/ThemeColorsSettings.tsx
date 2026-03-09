@@ -242,7 +242,7 @@ const ThemeColorsSettings: React.FC = () => {
         <div>
           <p className="text-xs font-medium mb-2" style={{ color: "var(--color-500)" }}>Knoppen</p>
           <div className="flex flex-wrap gap-3 items-center">
-            <Button size="sm">Primaire Knop</Button>
+            <Button className="btn--primary" size="sm">Primaire Knop</Button>
             <Button size="sm" variant="outline">Outline Knop</Button>
             <Button size="sm" variant="secondary">Secundair</Button>
             <Button
