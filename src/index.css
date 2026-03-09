@@ -1656,11 +1656,17 @@ tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-
 
 /* 19. DELETE BUTTON */
 .btn--danger {
-  @apply hover:bg-red-50 hover:border-red-300;
+  border-color: var(--color-destructive-border);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn--danger:hover {
+    background-color: var(--color-destructive-bg);
+    border-color: var(--color-destructive-border);
+  }
 }
 
 .btn--danger .lucide-trash-2 {
-  @apply text-red-600;
+  color: var(--color-destructive);
 }
 
 /* 20. SAFE AREA FOR MOBILE BOTTOM NAV */
