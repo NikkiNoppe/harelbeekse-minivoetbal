@@ -44,6 +44,7 @@ export interface TeamFinances {
   startCapital: number;
   fieldCosts: number;
   refereeCosts: number;
+  adminCosts: number;
   fines: number;
   currentBalance: number;
   adjustments: number;
