@@ -106,6 +106,8 @@ const Layout: React.FC = () => {
     closeLoginModal();
     // Always redirect to profile page after login
     navigate(ADMIN_ROUTES.profile, { replace: true });
+    // Scroll to top after navigation
+    window.scrollTo(0, 0);
   };
 
   // Check if active tab is visible (for tab visibility settings)
