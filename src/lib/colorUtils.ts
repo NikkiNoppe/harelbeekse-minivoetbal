@@ -18,7 +18,6 @@ export interface ColorScale {
 
 export interface SemanticColor {
   base: string;
-  dark: string;
   bg: string;
   border?: string;
 }
