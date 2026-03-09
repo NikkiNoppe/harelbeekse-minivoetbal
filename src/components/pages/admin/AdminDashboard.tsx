@@ -11,7 +11,7 @@ import TeamsPage from "@/components/pages/admin/teams/TeamsPage";
 import MatchesPage from "@/components/pages/admin/matches/MatchesPage";
 import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
 import PlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
-eenPage from "@/components/pages/public/information/AlgemeenPage";
+import AlgemeenPage from "@/components/pages/public/information/AlgemeenPage";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 
 import AdminSuspensionsPage from "@/components/pages/admin/suspensions/AdminSuspensionsPage";
