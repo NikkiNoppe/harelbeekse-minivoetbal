@@ -187,11 +187,11 @@ const AssignmentManagement: React.FC = () => {
       groups.get(groupKey)!.matches.push(match);
     });
 
-    // Sort groups by date, then by location
+    // Sort groups by date, then by location (Harelbeke first), then by time
     return Array.from(groups.values()).sort((a, b) => {
       const dateCompare = a.dateKey.localeCompare(b.dateKey);
       if (dateCompare !== 0) return dateCompare;
-      return a.location.localeCompare(b.location);
+      return getLocationOrder(a.location) - getLocationOrder(b.location);
     });
   }, [filteredMatches]);
 
