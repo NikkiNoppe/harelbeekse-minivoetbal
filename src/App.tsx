@@ -226,6 +226,7 @@ const App = () => (
           </PlayerListLockProvider>
         </ModalProvider>
       </AuthProvider>
+    </ThemeColorsInitializer>
     </ThemeProvider>
   </ErrorBoundary>
 );
