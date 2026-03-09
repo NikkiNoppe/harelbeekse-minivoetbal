@@ -107,7 +107,7 @@ export const costSettingsService = {
     }
   },
 
-  async updateCostSetting(id: number, setting: Partial<CostSetting>): Promise<{ success: boolean; message: string }> {
+  async updateCostSetting(id: number, setting: Partial<CostSetting>): Promise<{ success: boolean; message: string; updatedTransactions?: number }> {
     try {
       const { error } = await supabase
         .from('costs')
@@ -115,7 +115,32 @@ export const costSettingsService = {
         .eq('id', id);
 
       if (error) throw error;
-      return { success: true, message: 'Kostentarief succesvol bijgewerkt' };
+
+      // Als het bedrag gewijzigd is, update ook alle bestaande team_costs records
+      let updatedTransactions = 0;
+      if (setting.amount !== undefined) {
+        const { data, error: updateError } = await supabase
+          .from('team_costs')
+          .update({ amount: setting.amount })
+          .eq('cost_setting_id', id)
+          .select('id');
+
+        if (updateError) {
+          console.error('Error updating team_costs amounts:', updateError);
+          return { 
+            success: true, 
+            message: `Tarief bijgewerkt, maar bestaande transacties konden niet worden aangepast: ${updateError.message}`,
+            updatedTransactions: 0
+          };
+        }
+        updatedTransactions = data?.length || 0;
+      }
+
+      const msg = updatedTransactions > 0
+        ? `Kostentarief bijgewerkt en ${updatedTransactions} bestaande transacties aangepast`
+        : 'Kostentarief succesvol bijgewerkt';
+
+      return { success: true, message: msg, updatedTransactions };
     } catch (error) {
       console.error('Error updating cost setting:', error);
       return { success: false, message: 'Fout bij bijwerken kostentarief' };
