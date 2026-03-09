@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
 
     const fieldCost = costSettings.find((cs: any) => cs.name?.toLowerCase().includes('veld'));
     const refereeCost = costSettings.find((cs: any) => cs.name?.toLowerCase().includes('scheids'));
+    const adminCost = costSettings.find((cs: any) => cs.name?.toLowerCase().includes('administratie'));
 
     if (!fieldCost) throw new Error('Veldkosten niet gevonden');
 
