@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       const hasReferee = match.assigned_referee_id != null;
 
       // Check existing costs for this match
-      const costSettingIds = [fieldCost.id, ...(refereeCost ? [refereeCost.id] : [])];
+      const costSettingIds = [fieldCost.id, ...(refereeCost ? [refereeCost.id] : []), ...(adminCost ? [adminCost.id] : [])];
       const { data: existingCosts, error: existingCostsErr } = await supabaseServiceRole
         .from('team_costs')
         .select('id, team_id, cost_setting_id, amount')
