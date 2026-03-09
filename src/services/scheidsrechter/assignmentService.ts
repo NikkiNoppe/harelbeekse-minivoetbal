@@ -13,7 +13,7 @@ import type {
  */
 export const assignmentService = {
   /**
-   * Wijs een scheidsrechter toe aan een wedstrijd
+   * Wijs een scheidsrechter toe aan een wedstrijd (single match)
    */
   async assignReferee(
     input: CreateAssignmentInput,
@@ -41,6 +41,63 @@ export const assignmentService = {
     } catch (error) {
       console.error('Error in assignReferee:', error);
       return { success: false, error: 'Onverwachte fout bij toewijzen' };
+    }
+  },
+
+  /**
+   * Wijs een scheidsrechter toe aan alle wedstrijden in een sessie (zelfde datum+locatie)
+   */
+  async assignRefereeToSession(
+    matchId: number,
+    refereeId: number,
+    assignedBy: number,
+    notes?: string
+  ): Promise<{ success: boolean; count?: number; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('assign_referee_to_session' as any, {
+        p_user_id: assignedBy,
+        p_match_id: matchId,
+        p_referee_id: refereeId,
+        p_notes: notes || null
+      });
+
+      if (error) {
+        console.error('Error in assign_referee_to_session RPC:', error);
+        return { success: false, error: 'Kon toewijzing niet aanmaken' };
+      }
+
+      const result = data as any;
+      if (!result?.success) {
+        return { success: false, error: result?.error || 'Toewijzing mislukt' };
+      }
+
+      return { success: true, count: result.assignments_created };
+    } catch (error) {
+      console.error('Error in assignRefereeToSession:', error);
+      return { success: false, error: 'Onverwachte fout bij toewijzen' };
+    }
+  },
+
+  /**
+   * Verwijder toewijzingen voor alle wedstrijden in een sessie
+   */
+  async removeSessionAssignment(matchId: number, userId: number): Promise<boolean> {
+    try {
+      const { data, error } = await supabase.rpc('remove_referee_from_session' as any, {
+        p_user_id: userId,
+        p_match_id: matchId
+      });
+
+      if (error) {
+        console.error('Error in remove_referee_from_session RPC:', error);
+        return false;
+      }
+
+      const result = data as any;
+      return result?.success || false;
+    } catch (error) {
+      console.error('Error in removeSessionAssignment:', error);
+      return false;
     }
   },
 
