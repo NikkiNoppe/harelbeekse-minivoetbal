@@ -91,7 +91,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 
     setAssigning(true);
     try {
-      const success = await assignmentService.removeAssignment(match.current_assignment.id);
+      const success = await assignmentService.removeAssignment(match.current_assignment.id, user?.id);
       if (success) {
         toast.success('Toewijzing verwijderd');
         onAssignmentChange();

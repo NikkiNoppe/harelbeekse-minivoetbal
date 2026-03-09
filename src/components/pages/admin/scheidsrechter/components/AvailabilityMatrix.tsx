@@ -243,7 +243,7 @@ const AvailabilityMatrix: React.FC = () => {
   const handleRemove = async (assignment: AssignmentData) => {
     setAssigning(`${assignment.match_id}-${assignment.referee_id}`);
     try {
-      const success = await assignmentService.removeAssignment(assignment.id);
+      const success = await assignmentService.removeAssignment(assignment.id, user?.id);
       if (success) {
         toast.success('Toewijzing verwijderd');
         await fetchData();
