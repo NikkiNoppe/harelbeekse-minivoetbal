@@ -1,23 +1,37 @@
 import { MatchFormData } from "@/components/pages/admin/matches/types";
 
 /**
- * Generic function to sort matches by date and time
+ * Get location priority order (Harelbeke first, then Bavikhove)
+ * @param location The location string
+ * @returns Priority number (lower = first)
+ */
+export const getLocationOrder = (location: string): number => {
+  const loc = location.toLowerCase();
+  if (loc.includes('harelbeke') || loc.includes('dageraad')) return 1;
+  if (loc.includes('bavikhove') || loc.includes('vlasschaard')) return 2;
+  return 3;
+};
+
+/**
+ * Generic function to sort matches by date, location (Harelbeke first), then time
  * @param matches Array of matches to sort
  * @returns Sorted matches array
  */
-export const sortMatchesByDateAndTime = <T extends { date: string; time: string }>(
+export const sortMatchesByDateAndTime = <T extends { date: string; time: string; location?: string }>(
   matches: T[]
 ): T[] => {
   return matches.sort((a, b) => {
-    // First sort by date
-    const aDate = new Date(a.date);
-    const bDate = new Date(b.date);
-    
-    if (aDate.getTime() !== bDate.getTime()) {
-      return aDate.getTime() - bDate.getTime();
+    // 1. Sort by date
+    const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (dateCompare !== 0) return dateCompare;
+
+    // 2. Sort by location (Harelbeke first)
+    if (a.location && b.location) {
+      const locCompare = getLocationOrder(a.location) - getLocationOrder(b.location);
+      if (locCompare !== 0) return locCompare;
     }
-    
-    // Same date, sort by time (earliest time first)
+
+    // 3. Sort by time
     return a.time.localeCompare(b.time);
   });
 };
@@ -45,28 +59,19 @@ export const sortCupMatches = (matches: MatchFormData[]): MatchFormData[] => {
     const aRound = getRoundOrder(a.uniqueNumber);
     const bRound = getRoundOrder(b.uniqueNumber);
     
-    // First sort by round (Achtste finales, Kwartfinales, etc.)
-    if (aRound !== bRound) {
-      return aRound - bRound;
+    if (aRound !== bRound) return aRound - bRound;
+    
+    const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (dateCompare !== 0) return dateCompare;
+
+    // Location priority (Harelbeke first)
+    if (a.location && b.location) {
+      const locCompare = getLocationOrder(a.location) - getLocationOrder(b.location);
+      if (locCompare !== 0) return locCompare;
     }
+
+    if (a.time !== b.time) return a.time.localeCompare(b.time);
     
-    // Same round, sort by date first
-    const aDate = new Date(a.date);
-    const bDate = new Date(b.date);
-    
-    if (aDate.getTime() !== bDate.getTime()) {
-      return aDate.getTime() - bDate.getTime();
-    }
-    
-    // Same date, sort by time (earliest time first)
-    const aTime = a.time;
-    const bTime = b.time;
-    
-    if (aTime !== bTime) {
-      return aTime.localeCompare(bTime);
-    }
-    
-    // Same date and time, sort by sub-order (1/8-1, 1/8-2, etc.)
     return getRoundSubOrder(a.uniqueNumber) - getRoundSubOrder(b.uniqueNumber);
   });
 };
@@ -83,31 +88,21 @@ export const sortLeagueMatches = (matches: MatchFormData[]): MatchFormData[] => 
   };
 
   return matches.sort((a, b) => {
-    // First sort by matchday number
     const aMatchday = getMatchdayNumber(a.matchday);
     const bMatchday = getMatchdayNumber(b.matchday);
-    
-    if (aMatchday !== bMatchday) {
-      return aMatchday - bMatchday;
+    if (aMatchday !== bMatchday) return aMatchday - bMatchday;
+
+    const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (dateCompare !== 0) return dateCompare;
+
+    // Location priority (Harelbeke first)
+    if (a.location && b.location) {
+      const locCompare = getLocationOrder(a.location) - getLocationOrder(b.location);
+      if (locCompare !== 0) return locCompare;
     }
-    
-    // Same matchday, sort by date first
-    const aDate = new Date(a.date);
-    const bDate = new Date(b.date);
-    
-    if (aDate.getTime() !== bDate.getTime()) {
-      return aDate.getTime() - bDate.getTime();
-    }
-    
-    // Same date, sort by time (earliest time first)
-    const aTime = a.time;
-    const bTime = b.time;
-    
-    if (aTime !== bTime) {
-      return aTime.localeCompare(bTime);
-    }
-    
-    // Same date and time, sort by unique number
+
+    if (a.time !== b.time) return a.time.localeCompare(b.time);
+
     return a.uniqueNumber.localeCompare(b.uniqueNumber);
   });
 };

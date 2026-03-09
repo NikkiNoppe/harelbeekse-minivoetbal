@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { assignmentService } from '@/services/scheidsrechter/assignmentService';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDateWithDay, formatTimeForDisplay } from '@/lib/dateUtils';
+import { getLocationOrder } from '@/lib/matchSortingUtils';
 
 // Types
 interface RefereeInfo {
@@ -156,7 +157,8 @@ const AvailabilityMatrix: React.FC = () => {
 
       const sortedSessions = Array.from(sessionMap.values()).sort((a, b) => {
         const dc = a.dateOnly.localeCompare(b.dateOnly);
-        return dc !== 0 ? dc : a.location.localeCompare(b.location);
+        if (dc !== 0) return dc;
+        return getLocationOrder(a.location) - getLocationOrder(b.location);
       });
 
       setReferees(refereesData);
