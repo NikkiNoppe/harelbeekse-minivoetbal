@@ -30,13 +30,14 @@ function ThemeColorsInitializer({ children }: { children: React.ReactNode }) {
 const App = () => (
   <ErrorBoundary>
     <ThemeProvider defaultTheme="light">
-      <AuthProvider>
-        <ModalProvider>
-          <PlayerListLockProvider>
-            <TabVisibilityProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
+      <ThemeColorsInitializer>
+        <AuthProvider>
+          <ModalProvider>
+            <PlayerListLockProvider>
+              <TabVisibilityProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
                 <BrowserRouter>
                   <ScrollRestore />
                   <Routes>
