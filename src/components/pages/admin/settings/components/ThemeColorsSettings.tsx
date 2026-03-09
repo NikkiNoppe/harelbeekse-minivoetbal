@@ -122,7 +122,7 @@ const ThemeColorsSettings: React.FC = () => {
             <RotateCcw className="h-4 w-4 mr-1" />
             Standaard
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={!hasChanges || isSaving}>
+          <Button className="btn--primary" size="sm" onClick={handleSave} disabled={!hasChanges || isSaving}>
             <Save className="h-4 w-4 mr-1" />
             {isSaving ? "Opslaan..." : "Opslaan"}
           </Button>
