@@ -14,6 +14,7 @@ import { refereeAvailabilityService } from '@/services/scheidsrechter/refereeAva
 import type { RefereeAssignmentStats } from '@/services/scheidsrechter/types';
 import AssignmentCard from './AssignmentCard';
 import { formatDateWithDay, formatTimeForDisplay } from '@/lib/dateUtils';
+import { getLocationOrder } from '@/lib/matchSortingUtils';
 
 interface MatchWithAssignment {
   match_id: number;
