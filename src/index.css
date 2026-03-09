@@ -632,7 +632,7 @@ p, .card-description, .text-muted-foreground {
 }
 @media (hover: hover) and (pointer: fine) {
   .btn--icon.btn--danger:hover {
-    background-color: #fee2e2; 
+    background-color: var(--color-destructive-bg); 
     color: var(--color-destructive-dark); 
     border-color: var(--color-destructive-border);
   }
