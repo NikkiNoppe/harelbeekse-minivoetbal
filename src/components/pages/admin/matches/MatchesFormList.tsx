@@ -266,9 +266,6 @@ const getGridClassName = (groupKey: string) => {
     
     return (
       <span className="ml-auto flex items-center gap-2">
-        <span className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 rounded">
-          {match.uniqueNumber}
-        </span>
         <span 
           className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1`}
           style={backgroundColor ? { backgroundColor } : undefined}
