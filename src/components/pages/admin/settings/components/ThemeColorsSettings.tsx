@@ -137,7 +137,7 @@ const ThemeColorsSettings: React.FC = () => {
           Gegenereerd Palet
         </h4>
         <div className="flex gap-1 rounded-lg overflow-hidden">
-          {(Object.keys(SCALE_LABELS) as Array<keyof ColorScale>).map((key) => (
+          {(Object.keys(SCALE_LABELS) as unknown as Array<keyof ColorScale>).map((key) => (
             <div key={key} className="flex-1 text-center">
               <div
                 className="h-16 w-full transition-colors"

@@ -65,7 +65,7 @@ export function useThemeColorsAdmin() {
         const { error } = await supabase
           .from("application_settings")
           .update({
-            setting_value: newTheme as unknown as Record<string, unknown>,
+            setting_value: JSON.parse(JSON.stringify(newTheme)),
             updated_at: new Date().toISOString(),
           })
           .eq("id", existing.id);
@@ -73,12 +73,12 @@ export function useThemeColorsAdmin() {
       } else {
         const { error } = await supabase
           .from("application_settings")
-          .insert({
+          .insert([{
             setting_category: "theme_colors",
             setting_name: "global_theme",
-            setting_value: newTheme as unknown as Record<string, unknown>,
+            setting_value: JSON.parse(JSON.stringify(newTheme)),
             is_active: true,
-          });
+          }]);
         if (error) throw error;
       }
     },
