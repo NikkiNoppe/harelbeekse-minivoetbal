@@ -333,6 +333,31 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                 >
                   <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
                     <Euro className="h-3 w-3" />
+                    Administratie
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="bg-white p-3">
+                  <div className="text-lg font-bold text-purple-dark text-center">
+                    {formatCurrency(report.totalAdminCosts)}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-purple-light">
+                <CardHeader 
+                  className="bg-muted p-3"
+                  style={{ 
+                    marginTop: 0, 
+                    marginBottom: 0, 
+                    backgroundColor: 'unset', 
+                    background: 'unset',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
+                    <Euro className="h-3 w-3" />
                     Boetes
                   </CardTitle>
                 </CardHeader>
