@@ -11,9 +11,7 @@ import TeamsPage from "@/components/pages/admin/teams/TeamsPage";
 import MatchesPage from "@/components/pages/admin/matches/MatchesPage";
 import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
 import PlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
-
-import NotAvailable from "@/components/common/NotAvailable";
-import AlgemeenPage from "@/components/pages/public/information/AlgemeenPage";
+eenPage from "@/components/pages/public/information/AlgemeenPage";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 
 import AdminSuspensionsPage from "@/components/pages/admin/suspensions/AdminSuspensionsPage";
@@ -129,7 +127,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 </TabsContent>
                 
                 
-                <TabsContent value="polls" className="mt-0">
+   nel           <TabsContent value="polls" className="mt-0">
                   <ScheidsrechtersPage />
                 </TabsContent>
               </>
