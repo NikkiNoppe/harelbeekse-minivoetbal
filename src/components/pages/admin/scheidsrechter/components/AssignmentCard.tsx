@@ -60,7 +60,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     setAssigning(true);
     setSelectedReferee(refereeId);
     try {
-      const userId = parseInt(localStorage.getItem('userId') || '0');
+      const userId = user?.id || 0;
       const result = await assignmentService.assignReferee(
         { 
           match_id: match.match_id, 
