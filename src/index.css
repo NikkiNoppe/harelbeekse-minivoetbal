@@ -639,7 +639,7 @@ p, .card-description, .text-muted-foreground {
 }
 .btn--icon.btn--danger:active,
 .btn--icon.btn--danger[aria-pressed="true"] {
-  background-color: #fee2e2;
+  background-color: var(--color-destructive-bg);
   color: var(--color-destructive-dark);
   border-color: var(--color-destructive-border);
   opacity: var(--active-opacity);
