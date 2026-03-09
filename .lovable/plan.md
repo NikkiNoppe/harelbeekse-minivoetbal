@@ -1,68 +1,47 @@
 
 
-## Analyse: "32 kosten toegevoegd" bij openen financiële pagina
+## Probleem: Playoff data corruptie + preventie
 
-### Bevindingen
+### 1. Data Herstel
 
-**1. Er zijn DUPLICATEN aangemaakt — dit is een bug**
+Er is momenteel 1 beschadigde wedstrijd gevonden:
 
-De sync heeft 32 records toegevoegd, maar 20 daarvan zijn **duplicaten**. Er bestaan nu records met exact dezelfde combinatie van `match_id + team_id + cost_setting_id` die dubbel voorkomen.
+| Match | Huidig | Moet zijn |
+|-------|--------|-----------|
+| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
 
-Getroffen wedstrijden:
-- **1 play-off wedstrijd** (match 2179, 19 jan 2026) — 4 duplicaten
-- **4 bekerwedstrijden** (matches 1280-1283, 23-24 feb 2026) — 16 duplicaten
+Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
 
-Totaal: 652 match_cost records voor 158 wedstrijden. Zonder duplicaten zou dat 632 moeten zijn (158 × 2 teams × 2 kosttypes = 632).
+**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
+- `speeldag` terug naar "Playoff Speeldag 4"
+- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
 
-**2. Oorzaak: dubbele verificatie-logica in de edge function**
+### 2. Bug Fix: Voorkom toekomstige corruptie
 
-In `sync-all-match-costs/index.ts` zit een bug op regels 150-175. Na het inserten van ontbrekende kosten (`costsToInsert`), controleert de functie OPNIEUW of er kosten ontbreken via een tweede `missingCosts` check. Maar die check gebruikt de **oude** `existingCostsMap` die niet bijgewerkt is na de eerste insert. Hierdoor worden dezelfde kosten **twee keer** ingevoegd.
+**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
 
-**3. Waarom waren er überhaupt 12 ontbrekende kosten (de niet-duplicate 32 - 20)?**
+**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
 
-De DB-trigger `process_match_financial_costs` zoekt op `category = 'match'`, maar de werkelijke categorie in de `costs` tabel is `'match_cost'`. Dit betekent dat de trigger **nooit werkt** — alle kosten worden uitsluitend door de edge function of de background side effects aangemaakt.
+In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
+- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
+- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
 
-De 12 echte ontbrekende kosten kwamen waarschijnlijk van recente beker- en play-off wedstrijden waar de background side effects (bij formulier submit) gefaald hebben of niet getriggerd zijn.
+### Technische Details
 
-**4. Scheidsrechterkosten worden altijd aangerekend — ook zonder scheidsrechter**
+**Bestanden die gewijzigd worden:**
 
-De edge function kent scheidsrechterkosten toe aan ALLE wedstrijden met scores, ongeacht of er een scheidsrechter was toegewezen (`assigned_referee_id` is `NULL` bij alle getroffen wedstrijden). Dit is mogelijk ongewenst.
-
-### Voorgesteld plan
-
-| # | Actie | Impact |
-|---|-------|--------|
-| 1 | **Duplicaten opruimen** — Verwijder de 20 dubbele records uit `team_costs` | Data correctie |
-| 2 | **Unique constraint toevoegen** — `UNIQUE(match_id, team_id, cost_setting_id)` op `team_costs` om toekomstige duplicaten onmogelijk te maken | Preventie |
-| 3 | **Edge function fixen** — Verwijder de redundante tweede `missingCosts` check uit `sync-all-match-costs` | Bug fix |
-| 4 | **DB trigger fixen** — Wijzig `process_match_financial_costs` van `category = 'match'` naar `category = 'match_cost'` zodat kosten automatisch correct worden aangemaakt bij submit | Bug fix |
-| 5 | **Scheidsrechterkosten conditioneel maken** — Alleen aanrekenen als `assigned_referee_id IS NOT NULL` in de edge function | Bedrijfslogica |
-| 6 | **Sync-toast alleen bij problemen tonen** — De "Kosten gesynchroniseerd" melding onderdrukken wanneer alles al correct is, of de sync helemaal verwijderen nu de trigger correct gaat werken | UX |
-
-### Technische details
-
-**Duplicate cleanup SQL:**
-```sql
-DELETE FROM team_costs
-WHERE id IN (
-  SELECT id FROM (
-    SELECT id, ROW_NUMBER() OVER (
-      PARTITION BY match_id, team_id, cost_setting_id 
-      ORDER BY id
-    ) as rn
-    FROM team_costs
-  ) sub WHERE rn > 1
-);
+1. **Nieuwe SQL-migratie** - Herstel PO-22:
+```
+UPDATE matches 
+SET speeldag = 'Playoff Speeldag 4', 
+    match_date = '2026-02-10 18:30:00+00'
+WHERE match_id = 2197 
+AND unique_number = 'PO-22-1766492793564-7079';
 ```
 
-**Unique constraint:**
-```sql
-ALTER TABLE team_costs 
-ADD CONSTRAINT unique_team_match_cost 
-UNIQUE (match_id, team_id, cost_setting_id);
-```
+2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
+   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
+   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
+   - Voor team managers wordt `matchData` weggelaten uit het update-object
 
-**Edge function fix:** Verwijder regels 150-175 (de tweede `missingCosts` loop) uit `sync-all-match-costs/index.ts`, en gebruik `ON CONFLICT DO NOTHING` bij de insert.
-
-**Trigger fix:** In `process_match_financial_costs`, wijzig `WHERE name = 'Veldkosten' AND category = 'match'` naar `category = 'match_cost'`.
-
+Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.
