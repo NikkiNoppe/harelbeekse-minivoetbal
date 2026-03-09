@@ -59,28 +59,19 @@ export const sortCupMatches = (matches: MatchFormData[]): MatchFormData[] => {
     const aRound = getRoundOrder(a.uniqueNumber);
     const bRound = getRoundOrder(b.uniqueNumber);
     
-    // First sort by round (Achtste finales, Kwartfinales, etc.)
-    if (aRound !== bRound) {
-      return aRound - bRound;
+    if (aRound !== bRound) return aRound - bRound;
+    
+    const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (dateCompare !== 0) return dateCompare;
+
+    // Location priority (Harelbeke first)
+    if (a.location && b.location) {
+      const locCompare = getLocationOrder(a.location) - getLocationOrder(b.location);
+      if (locCompare !== 0) return locCompare;
     }
+
+    if (a.time !== b.time) return a.time.localeCompare(b.time);
     
-    // Same round, sort by date first
-    const aDate = new Date(a.date);
-    const bDate = new Date(b.date);
-    
-    if (aDate.getTime() !== bDate.getTime()) {
-      return aDate.getTime() - bDate.getTime();
-    }
-    
-    // Same date, sort by time (earliest time first)
-    const aTime = a.time;
-    const bTime = b.time;
-    
-    if (aTime !== bTime) {
-      return aTime.localeCompare(bTime);
-    }
-    
-    // Same date and time, sort by sub-order (1/8-1, 1/8-2, etc.)
     return getRoundSubOrder(a.uniqueNumber) - getRoundSubOrder(b.uniqueNumber);
   });
 };
