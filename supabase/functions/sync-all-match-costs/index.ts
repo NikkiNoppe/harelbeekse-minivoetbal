@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
 
     const fieldCost = costSettings.find((cs: any) => cs.name?.toLowerCase().includes('veld'));
     const refereeCost = costSettings.find((cs: any) => cs.name?.toLowerCase().includes('scheids'));
+    const adminCost = costSettings.find((cs: any) => cs.name?.toLowerCase().includes('administratie'));
 
     if (!fieldCost) throw new Error('Veldkosten niet gevonden');
 
@@ -77,7 +78,7 @@ Deno.serve(async (req) => {
       const hasReferee = match.assigned_referee_id != null;
 
       // Check existing costs for this match
-      const costSettingIds = [fieldCost.id, ...(refereeCost ? [refereeCost.id] : [])];
+      const costSettingIds = [fieldCost.id, ...(refereeCost ? [refereeCost.id] : []), ...(adminCost ? [adminCost.id] : [])];
       const { data: existingCosts, error: existingCostsErr } = await supabaseServiceRole
         .from('team_costs')
         .select('id, team_id, cost_setting_id, amount')
@@ -110,6 +111,17 @@ Deno.serve(async (req) => {
             costsToInsert.push({ team_id: teamId, cost_setting_id: refereeCost.id, amount: refereeCost.amount ?? 0, transaction_date: transactionDate, match_id: match.match_id });
           } else if (existingReferee.amount !== refereeCost.amount) {
             costsToUpdate.push({ id: existingReferee.id, amount: refereeCost.amount ?? 0 });
+          }
+        }
+
+        // Admin cost - always applied
+        if (adminCost) {
+          const adminKey = `${teamId}-${adminCost.id}`;
+          const existingAdmin = existingCostsMap.get(adminKey);
+          if (!existingAdmin) {
+            costsToInsert.push({ team_id: teamId, cost_setting_id: adminCost.id, amount: adminCost.amount ?? 0, transaction_date: transactionDate, match_id: match.match_id });
+          } else if (existingAdmin.amount !== adminCost.amount) {
+            costsToUpdate.push({ id: existingAdmin.id, amount: adminCost.amount ?? 0 });
           }
         }
       }

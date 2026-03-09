@@ -165,6 +165,7 @@ const AdminFinancialPage: React.FC = () => {
       startCapital: 0,
       fieldCosts: 0,
       refereeCosts: 0,
+      adminCosts: 0,
       fines: 0,
       currentBalance: 0
     };
@@ -172,13 +173,15 @@ const AdminFinancialPage: React.FC = () => {
     const startCapital = teamTransactions.filter(t => t.cost_settings?.category === 'deposit').reduce((sum, t) => sum + Number(t.amount), 0);
     const fieldCosts = teamTransactions.filter(t => t.cost_settings?.category === 'match_cost' && (t.cost_settings?.name?.toLowerCase().includes('veld') || (t.description?.toLowerCase() || '').includes('veld'))).reduce((sum, t) => sum + Number(t.amount), 0);
     const refereeCosts = teamTransactions.filter(t => t.cost_settings?.category === 'match_cost' && (t.cost_settings?.name?.toLowerCase().includes('scheids') || (t.description?.toLowerCase() || '').includes('scheids'))).reduce((sum, t) => sum + Number(t.amount), 0);
+    const adminCosts = teamTransactions.filter(t => t.cost_settings?.category === 'match_cost' && (t.cost_settings?.name?.toLowerCase().includes('administratie') || (t.description?.toLowerCase() || '').includes('administratie'))).reduce((sum, t) => sum + Number(t.amount), 0);
     const fines = teamTransactions.filter(t => t.cost_settings?.category === 'penalty').reduce((sum, t) => sum + Number(t.amount), 0);
     const adjustments = teamTransactions.filter(t => t.cost_settings?.category === 'adjustment' || t.cost_settings?.category === 'other').reduce((sum, t) => sum + Number(t.amount), 0);
-    const currentBalance = startCapital - fieldCosts - refereeCosts - fines + adjustments;
+    const currentBalance = startCapital - fieldCosts - refereeCosts - adminCosts - fines + adjustments;
     return {
       startCapital,
       fieldCosts,
       refereeCosts,
+      adminCosts,
       fines,
       currentBalance
     };
@@ -271,7 +274,7 @@ const AdminFinancialPage: React.FC = () => {
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-sm text-foreground truncate mb-2">{team.team_name}</h3>
-                        <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-xs">
+                        <div className="grid grid-cols-4 gap-x-2 gap-y-1 text-xs">
                           <div className="flex flex-col">
                             <span className="text-muted-foreground">Veld</span>
                             <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.fieldCosts)}</span>
@@ -279,6 +282,10 @@ const AdminFinancialPage: React.FC = () => {
                           <div className="flex flex-col">
                             <span className="text-muted-foreground">Scheids</span>
                             <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.refereeCosts)}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-muted-foreground">Admin</span>
+                            <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.adminCosts)}</span>
                           </div>
                           <div className="flex flex-col">
                             <span className="text-muted-foreground">Boetes</span>
