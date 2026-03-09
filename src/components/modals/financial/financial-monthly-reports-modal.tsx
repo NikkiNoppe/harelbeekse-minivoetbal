@@ -242,7 +242,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {/* Summary Cards - only show if data available */}
           {report && availableSeasons && availableSeasons.length > 0 && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <Card className="border-purple-light">
                 <CardHeader 
                   className="bg-muted p-3"
