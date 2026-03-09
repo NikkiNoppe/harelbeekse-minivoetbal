@@ -31,6 +31,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   match,
   onAssignmentChange
 }) => {
+  const { user } = useAuth();
   const [availableReferees, setAvailableReferees] = useState<AvailableReferee[]>([]);
   const [loading, setLoading] = useState(false);
   const [assigning, setAssigning] = useState(false);
