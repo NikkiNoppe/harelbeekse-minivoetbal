@@ -443,6 +443,7 @@ p, .card-description, .text-muted-foreground {
   .btn--secondary:hover {
     background-color: var(--color-300);
     color: var(--color-700);
+    border-color: var(--color-500);
   }
 }
 .btn--secondary:active,
