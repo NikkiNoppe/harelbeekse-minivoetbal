@@ -16,11 +16,30 @@ export interface ColorScale {
   900: string;
 }
 
+export interface SemanticColor {
+  base: string;
+  dark: string;
+  bg: string;
+  border?: string;
+}
+
 export interface ThemeColors {
   primaryBase: string;
   primaryLight: string;
   scale: ColorScale;
+  destructive?: SemanticColor;
+  success?: SemanticColor;
+  warning?: SemanticColor;
+  info?: SemanticColor;
 }
+
+// Default semantic colors
+export const DEFAULT_SEMANTIC: Required<Pick<ThemeColors, 'destructive' | 'success' | 'warning' | 'info'>> = {
+  destructive: { base: "#ef4444", dark: "#dc2626", bg: "#fee2e2", border: "#f87171" },
+  success: { base: "#22c55e", dark: "#15803d", bg: "#dcfce7" },
+  warning: { base: "#f59e0b", dark: "#b45309", bg: "#fef3c7" },
+  info: { base: "#3b82f6", dark: "#1d4ed8", bg: "#eff6ff" },
+};
 
 // Default purple theme
 export const DEFAULT_THEME: ThemeColors = {
@@ -38,6 +57,7 @@ export const DEFAULT_THEME: ThemeColors = {
     800: "#351d4a",
     900: "#201029",
   },
+  ...DEFAULT_SEMANTIC,
 };
 
 /** Convert hex to HSL */
@@ -119,7 +139,6 @@ export function generatePalette(baseHex: string): ColorScale {
 
   const scale = {} as ColorScale;
   for (const [key, lightness] of Object.entries(lightnessMap)) {
-    // Slightly desaturate very light and very dark shades for natural feel
     let adjustedS = s;
     const l = lightness;
     if (l > 90) adjustedS = Math.max(s - 20, 10);
@@ -139,6 +158,7 @@ export function generateThemeFromBase(baseHex: string): ThemeColors {
     primaryBase: baseHex,
     primaryLight: scale[400],
     scale,
+    ...DEFAULT_SEMANTIC,
   };
 }
 
@@ -164,4 +184,27 @@ export function applyThemeToCSS(theme: ThemeColors): void {
       `rgba(${r}, ${g}, ${b}, ${opacity})`
     );
   });
+
+  // Semantic colors
+  const semantic = {
+    destructive: theme.destructive ?? DEFAULT_SEMANTIC.destructive,
+    success: theme.success ?? DEFAULT_SEMANTIC.success,
+    warning: theme.warning ?? DEFAULT_SEMANTIC.warning,
+    info: theme.info ?? DEFAULT_SEMANTIC.info,
+  };
+
+  for (const [name, colors] of Object.entries(semantic)) {
+    root.style.setProperty(`--color-${name}`, colors.base);
+    root.style.setProperty(`--color-${name}-dark`, colors.dark);
+    root.style.setProperty(`--color-${name}-bg`, colors.bg);
+    if (colors.border) {
+      root.style.setProperty(`--color-${name}-border`, colors.border);
+    }
+    // Shadow variants for destructive
+    if (name === 'destructive') {
+      const [dr, dg, db] = hexToRgb(colors.dark);
+      root.style.setProperty(`--color-shadow-destructive-07`, `rgba(${dr}, ${dg}, ${db}, 0.07)`);
+      root.style.setProperty(`--color-shadow-destructive-15`, `rgba(${dr}, ${dg}, ${db}, 0.15)`);
+    }
+  }
 }

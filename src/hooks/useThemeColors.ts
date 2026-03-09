@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ThemeColors, DEFAULT_THEME, applyThemeToCSS } from "@/lib/colorUtils";
+import { ThemeColors, DEFAULT_THEME, DEFAULT_SEMANTIC, applyThemeToCSS } from "@/lib/colorUtils";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,7 +19,15 @@ async function fetchThemeColors(): Promise<ThemeColors> {
 
   const val = data.setting_value as unknown as ThemeColors;
   if (!val?.primaryBase || !val?.scale) return DEFAULT_THEME;
-  return val;
+  
+  // Merge with defaults for any missing semantic colors
+  return {
+    ...val,
+    destructive: val.destructive ?? DEFAULT_SEMANTIC.destructive,
+    success: val.success ?? DEFAULT_SEMANTIC.success,
+    warning: val.warning ?? DEFAULT_SEMANTIC.warning,
+    info: val.info ?? DEFAULT_SEMANTIC.info,
+  };
 }
 
 /**
@@ -53,7 +61,6 @@ export function useThemeColorsAdmin() {
 
   const saveMutation = useMutation({
     mutationFn: async (newTheme: ThemeColors) => {
-      // Check if record exists
       const { data: existing } = await supabase
         .from("application_settings")
         .select("id")
