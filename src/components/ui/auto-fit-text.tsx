@@ -137,7 +137,6 @@ const AutoFitText: React.FC<AutoFitTextProps> = ({
           lineHeight: '1.2',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
-          textOverflow: 'ellipsis',
           width: '100%',
           display: 'block',
           transition: 'font-size 0.1s ease-out',
