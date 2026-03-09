@@ -73,20 +73,29 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				// Updated purple theme colors with exact RGB values
-				purple: {
-					dark: '#60368c', // donkerpaars
-					light: '#ab86dd', // lichtpaars
-					white: '#ffffff', // wit
-					'light-gray': '#faf8ff', // lichtgrijs
-				},
-				// Update all color references to use purple theme
-				soccer: {
-					green: '#60368c', // Changed to dark purple
-					'dark-green': '#4a2a6b', // Darker purple variant
-					'light-green': '#ab86dd', // Light purple
-					black: '#60368c', // Changed to dark purple
+			purple: {
+					50: 'var(--color-50)',
+					100: 'var(--color-100)',
+					200: 'var(--color-200)',
+					300: 'var(--color-300)',
+					400: 'var(--color-400)',
+					500: 'var(--color-500)',
+					600: 'var(--color-600)',
+					700: 'var(--color-700)',
+					800: 'var(--color-800)',
+					900: 'var(--color-900)',
+					dark: 'var(--color-primary-base)',
+					light: 'var(--color-primary-light)',
 					white: '#ffffff',
-					gray: '#faf8ff', // Light gray
+					'light-gray': 'var(--color-50)',
+				},
+				soccer: {
+					green: 'var(--color-primary-base)',
+					'dark-green': 'var(--color-700)',
+					'light-green': 'var(--color-primary-light)',
+					black: 'var(--color-primary-base)',
+					white: '#ffffff',
+					gray: 'var(--color-50)',
 				},
 			},
 			borderRadius: {
