@@ -140,14 +140,14 @@ const AdminFinancialPage: React.FC = () => {
           queryClient.invalidateQueries({ queryKey: ['all-team-transactions'] });
           queryClient.invalidateQueries({ queryKey: ['submitted-matches'] });
           
-          // Toon alleen een toast als er daadwerkelijk iets gesynchroniseerd is
-          if (result.syncedCount && result.syncedCount > 0) {
-            toast({
-              title: "Kosten gesynchroniseerd",
-              description: result.message,
-              variant: "default",
-            });
-          }
+          // Toon alleen een toast als er daadwerkelijk iets gesynchroniseerd of bijgewerkt is
+            if ((result.syncedCount && result.syncedCount > 0) || (result.updatedCount && result.updatedCount > 0)) {
+              toast({
+                title: "Kosten gesynchroniseerd",
+                description: result.message,
+                variant: "default",
+              });
+            }
         } else {
           // Toon alleen een foutmelding als de sync echt faalt
           console.error('Automatische sync mislukt:', result.message);
