@@ -310,6 +310,7 @@ export const monthlyReportsService = {
       });
 
       const fieldCosts = Object.values(fieldCostsByMonth);
+      const adminCosts = Object.values(adminCostsByMonth);
       const refereeCosts = Object.values(refereeCostsByReferee).sort((a, b) => b.matchCount - a.matchCount);
       const fines = Object.values(finesByMonth);
       const matchStats = Object.values(matchStatsByMonth);
@@ -317,10 +318,12 @@ export const monthlyReportsService = {
       return {
         fieldCosts,
         refereeCosts,
+        adminCosts,
         fines,
         matchStats,
         totalFieldCosts: fieldCosts.reduce((sum, item) => sum + item.totalCost, 0),
         totalRefereeCosts: refereeCosts.reduce((sum, item) => sum + item.totalCost, 0),
+        totalAdminCosts: adminCosts.reduce((sum, item) => sum + item.totalCost, 0),
         totalFines: fines.reduce((sum, item) => sum + item.totalFines, 0),
         totalMatches: matchStats.reduce((sum, item) => sum + item.totalMatches, 0)
       };
