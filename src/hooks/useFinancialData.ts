@@ -203,6 +203,13 @@ export const useFinancialData = () => {
          t.description?.toLowerCase().includes('scheidsrechter')))
       .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
     
+    // Administratiekosten: alle match_cost transacties met 'administratie' in de naam
+    const adminCosts = teamTransactions
+      .filter(t => t.transaction_type === 'match_cost' && 
+        (t.cost_settings?.name?.toLowerCase().includes('administratie') || 
+         t.description?.toLowerCase().includes('administratie')))
+      .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
+    
     // Boetes: alle penalty transacties
     const fines = teamTransactions
       .filter(t => t.transaction_type === 'penalty')
@@ -214,12 +221,13 @@ export const useFinancialData = () => {
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     // Huidig saldo: startkapitaal - alle kosten + correcties
-    const currentBalance = startCapital - fieldCosts - refereeCosts - fines + adjustments;
+    const currentBalance = startCapital - fieldCosts - refereeCosts - adminCosts - fines + adjustments;
 
     return {
       startCapital,
       fieldCosts,
       refereeCosts,
+      adminCosts,
       fines,
       currentBalance,
       adjustments
