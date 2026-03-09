@@ -175,6 +175,7 @@ export const useFinancialData = () => {
         startCapital: 0,
         fieldCosts: 0,
         refereeCosts: 0,
+        adminCosts: 0,
         fines: 0,
         currentBalance: 0,
         adjustments: 0
