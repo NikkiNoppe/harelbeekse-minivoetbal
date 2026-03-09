@@ -18,7 +18,6 @@ export interface ColorScale {
 
 export interface SemanticColor {
   base: string;
-  dark: string;
   bg: string;
   border?: string;
 }
@@ -35,10 +34,10 @@ export interface ThemeColors {
 
 // Default semantic colors
 export const DEFAULT_SEMANTIC: Required<Pick<ThemeColors, 'destructive' | 'success' | 'warning' | 'info'>> = {
-  destructive: { base: "#ef4444", dark: "#dc2626", bg: "#fee2e2", border: "#f87171" },
-  success: { base: "#22c55e", dark: "#15803d", bg: "#dcfce7" },
-  warning: { base: "#f59e0b", dark: "#b45309", bg: "#fef3c7" },
-  info: { base: "#3b82f6", dark: "#1d4ed8", bg: "#eff6ff" },
+  destructive: { base: "#ef4444", bg: "#fee2e2", border: "#f87171" },
+  success: { base: "#22c55e", bg: "#dcfce7" },
+  warning: { base: "#f59e0b", bg: "#fef3c7" },
+  info: { base: "#3b82f6", bg: "#eff6ff" },
 };
 
 // Default purple theme
@@ -195,14 +194,13 @@ export function applyThemeToCSS(theme: ThemeColors): void {
 
   for (const [name, colors] of Object.entries(semantic)) {
     root.style.setProperty(`--color-${name}`, colors.base);
-    root.style.setProperty(`--color-${name}-dark`, colors.dark);
+    root.style.setProperty(`--color-${name}-dark`, colors.base);
     root.style.setProperty(`--color-${name}-bg`, colors.bg);
     if (colors.border) {
       root.style.setProperty(`--color-${name}-border`, colors.border);
     }
-    // Shadow variants for destructive
     if (name === 'destructive') {
-      const [dr, dg, db] = hexToRgb(colors.dark);
+      const [dr, dg, db] = hexToRgb(colors.base);
       root.style.setProperty(`--color-shadow-destructive-07`, `rgba(${dr}, ${dg}, ${db}, 0.07)`);
       root.style.setProperty(`--color-shadow-destructive-15`, `rgba(${dr}, ${dg}, ${db}, 0.15)`);
     }

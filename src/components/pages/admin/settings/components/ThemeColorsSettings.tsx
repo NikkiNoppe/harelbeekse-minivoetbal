@@ -32,10 +32,9 @@ const SemanticColorPicker: React.FC<SemanticPickerProps> = ({ label, description
       <label className="text-sm font-medium" style={{ color: "var(--color-700)" }}>{label}</label>
       <p className="text-xs mt-0.5" style={{ color: "var(--color-500)" }}>{description}</p>
     </div>
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-2 gap-3">
       {[
         { key: "base" as const, label: "Base" },
-        { key: "dark" as const, label: "Dark" },
         { key: "bg" as const, label: "Achtergrond" },
       ].map(({ key, label: l }) => (
         <div key={key} className="flex flex-col items-center gap-1.5">
@@ -71,7 +70,6 @@ const ThemeColorsSettings: React.FC = () => {
 
   const handleBaseColorChange = (hex: string) => {
     const newTheme = generateThemeFromBase(hex);
-    // Preserve current semantic colors
     updateAndPreview({
       ...newTheme,
       destructive: localTheme.destructive,
@@ -249,21 +247,14 @@ const ThemeColorsSettings: React.FC = () => {
             <Button size="sm" variant="secondary">Secundair</Button>
             <Button
               size="sm"
-              style={{
-                backgroundColor: destructive.base,
-                color: "#ffffff",
-                borderColor: destructive.base,
-              }}
+              style={{ backgroundColor: destructive.base, color: "#ffffff", borderColor: destructive.base }}
             >
               Verwijderen
             </Button>
             <Button
               size="sm"
               variant="outline"
-              style={{
-                color: destructive.base,
-                borderColor: destructive.border ?? destructive.base,
-              }}
+              style={{ color: destructive.base, borderColor: destructive.border ?? destructive.base }}
             >
               Danger Outline
             </Button>
@@ -276,10 +267,10 @@ const ThemeColorsSettings: React.FC = () => {
           <div className="flex flex-wrap gap-2 items-center">
             <Badge>Primary</Badge>
             <Badge variant="outline">Outline</Badge>
-            <Badge style={{ backgroundColor: success.bg, color: success.dark, border: "none" }}>Succes</Badge>
-            <Badge style={{ backgroundColor: warning.bg, color: warning.dark, border: "none" }}>Waarschuwing</Badge>
-            <Badge style={{ backgroundColor: destructive.bg, color: destructive.dark, border: "none" }}>Fout</Badge>
-            <Badge style={{ backgroundColor: info.bg, color: info.dark, border: "none" }}>Info</Badge>
+            <Badge style={{ backgroundColor: success.bg, color: success.base, border: "none" }}>Succes</Badge>
+            <Badge style={{ backgroundColor: warning.bg, color: warning.base, border: "none" }}>Waarschuwing</Badge>
+            <Badge style={{ backgroundColor: destructive.bg, color: destructive.base, border: "none" }}>Fout</Badge>
+            <Badge style={{ backgroundColor: info.bg, color: info.base, border: "none" }}>Info</Badge>
           </div>
         </div>
 
@@ -296,11 +287,11 @@ const ThemeColorsSettings: React.FC = () => {
               <p className="text-[10px] mt-0.5 opacity-80">Kleur 600</p>
             </div>
             <div className="p-3 rounded-lg" style={{ background: success.bg, border: `1px solid ${success.base}33` }}>
-              <p className="text-xs font-medium" style={{ color: success.dark }}>Succes</p>
+              <p className="text-xs font-medium" style={{ color: success.base }}>Succes</p>
               <p className="text-[10px] mt-0.5" style={{ color: success.base }}>Bevestigd</p>
             </div>
             <div className="p-3 rounded-lg" style={{ background: destructive.bg, border: `1px solid ${destructive.base}33` }}>
-              <p className="text-xs font-medium" style={{ color: destructive.dark }}>Fout</p>
+              <p className="text-xs font-medium" style={{ color: destructive.base }}>Fout</p>
               <p className="text-[10px] mt-0.5" style={{ color: destructive.base }}>Afgewezen</p>
             </div>
           </div>
@@ -316,7 +307,7 @@ const ThemeColorsSettings: React.FC = () => {
               { c: warning, label: "⚠️ Let op, er zijn onopgeslagen wijzigingen." },
               { c: destructive, label: "❌ Er is een fout opgetreden." },
             ].map(({ c, label }, i) => (
-              <div key={i} className="p-2.5 rounded-md text-xs" style={{ backgroundColor: c.bg, color: c.dark, borderLeft: `3px solid ${c.base}` }}>
+              <div key={i} className="p-2.5 rounded-md text-xs" style={{ backgroundColor: c.bg, color: c.base, borderLeft: `3px solid ${c.base}` }}>
                 {label}
               </div>
             ))}
