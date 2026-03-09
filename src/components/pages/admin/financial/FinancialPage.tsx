@@ -250,7 +250,7 @@ const AdminFinancialPage: React.FC = () => {
                 return (
                   <div 
                     key={team.team_id}
-                    className="p-4 cursor-pointer hover:bg-muted/50 active:bg-muted transition-all bg-card border border-border shadow-md hover:shadow-lg max-w-full w-full"
+                    className="p-4 cursor-pointer active:bg-muted transition-all bg-card border border-border shadow-md hover:shadow-lg max-w-full w-full"
                     style={{ 
                       paddingLeft: '16px', 
                       paddingRight: '16px',
