@@ -9,6 +9,7 @@ import { assignmentService } from '@/services/scheidsrechter/assignmentService';
 import type { AvailableReferee, RefereeAssignment } from '@/services/scheidsrechter/types';
 import { cn } from '@/lib/utils';
 import { formatTimeForDisplay } from '@/lib/dateUtils';
+import { useAuth } from '@/hooks/useAuth';
 
 interface MatchData {
   match_id: number;
