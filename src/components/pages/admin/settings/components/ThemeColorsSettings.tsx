@@ -244,7 +244,7 @@ const ThemeColorsSettings: React.FC = () => {
           <div className="flex flex-wrap gap-3 items-center">
             <Button className="btn--primary" size="sm">Primaire Knop</Button>
             <Button size="sm" variant="outline">Outline Knop</Button>
-            <Button size="sm" variant="secondary">Secundair</Button>
+            <Button className="btn--secondary" size="sm">Secundair</Button>
             <Button
               size="sm"
               style={{ backgroundColor: destructive.base, color: "#ffffff", borderColor: destructive.base }}
