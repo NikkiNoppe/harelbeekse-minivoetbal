@@ -46,10 +46,12 @@ export interface SeasonData {
 export interface MonthlyReport {
   fieldCosts: MonthlyFieldCosts[];
   refereeCosts: MonthlyRefereeCosts[];
+  adminCosts: MonthlyFieldCosts[];
   fines: MonthlyFines[];
   matchStats: MonthlyMatchStats[];
   totalFieldCosts: number;
   totalRefereeCosts: number;
+  totalAdminCosts: number;
   totalFines: number;
   totalMatches: number;
 }
