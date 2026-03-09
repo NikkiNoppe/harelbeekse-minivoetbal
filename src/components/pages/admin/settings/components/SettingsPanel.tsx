@@ -48,6 +48,14 @@ const AdminSettingsPanel: React.FC = () => {
               <Calendar className="h-4 w-4" />
               Seizoensdata
             </TabsTrigger>
+            <TabsTrigger value="colors" className="flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              Kleuren
+            </TabsTrigger>
+            <TabsTrigger value="season" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Seizoensdata
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="tab-visibility">
