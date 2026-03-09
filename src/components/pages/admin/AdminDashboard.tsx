@@ -124,7 +124,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 </TabsContent>
                 
                 <TabsContent value="settings" className="mt-0">
-                  <SettingsPage />
+                  <SettingsPanel />
                 </TabsContent>
                 
                 
