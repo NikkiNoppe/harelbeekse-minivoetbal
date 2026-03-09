@@ -113,6 +113,17 @@ Deno.serve(async (req) => {
             costsToUpdate.push({ id: existingReferee.id, amount: refereeCost.amount ?? 0 });
           }
         }
+
+        // Admin cost - always applied
+        if (adminCost) {
+          const adminKey = `${teamId}-${adminCost.id}`;
+          const existingAdmin = existingCostsMap.get(adminKey);
+          if (!existingAdmin) {
+            costsToInsert.push({ team_id: teamId, cost_setting_id: adminCost.id, amount: adminCost.amount ?? 0, transaction_date: transactionDate, match_id: match.match_id });
+          } else if (existingAdmin.amount !== adminCost.amount) {
+            costsToUpdate.push({ id: existingAdmin.id, amount: adminCost.amount ?? 0 });
+          }
+        }
       }
 
       // Insert new costs
