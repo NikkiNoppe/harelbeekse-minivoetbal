@@ -324,7 +324,7 @@ const Header: React.FC<HeaderProps> = ({
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="p-2 text-white bg-purple-200 hover:bg-purple-300 transition-all duration-200 hover:scale-105"
+                className="p-2 text-white bg-purple-200 hover:bg-purple-300ansition-all duration-200 hover:scale-105"
                 aria-label="Open navigatiemenu"
               >
                 <HamburgerIcon className="transition-transform duration-200 text-purple-900" />
@@ -348,7 +348,7 @@ const Header: React.FC<HeaderProps> = ({
                 {isAuthenticated && (
                   <button
                     type="button"
-                    className="w-full p-4 bg-purple-200 rounded-xl shadow-sm border border-purple-200 text-left hover:bg-purple-300/80 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                    className="w-full p-4 bg-purple-200 rounded-xl shadow-sm border border-purple-200 text-left hover:bg-purple-300/80ansition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
                     onClick={() => {
                       setIsSheetOpen(false);
                       navigate(ADMIN_ROUTES.profile);
