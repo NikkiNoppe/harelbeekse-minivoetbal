@@ -1,47 +1,53 @@
 
 
-## Probleem: Playoff data corruptie + preventie
+## Plan: Alle Kleuren Flexibel & Aanpasbaar Maken
 
-### 1. Data Herstel
+### Analyse
 
-Er is momenteel 1 beschadigde wedstrijd gevonden:
+**Hardcoded kleuren gevonden:**
 
-| Match | Huidig | Moet zijn |
-|-------|--------|-----------|
-| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
+1. **`src/index.css`**: 2x `#fee2e2` (destructive hover bg), plus de initiële `:root` waarden (worden al overschreven door JS)
+2. **`src/index.css` regel 1650-1655**: Tailwind `red-*` klassen in `.btn--danger` 
+3. **43 TSX bestanden**: ~450 matches met `bg-red-*`, `bg-green-*`, `bg-blue-*`, `bg-yellow-*` - dit zijn semantische kleuren (fout=rood, succes=groen, info=blauw, waarschuwing=geel). Deze horen bij het design system maar zijn nu niet aanpasbaar.
+4. **Supabase email templates**: Hardcoded hex in HTML emails (buiten scope - geen CSS vars mogelijk)
 
-Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
+### Aanpak (3 stappen)
 
-**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
-- `speeldag` terug naar "Playoff Speeldag 4"
-- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
+**1. Nieuwe CSS variabelen toevoegen voor semantische achtergrondkleuren**
 
-### 2. Bug Fix: Voorkom toekomstige corruptie
-
-**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
-
-**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
-
-In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
-- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
-- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
-
-### Technische Details
-
-**Bestanden die gewijzigd worden:**
-
-1. **Nieuwe SQL-migratie** - Herstel PO-22:
-```
-UPDATE matches 
-SET speeldag = 'Playoff Speeldag 4', 
-    match_date = '2026-02-10 18:30:00+00'
-WHERE match_id = 2197 
-AND unique_number = 'PO-22-1766492793564-7079';
+In `src/index.css` `:root` toevoegen:
+```css
+--color-destructive-bg: #fee2e2;
+--color-success-bg: #dcfce7;
+--color-warning-bg: #fef3c7;
+--color-info: #3b82f6;
+--color-info-bg: #eff6ff;
+--color-info-dark: #1d4ed8;
 ```
 
-2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
-   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
-   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
-   - Voor team managers wordt `matchData` weggelaten uit het update-object
+En de 2x hardcoded `#fee2e2` en `.btn--danger` Tailwind klassen vervangen door deze variabelen.
 
-Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.
+**2. ThemeColors interface uitbreiden**
+
+In `src/lib/colorUtils.ts`:
+- `ThemeColors` uitbreiden met `destructive`, `success`, `warning`, `info` objecten
+- `applyThemeToCSS` updaten om ook deze semantische kleuren als CSS vars te zetten
+- Defaults behouden als huidige waarden
+
+**3. ThemeColorsSettings Live Preview uitbreiden**
+
+In `ThemeColorsSettings.tsx` toevoegen:
+- **Buttons sectie**: Primary, Secondary, Outline, Danger knoppen met live preview  
+- **Semantische kleuren sectie**: Color pickers voor Destructive (rood), Success (groen), Warning (oranje), Info (blauw) met elk hun base/bg/dark varianten
+- Alle wijzigingen direct zichtbaar in live preview
+- Opslaan werkt voor alles tegelijk
+
+### Bestanden
+
+| # | Bestand | Wijziging |
+|---|---------|-----------|
+| 1 | `src/index.css` | Nieuwe CSS vars toevoegen, hardcoded hex vervangen |
+| 2 | `src/lib/colorUtils.ts` | ThemeColors uitbreiden met semantische kleuren, applyThemeToCSS updaten |
+| 3 | `src/hooks/useThemeColors.ts` | Fallback logica voor nieuwe velden |
+| 4 | `src/components/pages/admin/settings/components/ThemeColorsSettings.tsx` | Live preview met alle buttons + semantische kleuren pickers |
+
