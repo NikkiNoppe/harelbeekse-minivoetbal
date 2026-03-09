@@ -64,6 +64,8 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
         description: result.message
       });
       queryClient.invalidateQueries({ queryKey: ['cost-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['all-team-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
       resetForm();
     } else {
       toast({
