@@ -187,11 +187,11 @@ export const assignmentService = {
   /**
    * Verwijder een toewijzing
    */
-  async removeAssignment(assignmentId: number): Promise<boolean> {
+  async removeAssignment(assignmentId: number, userId?: number): Promise<boolean> {
     try {
-      const userId = parseInt(localStorage.getItem('userId') || '0');
+      const resolvedUserId = userId || 0;
       const { data, error } = await supabase.rpc('remove_referee_assignment', {
-        p_user_id: userId,
+        p_user_id: resolvedUserId,
         p_assignment_id: assignmentId
       });
 

@@ -9,6 +9,7 @@ import { assignmentService } from '@/services/scheidsrechter/assignmentService';
 import type { AvailableReferee, RefereeAssignment } from '@/services/scheidsrechter/types';
 import { cn } from '@/lib/utils';
 import { formatTimeForDisplay } from '@/lib/dateUtils';
+import { useAuth } from '@/hooks/useAuth';
 
 interface MatchData {
   match_id: number;
@@ -30,6 +31,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
   match,
   onAssignmentChange
 }) => {
+  const { user } = useAuth();
   const [availableReferees, setAvailableReferees] = useState<AvailableReferee[]>([]);
   const [loading, setLoading] = useState(false);
   const [assigning, setAssigning] = useState(false);
@@ -58,7 +60,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
     setAssigning(true);
     setSelectedReferee(refereeId);
     try {
-      const userId = parseInt(localStorage.getItem('userId') || '0');
+      const userId = user?.id || 0;
       const result = await assignmentService.assignReferee(
         { 
           match_id: match.match_id, 
@@ -89,7 +91,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 
     setAssigning(true);
     try {
-      const success = await assignmentService.removeAssignment(match.current_assignment.id);
+      const success = await assignmentService.removeAssignment(match.current_assignment.id, user?.id);
       if (success) {
         toast.success('Toewijzing verwijderd');
         onAssignmentChange();
