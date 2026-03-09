@@ -1,23 +1,37 @@
 import { MatchFormData } from "@/components/pages/admin/matches/types";
 
 /**
- * Generic function to sort matches by date and time
+ * Get location priority order (Harelbeke first, then Bavikhove)
+ * @param location The location string
+ * @returns Priority number (lower = first)
+ */
+export const getLocationOrder = (location: string): number => {
+  const loc = location.toLowerCase();
+  if (loc.includes('harelbeke') || loc.includes('dageraad')) return 1;
+  if (loc.includes('bavikhove') || loc.includes('vlasschaard')) return 2;
+  return 3;
+};
+
+/**
+ * Generic function to sort matches by date, location (Harelbeke first), then time
  * @param matches Array of matches to sort
  * @returns Sorted matches array
  */
-export const sortMatchesByDateAndTime = <T extends { date: string; time: string }>(
+export const sortMatchesByDateAndTime = <T extends { date: string; time: string; location?: string }>(
   matches: T[]
 ): T[] => {
   return matches.sort((a, b) => {
-    // First sort by date
-    const aDate = new Date(a.date);
-    const bDate = new Date(b.date);
-    
-    if (aDate.getTime() !== bDate.getTime()) {
-      return aDate.getTime() - bDate.getTime();
+    // 1. Sort by date
+    const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (dateCompare !== 0) return dateCompare;
+
+    // 2. Sort by location (Harelbeke first)
+    if (a.location && b.location) {
+      const locCompare = getLocationOrder(a.location) - getLocationOrder(b.location);
+      if (locCompare !== 0) return locCompare;
     }
-    
-    // Same date, sort by time (earliest time first)
+
+    // 3. Sort by time
     return a.time.localeCompare(b.time);
   });
 };
