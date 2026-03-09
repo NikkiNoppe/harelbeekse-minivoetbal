@@ -85,6 +85,10 @@ const AdminSettingsPanel: React.FC = () => {
           <TabsContent value="season">
             <SeasonDataSettings />
           </TabsContent>
+          
+          <TabsContent value="colors">
+            <ThemeColorsSettings />
+          </TabsContent>
         </Tabs>
       </section>
     </div>
