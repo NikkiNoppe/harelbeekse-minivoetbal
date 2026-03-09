@@ -196,6 +196,7 @@ export const monthlyReportsService = {
 
       // Group data by month
       const fieldCostsByMonth: Record<string, MonthlyFieldCosts> = {};
+      const adminCostsByMonth: Record<string, MonthlyFieldCosts> = {};
       const finesByMonth: Record<string, MonthlyFines> = {};
       const matchStatsByMonth: Record<string, MonthlyMatchStats> = {};
 
