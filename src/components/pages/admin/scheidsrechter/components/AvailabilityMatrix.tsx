@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { assignmentService } from '@/services/scheidsrechter/assignmentService';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDateWithDay, formatTimeForDisplay } from '@/lib/dateUtils';
+import { getLocationOrder } from '@/lib/matchSortingUtils';
 
 // Types
 interface RefereeInfo {
