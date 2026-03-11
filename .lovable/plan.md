@@ -1,47 +1,68 @@
 
 
-## Probleem: Playoff data corruptie + preventie
+## Analyse huidige situatie
 
-### 1. Data Herstel
+**Probleem**: In `RefereeUpcomingMatches` (regel 897-909) worden wedstrijden gefilterd op alleen "Open" status. Zodra een wedstrijd gesloten/gelockt is of gestart, verdwijnt deze uit de lijst -- ook als de scores nog niet zijn ingevuld. De `useRefereeMatches` hook filtert ook al completed matches weg (regel 62-64: `home_score === null && away_score === null`).
 
-Er is momenteel 1 beschadigde wedstrijd gevonden:
+**Gewenst gedrag**:
+1. Wedstrijden zonder scores blijven **altijd** zichtbaar (ook als locked/gestart)
+2. Afgelopen wedstrijden (met scores) worden getoond in een **inklapbare sectie**
+3. Filter per maand voor historische wedstrijden
 
-| Match | Huidig | Moet zijn |
-|-------|--------|-----------|
-| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
+---
 
-Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
+## Plan
 
-**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
-- `speeldag` terug naar "Playoff Speeldag 4"
-- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
+### 1. `useRefereeMatches` hook aanpassen
+- **Alle** wedstrijden ophalen voor de geselecteerde maand (niet meer filteren op `home_score === null`)
+- De hook retourneert het volledige resultaat; filtering naar "nog in te vullen" vs "afgelopen" gebeurt in de UI
 
-### 2. Bug Fix: Voorkom toekomstige corruptie
+### 2. `RefereeUpcomingMatches` component herstructureren
+De wedstrijden worden opgedeeld in twee groepen:
 
-**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
+**Groep A -- "Te spelen / In te vullen"** (altijd zichtbaar, expanded)
+- Wedstrijden waar scores nog `null` zijn, ongeacht lock-status
+- Sorteer chronologisch (oplopend)
+- Toon status-badge: "Open", "Gesloten" of "Gestart" zodat de scheidsrechter weet wat de status is
+- Clickable om wedstrijdformulier te openen (zoals nu)
 
-**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
+**Groep B -- "Afgelopen wedstrijden"** (collapsible, standaard ingeklapt)
+- Wedstrijden waar scores zijn ingevuld (`home_score !== null && away_score !== null`)
+- Gebruik `Collapsible` (Radix) component
+- Toon kort: teamnamen, datum, score
+- Clickable om wedstrijdformulier readonly te bekijken
+- Sorteer chronologisch (aflopend, meest recente bovenaan)
 
-In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
-- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
-- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
+### 3. Maandfilter uitbreiden
+- Huidige filter toont alleen huidige + volgende maand
+- Uitbreiden met **vorige maanden** van het lopende seizoen (bijv. september t/m huidige maand + volgende maand)
+- Dit geeft de scheidsrechter toegang tot zijn historiek
 
-### Technische Details
+### 4. Visuele structuur
 
-**Bestanden die gewijzigd worden:**
-
-1. **Nieuwe SQL-migratie** - Herstel PO-22:
+```text
+┌─────────────────────────────────────┐
+│ 📅 Komende Wedstrijden  [Mrt 2026▾]│
+├─────────────────────────────────────┤
+│                                     │
+│  ── Te spelen / In te vullen (2) ── │
+│  ┌─ Match Card (Gesloten) ────────┐ │
+│  │ Team A vs Team B  ·  15 mrt    │ │
+│  └────────────────────────────────┘ │
+│  ┌─ Match Card (Open) ───────────┐ │
+│  │ Team C vs Team D  ·  22 mrt   │ │
+│  └────────────────────────────────┘ │
+│                                     │
+│  ▶ Afgelopen wedstrijden (3)        │
+│    (click to expand)                │
+│  ┌─ Match Card ──────────────────┐ │
+│  │ Team E 2-1 Team F  ·  8 mrt  │ │
+│  └────────────────────────────────┘ │
+│  ...                                │
+└─────────────────────────────────────┘
 ```
-UPDATE matches 
-SET speeldag = 'Playoff Speeldag 4', 
-    match_date = '2026-02-10 18:30:00+00'
-WHERE match_id = 2197 
-AND unique_number = 'PO-22-1766492793564-7079';
-```
 
-2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
-   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
-   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
-   - Voor team managers wordt `matchData` weggelaten uit het update-object
+### Bestanden te wijzigen
+- `src/hooks/useRefereeMatches.ts` -- verwijder score-filter, retourneer alles
+- `src/components/pages/user/UserProfilePage.tsx` -- herstructureer `RefereeUpcomingMatches` met twee groepen + collapsible + uitgebreide maandfilter
 
-Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.
