@@ -778,25 +778,7 @@ const RefereeUpcomingMatches: React.FC<{
   
   // Update selected month/year when current month changes (e.g., when month rolls over)
   // This ensures that when we move to a new month, the available options update automatically
-  useEffect(() => {
-    const checkAndUpdate = () => {
-      const newNow = new Date();
-      const newCurrentMonth = newNow.getMonth() + 1;
-      const newCurrentYear = newNow.getFullYear();
-      
-      // If we're viewing a month that's in the past, automatically switch to current month
-      if (selectedYear < newCurrentYear || (selectedYear === newCurrentYear && selectedMonth < newCurrentMonth)) {
-        setSelectedMonth(newCurrentMonth);
-        setSelectedYear(newCurrentYear);
-      }
-    };
-    
-    // Check on mount and set up interval to check periodically (every hour)
-    checkAndUpdate();
-    const interval = setInterval(checkAndUpdate, 60 * 60 * 1000); // Check every hour
-    
-    return () => clearInterval(interval);
-  }, [selectedMonth, selectedYear]);
+  // Remove auto-switch to current month - allow viewing past months
   
   const { data: refereeMatches, isLoading: matchesLoading } = useRefereeMatches(
     refereeUsername,
@@ -810,12 +792,25 @@ const RefereeUpcomingMatches: React.FC<{
     'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'
   ];
 
-  // Get available months (current and next month only)
+  // Season runs Sep-Jun: generate months from Sep of season start to next month
   const availableMonths = useMemo(() => {
-    const months = [
-      { month: currentMonth, year: currentYear, label: `${monthNames[currentMonth - 1]} ${currentYear}` },
-      { month: nextMonth, year: nextMonthYear, label: `${monthNames[nextMonth - 1]} ${nextMonthYear}` }
-    ];
+    const seasonStartYear = currentMonth >= 9 ? currentYear : currentYear - 1;
+    const months: { month: number; year: number; label: string }[] = [];
+    
+    // Start from September of the season
+    let m = 9;
+    let y = seasonStartYear;
+    
+    // End at next month from now
+    const endMonth = nextMonth;
+    const endYear = nextMonthYear;
+    
+    while (y < endYear || (y === endYear && m <= endMonth)) {
+      months.push({ month: m, year: y, label: `${monthNames[m - 1]} ${y}` });
+      m++;
+      if (m > 12) { m = 1; y++; }
+    }
+    
     return months;
   }, [currentMonth, currentYear, nextMonth, nextMonthYear]);
 
