@@ -890,73 +890,128 @@ const RefereeUpcomingMatches: React.FC<{
         </div>
       ) : refereeMatches && refereeMatches.length > 0 ? (
         (() => {
-          // Filter to only show "Open" matches (not locked, not submitted, not auto-locked)
-          const openMatches = refereeMatches.filter((match) => {
-            const { date, time } = isoToLocalDateTime(match.match_date);
-            // Exclude matches that are submitted
-            if (match.is_submitted) return false;
-            // Exclude matches that are manually locked
-            if (match.is_locked) return false;
-            // Exclude matches that are auto-locked (within 5 minutes of start or in the past)
-            const isAutoLocked = shouldAutoLockMatch(date, time);
-            if (isAutoLocked) return false;
-            // Only include "Open" matches
-            return true;
-          });
+          // Split into pending (no scores) and completed (has scores)
+          const pendingMatches = refereeMatches.filter((match) => 
+            match.home_score === null || match.away_score === null
+          );
+          const completedMatches = [...refereeMatches.filter((match) => 
+            match.home_score !== null && match.away_score !== null
+          )].reverse(); // Most recent first
 
-          return openMatches.length > 0 ? (
-            <div className="space-y-3">
-              {openMatches.map((match) => {
-                const status = getMatchStatus(match);
-                const StatusIcon = status.icon;
-                const { date, time } = isoToLocalDateTime(match.match_date);
-                
-                return (
-                  <button
-                    key={match.match_id}
-                    onClick={() => onSelectMatch(convertToMatchFormData(match))}
-                    className="border-none bg-transparent p-0 transition-all duration-200 text-left w-full group hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer"
-                  >
-                    <MatchesCard
-                      id={undefined}
-                      home={match.home_team_name || 'Onbekend'}
-                      away={match.away_team_name || 'Onbekend'}
-                      homeScore={match.home_score}
-                      awayScore={match.away_score}
-                      date={match.match_date}
-                      time={time}
-                      location={match.location || 'Te bepalen'}
-                      status={undefined}
-                      badgeSlot={
-                        <span className="ml-auto flex items-center gap-2">
-                          {match.unique_number && (
-                            <span className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 rounded">
-                              {match.unique_number}
-                            </span>
-                          )}
-                          <span 
-                            className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1`}
-                            style={status.label === "Open" ? { backgroundColor: 'var(--accent)' } : undefined}
+          return (
+            <div className="space-y-4">
+              {/* Pending / To fill in */}
+              {pendingMatches.length > 0 ? (
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    Te spelen / In te vullen ({pendingMatches.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {pendingMatches.map((match) => {
+                      const status = getMatchStatus(match);
+                      const StatusIcon = status.icon;
+                      const { date, time } = isoToLocalDateTime(match.match_date);
+                      
+                      return (
+                        <button
+                          key={match.match_id}
+                          onClick={() => onSelectMatch(convertToMatchFormData(match))}
+                          className="border-none bg-transparent p-0 transition-all duration-200 text-left w-full group hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer"
+                        >
+                          <MatchesCard
+                            id={undefined}
+                            home={match.home_team_name || 'Onbekend'}
+                            away={match.away_team_name || 'Onbekend'}
+                            homeScore={match.home_score}
+                            awayScore={match.away_score}
+                            date={match.match_date}
+                            time={time}
+                            location={match.location || 'Te bepalen'}
+                            status={undefined}
+                            badgeSlot={
+                              <span className="ml-auto flex items-center gap-2">
+                                {match.unique_number && (
+                                  <span className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 rounded">
+                                    {match.unique_number}
+                                  </span>
+                                )}
+                                <span 
+                                  className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1`}
+                                  style={status.label === "Open" ? { backgroundColor: 'var(--accent)' } : undefined}
+                                >
+                                  <StatusIcon className="h-3 w-3 mr-1" />
+                                  {status.label}
+                                </span>
+                              </span>
+                            }
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="py-4 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Geen openstaande wedstrijden voor {availableMonths.find(m => m.month === selectedMonth && m.year === selectedYear)?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Completed matches - collapsible */}
+              {completedMatches.length > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group cursor-pointer">
+                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                    <History className="h-3.5 w-3.5" />
+                    Afgelopen wedstrijden ({completedMatches.length})
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-2 pt-2">
+                      {completedMatches.map((match) => {
+                        const { time } = isoToLocalDateTime(match.match_date);
+                        
+                        return (
+                          <button
+                            key={match.match_id}
+                            onClick={() => onSelectMatch(convertToMatchFormData(match))}
+                            className="border-none bg-transparent p-0 transition-all duration-200 text-left w-full group hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer opacity-80 hover:opacity-100"
                           >
-                            <StatusIcon className="h-3 w-3 mr-1" />
-                            {status.label}
-                          </span>
-                        </span>
-                      }
-                    />
-                  </button>
-                );
-              })}
+                            <MatchesCard
+                              id={undefined}
+                              home={match.home_team_name || 'Onbekend'}
+                              away={match.away_team_name || 'Onbekend'}
+                              homeScore={match.home_score}
+                              awayScore={match.away_score}
+                              date={match.match_date}
+                              time={time}
+                              location={match.location || 'Te bepalen'}
+                              status={undefined}
+                              badgeSlot={
+                                <span className="ml-auto flex items-center gap-2">
+                                  {match.unique_number && (
+                                    <span className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 rounded">
+                                      {match.unique_number}
+                                    </span>
+                                  )}
+                                  <span className="bg-green-500 text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Gespeeld
+                                  </span>
+                                </span>
+                              }
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
             </div>
-          ) : (
-            <Card>
-              <CardContent className="py-6 text-center">
-                <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-                <p className="text-sm text-muted-foreground">
-                  Geen open wedstrijden meer voor {availableMonths.find(m => m.month === selectedMonth && m.year === selectedYear)?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`}
-                </p>
-              </CardContent>
-            </Card>
           );
         })()
       ) : (
@@ -964,7 +1019,7 @@ const RefereeUpcomingMatches: React.FC<{
           <CardContent className="py-6 text-center">
             <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
                 <p className="text-sm text-muted-foreground">
-                  Geen komende wedstrijden meer voor {availableMonths.find(m => m.month === selectedMonth && m.year === selectedYear)?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`}
+                  Geen wedstrijden voor {availableMonths.find(m => m.month === selectedMonth && m.year === selectedYear)?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`}
                 </p>
           </CardContent>
         </Card>
