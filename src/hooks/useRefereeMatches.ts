@@ -63,12 +63,8 @@ export const useRefereeMatches = (refereeUsername: string | null, month?: number
 
         if (error) throw error;
 
-        // Filter out matches that have both scores (completed matches)
-        const incompleteMatches = data.filter((match: any) => 
-          match.home_score === null && match.away_score === null
-        );
-
-        return incompleteMatches.map((match: any) => ({
+        // Return all matches - filtering happens in the UI
+        return data.map((match: any) => ({
           match_id: match.match_id,
           match_date: match.match_date,
           home_team_id: match.home_team_id,
