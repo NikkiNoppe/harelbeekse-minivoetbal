@@ -828,7 +828,7 @@ const RefereeUpcomingMatches: React.FC<{
       awayTeamName: match.away_team_name || 'Onbekend',
       location: match.location || 'Te bepalen',
       matchday: match.speeldag || 'Te bepalen',
-      isCompleted: false, // These matches don't have scores yet
+      isCompleted: !!(match.home_score !== null && match.away_score !== null && match.is_submitted),
       isLocked: !!(match.is_locked || shouldAutoLockMatch(date, time)),
       homeScore: match.home_score,
       awayScore: match.away_score,
