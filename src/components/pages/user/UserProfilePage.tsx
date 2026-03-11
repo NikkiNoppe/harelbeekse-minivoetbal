@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { 
   User, Mail, Shield, Users, Trophy, Award, Phone, 
   AlertCircle, MapPin, Calendar, Clock, ArrowRight,
-  CheckCircle, Lock, Edit2, Save, X, Loader2
+  CheckCircle, Lock, Edit2, Save, X, Loader2, ChevronDown, History
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PageHeader } from "@/components/layout";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuth } from "@/hooks/useAuth";
@@ -777,25 +778,7 @@ const RefereeUpcomingMatches: React.FC<{
   
   // Update selected month/year when current month changes (e.g., when month rolls over)
   // This ensures that when we move to a new month, the available options update automatically
-  useEffect(() => {
-    const checkAndUpdate = () => {
-      const newNow = new Date();
-      const newCurrentMonth = newNow.getMonth() + 1;
-      const newCurrentYear = newNow.getFullYear();
-      
-      // If we're viewing a month that's in the past, automatically switch to current month
-      if (selectedYear < newCurrentYear || (selectedYear === newCurrentYear && selectedMonth < newCurrentMonth)) {
-        setSelectedMonth(newCurrentMonth);
-        setSelectedYear(newCurrentYear);
-      }
-    };
-    
-    // Check on mount and set up interval to check periodically (every hour)
-    checkAndUpdate();
-    const interval = setInterval(checkAndUpdate, 60 * 60 * 1000); // Check every hour
-    
-    return () => clearInterval(interval);
-  }, [selectedMonth, selectedYear]);
+  // Remove auto-switch to current month - allow viewing past months
   
   const { data: refereeMatches, isLoading: matchesLoading } = useRefereeMatches(
     refereeUsername,
@@ -809,12 +792,25 @@ const RefereeUpcomingMatches: React.FC<{
     'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'
   ];
 
-  // Get available months (current and next month only)
+  // Season runs Sep-Jun: generate months from Sep of season start to next month
   const availableMonths = useMemo(() => {
-    const months = [
-      { month: currentMonth, year: currentYear, label: `${monthNames[currentMonth - 1]} ${currentYear}` },
-      { month: nextMonth, year: nextMonthYear, label: `${monthNames[nextMonth - 1]} ${nextMonthYear}` }
-    ];
+    const seasonStartYear = currentMonth >= 9 ? currentYear : currentYear - 1;
+    const months: { month: number; year: number; label: string }[] = [];
+    
+    // Start from September of the season
+    let m = 9;
+    let y = seasonStartYear;
+    
+    // End at next month from now
+    const endMonth = nextMonth;
+    const endYear = nextMonthYear;
+    
+    while (y < endYear || (y === endYear && m <= endMonth)) {
+      months.push({ month: m, year: y, label: `${monthNames[m - 1]} ${y}` });
+      m++;
+      if (m > 12) { m = 1; y++; }
+    }
+    
     return months;
   }, [currentMonth, currentYear, nextMonth, nextMonthYear]);
 
@@ -832,7 +828,7 @@ const RefereeUpcomingMatches: React.FC<{
       awayTeamName: match.away_team_name || 'Onbekend',
       location: match.location || 'Te bepalen',
       matchday: match.speeldag || 'Te bepalen',
-      isCompleted: false, // These matches don't have scores yet
+      isCompleted: !!(match.home_score !== null && match.away_score !== null && match.is_submitted),
       isLocked: !!(match.is_locked || shouldAutoLockMatch(date, time)),
       homeScore: match.home_score,
       awayScore: match.away_score,
@@ -894,73 +890,128 @@ const RefereeUpcomingMatches: React.FC<{
         </div>
       ) : refereeMatches && refereeMatches.length > 0 ? (
         (() => {
-          // Filter to only show "Open" matches (not locked, not submitted, not auto-locked)
-          const openMatches = refereeMatches.filter((match) => {
-            const { date, time } = isoToLocalDateTime(match.match_date);
-            // Exclude matches that are submitted
-            if (match.is_submitted) return false;
-            // Exclude matches that are manually locked
-            if (match.is_locked) return false;
-            // Exclude matches that are auto-locked (within 5 minutes of start or in the past)
-            const isAutoLocked = shouldAutoLockMatch(date, time);
-            if (isAutoLocked) return false;
-            // Only include "Open" matches
-            return true;
-          });
+          // Split into pending (no scores) and completed (has scores)
+          const pendingMatches = refereeMatches.filter((match) => 
+            match.home_score === null || match.away_score === null
+          );
+          const completedMatches = [...refereeMatches.filter((match) => 
+            match.home_score !== null && match.away_score !== null
+          )].reverse(); // Most recent first
 
-          return openMatches.length > 0 ? (
-            <div className="space-y-3">
-              {openMatches.map((match) => {
-                const status = getMatchStatus(match);
-                const StatusIcon = status.icon;
-                const { date, time } = isoToLocalDateTime(match.match_date);
-                
-                return (
-                  <button
-                    key={match.match_id}
-                    onClick={() => onSelectMatch(convertToMatchFormData(match))}
-                    className="border-none bg-transparent p-0 transition-all duration-200 text-left w-full group hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer"
-                  >
-                    <MatchesCard
-                      id={undefined}
-                      home={match.home_team_name || 'Onbekend'}
-                      away={match.away_team_name || 'Onbekend'}
-                      homeScore={match.home_score}
-                      awayScore={match.away_score}
-                      date={match.match_date}
-                      time={time}
-                      location={match.location || 'Te bepalen'}
-                      status={undefined}
-                      badgeSlot={
-                        <span className="ml-auto flex items-center gap-2">
-                          {match.unique_number && (
-                            <span className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 rounded">
-                              {match.unique_number}
-                            </span>
-                          )}
-                          <span 
-                            className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1`}
-                            style={status.label === "Open" ? { backgroundColor: 'var(--accent)' } : undefined}
+          return (
+            <div className="space-y-4">
+              {/* Pending / To fill in */}
+              {pendingMatches.length > 0 ? (
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    Te spelen / In te vullen ({pendingMatches.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {pendingMatches.map((match) => {
+                      const status = getMatchStatus(match);
+                      const StatusIcon = status.icon;
+                      const { date, time } = isoToLocalDateTime(match.match_date);
+                      
+                      return (
+                        <button
+                          key={match.match_id}
+                          onClick={() => onSelectMatch(convertToMatchFormData(match))}
+                          className="border-none bg-transparent p-0 transition-all duration-200 text-left w-full group hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer"
+                        >
+                          <MatchesCard
+                            id={undefined}
+                            home={match.home_team_name || 'Onbekend'}
+                            away={match.away_team_name || 'Onbekend'}
+                            homeScore={match.home_score}
+                            awayScore={match.away_score}
+                            date={match.match_date}
+                            time={time}
+                            location={match.location || 'Te bepalen'}
+                            status={undefined}
+                            badgeSlot={
+                              <span className="ml-auto flex items-center gap-2">
+                                {match.unique_number && (
+                                  <span className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 rounded">
+                                    {match.unique_number}
+                                  </span>
+                                )}
+                                <span 
+                                  className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1`}
+                                  style={status.label === "Open" ? { backgroundColor: 'var(--accent)' } : undefined}
+                                >
+                                  <StatusIcon className="h-3 w-3 mr-1" />
+                                  {status.label}
+                                </span>
+                              </span>
+                            }
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="py-4 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Geen openstaande wedstrijden voor {availableMonths.find(m => m.month === selectedMonth && m.year === selectedYear)?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Completed matches - collapsible */}
+              {completedMatches.length > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group cursor-pointer">
+                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                    <History className="h-3.5 w-3.5" />
+                    Afgelopen wedstrijden ({completedMatches.length})
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-2 pt-2">
+                      {completedMatches.map((match) => {
+                        const { time } = isoToLocalDateTime(match.match_date);
+                        
+                        return (
+                          <button
+                            key={match.match_id}
+                            onClick={() => onSelectMatch(convertToMatchFormData(match))}
+                            className="border-none bg-transparent p-0 transition-all duration-200 text-left w-full group hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer opacity-80 hover:opacity-100"
                           >
-                            <StatusIcon className="h-3 w-3 mr-1" />
-                            {status.label}
-                          </span>
-                        </span>
-                      }
-                    />
-                  </button>
-                );
-              })}
+                            <MatchesCard
+                              id={undefined}
+                              home={match.home_team_name || 'Onbekend'}
+                              away={match.away_team_name || 'Onbekend'}
+                              homeScore={match.home_score}
+                              awayScore={match.away_score}
+                              date={match.match_date}
+                              time={time}
+                              location={match.location || 'Te bepalen'}
+                              status={undefined}
+                              badgeSlot={
+                                <span className="ml-auto flex items-center gap-2">
+                                  {match.unique_number && (
+                                    <span className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 rounded">
+                                      {match.unique_number}
+                                    </span>
+                                  )}
+                                  <span className="bg-green-500 text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Gespeeld
+                                  </span>
+                                </span>
+                              }
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
             </div>
-          ) : (
-            <Card>
-              <CardContent className="py-6 text-center">
-                <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-                <p className="text-sm text-muted-foreground">
-                  Geen open wedstrijden meer voor {availableMonths.find(m => m.month === selectedMonth && m.year === selectedYear)?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`}
-                </p>
-              </CardContent>
-            </Card>
           );
         })()
       ) : (
@@ -968,7 +1019,7 @@ const RefereeUpcomingMatches: React.FC<{
           <CardContent className="py-6 text-center">
             <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
                 <p className="text-sm text-muted-foreground">
-                  Geen komende wedstrijden meer voor {availableMonths.find(m => m.month === selectedMonth && m.year === selectedYear)?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`}
+                  Geen wedstrijden voor {availableMonths.find(m => m.month === selectedMonth && m.year === selectedYear)?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`}
                 </p>
           </CardContent>
         </Card>
