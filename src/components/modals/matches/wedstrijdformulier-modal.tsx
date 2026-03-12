@@ -347,9 +347,15 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const hideInlineCardSelectors = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
   const isCupMatch = useMemo(() => match.matchday?.includes('🏆'), [match.matchday]);
   const canTeamManagerEditMatch = useMemo(() => 
-    canTeamManagerEdit(match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId), 
-    [match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId]
+    canTeamManagerEdit(match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, matchFormSettings?.lock_minutes_before, matchFormSettings?.allow_late_submission), 
+    [match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, matchFormSettings]
   );
+  
+  // Detect if this is a late submission (past lock deadline but allowed)
+  const isLateSubmission = useMemo(() => {
+    if (!isTeamManager || !matchFormSettings?.allow_late_submission) return false;
+    return shouldAutoLockMatch(match.date, match.time, matchFormSettings.lock_minutes_before);
+  }, [isTeamManager, match.date, match.time, matchFormSettings]);
 
   const handleComplete = useCallback(() => {
     if (onComplete) {
