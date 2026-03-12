@@ -67,6 +67,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   } = useMatchFormState(match);
 
   const { submitMatchForm } = useEnhancedMatchFormSubmission();
+  const { data: matchFormSettings } = useMatchFormSettings();
   const [showPenaltyModal, setShowPenaltyModal] = React.useState(false);
   const [pendingSubmission, setPendingSubmission] = React.useState<MatchFormData | null>(null);
   const [homeCardsOpen, setHomeCardsOpen] = React.useState(false);
