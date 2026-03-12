@@ -47,7 +47,9 @@ export const canEditMatch = (
   date: string,
   time: string,
   isAdmin: boolean,
-  isReferee: boolean
+  isReferee: boolean,
+  lockMinutesBefore: number = 5,
+  allowLateSubmission: boolean = false
 ): boolean => {
   // Admins and referees can always edit
   if (isAdmin || isReferee) {
@@ -55,8 +57,13 @@ export const canEditMatch = (
   }
   
   // For other users, check if match is locked (manually or auto-locked)
-  const isAutoLocked = shouldAutoLockMatch(date, time);
-  return !isManuallyLocked && !isAutoLocked;
+  const isAutoLocked = shouldAutoLockMatch(date, time, lockMinutesBefore);
+  
+  if (isManuallyLocked) return false;
+  if (!isAutoLocked) return true;
+  
+  // If auto-locked but late submission allowed, still permit editing
+  return allowLateSubmission;
 };
 
 /**
