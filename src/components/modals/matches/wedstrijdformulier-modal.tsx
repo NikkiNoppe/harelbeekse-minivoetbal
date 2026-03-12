@@ -1739,6 +1739,18 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         Vul scores, spelers en details van de wedstrijd in
       </div>
       <div className="space-y-6">
+        {/* Late submission warning banner */}
+        {isLateSubmission && (
+          <div className="flex items-start gap-2 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-sm">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
+            <div>
+              <p className="font-medium text-destructive">Te laat ingevuld</p>
+              <p className="text-muted-foreground">
+                Dit formulier wordt na de deadline ingevuld. Bij opslaan wordt automatisch een boete van €{matchFormSettings?.late_penalty_amount?.toFixed(2) ?? '5.00'} aangerekend.
+              </p>
+            </div>
+          </div>
+        )}
         {/* SCORE - PROMINENT BOVENAAN */}
         <div className="space-y-4 pb-2">
           {/* Section Title */}
