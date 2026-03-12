@@ -8,14 +8,29 @@
  * @param time - Match time in HH:MM format
  * @returns true if the match should be auto-locked
  */
-export const shouldAutoLockMatch = (date: string, time: string): boolean => {
+export const shouldAutoLockMatch = (date: string, time: string, lockMinutesBefore: number = 5): boolean => {
   const now = new Date();
   const matchDateTime = new Date(`${date}T${time}`);
-  const fiveMinutesBeforeMatch = new Date(matchDateTime.getTime() - 5 * 60 * 1000);
-  const isMatchInPast = now >= matchDateTime;
-  const shouldAutoLock = now >= fiveMinutesBeforeMatch;
+  const lockThreshold = new Date(matchDateTime.getTime() - lockMinutesBefore * 60 * 1000);
   
-  return shouldAutoLock || isMatchInPast;
+  return now >= lockThreshold;
+};
+
+/**
+ * Checks if a match is past the lock deadline but late submission is allowed
+ */
+export const isLateSubmissionWindow = (
+  date: string,
+  time: string,
+  lockMinutesBefore: number = 5,
+  allowLateSubmission: boolean = false
+): boolean => {
+  if (!allowLateSubmission) return false;
+  const now = new Date();
+  const matchDateTime = new Date(`${date}T${time}`);
+  const lockThreshold = new Date(matchDateTime.getTime() - lockMinutesBefore * 60 * 1000);
+  // Past lock threshold but match hasn't started yet (or just started)
+  return now >= lockThreshold;
 };
 
 /**
