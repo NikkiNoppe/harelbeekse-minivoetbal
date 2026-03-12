@@ -4,6 +4,7 @@ import { updateMatchForm } from "@/components/pages/admin/matches/services/match
 import { MatchFormData } from "@/components/pages/admin/matches/types";
 import { scheduleBackgroundSideEffects } from "@/services/match/backgroundSideEffects";
 import { withUserContext } from "@/lib/supabaseUtils";
+import { MATCH_FORM_DEFAULTS, type MatchFormSettings } from "@/hooks/useMatchFormSettings";
 
 interface MatchUpdateData {
   homeScore?: number | null;
