@@ -15,10 +15,6 @@ export const useLoginHook = (onLoginSuccess: () => void) => {
       const loginSuccess = await authLogin(usernameOrEmail, password);
       
       if (loginSuccess) {
-        toast({ 
-          title: "Ingelogd!", 
-          description: "Je bent succesvol ingelogd" 
-        });
         onLoginSuccess();
       } else {
         toast({ 
