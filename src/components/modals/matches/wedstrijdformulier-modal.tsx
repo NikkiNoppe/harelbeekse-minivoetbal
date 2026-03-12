@@ -815,7 +815,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         isCompleted: false
       };
       
-      const result = await submitMatchForm(updatedMatch, false, "player_manager");
+      const result = await submitMatchForm(updatedMatch, false, "player_manager", matchFormSettings);
       if (result.success) {
         toast({
           title: "Spelers opgeslagen",
