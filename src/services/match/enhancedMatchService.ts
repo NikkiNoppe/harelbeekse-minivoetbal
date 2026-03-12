@@ -28,7 +28,7 @@ interface ServiceResponse {
 }
 
 export const enhancedMatchService = {
-  async updateMatch(matchId: number, updateData: MatchUpdateData, isAdmin: boolean = false, userRole?: string): Promise<ServiceResponse> {
+  async updateMatch(matchId: number, updateData: MatchUpdateData, isAdmin: boolean = false, userRole?: string, matchFormSettings?: MatchFormSettings): Promise<ServiceResponse> {
     console.log('🟢 [enhancedMatchService] Starting updateMatch');
     console.log('🟢 [enhancedMatchService] Match ID:', matchId);
     console.log('🟢 [enhancedMatchService] Is Admin:', isAdmin);
