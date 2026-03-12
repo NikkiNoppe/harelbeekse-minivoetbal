@@ -23,7 +23,8 @@ import { getCurrentDate } from "@/lib/dateUtils";
 import { MatchFormData, PlayerSelection } from "@/components/pages/admin/matches/types";
 import { useMatchFormState } from "@/components/pages/admin/matches/hooks/useMatchFormState";
 import { useEnhancedMatchFormSubmission } from "@/components/pages/admin/matches/hooks/useEnhancedMatchFormSubmission";
-import { canEditMatch, canTeamManagerEdit } from "@/lib/matchLockUtils";
+import { canEditMatch, canTeamManagerEdit, shouldAutoLockMatch } from "@/lib/matchLockUtils";
+import { useMatchFormSettings } from "@/hooks/useMatchFormSettings";
 
 interface WedstrijdformulierModalProps {
   open: boolean;
