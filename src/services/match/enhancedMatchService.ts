@@ -114,14 +114,16 @@ export const enhancedMatchService = {
       console.log('🟢 [enhancedMatchService] Using regular update logic');
       // Regular update logic for non-cup matches or when cup-specific logic fails
       
+      // Use configurable settings or defaults
+      const settings = matchFormSettings || MATCH_FORM_DEFAULTS;
+      
       // Check for late submission if this is a player_manager submission
       let isLateSubmission = false;
       if (userRole === "player_manager" && updateData.date && updateData.time) {
         const now = new Date();
         const matchDateTime = new Date(`${updateData.date}T${updateData.time}`);
-        const fifteenMinutesBeforeMatch = new Date(matchDateTime.getTime() - 15 * 60 * 1000);
-        const fiveMinutesBeforeMatch = new Date(matchDateTime.getTime() - 5 * 60 * 1000);
-        isLateSubmission = now >= fifteenMinutesBeforeMatch && now < fiveMinutesBeforeMatch;
+        const lockThreshold = new Date(matchDateTime.getTime() - settings.lock_minutes_before * 60 * 1000);
+        isLateSubmission = now >= lockThreshold && settings.allow_late_submission;
       }
       
       // Build update object with all provided values
