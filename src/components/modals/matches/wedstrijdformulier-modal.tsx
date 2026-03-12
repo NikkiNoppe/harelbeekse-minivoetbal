@@ -776,7 +776,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     }
     // Team managers can only edit their own team
     if (isTeamManager) {
-      return canTeamManagerEdit(match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId) && match.homeTeamId === teamId;
+      return canTeamManagerEdit(match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, matchFormSettings?.lock_minutes_before, matchFormSettings?.allow_late_submission) && match.homeTeamId === teamId;
     }
     return canTeamManagerEditMatch;
   }, [isAdmin, isReferee, isTeamManager, match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, canEdit, canTeamManagerEditMatch]);
