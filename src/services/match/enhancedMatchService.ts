@@ -145,7 +145,7 @@ export const enhancedMatchService = {
         // Add penalty to existing notes
         updateObject.referee_notes = (updateData.refereeNotes || '') + 
           (updateData.refereeNotes ? '\n\n' : '') + 
-          '⚠️ BOETE: Wedstrijdblad te laat ingevuld - €5.00';
+          settings.late_penalty_note + ` - €${settings.late_penalty_amount.toFixed(2)}`;
         console.log('💾 [enhancedMatchService] Added late submission penalty:', {
           finalRefereeNotes: updateObject.referee_notes
         });
