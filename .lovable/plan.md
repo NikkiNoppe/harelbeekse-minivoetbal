@@ -1,47 +1,90 @@
 
 
-## Probleem: Playoff data corruptie + preventie
+## Wedstrijdformulier Instellingen - Settings Dashboard
 
-### 1. Data Herstel
+### Samenvatting
+Een nieuw instellingenpaneel onder `/admin/settings` waarmee de admin het vergrendelings- en boetesysteem voor wedstrijdformulieren configureert. De huidige hardcoded 5-minutenregel wordt vervangen door configureerbare waarden uit `application_settings`.
 
-Er is momenteel 1 beschadigde wedstrijd gevonden:
+### Wat wordt gebouwd
 
-| Match | Huidig | Moet zijn |
-|-------|--------|-----------|
-| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
+**1. Nieuw accordion-item "Wedstrijdformulieren"** in SettingsPanel met:
 
-Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
+- **Tijdslimiet instellen**: Een numeriek invoerveld (standaard 5 min) dat bepaalt hoeveel minuten voor aanvang het formulier automatisch sluit voor team managers.
 
-**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
-- `speeldag` terug naar "Playoff Speeldag 4"
-- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
+- **"Te laat invullen" modus (checkbox/switch)**:
+  - Indien aangevinkt: team managers mogen het formulier **nog invullen** nadat de tijdslimiet verstreken is, maar:
+    - Er verschijnt een duidelijke waarschuwing ("Dit formulier is te laat. Bij opslaan wordt automatisch een boete aangerekend.")
+    - Bij opslaan wordt automatisch een boete-transactie aangemaakt in `team_costs`
+    - Er wordt een standaard notitie in `referee_notes` geplaatst (bijv. "⚠️ BOETE: Wedstrijdblad te laat ingevuld")
+  - Indien uitgevinkt: formulier is hard gesloten na tijdslimiet (huidig gedrag)
 
-### 2. Bug Fix: Voorkom toekomstige corruptie
+- **Boetebedrag**: Configureerbaar bedrag (standaard €5,00)
 
-**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
+- **Definitieve afsluiting**: Informatieve tekst dat na het invullen van scores het formulier onherroepelijk gesloten is voor team managers en scheidsrechters. Dit is bestaand gedrag, wordt alleen visueel bevestigd.
 
-**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
-
-In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
-- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
-- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
-
-### Technische Details
-
-**Bestanden die gewijzigd worden:**
-
-1. **Nieuwe SQL-migratie** - Herstel PO-22:
+```text
+┌─ Wedstrijdformulieren ──────────────────────┐
+│                                              │
+│  Automatische vergrendeling                  │
+│  ┌──────────────────────────────────────┐    │
+│  │ Sluit formulier [5] minuten voor     │    │
+│  │ aanvang wedstrijd                    │    │
+│  └──────────────────────────────────────┘    │
+│                                              │
+│  ☐ Sta te laat invullen toe (met boete)      │
+│    └─ Boetebedrag: € [5.00]                 │
+│    └─ Team managers zien een waarschuwing    │
+│       en krijgen automatisch een boete       │
+│                                              │
+│  ℹ️ Na invullen van scores is het formulier  │
+│     onherroepelijk afgesloten.               │
+│                                              │
+│  [Opslaan]                                   │
+└──────────────────────────────────────────────┘
 ```
-UPDATE matches 
-SET speeldag = 'Playoff Speeldag 4', 
-    match_date = '2026-02-10 18:30:00+00'
-WHERE match_id = 2197 
-AND unique_number = 'PO-22-1766492793564-7079';
-```
 
-2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
-   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
-   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
-   - Voor team managers wordt `matchData` weggelaten uit het update-object
+### Technische aanpak
 
-Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.
+**Database**: Nieuwe rij in `application_settings`:
+- `setting_category`: `'match_form_settings'`
+- `setting_name`: `'lock_rules'`
+- `setting_value` (jsonb):
+  ```json
+  {
+    "lock_minutes_before": 5,
+    "allow_late_submission": false,
+    "late_penalty_amount": 5.00,
+    "late_penalty_note": "⚠️ BOETE: Wedstrijdblad te laat ingevuld"
+  }
+  ```
+- Nieuwe RLS SELECT policy voor publieke leestoegang (alle rollen moeten de lock-regels kennen)
+
+**Bestanden te wijzigen/maken**:
+
+1. **`src/components/pages/admin/settings/components/MatchFormSettings.tsx`** (nieuw)
+   - Settings component, zelfde patroon als `PlayerListLockSettings.tsx`
+   - Laadt/schrijft naar `application_settings` met category `match_form_settings`
+
+2. **`src/components/pages/admin/settings/components/SettingsPanel.tsx`**
+   - Voeg nieuw accordion-item toe met `FileText` icon en label "Wedstrijdformulieren"
+
+3. **`src/lib/matchLockUtils.ts`**
+   - `shouldAutoLockMatch` krijgt optionele `lockMinutes` parameter (default 5)
+   - Nieuwe functie `shouldAllowLateSubmission` die checkt of late modus actief is
+
+4. **`src/hooks/useMatchFormSettings.ts`** (nieuw)
+   - React Query hook om match form settings op te halen uit `application_settings`
+   - Cached, wordt gebruikt door zowel admin settings als match formulieren
+
+5. **`src/services/match/enhancedMatchService.ts`**
+   - Huidige hardcoded 5-minuten en 15-minuten logica vervangen door DB-waarden
+   - Late submission penalty bedrag uit settings halen i.p.v. hardcoded €5.00
+
+6. **`src/components/pages/admin/matches/MatchesFormList.tsx`** + **`src/components/pages/user/UserProfilePage.tsx`**
+   - Gebruik configureerbare `lockMinutes` uit hook i.p.v. hardcoded 5 min
+   - Bij "late submission allowed": toon status "Te laat" i.p.v. "Gesloten"
+
+7. **Wedstrijdformulier modal** (`wedstrijdformulier-modal.tsx`)
+   - Indien `allow_late_submission` actief en match voorbij tijdslimiet: toon waarschuwingsbanner
+   - Bij opslaan: automatisch boete + notitie toevoegen
+
