@@ -128,7 +128,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 </TabsContent>
                 
                 
-   nel           <TabsContent value="polls" className="mt-0">
+   <TabsContent value="polls" className="mt-0">
                   <ScheidsrechtersPage />
                 </TabsContent>
               </>
