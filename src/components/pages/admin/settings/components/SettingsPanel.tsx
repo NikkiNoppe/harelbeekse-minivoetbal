@@ -26,6 +26,7 @@ const settingsSections = [
   { id: "vacations", label: "Vakanties", icon: Calendar, component: VacationsSettings },
   { id: "season", label: "Seizoensdata", icon: Calendar, component: SeasonDataSettings },
   { id: "colors", label: "Kleuren", icon: Palette, component: ThemeColorsSettings },
+  { id: "match-forms", label: "Wedstrijdformulieren", icon: FileText, component: MatchFormSettings },
 ];
 
 const AdminSettingsPanel: React.FC = () => {

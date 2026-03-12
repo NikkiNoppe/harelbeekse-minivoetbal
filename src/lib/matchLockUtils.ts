@@ -82,7 +82,9 @@ export const canTeamManagerEdit = (
   time: string,
   homeTeamId: number,
   awayTeamId: number,
-  userTeamId: number
+  userTeamId: number,
+  lockMinutesBefore: number = 5,
+  allowLateSubmission: boolean = false
 ): boolean => {
   // Must be their team
   const isTheirTeam = homeTeamId === userTeamId || awayTeamId === userTeamId;
@@ -90,7 +92,10 @@ export const canTeamManagerEdit = (
     return false;
   }
   
-  // Check if match is locked (manually or auto-locked)
-  const isAutoLocked = shouldAutoLockMatch(date, time);
-  return !isManuallyLocked && !isAutoLocked;
+  if (isManuallyLocked) return false;
+  
+  const isAutoLocked = shouldAutoLockMatch(date, time, lockMinutesBefore);
+  if (!isAutoLocked) return true;
+  
+  return allowLateSubmission;
 };
