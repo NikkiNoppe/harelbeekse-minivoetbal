@@ -3,13 +3,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { enhancedMatchService } from "@/services/match";
 import { MatchFormData } from "../types";
 import { useToast } from "@/hooks/use-toast";
+import { type MatchFormSettings } from "@/hooks/useMatchFormSettings";
 
 export const useEnhancedMatchFormSubmission = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const submitMatchForm = async (matchData: MatchFormData, isAdmin: boolean = false, userRole?: string) => {
+  const submitMatchForm = async (matchData: MatchFormData, isAdmin: boolean = false, userRole?: string, matchFormSettings?: MatchFormSettings) => {
     console.log('🟡 [useEnhancedMatchFormSubmission] Starting submitMatchForm');
     console.log('🟡 [useEnhancedMatchFormSubmission] Match data:', matchData);
     console.log('🟡 [useEnhancedMatchFormSubmission] isAdmin:', isAdmin, 'userRole:', userRole);
@@ -115,7 +116,7 @@ export const useEnhancedMatchFormSubmission = () => {
         ...updateData
       }));
 
-      const result = await enhancedMatchService.updateMatch(matchData.matchId, updateData, isAdmin, userRole);
+      const result = await enhancedMatchService.updateMatch(matchData.matchId, updateData, isAdmin, userRole, matchFormSettings);
       console.log('🟡 [useEnhancedMatchFormSubmission] Service response:', result);
 
       if (result.success) {

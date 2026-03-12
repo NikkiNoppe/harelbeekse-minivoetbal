@@ -23,7 +23,8 @@ import { getCurrentDate } from "@/lib/dateUtils";
 import { MatchFormData, PlayerSelection } from "@/components/pages/admin/matches/types";
 import { useMatchFormState } from "@/components/pages/admin/matches/hooks/useMatchFormState";
 import { useEnhancedMatchFormSubmission } from "@/components/pages/admin/matches/hooks/useEnhancedMatchFormSubmission";
-import { canEditMatch, canTeamManagerEdit } from "@/lib/matchLockUtils";
+import { canEditMatch, canTeamManagerEdit, shouldAutoLockMatch } from "@/lib/matchLockUtils";
+import { useMatchFormSettings } from "@/hooks/useMatchFormSettings";
 
 interface WedstrijdformulierModalProps {
   open: boolean;
@@ -66,6 +67,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   } = useMatchFormState(match);
 
   const { submitMatchForm } = useEnhancedMatchFormSubmission();
+  const { data: matchFormSettings } = useMatchFormSettings();
   const [showPenaltyModal, setShowPenaltyModal] = React.useState(false);
   const [pendingSubmission, setPendingSubmission] = React.useState<MatchFormData | null>(null);
   const [homeCardsOpen, setHomeCardsOpen] = React.useState(false);
@@ -330,7 +332,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
   const userRole = useMemo(() => (isAdmin ? "admin" : isReferee ? "referee" : "player_manager"), [isAdmin, isReferee]);
   const isTeamManager = useMemo(() => !isAdmin && !isReferee, [isAdmin, isReferee]);
-  const canEdit = useMemo(() => canEditMatch(match.isLocked, match.date, match.time, isAdmin, isReferee), [match.isLocked, match.date, match.time, isAdmin, isReferee]);
+  const canEdit = useMemo(() => canEditMatch(match.isLocked, match.date, match.time, isAdmin, isReferee, matchFormSettings?.lock_minutes_before, matchFormSettings?.allow_late_submission), [match.isLocked, match.date, match.time, isAdmin, isReferee, matchFormSettings]);
   const showRefereeFields = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
 
   const isAddPenaltyButtonDisabled = useMemo(() => {
@@ -345,9 +347,15 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const hideInlineCardSelectors = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
   const isCupMatch = useMemo(() => match.matchday?.includes('🏆'), [match.matchday]);
   const canTeamManagerEditMatch = useMemo(() => 
-    canTeamManagerEdit(match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId), 
-    [match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId]
+    canTeamManagerEdit(match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, matchFormSettings?.lock_minutes_before, matchFormSettings?.allow_late_submission), 
+    [match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, matchFormSettings]
   );
+  
+  // Detect if this is a late submission (past lock deadline but allowed)
+  const isLateSubmission = useMemo(() => {
+    if (!isTeamManager || !matchFormSettings?.allow_late_submission) return false;
+    return shouldAutoLockMatch(match.date, match.time, matchFormSettings.lock_minutes_before);
+  }, [isTeamManager, match.date, match.time, matchFormSettings]);
 
   const handleComplete = useCallback(() => {
     if (onComplete) {
@@ -647,7 +655,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         refereeNotesLength: updatedMatch.refereeNotes?.length || 0
       });
       
-      const result = await submitMatchForm(updatedMatch, isAdmin, userRole);
+      const result = await submitMatchForm(updatedMatch, isAdmin, userRole, matchFormSettings);
       
       console.log('💾 [WedstrijdformulierModal] handleSubmit - After submitMatchForm:', {
         success: result.success,
@@ -677,7 +685,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         awayScore: updatedAwayScore,
         refereeNotes: `${pendingSubmission.refereeNotes || ''}${pendingSubmission.refereeNotes ? '\n\n' : ''}${notes}`
       };
-      const result = await submitMatchForm(finalMatch, isAdmin, userRole);
+      const result = await submitMatchForm(finalMatch, isAdmin, userRole, matchFormSettings);
       if (result.success) {
         handleComplete();
       }
@@ -768,7 +776,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     }
     // Team managers can only edit their own team
     if (isTeamManager) {
-      return canTeamManagerEdit(match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId) && match.homeTeamId === teamId;
+      return canTeamManagerEdit(match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, matchFormSettings?.lock_minutes_before, matchFormSettings?.allow_late_submission) && match.homeTeamId === teamId;
     }
     return canTeamManagerEditMatch;
   }, [isAdmin, isReferee, isTeamManager, match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, canEdit, canTeamManagerEditMatch]);
@@ -807,7 +815,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         isCompleted: false
       };
       
-      const result = await submitMatchForm(updatedMatch, false, "player_manager");
+      const result = await submitMatchForm(updatedMatch, false, "player_manager", matchFormSettings);
       if (result.success) {
         toast({
           title: "Spelers opgeslagen",
@@ -1731,6 +1739,18 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         Vul scores, spelers en details van de wedstrijd in
       </div>
       <div className="space-y-6">
+        {/* Late submission warning banner */}
+        {isLateSubmission && (
+          <div className="flex items-start gap-2 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-sm">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
+            <div>
+              <p className="font-medium text-destructive">Te laat ingevuld</p>
+              <p className="text-muted-foreground">
+                Dit formulier wordt na de deadline ingevuld. Bij opslaan wordt automatisch een boete van €{matchFormSettings?.late_penalty_amount?.toFixed(2) ?? '5.00'} aangerekend.
+              </p>
+            </div>
+          </div>
+        )}
         {/* SCORE - PROMINENT BOVENAAN */}
         <div className="space-y-4 pb-2">
           {/* Section Title */}

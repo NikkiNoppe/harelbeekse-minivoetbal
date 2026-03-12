@@ -4,6 +4,7 @@ import { updateMatchForm } from "@/components/pages/admin/matches/services/match
 import { MatchFormData } from "@/components/pages/admin/matches/types";
 import { scheduleBackgroundSideEffects } from "@/services/match/backgroundSideEffects";
 import { withUserContext } from "@/lib/supabaseUtils";
+import { MATCH_FORM_DEFAULTS, type MatchFormSettings } from "@/hooks/useMatchFormSettings";
 
 interface MatchUpdateData {
   homeScore?: number | null;
@@ -27,7 +28,7 @@ interface ServiceResponse {
 }
 
 export const enhancedMatchService = {
-  async updateMatch(matchId: number, updateData: MatchUpdateData, isAdmin: boolean = false, userRole?: string): Promise<ServiceResponse> {
+  async updateMatch(matchId: number, updateData: MatchUpdateData, isAdmin: boolean = false, userRole?: string, matchFormSettings?: MatchFormSettings): Promise<ServiceResponse> {
     console.log('🟢 [enhancedMatchService] Starting updateMatch');
     console.log('🟢 [enhancedMatchService] Match ID:', matchId);
     console.log('🟢 [enhancedMatchService] Is Admin:', isAdmin);
@@ -113,14 +114,16 @@ export const enhancedMatchService = {
       console.log('🟢 [enhancedMatchService] Using regular update logic');
       // Regular update logic for non-cup matches or when cup-specific logic fails
       
+      // Use configurable settings or defaults
+      const settings = matchFormSettings || MATCH_FORM_DEFAULTS;
+      
       // Check for late submission if this is a player_manager submission
       let isLateSubmission = false;
       if (userRole === "player_manager" && updateData.date && updateData.time) {
         const now = new Date();
         const matchDateTime = new Date(`${updateData.date}T${updateData.time}`);
-        const fifteenMinutesBeforeMatch = new Date(matchDateTime.getTime() - 15 * 60 * 1000);
-        const fiveMinutesBeforeMatch = new Date(matchDateTime.getTime() - 5 * 60 * 1000);
-        isLateSubmission = now >= fifteenMinutesBeforeMatch && now < fiveMinutesBeforeMatch;
+        const lockThreshold = new Date(matchDateTime.getTime() - settings.lock_minutes_before * 60 * 1000);
+        isLateSubmission = now >= lockThreshold && settings.allow_late_submission;
       }
       
       // Build update object with all provided values
@@ -142,7 +145,7 @@ export const enhancedMatchService = {
         // Add penalty to existing notes
         updateObject.referee_notes = (updateData.refereeNotes || '') + 
           (updateData.refereeNotes ? '\n\n' : '') + 
-          '⚠️ BOETE: Wedstrijdblad te laat ingevuld - €5.00';
+          settings.late_penalty_note + ` - €${settings.late_penalty_amount.toFixed(2)}`;
         console.log('💾 [enhancedMatchService] Added late submission penalty:', {
           finalRefereeNotes: updateObject.referee_notes
         });

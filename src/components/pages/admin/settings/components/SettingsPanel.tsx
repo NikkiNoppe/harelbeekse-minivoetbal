@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Settings, Eye, Lock, Trophy, Building, Clock, Calendar, Palette } from "lucide-react";
+import { Settings, Eye, Lock, Trophy, Building, Clock, Calendar, Palette, FileText } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -15,6 +15,7 @@ import TimeslotsSettings from "@/components/pages/admin/settings/components/Time
 import VacationsSettings from "@/components/pages/admin/settings/components/VacationsSettings";
 import SeasonDataSettings from "@/components/pages/admin/settings/components/SeasonDataSettings";
 import ThemeColorsSettings from "@/components/pages/admin/settings/components/ThemeColorsSettings";
+import MatchFormSettings from "@/components/pages/admin/settings/components/MatchFormSettings";
 
 const settingsSections = [
   { id: "tab-visibility", label: "Tab Zichtbaarheid", icon: Eye, component: TabVisibilitySettingsUpdated },
@@ -25,6 +26,7 @@ const settingsSections = [
   { id: "vacations", label: "Vakanties", icon: Calendar, component: VacationsSettings },
   { id: "season", label: "Seizoensdata", icon: Calendar, component: SeasonDataSettings },
   { id: "colors", label: "Kleuren", icon: Palette, component: ThemeColorsSettings },
+  { id: "match-forms", label: "Wedstrijdformulieren", icon: FileText, component: MatchFormSettings },
 ];
 
 const AdminSettingsPanel: React.FC = () => {
