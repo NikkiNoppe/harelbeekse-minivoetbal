@@ -15,6 +15,7 @@ import TimeslotsSettings from "@/components/pages/admin/settings/components/Time
 import VacationsSettings from "@/components/pages/admin/settings/components/VacationsSettings";
 import SeasonDataSettings from "@/components/pages/admin/settings/components/SeasonDataSettings";
 import ThemeColorsSettings from "@/components/pages/admin/settings/components/ThemeColorsSettings";
+import MatchFormSettings from "@/components/pages/admin/settings/components/MatchFormSettings";
 
 const settingsSections = [
   { id: "tab-visibility", label: "Tab Zichtbaarheid", icon: Eye, component: TabVisibilitySettingsUpdated },
