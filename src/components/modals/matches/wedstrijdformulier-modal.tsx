@@ -655,7 +655,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         refereeNotesLength: updatedMatch.refereeNotes?.length || 0
       });
       
-      const result = await submitMatchForm(updatedMatch, isAdmin, userRole);
+      const result = await submitMatchForm(updatedMatch, isAdmin, userRole, matchFormSettings);
       
       console.log('💾 [WedstrijdformulierModal] handleSubmit - After submitMatchForm:', {
         success: result.success,
