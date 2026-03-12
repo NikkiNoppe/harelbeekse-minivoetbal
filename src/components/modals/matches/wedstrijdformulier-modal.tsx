@@ -332,7 +332,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
   const userRole = useMemo(() => (isAdmin ? "admin" : isReferee ? "referee" : "player_manager"), [isAdmin, isReferee]);
   const isTeamManager = useMemo(() => !isAdmin && !isReferee, [isAdmin, isReferee]);
-  const canEdit = useMemo(() => canEditMatch(match.isLocked, match.date, match.time, isAdmin, isReferee), [match.isLocked, match.date, match.time, isAdmin, isReferee]);
+  const canEdit = useMemo(() => canEditMatch(match.isLocked, match.date, match.time, isAdmin, isReferee, matchFormSettings?.lock_minutes_before, matchFormSettings?.allow_late_submission), [match.isLocked, match.date, match.time, isAdmin, isReferee, matchFormSettings]);
   const showRefereeFields = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
 
   const isAddPenaltyButtonDisabled = useMemo(() => {
