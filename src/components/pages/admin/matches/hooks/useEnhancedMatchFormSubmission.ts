@@ -116,7 +116,7 @@ export const useEnhancedMatchFormSubmission = () => {
         ...updateData
       }));
 
-      const result = await enhancedMatchService.updateMatch(matchData.matchId, updateData, isAdmin, userRole);
+      const result = await enhancedMatchService.updateMatch(matchData.matchId, updateData, isAdmin, userRole, matchFormSettings);
       console.log('🟡 [useEnhancedMatchFormSubmission] Service response:', result);
 
       if (result.success) {
