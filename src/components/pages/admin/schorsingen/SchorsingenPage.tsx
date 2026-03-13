@@ -7,18 +7,20 @@ import { useSuspensionsData } from "@/domains/cards-suspensions";
 import { useAuth } from "@/hooks/useAuth";
 import { useTeam } from "@/hooks/useTeams";
 import { PageHeader } from "@/components/layout";
+import type { Suspension } from "@/domains/cards-suspensions";
 import { 
   PlayerCardsTable, 
   SuspensionsTable, 
   AddSuspensionModal, 
+  EditSuspensionModal,
   SuspensionFilters 
 } from "./components";
 
 // Admin View Component
 const AdminView: React.FC = memo(() => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editSuspension, setEditSuspension] = useState<Suspension | null>(null);
   const [teamFilter, setTeamFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
   
   const { 
     suspensions, 
@@ -30,15 +32,12 @@ const AdminView: React.FC = memo(() => {
     refetchSuspensions
   } = useSuspensionsData();
 
-  // Filter data based on selected filters
   const filteredSuspensions = useMemo(() => {
     if (!suspensions) return [];
     return suspensions.filter(s => {
-      const teamMatch = teamFilter === 'all' || s.teamName === teamFilter;
-      const statusMatch = statusFilter === 'all' || s.status === statusFilter;
-      return teamMatch && statusMatch;
+      return teamFilter === 'all' || s.teamName === teamFilter;
     });
-  }, [suspensions, teamFilter, statusFilter]);
+  }, [suspensions, teamFilter]);
 
   const filteredPlayerCards = useMemo(() => {
     if (!playerCards) return [];
@@ -80,8 +79,6 @@ const AdminView: React.FC = memo(() => {
         <SuspensionFilters
           selectedTeam={teamFilter}
           onTeamChange={setTeamFilter}
-          selectedStatus={statusFilter}
-          onStatusChange={setStatusFilter}
         />
         <Button 
           onClick={() => setShowAddModal(true)}
@@ -93,42 +90,43 @@ const AdminView: React.FC = memo(() => {
         </Button>
       </div>
 
-      {/* Active Suspensions */}
+      {/* Schorsingen */}
       <section role="region" aria-labelledby="suspensions-heading" className="mb-6">
-        <Card className="border border-[var(--color-200)]">
+        <Card className="border border-border">
           <CardHeader>
             <CardTitle id="suspensions-heading" className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-destructive" />
-              Actieve Schorsingen
+              Schorsingen
             </CardTitle>
             <CardDescription>
-              Overzicht van alle actieve en wachtende schorsingen
+              Chronologisch overzicht van alle schorsingen
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-[12px] bg-transparent">
+          <CardContent className="p-3 bg-transparent">
             {filteredSuspensions.length === 0 && !isLoading ? (
               <div className="text-center py-12 px-4">
                 <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Shield className="h-8 w-8 text-green-600 dark:text-green-400" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2 text-foreground">Geen actieve schorsingen</h3>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Geen schorsingen</h3>
                 <p className="text-sm text-muted-foreground">Alle spelers kunnen deelnemen aan wedstrijden.</p>
               </div>
             ) : (
               <SuspensionsTable 
                 suspensions={filteredSuspensions}
                 showTeam={true}
-                showActions={false}
+                showActions={true}
                 isLoading={isLoading}
+                onEdit={setEditSuspension}
               />
             )}
           </CardContent>
         </Card>
       </section>
 
-      {/* Player Cards Overview */}
+      {/* Kaarten Overzicht */}
       <section role="region" aria-labelledby="cards-heading">
-        <Card className="border border-[var(--color-200)]">
+        <Card className="border border-border">
           <CardHeader>
             <CardTitle id="cards-heading" className="flex items-center gap-2">
               <Trophy className="h-5 w-5" />
@@ -138,7 +136,7 @@ const AdminView: React.FC = memo(() => {
               Alle spelers met gele of rode kaarten
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-[12px] bg-transparent">
+          <CardContent className="p-3 bg-transparent">
             {filteredPlayerCards.length === 0 && !isLoading ? (
               <div className="text-center py-12 px-4">
                 <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -158,9 +156,11 @@ const AdminView: React.FC = memo(() => {
         </Card>
       </section>
 
-      <AddSuspensionModal 
-        open={showAddModal} 
-        onOpenChange={setShowAddModal} 
+      <AddSuspensionModal open={showAddModal} onOpenChange={setShowAddModal} />
+      <EditSuspensionModal 
+        open={!!editSuspension} 
+        onOpenChange={(open) => !open && setEditSuspension(null)} 
+        suspension={editSuspension} 
       />
     </>
   );
@@ -170,7 +170,7 @@ AdminView.displayName = 'AdminView';
 
 // Team Manager View Component
 const TeamManagerView: React.FC<{ teamIds: number[] }> = memo(({ teamIds }) => {
-  const teamId = teamIds[0]; // Use first team ID
+  const teamId = teamIds[0];
   const { data: team } = useTeam(teamId);
   
   const { 
@@ -183,7 +183,6 @@ const TeamManagerView: React.FC<{ teamIds: number[] }> = memo(({ teamIds }) => {
     refetchSuspensions
   } = useSuspensionsData();
 
-  // Filter data for current team only
   const teamSuspensions = useMemo(() => {
     if (!suspensions || !team) return [];
     return suspensions.filter(s => s.teamName === team.team_name);
@@ -236,25 +235,24 @@ const TeamManagerView: React.FC<{ teamIds: number[] }> = memo(({ teamIds }) => {
         }
       />
 
-      {/* Active Suspensions */}
       <section role="region" aria-labelledby="team-suspensions-heading" className="mb-6">
-        <Card className="border border-[var(--color-200)]">
+        <Card className="border border-border">
           <CardHeader>
             <CardTitle id="team-suspensions-heading" className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-destructive" />
-              Actieve Schorsingen
+              Schorsingen
             </CardTitle>
             <CardDescription>
               Schorsingen voor spelers van {teamName}
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-[12px] bg-transparent">
+          <CardContent className="p-3 bg-transparent">
             {teamSuspensions.length === 0 && !isLoading ? (
               <div className="text-center py-12 px-4">
                 <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Shield className="h-8 w-8 text-green-600 dark:text-green-400" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2 text-foreground">Geen actieve schorsingen</h3>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Geen schorsingen</h3>
                 <p className="text-sm text-muted-foreground">Alle spelers van jouw team kunnen deelnemen.</p>
               </div>
             ) : (
@@ -269,9 +267,8 @@ const TeamManagerView: React.FC<{ teamIds: number[] }> = memo(({ teamIds }) => {
         </Card>
       </section>
 
-      {/* Player Cards Overview */}
       <section role="region" aria-labelledby="team-cards-heading">
-        <Card className="border border-[var(--color-200)]">
+        <Card className="border border-border">
           <CardHeader>
             <CardTitle id="team-cards-heading" className="flex items-center gap-2">
               <Trophy className="h-5 w-5" />
@@ -281,7 +278,7 @@ const TeamManagerView: React.FC<{ teamIds: number[] }> = memo(({ teamIds }) => {
               Gele en rode kaarten voor spelers van {teamName}
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-[12px] bg-transparent">
+          <CardContent className="p-3 bg-transparent">
             {teamPlayerCards.length === 0 && !isLoading ? (
               <div className="text-center py-12 px-4">
                 <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -306,11 +303,9 @@ const TeamManagerView: React.FC<{ teamIds: number[] }> = memo(({ teamIds }) => {
 
 TeamManagerView.displayName = 'TeamManagerView';
 
-// Main Page Component
 const SchorsingenPage: React.FC = memo(() => {
   const { user } = useAuth();
   
-  // Determine user role and access level
   const isAdmin = user?.role === 'admin';
   const isTeamManager = user?.role === 'player_manager' && user?.teamId;
   const teamIds = user?.teamId ? [user.teamId] : [];
