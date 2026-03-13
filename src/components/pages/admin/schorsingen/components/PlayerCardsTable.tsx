@@ -10,12 +10,11 @@ interface PlayerCardsTableProps {
   isLoading?: boolean;
 }
 
-// Card Skeleton
 const CardSkeleton = memo(() => (
   <div className="space-y-2">
     {[...Array(3)].map((_, i) => (
-      <Card key={i} className="border border-[var(--color-200)]">
-        <CardContent className="p-[12px] pt-[12px] bg-transparent">
+      <Card key={i} className="border border-border">
+        <CardContent className="p-3 pt-3 bg-transparent">
           <div className="flex items-center justify-between gap-3">
             <div className="flex-1 min-w-0">
               <Skeleton className="h-4 w-32" />
@@ -34,57 +33,34 @@ const CardSkeleton = memo(() => (
 
 CardSkeleton.displayName = 'CardSkeleton';
 
-const getStatusBadge = (card: PlayerCard) => {
-  if (card.redCards > 0) {
-    return <SuspensionBadge type="active" />;
-  }
-  if (card.yellowCards >= 5) {
-    return <SuspensionBadge type="active" />;
-  }
-  if (card.yellowCards >= 3) {
-    return <SuspensionBadge type="pending" />;
-  }
-  return null;
-};
-
-// Mobile Card View
 const PlayerCardCard = memo(({ 
   card, 
   showTeam 
 }: { 
   card: PlayerCard; 
   showTeam: boolean;
-}) => {
-  const statusBadge = getStatusBadge(card);
-  
-  return (
-    <Card className="border border-[var(--color-200)] hover:shadow-md transition-shadow duration-200">
-      <CardContent className="p-[12px] pt-[12px] bg-transparent">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm text-foreground truncate">
-              {card.playerName}
-            </h3>
-            {showTeam && (
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                {card.teamName}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <SuspensionBadge type="yellow" count={card.yellowCards} />
-            <SuspensionBadge type="red" count={card.redCards} />
-            {statusBadge && (
-              <div className="flex-shrink-0">
-                {statusBadge}
-              </div>
-            )}
-          </div>
+}) => (
+  <Card className="border border-border hover:shadow-sm transition-shadow duration-200">
+    <CardContent className="p-3 pt-3 bg-transparent">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-sm text-foreground truncate">
+            {card.playerName}
+          </h3>
+          {showTeam && (
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+              {card.teamName}
+            </p>
+          )}
         </div>
-      </CardContent>
-    </Card>
-  );
-});
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <SuspensionBadge type="yellow" count={card.yellowCards} />
+          <SuspensionBadge type="red" count={card.redCards} />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+));
 
 PlayerCardCard.displayName = 'PlayerCardCard';
 
@@ -93,9 +69,7 @@ export const PlayerCardsTable: React.FC<PlayerCardsTableProps> = memo(({
   showTeam = true,
   isLoading = false 
 }) => {
-  if (isLoading) {
-    return <CardSkeleton />;
-  }
+  if (isLoading) return <CardSkeleton />;
 
   if (playerCards.length === 0) {
     return (
@@ -105,23 +79,16 @@ export const PlayerCardsTable: React.FC<PlayerCardsTableProps> = memo(({
     );
   }
 
-  // Sort by team name, then by player name
   const sortedCards = [...playerCards].sort((a, b) => {
-    // First sort by team name
     const teamCompare = a.teamName.localeCompare(b.teamName, 'nl', { sensitivity: 'base' });
     if (teamCompare !== 0) return teamCompare;
-    // Then sort by player name within the same team
     return a.playerName.localeCompare(b.playerName, 'nl', { sensitivity: 'base' });
   });
 
   return (
     <div className="space-y-2" role="region" aria-label="Kaarten lijst">
       {sortedCards.map((card) => (
-        <PlayerCardCard
-          key={card.playerId}
-          card={card}
-          showTeam={showTeam}
-        />
+        <PlayerCardCard key={card.playerId} card={card} showTeam={showTeam} />
       ))}
     </div>
   );

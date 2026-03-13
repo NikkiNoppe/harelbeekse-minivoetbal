@@ -5,15 +5,11 @@ import { useTeams } from "@/hooks/useTeams";
 interface SuspensionFiltersProps {
   selectedTeam: string;
   onTeamChange: (teamId: string) => void;
-  selectedStatus: string;
-  onStatusChange: (status: string) => void;
 }
 
 export const SuspensionFilters: React.FC<SuspensionFiltersProps> = ({
   selectedTeam,
-  onTeamChange,
-  selectedStatus,
-  onStatusChange
+  onTeamChange
 }) => {
   const { data: teams } = useTeams();
 
@@ -30,18 +26,6 @@ export const SuspensionFilters: React.FC<SuspensionFiltersProps> = ({
               {team.team_name}
             </SelectItem>
           ))}
-        </SelectContent>
-      </Select>
-
-      <Select value={selectedStatus} onValueChange={onStatusChange}>
-        <SelectTrigger className="w-full sm:w-[200px] min-h-[44px]">
-          <SelectValue placeholder="Alle statussen" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Alle statussen</SelectItem>
-          <SelectItem value="active">Actief</SelectItem>
-          <SelectItem value="pending">Wachtend</SelectItem>
-          <SelectItem value="completed">Voltooid</SelectItem>
         </SelectContent>
       </Select>
     </div>
