@@ -66,9 +66,9 @@ const getSeasonFromYear = (year: number): SeasonData => {
 };
 
 const getSeasonDates = (seasonData: SeasonData) => {
-  // Season runs from July to June
-  const startDate = new Date(seasonData.startYear, 6, 1); // July 1st (month is 0-indexed)
-  const endDate = new Date(seasonData.endYear, 5, 30); // June 30th
+  // Season runs from July to June - use UTC to avoid timezone issues
+  const startDate = new Date(Date.UTC(seasonData.startYear, 6, 1)); // July 1st (month is 0-indexed)
+  const endDate = new Date(Date.UTC(seasonData.endYear, 5, 30, 23, 59, 59)); // June 30th
   return { startDate, endDate };
 };
 
