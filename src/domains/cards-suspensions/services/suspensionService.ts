@@ -402,7 +402,7 @@ export const suspensionService = {
                 (cardType === 'yellow' && (cardTypeValue === 'yellow' || cardTypeValue === 'geel')) ||
                 (cardType === 'red' && (cardTypeValue === 'red' || cardTypeValue === 'rood' || cardTypeValue === 'double_yellow'))
               ) {
-                return match.match_date ? new Date(match.match_date).toISOString().slice(0, 10) : undefined;
+                return match.match_date ? new Date(match.match_date).toISOString() : undefined;
               }
             }
           }
