@@ -37,7 +37,7 @@ const SuspensionCard = memo(({
   showActions: boolean;
   onEdit?: (suspension: Suspension) => void;
 }) => (
-  <div className="flex items-center justify-between gap-2 py-2 px-1 border-b border-border last:border-b-0">
+  <div className="flex items-center justify-between gap-2 py-2.5 px-1 border-b border-border/50 last:border-b-0">
     <div className="flex-1 min-w-0">
       <p className="text-sm text-foreground leading-tight">
         <span className="font-medium">{suspension.playerName}</span>
