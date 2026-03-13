@@ -14,15 +14,12 @@ interface SuspensionsTableProps {
 }
 
 const CardSkeleton = memo(() => (
-  <div className="space-y-2">
+  <div className="space-y-3 py-2">
     {[...Array(3)].map((_, i) => (
-      <Card key={i} className="border border-border">
-        <CardContent className="p-3 pt-3 bg-transparent space-y-1.5">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-3 w-56" />
-          <Skeleton className="h-3 w-20" />
-        </CardContent>
-      </Card>
+      <div key={i} className="space-y-1 px-1">
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-3 w-56" />
+      </div>
     ))}
   </div>
 ));
