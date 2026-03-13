@@ -4,9 +4,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export interface YellowCardRule {
-  min_cards: number;
-  max_cards: number;
+  card_count: number;
   suspension_matches: number;
+  // Legacy fields for backwards compatibility
+  min_cards?: number;
+  max_cards?: number;
 }
 
 export interface RedCardRules {
@@ -16,8 +18,9 @@ export interface RedCardRules {
 }
 
 export interface ResetRules {
-  reset_yellow_cards_after_matches: number;
   reset_at_season_end: boolean;
+  // Legacy field - kept for backwards compat but no longer used
+  reset_yellow_cards_after_matches?: number;
 }
 
 export interface SuspensionRules {
@@ -29,9 +32,9 @@ export interface SuspensionRules {
 // Default fallback rules
 const DEFAULT_SUSPENSION_RULES: SuspensionRules = {
   yellow_card_rules: [
-    { min_cards: 2, max_cards: 3, suspension_matches: 1 },
-    { min_cards: 4, max_cards: 5, suspension_matches: 2 },
-    { min_cards: 6, max_cards: 999, suspension_matches: 3 }
+    { card_count: 2, suspension_matches: 1 },
+    { card_count: 4, suspension_matches: 2 },
+    { card_count: 6, suspension_matches: 2 }
   ],
   red_card_rules: {
     default_suspension_matches: 1,
@@ -39,10 +42,20 @@ const DEFAULT_SUSPENSION_RULES: SuspensionRules = {
     max_suspension_matches: 5
   },
   reset_rules: {
-    reset_yellow_cards_after_matches: 10,
     reset_at_season_end: true
   }
 };
+
+// Convert legacy range-based rules to new card_count format
+function normalizeYellowCardRules(rules: any[]): YellowCardRule[] {
+  return rules.map(rule => {
+    if ('card_count' in rule) {
+      return { card_count: rule.card_count, suspension_matches: rule.suspension_matches };
+    }
+    // Legacy: convert min_cards to card_count
+    return { card_count: rule.min_cards, suspension_matches: rule.suspension_matches };
+  });
+}
 
 class SuspensionRulesService {
   private cachedRules: SuspensionRules | null = null;
@@ -50,7 +63,6 @@ class SuspensionRulesService {
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   async getSuspensionRules(): Promise<SuspensionRules> {
-    // Return cached rules if still valid
     if (this.cachedRules && (Date.now() - this.cacheTimestamp) < this.CACHE_DURATION) {
       return this.cachedRules;
     }
@@ -71,11 +83,12 @@ class SuspensionRulesService {
 
       const rules = data.setting_value as unknown as SuspensionRules;
       
-      // Validate and merge with defaults
       this.cachedRules = {
-        yellow_card_rules: rules.yellow_card_rules || DEFAULT_SUSPENSION_RULES.yellow_card_rules,
+        yellow_card_rules: normalizeYellowCardRules(rules.yellow_card_rules || DEFAULT_SUSPENSION_RULES.yellow_card_rules),
         red_card_rules: { ...DEFAULT_SUSPENSION_RULES.red_card_rules, ...rules.red_card_rules },
-        reset_rules: { ...DEFAULT_SUSPENSION_RULES.reset_rules, ...rules.reset_rules }
+        reset_rules: { 
+          reset_at_season_end: rules.reset_rules?.reset_at_season_end ?? DEFAULT_SUSPENSION_RULES.reset_rules.reset_at_season_end
+        }
       };
       
       this.cacheTimestamp = Date.now();
@@ -102,7 +115,6 @@ class SuspensionRulesService {
         return false;
       }
 
-      // Clear cache to force refresh
       this.cachedRules = null;
       this.cacheTimestamp = 0;
       
@@ -113,27 +125,21 @@ class SuspensionRulesService {
     }
   }
 
-  // Calculate suspension matches for yellow cards
+  // Calculate suspension matches for yellow cards - exact match on card_count
   calculateYellowCardSuspension(yellowCards: number): number {
-    if (!this.cachedRules) {
-      // If no cached rules, fetch them synchronously from defaults
-      const rules = DEFAULT_SUSPENSION_RULES.yellow_card_rules;
-      return this.findSuspensionMatches(yellowCards, rules);
-    }
-
-    return this.findSuspensionMatches(yellowCards, this.cachedRules.yellow_card_rules);
+    const rules = this.cachedRules?.yellow_card_rules || DEFAULT_SUSPENSION_RULES.yellow_card_rules;
+    return this.findSuspensionMatches(yellowCards, rules);
   }
 
   private findSuspensionMatches(cards: number, rules: YellowCardRule[]): number {
     for (const rule of rules) {
-      if (cards >= rule.min_cards && cards <= rule.max_cards) {
+      if (cards === rule.card_count) {
         return rule.suspension_matches;
       }
     }
     return 0;
   }
 
-  // Clear cache manually
   clearCache(): void {
     this.cachedRules = null;
     this.cacheTimestamp = 0;

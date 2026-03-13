@@ -72,8 +72,7 @@ export const SuspensionRulesSettings: React.FC = () => {
     if (!rules) return;
     
     const newRule: YellowCardRule = {
-      min_cards: 1,
-      max_cards: 1,
+      card_count: 1,
       suspension_matches: 1
     };
     
@@ -83,7 +82,7 @@ export const SuspensionRulesSettings: React.FC = () => {
     });
   };
 
-  const updateYellowCardRule = (index: number, field: keyof YellowCardRule, value: number) => {
+  const updateYellowCardRule = (index: number, field: 'card_count' | 'suspension_matches', value: number) => {
     if (!rules) return;
     
     const updatedRules = [...rules.yellow_card_rules];
@@ -146,13 +145,6 @@ export const SuspensionRulesSettings: React.FC = () => {
           Schorsingsregels
           <div className="flex gap-2">
             <Button
-              onClick={() => window.location.hash = '#schorsingen'}
-              variant="ghost"
-              size="sm"
-            >
-              Beheer Schorsingen
-            </Button>
-            <Button
               variant="outline"
               size="sm"
               onClick={loadRules}
@@ -191,40 +183,26 @@ export const SuspensionRulesSettings: React.FC = () => {
             {rules.yellow_card_rules.map((rule, index) => (
               <div key={index} className="flex items-center gap-4 p-3 border rounded-lg">
                 <div className="flex items-center gap-2">
-                  <Label htmlFor={`min-${index}`} className="text-sm">Van:</Label>
                   <Input
-                    id={`min-${index}`}
                     type="number"
-                    value={rule.min_cards}
-                    onChange={(e) => updateYellowCardRule(index, 'min_cards', parseInt(e.target.value) || 0)}
+                    value={rule.card_count}
+                    onChange={(e) => updateYellowCardRule(index, 'card_count', parseInt(e.target.value) || 1)}
                     className="w-16"
                     min="1"
                   />
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">gele kaarten:</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <Label htmlFor={`max-${index}`} className="text-sm">Tot:</Label>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">schorsing</span>
                   <Input
-                    id={`max-${index}`}
-                    type="number"
-                    value={rule.max_cards}
-                    onChange={(e) => updateYellowCardRule(index, 'max_cards', parseInt(e.target.value) || 0)}
-                    className="w-16"
-                    min="1"
-                  />
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Label htmlFor={`suspension-${index}`} className="text-sm">Schorsing:</Label>
-                  <Input
-                    id={`suspension-${index}`}
                     type="number"
                     value={rule.suspension_matches}
                     onChange={(e) => updateYellowCardRule(index, 'suspension_matches', parseInt(e.target.value) || 0)}
                     className="w-16"
                     min="0"
                   />
-                  <span className="text-sm text-muted-foreground">wedstrijd(en)</span>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">wedstrijd(en)</span>
                 </div>
                 
                 <Button
@@ -308,25 +286,6 @@ export const SuspensionRulesSettings: React.FC = () => {
         <div>
           <Label className="text-base font-medium">Reset Regels</Label>
           <div className="mt-4 space-y-4">
-            <div className="flex items-center gap-4">
-              <Label htmlFor="reset-matches">Reset gele kaarten na:</Label>
-              <Input
-                id="reset-matches"
-                type="number"
-                value={rules.reset_rules.reset_yellow_cards_after_matches}
-                onChange={(e) => setRules({
-                  ...rules,
-                  reset_rules: {
-                    ...rules.reset_rules,
-                    reset_yellow_cards_after_matches: parseInt(e.target.value) || 10
-                  }
-                })}
-                className="w-20"
-                min="1"
-              />
-              <span className="text-sm text-muted-foreground">wedstrijden</span>
-            </div>
-            
             <div className="flex items-center gap-3">
               <Switch
                 id="season-reset"
