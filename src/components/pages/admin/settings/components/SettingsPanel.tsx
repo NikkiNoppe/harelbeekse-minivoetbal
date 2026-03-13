@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Settings, Eye, Lock, Trophy, Building, Clock, Calendar, Palette, FileText } from "lucide-react";
+import { Settings, Eye, Lock, Trophy, Building, Clock, Calendar, Palette, FileText, ShieldAlert } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
