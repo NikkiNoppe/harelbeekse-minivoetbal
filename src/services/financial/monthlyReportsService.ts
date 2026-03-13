@@ -142,8 +142,9 @@ export const monthlyReportsService = {
       let filterEndDate = endDate;
       
       if (month && year) {
-        filterStartDate = new Date(year, month - 1, 1);
-        filterEndDate = new Date(year, month, 0, 23, 59, 59);
+        // Use UTC dates to avoid timezone issues
+        filterStartDate = new Date(Date.UTC(year, month - 1, 1));
+        filterEndDate = new Date(Date.UTC(year, month, 0, 23, 59, 59));
       }
 
       // Fetch all team_costs transactions for the season period
