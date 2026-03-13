@@ -20,13 +20,15 @@ export const useRemovePlayer = (refreshPlayers: () => Promise<void>) => {
     setIsRemoving(true);
 
     try {
-      // Fetch player for context
+      // Fetch player for context (with RLS context)
       console.log('🔍 Fetching player data for removal...');
-      const { data: currentPlayer, error: fetchError } = await supabase
-        .from('players')
-        .select('player_id, first_name, last_name, team_id, birth_date')
-        .eq('player_id', playerId)
-        .maybeSingle();
+      const { data: currentPlayer, error: fetchError } = await withUserContext(async () => {
+        return await supabase
+          .from('players')
+          .select('player_id, first_name, last_name, team_id, birth_date')
+          .eq('player_id', playerId)
+          .maybeSingle();
+      });
 
       if (fetchError) {
         console.error('❌ Error fetching current player:', fetchError);
