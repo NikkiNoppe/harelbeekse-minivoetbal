@@ -451,14 +451,15 @@ export const suspensionService = {
 
       // Process each player
       for (const player of playerCards) {
-        // Logic voor schorsingen op basis van gele kaarten
+        // Logic voor schorsingen op basis van gele kaarten - exact match op card_count
         if (player.yellowCards >= 2) {
           let matches = 0;
           let reason = '';
           
-          // Use dynamic rules instead of hardcoded logic
+          // Use dynamic rules - exact card_count match (backwards compatible with legacy min_cards/max_cards)
           for (const rule of rules.yellow_card_rules) {
-            if (player.yellowCards >= rule.min_cards && player.yellowCards <= rule.max_cards) {
+            const ruleCardCount = (rule as any).card_count ?? (rule as any).min_cards;
+            if (player.yellowCards === ruleCardCount) {
               matches = rule.suspension_matches;
               reason = `${player.yellowCards} gele kaarten`;
               break;

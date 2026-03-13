@@ -1,69 +1,47 @@
 
 
-## Schorsingsregels aanpassen: nieuw model
+## Probleem: Playoff data corruptie + preventie
 
-### Gewenst gedrag
+### 1. Data Herstel
 
-**Gele kaarten** -- exacte drempels (niet ranges):
-- 2 gele kaarten → 1 wedstrijd schorsing
-- 4 gele kaarten → 2 wedstrijden schorsing  
-- 6 gele kaarten → 2 wedstrijden schorsing
-- Dynamisch toevoegbaar (admin kan drempels toevoegen/verwijderen)
+Er is momenteel 1 beschadigde wedstrijd gevonden:
 
-**Rode kaarten** -- cumulatief:
-- 1 rode kaart → 1 wedstrijd (standaard, admin aanpasbaar)
-- 2 rode kaarten → 2 wedstrijden
-- Etc.
+| Match | Huidig | Moet zijn |
+|-------|--------|-----------|
+| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
 
-**Reset regels**:
-- Verwijder "reset na X wedstrijden"
-- Behoud alleen "reset aan einde seizoen"
+Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
 
-### Wijzigingen
+**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
+- `speeldag` terug naar "Playoff Speeldag 4"
+- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
 
-#### 1. Data model aanpassen (`suspensionRulesService.ts`)
+### 2. Bug Fix: Voorkom toekomstige corruptie
 
-Het `YellowCardRule` type wordt vereenvoudigd: weg met `min_cards`/`max_cards` range, vervangen door een enkel `card_count` veld.
+**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
 
+**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
+
+In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
+- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
+- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
+
+### Technische Details
+
+**Bestanden die gewijzigd worden:**
+
+1. **Nieuwe SQL-migratie** - Herstel PO-22:
 ```
-interface YellowCardRule {
-  card_count: number;        // was min_cards/max_cards
-  suspension_matches: number;
-}
-```
-
-`ResetRules` verliest `reset_yellow_cards_after_matches`, houdt alleen `reset_at_season_end`.
-
-Default rules worden:
-```
-yellow_card_rules: [
-  { card_count: 2, suspension_matches: 1 },
-  { card_count: 4, suspension_matches: 2 },
-  { card_count: 6, suspension_matches: 2 }
-]
+UPDATE matches 
+SET speeldag = 'Playoff Speeldag 4', 
+    match_date = '2026-02-10 18:30:00+00'
+WHERE match_id = 2197 
+AND unique_number = 'PO-22-1766492793564-7079';
 ```
 
-`findSuspensionMatches()` wordt aangepast: zoekt exact match op `card_count` in plaats van range check. Backwards compatible: als oude data met `min_cards`/`max_cards` binnenkomt, wordt dat geconverteerd.
+2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
+   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
+   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
+   - Voor team managers wordt `matchData` weggelaten uit het update-object
 
-#### 2. UI aanpassen (`SuspensionRulesSettings.tsx`)
-
-**Gele kaarten sectie**: Per regel wordt getoond:
-```
-[X] gele kaarten: schorsing [Y] wedstrijd(en)  [🗑]
-```
-Twee inputvelden per regel: card_count en suspension_matches.
-
-**Rode kaarten sectie**: Ongewijzigd (standaard + max + admin toggle).
-
-**Reset regels sectie**: Verwijder het "reset na X wedstrijden" inputveld. Alleen de switch "Reset aan einde van seizoen" blijft.
-
-#### 3. Suspension berekening (`suspensionService.ts`)
-
-In `getActiveSuspensions()` (regel 455-487): de check `player.yellowCards >= rule.min_cards && player.yellowCards <= rule.max_cards` wordt vervangen door exacte match: `player.yellowCards === rule.card_count`. Backwards compatible met oude ranges via fallback.
-
-### Bestanden
-
-1. **`src/domains/cards-suspensions/services/suspensionRulesService.ts`** -- type wijzigen, defaults updaten, `findSuspensionMatches` aanpassen, backwards compat
-2. **`src/components/pages/admin/settings/components/SuspensionRulesSettings.tsx`** -- UI vereenvoudigen (1 veld i.p.v. 2 voor gele kaarten), reset sectie trimmen
-3. **`src/domains/cards-suspensions/services/suspensionService.ts`** -- `getActiveSuspensions` aanpassen voor nieuw `card_count` model
-
+Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.
