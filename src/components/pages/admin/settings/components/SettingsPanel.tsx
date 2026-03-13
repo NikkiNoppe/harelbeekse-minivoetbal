@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Settings, Eye, Lock, Trophy, Building, Clock, Calendar, Palette, FileText } from "lucide-react";
+import { Settings, Eye, Lock, Trophy, Building, Clock, Calendar, Palette, FileText, ShieldAlert } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -16,6 +16,7 @@ import VacationsSettings from "@/components/pages/admin/settings/components/Vaca
 import SeasonDataSettings from "@/components/pages/admin/settings/components/SeasonDataSettings";
 import ThemeColorsSettings from "@/components/pages/admin/settings/components/ThemeColorsSettings";
 import MatchFormSettings from "@/components/pages/admin/settings/components/MatchFormSettings";
+import { SuspensionRulesSettings } from "@/components/pages/admin/settings/components/SuspensionRulesSettings";
 
 const settingsSections = [
   { id: "tab-visibility", label: "Tab Zichtbaarheid", icon: Eye, component: TabVisibilitySettingsUpdated },
@@ -27,6 +28,7 @@ const settingsSections = [
   { id: "season", label: "Seizoensdata", icon: Calendar, component: SeasonDataSettings },
   { id: "colors", label: "Kleuren", icon: Palette, component: ThemeColorsSettings },
   { id: "match-forms", label: "Wedstrijdformulieren", icon: FileText, component: MatchFormSettings },
+  { id: "suspension-rules", label: "Kaarten & Schorsingen", icon: ShieldAlert, component: SuspensionRulesSettings },
 ];
 
 const AdminSettingsPanel: React.FC = () => {
