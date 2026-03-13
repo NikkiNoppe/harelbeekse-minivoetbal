@@ -97,7 +97,7 @@ export const SuspensionsTable: React.FC<SuspensionsTableProps> = memo(({
   }
 
   return (
-    <div className="space-y-2" role="region" aria-label="Schorsingen lijst">
+    <div role="region" aria-label="Schorsingen lijst">
       {sortedSuspensions.map((suspension) => (
         <SuspensionCard
           key={`${suspension.playerId}-${suspension.reason}`}
