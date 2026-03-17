@@ -1011,8 +1011,8 @@ const FinancialOverviewCard: React.FC<{ teamId: number }> = memo(({ teamId }) =>
 });
 FinancialOverviewCard.displayName = 'FinancialOverviewCard';
 
-// Admin Message Card - Placeholder for admin-to-user messages
-const AdminMessageCard: React.FC = memo(() => {
+// Admin Message Card Content (without Card wrapper, for use inside collapsible)
+const AdminMessageCardContent: React.FC = memo(() => {
   const { user } = useAuth();
   const { data: messages, isLoading } = useQuery({
     queryKey: ['adminMessages', user?.role],
@@ -1039,39 +1039,31 @@ const AdminMessageCard: React.FC = memo(() => {
   });
 
   return (
-    <Card className="border-primary/20">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
-          Berichten
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0">
-        {isLoading ? (
-          <Skeleton className="h-10 w-full" />
-        ) : messages && messages.length > 0 ? (
-          <div className="space-y-2">
-            {messages.map((msg: any, i: number) => (
-              <div key={i} className="p-3 rounded-md bg-primary/5 border border-primary/10">
-                <p className="text-sm text-foreground">
-                  {msg.setting_value?.message || msg.setting_value?.text || 'Bericht'}
+    <CardContent className="pt-0">
+      {isLoading ? (
+        <Skeleton className="h-10 w-full" />
+      ) : messages && messages.length > 0 ? (
+        <div className="space-y-2">
+          {messages.map((msg: any, i: number) => (
+            <div key={i} className="p-3 rounded-md bg-primary/5 border border-primary/10">
+              <p className="text-sm text-foreground">
+                {msg.setting_value?.message || msg.setting_value?.text || 'Bericht'}
+              </p>
+              {msg.updated_at && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {new Date(msg.updated_at).toLocaleDateString('nl-BE')}
                 </p>
-                {msg.updated_at && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(msg.updated_at).toLocaleDateString('nl-BE')}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground italic py-2">Geen berichten</p>
-        )}
-      </CardContent>
-    </Card>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground italic py-2">Geen berichten</p>
+      )}
+    </CardContent>
   );
 });
-AdminMessageCard.displayName = 'AdminMessageCard';
+AdminMessageCardContent.displayName = 'AdminMessageCardContent';
 
 // Referee Upcoming Matches Component
 const RefereeUpcomingMatches: React.FC<{
