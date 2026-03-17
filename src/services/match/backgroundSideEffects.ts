@@ -309,7 +309,7 @@ const syncLatePenalty = async (
         team_id: teamId,
         cost_setting_id: costSetting.id,
         match_id: matchId,
-        transaction_date: new Date().toISOString().split('T')[0]
+        transaction_date: new Date().toISOString()
       });
 
     if (insertError) throw insertError;
