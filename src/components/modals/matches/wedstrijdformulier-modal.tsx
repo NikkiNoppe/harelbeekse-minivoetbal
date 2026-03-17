@@ -542,12 +542,12 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
   useEffect(() => {
     if (!awayIsLoading && awayPlayersWithSuspensions && awayPlayersWithSuspensions.length > 0) {
+      suppressDirtyRef.current = true;
       setAwayTeamSelections(prev => prev.map(selection => {
         if (selection.playerId) {
           const player = awayPlayersWithSuspensions.find(p => p.player_id === selection.playerId);
           if (player) {
             const expectedName = `${player.first_name} ${player.last_name}`;
-            // Always update playerName to ensure it matches the loaded player data
             return {
               ...selection,
               playerName: expectedName
@@ -556,6 +556,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         }
         return selection;
       }));
+      suppressDirtyRef.current = false;
     }
   }, [awayPlayersWithSuspensions, awayIsLoading]);
 
