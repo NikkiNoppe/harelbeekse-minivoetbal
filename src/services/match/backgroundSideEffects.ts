@@ -269,7 +269,8 @@ const syncMatchCosts = async (
 const syncLatePenalty = async (
   ctx: SideEffectContext,
   matchId: number,
-  matchInfo: MatchInfo
+  matchInfo: MatchInfo,
+  latePenaltyTeamIds?: number[]
 ): Promise<void> => {
   // Find the "Boete te laat ingevuld" cost setting
   const { data: costSetting, error: costError } = await supabase
@@ -284,9 +285,10 @@ const syncLatePenalty = async (
     throw new Error('Cost setting "Boete te laat ingevuld" not found');
   }
 
-  // Determine the submitting team (home_team_id as default — the team manager submitting)
-  // Both teams get the penalty since the form covers both
-  const teamIds = [matchInfo.home_team_id, matchInfo.away_team_id].filter(Boolean) as number[];
+  // Use specific team IDs if provided, otherwise fall back to both teams
+  const teamIds = (latePenaltyTeamIds && latePenaltyTeamIds.length > 0)
+    ? latePenaltyTeamIds
+    : [matchInfo.home_team_id, matchInfo.away_team_id].filter(Boolean) as number[];
 
   for (const teamId of teamIds) {
     // Check if penalty already exists for this match + team + cost setting (idempotent)
@@ -329,7 +331,8 @@ export const scheduleBackgroundSideEffects = (
   updateData: UpdateData,
   matchInfo: MatchInfo | null,
   isCupMatch: boolean,
-  isLateSubmission: boolean = false
+  isLateSubmission: boolean = false,
+  latePenaltyTeamIds?: number[]
 ): void => {
   // Don't await - run in background
   Promise.resolve().then(async () => {
@@ -370,7 +373,7 @@ export const scheduleBackgroundSideEffects = (
       const result = await executeWithRetry(
         ctx,
         'late_penalty',
-        () => syncLatePenalty(ctx, matchId, matchInfo),
+        () => syncLatePenalty(ctx, matchId, matchInfo, latePenaltyTeamIds),
         1500
       );
       results.push(result);

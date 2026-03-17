@@ -19,7 +19,7 @@ interface MatchUpdateData {
   awayPlayers?: any[];
   isCompleted?: boolean;
   isLocked?: boolean;
-  forceLatePenalty?: boolean;
+  forceLatePenaltyTeamIds?: number[];
 }
 
 interface ServiceResponse {
@@ -128,8 +128,8 @@ export const enhancedMatchService = {
         if (userRole === "player_manager") {
           // Team managers: auto-detect late submission
           isLateSubmission = now >= lockThreshold && settings.allow_late_submission;
-        } else if (isAdmin && updateData.forceLatePenalty) {
-          // Admins: only if explicitly confirmed via dialog
+        } else if (isAdmin && updateData.forceLatePenaltyTeamIds && updateData.forceLatePenaltyTeamIds.length > 0) {
+          // Admins: only if explicitly confirmed via dialog, with specific team IDs
           isLateSubmission = true;
         }
       }
@@ -248,7 +248,7 @@ export const enhancedMatchService = {
       // FIRE-AND-FORGET: Schedule non-critical side effects without blocking
       // These run asynchronously after success response is returned
       // Uses hardened background processor with retry logic and failure tracking
-      scheduleBackgroundSideEffects(matchId, updateData, matchInfo, isCupMatch, isLateSubmission);
+      scheduleBackgroundSideEffects(matchId, updateData, matchInfo, isCupMatch, isLateSubmission, updateData.forceLatePenaltyTeamIds);
 
       // Return SUCCESS immediately - critical path complete
       return {
