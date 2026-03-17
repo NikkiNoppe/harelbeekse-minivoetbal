@@ -114,15 +114,26 @@ const RefereeNotesCard: React.FC = () => {
             .order("match_date", { ascending: false });
 
           if (error) throw error;
-          return (data || []).map((m: any) => ({
-            match_id: m.match_id,
-            match_date: m.match_date,
-            referee_notes: m.referee_notes,
-            referee: m.referee,
-            speeldag: m.speeldag,
-            home_team_name: m.home_team?.team_name || "?",
-            away_team_name: m.away_team?.team_name || "?",
-          })) as RefereeNote[];
+          // Filter out legacy penalty notes and clean remaining notes
+          return (data || [])
+            .map((m: any) => {
+              // Remove "⚠️ BOETE: ..." lines from referee_notes
+              const cleanedNotes = (m.referee_notes || "")
+                .split("\n")
+                .filter((line: string) => !line.trim().startsWith("⚠️ BOETE:"))
+                .join("\n")
+                .trim();
+              return {
+                match_id: m.match_id,
+                match_date: m.match_date,
+                referee_notes: cleanedNotes,
+                referee: m.referee,
+                speeldag: m.speeldag,
+                home_team_name: m.home_team?.team_name || "?",
+                away_team_name: m.away_team?.team_name || "?",
+              };
+            })
+            .filter((n: RefereeNote) => n.referee_notes.length > 0) as RefereeNote[];
         },
         {
           userId: authUser?.id,

@@ -365,7 +365,18 @@ export const scheduleBackgroundSideEffects = (
       results.push(result);
     }
 
-    // 3. Sync match costs (if match completed)
+    // 3. Late submission penalty (if applicable)
+    if (isLateSubmission && matchInfo) {
+      const result = await executeWithRetry(
+        ctx,
+        'late_penalty',
+        () => syncLatePenalty(ctx, matchId, matchInfo),
+        1500
+      );
+      results.push(result);
+    }
+
+    // 4. Sync match costs (if match completed)
     if (updateData.isCompleted && matchInfo) {
       const result = await executeWithRetry(
         ctx,
