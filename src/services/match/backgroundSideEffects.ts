@@ -269,7 +269,8 @@ const syncMatchCosts = async (
 const syncLatePenalty = async (
   ctx: SideEffectContext,
   matchId: number,
-  matchInfo: MatchInfo
+  matchInfo: MatchInfo,
+  latePenaltyTeamIds?: number[]
 ): Promise<void> => {
   // Find the "Boete te laat ingevuld" cost setting
   const { data: costSetting, error: costError } = await supabase
