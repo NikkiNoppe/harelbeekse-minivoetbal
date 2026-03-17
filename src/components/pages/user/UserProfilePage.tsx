@@ -898,13 +898,15 @@ const NextMatchCard: React.FC<{
 });
 NextMatchCard.displayName = 'NextMatchCard';
 
-// Financial Overview Card - Pro forma for team managers
+// Financial Overview Card - Detailed breakdown for team managers
 const FinancialOverviewCard: React.FC<{ teamId: number }> = memo(({ teamId }) => {
   const { user } = useAuth();
-  const { data: balanceData, isLoading } = useQuery({
+  
+  // Fetch balance
+  const { data: balanceData, isLoading: balanceLoading } = useQuery({
     queryKey: ['teamBalanceProfile', teamId],
     queryFn: async () => {
-      const result = await withUserContext(async () => {
+      return await withUserContext(async () => {
         const { data, error } = await supabase.rpc('calculate_team_balance_updated', {
           team_id_param: teamId
         });
@@ -915,7 +917,60 @@ const FinancialOverviewCard: React.FC<{ teamId: number }> = memo(({ teamId }) =>
         role: user?.role,
         teamIds: String(teamId),
       });
-      return result;
+    },
+    enabled: !!user && !!teamId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch transaction breakdown
+  const { data: breakdown, isLoading: breakdownLoading } = useQuery({
+    queryKey: ['teamFinancialBreakdown', teamId],
+    queryFn: async () => {
+      return await withUserContext(async () => {
+        const { data, error } = await supabase
+          .from('team_costs')
+          .select('amount, cost_setting_id, costs(name, category)')
+          .eq('team_id', teamId);
+        if (error) throw error;
+        
+        const transactions = data || [];
+        let matchCount = 0;
+        let fieldCosts = 0;
+        let adminCosts = 0;
+        let refereeCosts = 0;
+        let fines = 0;
+        let deposits = 0;
+
+        transactions.forEach((t: any) => {
+          const amount = Number(t.amount ?? (t.costs as any)?.amount ?? 0);
+          const category = t.costs?.category || '';
+          const name = (t.costs?.name || '').toLowerCase();
+
+          if (category === 'deposit') {
+            deposits += amount;
+          } else if (category === 'penalty') {
+            fines += Math.abs(amount);
+          } else if (category === 'match_cost') {
+            if (name.includes('veld')) {
+              fieldCosts += Math.abs(amount);
+              matchCount++;
+            } else if (name.includes('administratie')) {
+              adminCosts += Math.abs(amount);
+            } else if (name.includes('scheidsrechter')) {
+              refereeCosts += Math.abs(amount);
+            } else {
+              fieldCosts += Math.abs(amount);
+            }
+          }
+        });
+
+        // Match count = field cost entries (one per match played as home)
+        return { matchCount, fieldCosts, adminCosts, refereeCosts, fines, deposits };
+      }, {
+        userId: user?.id as number,
+        role: user?.role,
+        teamIds: String(teamId),
+      });
     },
     enabled: !!user && !!teamId,
     staleTime: 5 * 60 * 1000,
@@ -923,27 +978,59 @@ const FinancialOverviewCard: React.FC<{ teamId: number }> = memo(({ teamId }) =>
 
   const balance = balanceData ?? 0;
   const isNegative = balance < 0;
+  const isLoading = balanceLoading || breakdownLoading;
+  const fmt = (n: number) => `€${n.toFixed(2)}`;
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-          <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
-          Financieel Overzicht
-        </CardTitle>
-      </CardHeader>
       <CardContent className="pt-0">
         {isLoading ? (
-          <Skeleton className="h-12 w-full" />
+          <div className="py-4 space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
         ) : (
-          <div className="flex items-center justify-between py-2">
-            <span className="text-sm text-muted-foreground">Huidig saldo</span>
-            <span className={cn(
-              "text-lg font-bold",
-              isNegative ? "text-destructive" : "text-green-600"
-            )}>
-              {isNegative ? '−' : ''}€{Math.abs(balance).toFixed(2)}
-            </span>
+          <div className="space-y-3">
+            {/* Balance hero */}
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-sm font-medium text-muted-foreground">Huidig saldo</span>
+              <span className={cn(
+                "text-xl font-bold tabular-nums",
+                isNegative ? "text-destructive" : "text-green-600"
+              )}>
+                {isNegative ? '−' : ''}€{Math.abs(balance).toFixed(2)}
+              </span>
+            </div>
+
+            {/* Compact breakdown grid */}
+            {breakdown && (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs border-t border-border/50 pt-2.5">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Wedstrijden</span>
+                  <span className="font-medium tabular-nums text-foreground">{breakdown.matchCount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Boetes</span>
+                  <span className="font-medium tabular-nums text-destructive/80">{fmt(breakdown.fines)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Veldkosten</span>
+                  <span className="font-medium tabular-nums text-foreground">{fmt(breakdown.fieldCosts)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Scheidsrechter</span>
+                  <span className="font-medium tabular-nums text-foreground">{fmt(breakdown.refereeCosts)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Administratie</span>
+                  <span className="font-medium tabular-nums text-foreground">{fmt(breakdown.adminCosts)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Stortingen</span>
+                  <span className="font-medium tabular-nums text-green-600">{fmt(breakdown.deposits)}</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
