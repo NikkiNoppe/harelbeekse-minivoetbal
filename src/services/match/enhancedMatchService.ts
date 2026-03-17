@@ -128,8 +128,8 @@ export const enhancedMatchService = {
         if (userRole === "player_manager") {
           // Team managers: auto-detect late submission
           isLateSubmission = now >= lockThreshold && settings.allow_late_submission;
-        } else if (isAdmin && updateData.forceLatePenalty) {
-          // Admins: only if explicitly confirmed via dialog
+        } else if (isAdmin && updateData.forceLatePenaltyTeamIds && updateData.forceLatePenaltyTeamIds.length > 0) {
+          // Admins: only if explicitly confirmed via dialog, with specific team IDs
           isLateSubmission = true;
         }
       }
