@@ -1,54 +1,47 @@
 
 
-## Analyse: Spelerslijsten worden overschreven bij opslaan door referee
+## Probleem: Playoff data corruptie + preventie
 
-### Hoofdoorzaak: Race condition bij gelijktijdige bewerkingen
+### 1. Data Herstel
 
-Het probleem zit in de `WedstrijdformulierModal` + `enhancedMatchService`:
+Er is momenteel 1 beschadigde wedstrijd gevonden:
 
-1. **Team manager** laadt wedstrijd → vult spelers in → slaat op ✅
-2. **Referee** had de wedstrijd **eerder** al geladen (vóór stap 1) → ziet lege spelerslijsten
-3. Referee vult enkel scores in en drukt op "Opslaan"
-4. `createUpdatedMatch()` (regel 620-621) stuurt **altijd** `homePlayers` en `awayPlayers` mee — ook al heeft de referee die niet gewijzigd
-5. `enhancedMatchService.updateMatch` (regel 176-177) detecteert `homePlayers !== undefined` → stuurt ze mee naar de database
-6. De RPC `update_match_with_context` ziet `home_players` key in de payload → **overschrijft** met de stale (lege) data ❌
+| Match | Huidig | Moet zijn |
+|-------|--------|-----------|
+| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
 
-Kernprobleem: het formulier verstuurt **altijd** de volledige spelerslijst, zelfs als de gebruiker deze niet heeft gewijzigd. Hierdoor overschrijft een referee of admin met verouderde data de spelerslijst die een team manager net had ingevuld.
+Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
 
-### Oplossing: Dirty tracking voor spelerslijsten
+**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
+- `speeldag` terug naar "Playoff Speeldag 4"
+- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
 
-Bijhouden of de spelerslijst daadwerkelijk is gewijzigd door de gebruiker. Alleen gewijzigde spelerslijsten meesturen in de update.
+### 2. Bug Fix: Voorkom toekomstige corruptie
 
-### Wijzigingen
+**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
 
-**1. `src/components/pages/admin/matches/hooks/useMatchFormState.ts`**
-- Twee nieuwe state booleans: `homePlayersDirty` en `awayPlayersDirty` (default `false`)
-- Worden `true` gezet wanneer `setHomeTeamSelections`/`setAwayTeamSelections` wordt aangeroepen buiten de sync-useEffect
-- Wrapper-functies: `setHomeTeamSelectionsTracked` en `setAwayTeamSelectionsTracked` die de dirty flag zetten
-- De sync-useEffect reset de dirty flags naar `false`
-- Exporteer `homePlayersDirty` en `awayPlayersDirty`
+**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
 
-**2. `src/components/modals/matches/wedstrijdformulier-modal.tsx`**
-- In `createUpdatedMatch`: alleen `homePlayers` meegeven als `homePlayersDirty === true`, anders de originele `match.homePlayers` doorsturen (of helemaal weglaten)
-- Idem voor `awayPlayers` met `awayPlayersDirty`
-- Alle bestaande calls naar `setHomeTeamSelections`/`setAwayTeamSelections` vervangen door de tracked versies
-- De player name sync effect (regels 520-556) moet de dirty flag NIET triggeren — dit is cosmetisch, niet een echte wijziging
+In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
+- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
+- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
 
-**3. `src/services/match/enhancedMatchService.ts`**
-- In `updateMatch`: als `homePlayers` `undefined` is in de updateData, deze key NIET opnemen in `updateObject` (dit werkt al zo, regel 176-177)
-- Geen wijziging nodig hier, het werkt al correct met `undefined`
+### Technische Details
 
-**4. `src/components/pages/admin/matches/hooks/useEnhancedMatchFormSubmission.ts`**
-- In `submitMatchForm`: als `matchData.homePlayers` `undefined` is (niet dirty), niet meesturen als `[]` maar als `undefined`
-- Regel 20-21 aanpassen: `const homePlayersToSave = matchData.homePlayers;` (zonder `|| []` fallback)
+**Bestanden die gewijzigd worden:**
 
-### Effect
-- Als de referee enkel scores invult → `homePlayers` en `awayPlayers` zijn `undefined` in de update → database behoudt bestaande spelerslijsten
-- Als de referee wél spelers wijzigt → dirty flag is `true` → data wordt meegestuurd en opgeslagen
-- Team managers wijzigen altijd spelers → dirty flag wordt `true` → werkt zoals voorheen
+1. **Nieuwe SQL-migratie** - Herstel PO-22:
+```
+UPDATE matches 
+SET speeldag = 'Playoff Speeldag 4', 
+    match_date = '2026-02-10 18:30:00+00'
+WHERE match_id = 2197 
+AND unique_number = 'PO-22-1766492793564-7079';
+```
 
-### Bestanden
-1. `src/components/pages/admin/matches/hooks/useMatchFormState.ts` — dirty tracking toevoegen
-2. `src/components/modals/matches/wedstrijdformulier-modal.tsx` — dirty flags gebruiken in createUpdatedMatch + tracked setters
-3. `src/components/pages/admin/matches/hooks/useEnhancedMatchFormSubmission.ts` — undefined doorlaten i.p.v. `|| []`
+2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
+   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
+   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
+   - Voor team managers wordt `matchData` weggelaten uit het update-object
 
+Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.

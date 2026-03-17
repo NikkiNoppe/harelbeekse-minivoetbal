@@ -1,5 +1,5 @@
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { MatchFormData, PlayerSelection } from "../types";
 
 export const useMatchFormState = (match: MatchFormData) => {
@@ -8,6 +8,12 @@ export const useMatchFormState = (match: MatchFormData) => {
   const [selectedReferee, setSelectedReferee] = useState(match.referee || "");
   const [refereeNotes, setRefereeNotes] = useState(match.refereeNotes || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Dirty tracking for player selections
+  const [homePlayersDirty, setHomePlayersDirty] = useState(false);
+  const [awayPlayersDirty, setAwayPlayersDirty] = useState(false);
+  // Ref to suppress dirty tracking during sync effects
+  const suppressDirtyRef = useRef(false);
   
   // Initialize player cards directly from existing data
   const initializePlayerCards = (players: PlayerSelection[]) => {
@@ -58,13 +64,28 @@ export const useMatchFormState = (match: MatchFormData) => {
     return selections;
   };
   
-  const [homeTeamSelections, setHomeTeamSelections] = useState<PlayerSelection[]>(
+  const [homeTeamSelections, setHomeTeamSelectionsRaw] = useState<PlayerSelection[]>(
     initializePlayerSelections(match.homePlayers || [])
   );
   
-  const [awayTeamSelections, setAwayTeamSelections] = useState<PlayerSelection[]>(
+  const [awayTeamSelections, setAwayTeamSelectionsRaw] = useState<PlayerSelection[]>(
     initializePlayerSelections(match.awayPlayers || [])
   );
+
+  // Tracked setters that mark dirty when called outside of sync effects
+  const setHomeTeamSelections: typeof setHomeTeamSelectionsRaw = useCallback((value) => {
+    if (!suppressDirtyRef.current) {
+      setHomePlayersDirty(true);
+    }
+    setHomeTeamSelectionsRaw(value);
+  }, []);
+
+  const setAwayTeamSelections: typeof setAwayTeamSelectionsRaw = useCallback((value) => {
+    if (!suppressDirtyRef.current) {
+      setAwayPlayersDirty(true);
+    }
+    setAwayTeamSelectionsRaw(value);
+  }, []);
 
   // Sync state with match prop when it changes (e.g., when modal reopens with updated data)
   useEffect(() => {
@@ -97,9 +118,13 @@ export const useMatchFormState = (match: MatchFormData) => {
     const updatedCards = initializePlayerCards(allPlayers);
     setPlayerCards(updatedCards);
     
-    // Sync player selections
-    setHomeTeamSelections(initializePlayerSelections(match.homePlayers || []));
-    setAwayTeamSelections(initializePlayerSelections(match.awayPlayers || []));
+    // Sync player selections — suppress dirty tracking
+    suppressDirtyRef.current = true;
+    setHomeTeamSelectionsRaw(initializePlayerSelections(match.homePlayers || []));
+    setAwayTeamSelectionsRaw(initializePlayerSelections(match.awayPlayers || []));
+    setHomePlayersDirty(false);
+    setAwayPlayersDirty(false);
+    suppressDirtyRef.current = false;
   }, [match.matchId, match.homeScore, match.awayScore, match.referee, match.refereeNotes, match.homePlayers, match.awayPlayers]);
 
   // Helper function to merge card data into player selections
@@ -132,6 +157,8 @@ export const useMatchFormState = (match: MatchFormData) => {
     awayTeamSelections,
     setAwayTeamSelections,
     getHomeTeamSelectionsWithCards,
-    getAwayTeamSelectionsWithCards
+    getAwayTeamSelectionsWithCards,
+    homePlayersDirty,
+    awayPlayersDirty
   };
 };
