@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { AppModal } from "@/components/modals/base/app-modal";
-import { AppAlertModal } from "@/components/modals/base/app-alert-modal";
 import { MatchesPenaltyShootoutModal } from "@/components/modals";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -75,7 +74,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const [latePenaltyTeamNames, setLatePenaltyTeamNames] = useState<string[]>([]);
   const [latePenaltyTeamIds, setLatePenaltyTeamIds] = useState<number[]>([]);
   const [pendingLatePenaltyMatch, setPendingLatePenaltyMatch] = useState<MatchFormData | null>(null);
-  const [latePenaltyDecision, setLatePenaltyDecision] = useState<'confirm' | 'skip' | null>(null);
   const [homeCardsOpen, setHomeCardsOpen] = React.useState(false);
   const [awayCardsOpen, setAwayCardsOpen] = React.useState(false);
   const [isKaartenOpen, setIsKaartenOpen] = useState(false);
@@ -708,32 +706,25 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     }
   }, [homeScore, awayScore, isCupMatch, createUpdatedMatch, submitMatchForm, isAdmin, userRole, handleComplete, setIsSubmitting, match, matchFormSettings]);
 
-  // Process late penalty decision via useEffect to avoid async in AlertDialog handlers
-  useEffect(() => {
-    if (!latePenaltyDecision || !pendingLatePenaltyMatch) return;
-    
-    const decision = latePenaltyDecision;
+  const handleLatePenaltySubmit = useCallback(async (applyPenalty: boolean) => {
+    if (!pendingLatePenaltyMatch) return;
+
     const matchToSubmit = pendingLatePenaltyMatch;
-    const teamIds = decision === 'confirm' ? latePenaltyTeamIds : [];
-    
-    // Reset decision state immediately
-    setLatePenaltyDecision(null);
+    const teamIds = applyPenalty ? latePenaltyTeamIds : [];
+
+    setShowLatePenaltyModal(false);
     setPendingLatePenaltyMatch(null);
-    
-    const doSubmit = async () => {
-      setIsSubmitting(true);
-      try {
-        const result = await submitMatchForm(matchToSubmit, isAdmin, userRole, matchFormSettings, teamIds);
-        if (result.success) handleComplete();
-      } catch (error) {
-        console.error('Error submitting match form:', error);
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
-    
-    doSubmit();
-  }, [latePenaltyDecision, pendingLatePenaltyMatch, latePenaltyTeamIds, submitMatchForm, isAdmin, userRole, matchFormSettings, handleComplete, setIsSubmitting]);
+    setIsSubmitting(true);
+
+    try {
+      const result = await submitMatchForm(matchToSubmit, isAdmin, userRole, matchFormSettings, teamIds);
+      if (result.success) handleComplete();
+    } catch (error) {
+      console.error('Error submitting match form:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [pendingLatePenaltyMatch, latePenaltyTeamIds, submitMatchForm, isAdmin, userRole, matchFormSettings, handleComplete, setIsSubmitting]);
 
   const handlePenaltyResult = useCallback(async (winner: 'home' | 'away', homePenalties: number, awayPenalties: number, notes: string) => {
     if (!pendingSubmission) return;
@@ -2466,32 +2457,34 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           onPenaltyResult={handlePenaltyResult}
         />
 
-        <AppAlertModal
+        <AppModal
           open={showLatePenaltyModal}
           onOpenChange={setShowLatePenaltyModal}
           title="⚠️ Wedstrijddatum verstreken"
-          description={
-            latePenaltyTeamNames.length === 1
-              ? `Wil je een "Boete te laat ingevuld" aanrekenen voor ${latePenaltyTeamNames[0]}?`
-              : `Wil je een "Boete te laat ingevuld" aanrekenen voor beide teams (${latePenaltyTeamNames.join(' en ')})?`
-          }
           size="sm"
-          confirmAction={{
+          showCloseButton={!isSubmitting}
+          primaryAction={{
             label: "Boete aanrekenen",
-            onClick: () => {
-              setShowLatePenaltyModal(false);
-              setLatePenaltyDecision('confirm');
-            },
-            variant: "destructive"
+            onClick: () => void handleLatePenaltySubmit(true),
+            variant: "destructive",
+            disabled: isSubmitting,
+            loading: isSubmitting,
           }}
-          cancelAction={{
+          secondaryAction={{
             label: "Opslaan zonder boete",
-            onClick: () => {
-              setShowLatePenaltyModal(false);
-              setLatePenaltyDecision('skip');
-            }
+            onClick: () => void handleLatePenaltySubmit(false),
+            disabled: isSubmitting,
           }}
-        />
+        >
+          <div className="space-y-2 text-sm text-foreground">
+            <p className="font-medium">De wedstrijddatum is verstreken.</p>
+            <p>
+              {latePenaltyTeamNames.length === 1
+                ? `Wil je een "Boete te laat ingevuld" aanrekenen voor ${latePenaltyTeamNames[0]}?`
+                : `Wil je een "Boete te laat ingevuld" aanrekenen voor beide teams (${latePenaltyTeamNames.join(' en ')})?`}
+            </p>
+          </div>
+        </AppModal>
       </div>
     </AppModal>
   );
