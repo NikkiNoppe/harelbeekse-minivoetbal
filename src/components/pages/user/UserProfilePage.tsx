@@ -250,20 +250,52 @@ const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
   );
 };
 
+// Sort options for player stats
+type PlayerSortOption = 'name' | 'matches' | 'cards';
+
+const sortLabels: Record<PlayerSortOption, string> = {
+  name: 'Naam',
+  matches: 'Wedstrijden',
+  cards: 'Kaarten',
+};
+
+const sortPlayers = (players: PlayerStat[], sortBy: PlayerSortOption): PlayerStat[] => {
+  return [...players].sort((a, b) => {
+    switch (sortBy) {
+      case 'matches':
+        return b.matchCount - a.matchCount || a.last_name.localeCompare(b.last_name);
+      case 'cards':
+        // Red first, then most yellows, then name
+        if (b.redCards !== a.redCards) return b.redCards - a.redCards;
+        if (b.yellowCards !== a.yellowCards) return b.yellowCards - a.yellowCards;
+        return a.last_name.localeCompare(b.last_name);
+      case 'name':
+      default:
+        return a.last_name.localeCompare(b.last_name);
+    }
+  });
+};
+
 // Team Players Overview Component
 const TeamPlayersOverview: React.FC<{ teamId: number }> = memo(({ teamId }) => {
   const { data: players, isLoading } = useTeamPlayerStats(teamId);
+  const [sortBy, setSortBy] = useState<PlayerSortOption>('name');
+
+  const sortedPlayers = useMemo(() => {
+    if (!players) return [];
+    return sortPlayers(players, sortBy);
+  }, [players, sortBy]);
+
+  const title = "Gespeelde wedstrijden per speler";
 
   if (isLoading) {
     return (
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-              Mijn Spelers
-            </CardTitle>
-          </div>
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+            {title}
+          </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 space-y-2">
           {[1, 2, 3].map(i => (
@@ -280,7 +312,7 @@ const TeamPlayersOverview: React.FC<{ teamId: number }> = memo(({ teamId }) => {
         <CardHeader className="pb-3">
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
             <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-            Mijn Spelers
+            {title}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
@@ -296,14 +328,32 @@ const TeamPlayersOverview: React.FC<{ teamId: number }> = memo(({ teamId }) => {
         <div className="flex items-center justify-between">
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
             <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-            Mijn Spelers
+            {title}
           </CardTitle>
           <Badge variant="outline" className="text-xs">{players.length}</Badge>
+        </div>
+        {/* Sort buttons */}
+        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+          <span className="text-xs text-muted-foreground mr-1">Sorteer:</span>
+          {(['name', 'matches', 'cards'] as PlayerSortOption[]).map((option) => (
+            <button
+              key={option}
+              onClick={() => setSortBy(option)}
+              className={cn(
+                "px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
+                sortBy === option
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              {sortLabels[option]}
+            </button>
+          ))}
         </div>
       </CardHeader>
       <CardContent className="pt-0">
         <div className="divide-y divide-border/50">
-          {players.map((player) => (
+          {sortedPlayers.map((player) => (
             <div
               key={player.player_id}
               className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
@@ -312,11 +362,6 @@ const TeamPlayersOverview: React.FC<{ teamId: number }> = memo(({ teamId }) => {
                 {player.last_name}, {player.first_name}
               </span>
               <div className="flex items-center gap-3 flex-shrink-0">
-                {/* Match count */}
-                <span className="flex items-center gap-1 text-xs text-muted-foreground" title="Wedstrijden">
-                  <Trophy className="h-3.5 w-3.5" />
-                  <span className="font-medium">{player.matchCount}</span>
-                </span>
                 {/* Yellow cards */}
                 {player.yellowCards > 0 && (
                   <span className="flex items-center gap-1 text-xs" title="Gele kaarten">
@@ -331,6 +376,11 @@ const TeamPlayersOverview: React.FC<{ teamId: number }> = memo(({ teamId }) => {
                     <span className="font-medium text-foreground">{player.redCards}</span>
                   </span>
                 )}
+                {/* Match count - now last */}
+                <span className="flex items-center gap-1 text-xs text-muted-foreground" title="Wedstrijden">
+                  <Trophy className="h-3.5 w-3.5" />
+                  <span className="font-medium">{player.matchCount}</span>
+                </span>
               </div>
             </div>
           ))}
