@@ -626,14 +626,18 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                                     </p>
                                     {transaction.cost_settings?.name === 'Boete te laat ingevuld' && transaction.transaction_date && (() => {
                                       const d = new Date(transaction.transaction_date);
-                                      const h = d.getUTCHours();
-                                      const m = d.getUTCMinutes();
-                                      const s = d.getUTCSeconds();
-                                      // Only show time if it's not midnight (meaning it has actual time data)
-                                      if (h !== 0 || m !== 0 || s !== 0) {
+                                      // Display in Belgian timezone
+                                      const timeStr = d.toLocaleTimeString('nl-BE', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit',
+                                        timeZone: 'Europe/Brussels'
+                                      });
+                                      // Only show if not midnight (legacy records without time)
+                                      if (timeStr !== '00:00:00') {
                                         return (
                                           <span className="text-[10px] text-muted-foreground italic leading-tight">
-                                            Ingediend om {String(h).padStart(2, '0')}:{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
+                                            Ingediend om {timeStr}
                                           </span>
                                         );
                                       }
