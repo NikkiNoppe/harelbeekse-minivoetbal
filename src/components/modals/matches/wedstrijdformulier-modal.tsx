@@ -708,36 +708,32 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     }
   }, [homeScore, awayScore, isCupMatch, createUpdatedMatch, submitMatchForm, isAdmin, userRole, handleComplete, setIsSubmitting, match, matchFormSettings]);
 
-  // Handle late penalty modal confirmation/cancel
-  const handleLatePenaltyConfirm = useCallback(async () => {
-    if (!pendingLatePenaltyMatch) return;
-    setShowLatePenaltyModal(false);
-    setIsSubmitting(true);
-    try {
-      const result = await submitMatchForm(pendingLatePenaltyMatch, isAdmin, userRole, matchFormSettings, latePenaltyTeamIds);
-      if (result.success) handleComplete();
-    } catch (error) {
-      console.error('Error submitting with late penalty:', error);
-    } finally {
-      setIsSubmitting(false);
-      setPendingLatePenaltyMatch(null);
-    }
-  }, [pendingLatePenaltyMatch, submitMatchForm, isAdmin, userRole, matchFormSettings, latePenaltyTeamIds, handleComplete, setIsSubmitting]);
-
-  const handleLatePenaltyCancel = useCallback(async () => {
-    if (!pendingLatePenaltyMatch) return;
-    setShowLatePenaltyModal(false);
-    setIsSubmitting(true);
-    try {
-      const result = await submitMatchForm(pendingLatePenaltyMatch, isAdmin, userRole, matchFormSettings, []);
-      if (result.success) handleComplete();
-    } catch (error) {
-      console.error('Error submitting without late penalty:', error);
-    } finally {
-      setIsSubmitting(false);
-      setPendingLatePenaltyMatch(null);
-    }
-  }, [pendingLatePenaltyMatch, submitMatchForm, isAdmin, userRole, matchFormSettings, handleComplete, setIsSubmitting]);
+  // Process late penalty decision via useEffect to avoid async in AlertDialog handlers
+  useEffect(() => {
+    if (!latePenaltyDecision || !pendingLatePenaltyMatch) return;
+    
+    const decision = latePenaltyDecision;
+    const matchToSubmit = pendingLatePenaltyMatch;
+    const teamIds = decision === 'confirm' ? latePenaltyTeamIds : [];
+    
+    // Reset decision state immediately
+    setLatePenaltyDecision(null);
+    setPendingLatePenaltyMatch(null);
+    
+    const doSubmit = async () => {
+      setIsSubmitting(true);
+      try {
+        const result = await submitMatchForm(matchToSubmit, isAdmin, userRole, matchFormSettings, teamIds);
+        if (result.success) handleComplete();
+      } catch (error) {
+        console.error('Error submitting match form:', error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+    
+    doSubmit();
+  }, [latePenaltyDecision, pendingLatePenaltyMatch, latePenaltyTeamIds, submitMatchForm, isAdmin, userRole, matchFormSettings, handleComplete, setIsSubmitting]);
 
   const handlePenaltyResult = useCallback(async (winner: 'home' | 'away', homePenalties: number, awayPenalties: number, notes: string) => {
     if (!pendingSubmission) return;
