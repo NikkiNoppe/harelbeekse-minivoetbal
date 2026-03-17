@@ -324,6 +324,100 @@ const syncLatePenalty = async (
 };
 
 /**
+ * Form completion penalties side effect
+ * IDEMPOTENT: Checks for existing penalty before inserting
+ * 
+ * Rules per team:
+ * - 0 players → "Wedstrijdformulier niet ingevuld"
+ * - >0 players but <4 with jerseyNumber OR no captain → "Wedstrijdformulier niet correct ingevuld"
+ * The two penalties are mutually exclusive.
+ */
+const syncFormCompletionPenalties = async (
+  ctx: SideEffectContext,
+  matchId: number,
+  matchInfo: MatchInfo,
+  updateData: UpdateData
+): Promise<void> => {
+  // Lookup both cost settings by name
+  const { data: costSettings, error: costError } = await supabase
+    .from('costs')
+    .select('id, name, amount')
+    .in('name', ['Wedstrijdformulier niet ingevuld', 'Wedstrijdformulier niet correct ingevuld'])
+    .eq('category', 'penalty')
+    .eq('is_active', true);
+
+  if (costError || !costSettings || costSettings.length === 0) {
+    throw new Error('Could not find form completion penalty cost settings');
+  }
+
+  const notFilledCost = costSettings.find(c => c.name === 'Wedstrijdformulier niet ingevuld');
+  const incorrectCost = costSettings.find(c => c.name === 'Wedstrijdformulier niet correct ingevuld');
+
+  if (!notFilledCost || !incorrectCost) {
+    throw new Error('Missing one or both form completion penalty cost settings');
+  }
+
+  const teamChecks: { teamId: number | undefined; players: any[] }[] = [
+    { teamId: matchInfo.home_team_id, players: updateData.homePlayers || [] },
+    { teamId: matchInfo.away_team_id, players: updateData.awayPlayers || [] },
+  ];
+
+  for (const { teamId, players } of teamChecks) {
+    if (!teamId) continue;
+
+    // Filter to players with a valid playerId
+    const validPlayers = players.filter(p => p?.playerId != null);
+    
+    let penaltyCost: typeof notFilledCost | null = null;
+
+    if (validPlayers.length === 0) {
+      // No players at all
+      penaltyCost = notFilledCost;
+    } else {
+      // Check: at least 4 players with a jerseyNumber
+      const playersWithJersey = validPlayers.filter(p => p.jerseyNumber && String(p.jerseyNumber).trim() !== '');
+      const hasCaptain = validPlayers.some(p => p.isCaptain === true);
+
+      if (playersWithJersey.length < 4 || !hasCaptain) {
+        penaltyCost = incorrectCost;
+      }
+    }
+
+    if (!penaltyCost) continue;
+
+    // Idempotent: check if penalty already exists
+    const { data: existing } = await supabase
+      .from('team_costs')
+      .select('id')
+      .eq('match_id', matchId)
+      .eq('team_id', teamId)
+      .eq('cost_setting_id', penaltyCost.id)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      logSideEffect(ctx, 'form_completion', 'info', `Penalty "${penaltyCost.name}" already exists for team ${teamId}, skipping`);
+      continue;
+    }
+
+    const { error: insertError } = await supabase
+      .from('team_costs')
+      .insert({
+        team_id: teamId,
+        cost_setting_id: penaltyCost.id,
+        match_id: matchId,
+        amount: penaltyCost.amount,
+        transaction_date: new Date().toISOString()
+      });
+
+    if (insertError) throw insertError;
+
+    logSideEffect(ctx, 'form_completion', 'info', `Penalty "${penaltyCost.name}" inserted for team ${teamId}`, {
+      amount: penaltyCost.amount
+    });
+  }
+};
+
+/**
  * Main entry point for scheduling all background side effects
  * Fire-and-forget pattern - does not block caller
  */
@@ -386,6 +480,17 @@ export const scheduleBackgroundSideEffects = (
         ctx,
         'match_costs',
         () => syncMatchCosts(ctx, matchId, matchInfo, updateData),
+        1500
+      );
+      results.push(result);
+    }
+
+    // 5. Form completion penalties (if match completed)
+    if (updateData.isCompleted && matchInfo) {
+      const result = await executeWithRetry(
+        ctx,
+        'form_completion',
+        () => syncFormCompletionPenalties(ctx, matchId, matchInfo, updateData),
         1500
       );
       results.push(result);
