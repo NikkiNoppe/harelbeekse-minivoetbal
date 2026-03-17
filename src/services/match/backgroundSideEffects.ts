@@ -373,7 +373,7 @@ export const scheduleBackgroundSideEffects = (
       const result = await executeWithRetry(
         ctx,
         'late_penalty',
-        () => syncLatePenalty(ctx, matchId, matchInfo),
+        () => syncLatePenalty(ctx, matchId, matchInfo, latePenaltyTeamIds),
         1500
       );
       results.push(result);
