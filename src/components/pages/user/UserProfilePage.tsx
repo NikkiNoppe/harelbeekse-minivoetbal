@@ -956,59 +956,57 @@ const FinancialOverviewCard: React.FC<{ teamId: number }> = memo(({ teamId }) =>
   const fmt = (n: number) => `€${n.toFixed(2)}`;
 
   return (
-    <Card>
-      <CardContent className="pt-0">
-        {isLoading ? (
-          <div className="py-4 space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-4 w-3/4" />
+    <CardContent className="pt-0">
+      {isLoading ? (
+        <div className="py-4 space-y-2">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {/* Balance hero */}
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-sm font-medium text-muted-foreground">Huidig saldo</span>
+            <span className={cn(
+              "text-xl font-bold tabular-nums",
+              isNegative ? "text-destructive" : "text-green-600"
+            )}>
+              {isNegative ? '−' : ''}€{Math.abs(balance).toFixed(2)}
+            </span>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {/* Balance hero */}
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-sm font-medium text-muted-foreground">Huidig saldo</span>
-              <span className={cn(
-                "text-xl font-bold tabular-nums",
-                isNegative ? "text-destructive" : "text-green-600"
-              )}>
-                {isNegative ? '−' : ''}€{Math.abs(balance).toFixed(2)}
-              </span>
-            </div>
 
-            {/* Compact breakdown grid */}
-            {breakdown && (
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs border-t border-border/50 pt-2.5">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Wedstrijden</span>
-                  <span className="font-medium tabular-nums text-foreground">{breakdown.matchCount}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Boetes</span>
-                  <span className="font-medium tabular-nums text-destructive/80">{fmt(breakdown.fines)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Veldkosten</span>
-                  <span className="font-medium tabular-nums text-foreground">{fmt(breakdown.fieldCosts)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Scheidsrechter</span>
-                  <span className="font-medium tabular-nums text-foreground">{fmt(breakdown.refereeCosts)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Administratie</span>
-                  <span className="font-medium tabular-nums text-foreground">{fmt(breakdown.adminCosts)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Stortingen</span>
-                  <span className="font-medium tabular-nums text-green-600">{fmt(breakdown.deposits)}</span>
-                </div>
+          {/* Compact breakdown grid */}
+          {breakdown && (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs border-t border-border/50 pt-2.5">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Wedstrijden</span>
+                <span className="font-medium tabular-nums text-foreground">{breakdown.matchCount}</span>
               </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Boetes</span>
+                <span className="font-medium tabular-nums text-destructive/80">{fmt(breakdown.fines)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Veldkosten</span>
+                <span className="font-medium tabular-nums text-foreground">{fmt(breakdown.fieldCosts)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Scheidsrechter</span>
+                <span className="font-medium tabular-nums text-foreground">{fmt(breakdown.refereeCosts)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Administratie</span>
+                <span className="font-medium tabular-nums text-foreground">{fmt(breakdown.adminCosts)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Stortingen</span>
+                <span className="font-medium tabular-nums text-green-600">{fmt(breakdown.deposits)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </CardContent>
   );
 });
 FinancialOverviewCard.displayName = 'FinancialOverviewCard';
