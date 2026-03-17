@@ -655,7 +655,19 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         refereeNotesLength: updatedMatch.refereeNotes?.length || 0
       });
       
-      const result = await submitMatchForm(updatedMatch, isAdmin, userRole, matchFormSettings);
+      // Check if admin is submitting after match date → ask about late penalty
+      let forceLatePenalty = false;
+      if (isAdmin && updatedMatch.date && updatedMatch.time) {
+        const matchDateTime = new Date(`${updatedMatch.date}T${updatedMatch.time}`);
+        if (new Date() > matchDateTime) {
+          forceLatePenalty = window.confirm(
+            '⚠️ De wedstrijddatum is verstreken.\n\n' +
+            'Wil je een "Boete te laat ingevuld" aanrekenen voor beide teams?'
+          );
+        }
+      }
+      
+      const result = await submitMatchForm(updatedMatch, isAdmin, userRole, matchFormSettings, forceLatePenalty);
       
       console.log('💾 [WedstrijdformulierModal] handleSubmit - After submitMatchForm:', {
         success: result.success,

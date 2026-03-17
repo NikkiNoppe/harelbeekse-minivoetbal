@@ -19,6 +19,7 @@ interface MatchUpdateData {
   awayPlayers?: any[];
   isCompleted?: boolean;
   isLocked?: boolean;
+  forceLatePenalty?: boolean;
 }
 
 interface ServiceResponse {
