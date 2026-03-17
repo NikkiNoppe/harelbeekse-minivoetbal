@@ -159,6 +159,7 @@ export const useMatchFormState = (match: MatchFormData) => {
     getHomeTeamSelectionsWithCards,
     getAwayTeamSelectionsWithCards,
     homePlayersDirty,
-    awayPlayersDirty
+    awayPlayersDirty,
+    suppressDirtyRef
   };
 };

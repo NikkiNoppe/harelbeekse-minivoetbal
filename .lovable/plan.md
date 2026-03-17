@@ -1,52 +1,47 @@
 
 
-## Analyse: Dirty tracking is correct, maar heeft een bug
+## Probleem: Playoff data corruptie + preventie
 
-### Wat er aan de hand is
+### 1. Data Herstel
 
-De dirty tracking aanpak is **de juiste oplossing** — het is een standaard frontend pattern (React forms gebruiken dit overal). Het vergroot je database niet en voegt geen extra queries toe. Het enige wat het doet is: "stuur alleen data mee die de gebruiker daadwerkelijk heeft gewijzigd."
+Er is momenteel 1 beschadigde wedstrijd gevonden:
 
-**Maar er zit een bug in de huidige implementatie waardoor het niet werkt.**
+| Match | Huidig | Moet zijn |
+|-------|--------|-----------|
+| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
 
-### De bug
+Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
 
-In `wedstrijdformulier-modal.tsx` regels 522-558 staan twee "name sync" effecten. Deze draaien automatisch wanneer spelerdata wordt geladen en roepen `setHomeTeamSelections` / `setAwayTeamSelections` aan. Dit zijn de **tracked** setters die `dirty = true` zetten.
+**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
+- `speeldag` terug naar "Playoff Speeldag 4"
+- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
 
-```text
-Modal opent
-  → spelers laden uit DB
-  → name sync effect vuurt automatisch
-  → setHomeTeamSelections() aangeroepen
-  → homePlayersDirty = true  ← BUG: niemand heeft iets gewijzigd!
-  → spelers worden ALTIJD meegestuurd (zelfde als zonder dirty tracking)
+### 2. Bug Fix: Voorkom toekomstige corruptie
+
+**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
+
+**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
+
+In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
+- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
+- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
+
+### Technische Details
+
+**Bestanden die gewijzigd worden:**
+
+1. **Nieuwe SQL-migratie** - Herstel PO-22:
+```
+UPDATE matches 
+SET speeldag = 'Playoff Speeldag 4', 
+    match_date = '2026-02-10 18:30:00+00'
+WHERE match_id = 2197 
+AND unique_number = 'PO-22-1766492793564-7079';
 ```
 
-Resultaat: de dirty tracking heeft **geen effect** — het gedrag is identiek aan vóór de fix.
+2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
+   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
+   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
+   - Voor team managers wordt `matchData` weggelaten uit het update-object
 
-### De fix: 6 regels code
-
-Exporteer `suppressDirtyRef` uit `useMatchFormState` (al aanwezig, maar niet geëxporteerd) en wrap de name sync effecten ermee:
-
-**`useMatchFormState.ts`** — voeg `suppressDirtyRef` toe aan return object
-
-**`wedstrijdformulier-modal.tsx`** — wrap de twee name sync effecten:
-```typescript
-// Regel 522-538 (home) en 541-558 (away):
-suppressDirtyRef.current = true;
-setHomeTeamSelections(prev => prev.map(...));
-suppressDirtyRef.current = false;
-```
-
-### Waarom dit efficiënt is
-
-- Geen database wijzigingen
-- Geen extra queries
-- Geen extra state of complexity
-- Het `update_match_with_context` RPC ondersteunt dit al: `CASE WHEN p_update_data ? 'home_players'` — als de key niet in de JSON zit, wordt die kolom niet aangeraakt
-- Team manager wijzigt spelers → dirty=true → data gaat mee ✅
-- Referee wijzigt alleen scores → dirty=false → spelers worden niet aangeraakt ✅
-
-### Bestanden
-1. `src/components/pages/admin/matches/hooks/useMatchFormState.ts` — exporteer `suppressDirtyRef`
-2. `src/components/modals/matches/wedstrijdformulier-modal.tsx` — wrap name sync effecten met suppress
-
+Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.
