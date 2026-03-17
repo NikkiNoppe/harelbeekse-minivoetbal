@@ -10,7 +10,7 @@ export const useEnhancedMatchFormSubmission = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const submitMatchForm = async (matchData: MatchFormData, isAdmin: boolean = false, userRole?: string, matchFormSettings?: MatchFormSettings) => {
+  const submitMatchForm = async (matchData: MatchFormData, isAdmin: boolean = false, userRole?: string, matchFormSettings?: MatchFormSettings, forceLatePenalty: boolean = false) => {
     console.log('🟡 [useEnhancedMatchFormSubmission] Starting submitMatchForm');
     console.log('🟡 [useEnhancedMatchFormSubmission] Match data:', matchData);
     console.log('🟡 [useEnhancedMatchFormSubmission] isAdmin:', isAdmin, 'userRole:', userRole);
