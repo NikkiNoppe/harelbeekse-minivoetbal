@@ -54,7 +54,9 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
       category: 'penalty'
     });
     setShowAddForm(false);
-    setEditingItem(null);
+    setEditingId(null);
+    setEditName('');
+    setEditAmount('');
   }, []);
 
   const handleSave = useCallback(async () => {
