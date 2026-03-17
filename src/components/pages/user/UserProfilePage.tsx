@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { teamService } from "@/services/core";
 import { useQueryClient } from "@tanstack/react-query";
 import { withUserContext } from "@/lib/supabaseUtils";
+import RefereeNotesCard from "./RefereeNotesCard";
 
 // Loading skeleton
 const ProfileSkeleton = memo(() => (
@@ -1112,6 +1113,9 @@ const UserProfilePage: React.FC = () => {
             queryClient.refetchQueries({ queryKey: ['userProfile'] });
           }}
         />
+
+        {/* Referee Notes Card - Admin only */}
+        {isAdmin && <RefereeNotesCard />}
 
         {/* Next Match Card - Show if user has a team and there's an upcoming match */}
         {firstTeam && !matchesLoading && nextMatch && (
