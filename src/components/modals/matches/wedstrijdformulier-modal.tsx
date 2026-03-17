@@ -522,12 +522,12 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   // Sync player names when players are loaded - this ensures playerName is always set correctly
   useEffect(() => {
     if (!homeIsLoading && homePlayersWithSuspensions && homePlayersWithSuspensions.length > 0) {
+      suppressDirtyRef.current = true;
       setHomeTeamSelections(prev => prev.map(selection => {
         if (selection.playerId) {
           const player = homePlayersWithSuspensions.find(p => p.player_id === selection.playerId);
           if (player) {
             const expectedName = `${player.first_name} ${player.last_name}`;
-            // Always update playerName to ensure it matches the loaded player data
             return {
               ...selection,
               playerName: expectedName
@@ -536,6 +536,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         }
         return selection;
       }));
+      suppressDirtyRef.current = false;
     }
   }, [homePlayersWithSuspensions, homeIsLoading]);
 
