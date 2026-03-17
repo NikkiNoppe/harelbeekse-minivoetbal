@@ -498,6 +498,9 @@ export const retryFailedSideEffect = async (failureId: number): Promise<boolean>
           referee: matchInfo.referee
         });
         break;
+      case 'late_penalty':
+        await syncLatePenalty(ctx, matchId, matchInfo);
+        break;
       default:
         console.error('Unknown side effect type:', sideEffect);
         return false;
