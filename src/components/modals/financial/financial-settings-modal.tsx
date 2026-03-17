@@ -307,11 +307,11 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
 
                   <div className="flex flex-col gap-2 pt-2">
                     <button 
-                      onClick={handleSave}
+                      onClick={handleAddSave}
                       className="btn btn--primary w-full"
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? 'Bezig...' : (editingItem ? 'Bijwerken' : 'Toevoegen')}
+                      {isSubmitting ? 'Bezig...' : 'Toevoegen'}
                     </button>
                     <button 
                       onClick={resetForm}
