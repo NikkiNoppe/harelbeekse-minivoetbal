@@ -140,16 +140,9 @@ export const enhancedMatchService = {
         isLateSubmission: isLateSubmission
       });
       
-      // Handle referee notes - add late submission penalty if applicable, otherwise use provided value
-      if (isLateSubmission) {
-        // Add penalty to existing notes
-        updateObject.referee_notes = (updateData.refereeNotes || '') + 
-          (updateData.refereeNotes ? '\n\n' : '') + 
-          settings.late_penalty_note + ` - €${settings.late_penalty_amount.toFixed(2)}`;
-        console.log('💾 [enhancedMatchService] Added late submission penalty:', {
-          finalRefereeNotes: updateObject.referee_notes
-        });
-      } else if (updateData.refereeNotes !== undefined) {
+      // Handle referee notes - no longer appending penalty text here
+      // Late submission penalties are now handled financially via backgroundSideEffects
+      if (updateData.refereeNotes !== undefined) {
         // Only set referee_notes if not already set by late submission penalty
         // Preserve empty strings, only convert undefined/null to null
         updateObject.referee_notes = updateData.refereeNotes !== null && updateData.refereeNotes !== undefined ? updateData.refereeNotes : null;
