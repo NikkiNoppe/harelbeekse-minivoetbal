@@ -611,7 +611,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     
     // Only include matchData (date, time, location, matchday) for admin/referee
     // Team managers should NOT overwrite these fields to prevent data corruption
-    const updatedMatch = {
+    // Only include player data if it was actually modified (dirty tracking)
+    const updatedMatch: MatchFormData = {
       ...match,
       ...(isAdmin || isReferee ? matchData : {}),
       homeScore,
@@ -619,9 +620,16 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       referee: selectedReferee,
       refereeNotes: processedRefereeNotes,
       isCompleted: homeScore != null && awayScore != null,
-      homePlayers: homePlayersWithNames,
-      awayPlayers: awayPlayersWithNames
+      homePlayers: homePlayersDirty ? homePlayersWithNames : undefined as any,
+      awayPlayers: awayPlayersDirty ? awayPlayersWithNames : undefined as any
     };
+    
+    console.log('🔍 [WedstrijdformulierModal] createUpdatedMatch - Dirty flags:', {
+      homePlayersDirty,
+      awayPlayersDirty,
+      homePlayersIncluded: homePlayersDirty,
+      awayPlayersIncluded: awayPlayersDirty
+    });
     
     console.log('🔍 [WedstrijdformulierModal] createUpdatedMatch - Final match object:', {
       matchId: updatedMatch.matchId,
@@ -631,7 +639,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     });
     
     return updatedMatch;
-  }, [match, matchData, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards, homePlayersWithSuspensions, awayPlayersWithSuspensions]);
+  }, [match, matchData, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards, homePlayersWithSuspensions, awayPlayersWithSuspensions, homePlayersDirty, awayPlayersDirty]);
 
   const handleSubmit = useCallback(async () => {
     const parsedHomeScore = homeScore !== "" ? parseInt(homeScore) : null;
