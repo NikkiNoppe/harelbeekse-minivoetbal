@@ -278,8 +278,8 @@ const sortPlayers = (players: PlayerStat[], sortBy: PlayerSortOption): PlayerSta
   });
 };
 
-// Team Players Overview Component
-const TeamPlayersOverview: React.FC<{ teamId: number }> = memo(({ teamId }) => {
+// Team Players Overview Content (without Card wrapper, for use inside collapsible)
+const TeamPlayersOverviewContent: React.FC<{ teamId: number }> = memo(({ teamId }) => {
   const { data: players, isLoading } = useTeamPlayerStats(teamId);
   const [sortBy, setSortBy] = useState<PlayerSortOption>('name');
 
@@ -288,54 +288,30 @@ const TeamPlayersOverview: React.FC<{ teamId: number }> = memo(({ teamId }) => {
     return sortPlayers(players, sortBy);
   }, [players, sortBy]);
 
-  const title = "Gespeelde wedstrijden per speler";
-
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-            {title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-2">
-          {[1, 2, 3].map(i => (
-            <Skeleton key={i} className="h-10 w-full" />
-          ))}
-        </CardContent>
-      </Card>
+      <CardContent className="pt-0 space-y-2">
+        {[1, 2, 3].map(i => (
+          <Skeleton key={i} className="h-10 w-full" />
+        ))}
+      </CardContent>
     );
   }
 
   if (!players || players.length === 0) {
     return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-            {title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <p className="text-sm text-muted-foreground italic">Geen spelers gevonden</p>
-        </CardContent>
-      </Card>
+      <CardContent className="pt-0">
+        <p className="text-sm text-muted-foreground italic">Geen spelers gevonden</p>
+      </CardContent>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-            {title}
-          </CardTitle>
-          <Badge variant="outline" className="text-xs">{players.length}</Badge>
-        </div>
-        {/* Sort dropdown */}
-        <div className="flex items-center gap-2 mt-2">
+    <CardContent className="pt-0">
+      {/* Sort + count row */}
+      <div className="flex items-center justify-between mb-3">
+        <Badge variant="outline" className="text-xs">{players.length} spelers</Badge>
+        <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">Sorteer:</span>
           <Select value={sortBy} onValueChange={(val) => setSortBy(val as PlayerSortOption)}>
             <SelectTrigger className="h-7 min-h-[32px] w-[140px] text-xs">
@@ -348,46 +324,44 @@ const TeamPlayersOverview: React.FC<{ teamId: number }> = memo(({ teamId }) => {
             </SelectContent>
           </Select>
         </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="divide-y divide-border/50">
-          {sortedPlayers.map((player) => (
-            <div
-              key={player.player_id}
-              className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
-            >
-              <span className="text-sm font-medium text-foreground truncate mr-3">
-                {player.last_name}, {player.first_name}
-              </span>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                {/* Yellow cards */}
-                {player.yellowCards > 0 && (
-                  <span className="flex items-center gap-1 text-xs" title="Gele kaarten">
-                    <span className="w-3 h-4 rounded-[2px] bg-yellow-400 inline-block" />
-                    <span className="font-medium text-foreground">{player.yellowCards}</span>
-                  </span>
-                )}
-                {/* Red cards */}
-                {player.redCards > 0 && (
-                  <span className="flex items-center gap-1 text-xs" title="Rode kaarten">
-                    <span className="w-3 h-4 rounded-[2px] bg-red-500 inline-block" />
-                    <span className="font-medium text-foreground">{player.redCards}</span>
-                  </span>
-                )}
-                {/* Match count - now last */}
-                <span className="flex items-center gap-1 text-xs text-muted-foreground" title="Wedstrijden">
-                  <Trophy className="h-3.5 w-3.5" />
-                  <span className="font-medium">{player.matchCount}</span>
+      </div>
+      <div className="divide-y divide-border/50">
+        {sortedPlayers.map((player) => (
+          <div
+            key={player.player_id}
+            className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
+          >
+            <span className="text-sm font-medium text-foreground truncate mr-3">
+              {player.last_name}, {player.first_name}
+            </span>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              {/* Yellow cards */}
+              {player.yellowCards > 0 && (
+                <span className="flex items-center gap-1 text-xs" title="Gele kaarten">
+                  <span className="w-3 h-4 rounded-[2px] bg-yellow-400 inline-block" />
+                  <span className="font-medium text-foreground">{player.yellowCards}</span>
                 </span>
-              </div>
+              )}
+              {/* Red cards */}
+              {player.redCards > 0 && (
+                <span className="flex items-center gap-1 text-xs" title="Rode kaarten">
+                  <span className="w-3 h-4 rounded-[2px] bg-red-500 inline-block" />
+                  <span className="font-medium text-foreground">{player.redCards}</span>
+                </span>
+              )}
+              {/* Match count */}
+              <span className="flex items-center gap-1 text-xs text-muted-foreground" title="Wedstrijden">
+                <Trophy className="h-3.5 w-3.5" />
+                <span className="font-medium">{player.matchCount}</span>
+              </span>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+          </div>
+        ))}
+      </div>
+    </CardContent>
   );
 });
-
+TeamPlayersOverviewContent.displayName = 'TeamPlayersOverviewContent';
 // Combined User & Team Info Card Component
 const UserTeamInfoCard: React.FC<{
   user: {
