@@ -1115,6 +1115,11 @@ const UserProfilePage: React.FC = () => {
           }}
         />
 
+        {/* Team Players Overview - Player managers only */}
+        {user.role === 'player_manager' && firstTeam && (
+          <TeamPlayersOverview teamId={firstTeam.team_id} />
+        )}
+
         {/* Referee Notes Card - Admin only */}
         {isAdmin && <RefereeNotesCard />}
 
