@@ -59,54 +59,67 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
     setEditAmount('');
   }, []);
 
-  const handleSave = useCallback(async () => {
+  // Save for NEW items only
+  const handleAddSave = useCallback(async () => {
     if (!formData.name.trim() || !formData.amount) {
-      toast({
-        title: "Fout",
-        description: "Vul alle verplichte velden in",
-        variant: "destructive"
-      });
+      toast({ title: "Fout", description: "Vul alle verplichte velden in", variant: "destructive" });
       return;
     }
     const amount = parseFloat(formData.amount);
     if (isNaN(amount) || amount < 0) {
-      toast({
-        title: "Fout",
-        description: "Voer een geldig bedrag in",
-        variant: "destructive"
-      });
+      toast({ title: "Fout", description: "Voer een geldig bedrag in", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
-    const settingData = {
+    const result = await enhancedCostSettingsService.addCostSetting({
       name: formData.name.trim(),
-      amount: amount,
+      amount,
       category: formData.category,
       is_active: true
-    };
-    let result;
-    if (editingItem) {
-      result = await enhancedCostSettingsService.updateCostSetting(editingItem.id, settingData);
-    } else {
-      result = await enhancedCostSettingsService.addCostSetting(settingData);
-    }
+    });
     setIsSubmitting(false);
     if (result.success) {
-      toast({
-        title: "Succesvol",
-        description: result.message
-      });
+      toast({ title: "Succesvol", description: result.message });
       queryClient.invalidateQueries({ queryKey: ['cost-settings-management'] });
       queryClient.invalidateQueries({ queryKey: ['cost-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
       resetForm();
     } else {
-      toast({
-        title: "Fout",
-        description: result.message,
-        variant: "destructive"
-      });
+      toast({ title: "Fout", description: result.message, variant: "destructive" });
     }
-  }, [formData, editingItem, queryClient, resetForm, toast]);
+  }, [formData, queryClient, resetForm, toast]);
+
+  // Save for INLINE edit (naam + bedrag)
+  const handleEditSave = useCallback(async () => {
+    if (editingId === null) return;
+    if (!editName.trim() || !editAmount) {
+      toast({ title: "Fout", description: "Vul naam en bedrag in", variant: "destructive" });
+      return;
+    }
+    const amount = parseFloat(editAmount);
+    if (isNaN(amount) || amount < 0) {
+      toast({ title: "Fout", description: "Voer een geldig bedrag in", variant: "destructive" });
+      return;
+    }
+    setIsSubmitting(true);
+    const result = await enhancedCostSettingsService.updateCostSetting(editingId, {
+      name: editName.trim(),
+      amount
+    });
+    setIsSubmitting(false);
+    if (result.success) {
+      toast({ title: "Succesvol", description: result.message });
+      queryClient.invalidateQueries({ queryKey: ['cost-settings-management'] });
+      queryClient.invalidateQueries({ queryKey: ['cost-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
+      queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
+      setEditingId(null);
+      setEditName('');
+      setEditAmount('');
+    } else {
+      toast({ title: "Fout", description: result.message, variant: "destructive" });
+    }
+  }, [editingId, editName, editAmount, queryClient, toast]);
 
   const handleDelete = useCallback(async () => {
     if (!deletingItem) return;
