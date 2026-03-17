@@ -27,15 +27,20 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
   const queryClient = useQueryClient();
   
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingItem, setDeletingItem] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Form for adding new items
   const [formData, setFormData] = useState({
     name: '',
     amount: '',
     category: 'penalty' as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost'
   });
+  
+  // Inline edit form
+  const [editName, setEditName] = useState('');
+  const [editAmount, setEditAmount] = useState('');
 
   const { data: costSettings, isLoading } = useQuery({
     queryKey: ['cost-settings-management'],
