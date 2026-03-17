@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { AppModal } from "@/components/modals/base/app-modal";
+import { AppAlertModal } from "@/components/modals/base/app-alert-modal";
 import { MatchesPenaltyShootoutModal } from "@/components/modals";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
