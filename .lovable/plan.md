@@ -1,47 +1,29 @@
 
 
-## Probleem: Playoff data corruptie + preventie
+## Plan: Fix late penalty amount & kostenlijst cascading update
 
-### 1. Data Herstel
+### Probleem 1: Late penalty insert mist het `amount` veld
+In `backgroundSideEffects.ts` regel 308-315 wordt de "Boete te laat ingevuld" penalty ingevoegd **zonder `amount`**. Het `amount` veld in `team_costs` blijft `null`, wat ertoe leidt dat het bedrag mogelijk niet correct wordt getoond in de financiele overview.
 
-Er is momenteel 1 beschadigde wedstrijd gevonden:
+**Fix**: Voeg `amount: costSetting.amount` toe aan de insert in `syncLatePenalty`.
 
-| Match | Huidig | Moet zijn |
-|-------|--------|-----------|
-| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
-
-Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
-
-**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
-- `speeldag` terug naar "Playoff Speeldag 4"
-- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
-
-### 2. Bug Fix: Voorkom toekomstige corruptie
-
-**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
-
-**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
-
-In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
-- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
-- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
-
-### Technische Details
-
-**Bestanden die gewijzigd worden:**
-
-1. **Nieuwe SQL-migratie** - Herstel PO-22:
+### Probleem 2: Kostenlijst cascading update werkt niet correct
+In `costSettingsService.ts` regel 122-126 updatet `updateCostSetting` alle `team_costs` records met het nieuwe bedrag. Dit werkt via:
 ```
-UPDATE matches 
-SET speeldag = 'Playoff Speeldag 4', 
-    match_date = '2026-02-10 18:30:00+00'
-WHERE match_id = 2197 
-AND unique_number = 'PO-22-1766492793564-7079';
+.update({ amount: setting.amount })
+.eq('cost_setting_id', id)
 ```
+Dit zou moeten werken, maar het probleem is waarschijnlijk dat `team_costs` records die **geen `amount` hebben** (null) niet correct worden bijgewerkt, of de RLS policies blokkeren de update. De RLS policy vereist `get_current_user_role() = 'admin'` of `pg_trigger_depth() > 0`. Als admin zou dit moeten werken.
 
-2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
-   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
-   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
-   - Voor team managers wordt `matchData` weggelaten uit het update-object
+Laat me verifiëren of er nog een ander probleem is — de update query zelf lijkt correct. Het kan zijn dat records die via de database trigger (`process_match_financial_costs`) zijn aangemaakt geen `amount` veld hebben (de trigger insert zonder amount), waardoor ze `null` blijven en de cascading update ze wel correct zou moeten updaten.
 
-Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.
+**Fix**: Geen codewijziging nodig voor de cascading update zelf — die logica is correct. Het probleem zat erin dat nieuwe records zonder `amount` werden aangemaakt.
+
+### Wijzigingen
+
+**1. `src/services/match/backgroundSideEffects.ts`** — Voeg `amount` toe aan late penalty insert
+- Regel 308-315: voeg `amount: costSetting.amount` toe aan het insert object
+
+### Bestanden
+1. `src/services/match/backgroundSideEffects.ts` — 1 regel toevoegen
+
