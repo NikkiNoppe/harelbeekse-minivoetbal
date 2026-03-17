@@ -1,47 +1,45 @@
 
 
-## Probleem: Playoff data corruptie + preventie
+## Plan: Gestyleerde boete-bevestiging met team-specifieke logica
 
-### 1. Data Herstel
+### Probleem
+1. De boete-bevestiging gebruikt `window.confirm()` — geen styling, past niet bij het design system
+2. De boete wordt altijd voor **beide** teams voorgesteld, ook als slechts voor 1 team spelers werden aangepast
 
-Er is momenteel 1 beschadigde wedstrijd gevonden:
+### Wijzigingen
 
-| Match | Huidig | Moet zijn |
-|-------|--------|-----------|
-| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
+**1. `wedstrijdformulier-modal.tsx`** — Vervang `window.confirm` door `AppAlertModal`
+- Voeg state toe: `showLatePenaltyModal`, `latePenaltyTeams` (array van teamnamen die gewijzigd werden), en `pendingLatePenaltySubmission`
+- Detecteer welke teams gewijzigd zijn door de huidige spelers te vergelijken met de originele `match.homePlayers` / `match.awayPlayers`:
+  - Als home spelers gewijzigd → home team in de boete-lijst
+  - Als away spelers gewijzigd → away team in de boete-lijst
+- Toon `AppAlertModal` met dynamische tekst:
+  - 1 team: *"Wil je een boete aanrekenen voor [teamnaam]?"*
+  - 2 teams: *"Wil je een boete aanrekenen voor beide teams?"*
+- Bij bevestiging: sla de betreffende team-IDs op en ga door met submit
+- Bij annuleren: submit zonder boete
 
-Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
+**2. `useEnhancedMatchFormSubmission.ts`** — Vervang `forceLatePenalty: boolean` door `forceLatePenaltyTeamIds: number[]`
+- Geef de specifieke team-IDs door aan de service in plaats van een boolean
 
-**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
-- `speeldag` terug naar "Playoff Speeldag 4"
-- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
+**3. `enhancedMatchService.ts`** — Accepteer `forceLatePenaltyTeamIds` in plaats van `forceLatePenalty`
+- Geef de team-IDs door aan `scheduleBackgroundSideEffects`
 
-### 2. Bug Fix: Voorkom toekomstige corruptie
+**4. `backgroundSideEffects.ts`** — Accepteer optionele `latePenaltyTeamIds`
+- In `syncLatePenalty`: als `latePenaltyTeamIds` meegegeven, gebruik alleen die IDs in plaats van beide teams
+- `scheduleBackgroundSideEffects` krijgt een extra parameter `latePenaltyTeamIds?: number[]`
 
-**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
+### Detectielogica voor gewijzigde teams
 
-**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
-
-In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
-- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
-- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
-
-### Technische Details
-
-**Bestanden die gewijzigd worden:**
-
-1. **Nieuwe SQL-migratie** - Herstel PO-22:
-```
-UPDATE matches 
-SET speeldag = 'Playoff Speeldag 4', 
-    match_date = '2026-02-10 18:30:00+00'
-WHERE match_id = 2197 
-AND unique_number = 'PO-22-1766492793564-7079';
+```text
+function hasPlayersChanged(original, current):
+  - Vergelijk geselecteerde spelers (playerId !== null)
+  - Als verschil in aantal of in specifieke playerIds → team is gewijzigd
 ```
 
-2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
-   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
-   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
-   - Voor team managers wordt `matchData` weggelaten uit het update-object
+### Bestanden
+1. `src/components/modals/matches/wedstrijdformulier-modal.tsx` — AppAlertModal + team-detectie
+2. `src/components/pages/admin/matches/hooks/useEnhancedMatchFormSubmission.ts` — `forceLatePenaltyTeamIds`
+3. `src/services/match/enhancedMatchService.ts` — doorgeef team-IDs
+4. `src/services/match/backgroundSideEffects.ts` — team-specifieke penalty
 
-Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.
