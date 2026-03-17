@@ -27,15 +27,20 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
   const queryClient = useQueryClient();
   
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingItem, setDeletingItem] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Form for adding new items
   const [formData, setFormData] = useState({
     name: '',
     amount: '',
     category: 'penalty' as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost'
   });
+  
+  // Inline edit form
+  const [editName, setEditName] = useState('');
+  const [editAmount, setEditAmount] = useState('');
 
   const { data: costSettings, isLoading } = useQuery({
     queryKey: ['cost-settings-management'],
@@ -49,57 +54,72 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
       category: 'penalty'
     });
     setShowAddForm(false);
-    setEditingItem(null);
+    setEditingId(null);
+    setEditName('');
+    setEditAmount('');
   }, []);
 
-  const handleSave = useCallback(async () => {
+  // Save for NEW items only
+  const handleAddSave = useCallback(async () => {
     if (!formData.name.trim() || !formData.amount) {
-      toast({
-        title: "Fout",
-        description: "Vul alle verplichte velden in",
-        variant: "destructive"
-      });
+      toast({ title: "Fout", description: "Vul alle verplichte velden in", variant: "destructive" });
       return;
     }
     const amount = parseFloat(formData.amount);
     if (isNaN(amount) || amount < 0) {
-      toast({
-        title: "Fout",
-        description: "Voer een geldig bedrag in",
-        variant: "destructive"
-      });
+      toast({ title: "Fout", description: "Voer een geldig bedrag in", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
-    const settingData = {
+    const result = await enhancedCostSettingsService.addCostSetting({
       name: formData.name.trim(),
-      amount: amount,
+      amount,
       category: formData.category,
       is_active: true
-    };
-    let result;
-    if (editingItem) {
-      result = await enhancedCostSettingsService.updateCostSetting(editingItem.id, settingData);
-    } else {
-      result = await enhancedCostSettingsService.addCostSetting(settingData);
-    }
+    });
     setIsSubmitting(false);
     if (result.success) {
-      toast({
-        title: "Succesvol",
-        description: result.message
-      });
+      toast({ title: "Succesvol", description: result.message });
       queryClient.invalidateQueries({ queryKey: ['cost-settings-management'] });
       queryClient.invalidateQueries({ queryKey: ['cost-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
       resetForm();
     } else {
-      toast({
-        title: "Fout",
-        description: result.message,
-        variant: "destructive"
-      });
+      toast({ title: "Fout", description: result.message, variant: "destructive" });
     }
-  }, [formData, editingItem, queryClient, resetForm, toast]);
+  }, [formData, queryClient, resetForm, toast]);
+
+  // Save for INLINE edit (naam + bedrag)
+  const handleEditSave = useCallback(async () => {
+    if (editingId === null) return;
+    if (!editName.trim() || !editAmount) {
+      toast({ title: "Fout", description: "Vul naam en bedrag in", variant: "destructive" });
+      return;
+    }
+    const amount = parseFloat(editAmount);
+    if (isNaN(amount) || amount < 0) {
+      toast({ title: "Fout", description: "Voer een geldig bedrag in", variant: "destructive" });
+      return;
+    }
+    setIsSubmitting(true);
+    const result = await enhancedCostSettingsService.updateCostSetting(editingId, {
+      name: editName.trim(),
+      amount
+    });
+    setIsSubmitting(false);
+    if (result.success) {
+      toast({ title: "Succesvol", description: result.message });
+      queryClient.invalidateQueries({ queryKey: ['cost-settings-management'] });
+      queryClient.invalidateQueries({ queryKey: ['cost-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
+      queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
+      setEditingId(null);
+      setEditName('');
+      setEditAmount('');
+    } else {
+      toast({ title: "Fout", description: result.message, variant: "destructive" });
+    }
+  }, [editingId, editName, editAmount, queryClient, toast]);
 
   const handleDelete = useCallback(async () => {
     if (!deletingItem) return;
@@ -124,13 +144,9 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
   }, [deletingItem, queryClient, toast]);
 
   const handleEdit = useCallback((item: any) => {
-    setEditingItem(item);
-    setFormData({
-      name: item.name,
-      amount: item.amount.toString(),
-      category: item.category
-    });
-    setShowAddForm(true);
+    setEditingId(item.id);
+    setEditName(item.name);
+    setEditAmount(item.amount?.toString() || '0');
   }, []);
 
   const formatCurrency = useMemo(() => (amount: number) => {
@@ -291,11 +307,11 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
 
                   <div className="flex flex-col gap-2 pt-2">
                     <button 
-                      onClick={handleSave}
+                      onClick={handleAddSave}
                       className="btn btn--primary w-full"
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? 'Bezig...' : (editingItem ? 'Bijwerken' : 'Toevoegen')}
+                      {isSubmitting ? 'Bezig...' : 'Toevoegen'}
                     </button>
                     <button 
                       onClick={resetForm}
@@ -341,96 +357,148 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
               ) : costSettings && costSettings.length > 0 ? (
                 <div className="space-y-1.5">
                   {costSettings.map((setting) => (
-                    <Card 
-                      key={setting.id}
-                      className="border transition-all duration-150 hover:shadow-sm"
-                      style={{
-                        borderColor: 'var(--accent)',
-                        borderWidth: '1px',
-                        borderStyle: 'solid'
-                      }}
-                    >
-                      <CardContent 
-                        className="!bg-transparent"
-                        style={{ 
-                          paddingTop: '12px', 
-                          paddingBottom: '12px', 
-                          paddingLeft: '12px', 
-                          paddingRight: '12px',
-                          backgroundColor: 'unset',
-                          background: 'unset'
+                    <React.Fragment key={setting.id}>
+                      <Card 
+                        className={cn(
+                          "border transition-all duration-150 hover:shadow-sm",
+                          editingId === setting.id && "ring-1 ring-primary/30"
+                        )}
+                        style={{
+                          borderColor: 'var(--accent)',
+                          borderWidth: '1px',
+                          borderStyle: 'solid'
                         }}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <p className="text-sm font-medium truncate">
-                                {setting.name}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge className={getCategoryColor(setting.category)}>
-                                  {getCategoryLabel(setting.category)}
-                                </Badge>
-                                <span 
-                                  className="text-xs font-semibold whitespace-nowrap"
-                                  style={{ color: 'var(--accent)' }}
-                                >
-                                  {formatCurrency(setting.amount)}
-                                </span>
+                        <CardContent 
+                          className="!bg-transparent"
+                          style={{ 
+                            paddingTop: '12px', 
+                            paddingBottom: '12px', 
+                            paddingLeft: '12px', 
+                            paddingRight: '12px',
+                            backgroundColor: 'unset',
+                            background: 'unset'
+                          }}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <p className="text-sm font-medium truncate">
+                                  {setting.name}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge className={getCategoryColor(setting.category)}>
+                                    {getCategoryLabel(setting.category)}
+                                  </Badge>
+                                  <span 
+                                    className="text-xs font-semibold whitespace-nowrap"
+                                    style={{ color: 'var(--accent)' }}
+                                  >
+                                    {formatCurrency(setting.amount)}
+                                  </span>
+                                </div>
                               </div>
                             </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => editingId === setting.id ? setEditingId(null) : handleEdit(setting)}
+                                className={cn(
+                                  "h-7 w-7 border-[var(--color-300)]",
+                                  "hover:bg-accent/50 hover:border-[var(--color-400)]",
+                                  "text-[var(--color-700)] hover:text-[var(--color-900)]",
+                                  "transition-colors duration-150",
+                                  editingId === setting.id && "bg-accent/50"
+                                )}
+                                style={{ 
+                                  height: '28px',
+                                  width: '28px',
+                                  minHeight: '28px',
+                                  maxHeight: '28px',
+                                  minWidth: '28px',
+                                  maxWidth: '28px'
+                                }}
+                                disabled={isSubmitting}
+                                aria-label="Bewerk tarief"
+                              >
+                                <Edit size={14} />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setDeletingItem(setting)}
+                                className={cn(
+                                  "!h-7 !w-7 !min-h-0 !max-h-7 !max-w-7 rounded-md border-destructive/30",
+                                  "hover:bg-destructive/10 hover:border-destructive/50",
+                                  "text-destructive hover:text-destructive",
+                                  "transition-colors duration-150"
+                                )}
+                                style={{ 
+                                  height: '28px',
+                                  width: '28px',
+                                  minHeight: '28px',
+                                  maxHeight: '28px',
+                                  minWidth: '28px',
+                                  maxWidth: '28px'
+                                }}
+                                disabled={isSubmitting}
+                                aria-label="Verwijder tarief"
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handleEdit(setting)}
-                              className={cn(
-                                "h-7 w-7 border-[var(--color-300)]",
-                                "bg-white hover:bg-purple-50 hover:border-[var(--color-400)]",
-                                "text-[var(--color-700)] hover:text-[var(--color-900)]",
-                                "transition-colors duration-150"
-                              )}
-                              style={{ 
-                                height: '28px',
-                                width: '28px',
-                                minHeight: '28px',
-                                maxHeight: '28px',
-                                minWidth: '28px',
-                                maxWidth: '28px'
-                              }}
-                              disabled={isSubmitting}
-                              aria-label="Bewerk tarief"
-                            >
-                              <Edit size={14} />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => setDeletingItem(setting)}
-                              className={cn(
-                                "!h-7 !w-7 !min-h-0 !max-h-7 !max-w-7 rounded-md border-red-300",
-                                "hover:bg-red-50 hover:border-red-400",
-                                "text-red-600 hover:text-red-700",
-                                "transition-colors duration-150"
-                              )}
-                              style={{ 
-                                height: '28px',
-                                width: '28px',
-                                minHeight: '28px',
-                                maxHeight: '28px',
-                                minWidth: '28px',
-                                maxWidth: '28px'
-                              }}
-                              disabled={isSubmitting}
-                              aria-label="Verwijder tarief"
-                            >
-                              <Trash2 size={14} />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+
+                          {/* Inline edit form */}
+                          {editingId === setting.id && (
+                            <div className="mt-3 pt-3 border-t border-border/50 space-y-3">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs font-medium text-muted-foreground">Naam</Label>
+                                  <Input
+                                    value={editName}
+                                    onChange={e => setEditName(e.target.value)}
+                                    placeholder="Naam"
+                                    className="modal__input h-8 text-sm"
+                                    disabled={isSubmitting}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs font-medium text-muted-foreground">Bedrag (€)</Label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={editAmount}
+                                    onChange={e => setEditAmount(e.target.value)}
+                                    placeholder="0.00"
+                                    className="modal__input h-8 text-sm"
+                                    disabled={isSubmitting}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button 
+                                  onClick={handleEditSave}
+                                  className="btn btn--primary flex-1 text-sm py-1.5"
+                                  disabled={isSubmitting}
+                                >
+                                  {isSubmitting ? 'Bezig...' : 'Opslaan'}
+                                </button>
+                                <button 
+                                  onClick={() => { setEditingId(null); setEditName(''); setEditAmount(''); }}
+                                  className="btn btn--secondary flex-1 text-sm py-1.5"
+                                  disabled={isSubmitting}
+                                >
+                                  Annuleren
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </React.Fragment>
                   ))}
                 </div>
               ) : (
