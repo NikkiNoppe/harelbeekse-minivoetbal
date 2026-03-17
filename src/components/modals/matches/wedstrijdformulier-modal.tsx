@@ -660,19 +660,37 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         refereeNotesLength: updatedMatch.refereeNotes?.length || 0
       });
       
-      // Check if admin is submitting after match date → ask about late penalty
-      let forceLatePenalty = false;
+      // Check if admin is submitting after match date → show styled penalty modal
       if (isAdmin && updatedMatch.date && updatedMatch.time) {
         const matchDateTime = new Date(`${updatedMatch.date}T${updatedMatch.time}`);
         if (new Date() > matchDateTime) {
-          forceLatePenalty = window.confirm(
-            '⚠️ De wedstrijddatum is verstreken.\n\n' +
-            'Wil je een "Boete te laat ingevuld" aanrekenen voor beide teams?'
-          );
+          // Detect which teams had player changes
+          const getPlayerIds = (players: any[]) => (players || []).filter((p: any) => p?.playerId != null).map((p: any) => p.playerId).sort((a: number, b: number) => a - b);
+          const origHome = getPlayerIds(match.homePlayers);
+          const origAway = getPlayerIds(match.awayPlayers);
+          const currHome = getPlayerIds(updatedMatch.homePlayers);
+          const currAway = getPlayerIds(updatedMatch.awayPlayers);
+          
+          const homeChanged = JSON.stringify(origHome) !== JSON.stringify(currHome);
+          const awayChanged = JSON.stringify(origAway) !== JSON.stringify(currAway);
+          
+          if (homeChanged || awayChanged) {
+            const teamNames: string[] = [];
+            const teamIds: number[] = [];
+            if (homeChanged) { teamNames.push(match.homeTeamName); teamIds.push(match.homeTeamId); }
+            if (awayChanged) { teamNames.push(match.awayTeamName); teamIds.push(match.awayTeamId); }
+            
+            setLatePenaltyTeamNames(teamNames);
+            setLatePenaltyTeamIds(teamIds);
+            setPendingLatePenaltyMatch(updatedMatch);
+            setShowLatePenaltyModal(true);
+            setIsSubmitting(false);
+            return;
+          }
         }
       }
       
-      const result = await submitMatchForm(updatedMatch, isAdmin, userRole, matchFormSettings, forceLatePenalty);
+      const result = await submitMatchForm(updatedMatch, isAdmin, userRole, matchFormSettings, []);
       
       console.log('💾 [WedstrijdformulierModal] handleSubmit - After submitMatchForm:', {
         success: result.success,
