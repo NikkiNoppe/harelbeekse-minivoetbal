@@ -485,6 +485,17 @@ export const scheduleBackgroundSideEffects = (
       results.push(result);
     }
 
+    // 5. Form completion penalties (if match completed)
+    if (updateData.isCompleted && matchInfo) {
+      const result = await executeWithRetry(
+        ctx,
+        'form_completion',
+        () => syncFormCompletionPenalties(ctx, matchId, matchInfo, updateData),
+        1500
+      );
+      results.push(result);
+    }
+
     // Summary log
     const successCount = results.filter(r => r.success).length;
     const failedCount = results.filter(r => !r.success).length;
