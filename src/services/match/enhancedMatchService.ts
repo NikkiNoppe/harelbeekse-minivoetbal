@@ -117,13 +117,20 @@ export const enhancedMatchService = {
       // Use configurable settings or defaults
       const settings = matchFormSettings || MATCH_FORM_DEFAULTS;
       
-      // Check for late submission if this is a player_manager submission
+      // Check for late submission
       let isLateSubmission = false;
-      if (userRole === "player_manager" && updateData.date && updateData.time) {
+      if (updateData.date && updateData.time) {
         const now = new Date();
         const matchDateTime = new Date(`${updateData.date}T${updateData.time}`);
         const lockThreshold = new Date(matchDateTime.getTime() - settings.lock_minutes_before * 60 * 1000);
-        isLateSubmission = now >= lockThreshold && settings.allow_late_submission;
+        
+        if (userRole === "player_manager") {
+          // Team managers: auto-detect late submission
+          isLateSubmission = now >= lockThreshold && settings.allow_late_submission;
+        } else if (isAdmin && updateData.forceLatePenalty) {
+          // Admins: only if explicitly confirmed via dialog
+          isLateSubmission = true;
+        }
       }
       
       // Build update object with all provided values
