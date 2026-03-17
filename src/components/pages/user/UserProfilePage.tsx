@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { teamService } from "@/services/core";
 import { useQueryClient } from "@tanstack/react-query";
 import { withUserContext } from "@/lib/supabaseUtils";
+import RefereeNotesCard from "./RefereeNotesCard";
 
 // Loading skeleton
 const ProfileSkeleton = memo(() => (
