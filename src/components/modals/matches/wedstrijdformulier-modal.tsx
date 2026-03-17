@@ -63,7 +63,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     awayTeamSelections,
     setAwayTeamSelections,
     getHomeTeamSelectionsWithCards,
-    getAwayTeamSelectionsWithCards
+    getAwayTeamSelectionsWithCards,
+    homePlayersDirty,
+    awayPlayersDirty
   } = useMatchFormState(match);
 
   const { submitMatchForm } = useEnhancedMatchFormSubmission();
