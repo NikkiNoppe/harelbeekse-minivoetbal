@@ -1472,18 +1472,69 @@ const UserProfilePage: React.FC = () => {
           />
         )}
 
-        {/* 3. Team Players Overview - Player managers only */}
+        {/* 3. Team Players Overview - Collapsible */}
         {user.role === 'player_manager' && firstTeam && (
-          <TeamPlayersOverview teamId={firstTeam.team_id} />
+          <Collapsible defaultOpen>
+            <Card>
+              <CollapsibleTrigger className="w-full">
+                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                      <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+                      Gespeelde wedstrijden per speler
+                    </CardTitle>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180 [&[data-state=open]]:rotate-180" />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <TeamPlayersOverviewContent teamId={firstTeam.team_id} />
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         )}
 
-        {/* 4. Financial Overview - Player managers only */}
+        {/* 4. Financial Overview - Collapsible */}
         {user.role === 'player_manager' && firstTeam && (
-          <FinancialOverviewCard teamId={firstTeam.team_id} />
+          <Collapsible defaultOpen>
+            <Card>
+              <CollapsibleTrigger className="w-full">
+                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                      <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
+                      Financieel Overzicht
+                    </CardTitle>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <FinancialOverviewCard teamId={firstTeam.team_id} />
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         )}
 
-        {/* 5. Admin Messages */}
-        <AdminMessageCard />
+        {/* 5. Admin Messages - Collapsible */}
+        <Collapsible defaultOpen>
+          <Card className="border-primary/20">
+            <CollapsibleTrigger className="w-full">
+              <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
+                    Berichten
+                  </CardTitle>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <AdminMessageCardContent />
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
         {/* Referee Notes Card - Admin only */}
         {isAdmin && <RefereeNotesCard />}
@@ -1540,44 +1591,53 @@ const UserProfilePage: React.FC = () => {
           </div>
         )}
 
-        {/* 6. Quick Actions */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base sm:text-lg">Snelle Acties</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 pt-0">
-            {user.role === 'player_manager' && (
-              <Button
-                variant="outline"
-                className="w-full justify-start text-sm sm:text-base"
-                onClick={() => navigate('/admin/players')}
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Spelers Beheren
-              </Button>
-            )}
-            {user.role === 'admin' && (
-              <>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-sm sm:text-base"
-                  onClick={() => navigate('/admin/users')}
-                >
-                  <User className="h-4 w-4 mr-2" />
-                  Gebruikers Beheren
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-sm sm:text-base"
-                  onClick={() => navigate('/admin/settings')}
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  Instellingen
-                </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        {/* 6. Quick Actions - Collapsible */}
+        <Collapsible defaultOpen>
+          <Card>
+            <CollapsibleTrigger className="w-full">
+              <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base sm:text-lg">Snelle Acties</CardTitle>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-2 pt-0">
+                {user.role === 'player_manager' && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-sm sm:text-base"
+                    onClick={() => navigate('/admin/players')}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Spelers Beheren
+                  </Button>
+                )}
+                {user.role === 'admin' && (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-sm sm:text-base"
+                      onClick={() => navigate('/admin/users')}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Gebruikers Beheren
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-sm sm:text-base"
+                      onClick={() => navigate('/admin/settings')}
+                    >
+                      <Shield className="h-4 w-4 mr-2" />
+                      Instellingen
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       </div>
       
       {/* Match Form Modal */}
