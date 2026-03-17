@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { 
   User, Mail, Shield, Users, Trophy, Award, Phone, 
   AlertCircle, MapPin, Calendar, Clock, ArrowRight,
-  CheckCircle, Lock, Edit2, Save, X, Loader2, ChevronDown, History
+  CheckCircle, Lock, Edit2, Save, X, Loader2, ChevronDown, History,
+  Wallet, MessageSquare, TrendingDown, CreditCard
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PageHeader } from "@/components/layout";
