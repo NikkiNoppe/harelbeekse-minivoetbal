@@ -2468,6 +2468,27 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           awayTeamName={match.awayTeamName}
           onPenaltyResult={handlePenaltyResult}
         />
+
+        <AppAlertModal
+          open={showLatePenaltyModal}
+          onOpenChange={setShowLatePenaltyModal}
+          title="⚠️ Wedstrijddatum verstreken"
+          description={
+            latePenaltyTeamNames.length === 1
+              ? `Wil je een "Boete te laat ingevuld" aanrekenen voor ${latePenaltyTeamNames[0]}?`
+              : `Wil je een "Boete te laat ingevuld" aanrekenen voor beide teams (${latePenaltyTeamNames.join(' en ')})?`
+          }
+          size="sm"
+          confirmAction={{
+            label: "Boete aanrekenen",
+            onClick: handleLatePenaltyConfirm,
+            variant: "destructive"
+          }}
+          cancelAction={{
+            label: "Opslaan zonder boete",
+            onClick: handleLatePenaltyCancel
+          }}
+        />
       </div>
     </AppModal>
   );
