@@ -49,7 +49,8 @@ export const useEnhancedMatchFormSubmission = () => {
       homePlayers: homePlayersToSave,
       awayPlayers: awayPlayersToSave,
       isCompleted: matchData.isCompleted,
-      isLocked: matchData.isLocked
+      isLocked: matchData.isLocked,
+      forceLatePenalty
     };
     
     console.log('🟡 [useEnhancedMatchFormSubmission] Final updateData:', {
