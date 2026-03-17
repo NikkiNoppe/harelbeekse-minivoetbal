@@ -74,7 +74,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const [latePenaltyTeamNames, setLatePenaltyTeamNames] = useState<string[]>([]);
   const [latePenaltyTeamIds, setLatePenaltyTeamIds] = useState<number[]>([]);
   const [pendingLatePenaltyMatch, setPendingLatePenaltyMatch] = useState<MatchFormData | null>(null);
-  const [latePenaltyDecision, setLatePenaltyDecision] = useState<'confirm' | 'skip' | null>(null);
   const [homeCardsOpen, setHomeCardsOpen] = React.useState(false);
   const [awayCardsOpen, setAwayCardsOpen] = React.useState(false);
   const [isKaartenOpen, setIsKaartenOpen] = useState(false);
