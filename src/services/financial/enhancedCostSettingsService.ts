@@ -232,11 +232,12 @@ export const enhancedCostSettingsService = {
         ? `Kostentarief bijgewerkt. ${finalAffectedCount} gerelateerde transactie(s) zijn automatisch aangepast.`
         : 'Kostentarief succesvol bijgewerkt';
       
-      return { 
-        success: true, 
-        message,
-        affectedTransactions: finalAffectedCount || 0
-      };
+        return { 
+          success: true, 
+          message,
+          affectedTransactions: finalAffectedCount || 0
+        };
+      });
     } catch (error) {
       logOperation('updateCostSetting - CATCH ERROR', { error });
       const errorMessage = error instanceof Error ? error.message : 
