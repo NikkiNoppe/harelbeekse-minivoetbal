@@ -331,7 +331,8 @@ export const scheduleBackgroundSideEffects = (
   updateData: UpdateData,
   matchInfo: MatchInfo | null,
   isCupMatch: boolean,
-  isLateSubmission: boolean = false
+  isLateSubmission: boolean = false,
+  latePenaltyTeamIds?: number[]
 ): void => {
   // Don't await - run in background
   Promise.resolve().then(async () => {
