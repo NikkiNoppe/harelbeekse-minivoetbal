@@ -144,13 +144,9 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
   }, [deletingItem, queryClient, toast]);
 
   const handleEdit = useCallback((item: any) => {
-    setEditingItem(item);
-    setFormData({
-      name: item.name,
-      amount: item.amount.toString(),
-      category: item.category
-    });
-    setShowAddForm(true);
+    setEditingId(item.id);
+    setEditName(item.name);
+    setEditAmount(item.amount?.toString() || '0');
   }, []);
 
   const formatCurrency = useMemo(() => (amount: number) => {
