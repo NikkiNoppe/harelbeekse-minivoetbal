@@ -1358,26 +1358,17 @@ const UserProfilePage: React.FC = () => {
 
       {/* Mobile-first layout: Stack cards vertically on mobile */}
       <div className="space-y-4 sm:space-y-6">
-        {/* Combined User & Team Info Card */}
+        {/* 1. Combined User & Team Info Card */}
         <MemoizedUserTeamInfoCard 
           user={user} 
           team={teams[0] || null}
           onTeamUpdate={() => {
-            // Refresh profile data immediately
             queryClient.invalidateQueries({ queryKey: ['userProfile'] });
             queryClient.refetchQueries({ queryKey: ['userProfile'] });
           }}
         />
 
-        {/* Team Players Overview - Player managers only */}
-        {user.role === 'player_manager' && firstTeam && (
-          <TeamPlayersOverview teamId={firstTeam.team_id} />
-        )}
-
-        {/* Referee Notes Card - Admin only */}
-        {isAdmin && <RefereeNotesCard />}
-
-        {/* Next Match Card - Show if user has a team and there's an upcoming match */}
+        {/* 2. Next Match Card - Team managers */}
         {firstTeam && !matchesLoading && nextMatch && (
           <NextMatchCard 
             match={nextMatch} 
@@ -1386,7 +1377,7 @@ const UserProfilePage: React.FC = () => {
           />
         )}
 
-        {/* Referee Upcoming Matches - Show if user is a referee */}
+        {/* 2b. Referee Upcoming Matches */}
         {isReferee && authUser?.username && (
           <RefereeUpcomingMatches
             refereeUsername={authUser.username}
@@ -1394,7 +1385,23 @@ const UserProfilePage: React.FC = () => {
           />
         )}
 
-        {/* Additional Teams Section - Only show if user has more than 1 team */}
+        {/* 3. Team Players Overview - Player managers only */}
+        {user.role === 'player_manager' && firstTeam && (
+          <TeamPlayersOverview teamId={firstTeam.team_id} />
+        )}
+
+        {/* 4. Financial Overview - Player managers only */}
+        {user.role === 'player_manager' && firstTeam && (
+          <FinancialOverviewCard teamId={firstTeam.team_id} />
+        )}
+
+        {/* 5. Admin Messages */}
+        <AdminMessageCard />
+
+        {/* Referee Notes Card - Admin only */}
+        {isAdmin && <RefereeNotesCard />}
+
+        {/* Additional Teams Section */}
         {teams.length > 1 && (
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between">
@@ -1446,7 +1453,7 @@ const UserProfilePage: React.FC = () => {
           </div>
         )}
 
-        {/* Quick Actions */}
+        {/* 6. Quick Actions */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base sm:text-lg">Snelle Acties</CardTitle>
