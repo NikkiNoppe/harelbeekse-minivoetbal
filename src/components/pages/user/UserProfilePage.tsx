@@ -333,23 +333,19 @@ const TeamPlayersOverview: React.FC<{ teamId: number }> = memo(({ teamId }) => {
           </CardTitle>
           <Badge variant="outline" className="text-xs">{players.length}</Badge>
         </div>
-        {/* Sort buttons */}
-        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-          <span className="text-xs text-muted-foreground mr-1">Sorteer:</span>
-          {(['name', 'matches', 'cards'] as PlayerSortOption[]).map((option) => (
-            <button
-              key={option}
-              onClick={() => setSortBy(option)}
-              className={cn(
-                "px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
-                sortBy === option
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              )}
-            >
-              {sortLabels[option]}
-            </button>
-          ))}
+        {/* Sort dropdown */}
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-xs text-muted-foreground">Sorteer:</span>
+          <Select value={sortBy} onValueChange={(val) => setSortBy(val as PlayerSortOption)}>
+            <SelectTrigger className="h-7 min-h-[32px] w-[140px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name">Naam</SelectItem>
+              <SelectItem value="matches">Wedstrijden</SelectItem>
+              <SelectItem value="cards">Kaarten</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
