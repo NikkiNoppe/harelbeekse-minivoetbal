@@ -2457,32 +2457,34 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           onPenaltyResult={handlePenaltyResult}
         />
 
-        <AppAlertModal
+        <AppModal
           open={showLatePenaltyModal}
           onOpenChange={setShowLatePenaltyModal}
           title="⚠️ Wedstrijddatum verstreken"
-          description={
-            latePenaltyTeamNames.length === 1
-              ? `Wil je een "Boete te laat ingevuld" aanrekenen voor ${latePenaltyTeamNames[0]}?`
-              : `Wil je een "Boete te laat ingevuld" aanrekenen voor beide teams (${latePenaltyTeamNames.join(' en ')})?`
-          }
           size="sm"
-          confirmAction={{
+          showCloseButton={!isSubmitting}
+          primaryAction={{
             label: "Boete aanrekenen",
-            onClick: () => {
-              setShowLatePenaltyModal(false);
-              setLatePenaltyDecision('confirm');
-            },
-            variant: "destructive"
+            onClick: () => void handleLatePenaltySubmit(true),
+            variant: "destructive",
+            disabled: isSubmitting,
+            loading: isSubmitting,
           }}
-          cancelAction={{
+          secondaryAction={{
             label: "Opslaan zonder boete",
-            onClick: () => {
-              setShowLatePenaltyModal(false);
-              setLatePenaltyDecision('skip');
-            }
+            onClick: () => void handleLatePenaltySubmit(false),
+            disabled: isSubmitting,
           }}
-        />
+        >
+          <div className="space-y-2 text-sm text-foreground">
+            <p className="font-medium">De wedstrijddatum is verstreken.</p>
+            <p>
+              {latePenaltyTeamNames.length === 1
+                ? `Wil je een "Boete te laat ingevuld" aanrekenen voor ${latePenaltyTeamNames[0]}?`
+                : `Wil je een "Boete te laat ingevuld" aanrekenen voor beide teams (${latePenaltyTeamNames.join(' en ')})?`}
+            </p>
+          </div>
+        </AppModal>
       </div>
     </AppModal>
   );
