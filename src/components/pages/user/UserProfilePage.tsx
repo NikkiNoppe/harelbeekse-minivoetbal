@@ -897,6 +897,122 @@ const NextMatchCard: React.FC<{
 });
 NextMatchCard.displayName = 'NextMatchCard';
 
+// Financial Overview Card - Pro forma for team managers
+const FinancialOverviewCard: React.FC<{ teamId: number }> = memo(({ teamId }) => {
+  const { user } = useAuth();
+  const { data: balanceData, isLoading } = useQuery({
+    queryKey: ['teamBalanceProfile', teamId],
+    queryFn: async () => {
+      const result = await withUserContext(async () => {
+        const { data, error } = await supabase.rpc('calculate_team_balance_updated', {
+          team_id_param: teamId
+        });
+        if (error) throw error;
+        return data as number;
+      }, {
+        userId: user?.id as number,
+        role: user?.role,
+        teamIds: String(teamId),
+      });
+      return result;
+    },
+    enabled: !!user && !!teamId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const balance = balanceData ?? 0;
+  const isNegative = balance < 0;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+          <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
+          Financieel Overzicht
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {isLoading ? (
+          <Skeleton className="h-12 w-full" />
+        ) : (
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm text-muted-foreground">Huidig saldo</span>
+            <span className={cn(
+              "text-lg font-bold",
+              isNegative ? "text-destructive" : "text-green-600"
+            )}>
+              {isNegative ? '−' : ''}€{Math.abs(balance).toFixed(2)}
+            </span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
+FinancialOverviewCard.displayName = 'FinancialOverviewCard';
+
+// Admin Message Card - Placeholder for admin-to-user messages
+const AdminMessageCard: React.FC = memo(() => {
+  const { user } = useAuth();
+  const { data: messages, isLoading } = useQuery({
+    queryKey: ['adminMessages', user?.role],
+    queryFn: async () => {
+      const result = await withUserContext(async () => {
+        const { data, error } = await supabase
+          .from('application_settings')
+          .select('setting_value, updated_at')
+          .eq('setting_category', 'admin_messages')
+          .eq('is_active', true)
+          .order('updated_at', { ascending: false })
+          .limit(3);
+        if (error) return [];
+        return data || [];
+      }, {
+        userId: user?.id as number,
+        role: user?.role,
+        teamIds: user?.teamId ? String(user.teamId) : '',
+      });
+      return result;
+    },
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  return (
+    <Card className="border-primary/20">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
+          Berichten
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {isLoading ? (
+          <Skeleton className="h-10 w-full" />
+        ) : messages && messages.length > 0 ? (
+          <div className="space-y-2">
+            {messages.map((msg: any, i: number) => (
+              <div key={i} className="p-3 rounded-md bg-primary/5 border border-primary/10">
+                <p className="text-sm text-foreground">
+                  {msg.setting_value?.message || msg.setting_value?.text || 'Bericht'}
+                </p>
+                {msg.updated_at && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {new Date(msg.updated_at).toLocaleDateString('nl-BE')}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground italic py-2">Geen berichten</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
+AdminMessageCard.displayName = 'AdminMessageCard';
+
 // Referee Upcoming Matches Component
 const RefereeUpcomingMatches: React.FC<{
   refereeUsername: string;
