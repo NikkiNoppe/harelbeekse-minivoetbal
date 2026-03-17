@@ -1,55 +1,47 @@
 
 
-## Plan: Profielpagina verbeteren
+## Probleem: Playoff data corruptie + preventie
 
-### 1. Fix kaarten niet zichtbaar
+### 1. Data Herstel
 
-**Oorzaak**: In `useTeamPlayerStats.ts` wordt een directe query op de `players` tabel gedaan voor `yellow_cards` en `red_cards` (regel 37-40), maar er is geen user context ingesteld. De RLS policies op `players` vereisen `get_current_user_role()` en `get_current_user_team_ids()`, waardoor de query stilletjes een leeg resultaat geeft. Alle kaarten worden dan 0.
+Er is momenteel 1 beschadigde wedstrijd gevonden:
 
-**Fix**: Wrap de card data query met `withUserContext`, of beter: voeg `yellow_cards` en `red_cards` toe aan de bestaande RPC `get_players_for_team` zodat er geen aparte query nodig is. Aangezien we de RPC niet willen wijzigen (database migratie), wrappen we de players query met `withUserContext`.
+| Match | Huidig | Moet zijn |
+|-------|--------|-----------|
+| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
 
-**Bestand**: `src/hooks/useTeamPlayerStats.ts`
+Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
 
-### 2. Volgorde secties herschikken
+**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
+- `speeldag` terug naar "Playoff Speeldag 4"
+- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
 
-Huidige volgorde: Profiel → Spelers → RefereeNotes → Wedstrijd → Snelle Acties
+### 2. Bug Fix: Voorkom toekomstige corruptie
 
-Nieuwe volgorde:
-1. Mijn Profiel (kaart)
-2. Eerstvolgende Wedstrijd
-3. Gespeelde wedstrijden per speler
-4. Financieel overzicht (nieuw, pro forma)
-5. Admin Berichten (nieuw kader)
-6. Snelle Acties
+**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
 
-**Bestand**: `src/components/pages/user/UserProfilePage.tsx` (render volgorde aanpassen in het return statement, regels 1248-1373)
+**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
 
-### 3. Sorteer-dropdown in plaats van buttons
+In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
+- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
+- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
 
-Vervang de drie sorteerbuttons ("Naam", "Wedstrijden", "Kaarten") door een compacte `Select` dropdown. Past beter bij de rest van de UI waar dropdowns worden gebruikt (bv. maandselectie bij referee matches).
+### Technische Details
 
-**Bestand**: `src/components/pages/user/UserProfilePage.tsx` (TeamPlayersOverview component, regels 336-352)
+**Bestanden die gewijzigd worden:**
 
-### 4. Pro forma financieel overzicht
+1. **Nieuwe SQL-migratie** - Herstel PO-22:
+```
+UPDATE matches 
+SET speeldag = 'Playoff Speeldag 4', 
+    match_date = '2026-02-10 18:30:00+00'
+WHERE match_id = 2197 
+AND unique_number = 'PO-22-1766492793564-7079';
+```
 
-Nieuw compact `FinancialOverviewCard` component voor team managers. Toont een simpel overzicht met:
-- Huidig saldo (opgehaald uit `team_costs` tabel, som van amounts per team)
-- Aantal boetes dit seizoen
-- Compacte weergave, consistent met de card-styling van de rest van de pagina
+2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
+   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
+   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
+   - Voor team managers wordt `matchData` weggelaten uit het update-object
 
-Dit is een klein pro forma blok — de echte financiële pagina blijft de volledige versie.
-
-**Bestand**: `src/components/pages/user/UserProfilePage.tsx` (nieuw component inline)
-
-### 5. Admin berichten kader
-
-Nieuw `AdminMessageCard` component dat een bericht toont afkomstig van de admin. Voorlopig pro forma met placeholder tekst en de juiste styling. Later kan dit gekoppeld worden aan een `application_settings` entry (category `admin_messages`) zodat de admin via de settings pagina berichten kan posten.
-
-Styling: Card met een subtiele `border-primary/20` rand, een `MessageSquare` icoon, en een lichte achtergrond. Toont "Geen berichten" als er niets is.
-
-**Bestand**: `src/components/pages/user/UserProfilePage.tsx` (nieuw component inline)
-
-### Bestanden
-1. `src/hooks/useTeamPlayerStats.ts` — fix card data query met withUserContext
-2. `src/components/pages/user/UserProfilePage.tsx` — herschik secties, dropdown sorteer, financieel overzicht, admin berichten kader
-
+Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.

@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { 
   User, Mail, Shield, Users, Trophy, Award, Phone, 
   AlertCircle, MapPin, Calendar, Clock, ArrowRight,
-  CheckCircle, Lock, Edit2, Save, X, Loader2, ChevronDown, History
+  CheckCircle, Lock, Edit2, Save, X, Loader2, ChevronDown, History,
+  Wallet, MessageSquare, TrendingDown, CreditCard
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PageHeader } from "@/components/layout";
@@ -25,8 +26,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TeamModal } from "@/components/modals";
 import { useToast } from "@/hooks/use-toast";
 import { teamService } from "@/services/core";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { withUserContext } from "@/lib/supabaseUtils";
+import { supabase } from "@/integrations/supabase/client";
 import RefereeNotesCard from "./RefereeNotesCard";
 import { useTeamPlayerStats, type PlayerStat } from "@/hooks/useTeamPlayerStats";
 
@@ -332,23 +334,19 @@ const TeamPlayersOverview: React.FC<{ teamId: number }> = memo(({ teamId }) => {
           </CardTitle>
           <Badge variant="outline" className="text-xs">{players.length}</Badge>
         </div>
-        {/* Sort buttons */}
-        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-          <span className="text-xs text-muted-foreground mr-1">Sorteer:</span>
-          {(['name', 'matches', 'cards'] as PlayerSortOption[]).map((option) => (
-            <button
-              key={option}
-              onClick={() => setSortBy(option)}
-              className={cn(
-                "px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
-                sortBy === option
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              )}
-            >
-              {sortLabels[option]}
-            </button>
-          ))}
+        {/* Sort dropdown */}
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-xs text-muted-foreground">Sorteer:</span>
+          <Select value={sortBy} onValueChange={(val) => setSortBy(val as PlayerSortOption)}>
+            <SelectTrigger className="h-7 min-h-[32px] w-[140px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name">Naam</SelectItem>
+              <SelectItem value="matches">Wedstrijden</SelectItem>
+              <SelectItem value="cards">Kaarten</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -900,6 +898,122 @@ const NextMatchCard: React.FC<{
 });
 NextMatchCard.displayName = 'NextMatchCard';
 
+// Financial Overview Card - Pro forma for team managers
+const FinancialOverviewCard: React.FC<{ teamId: number }> = memo(({ teamId }) => {
+  const { user } = useAuth();
+  const { data: balanceData, isLoading } = useQuery({
+    queryKey: ['teamBalanceProfile', teamId],
+    queryFn: async () => {
+      const result = await withUserContext(async () => {
+        const { data, error } = await supabase.rpc('calculate_team_balance_updated', {
+          team_id_param: teamId
+        });
+        if (error) throw error;
+        return data as number;
+      }, {
+        userId: user?.id as number,
+        role: user?.role,
+        teamIds: String(teamId),
+      });
+      return result;
+    },
+    enabled: !!user && !!teamId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const balance = balanceData ?? 0;
+  const isNegative = balance < 0;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+          <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
+          Financieel Overzicht
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {isLoading ? (
+          <Skeleton className="h-12 w-full" />
+        ) : (
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm text-muted-foreground">Huidig saldo</span>
+            <span className={cn(
+              "text-lg font-bold",
+              isNegative ? "text-destructive" : "text-green-600"
+            )}>
+              {isNegative ? '−' : ''}€{Math.abs(balance).toFixed(2)}
+            </span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
+FinancialOverviewCard.displayName = 'FinancialOverviewCard';
+
+// Admin Message Card - Placeholder for admin-to-user messages
+const AdminMessageCard: React.FC = memo(() => {
+  const { user } = useAuth();
+  const { data: messages, isLoading } = useQuery({
+    queryKey: ['adminMessages', user?.role],
+    queryFn: async () => {
+      const result = await withUserContext(async () => {
+        const { data, error } = await supabase
+          .from('application_settings')
+          .select('setting_value, updated_at')
+          .eq('setting_category', 'admin_messages')
+          .eq('is_active', true)
+          .order('updated_at', { ascending: false })
+          .limit(3);
+        if (error) return [];
+        return data || [];
+      }, {
+        userId: user?.id as number,
+        role: user?.role,
+        teamIds: user?.teamId ? String(user.teamId) : '',
+      });
+      return result;
+    },
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  return (
+    <Card className="border-primary/20">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
+          Berichten
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {isLoading ? (
+          <Skeleton className="h-10 w-full" />
+        ) : messages && messages.length > 0 ? (
+          <div className="space-y-2">
+            {messages.map((msg: any, i: number) => (
+              <div key={i} className="p-3 rounded-md bg-primary/5 border border-primary/10">
+                <p className="text-sm text-foreground">
+                  {msg.setting_value?.message || msg.setting_value?.text || 'Bericht'}
+                </p>
+                {msg.updated_at && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {new Date(msg.updated_at).toLocaleDateString('nl-BE')}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground italic py-2">Geen berichten</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
+AdminMessageCard.displayName = 'AdminMessageCard';
+
 // Referee Upcoming Matches Component
 const RefereeUpcomingMatches: React.FC<{
   refereeUsername: string;
@@ -1244,26 +1358,17 @@ const UserProfilePage: React.FC = () => {
 
       {/* Mobile-first layout: Stack cards vertically on mobile */}
       <div className="space-y-4 sm:space-y-6">
-        {/* Combined User & Team Info Card */}
+        {/* 1. Combined User & Team Info Card */}
         <MemoizedUserTeamInfoCard 
           user={user} 
           team={teams[0] || null}
           onTeamUpdate={() => {
-            // Refresh profile data immediately
             queryClient.invalidateQueries({ queryKey: ['userProfile'] });
             queryClient.refetchQueries({ queryKey: ['userProfile'] });
           }}
         />
 
-        {/* Team Players Overview - Player managers only */}
-        {user.role === 'player_manager' && firstTeam && (
-          <TeamPlayersOverview teamId={firstTeam.team_id} />
-        )}
-
-        {/* Referee Notes Card - Admin only */}
-        {isAdmin && <RefereeNotesCard />}
-
-        {/* Next Match Card - Show if user has a team and there's an upcoming match */}
+        {/* 2. Next Match Card - Team managers */}
         {firstTeam && !matchesLoading && nextMatch && (
           <NextMatchCard 
             match={nextMatch} 
@@ -1272,7 +1377,7 @@ const UserProfilePage: React.FC = () => {
           />
         )}
 
-        {/* Referee Upcoming Matches - Show if user is a referee */}
+        {/* 2b. Referee Upcoming Matches */}
         {isReferee && authUser?.username && (
           <RefereeUpcomingMatches
             refereeUsername={authUser.username}
@@ -1280,7 +1385,23 @@ const UserProfilePage: React.FC = () => {
           />
         )}
 
-        {/* Additional Teams Section - Only show if user has more than 1 team */}
+        {/* 3. Team Players Overview - Player managers only */}
+        {user.role === 'player_manager' && firstTeam && (
+          <TeamPlayersOverview teamId={firstTeam.team_id} />
+        )}
+
+        {/* 4. Financial Overview - Player managers only */}
+        {user.role === 'player_manager' && firstTeam && (
+          <FinancialOverviewCard teamId={firstTeam.team_id} />
+        )}
+
+        {/* 5. Admin Messages */}
+        <AdminMessageCard />
+
+        {/* Referee Notes Card - Admin only */}
+        {isAdmin && <RefereeNotesCard />}
+
+        {/* Additional Teams Section */}
         {teams.length > 1 && (
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between">
@@ -1332,7 +1453,7 @@ const UserProfilePage: React.FC = () => {
           </div>
         )}
 
-        {/* Quick Actions */}
+        {/* 6. Quick Actions */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base sm:text-lg">Snelle Acties</CardTitle>
