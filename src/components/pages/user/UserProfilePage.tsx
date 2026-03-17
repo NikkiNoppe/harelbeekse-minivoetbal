@@ -26,8 +26,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TeamModal } from "@/components/modals";
 import { useToast } from "@/hooks/use-toast";
 import { teamService } from "@/services/core";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { withUserContext } from "@/lib/supabaseUtils";
+import { supabase } from "@/integrations/supabase/client";
 import RefereeNotesCard from "./RefereeNotesCard";
 import { useTeamPlayerStats, type PlayerStat } from "@/hooks/useTeamPlayerStats";
 
