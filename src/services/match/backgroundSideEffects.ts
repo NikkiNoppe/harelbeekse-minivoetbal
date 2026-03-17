@@ -263,6 +263,64 @@ const syncMatchCosts = async (
 };
 
 /**
+ * Late submission penalty side effect
+ * IDEMPOTENT: Checks for existing penalty before inserting
+ */
+const syncLatePenalty = async (
+  ctx: SideEffectContext,
+  matchId: number,
+  matchInfo: MatchInfo
+): Promise<void> => {
+  // Find the "Boete te laat ingevuld" cost setting
+  const { data: costSetting, error: costError } = await supabase
+    .from('costs')
+    .select('id, amount')
+    .eq('name', 'Boete te laat ingevuld')
+    .eq('category', 'penalty')
+    .eq('is_active', true)
+    .single();
+
+  if (costError || !costSetting) {
+    throw new Error('Cost setting "Boete te laat ingevuld" not found');
+  }
+
+  // Determine the submitting team (home_team_id as default — the team manager submitting)
+  // Both teams get the penalty since the form covers both
+  const teamIds = [matchInfo.home_team_id, matchInfo.away_team_id].filter(Boolean) as number[];
+
+  for (const teamId of teamIds) {
+    // Check if penalty already exists for this match + team + cost setting (idempotent)
+    const { data: existing } = await supabase
+      .from('team_costs')
+      .select('id')
+      .eq('match_id', matchId)
+      .eq('team_id', teamId)
+      .eq('cost_setting_id', costSetting.id)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      logSideEffect(ctx, 'late_penalty', 'info', `Penalty already exists for team ${teamId}, skipping`);
+      continue;
+    }
+
+    const { error: insertError } = await supabase
+      .from('team_costs')
+      .insert({
+        team_id: teamId,
+        cost_setting_id: costSetting.id,
+        match_id: matchId,
+        transaction_date: new Date().toISOString().split('T')[0]
+      });
+
+    if (insertError) throw insertError;
+
+    logSideEffect(ctx, 'late_penalty', 'info', `Penalty inserted for team ${teamId}`, {
+      amount: costSetting.amount
+    });
+  }
+};
+
+/**
  * Main entry point for scheduling all background side effects
  * Fire-and-forget pattern - does not block caller
  */
@@ -270,7 +328,8 @@ export const scheduleBackgroundSideEffects = (
   matchId: number,
   updateData: UpdateData,
   matchInfo: MatchInfo | null,
-  isCupMatch: boolean
+  isCupMatch: boolean,
+  isLateSubmission: boolean = false
 ): void => {
   // Don't await - run in background
   Promise.resolve().then(async () => {
