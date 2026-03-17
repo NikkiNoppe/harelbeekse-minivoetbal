@@ -250,6 +250,96 @@ const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
   );
 };
 
+// Team Players Overview Component
+const TeamPlayersOverview: React.FC<{ teamId: number }> = memo(({ teamId }) => {
+  const { data: players, isLoading } = useTeamPlayerStats(teamId);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+              Mijn Spelers
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-2">
+          {[1, 2, 3].map(i => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!players || players.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+            Mijn Spelers
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <p className="text-sm text-muted-foreground italic">Geen spelers gevonden</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+            Mijn Spelers
+          </CardTitle>
+          <Badge variant="outline" className="text-xs">{players.length}</Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="divide-y divide-border/50">
+          {players.map((player) => (
+            <div
+              key={player.player_id}
+              className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
+            >
+              <span className="text-sm font-medium text-foreground truncate mr-3">
+                {player.last_name}, {player.first_name}
+              </span>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                {/* Match count */}
+                <span className="flex items-center gap-1 text-xs text-muted-foreground" title="Wedstrijden">
+                  <Trophy className="h-3.5 w-3.5" />
+                  <span className="font-medium">{player.matchCount}</span>
+                </span>
+                {/* Yellow cards */}
+                {player.yellowCards > 0 && (
+                  <span className="flex items-center gap-1 text-xs" title="Gele kaarten">
+                    <span className="w-3 h-4 rounded-[2px] bg-yellow-400 inline-block" />
+                    <span className="font-medium text-foreground">{player.yellowCards}</span>
+                  </span>
+                )}
+                {/* Red cards */}
+                {player.redCards > 0 && (
+                  <span className="flex items-center gap-1 text-xs" title="Rode kaarten">
+                    <span className="w-3 h-4 rounded-[2px] bg-red-500 inline-block" />
+                    <span className="font-medium text-foreground">{player.redCards}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
+
 // Combined User & Team Info Card Component
 const UserTeamInfoCard: React.FC<{
   user: {
