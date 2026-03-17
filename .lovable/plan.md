@@ -1,47 +1,34 @@
 
 
-## Probleem: Playoff data corruptie + preventie
+## Analyse: Scheidsrechters laden traag door onnodige RLS context
 
-### 1. Data Herstel
+### Hoofdoorzaak
 
-Er is momenteel 1 beschadigde wedstrijd gevonden:
+`fetchReferees()` in `useRefereesQuery.ts` wrapt de query met `withUserContext()`. Dit doet een extra RPC call (`set_current_user_context`) vóór elke referee-query.
 
-| Match | Huidig | Moet zijn |
-|-------|--------|-----------|
-| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
+**Maar `referees_public` is een view zonder RLS policies** — het heeft helemaal geen user context nodig. De `withUserContext` wrapper voegt dus alleen maar latency toe (en kan zelfs falen als de context-RPC traag is of een race condition heeft met andere parallelle context-calls via de `contextPromise` lock).
 
-Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
+Bovendien heeft de query een 15-seconden timeout die racet met de `withUserContext` + de eigenlijke query. Als `withUserContext` al 2-3 seconden duurt (context instellen + verificatie in dev), blijft er minder tijd over voor de eigenlijke query.
 
-**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
-- `speeldag` terug naar "Playoff Speeldag 4"
-- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
+### Oplossing
 
-### 2. Bug Fix: Voorkom toekomstige corruptie
+Verwijder `withUserContext` uit `fetchReferees()`. Query `referees_public` direct — het is een publieke view, geen context nodig.
 
-**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
+### Wijzigingen
 
-**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
+**`src/hooks/useRefereesQuery.ts`**
+- Verwijder de `withUserContext` wrapper rond de Supabase query
+- Query `referees_public` direct met `supabase.from(...).select(...).order(...)`
+- Verwijder de import van `withUserContext`
+- Verwijder de import van `useAuth` en de `authContextReady` check (niet nodig voor publieke view)
+- Vereenvoudig de timeout logica (kan korter, bv 8 seconden)
 
-In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
-- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
-- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
+Dit elimineert:
+1. De extra RPC call voor context instellen
+2. De wachttijd op de `contextPromise` lock (als andere queries parallel context instellen)
+3. De dev-only context verificatie delay (10ms + extra RPCs)
+4. De afhankelijkheid van `authContextReady` — referees kunnen laden zodra de modal opent
 
-### Technische Details
+### Bestanden
+1. `src/hooks/useRefereesQuery.ts` — verwijder withUserContext, direct query op publieke view
 
-**Bestanden die gewijzigd worden:**
-
-1. **Nieuwe SQL-migratie** - Herstel PO-22:
-```
-UPDATE matches 
-SET speeldag = 'Playoff Speeldag 4', 
-    match_date = '2026-02-10 18:30:00+00'
-WHERE match_id = 2197 
-AND unique_number = 'PO-22-1766492793564-7079';
-```
-
-2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
-   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
-   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
-   - Voor team managers wordt `matchData` weggelaten uit het update-object
-
-Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.
