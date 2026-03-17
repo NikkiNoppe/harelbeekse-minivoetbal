@@ -1114,6 +1114,9 @@ const UserProfilePage: React.FC = () => {
           }}
         />
 
+        {/* Referee Notes Card - Admin only */}
+        {isAdmin && <RefereeNotesCard />}
+
         {/* Next Match Card - Show if user has a team and there's an upcoming match */}
         {firstTeam && !matchesLoading && nextMatch && (
           <NextMatchCard 
