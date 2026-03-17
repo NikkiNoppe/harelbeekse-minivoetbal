@@ -1,58 +1,47 @@
 
 
-## Plan: Spelersoverzicht met wedstrijden en kaarten op profielpagina
+## Probleem: Playoff data corruptie + preventie
 
-### Wat wordt gebouwd
-Een compact "Mijn Spelers" kaart op de `/profile` pagina voor team managers. Per speler wordt getoond:
-- Naam
-- Aantal wedstrijden (gespeelde wedstrijden waarin de speler op het formulier staat)
-- Gele kaarten (compact geel bolletje + aantal)
-- Rode kaarten (compact rood bolletje + aantal)
+### 1. Data Herstel
 
-### Data-aanpak
+Er is momenteel 1 beschadigde wedstrijd gevonden:
 
-De spelersdata (naam, yellow_cards, red_cards) komt al uit de `players` tabel via de bestaande `get_players_for_team` RPC.
+| Match | Huidig | Moet zijn |
+|-------|--------|-----------|
+| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
 
-Voor het aantal wedstrijden per speler moet ik de `matches` tabel doorzoeken: alle `is_submitted = true` wedstrijden waar het team in speelt, en per match de `home_players`/`away_players` JSONB arrays parsen om te tellen in hoeveel wedstrijden elke `playerId` voorkomt.
+Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
 
-### Technische aanpak
+**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
+- `speeldag` terug naar "Playoff Speeldag 4"
+- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
 
-**1. Nieuwe hook: `src/hooks/useTeamPlayerStats.ts`**
-- Accepteert `teamId`
-- Fetcht spelers via `get_players_for_team` RPC (hergebruik bestaande pattern)
-- Fetcht alle submitted matches voor dit team via Supabase query op `matches` (where `home_team_id = teamId OR away_team_id = teamId` AND `is_submitted = true`), selecteert alleen `home_players, away_players, home_team_id`
-- Combineert: per speler tel in hoeveel wedstrijden hun `playerId` voorkomt in de juiste players-array
-- Retourneert: `{ players: Array<{ player_id, name, matchCount, yellowCards, redCards }>, isLoading }`
+### 2. Bug Fix: Voorkom toekomstige corruptie
 
-**2. Nieuwe component in `UserProfilePage.tsx`: `TeamPlayersOverview`**
-- Compact Card met titel "Mijn Spelers" + Users icon
-- Lijst van spelers als compacte rijen (geen tabel, mobile-first)
-- Per rij: naam links, rechts een cluster van badges:
-  - Wedstrijden: klein getal met `Trophy` icon
-  - Geel: geel bolletje + aantal (alleen als >0)
-  - Rood: rood bolletje + aantal (alleen als >0)
-- Gesorteerd op achternaam
-- Skeleton loading state
-- Getoond tussen de UserTeamInfoCard en NextMatchCard, alleen voor `player_manager` rol
+**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
 
-### UI Design (compact, consistent met bestaande stijl)
+**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
 
-```text
-┌─────────────────────────────────────────┐
-│ 👥 Mijn Spelers                    (12) │
-├─────────────────────────────────────────┤
-│ Janssen, Pieter        🏆 8  🟡 2  🔴 0 │
-│─────────────────────────────────────────│
-│ De Vries, Thomas       🏆 6  🟡 1       │
-│─────────────────────────────────────────│
-│ Bakker, Kevin          🏆 5             │
-└─────────────────────────────────────────┘
+In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
+- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
+- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
+
+### Technische Details
+
+**Bestanden die gewijzigd worden:**
+
+1. **Nieuwe SQL-migratie** - Herstel PO-22:
+```
+UPDATE matches 
+SET speeldag = 'Playoff Speeldag 4', 
+    match_date = '2026-02-10 18:30:00+00'
+WHERE match_id = 2197 
+AND unique_number = 'PO-22-1766492793564-7079';
 ```
 
-Subtiele `border-border/50` scheidingen tussen rijen. Kaartindicatoren alleen getoond als count > 0. Rode kaarten alleen als > 0.
+2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
+   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
+   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
+   - Voor team managers wordt `matchData` weggelaten uit het update-object
 
-### Bestanden
-
-1. `src/hooks/useTeamPlayerStats.ts` — nieuwe hook voor gecombineerde speler + wedstrijdtelling data
-2. `src/components/pages/user/UserProfilePage.tsx` — nieuwe `TeamPlayersOverview` component + integratie in profiel layout
-
+Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.
