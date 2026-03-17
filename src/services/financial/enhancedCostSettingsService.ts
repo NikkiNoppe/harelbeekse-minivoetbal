@@ -129,10 +129,12 @@ export const enhancedCostSettingsService = {
   async addCostSetting(setting: Omit<CostSetting, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; message: string }> {
     logOperation('addCostSetting - START', { setting });
     try {
-      const { data, error } = await supabase
-        .from('costs')
-        .insert([setting])
-        .select();
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('costs')
+          .insert([setting])
+          .select();
+      });
 
       logOperation('addCostSetting - QUERY RESULT', { data, error });
 
