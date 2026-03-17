@@ -706,32 +706,25 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     }
   }, [homeScore, awayScore, isCupMatch, createUpdatedMatch, submitMatchForm, isAdmin, userRole, handleComplete, setIsSubmitting, match, matchFormSettings]);
 
-  // Process late penalty decision via useEffect to avoid async in AlertDialog handlers
-  useEffect(() => {
-    if (!latePenaltyDecision || !pendingLatePenaltyMatch) return;
-    
-    const decision = latePenaltyDecision;
+  const handleLatePenaltySubmit = useCallback(async (applyPenalty: boolean) => {
+    if (!pendingLatePenaltyMatch) return;
+
     const matchToSubmit = pendingLatePenaltyMatch;
-    const teamIds = decision === 'confirm' ? latePenaltyTeamIds : [];
-    
-    // Reset decision state immediately
-    setLatePenaltyDecision(null);
+    const teamIds = applyPenalty ? latePenaltyTeamIds : [];
+
+    setShowLatePenaltyModal(false);
     setPendingLatePenaltyMatch(null);
-    
-    const doSubmit = async () => {
-      setIsSubmitting(true);
-      try {
-        const result = await submitMatchForm(matchToSubmit, isAdmin, userRole, matchFormSettings, teamIds);
-        if (result.success) handleComplete();
-      } catch (error) {
-        console.error('Error submitting match form:', error);
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
-    
-    doSubmit();
-  }, [latePenaltyDecision, pendingLatePenaltyMatch, latePenaltyTeamIds, submitMatchForm, isAdmin, userRole, matchFormSettings, handleComplete, setIsSubmitting]);
+    setIsSubmitting(true);
+
+    try {
+      const result = await submitMatchForm(matchToSubmit, isAdmin, userRole, matchFormSettings, teamIds);
+      if (result.success) handleComplete();
+    } catch (error) {
+      console.error('Error submitting match form:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [pendingLatePenaltyMatch, latePenaltyTeamIds, submitMatchForm, isAdmin, userRole, matchFormSettings, handleComplete, setIsSubmitting]);
 
   const handlePenaltyResult = useCallback(async (winner: 'home' | 'away', homePenalties: number, awayPenalties: number, notes: string) => {
     if (!pendingSubmission) return;
