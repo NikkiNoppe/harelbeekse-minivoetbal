@@ -624,6 +624,21 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                                        transaction.matches?.unique_number || 
                                        '-'}
                                     </p>
+                                    {transaction.cost_settings?.name === 'Boete te laat ingevuld' && transaction.transaction_date && (() => {
+                                      const d = new Date(transaction.transaction_date);
+                                      const h = d.getUTCHours();
+                                      const m = d.getUTCMinutes();
+                                      const s = d.getUTCSeconds();
+                                      // Only show time if it's not midnight (meaning it has actual time data)
+                                      if (h !== 0 || m !== 0 || s !== 0) {
+                                        return (
+                                          <span className="text-[10px] text-muted-foreground italic leading-tight">
+                                            Ingediend om {String(h).padStart(2, '0')}:{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
+                                          </span>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
                                   </div>
                                 </div>
 
