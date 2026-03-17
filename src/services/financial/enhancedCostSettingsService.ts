@@ -157,80 +157,71 @@ export const enhancedCostSettingsService = {
   async updateCostSetting(id: number, setting: Partial<CostSetting>): Promise<{ success: boolean; message: string; affectedTransactions?: number }> {
     logOperation('updateCostSetting - START', { id, setting });
     try {
-      // Check if amount is being changed
       const isAmountChange = setting.amount !== undefined;
-      
-      if (isAmountChange) {
-        // Get current setting to compare amounts
-        const { data: currentSetting } = await supabase
-          .from('costs')
-          .select('amount')
-          .eq('id', id)
-          .single();
-        
-        if (currentSetting && currentSetting.amount !== setting.amount) {
-          // Get count of affected transactions
-          const { count: affectedCount } = await supabase
-            .from('team_costs')
-            .select('*', { count: 'exact', head: true })
-            .eq('cost_setting_id', id);
+
+      // Wrap entire mutation flow in withUserContext for RLS
+      return await withUserContext(async () => {
+        if (isAmountChange) {
+          const { data: currentSetting } = await supabase
+            .from('costs')
+            .select('amount')
+            .eq('id', id)
+            .single();
           
-          logOperation('updateCostSetting - AMOUNT CHANGE DETECTED', { 
-            oldAmount: currentSetting.amount, 
-            newAmount: setting.amount, 
-            affectedTransactions: affectedCount 
-          });
-        }
-      }
-
-      const updateData = {
-        ...setting
-      };
-
-      // First, try to update without the trigger to avoid audit log issues
-      const { data, error } = await supabase
-        .from('costs')
-        .update(updateData)
-        .eq('id', id)
-        .select();
-
-      logOperation('updateCostSetting - QUERY RESULT', { data, error, updateData });
-
-      if (error) {
-        logOperation('updateCostSetting - ERROR', { error });
-        throw error;
-      }
-      
-      // If amount changed, manually update related transactions
-      if (isAmountChange && setting.amount !== undefined) {
-        try {
-          // Update all team_costs that reference this cost_setting
-          const { error: updateError } = await supabase
-            .from('team_costs')
-            .update({ amount: setting.amount })
-            .eq('cost_setting_id', id);
-          
-          if (updateError) {
-            logOperation('updateCostSetting - TRANSACTION UPDATE ERROR', { updateError });
-            // Don't throw here, just log the error
+          if (currentSetting && currentSetting.amount !== setting.amount) {
+            const { count: affectedCount } = await supabase
+              .from('team_costs')
+              .select('*', { count: 'exact', head: true })
+              .eq('cost_setting_id', id);
+            
+            logOperation('updateCostSetting - AMOUNT CHANGE DETECTED', { 
+              oldAmount: currentSetting.amount, 
+              newAmount: setting.amount, 
+              affectedTransactions: affectedCount 
+            });
           }
-          
-          // Note: Audit log functionality is temporarily disabled until database is fixed
-          // TODO: Re-enable audit log after running the migration
-          logOperation('updateCostSetting - AUDIT LOG DISABLED', { 
-            message: 'Audit log temporarily disabled due to database issues' 
-          });
-        } catch (manualUpdateError) {
-          logOperation('updateCostSetting - MANUAL UPDATE ERROR', { manualUpdateError });
-          // Don't throw here, just log the error
         }
-      }
-      
-      // Get updated count of affected transactions after the update
-      const { count: finalAffectedCount } = await supabase
-        .from('team_costs')
-        .select('*', { count: 'exact', head: true })
-        .eq('cost_setting_id', id);
+
+        const updateData = { ...setting };
+
+        const { data, error } = await supabase
+          .from('costs')
+          .update(updateData)
+          .eq('id', id)
+          .select();
+
+        logOperation('updateCostSetting - QUERY RESULT', { data, error, updateData });
+
+        if (error) {
+          logOperation('updateCostSetting - ERROR', { error });
+          throw error;
+        }
+        
+        // Check if any rows were actually updated
+        if (!data || data.length === 0) {
+          logOperation('updateCostSetting - NO ROWS UPDATED (possible RLS block)');
+          return { success: false, message: 'Update mislukt: geen rijen bijgewerkt. Controleer of je als admin bent ingelogd.' };
+        }
+        
+        if (isAmountChange && setting.amount !== undefined) {
+          try {
+            const { error: updateError } = await supabase
+              .from('team_costs')
+              .update({ amount: setting.amount })
+              .eq('cost_setting_id', id);
+            
+            if (updateError) {
+              logOperation('updateCostSetting - TRANSACTION UPDATE ERROR', { updateError });
+            }
+          } catch (manualUpdateError) {
+            logOperation('updateCostSetting - MANUAL UPDATE ERROR', { manualUpdateError });
+          }
+        }
+        
+        const { count: finalAffectedCount } = await supabase
+          .from('team_costs')
+          .select('*', { count: 'exact', head: true })
+          .eq('cost_setting_id', id);
       
       logOperation('updateCostSetting - SUCCESS', { 
         updatedData: data, 
