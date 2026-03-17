@@ -285,9 +285,10 @@ const syncLatePenalty = async (
     throw new Error('Cost setting "Boete te laat ingevuld" not found');
   }
 
-  // Determine the submitting team (home_team_id as default — the team manager submitting)
-  // Both teams get the penalty since the form covers both
-  const teamIds = [matchInfo.home_team_id, matchInfo.away_team_id].filter(Boolean) as number[];
+  // Use specific team IDs if provided, otherwise fall back to both teams
+  const teamIds = (latePenaltyTeamIds && latePenaltyTeamIds.length > 0)
+    ? latePenaltyTeamIds
+    : [matchInfo.home_team_id, matchInfo.away_team_id].filter(Boolean) as number[];
 
   for (const teamId of teamIds) {
     // Check if penalty already exists for this match + team + cost setting (idempotent)
