@@ -2478,12 +2478,18 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           size="sm"
           confirmAction={{
             label: "Boete aanrekenen",
-            onClick: handleLatePenaltyConfirm,
+            onClick: () => {
+              setShowLatePenaltyModal(false);
+              setLatePenaltyDecision('confirm');
+            },
             variant: "destructive"
           }}
           cancelAction={{
             label: "Opslaan zonder boete",
-            onClick: handleLatePenaltyCancel
+            onClick: () => {
+              setShowLatePenaltyModal(false);
+              setLatePenaltyDecision('skip');
+            }
           }}
         />
       </div>
