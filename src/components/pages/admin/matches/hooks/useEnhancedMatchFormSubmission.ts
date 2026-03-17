@@ -15,14 +15,14 @@ export const useEnhancedMatchFormSubmission = () => {
     console.log('🟡 [useEnhancedMatchFormSubmission] Match data:', matchData);
     console.log('🟡 [useEnhancedMatchFormSubmission] isAdmin:', isAdmin, 'userRole:', userRole);
     
-    // Keep all player slots (including empty ones) to preserve positions
-    // This ensures that when data is loaded, the positions are maintained
-    const homePlayersToSave = matchData.homePlayers || [];
-    const awayPlayersToSave = matchData.awayPlayers || [];
+    // Only include player data if it was actually modified (dirty tracking)
+    // undefined means "don't touch" — the database will keep existing data
+    const homePlayersToSave = matchData.homePlayers;
+    const awayPlayersToSave = matchData.awayPlayers;
     
-    console.log('🟡 [useEnhancedMatchFormSubmission] Players to save - Home:', homePlayersToSave.length, 'Away:', awayPlayersToSave.length);
-    console.log('🟡 [useEnhancedMatchFormSubmission] Home players data:', homePlayersToSave.map(p => ({ playerId: p?.playerId, playerName: p?.playerName, jerseyNumber: p?.jerseyNumber })));
-    console.log('🟡 [useEnhancedMatchFormSubmission] Away players data:', awayPlayersToSave.map(p => ({ playerId: p?.playerId, playerName: p?.playerName, jerseyNumber: p?.jerseyNumber })));
+    console.log('🟡 [useEnhancedMatchFormSubmission] Players to save - Home:', homePlayersToSave?.length ?? 'SKIPPED (undefined)', 'Away:', awayPlayersToSave?.length ?? 'SKIPPED (undefined)');
+    if (homePlayersToSave) console.log('🟡 [useEnhancedMatchFormSubmission] Home players data:', homePlayersToSave.map(p => ({ playerId: p?.playerId, playerName: p?.playerName, jerseyNumber: p?.jerseyNumber })));
+    if (awayPlayersToSave) console.log('🟡 [useEnhancedMatchFormSubmission] Away players data:', awayPlayersToSave.map(p => ({ playerId: p?.playerId, playerName: p?.playerName, jerseyNumber: p?.jerseyNumber })));
     
     const processedRefereeNotes = matchData.refereeNotes !== undefined && matchData.refereeNotes !== null ? matchData.refereeNotes : "";
     
