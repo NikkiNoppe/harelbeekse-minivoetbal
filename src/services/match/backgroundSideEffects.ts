@@ -311,6 +311,7 @@ const syncLatePenalty = async (
         team_id: teamId,
         cost_setting_id: costSetting.id,
         match_id: matchId,
+        amount: costSetting.amount,
         transaction_date: new Date().toISOString()
       });
 
