@@ -187,7 +187,7 @@ export const ROUTE_GUARDS = {
     ADMIN_ROUTES.suspensions,
     ADMIN_ROUTES.schorsingen,
     ADMIN_ROUTES['blog-management'],
-    ADMIN_ROUTES['notification-management'],
+    ADMIN_ROUTES['notification'],
   ],
 } as const;
 
