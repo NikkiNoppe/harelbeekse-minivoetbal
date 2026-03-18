@@ -168,6 +168,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             isSuperAdmin: true,
           };
           
+          await setSuperAdminDbContext();
           setUser(superAdminUser);
           setIsAuthenticated(true);
           persistAuthState(superAdminUser);
