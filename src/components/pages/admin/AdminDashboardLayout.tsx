@@ -22,7 +22,7 @@ export function AdminDashboardLayout({
   onLogoClick, 
   onLoginClick 
 }: AdminDashboardLayoutProps) {
-  const { user, isSuperAdmin } = useAuth();
+  const { user } = useAuth();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
 
