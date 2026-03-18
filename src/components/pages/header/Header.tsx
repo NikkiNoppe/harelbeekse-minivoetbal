@@ -8,7 +8,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Menu, User, LogOut, Settings, Shield, Users, Calendar, Trophy, Award, DollarSign, Home, BookOpen, Ban, AlertTriangle, Target, ChevronDown } from "lucide-react";
+import { Menu, User, LogOut, Settings, Shield, Users, Calendar, Trophy, Award, DollarSign, Home, BookOpen, Ban, AlertTriangle, Target, ChevronDown, MessageSquare } from "lucide-react";
 import HamburgerIcon from "@/components/ui/hamburger-icon";
 import Logo from "./Logo";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
@@ -144,7 +144,7 @@ const Header: React.FC<HeaderProps> = ({
   const systeemItems = [
     { key: "settings", label: "Instellingen", icon: <Settings size={18} />, adminOnly: true },
     { key: "blog-management", label: "Blog Beheer", icon: <BookOpen size={18} />, adminOnly: true },
-    { key: "notification-management", label: "Notificaties", icon: <AlertTriangle size={18} />, adminOnly: true },
+    { key: "notification", label: "Berichten", icon: <MessageSquare size={18} />, adminOnly: true },
   ];
 
   // Visibility filtering similar to AdminSidebar

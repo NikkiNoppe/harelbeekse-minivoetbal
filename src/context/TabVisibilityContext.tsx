@@ -83,7 +83,7 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Admin tabs that require login and check visibility settings directly
     // Note: 'teams' is now only used for admin teams page (/admin/teams)
-    const adminTabs = ['teams', 'users', 'players', 'scheidsrechters', 'schorsingen', 'financial', 'settings', 'blog-management', 'notification-management', 'format-competition', 'format-cup', 'format-playoffs'];
+    const adminTabs = ['teams', 'users', 'players', 'scheidsrechters', 'schorsingen', 'financial', 'settings', 'blog-management', 'notification', 'format-competition', 'format-cup', 'format-playoffs'];
     
     // Special handling for 'teams': admin teams page only
     if (tab === 'teams') {

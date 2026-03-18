@@ -1,82 +1,47 @@
 
 
-## Plan: Berichten-systeem herstructureren
+## Probleem: Playoff data corruptie + preventie
 
-### Samenvatting
-De huidige twee-systemen aanpak (popup-notificaties + admin berichten) wordt samengevoegd tot één persistent berichten-systeem. Berichten worden aangemaakt door de admin en getoond onder `/profile` → "Berichten". Geen popups meer.
+### 1. Data Herstel
 
-### Wijzigingen
+Er is momenteel 1 beschadigde wedstrijd gevonden:
 
-#### 1. Route hernoemen: `/admin/notification-management` → `/admin/notification`
+| Match | Huidig | Moet zijn |
+|-------|--------|-----------|
+| PO-22 (match_id 2197, Team 16 vs Team 2) | Speeldag 2, 2026-01-27 19:30 | Speeldag 4, 2026-02-10 18:30 |
 
-**Bestanden** (9 bestanden, zoek-en-vervang `notification-management` → `notification`):
-- `src/config/routes.ts` — route definitie + alle referenties
-- `src/App.tsx` — route registratie
-- `src/components/pages/admin/AdminDashboard.tsx` — TabsContent value
-- `src/components/pages/admin/AdminSidebar.tsx` — sidebar mapping
-- `src/components/pages/header/Header.tsx` — menu item key
-- `src/components/navigation/admin-quick-sheet.tsx` — quick sheet item
-- `src/components/app-layout.tsx` — adminTabs array
-- `src/context/TabVisibilityContext.tsx` — visibility check
-- `src/components/pages/admin/settings/components/TabVisibilitySettingsUpdated.tsx` — tab visibility settings
+Dit verklaart waarom Speeldag 2 ineens 8 wedstrijden toont en Speeldag 4 maar 6.
 
-#### 2. NotificationPopup verwijderen
+**Herstel**: Een SQL-migratie die deze ene wedstrijd corrigeert:
+- `speeldag` terug naar "Playoff Speeldag 4"
+- `match_date` terug naar "2026-02-10 18:30:00+00" (overeenkomend met het patroon van andere PO2-wedstrijden in Speeldag 4)
 
-- **Verwijder** `src/components/common/NotificationPopup.tsx`
-- **Verwijder import/gebruik** uit `src/components/app-layout.tsx`
-- **Verwijder import/gebruik** uit `src/components/pages/admin/AdminDashboardLayout.tsx`
+### 2. Bug Fix: Voorkom toekomstige corruptie
 
-#### 3. NotificationService aanpassen
+**Oorzaak**: Wanneer een gebruiker het wedstrijdformulier opslaat (score, spelers, etc.), stuurt de code ALTIJD ook de velden `date`, `time`, `location` en `matchday` mee (regel 598-600 in `wedstrijdformulier-modal.tsx`). Deze waarden worden uit de lokale `matchData` state gehaald, die bij het openen van het formulier wordt gevuld met de huidige wedstrijdgegevens. Als er iets misgaat met de state (bv. verkeerde match data geladen), worden de originele waarden overschreven.
 
-**Bestand**: `src/services/notificationService.ts`
-- Verander `setting_category` van `'notifications'` naar `'admin_messages'` voor alle CRUD operaties
-- Verwijder `duration` veld uit interfaces en transformatie (niet meer nodig zonder popups)
-- Voeg `title` veld toe aan `setting_value` voor een optioneel onderwerp
+**Oplossing**: Alleen `date`, `time`, `location` en `matchday` meesturen als de gebruiker admin of scheidsrechter is (de enigen die deze velden mogen wijzigen). Voor team managers worden deze velden niet meegestuurd, waardoor ze niet per ongeluk overschreven kunnen worden.
 
-#### 4. Admin Formulier aanpassen (NotificationPage + NotificationFormModal)
+In `createUpdatedMatch` wordt de spread `...matchData` conditioneel gemaakt:
+- Admin/scheidsrechter: `matchData` wordt meegestuurd (zij mogen deze velden wijzigen)
+- Team manager: `matchData` wordt NIET meegestuurd, alleen score, spelers en kaarten
 
-**Bestand**: `src/components/pages/admin/notifications/NotificationPage.tsx`
-- Verwijder `duration`-gerelateerde logica
-- Category wordt `'admin_messages'` i.p.v. `'notifications'`
-- Hernoem UI-labels: "Notificatie" → "Bericht"
-- Doelgroep vereenvoudigen: Rollen (teammanagers/scheidsrechters) of individuele gebruikers — geen "teams" als aparte categorie, geen "everyone"
+### Technische Details
 
-**Bestand**: `src/components/modals/notifications/notification-form-modal.tsx`
-- Verwijder `duration` slider/veld
-- Verwijder "Iedereen" target mode
-- Houd: "Rollen" (alleen `referee` + `player_manager`), "Individuele gebruikers"
-- Start/eind-datum verplicht maken (of standaardwaarden instellen)
+**Bestanden die gewijzigd worden:**
 
-#### 5. Berichten weergave op /profile verbeteren
+1. **Nieuwe SQL-migratie** - Herstel PO-22:
+```
+UPDATE matches 
+SET speeldag = 'Playoff Speeldag 4', 
+    match_date = '2026-02-10 18:30:00+00'
+WHERE match_id = 2197 
+AND unique_number = 'PO-22-1766492793564-7079';
+```
 
-**Bestand**: `src/components/pages/user/UserProfilePage.tsx` — `AdminMessageCardContent`
+2. **`src/components/modals/matches/wedstrijdformulier-modal.tsx`** - In `createUpdatedMatch` (rond regel 598):
+   - De huidige code `...matchData` (die altijd date/time/location/matchday meestuurt) wordt vervangen door een conditionele spread
+   - Alleen als `isAdmin || isReferee` worden de `matchData` velden meegestuurd
+   - Voor team managers wordt `matchData` weggelaten uit het update-object
 
-Huidige implementatie haalt alleen `admin_messages` op zonder targeting-filtering. Aanpassen:
-- Query haalt alle actieve `admin_messages` op
-- **Client-side filtering** op basis van:
-  - `start_date` / `end_date` (alleen tonen als vandaag binnen bereik)
-  - `target_roles` — match met ingelogde gebruiker's rol
-  - `target_users` — match met ingelogde gebruiker's ID
-- Toon berichten als kaarten met type-indicatie (info/warning/success/error kleur), bericht tekst en datum
-- Verhoog limit van 3 naar 10
-
-#### 6. RLS Policy toevoegen
-
-Er is al een RLS policy "Authenticated users can read admin messages" voor `setting_category = 'admin_messages'`. Deze werkt voor `player_manager` en `referee` rollen. Geen database-wijzigingen nodig — targeting-filtering gebeurt client-side na de RLS-doorgelaten resultaten.
-
-### Technische aanpak (back-end perspectief)
-
-**Efficiëntie**: Eén tabel (`application_settings`) met `setting_category = 'admin_messages'` dient als opslag. Geen nieuwe tabellen nodig. De bestaande RLS policies garanderen dat alleen geauthenticeerde gebruikers met de juiste rol berichten kunnen lezen. Filtering op targeting (welke gebruiker/rol mag dit bericht zien) gebeurt client-side omdat de dataset klein is (< 50 berichten typisch) en de targeting-logica complex is (combinatie van rollen + individuele users + datumbereik).
-
-### Bestanden die wijzigen
-1. `src/config/routes.ts`
-2. `src/App.tsx`
-3. 7 componenten met route-referenties
-4. `src/services/notificationService.ts`
-5. `src/components/pages/admin/notifications/NotificationPage.tsx`
-6. `src/components/modals/notifications/notification-form-modal.tsx`
-7. `src/components/pages/user/UserProfilePage.tsx`
-8. `src/components/common/NotificationPopup.tsx` (verwijderen)
-9. `src/components/app-layout.tsx` (popup import verwijderen)
-10. `src/components/pages/admin/AdminDashboardLayout.tsx` (popup import verwijderen)
-
+Dit voorkomt dat team managers per ongeluk datum, tijd, locatie of speeldag overschrijven wanneer zij enkel een score of spelerslijst indienen.

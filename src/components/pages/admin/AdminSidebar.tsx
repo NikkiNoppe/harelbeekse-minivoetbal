@@ -54,7 +54,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
     schorsingen: ADMIN_ROUTES.schorsingen,
     scheidsrechters: ADMIN_ROUTES.scheidsrechters,
     'blog-management': ADMIN_ROUTES['blog-management'],
-    'notification-management': ADMIN_ROUTES['notification-management'],
+    'notification': ADMIN_ROUTES['notification'],
   };
 
 

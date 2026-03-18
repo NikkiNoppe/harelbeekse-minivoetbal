@@ -89,7 +89,7 @@ export const SYSTEM_ROUTES = {
     users: '/admin/users',
     settings: '/admin/settings',
     blog: '/admin/blog-management',
-    notifications: '/admin/notification-management',
+    notifications: '/admin/notification',
   },
 } as const;
 
@@ -137,7 +137,7 @@ export const ADMIN_ROUTES = {
   schorsingen: CARDS_SUSPENSIONS_ROUTES.admin.teamSuspensions,
   scheidsrechters: TEAMS_PLAYERS_ROUTES.admin.referees,
   'blog-management': SYSTEM_ROUTES.admin.blog,
-  'notification-management': SYSTEM_ROUTES.admin.notifications,
+  'notification': SYSTEM_ROUTES.admin.notifications,
   profile: '/profile',
 } as const;
 
@@ -162,7 +162,7 @@ export const ADMIN_SYSTEM_ROUTES = {
   playoffs: ADMIN_ROUTES.playoffs,
   settings: ADMIN_ROUTES.settings,
   'blog-management': ADMIN_ROUTES['blog-management'],
-  'notification-management': ADMIN_ROUTES['notification-management'],
+  'notification': ADMIN_ROUTES['notification'],
 } as const;
 
 // Alle routes gecombineerd
@@ -187,7 +187,7 @@ export const ROUTE_GUARDS = {
     ADMIN_ROUTES.suspensions,
     ADMIN_ROUTES.schorsingen,
     ADMIN_ROUTES['blog-management'],
-    ADMIN_ROUTES['notification-management'],
+    ADMIN_ROUTES['notification'],
   ],
 } as const;
 
@@ -388,9 +388,9 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     requiresAuth: true,
     requiresAdmin: true,
   },
-  [ADMIN_ROUTES['notification-management']]: {
-    title: 'Notificaties Beheer',
-    description: 'Beheer notificaties',
+  [ADMIN_ROUTES['notification']]: {
+    title: 'Berichten Beheer',
+    description: 'Beheer berichten',
     requiresAuth: true,
     requiresAdmin: true,
   },

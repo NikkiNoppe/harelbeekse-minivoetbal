@@ -65,7 +65,7 @@ const TAB_GROUPS = [
     title: 'Systeem',
     description: 'Systeeminstellingen en content beheer',
     icon: Cog,
-    tabs: ['settings', 'blog-management', 'notification-management'],
+    tabs: ['settings', 'blog-management', 'notification'],
   },
 ];
 
@@ -90,7 +90,7 @@ const TAB_DISPLAY_NAMES: Record<string, string> = {
   'format-playoffs': 'Playoff',
   'settings': 'Instellingen',
   'blog-management': 'Blog Beheer',
-  'notification-management': 'Notificaties',
+  'notification': 'Berichten',
 };
 
 const TabVisibilitySettingsUpdated: React.FC = () => {

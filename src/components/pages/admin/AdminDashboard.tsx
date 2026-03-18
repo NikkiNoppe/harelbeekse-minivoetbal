@@ -22,7 +22,7 @@ import BlogPage from "@/components/pages/admin/blog/BlogPage";
 import NotificationPage from "@/components/pages/admin/notifications/NotificationPage";
 import SchorsingenPage from "@/components/pages/admin/schorsingen/SchorsingenPage";
 
-type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "match-forms-playoffs" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup" | "suspensions" | "schorsingen" | "polls" | "scheidsrechters" | "blog-management" | "notification-management";
+type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "match-forms-playoffs" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup" | "suspensions" | "schorsingen" | "polls" | "scheidsrechters" | "blog-management" | "notification";
 
 interface AdminDashboardProps {
   activeTab: TabName;
@@ -139,8 +139,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
               <BlogPage />
             </TabsContent>
 
-            {/* Notification Management */}
-            <TabsContent value="notification-management" className="mt-0">
+            {/* Berichten Beheer */}
+            <TabsContent value="notification" className="mt-0">
               <NotificationPage />
             </TabsContent>
 

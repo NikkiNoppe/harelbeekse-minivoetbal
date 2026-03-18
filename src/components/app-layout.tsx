@@ -10,7 +10,7 @@ import { AdminDashboardLayout } from "@/components/pages/admin/AdminDashboardLay
 import UserProfilePage from "@/components/pages/user/UserProfilePage";
 import { useAuth } from "@/hooks/useAuth";
 import { useModal } from "@/context/ModalContext";
-import NotificationPopup from "@/components/common/NotificationPopup";
+
 import { getTabFromPath, getPathFromTab, PUBLIC_ROUTES, ADMIN_ROUTES } from "@/config/routes";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 import { useRouteMeta } from "@/hooks/useRouteMeta";
@@ -41,7 +41,7 @@ const Layout: React.FC = () => {
   // Admin sections die sidebar gebruiken
   const adminTabs = [
     "match-forms", "match-forms-league", "match-forms-cup", "match-forms-playoffs", "players", "teams", "users", 
-    "competition", "playoffs", "cup", "financial", "settings", "schorsingen", "suspensions", "blog-management", "notification-management"
+    "competition", "playoffs", "cup", "financial", "settings", "schorsingen", "suspensions", "blog-management", "notification"
   ];
   
   // Main public tabs that use MainPages component
@@ -191,7 +191,7 @@ const Layout: React.FC = () => {
           )}
         </main>
         <Footer />
-        <NotificationPopup />
+        
         
         {/* Global Login Modal */}
         <AppModal

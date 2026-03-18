@@ -1015,7 +1015,7 @@ FinancialOverviewCard.displayName = 'FinancialOverviewCard';
 const AdminMessageCardContent: React.FC = memo(() => {
   const { user } = useAuth();
   const { data: messages, isLoading } = useQuery({
-    queryKey: ['adminMessages', user?.role],
+    queryKey: ['adminMessages', user?.role, user?.id],
     queryFn: async () => {
       const result = await withUserContext(async () => {
         const { data, error } = await supabase
@@ -1024,7 +1024,7 @@ const AdminMessageCardContent: React.FC = memo(() => {
           .eq('setting_category', 'admin_messages')
           .eq('is_active', true)
           .order('updated_at', { ascending: false })
-          .limit(3);
+          .limit(20);
         if (error) return [];
         return data || [];
       }, {
@@ -1038,24 +1038,88 @@ const AdminMessageCardContent: React.FC = memo(() => {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Client-side filtering based on targeting + date range
+  const filteredMessages = useMemo(() => {
+    if (!messages || !user) return [];
+    const now = new Date();
+    
+    return messages.filter((msg: any) => {
+      const sv = msg.setting_value;
+      if (!sv) return false;
+      
+      // Date range check
+      if (sv.start_date && new Date(sv.start_date) > now) return false;
+      if (sv.end_date && new Date(sv.end_date) < now) return false;
+      
+      // Targeting check
+      const targetUsers = Array.isArray(sv.target_users) ? sv.target_users : [];
+      const targetRoles = Array.isArray(sv.target_roles) ? sv.target_roles : [];
+      
+      // If specific users are targeted, check if current user is in the list
+      if (targetUsers.length > 0) {
+        return targetUsers.includes(user.id);
+      }
+      
+      // If roles are targeted, check if current user's role matches
+      if (targetRoles.length > 0) {
+        return targetRoles.includes(user.role?.toLowerCase());
+      }
+      
+      // No targeting = show to everyone (backwards compat)
+      return true;
+    });
+  }, [messages, user]);
+
+  const getTypeStyle = (type: string) => {
+    switch (type) {
+      case 'success': return 'bg-[hsl(var(--success))]/10 border-[hsl(var(--success))]/30';
+      case 'warning': return 'bg-[var(--color-700)]/10 border-[var(--color-700)]/30';
+      case 'error': return 'bg-[hsl(var(--destructive))]/10 border-[hsl(var(--destructive))]/30';
+      default: return 'bg-[var(--color-500)]/10 border-[var(--color-500)]/30';
+    }
+  };
+
+  const getTypeAccent = (type: string) => {
+    switch (type) {
+      case 'success': return 'bg-[hsl(var(--success))]';
+      case 'warning': return 'bg-[var(--color-700)]';
+      case 'error': return 'bg-[hsl(var(--destructive))]';
+      default: return 'bg-[var(--color-500)]';
+    }
+  };
+
   return (
     <CardContent className="pt-0">
       {isLoading ? (
         <Skeleton className="h-10 w-full" />
-      ) : messages && messages.length > 0 ? (
+      ) : filteredMessages.length > 0 ? (
         <div className="space-y-2">
-          {messages.map((msg: any, i: number) => (
-            <div key={i} className="p-3 rounded-md bg-primary/5 border border-primary/10">
-              <p className="text-sm text-foreground">
-                {msg.setting_value?.message || msg.setting_value?.text || 'Bericht'}
-              </p>
-              {msg.updated_at && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {new Date(msg.updated_at).toLocaleDateString('nl-BE')}
-                </p>
-              )}
-            </div>
-          ))}
+          {filteredMessages.map((msg: any, i: number) => {
+            const sv = msg.setting_value;
+            const type = sv?.type || 'info';
+            return (
+              <div key={i} className={cn(
+                "p-3 rounded-lg border relative overflow-hidden",
+                getTypeStyle(type)
+              )}>
+                {/* Left accent bar */}
+                <div className={cn("absolute left-0 top-0 bottom-0 w-1 rounded-l-lg", getTypeAccent(type))} />
+                <div className="pl-3">
+                  {sv?.title && (
+                    <p className="text-sm font-semibold text-foreground mb-0.5">{sv.title}</p>
+                  )}
+                  <p className="text-sm text-foreground">
+                    {sv?.message || 'Bericht'}
+                  </p>
+                  {msg.updated_at && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(msg.updated_at).toLocaleDateString('nl-BE')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <p className="text-sm text-muted-foreground italic py-2">Geen berichten</p>

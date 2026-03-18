@@ -189,7 +189,7 @@ const App = () => (
                         </Suspense>
                       </ProtectedRoute>
                     } />
-                    <Route path={ADMIN_ROUTES['notification-management']} element={
+                    <Route path={ADMIN_ROUTES['notification']} element={
                       <ProtectedRoute requireAdmin>
                         <Suspense fallback={<LoadingSpinner />}>
                           <Index />

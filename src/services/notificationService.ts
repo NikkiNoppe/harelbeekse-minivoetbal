@@ -6,16 +6,13 @@ export interface NotificationData {
   setting_category: string;
   setting_name: string;
   setting_value: {
+    title?: string;
     message: string;
     type: 'info' | 'warning' | 'success' | 'error';
     target_roles: string[];
     target_users?: number[];
-    target_teams?: number[];
-    player_manager_mode?: 'all' | 'specific_teams';
-    player_manager_teams?: number[];
     start_date?: string;
     end_date?: string;
-    duration?: number;
   };
   is_active: boolean;
   created_at?: string;
@@ -27,16 +24,13 @@ export interface Notification {
   setting_category: string;
   setting_name: string;
   setting_value: {
+    title?: string;
     message: string;
     type: string;
     target_roles: string[];
     target_users?: number[];
-    target_teams?: number[];
-    player_manager_mode?: 'all' | 'specific_teams';
-    player_manager_teams?: number[];
     start_date?: string;
     end_date?: string;
-    duration?: number;
   };
   is_active: boolean;
   created_at: string;
@@ -55,16 +49,13 @@ const transformNotificationData = (data: any[]): Notification[] => {
       setting_category: item.setting_category,
       setting_name: item.setting_name,
       setting_value: {
+        title: settingValue?.title || '',
         message: settingValue?.message || '',
         type: settingValue?.type || 'info',
         target_roles: settingValue?.target_roles || [],
         target_users: settingValue?.target_users || [],
-        target_teams: settingValue?.target_teams || [],
-        player_manager_mode: settingValue?.player_manager_mode || 'all',
-        player_manager_teams: settingValue?.player_manager_teams || [],
         start_date: settingValue?.start_date,
         end_date: settingValue?.end_date,
-        duration: settingValue?.duration || 8
       },
       is_active: item.is_active,
       created_at: item.created_at,
@@ -74,20 +65,20 @@ const transformNotificationData = (data: any[]): Notification[] => {
 };
 
 export const notificationService = {
-  // Get all notifications
+  // Get all notifications (admin messages)
   async getAllNotifications(): Promise<Notification[]> {
     try {
       const { data, error } = await supabase
         .from('application_settings')
         .select('*')
-        .in('setting_category', ['notifications', 'admin_notifications'])
+        .eq('setting_category', 'admin_messages')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return transformNotificationData(data || []);
     } catch (error) {
       console.error('Error loading notifications:', error);
-      throw new Error('Kon notificaties niet laden');
+      throw new Error('Kon berichten niet laden');
     }
   },
 
@@ -96,7 +87,7 @@ export const notificationService = {
     try {
       const data = {
         ...notificationData,
-        setting_name: `notification_${Date.now()}`,
+        setting_name: `message_${Date.now()}`,
         updated_at: new Date().toISOString()
       };
 
@@ -109,7 +100,7 @@ export const notificationService = {
       if (error) throw error;
     } catch (error) {
       console.error('Error creating notification:', error);
-      throw new Error('Kon notificatie niet aanmaken');
+      throw new Error('Kon bericht niet aanmaken');
     }
   },
 
@@ -131,7 +122,7 @@ export const notificationService = {
       if (error) throw error;
     } catch (error) {
       console.error('Error updating notification:', error);
-      throw new Error('Kon notificatie niet bijwerken');
+      throw new Error('Kon bericht niet bijwerken');
     }
   },
 
@@ -148,7 +139,7 @@ export const notificationService = {
       if (error) throw error;
     } catch (error) {
       console.error('Error deleting notification:', error);
-      throw new Error('Kon notificatie niet verwijderen');
+      throw new Error('Kon bericht niet verwijderen');
     }
   },
 
@@ -172,13 +163,13 @@ export const notificationService = {
     }
   },
 
-  // Get active notifications for popup display
+  // Get active notifications for display
   async getActiveNotifications(): Promise<Notification[]> {
     try {
       const { data, error } = await supabase
         .from('application_settings')
         .select('*')
-        .in('setting_category', ['notifications', 'admin_notifications'])
+        .eq('setting_category', 'admin_messages')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -186,7 +177,7 @@ export const notificationService = {
       return transformNotificationData(data || []);
     } catch (error) {
       console.error('Error loading active notifications:', error);
-      throw new Error('Kon actieve notificaties niet laden');
+      throw new Error('Kon actieve berichten niet laden');
     }
   },
 
