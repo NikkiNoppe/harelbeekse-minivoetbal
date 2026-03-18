@@ -148,15 +148,36 @@ export const monthlyReportsService = {
       }
 
       // Fetch all team_costs transactions for the season period
-      const { data: transactions, error } = await supabase
-        .from('team_costs')
-        .select(`
-          *,
-          costs(name, category),
-          matches(unique_number, match_date, referee)
-        `)
-        .gte('transaction_date', filterStartDate.toISOString().split('T')[0])
-        .lte('transaction_date', filterEndDate.toISOString().split('T')[0]);
+      // IMPORTANT: Use a large range to avoid the default 1000-row Supabase limit
+      const startDateStr = filterStartDate.toISOString().split('T')[0];
+      const endDateStr = filterEndDate.toISOString().split('T')[0];
+      
+      let allTransactions: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      
+      while (true) {
+        const { data: batch, error: batchError } = await supabase
+          .from('team_costs')
+          .select(`
+            *,
+            costs(name, category),
+            matches(unique_number, match_date, referee)
+          `)
+          .gte('transaction_date', startDateStr)
+          .lte('transaction_date', endDateStr)
+          .range(from, from + batchSize - 1);
+        
+        if (batchError) throw batchError;
+        if (!batch || batch.length === 0) break;
+        
+        allTransactions = allTransactions.concat(batch);
+        if (batch.length < batchSize) break;
+        from += batchSize;
+      }
+      
+      const transactions = allTransactions;
+      const error = null;
 
       if (error) throw error;
 
