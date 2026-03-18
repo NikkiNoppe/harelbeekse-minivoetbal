@@ -114,16 +114,23 @@ export const withUserContext = async <T>(
     // This prevents RLS issues when context is lost between queries
     contextPromise = (async () => {
       try {
-        // Set user context before the operation
-        const { error: contextError } = await supabase.rpc('set_current_user_context', {
-          p_user_id: userId,
-          p_role: normalizedRole,
-          p_team_ids: teamIds
-        });
-        
-        if (contextError) {
-          console.error('❌ Error setting user context:', contextError);
-          throw contextError;
+        // SuperAdmin: set context directly via set_config (no DB user to validate against)
+        if (userData.isSuperAdmin) {
+          await supabase.rpc('set_config', { parameter: 'app.current_user_role', value: 'admin' });
+          await supabase.rpc('set_config', { parameter: 'app.current_user_id', value: '-1' });
+          await supabase.rpc('set_config', { parameter: 'app.current_user_team_ids', value: '' });
+        } else {
+          // Normal user: use validated context setter
+          const { error: contextError } = await supabase.rpc('set_current_user_context', {
+            p_user_id: userId,
+            p_role: normalizedRole,
+            p_team_ids: teamIds
+          });
+          
+          if (contextError) {
+            console.error('❌ Error setting user context:', contextError);
+            throw contextError;
+          }
         }
         
         // Verify context was set correctly (only in development and when changed)
