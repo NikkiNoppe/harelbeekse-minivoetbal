@@ -1,5 +1,4 @@
 import React, { useCallback } from "react";
-import { AlertTriangle } from "lucide-react";
 import AdminDashboard from "./AdminDashboard";
 import Footer from "@/components/pages/footer/Footer";
 import Header from "@/components/pages/header/Header";
