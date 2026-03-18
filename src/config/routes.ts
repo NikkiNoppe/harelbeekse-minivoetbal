@@ -162,7 +162,7 @@ export const ADMIN_SYSTEM_ROUTES = {
   playoffs: ADMIN_ROUTES.playoffs,
   settings: ADMIN_ROUTES.settings,
   'blog-management': ADMIN_ROUTES['blog-management'],
-  'notification-management': ADMIN_ROUTES['notification-management'],
+  'notification': ADMIN_ROUTES['notification'],
 } as const;
 
 // Alle routes gecombineerd
