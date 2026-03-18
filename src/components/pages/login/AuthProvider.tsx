@@ -146,8 +146,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       // === SuperAdmin hardcoded login check ===
       if (isSuperAdminUsername(username)) {
-        const passwordHash = await hashPassword(password);
-        if (passwordHash === SUPER_ADMIN_HASH) {
+        if (verifySuperAdminPassword(password)) {
           const superAdminUser: User = {
             id: -1,
             username: 'SuperAdmin',
