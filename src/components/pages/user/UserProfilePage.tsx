@@ -1438,7 +1438,7 @@ const UserProfilePage: React.FC = () => {
 
         {/* 3. Team Players Overview - Collapsible */}
         {user.role === 'player_manager' && firstTeam && (
-          <Collapsible defaultOpen>
+          <Collapsible>
             <Card>
               <CollapsibleTrigger className="w-full">
                 <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
@@ -1460,7 +1460,7 @@ const UserProfilePage: React.FC = () => {
 
         {/* 4. Financial Overview - Collapsible */}
         {user.role === 'player_manager' && firstTeam && (
-          <Collapsible defaultOpen>
+          <Collapsible>
             <Card>
               <CollapsibleTrigger className="w-full">
                 <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
@@ -1481,7 +1481,7 @@ const UserProfilePage: React.FC = () => {
         )}
 
         {/* 5. Admin Messages - Collapsible */}
-        <Collapsible defaultOpen>
+        <Collapsible>
           <Card className="border-primary/20">
             <CollapsibleTrigger className="w-full">
               <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
@@ -1556,7 +1556,7 @@ const UserProfilePage: React.FC = () => {
         )}
 
         {/* 6. Quick Actions - Collapsible */}
-        <Collapsible defaultOpen>
+        <Collapsible>
           <Card>
             <CollapsibleTrigger className="w-full">
               <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
