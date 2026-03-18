@@ -1556,7 +1556,7 @@ const UserProfilePage: React.FC = () => {
         )}
 
         {/* 6. Quick Actions - Collapsible */}
-        <Collapsible defaultOpen>
+        <Collapsible>
           <Card>
             <CollapsibleTrigger className="w-full">
               <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
