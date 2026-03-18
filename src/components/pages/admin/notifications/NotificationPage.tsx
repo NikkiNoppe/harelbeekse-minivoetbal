@@ -238,7 +238,7 @@ const NotificationPage: React.FC = () => {
     <div className="container mx-auto p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-600)]">Berichten</h1>
-        <Button className="w-full sm:w-auto bg-[var(--color-500)] hover:bg-[var(--color-600)] text-[var(--color-white)]" onClick={handleOpenNew}>
+        <Button className="btn--primary w-full sm:w-auto" onClick={handleOpenNew}>
           <Plus className="w-4 h-4 mr-2" />
           Nieuw Bericht
         </Button>
