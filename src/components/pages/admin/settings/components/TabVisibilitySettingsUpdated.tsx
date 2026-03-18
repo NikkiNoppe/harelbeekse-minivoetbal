@@ -90,7 +90,7 @@ const TAB_DISPLAY_NAMES: Record<string, string> = {
   'format-playoffs': 'Playoff',
   'settings': 'Instellingen',
   'blog-management': 'Blog Beheer',
-  'notification-management': 'Notificaties',
+  'notification': 'Berichten',
 };
 
 const TabVisibilitySettingsUpdated: React.FC = () => {

@@ -139,8 +139,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
               <BlogPage />
             </TabsContent>
 
-            {/* Notification Management */}
-            <TabsContent value="notification-management" className="mt-0">
+            {/* Berichten Beheer */}
+            <TabsContent value="notification" className="mt-0">
               <NotificationPage />
             </TabsContent>
 

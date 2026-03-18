@@ -44,7 +44,7 @@ const systemActions: ActionItem[] = [
   { key: "playoffs", label: "Playoff Planning", icon: <Target size={16} />, path: ADMIN_ROUTES.playoffs, adminOnly: true },
   { key: "settings", label: "Instellingen", icon: <Settings size={16} />, path: ADMIN_ROUTES.settings, adminOnly: true },
   { key: "blog-management", label: "Blog Beheer", icon: <BookOpen size={16} />, path: ADMIN_ROUTES["blog-management"], adminOnly: true },
-  { key: "notification-management", label: "Notificaties", icon: <AlertTriangle size={16} />, path: ADMIN_ROUTES["notification-management"], adminOnly: true },
+  { key: "notification", label: "Berichten", icon: <AlertTriangle size={16} />, path: ADMIN_ROUTES["notification"], adminOnly: true },
 ];
 
 const AdminQuickSheet: React.FC<AdminQuickSheetProps> = ({ open, onOpenChange }) => {

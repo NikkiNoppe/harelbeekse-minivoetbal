@@ -10,7 +10,7 @@ import { AdminDashboardLayout } from "@/components/pages/admin/AdminDashboardLay
 import UserProfilePage from "@/components/pages/user/UserProfilePage";
 import { useAuth } from "@/hooks/useAuth";
 import { useModal } from "@/context/ModalContext";
-import NotificationPopup from "@/components/common/NotificationPopup";
+
 import { getTabFromPath, getPathFromTab, PUBLIC_ROUTES, ADMIN_ROUTES } from "@/config/routes";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 import { useRouteMeta } from "@/hooks/useRouteMeta";

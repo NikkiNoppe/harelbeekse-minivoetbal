@@ -388,9 +388,9 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     requiresAuth: true,
     requiresAdmin: true,
   },
-  [ADMIN_ROUTES['notification-management']]: {
-    title: 'Notificaties Beheer',
-    description: 'Beheer notificaties',
+  [ADMIN_ROUTES['notification']]: {
+    title: 'Berichten Beheer',
+    description: 'Beheer berichten',
     requiresAuth: true,
     requiresAdmin: true,
   },
