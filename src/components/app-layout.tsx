@@ -191,7 +191,7 @@ const Layout: React.FC = () => {
           )}
         </main>
         <Footer />
-        <NotificationPopup />
+        
         
         {/* Global Login Modal */}
         <AppModal
