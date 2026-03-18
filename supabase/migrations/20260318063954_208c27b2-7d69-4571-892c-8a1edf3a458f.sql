@@ -1,0 +1,1 @@
+UPDATE application_settings SET setting_name = 'notification' WHERE setting_name = 'notification-management' AND setting_category = 'tab_visibility';
