@@ -54,9 +54,7 @@ export function AdminDashboardLayout({
 
         {/* Footer - always visible at bottom */}
         <Footer />
-
-
-        <Footer />
+      </div>
     </PullToRefreshWrapper>
   );
 }
