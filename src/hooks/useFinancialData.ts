@@ -127,16 +127,31 @@ export const useFinancialData = () => {
   const transactionsQuery = useQuery({
     queryKey: ['all-team-transactions'],
     queryFn: async (): Promise<TeamTransaction[]> => {
-      const { data, error } = await supabase
-        .from('team_costs')
-        .select(`
-          *,
-          costs(name, category),
-          matches(unique_number, match_date)
-        `)
-        .order('transaction_date', { ascending: false });
+      // Paginate to avoid Supabase 1000-row default limit
+      let allData: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
       
-      if (error) throw error;
+      while (true) {
+        const { data: batch, error } = await supabase
+          .from('team_costs')
+          .select(`
+            *,
+            costs(name, category),
+            matches(unique_number, match_date)
+          `)
+          .order('transaction_date', { ascending: false })
+          .range(from, from + batchSize - 1);
+        
+        if (error) throw error;
+        if (!batch || batch.length === 0) break;
+        
+        allData = allData.concat(batch);
+        if (batch.length < batchSize) break;
+        from += batchSize;
+      }
+      
+      const data = allData;
       
       return (data || []).map(transaction => ({
         id: transaction.id,
