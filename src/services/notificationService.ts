@@ -184,10 +184,12 @@ export const notificationService = {
   // Get all users for targeting (admin only)
   async getAllUsers(): Promise<Array<{ user_id: number; username: string; role: string }>> {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('user_id, username, role')
-        .order('username');
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('users')
+          .select('user_id, username, role')
+          .order('username');
+      });
 
       if (error) throw error;
       return data || [];
