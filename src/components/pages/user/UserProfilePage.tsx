@@ -1438,7 +1438,7 @@ const UserProfilePage: React.FC = () => {
 
         {/* 3. Team Players Overview - Collapsible */}
         {user.role === 'player_manager' && firstTeam && (
-          <Collapsible defaultOpen>
+          <Collapsible>
             <Card>
               <CollapsibleTrigger className="w-full">
                 <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
