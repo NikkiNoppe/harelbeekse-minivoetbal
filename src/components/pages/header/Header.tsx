@@ -73,6 +73,8 @@ const Header: React.FC<HeaderProps> = ({
     financial: ADMIN_ROUTES.financial,
     settings: ADMIN_ROUTES.settings,
     scheidsrechters: ADMIN_ROUTES.scheidsrechters,
+    'blog-management': ADMIN_ROUTES['blog-management'],
+    'notification': ADMIN_ROUTES['notification'],
   };
 
   const handleLogout = () => {
