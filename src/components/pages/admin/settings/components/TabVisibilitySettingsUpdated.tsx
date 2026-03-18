@@ -65,7 +65,7 @@ const TAB_GROUPS = [
     title: 'Systeem',
     description: 'Systeeminstellingen en content beheer',
     icon: Cog,
-    tabs: ['settings', 'blog-management', 'notification-management'],
+    tabs: ['settings', 'blog-management', 'notification'],
   },
 ];
 
