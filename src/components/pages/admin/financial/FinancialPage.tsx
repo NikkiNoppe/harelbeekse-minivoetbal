@@ -97,12 +97,26 @@ const AdminFinancialPage: React.FC = () => {
   } = useQuery({
     queryKey: ['all-team-transactions'],
     queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('team_costs').select('*, costs(name, category, amount), matches(unique_number, match_date)');
-      if (error) throw error;
-      return (data || []).map(transaction => ({
+      // Paginate to avoid Supabase 1000-row default limit
+      let allData: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      
+      while (true) {
+        const { data: batch, error } = await supabase
+          .from('team_costs')
+          .select('*, costs(name, category, amount), matches(unique_number, match_date)')
+          .range(from, from + batchSize - 1);
+        
+        if (error) throw error;
+        if (!batch || batch.length === 0) break;
+        
+        allData = allData.concat(batch);
+        if (batch.length < batchSize) break;
+        from += batchSize;
+      }
+      
+      return allData.map(transaction => ({
         id: transaction.id,
         team_id: transaction.team_id,
         amount: transaction.amount ?? (transaction.costs && typeof (transaction.costs as any).amount === 'number' ? (transaction.costs as any).amount : 0),
