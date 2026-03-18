@@ -83,8 +83,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUser(authData.user);
             setIsAuthenticated(true);
             
-            // SuperAdmin doesn't need database context
+            // SuperAdmin: set admin context directly
             if (authData.user.isSuperAdmin) {
+              await setSuperAdminDbContext();
               setAuthContextReady(true);
               setLoading(false);
               return;
