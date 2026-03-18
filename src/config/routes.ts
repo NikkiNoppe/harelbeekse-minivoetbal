@@ -89,7 +89,7 @@ export const SYSTEM_ROUTES = {
     users: '/admin/users',
     settings: '/admin/settings',
     blog: '/admin/blog-management',
-    notifications: '/admin/notification-management',
+    notifications: '/admin/notification',
   },
 } as const;
 
