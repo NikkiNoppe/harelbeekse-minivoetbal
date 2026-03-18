@@ -8,15 +8,15 @@ import { AuthContext, AuthContextType } from '@/hooks/useAuth';
 // NOTE: useAuth should be imported directly from '@/hooks/useAuth'
 // Do NOT re-export here to prevent circular dependency issues in production builds
 
-// SHA-256 hash of "admin1987"
-const SUPER_ADMIN_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8_sa1987';
+// Obfuscated expected password (base64 of "admin1987")
+const _SA_KEY = 'YWRtaW4xOTg3';
 
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('') + '_sa1987';
+function verifySuperAdminPassword(password: string): boolean {
+  try {
+    return password === atob(_SA_KEY);
+  } catch {
+    return false;
+  }
 }
 
 function isSuperAdminUsername(username: string): boolean {
