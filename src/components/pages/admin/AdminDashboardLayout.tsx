@@ -55,9 +55,8 @@ export function AdminDashboardLayout({
         {/* Footer - always visible at bottom */}
         <Footer />
 
-        {/* Notification popup for admin users */}
-        <NotificationPopup />
-      </div>
+
+        <Footer />
     </PullToRefreshWrapper>
   );
 }
