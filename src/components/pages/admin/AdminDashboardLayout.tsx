@@ -45,14 +45,6 @@ export function AdminDashboardLayout({
           user={user}
         />
 
-        {/* SuperAdmin read-only banner */}
-        {isSuperAdmin && (
-          <div className="bg-amber-500 text-white text-center py-2 px-4 text-sm font-medium flex items-center justify-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Noodtoegang — alleen-lezen modus (geen wijzigingen mogelijk)
-          </div>
-        )}
-
         {/* Main content area */}
         <main className="flex-1 bg-purple-100">
           <AdminDashboard 
