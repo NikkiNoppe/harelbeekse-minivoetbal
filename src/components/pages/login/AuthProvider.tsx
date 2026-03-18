@@ -23,6 +23,17 @@ function isSuperAdminUsername(username: string): boolean {
   return username.toLowerCase() === 'superadmin';
 }
 
+// Set database session context directly for SuperAdmin (bypasses user lookup)
+async function setSuperAdminDbContext(): Promise<void> {
+  try {
+    await supabase.rpc('set_config', { parameter: 'app.current_user_role', value: 'admin' });
+    await supabase.rpc('set_config', { parameter: 'app.current_user_id', value: '-1' });
+    await supabase.rpc('set_config', { parameter: 'app.current_user_team_ids', value: '' });
+  } catch (e) {
+    console.warn('Could not set SuperAdmin DB context:', e);
+  }
+}
+
 // Normalize user role for RLS context
 function normalizeRole(role: string): string {
   const r = String(role || '').toLowerCase();
