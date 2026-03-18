@@ -4,6 +4,7 @@ import { User, AuthState } from '@/types/auth';
 
 export interface AuthContextType extends AuthState {
   authContextReady: boolean;
+  isSuperAdmin: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
 }

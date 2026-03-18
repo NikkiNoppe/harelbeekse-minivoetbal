@@ -1,5 +1,5 @@
 
-export type UserRole = 'admin' | 'player_manager' | 'referee';
+export type UserRole = 'admin' | 'player_manager' | 'referee' | 'superadmin';
 
 export interface User {
   id: number;
@@ -8,6 +8,7 @@ export interface User {
   role: UserRole;
   teamId?: number;
   email?: string;
+  isSuperAdmin?: boolean;
 }
 
 export interface TeamData {
