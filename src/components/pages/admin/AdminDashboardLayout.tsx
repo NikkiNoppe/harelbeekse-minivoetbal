@@ -1,5 +1,4 @@
 import React, { useCallback } from "react";
-import { AlertTriangle } from "lucide-react";
 import AdminDashboard from "./AdminDashboard";
 import Footer from "@/components/pages/footer/Footer";
 import Header from "@/components/pages/header/Header";
@@ -22,7 +21,7 @@ export function AdminDashboardLayout({
   onLogoClick, 
   onLoginClick 
 }: AdminDashboardLayoutProps) {
-  const { user, isSuperAdmin } = useAuth();
+  const { user } = useAuth();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
 
@@ -44,14 +43,6 @@ export function AdminDashboardLayout({
           isAuthenticated={!!user}
           user={user}
         />
-
-        {/* SuperAdmin read-only banner */}
-        {isSuperAdmin && (
-          <div className="bg-amber-500 text-white text-center py-2 px-4 text-sm font-medium flex items-center justify-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Noodtoegang — alleen-lezen modus (geen wijzigingen mogelijk)
-          </div>
-        )}
 
         {/* Main content area */}
         <main className="flex-1 bg-purple-100">
