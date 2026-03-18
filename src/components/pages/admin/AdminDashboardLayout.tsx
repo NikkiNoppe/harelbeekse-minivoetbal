@@ -3,7 +3,7 @@ import AdminDashboard from "./AdminDashboard";
 import Footer from "@/components/pages/footer/Footer";
 import Header from "@/components/pages/header/Header";
 import { useAuth } from "@/hooks/useAuth";
-import NotificationPopup from "@/components/common/NotificationPopup";
+
 import PullToRefreshWrapper from "@/components/common/PullToRefreshWrapper";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryClient } from "@tanstack/react-query";
