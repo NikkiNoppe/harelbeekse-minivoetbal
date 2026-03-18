@@ -137,7 +137,7 @@ export const ADMIN_ROUTES = {
   schorsingen: CARDS_SUSPENSIONS_ROUTES.admin.teamSuspensions,
   scheidsrechters: TEAMS_PLAYERS_ROUTES.admin.referees,
   'blog-management': SYSTEM_ROUTES.admin.blog,
-  'notification-management': SYSTEM_ROUTES.admin.notifications,
+  'notification': SYSTEM_ROUTES.admin.notifications,
   profile: '/profile',
 } as const;
 
