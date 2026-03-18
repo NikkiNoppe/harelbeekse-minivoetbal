@@ -916,7 +916,7 @@ const FinancialOverviewCard: React.FC<{ teamId: number }> = memo(({ teamId }) =>
         let deposits = 0;
 
         transactions.forEach((t: any) => {
-          const amount = Number(t.amount ?? (t.costs as any)?.amount ?? 0);
+          const amount = Number(t.amount != null ? t.amount : ((t.costs as any)?.amount ?? 0));
           const category = t.costs?.category || '';
           const name = (t.costs?.name || '').toLowerCase();
 
