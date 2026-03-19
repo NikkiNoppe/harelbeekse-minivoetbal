@@ -873,16 +873,30 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     if (!canEdit) return;
     if (isTeamManager && !canTeamManagerEditMatch) return;
     
+    // Only include player data that was actually modified (dirty tracking)
+    // This prevents accidentally overwriting existing data with blank arrays
+    const homePlayersToSave = homePlayersDirty ? homeTeamSelections : undefined;
+    const awayPlayersToSave = awayPlayersDirty ? awayTeamSelections : undefined;
+    
+    if (!homePlayersToSave && !awayPlayersToSave) {
+      toast({
+        title: "Geen wijzigingen",
+        description: "Er zijn geen wijzigingen om op te slaan.",
+      });
+      return;
+    }
+    
     setIsSubmittingPlayers(true);
     try {
-      const updatedMatch = {
+      const updatedMatch: MatchFormData = {
         ...match,
-        homePlayers: homeTeamSelections,
-        awayPlayers: awayTeamSelections,
+        homePlayers: homePlayersToSave as any,
+        awayPlayers: awayPlayersToSave as any,
         isCompleted: false
       };
       
-      const result = await submitMatchForm(updatedMatch, false, "player_manager", matchFormSettings);
+      const userRole = isReferee ? "referee" : isAdmin ? "admin" : "player_manager";
+      const result = await submitMatchForm(updatedMatch, isAdmin, userRole, matchFormSettings);
       if (result.success) {
         toast({
           title: "Spelers opgeslagen",
@@ -900,7 +914,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     } finally {
       setIsSubmittingPlayers(false);
     }
-  }, [isTeamManager, canEdit, canTeamManagerEditMatch, match, homeTeamSelections, awayTeamSelections, submitMatchForm, toast]);
+  }, [isTeamManager, isAdmin, isReferee, canEdit, canTeamManagerEditMatch, match, homeTeamSelections, awayTeamSelections, homePlayersDirty, awayPlayersDirty, submitMatchForm, toast, matchFormSettings]);
 
   // Score validation and display logic (from MatchesScoreSection)
   const isValidScore = useCallback((score: string) => {
