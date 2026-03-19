@@ -500,6 +500,74 @@ const UserTeamInfoCard: React.FC<{
     }
   };
 
+  const handleDownloadBackup = useCallback(async () => {
+    if (isDownloadingBackup) return;
+    setIsDownloadingBackup(true);
+    
+    try {
+      const tables = ['teams', 'players', 'matches', 'users', 'team_users', 'competition_standings', 'costs', 'team_costs', 'application_settings', 'referee_assignments', 'referee_availability', 'monthly_polls', 'poll_match_dates'] as const;
+      const backup: Record<string, any[]> = {};
+      
+      for (const table of tables) {
+        let allRows: any[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        
+        while (true) {
+          const { data, error } = await supabase
+            .from(table)
+            .select('*')
+            .range(from, from + batchSize - 1);
+          
+          if (error) {
+            console.error(`Error fetching ${table}:`, error);
+            break;
+          }
+          if (!data || data.length === 0) break;
+          allRows = allRows.concat(data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        
+        backup[table] = allRows;
+      }
+      
+      // Add metadata
+      const backupData = {
+        _metadata: {
+          created_at: new Date().toISOString(),
+          tables: Object.keys(backup),
+          row_counts: Object.fromEntries(Object.entries(backup).map(([k, v]) => [k, v.length]))
+        },
+        ...backup
+      };
+      
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Backup gedownload",
+        description: `${Object.values(backup).reduce((sum, rows) => sum + rows.length, 0)} rijen uit ${tables.length} tabellen.`,
+      });
+    } catch (error) {
+      console.error('Backup error:', error);
+      toast({
+        title: "Fout",
+        description: "Kon backup niet downloaden.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingBackup(false);
+    }
+  }, [isDownloadingBackup, toast]);
+
   return (
     <>
       <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
