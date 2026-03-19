@@ -6,7 +6,7 @@ import {
   User, Mail, Shield, Users, Trophy, Award, Phone, 
   AlertCircle, MapPin, Calendar, Clock, ArrowRight,
   CheckCircle, Lock, Edit2, Save, X, Loader2, ChevronDown, History,
-  Wallet, MessageSquare, TrendingDown, CreditCard
+  Wallet, MessageSquare, TrendingDown, CreditCard, Download
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PageHeader } from "@/components/layout";
@@ -391,6 +391,7 @@ const UserTeamInfoCard: React.FC<{
   }, [team?.team_id, team?.club_colors, team?.contact_person, team?.contact_email, team?.contact_phone]);
   const { user: authUser } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDownloadingBackup, setIsDownloadingBackup] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: team?.team_name || '',
@@ -499,6 +500,74 @@ const UserTeamInfoCard: React.FC<{
     }
   };
 
+  const handleDownloadBackup = useCallback(async () => {
+    if (isDownloadingBackup) return;
+    setIsDownloadingBackup(true);
+    
+    try {
+      const tables = ['teams', 'players', 'matches', 'users', 'team_users', 'competition_standings', 'costs', 'team_costs', 'application_settings', 'referee_assignments', 'referee_availability', 'monthly_polls', 'poll_match_dates'] as const;
+      const backup: Record<string, any[]> = {};
+      
+      for (const table of tables) {
+        let allRows: any[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        
+        while (true) {
+          const { data, error } = await supabase
+            .from(table)
+            .select('*')
+            .range(from, from + batchSize - 1);
+          
+          if (error) {
+            console.error(`Error fetching ${table}:`, error);
+            break;
+          }
+          if (!data || data.length === 0) break;
+          allRows = allRows.concat(data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        
+        backup[table] = allRows;
+      }
+      
+      // Add metadata
+      const backupData = {
+        _metadata: {
+          created_at: new Date().toISOString(),
+          tables: Object.keys(backup),
+          row_counts: Object.fromEntries(Object.entries(backup).map(([k, v]) => [k, v.length]))
+        },
+        ...backup
+      };
+      
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Backup gedownload",
+        description: `${Object.values(backup).reduce((sum, rows) => sum + rows.length, 0)} rijen uit ${tables.length} tabellen.`,
+      });
+    } catch (error) {
+      console.error('Backup error:', error);
+      toast({
+        title: "Fout",
+        description: "Kon backup niet downloaden.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingBackup(false);
+    }
+  }, [isDownloadingBackup, toast]);
+
   return (
     <>
       <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
@@ -517,33 +586,62 @@ const UserTeamInfoCard: React.FC<{
                 </div>
               </div>
             </div>
-            {/* Only show edit button for team managers with a team, not for admins */}
-            {team && user.role === 'player_manager' && (
-              <Button
-                variant="outline"
-                size="icon"
-                className={cn(
-                  "h-9 border-[var(--color-300)]",
-                  "bg-white hover:bg-purple-50 hover:border-[var(--color-400)]",
-                  "text-[var(--color-700)] hover:text-[var(--color-900)]",
-                  "transition-colors duration-150"
-                )}
-                style={{ 
-                  color: 'var(--accent)',
-                  height: '32px',
-                  width: '32px',
-                  minHeight: '32px',
-                  maxHeight: '32px',
-                  minWidth: '32px',
-                  maxWidth: '32px'
-                }}
-                onClick={handleEditClick}
-                title="Team gegevens bewerken"
-                aria-label="Team gegevens bewerken"
-              >
-                <Edit2 size={16} />
-              </Button>
-            )}
+            <div className="flex items-center gap-1.5">
+              {/* DB backup button - Admin only */}
+              {authUser?.role === 'admin' && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className={cn(
+                    "border-[var(--color-300)]",
+                    "bg-white hover:bg-muted/50 hover:border-[var(--color-400)]",
+                    "text-muted-foreground hover:text-foreground",
+                    "transition-colors duration-150"
+                  )}
+                  style={{ 
+                    height: '32px',
+                    width: '32px',
+                    minHeight: '32px',
+                    maxHeight: '32px',
+                    minWidth: '32px',
+                    maxWidth: '32px'
+                  }}
+                  onClick={handleDownloadBackup}
+                  disabled={isDownloadingBackup}
+                  title="Database backup downloaden"
+                  aria-label="Database backup downloaden"
+                >
+                  {isDownloadingBackup ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                </Button>
+              )}
+              {/* Edit button for team managers */}
+              {team && user.role === 'player_manager' && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className={cn(
+                    "border-[var(--color-300)]",
+                    "bg-white hover:bg-purple-50 hover:border-[var(--color-400)]",
+                    "text-[var(--color-700)] hover:text-[var(--color-900)]",
+                    "transition-colors duration-150"
+                  )}
+                  style={{ 
+                    color: 'var(--accent)',
+                    height: '32px',
+                    width: '32px',
+                    minHeight: '32px',
+                    maxHeight: '32px',
+                    minWidth: '32px',
+                    maxWidth: '32px'
+                  }}
+                  onClick={handleEditClick}
+                  title="Team gegevens bewerken"
+                  aria-label="Team gegevens bewerken"
+                >
+                  <Edit2 size={16} />
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         
