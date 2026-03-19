@@ -547,10 +547,14 @@ const UserTeamInfoCard: React.FC<{
       const a = document.createElement('a');
       a.href = url;
       a.download = `backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Delay cleanup to give the browser time to start the download
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 1000);
       
       toast({
         title: "Backup gedownload",
