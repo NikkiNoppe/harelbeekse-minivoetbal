@@ -643,7 +643,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     });
     
     return updatedMatch;
-  }, [match, matchData, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards, homePlayersWithSuspensions, awayPlayersWithSuspensions, homePlayersDirty, awayPlayersDirty]);
+  }, [match, matchData, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards, homePlayersWithSuspensions, awayPlayersWithSuspensions, homePlayersDirty, awayPlayersDirty, isAdmin, isReferee]);
 
   const handleSubmit = useCallback(async () => {
     const parsedHomeScore = homeScore !== "" ? parseInt(homeScore) : null;
