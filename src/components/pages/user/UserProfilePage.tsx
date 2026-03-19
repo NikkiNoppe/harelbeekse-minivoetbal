@@ -586,33 +586,62 @@ const UserTeamInfoCard: React.FC<{
                 </div>
               </div>
             </div>
-            {/* Only show edit button for team managers with a team, not for admins */}
-            {team && user.role === 'player_manager' && (
-              <Button
-                variant="outline"
-                size="icon"
-                className={cn(
-                  "h-9 border-[var(--color-300)]",
-                  "bg-white hover:bg-purple-50 hover:border-[var(--color-400)]",
-                  "text-[var(--color-700)] hover:text-[var(--color-900)]",
-                  "transition-colors duration-150"
-                )}
-                style={{ 
-                  color: 'var(--accent)',
-                  height: '32px',
-                  width: '32px',
-                  minHeight: '32px',
-                  maxHeight: '32px',
-                  minWidth: '32px',
-                  maxWidth: '32px'
-                }}
-                onClick={handleEditClick}
-                title="Team gegevens bewerken"
-                aria-label="Team gegevens bewerken"
-              >
-                <Edit2 size={16} />
-              </Button>
-            )}
+            <div className="flex items-center gap-1.5">
+              {/* DB backup button - Admin only */}
+              {authUser?.role === 'admin' && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className={cn(
+                    "border-[var(--color-300)]",
+                    "bg-white hover:bg-muted/50 hover:border-[var(--color-400)]",
+                    "text-muted-foreground hover:text-foreground",
+                    "transition-colors duration-150"
+                  )}
+                  style={{ 
+                    height: '32px',
+                    width: '32px',
+                    minHeight: '32px',
+                    maxHeight: '32px',
+                    minWidth: '32px',
+                    maxWidth: '32px'
+                  }}
+                  onClick={handleDownloadBackup}
+                  disabled={isDownloadingBackup}
+                  title="Database backup downloaden"
+                  aria-label="Database backup downloaden"
+                >
+                  {isDownloadingBackup ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                </Button>
+              )}
+              {/* Edit button for team managers */}
+              {team && user.role === 'player_manager' && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className={cn(
+                    "border-[var(--color-300)]",
+                    "bg-white hover:bg-purple-50 hover:border-[var(--color-400)]",
+                    "text-[var(--color-700)] hover:text-[var(--color-900)]",
+                    "transition-colors duration-150"
+                  )}
+                  style={{ 
+                    color: 'var(--accent)',
+                    height: '32px',
+                    width: '32px',
+                    minHeight: '32px',
+                    maxHeight: '32px',
+                    minWidth: '32px',
+                    maxWidth: '32px'
+                  }}
+                  onClick={handleEditClick}
+                  title="Team gegevens bewerken"
+                  aria-label="Team gegevens bewerken"
+                >
+                  <Edit2 size={16} />
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         
