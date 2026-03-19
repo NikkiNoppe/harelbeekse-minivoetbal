@@ -6,7 +6,7 @@ import {
   User, Mail, Shield, Users, Trophy, Award, Phone, 
   AlertCircle, MapPin, Calendar, Clock, ArrowRight,
   CheckCircle, Lock, Edit2, Save, X, Loader2, ChevronDown, History,
-  Wallet, MessageSquare, TrendingDown, CreditCard
+  Wallet, MessageSquare, TrendingDown, CreditCard, Download
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PageHeader } from "@/components/layout";
