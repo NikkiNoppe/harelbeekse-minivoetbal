@@ -614,6 +614,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     
     // Only include matchData (date, time, location, matchday) for admin/referee
     // Team managers should NOT overwrite these fields to prevent data corruption
+    // Referees should NEVER include player data — they only update scores and notes
     // Only include player data if it was actually modified (dirty tracking)
     const updatedMatch: MatchFormData = {
       ...match,
@@ -623,8 +624,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       referee: selectedReferee,
       refereeNotes: processedRefereeNotes,
       isCompleted: homeScore != null && awayScore != null,
-      homePlayers: homePlayersDirty ? homePlayersWithNames : undefined as any,
-      awayPlayers: awayPlayersDirty ? awayPlayersWithNames : undefined as any
+      homePlayers: (isReferee && !isAdmin) ? undefined as any : (homePlayersDirty ? homePlayersWithNames : undefined as any),
+      awayPlayers: (isReferee && !isAdmin) ? undefined as any : (awayPlayersDirty ? awayPlayersWithNames : undefined as any)
     };
     
     console.log('🔍 [WedstrijdformulierModal] createUpdatedMatch - Dirty flags:', {
@@ -642,7 +643,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     });
     
     return updatedMatch;
-  }, [match, matchData, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards, homePlayersWithSuspensions, awayPlayersWithSuspensions, homePlayersDirty, awayPlayersDirty]);
+  }, [match, matchData, selectedReferee, refereeNotes, getHomeTeamSelectionsWithCards, getAwayTeamSelectionsWithCards, homePlayersWithSuspensions, awayPlayersWithSuspensions, homePlayersDirty, awayPlayersDirty, isAdmin, isReferee]);
 
   const handleSubmit = useCallback(async () => {
     const parsedHomeScore = homeScore !== "" ? parseInt(homeScore) : null;
@@ -873,16 +874,30 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     if (!canEdit) return;
     if (isTeamManager && !canTeamManagerEditMatch) return;
     
+    // Only include player data that was actually modified (dirty tracking)
+    // This prevents accidentally overwriting existing data with blank arrays
+    const homePlayersToSave = homePlayersDirty ? homeTeamSelections : undefined;
+    const awayPlayersToSave = awayPlayersDirty ? awayTeamSelections : undefined;
+    
+    if (!homePlayersToSave && !awayPlayersToSave) {
+      toast({
+        title: "Geen wijzigingen",
+        description: "Er zijn geen wijzigingen om op te slaan.",
+      });
+      return;
+    }
+    
     setIsSubmittingPlayers(true);
     try {
-      const updatedMatch = {
+      const updatedMatch: MatchFormData = {
         ...match,
-        homePlayers: homeTeamSelections,
-        awayPlayers: awayTeamSelections,
+        homePlayers: homePlayersToSave as any,
+        awayPlayers: awayPlayersToSave as any,
         isCompleted: false
       };
       
-      const result = await submitMatchForm(updatedMatch, false, "player_manager", matchFormSettings);
+      const userRole = isReferee ? "referee" : isAdmin ? "admin" : "player_manager";
+      const result = await submitMatchForm(updatedMatch, isAdmin, userRole, matchFormSettings);
       if (result.success) {
         toast({
           title: "Spelers opgeslagen",
@@ -900,7 +915,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     } finally {
       setIsSubmittingPlayers(false);
     }
-  }, [isTeamManager, canEdit, canTeamManagerEditMatch, match, homeTeamSelections, awayTeamSelections, submitMatchForm, toast]);
+  }, [isTeamManager, isAdmin, isReferee, canEdit, canTeamManagerEditMatch, match, homeTeamSelections, awayTeamSelections, homePlayersDirty, awayPlayersDirty, submitMatchForm, toast, matchFormSettings]);
 
   // Score validation and display logic (from MatchesScoreSection)
   const isValidScore = useCallback((score: string) => {

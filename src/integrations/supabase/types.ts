@@ -870,6 +870,7 @@ export type Database = {
         Args: { p_user_id: number }
         Returns: number[]
       }
+      has_real_players: { Args: { player_data: Json }; Returns: boolean }
       insert_player_with_context: {
         Args: {
           p_birth_date: string
