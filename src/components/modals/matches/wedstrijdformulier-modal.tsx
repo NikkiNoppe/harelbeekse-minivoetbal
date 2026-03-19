@@ -614,6 +614,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     
     // Only include matchData (date, time, location, matchday) for admin/referee
     // Team managers should NOT overwrite these fields to prevent data corruption
+    // Referees should NEVER include player data — they only update scores and notes
     // Only include player data if it was actually modified (dirty tracking)
     const updatedMatch: MatchFormData = {
       ...match,
@@ -623,8 +624,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       referee: selectedReferee,
       refereeNotes: processedRefereeNotes,
       isCompleted: homeScore != null && awayScore != null,
-      homePlayers: homePlayersDirty ? homePlayersWithNames : undefined as any,
-      awayPlayers: awayPlayersDirty ? awayPlayersWithNames : undefined as any
+      homePlayers: (isReferee && !isAdmin) ? undefined as any : (homePlayersDirty ? homePlayersWithNames : undefined as any),
+      awayPlayers: (isReferee && !isAdmin) ? undefined as any : (awayPlayersDirty ? awayPlayersWithNames : undefined as any)
     };
     
     console.log('🔍 [WedstrijdformulierModal] createUpdatedMatch - Dirty flags:', {
