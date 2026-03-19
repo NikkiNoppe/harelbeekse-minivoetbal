@@ -506,65 +506,98 @@ const UserTeamInfoCard: React.FC<{
     }
   };
 
-  const handleDownloadBackup = useCallback(async () => {
+  const fetchBackupData = useCallback(async () => {
+    const tables = ['teams', 'players', 'matches', 'users', 'team_users', 'competition_standings', 'costs', 'team_costs', 'application_settings', 'referee_assignments', 'referee_availability', 'monthly_polls', 'poll_match_dates'] as const;
+    const backup: Record<string, any[]> = {};
+    
+    for (const table of tables) {
+      let allRows: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      
+      while (true) {
+        const { data, error } = await supabase
+          .from(table)
+          .select('*')
+          .range(from, from + batchSize - 1);
+        
+        if (error) {
+          console.error(`Error fetching ${table}:`, error);
+          break;
+        }
+        if (!data || data.length === 0) break;
+        allRows = allRows.concat(data);
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
+      
+      backup[table] = allRows;
+    }
+    return { backup, tables };
+  }, []);
+
+  const triggerDownload = useCallback((blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1000);
+  }, []);
+
+  const handleDownloadBackup = useCallback(async (format: 'json' | 'csv') => {
     if (isDownloadingBackup) return;
     setIsDownloadingBackup(true);
     
     try {
-      const tables = ['teams', 'players', 'matches', 'users', 'team_users', 'competition_standings', 'costs', 'team_costs', 'application_settings', 'referee_assignments', 'referee_availability', 'monthly_polls', 'poll_match_dates'] as const;
-      const backup: Record<string, any[]> = {};
-      
-      for (const table of tables) {
-        let allRows: any[] = [];
-        let from = 0;
-        const batchSize = 1000;
-        
-        while (true) {
-          const { data, error } = await supabase
-            .from(table)
-            .select('*')
-            .range(from, from + batchSize - 1);
-          
-          if (error) {
-            console.error(`Error fetching ${table}:`, error);
-            break;
-          }
-          if (!data || data.length === 0) break;
-          allRows = allRows.concat(data);
-          if (data.length < batchSize) break;
-          from += batchSize;
+      const { backup, tables } = await fetchBackupData();
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const totalRows = Object.values(backup).reduce((sum, rows) => sum + rows.length, 0);
+
+      if (format === 'json') {
+        const backupData = {
+          _metadata: {
+            created_at: new Date().toISOString(),
+            tables: Object.keys(backup),
+            row_counts: Object.fromEntries(Object.entries(backup).map(([k, v]) => [k, v.length]))
+          },
+          ...backup
+        };
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        triggerDownload(blob, `backup_${dateStr}.json`);
+      } else {
+        // CSV per table - create individual downloads
+        for (const [table, rows] of Object.entries(backup)) {
+          if (rows.length === 0) continue;
+          const headers = Object.keys(rows[0]);
+          const csvLines = [
+            headers.join(';'),
+            ...rows.map(row => 
+              headers.map(h => {
+                const val = row[h];
+                if (val === null || val === undefined) return '';
+                const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
+                return str.includes(';') || str.includes('"') || str.includes('\n')
+                  ? `"${str.replace(/"/g, '""')}"` 
+                  : str;
+              }).join(';')
+            )
+          ];
+          const blob = new Blob(['\uFEFF' + csvLines.join('\n')], { type: 'text/csv;charset=utf-8' });
+          triggerDownload(blob, `backup_${dateStr}_${table}.csv`);
+          // Small delay between downloads so browser doesn't block them
+          await new Promise(r => setTimeout(r, 300));
         }
-        
-        backup[table] = allRows;
       }
-      
-      // Add metadata
-      const backupData = {
-        _metadata: {
-          created_at: new Date().toISOString(),
-          tables: Object.keys(backup),
-          row_counts: Object.fromEntries(Object.entries(backup).map(([k, v]) => [k, v.length]))
-        },
-        ...backup
-      };
-      
-      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `backup_${new Date().toISOString().slice(0, 10)}.json`;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      // Delay cleanup to give the browser time to start the download
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 1000);
       
       toast({
         title: "Backup gedownload",
-        description: `${Object.values(backup).reduce((sum, rows) => sum + rows.length, 0)} rijen uit ${tables.length} tabellen.`,
+        description: `${totalRows} rijen uit ${tables.length} tabellen (${format.toUpperCase()}).`,
       });
     } catch (error) {
       console.error('Backup error:', error);
@@ -576,7 +609,7 @@ const UserTeamInfoCard: React.FC<{
     } finally {
       setIsDownloadingBackup(false);
     }
-  }, [isDownloadingBackup, toast]);
+  }, [isDownloadingBackup, toast, fetchBackupData, triggerDownload]);
 
   return (
     <>
