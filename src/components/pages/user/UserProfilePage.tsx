@@ -632,30 +632,31 @@ const UserTeamInfoCard: React.FC<{
             <div className="flex items-center gap-1.5">
               {/* DB backup button - Admin only */}
               {authUser?.role === 'admin' && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className={cn(
-                    "border-[var(--color-300)]",
-                    "bg-white hover:bg-muted/50 hover:border-[var(--color-400)]",
-                    "text-muted-foreground hover:text-foreground",
-                    "transition-colors duration-150"
-                  )}
-                  style={{ 
-                    height: '32px',
-                    width: '32px',
-                    minHeight: '32px',
-                    maxHeight: '32px',
-                    minWidth: '32px',
-                    maxWidth: '32px'
-                  }}
-                  onClick={handleDownloadBackup}
-                  disabled={isDownloadingBackup}
-                  title="Database backup downloaden"
-                  aria-label="Database backup downloaden"
-                >
-                  {isDownloadingBackup ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="border-border bg-background hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors duration-150"
+                      style={{ height: '32px', width: '32px', minHeight: '32px', maxHeight: '32px', minWidth: '32px', maxWidth: '32px' }}
+                      disabled={isDownloadingBackup}
+                      title="Database backup downloaden"
+                      aria-label="Database backup downloaden"
+                    >
+                      {isDownloadingBackup ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 bg-popover">
+                    <DropdownMenuItem onClick={() => handleDownloadBackup('json')} className="cursor-pointer">
+                      <FileJson className="mr-2 h-4 w-4" />
+                      <span>Download JSON</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDownloadBackup('csv')} className="cursor-pointer">
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      <span>Download CSV (per tabel)</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
               {/* Edit button for team managers */}
               {team && user.role === 'player_manager' && (
