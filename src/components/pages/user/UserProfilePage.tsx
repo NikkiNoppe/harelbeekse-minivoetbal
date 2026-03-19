@@ -391,6 +391,7 @@ const UserTeamInfoCard: React.FC<{
   }, [team?.team_id, team?.club_colors, team?.contact_person, team?.contact_email, team?.contact_phone]);
   const { user: authUser } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDownloadingBackup, setIsDownloadingBackup] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: team?.team_name || '',
