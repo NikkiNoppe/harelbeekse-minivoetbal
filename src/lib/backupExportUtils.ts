@@ -33,5 +33,5 @@ export function buildCsvZip(files: Record<string, string>): Blob {
     zipData[filename] = strToU8(content);
   }
   const compressed = zipSync(zipData);
-  return new Blob([compressed], { type: 'application/zip' });
+  return new Blob([compressed.buffer], { type: 'application/zip' });
 }

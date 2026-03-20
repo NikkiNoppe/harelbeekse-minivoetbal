@@ -572,28 +572,15 @@ const UserTeamInfoCard: React.FC<{
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
         triggerDownload(blob, `backup_${dateStr}.json`);
       } else {
-        // CSV per table - create individual downloads
+        // CSV per table - bundled into a single ZIP
+        const csvFiles: Record<string, string> = {};
         for (const [table, rows] of Object.entries(backup)) {
           if (rows.length === 0) continue;
-          const headers = Object.keys(rows[0]);
-          const csvLines = [
-            headers.join(';'),
-            ...rows.map(row => 
-              headers.map(h => {
-                const val = row[h];
-                if (val === null || val === undefined) return '';
-                const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
-                return str.includes(';') || str.includes('"') || str.includes('\n')
-                  ? `"${str.replace(/"/g, '""')}"` 
-                  : str;
-              }).join(';')
-            )
-          ];
-          const blob = new Blob(['\uFEFF' + csvLines.join('\n')], { type: 'text/csv;charset=utf-8' });
-          triggerDownload(blob, `backup_${dateStr}_${table}.csv`);
-          // Small delay between downloads so browser doesn't block them
-          await new Promise(r => setTimeout(r, 300));
+          csvFiles[`${table}.csv`] = rowsToCsv(rows);
         }
+        const zipBlob = buildCsvZip(csvFiles);
+        const filename = `backup_${dateStr}_csv.zip`;
+        triggerDownload(zipBlob, filename);
       }
       
       toast({
