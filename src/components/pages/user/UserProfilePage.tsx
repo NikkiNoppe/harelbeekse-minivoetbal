@@ -641,7 +641,7 @@ const UserTeamInfoCard: React.FC<{
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleDownloadBackup('csv')} className="cursor-pointer">
                       <FileSpreadsheet className="mr-2 h-4 w-4" />
-                      <span>Download CSV (per tabel)</span>
+                      <span>Download CSV (ZIP)</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
