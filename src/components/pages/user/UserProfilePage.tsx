@@ -538,7 +538,7 @@ const UserTeamInfoCard: React.FC<{
     return { backup, tables };
   }, []);
 
-  const triggerDownload = useCallback((blob: Blob, filename: string) => {
+  const triggerDownload = useCallback((blob: Blob, filename: string): string => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -548,8 +548,12 @@ const UserTeamInfoCard: React.FC<{
     a.click();
     setTimeout(() => {
       document.body.removeChild(a);
+    }, 500);
+    // Revoke after 60s so the fallback toast link stays usable
+    setTimeout(() => {
       URL.revokeObjectURL(url);
-    }, 1000);
+    }, 60000);
+    return url;
   }, []);
 
   const handleDownloadBackup = useCallback(async (format: 'json' | 'csv') => {
