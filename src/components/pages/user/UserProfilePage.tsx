@@ -37,6 +37,7 @@ import { withUserContext } from "@/lib/supabaseUtils";
 import { supabase } from "@/integrations/supabase/client";
 import RefereeNotesCard from "./RefereeNotesCard";
 import { useTeamPlayerStats, type PlayerStat } from "@/hooks/useTeamPlayerStats";
+import { rowsToCsv, buildCsvZip } from "@/lib/backupExportUtils";
 
 // Loading skeleton
 const ProfileSkeleton = memo(() => (
