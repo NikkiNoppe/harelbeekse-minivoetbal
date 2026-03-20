@@ -285,36 +285,36 @@ const AdminFinancialPage: React.FC = () => {
                     }}
                     onClick={() => handleTeamClick(team)}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm text-foreground truncate mb-2">{team.team_name}</h3>
-                        <div className="grid grid-cols-4 gap-x-2 gap-y-1 text-xs">
-                          <div className="flex flex-col">
-                            <span className="text-muted-foreground">Veld</span>
-                            <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.fieldCosts)}</span>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <h3 className="font-semibold text-sm text-foreground truncate flex-1 min-w-0">{team.team_name}</h3>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className={`text-right ${isNegative ? 'text-destructive' : 'text-green-600'}`}>
+                            <div className="flex items-center gap-1">
+                              {isNegative ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
+                              <span className="font-bold text-sm">{formatCurrency(finances.currentBalance)}</span>
+                            </div>
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-muted-foreground">Scheids</span>
-                            <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.refereeCosts)}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-muted-foreground">Admin</span>
-                            <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.adminCosts)}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-muted-foreground">Boetes</span>
-                            <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.fines)}</span>
-                          </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className={`text-right ${isNegative ? 'text-destructive' : 'text-green-600'}`}>
-                          <div className="flex items-center gap-1">
-                            {isNegative ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
-                            <span className="font-bold text-sm">{formatCurrency(finances.currentBalance)}</span>
-                          </div>
+                      <div className="grid grid-cols-4 gap-y-1 text-xs w-full">
+                        <div className="flex flex-col items-center">
+                          <span className="text-muted-foreground">Veld</span>
+                          <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.fieldCosts)}</span>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex flex-col items-center">
+                          <span className="text-muted-foreground">Scheids</span>
+                          <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.refereeCosts)}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className="text-muted-foreground">Admin</span>
+                          <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.adminCosts)}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className="text-muted-foreground">Boetes</span>
+                          <span className="font-medium" style={{ color: 'var(--accent)' }}>{formatCurrency(finances.fines)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
