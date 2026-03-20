@@ -1,4 +1,5 @@
 import React, { memo, useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { ToastAction } from "@/components/ui/toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -537,7 +538,7 @@ const UserTeamInfoCard: React.FC<{
     return { backup, tables };
   }, []);
 
-  const triggerDownload = useCallback((blob: Blob, filename: string) => {
+  const triggerDownload = useCallback((blob: Blob, filename: string): string => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -547,8 +548,12 @@ const UserTeamInfoCard: React.FC<{
     a.click();
     setTimeout(() => {
       document.body.removeChild(a);
+    }, 500);
+    // Revoke after 60s so the fallback toast link stays usable
+    setTimeout(() => {
       URL.revokeObjectURL(url);
-    }, 1000);
+    }, 60000);
+    return url;
   }, []);
 
   const handleDownloadBackup = useCallback(async (format: 'json' | 'csv') => {
@@ -560,6 +565,9 @@ const UserTeamInfoCard: React.FC<{
       const dateStr = new Date().toISOString().slice(0, 10);
       const totalRows = Object.values(backup).reduce((sum, rows) => sum + rows.length, 0);
 
+      let blobUrl: string;
+      let filename: string;
+
       if (format === 'json') {
         const backupData = {
           _metadata: {
@@ -570,22 +578,33 @@ const UserTeamInfoCard: React.FC<{
           ...backup
         };
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-        triggerDownload(blob, `backup_${dateStr}.json`);
+        filename = `backup_${dateStr}.json`;
+        blobUrl = triggerDownload(blob, filename);
       } else {
-        // CSV per table - bundled into a single ZIP
         const csvFiles: Record<string, string> = {};
         for (const [table, rows] of Object.entries(backup)) {
           if (rows.length === 0) continue;
           csvFiles[`${table}.csv`] = rowsToCsv(rows);
         }
         const zipBlob = buildCsvZip(csvFiles);
-        const filename = `backup_${dateStr}_csv.zip`;
-        triggerDownload(zipBlob, filename);
+        filename = `backup_${dateStr}_csv.zip`;
+        blobUrl = triggerDownload(zipBlob, filename);
       }
       
       toast({
-        title: "Backup gedownload",
+        title: "Backup klaar",
         description: `${totalRows} rijen uit ${tables.length} tabellen (${format.toUpperCase()}).`,
+        action: (
+          <ToastAction altText="Download bestand" asChild>
+            <a
+              href={blobUrl}
+              download={filename}
+              className="font-semibold underline"
+            >
+              Download
+            </a>
+          </ToastAction>
+        ),
       });
     } catch (error) {
       console.error('Backup error:', error);
