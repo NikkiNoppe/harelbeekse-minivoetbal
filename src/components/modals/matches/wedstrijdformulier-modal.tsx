@@ -1414,7 +1414,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                             style={{ fontSize: '16px' }}
                           />
                         ) : (
-                          <span className="block text-xs text-right">{selection.jerseyNumber && `#${selection.jerseyNumber}`}</span>
+                          <span className="block text-xs text-right">{selection.jerseyNumber && selection.jerseyNumber}</span>
                         )}
                       </div>
                     </div>
