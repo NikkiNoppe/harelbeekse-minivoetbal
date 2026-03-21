@@ -1240,9 +1240,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       ) : (
                         <span className="block w-full">
                           {selection.playerName || "-"}
-                          {selection.isCaptain && (
-                            <span className="ml-2 text-xs bg-secondary px-1 py-0.5 rounded font-semibold">(K)</span>
-                          )}
                         </span>
                       )}
                     </td>
@@ -1262,7 +1259,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         />
                       ) : (
                         <span className="text-xs">
-                          {selection.jerseyNumber && <>#{selection.jerseyNumber}</>}
+                          {selection.jerseyNumber && <>{selection.jerseyNumber}</>}
                         </span>
                       )}
                     </td>
@@ -1400,9 +1397,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       ) : (
                         <div className="min-w-0 text-xs h-8 flex items-center">
                           {selection.playerName || "-"}
-                          {selection.isCaptain && (
-                            <span className="ml-2 text-xs bg-secondary px-1 py-0.5 rounded font-semibold">(K)</span>
-                          )}
                         </div>
                       )}
                       <div className="min-w-0">
@@ -1420,7 +1414,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                             style={{ fontSize: '16px' }}
                           />
                         ) : (
-                          <span className="block text-xs text-right">{selection.jerseyNumber && `#${selection.jerseyNumber}`}</span>
+                          <span className="block text-xs text-right">{selection.jerseyNumber && selection.jerseyNumber}</span>
                         )}
                       </div>
                     </div>
