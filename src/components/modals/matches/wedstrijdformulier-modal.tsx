@@ -2053,7 +2053,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         </SelectContent>
                       </Select>
                       {/* Inline retry for referees when empty */}
-                      {!loadingReferees && memoizedReferees.length === 0 && (
+                      {!loadingReferees && memoizedReferees.length === 0 && !selectedReferee && (
                         <InlinePlayerRetry
                           onRetry={async () => { await refetchReferees(); }}
                           isLoading={loadingReferees}
