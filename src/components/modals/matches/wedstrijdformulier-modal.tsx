@@ -1240,9 +1240,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       ) : (
                         <span className="block w-full">
                           {selection.playerName || "-"}
-                          {selection.isCaptain && (
-                            <span className="ml-2 text-xs bg-secondary px-1 py-0.5 rounded font-semibold">(K)</span>
-                          )}
                         </span>
                       )}
                     </td>
