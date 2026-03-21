@@ -2033,7 +2033,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                                   value={selectedReferee} 
                                   className="dropdown-item-login-style opacity-75"
                                 >
-                                  {selectedReferee} {!loadingReferees && "(niet beschikbaar)"}
+                                  {selectedReferee} {!loadingReferees && !isTeamManager && "(niet beschikbaar)"}
                                 </SelectItem>
                               )}
                               {/* Show all available referees */}
@@ -2053,7 +2053,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         </SelectContent>
                       </Select>
                       {/* Inline retry for referees when empty */}
-                      {!loadingReferees && memoizedReferees.length === 0 && (
+                      {!loadingReferees && memoizedReferees.length === 0 && !selectedReferee && (
                         <InlinePlayerRetry
                           onRetry={async () => { await refetchReferees(); }}
                           isLoading={loadingReferees}
