@@ -1397,9 +1397,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       ) : (
                         <div className="min-w-0 text-xs h-8 flex items-center">
                           {selection.playerName || "-"}
-                          {selection.isCaptain && (
-                            <span className="ml-2 text-xs bg-secondary px-1 py-0.5 rounded font-semibold">(K)</span>
-                          )}
                         </div>
                       )}
                       <div className="min-w-0">
