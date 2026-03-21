@@ -1259,7 +1259,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         />
                       ) : (
                         <span className="text-xs">
-                          {selection.jerseyNumber && <>#{selection.jerseyNumber}</>}
+                          {selection.jerseyNumber && <>{selection.jerseyNumber}</>}
                         </span>
                       )}
                     </td>
