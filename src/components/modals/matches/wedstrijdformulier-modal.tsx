@@ -465,6 +465,16 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     matchday: match.matchday || "",
   });
 
+  // Sync matchData when match prop changes (e.g. opening a different match)
+  useEffect(() => {
+    setMatchData({
+      date: match.date,
+      time: match.time,
+      location: match.location,
+      matchday: match.matchday || "",
+    });
+  }, [match.matchId, match.date, match.time, match.location, match.matchday]);
+
   // Handler for match data changes (date, time, location, matchday)
   const handleMatchDataChange = useCallback((field: string, value: string) => {
     setMatchData(prev => ({ ...prev, [field]: value }));
