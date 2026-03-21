@@ -1,48 +1,30 @@
 
 
-## Fix: misleidende scheidsrechter-meldingen verbergen in wedstrijdformulier
+## Bug: Gegevens-sectie toont data van vorige wedstrijd
 
-### Probleem
+### Oorzaak
 
-Zelfde patroon als het spelers-probleem: als een team manager een ingediend wedstrijdformulier bekijkt, retourneert de scheidsrechter-query 0 resultaten (RLS-beperking of lege lijst), terwijl de scheidsrechternaam al opgeslagen is in de matchdata. Dit veroorzaakt twee misleidende UI-elementen:
+`matchData` (date, time, location, matchday) wordt geinitialiseerd via `useState` op regel 461-466 met de eerste `match` prop, maar wordt **nooit gesynchroniseerd** wanneer de `match` prop verandert (andere wedstrijd geopend). Andere velden (scores, scheidsrechter, notities, spelers) worden wel gesynchroniseerd via de `useEffect` in `useMatchFormState`, maar `matchData` zit buiten die hook.
 
-1. **"(niet beschikbaar)"** naast de scheidsrechternaam in de dropdown
-2. **"Geen scheidsrechters gevonden"** retry-banner onder het veld
+Resultaat: als je de modal een tweede keer opent met een andere wedstrijd, blijven date/time/location/matchday staan van de eerste wedstrijd.
 
 ### Oplossing
 
 **Bestand: `src/components/modals/matches/wedstrijdformulier-modal.tsx`**
 
-**Wijziging 1 — "Geen scheidsrechters gevonden" banner (regel ~2056-2065)**
-
-De `InlinePlayerRetry` voor referees alleen tonen als er ook geen geselecteerde scheidsrechter is:
+Voeg een `useEffect` toe direct na regel 466 die `matchData` synchroniseert wanneer de `match` prop verandert:
 
 ```typescript
-// Was:
-{!loadingReferees && memoizedReferees.length === 0 && (
-  <InlinePlayerRetry ... />
-)}
-
-// Wordt:
-{!loadingReferees && memoizedReferees.length === 0 && !selectedReferee && (
-  <InlinePlayerRetry ... />
-)}
+// Sync matchData when match prop changes (e.g. opening a different match)
+useEffect(() => {
+  setMatchData({
+    date: match.date,
+    time: match.time,
+    location: match.location,
+    matchday: match.matchday || "",
+  });
+}, [match.matchId, match.date, match.time, match.location, match.matchday]);
 ```
 
-**Wijziging 2 — "(niet beschikbaar)" label (regel ~2036)**
-
-Het "(niet beschikbaar)" label alleen tonen als het veld bewerkbaar is (admin/referee). Voor team managers die het formulier read-only bekijken is dit verwarrend:
-
-```typescript
-// Was:
-{selectedReferee} {!loadingReferees && "(niet beschikbaar)"}
-
-// Wordt:
-{selectedReferee} {!loadingReferees && !isTeamManager && "(niet beschikbaar)"}
-```
-
-### Impact
-
-- 2 kleine conditionele wijzigingen, geen logica- of data-aanpassingen
-- Geen invloed op bewerkbare formulieren (admin/referee zien de meldingen nog wel als relevant)
+Dit volgt exact hetzelfde patroon als de bestaande sync-effect in `useMatchFormState` (regel 91-128). Eén kleine toevoeging, geen risico op neveneffecten.
 
