@@ -1075,7 +1075,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     }
 
     // Check if we have an empty result that might be a loading issue (not just an empty team)
-    const hasEmptyResult = !isLoading && !error && memoizedPlayers !== undefined && memoizedPlayers.length === 0;
+    const hasExistingSelections = selections.some(s => s.playerName && s.playerName.trim() !== '' && s.playerName !== '(niet beschikbaar)');
+    const hasEmptyResult = !isLoading && !error && memoizedPlayers !== undefined && memoizedPlayers.length === 0 && !hasExistingSelections;
     
     const TABLE_COLUMNS = { speler: "w-[80%]", rugnr: "w-[20%]" } as const;
 
