@@ -1,30 +1,39 @@
 
 
-## Bug: Gegevens-sectie toont data van vorige wedstrijd
+## Fix: subtielere melding bij geen scheidsrechter toegewezen
 
-### Oorzaak
+### Probleem
 
-`matchData` (date, time, location, matchday) wordt geinitialiseerd via `useState` op regel 461-466 met de eerste `match` prop, maar wordt **nooit gesynchroniseerd** wanneer de `match` prop verandert (andere wedstrijd geopend). Andere velden (scores, scheidsrechter, notities, spelers) worden wel gesynchroniseerd via de `useEffect` in `useMatchFormState`, maar `matchData` zit buiten die hook.
-
-Resultaat: als je de modal een tweede keer opent met een andere wedstrijd, blijven date/time/location/matchday staan van de eerste wedstrijd.
+Bij een toekomstige wedstrijd zonder toegewezen scheidsrechter toont het formulier de `InlinePlayerRetry` banner met "Geen scheidsrechters gevonden" en een "Opnieuw" knop. Dit is misleidend — er is geen fout, er is simpelweg nog geen scheidsrechter aangewezen.
 
 ### Oplossing
 
-**Bestand: `src/components/modals/matches/wedstrijdformulier-modal.tsx`**
+**Bestand: `src/components/modals/matches/wedstrijdformulier-modal.tsx` (regel 2066-2074)**
 
-Voeg een `useEffect` toe direct na regel 466 die `matchData` synchroniseert wanneer de `match` prop verandert:
+Twee scenario's onderscheiden:
 
-```typescript
-// Sync matchData when match prop changes (e.g. opening a different match)
-useEffect(() => {
-  setMatchData({
-    date: match.date,
-    time: match.time,
-    location: match.location,
-    matchday: match.matchday || "",
-  });
-}, [match.matchId, match.date, match.time, match.location, match.matchday]);
+1. **Er is een echte fout** (`refereesError` is truthy) → toon de huidige `InlinePlayerRetry` met retry-knop
+2. **Geen fout, gewoon lege lijst en geen scheidsrechter geselecteerd** → toon een subtiele informatieve tekst: "Nog geen scheidsrechter toegewezen" (zonder retry-knop)
+
+```tsx
+// Vervang regels 2066-2074:
+{!loadingReferees && memoizedReferees.length === 0 && !selectedReferee && (
+  refereesError ? (
+    <InlinePlayerRetry
+      onRetry={async () => { await refetchReferees(); }}
+      isLoading={loadingReferees}
+      error={refereesError}
+      itemCount={memoizedReferees.length}
+      emptyMessage="Geen scheidsrechters gevonden"
+      className="mt-2"
+    />
+  ) : (
+    <p className="text-xs text-muted-foreground mt-2">
+      Nog geen scheidsrechter toegewezen
+    </p>
+  )
+)}
 ```
 
-Dit volgt exact hetzelfde patroon als de bestaande sync-effect in `useMatchFormState` (regel 91-128). Eén kleine toevoeging, geen risico op neveneffecten.
+Eén wijziging, ~10 regels, geen nieuwe bestanden of dependencies.
 
