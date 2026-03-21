@@ -1,22 +1,48 @@
 
 
-## Twee kleine UI-aanpassingen in het wedstrijdformulier (read-only modus)
+## Fix: misleidende scheidsrechter-meldingen verbergen in wedstrijdformulier
 
-### Wat verandert
+### Probleem
 
-1. **`#` weghalen bij rugnummers** — in read-only weergave tonen we het rugnummer zonder `#` prefix (bv. `4` i.p.v. `#4`)
-2. **`(K)` badge weghalen bij spelernaam** — de kapitein staat al onderaan vermeld, dus de inline badge is overbodig
+Zelfde patroon als het spelers-probleem: als een team manager een ingediend wedstrijdformulier bekijkt, retourneert de scheidsrechter-query 0 resultaten (RLS-beperking of lege lijst), terwijl de scheidsrechternaam al opgeslagen is in de matchdata. Dit veroorzaakt twee misleidende UI-elementen:
 
-### Bestanden & locaties
+1. **"(niet beschikbaar)"** naast de scheidsrechternaam in de dropdown
+2. **"Geen scheidsrechters gevonden"** retry-banner onder het veld
 
-**`src/components/modals/matches/wedstrijdformulier-modal.tsx`** — 4 kleine wijzigingen:
+### Oplossing
 
-| Regel | Wat | Wijziging |
-|-------|-----|-----------|
-| 1243-1245 | Desktop: `(K)` badge bij spelernaam | Verwijderen |
-| 1265 | Desktop: `#{selection.jerseyNumber}` | → `{selection.jerseyNumber}` |
-| 1403-1405 | Mobiel: `(K)` badge bij spelernaam | Verwijderen |
-| 1423 | Mobiel: `` `#${selection.jerseyNumber}` `` | → `selection.jerseyNumber` |
+**Bestand: `src/components/modals/matches/wedstrijdformulier-modal.tsx`**
 
-Geen andere bestanden, dependencies of logica-wijzigingen nodig.
+**Wijziging 1 — "Geen scheidsrechters gevonden" banner (regel ~2056-2065)**
+
+De `InlinePlayerRetry` voor referees alleen tonen als er ook geen geselecteerde scheidsrechter is:
+
+```typescript
+// Was:
+{!loadingReferees && memoizedReferees.length === 0 && (
+  <InlinePlayerRetry ... />
+)}
+
+// Wordt:
+{!loadingReferees && memoizedReferees.length === 0 && !selectedReferee && (
+  <InlinePlayerRetry ... />
+)}
+```
+
+**Wijziging 2 — "(niet beschikbaar)" label (regel ~2036)**
+
+Het "(niet beschikbaar)" label alleen tonen als het veld bewerkbaar is (admin/referee). Voor team managers die het formulier read-only bekijken is dit verwarrend:
+
+```typescript
+// Was:
+{selectedReferee} {!loadingReferees && "(niet beschikbaar)"}
+
+// Wordt:
+{selectedReferee} {!loadingReferees && !isTeamManager && "(niet beschikbaar)"}
+```
+
+### Impact
+
+- 2 kleine conditionele wijzigingen, geen logica- of data-aanpassingen
+- Geen invloed op bewerkbare formulieren (admin/referee zien de meldingen nog wel als relevant)
 
