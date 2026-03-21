@@ -2064,14 +2064,20 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       </Select>
                       {/* Inline retry for referees when empty */}
                       {!loadingReferees && memoizedReferees.length === 0 && !selectedReferee && (
-                        <InlinePlayerRetry
-                          onRetry={async () => { await refetchReferees(); }}
-                          isLoading={loadingReferees}
-                          error={refereesError}
-                          itemCount={memoizedReferees.length}
-                          emptyMessage="Geen scheidsrechters gevonden"
-                          className="mt-2"
-                        />
+                        refereesError ? (
+                          <InlinePlayerRetry
+                            onRetry={async () => { await refetchReferees(); }}
+                            isLoading={loadingReferees}
+                            error={refereesError}
+                            itemCount={memoizedReferees.length}
+                            emptyMessage="Geen scheidsrechters gevonden"
+                            className="mt-2"
+                          />
+                        ) : (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Nog geen scheidsrechter toegewezen
+                          </p>
+                        )
                       )}
                     </div>
                   </div>
