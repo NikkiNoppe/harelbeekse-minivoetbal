@@ -564,7 +564,7 @@ const Header: React.FC<HeaderProps> = ({
               </div>
 
               {/* Fixed bottom action bar */}
-              <div className="p-3 sticky bottom-0 bg-gradient-to-t from-white via-white to-transparent safe-area-bottom">
+              <div className="p-3 sticky bottom-0 safe-area-bottom">
                 {!isAuthenticated ? (
                   <button
                     onClick={() => { onLoginClick(); setIsSheetOpen(false); }}
