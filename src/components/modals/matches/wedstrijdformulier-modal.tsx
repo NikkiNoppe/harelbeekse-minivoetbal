@@ -2074,7 +2074,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                             className="mt-2"
                           />
                         ) : (
-                          <p className="text-xs text-muted-foreground mt-2">
+                          <p className="text-xs text-muted-foreground mt-2 w-full">
                             Nog geen scheidsrechter toegewezen
                           </p>
                         )
