@@ -83,7 +83,9 @@ export const useRefereeMatches = (refereeUsername: string | null, month?: number
           home_score: match.home_score,
           away_score: match.away_score,
           referee: match.referee,
-          referee_notes: match.referee_notes
+          referee_notes: match.referee_notes,
+          home_players: match.home_players,
+          away_players: match.away_players
         }));
       });
     },
