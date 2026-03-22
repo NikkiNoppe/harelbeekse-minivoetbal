@@ -18,6 +18,8 @@ export interface RefereeMatch {
   away_score?: number | null;
   referee?: string;
   referee_notes?: string;
+  home_players?: any[];
+  away_players?: any[];
 }
 
 export const useRefereeMatches = (refereeUsername: string | null, month?: number, year?: number) => {
