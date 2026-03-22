@@ -55,6 +55,8 @@ export const useRefereeMatches = (refereeUsername: string | null, month?: number
             away_score,
             referee,
             referee_notes,
+            home_players,
+            away_players,
             home_team:teams!matches_home_team_id_fkey(team_name),
             away_team:teams!matches_away_team_id_fkey(team_name)
           `)
