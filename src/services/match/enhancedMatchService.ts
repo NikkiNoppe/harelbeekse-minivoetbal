@@ -86,8 +86,8 @@ export const enhancedMatchService = {
             awayScore: updateData.awayScore,
             referee: updateData.referee,
             refereeNotes: updateData.refereeNotes,
-            homePlayers: updateData.homePlayers || [],
-            awayPlayers: updateData.awayPlayers || []
+            homePlayers: updateData.homePlayers as any,
+            awayPlayers: updateData.awayPlayers as any
           };
 
           const result = await updateMatchForm(matchFormData);
