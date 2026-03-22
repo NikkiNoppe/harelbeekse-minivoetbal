@@ -18,6 +18,8 @@ export interface RefereeMatch {
   away_score?: number | null;
   referee?: string;
   referee_notes?: string;
+  home_players?: any[];
+  away_players?: any[];
 }
 
 export const useRefereeMatches = (refereeUsername: string | null, month?: number, year?: number) => {
@@ -53,6 +55,8 @@ export const useRefereeMatches = (refereeUsername: string | null, month?: number
             away_score,
             referee,
             referee_notes,
+            home_players,
+            away_players,
             home_team:teams!matches_home_team_id_fkey(team_name),
             away_team:teams!matches_away_team_id_fkey(team_name)
           `)
@@ -79,7 +83,9 @@ export const useRefereeMatches = (refereeUsername: string | null, month?: number
           home_score: match.home_score,
           away_score: match.away_score,
           referee: match.referee,
-          referee_notes: match.referee_notes
+          referee_notes: match.referee_notes,
+          home_players: match.home_players,
+          away_players: match.away_players
         }));
       });
     },

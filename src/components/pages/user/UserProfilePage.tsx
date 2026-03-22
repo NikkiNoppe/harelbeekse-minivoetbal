@@ -1354,8 +1354,8 @@ const RefereeUpcomingMatches: React.FC<{
       awayScore: match.away_score,
       referee: match.referee,
       refereeNotes: match.referee_notes,
-      homePlayers: [],
-      awayPlayers: [],
+      homePlayers: match.home_players || [],
+      awayPlayers: match.away_players || [],
     };
   }, []);
 
