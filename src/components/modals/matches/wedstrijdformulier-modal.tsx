@@ -1998,7 +1998,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         id="match-matchday"
                         value={matchData.matchday || ""}
                         onChange={(e) => handleMatchDataChange("matchday", e.target.value)}
-                        disabled={!showRefereeFields}
+                        disabled={!isAdmin}
                         placeholder="Speeldag"
                         className="input-login-style h-8 text-sm"
                       />
