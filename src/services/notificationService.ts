@@ -206,10 +206,12 @@ export const notificationService = {
   // Get all teams for targeting (admin only)
   async getAllTeams(): Promise<Array<{ team_id: number; team_name: string }>> {
     try {
-      const { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .order('team_name');
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('teams')
+          .select('team_id, team_name')
+          .order('team_name');
+      });
 
       if (error) throw error;
       return data || [];
