@@ -1957,7 +1957,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         type="date"
                         value={matchData.date}
                         onChange={(e) => handleMatchDataChange("date", e.target.value)}
-                        disabled={!showRefereeFields}
+                        disabled={!isAdmin}
                         className="input-login-style h-8 text-sm"
                       />
                     </div>
@@ -1969,7 +1969,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         type="time"
                         value={matchData.time}
                         onChange={(e) => handleMatchDataChange("time", e.target.value)}
-                        disabled={!showRefereeFields}
+                        disabled={!isAdmin}
                         className="input-login-style h-8 text-sm"
                       />
                     </div>
@@ -1983,7 +1983,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         id="match-location"
                         value={matchData.location}
                         onChange={(e) => handleMatchDataChange("location", e.target.value)}
-                        disabled={!showRefereeFields}
+                        disabled={!isAdmin}
                         placeholder="Wedstrijdlocatie"
                         className="input-login-style h-8 text-sm"
                       />
@@ -1998,7 +1998,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         id="match-matchday"
                         value={matchData.matchday || ""}
                         onChange={(e) => handleMatchDataChange("matchday", e.target.value)}
-                        disabled={!showRefereeFields}
+                        disabled={!isAdmin}
                         placeholder="Speeldag"
                         className="input-login-style h-8 text-sm"
                       />
@@ -2043,7 +2043,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                                   value={selectedReferee} 
                                   className="dropdown-item-login-style opacity-75"
                                 >
-                                  {selectedReferee} {!loadingReferees && !isTeamManager && "(niet beschikbaar)"}
+                                  {selectedReferee}
                                 </SelectItem>
                               )}
                               {/* Show all available referees */}
