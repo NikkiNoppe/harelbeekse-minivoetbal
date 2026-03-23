@@ -68,11 +68,13 @@ export const notificationService = {
   // Get all notifications (admin messages)
   async getAllNotifications(): Promise<Notification[]> {
     try {
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('*')
-        .eq('setting_category', 'admin_messages')
-        .order('created_at', { ascending: false });
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .select('*')
+          .eq('setting_category', 'admin_messages')
+          .order('created_at', { ascending: false });
+      });
 
       if (error) throw error;
       return transformNotificationData(data || []);
@@ -166,12 +168,14 @@ export const notificationService = {
   // Get active notifications for display
   async getActiveNotifications(): Promise<Notification[]> {
     try {
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('*')
-        .eq('setting_category', 'admin_messages')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .select('*')
+          .eq('setting_category', 'admin_messages')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+      });
 
       if (error) throw error;
       return transformNotificationData(data || []);
@@ -202,10 +206,12 @@ export const notificationService = {
   // Get all teams for targeting (admin only)
   async getAllTeams(): Promise<Array<{ team_id: number; team_name: string }>> {
     try {
-      const { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .order('team_name');
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('teams')
+          .select('team_id, team_name')
+          .order('team_name');
+      });
 
       if (error) throw error;
       return data || [];
