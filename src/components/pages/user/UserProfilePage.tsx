@@ -289,7 +289,7 @@ const sortPlayers = (players: PlayerStat[], sortBy: PlayerSortOption): PlayerSta
 // Team Players Overview Content (without Card wrapper, for use inside collapsible)
 const TeamPlayersOverviewContent: React.FC<{ teamId: number }> = memo(({ teamId }) => {
   const { data: players, isLoading } = useTeamPlayerStats(teamId);
-  const [sortBy, setSortBy] = useState<PlayerSortOption>('name');
+  const [sortBy, setSortBy] = useState<PlayerSortOption>('matches');
 
   const sortedPlayers = useMemo(() => {
     if (!players) return [];
