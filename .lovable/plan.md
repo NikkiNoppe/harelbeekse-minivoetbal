@@ -1,59 +1,43 @@
 
 
-## Plan: Scheidsrechter wedstrijdformulier aanpassingen
+## Fix: Admin berichten worden niet geladen op /admin/notification
 
-### 1. Gegevens onveranderbaar voor scheidsrechter (Datum, Tijd, Locatie, Speeldag)
+### Oorzaak
 
-**Bestand:** `src/components/modals/matches/wedstrijdformulier-modal.tsx`
+De `getAllNotifications()` functie in `notificationService.ts` roept `supabase.from('application_settings')` aan **zonder** `withUserContext`. Hierdoor is er geen `app.current_user_role` context ingesteld in de database-sessie.
 
-De velden Datum, Tijd, Locatie en Speeldag gebruiken `disabled={!showRefereeFields}` (regel 1960, 1972, 1986, 2001). Omdat `showRefereeFields = isReferee || isAdmin`, zijn deze velden **enabled** voor referees. Dit moet worden aangepast:
+De RLS-policy "Admins can manage all application settings" controleert `is_admin_user()` → `get_current_user_role() = 'admin'`. Zonder context retourneert dit `''` (lege string), waardoor de query 0 rijen teruggeeft.
 
-- Datum, Tijd, Locatie, Speeldag: `disabled={!isAdmin}` — alleen admins mogen deze wijzigen, referees niet.
+De `SELECT`-policies voor `admin_messages` vereisen ook `get_current_user_role()` te zijn ingesteld (`admin`, `player_manager`, of `referee`), dus ook de fallback-policy werkt niet.
 
-### 2. "Playoff Speeldag X" verkorten naar "Playoff X"
+### Oplossing
 
-**Bestand:** `src/services/match/playoffService.ts` (regels 411, 440)
+**Bestand:** `src/services/notificationService.ts`
 
-- Wijzig `speeldag: \`Playoff Speeldag ${matchday}\`` naar `speeldag: \`Playoff ${matchday}\``
+Wrap de query in `getAllNotifications()` met `withUserContext`:
 
-Dit past enkel toekomstige playoff-wedstrijden aan. Voor bestaande data:
-
-**Bestand:** `src/components/pages/admin/matches/services/matchesFormService.ts`
-
-- In de mapping van matches, een simpele replace toevoegen:
-  ```
-  matchdayDisplay = matchdayDisplay.replace('Playoff Speeldag', 'Playoff')
-  ```
-
-### 3. "(niet beschikbaar)" weghalen bij scheidsrechter
-
-**Bestand:** `src/components/modals/matches/wedstrijdformulier-modal.tsx` (regel 2046)
-
-De conditie `!loadingReferees && !isTeamManager` toont "(niet beschikbaar)" voor admins en referees wanneer de geselecteerde scheidsrechter niet in de lijst zit. Dit is misleidend als de scheidsrechter zichzelf ziet.
-
-- Verwijder de "(niet beschikbaar)" tekst volledig. De scheidsrechter staat gewoon als optie in de dropdown, en kan een andere selecteren indien nodig.
-
-### 4. Niet-toegewezen wedstrijden ook tonen voor referees op /admin/match-forms/playoffs
-
-**Bestand:** `src/components/pages/admin/matches/services/matchesFormService.ts` (regel 59-61)
-
-Huidige filter voor referees:
-```
-query.or(`assigned_referee_id.eq.${refereeFilter.userId},referee.eq.${refereeFilter.username}`)
+```typescript
+async getAllNotifications(): Promise<Notification[]> {
+  try {
+    const { data, error } = await withUserContext(async () => {
+      return await supabase
+        .from('application_settings')
+        .select('*')
+        .eq('setting_category', 'admin_messages')
+        .order('created_at', { ascending: false });
+    });
+    if (error) throw error;
+    return transformNotificationData(data || []);
+  } catch (error) {
+    console.error('Error loading notifications:', error);
+    throw new Error('Kon berichten niet laden');
+  }
+}
 ```
 
-Dit filtert alleen op toegewezen wedstrijden. Uitbreiden met wedstrijden zonder scheidsrechter:
-```
-query.or(`assigned_referee_id.eq.${refereeFilter.userId},referee.eq.${refereeFilter.username},referee.is.null`)
-```
+Dezelfde fix toepassen op `getActiveNotifications()` en `getAllUsers()` — alle queries die afhankelijk zijn van RLS met rolcontrole moeten via `withUserContext` lopen.
 
-Hierdoor ziet de referee ook wedstrijden waar nog geen scheidsrechter is toegewezen, en kan deze zichzelf toewijzen via het formulier.
-
-### Technische details
-
-| Bestand | Wijziging |
-|---------|-----------|
-| `wedstrijdformulier-modal.tsx` | 4 velden `disabled={!isAdmin}`, verwijder "(niet beschikbaar)" tekst |
-| `playoffService.ts` | "Playoff Speeldag" → "Playoff" |
-| `matchesFormService.ts` | Replace "Playoff Speeldag" → "Playoff" in mapping + referee filter uitbreiden met `referee.is.null` |
+### Impact
+- 1 bestand: `src/services/notificationService.ts`
+- 3 functies wrappen met `withUserContext`: `getAllNotifications`, `getActiveNotifications`, `getAllUsers`
 
