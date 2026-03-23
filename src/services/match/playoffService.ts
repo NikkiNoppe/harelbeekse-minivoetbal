@@ -408,7 +408,7 @@ export const playoffService = {
           
           matchInserts.push({
             unique_number: `PO-${counter}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-            speeldag: `Playoff Speeldag ${matchday}`,
+            speeldag: `Playoff ${matchday}`,
             home_team_id: null,
             away_team_id: null,
             home_position: match.home_position,
