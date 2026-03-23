@@ -1969,7 +1969,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         type="time"
                         value={matchData.time}
                         onChange={(e) => handleMatchDataChange("time", e.target.value)}
-                        disabled={!showRefereeFields}
+                        disabled={!isAdmin}
                         className="input-login-style h-8 text-sm"
                       />
                     </div>
