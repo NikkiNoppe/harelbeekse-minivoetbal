@@ -289,7 +289,7 @@ const sortPlayers = (players: PlayerStat[], sortBy: PlayerSortOption): PlayerSta
 // Team Players Overview Content (without Card wrapper, for use inside collapsible)
 const TeamPlayersOverviewContent: React.FC<{ teamId: number }> = memo(({ teamId }) => {
   const { data: players, isLoading } = useTeamPlayerStats(teamId);
-  const [sortBy, setSortBy] = useState<PlayerSortOption>('name');
+  const [sortBy, setSortBy] = useState<PlayerSortOption>('matches');
 
   const sortedPlayers = useMemo(() => {
     if (!players) return [];
@@ -344,19 +344,15 @@ const TeamPlayersOverviewContent: React.FC<{ teamId: number }> = memo(({ teamId 
             </span>
             <div className="flex items-center gap-3 flex-shrink-0">
               {/* Yellow cards */}
-              {player.yellowCards > 0 && (
-                <span className="flex items-center gap-1 text-xs" title="Gele kaarten">
-                  <span className="w-3 h-4 rounded-[2px] bg-yellow-400 inline-block" />
-                  <span className="font-medium text-foreground">{player.yellowCards}</span>
-                </span>
-              )}
+              <span className="flex items-center gap-1 text-xs" title="Gele kaarten">
+                <span className="w-3 h-4 rounded-[2px] bg-yellow-400 inline-block" />
+                <span className="font-medium text-foreground">{player.yellowCards}</span>
+              </span>
               {/* Red cards */}
-              {player.redCards > 0 && (
-                <span className="flex items-center gap-1 text-xs" title="Rode kaarten">
-                  <span className="w-3 h-4 rounded-[2px] bg-red-500 inline-block" />
-                  <span className="font-medium text-foreground">{player.redCards}</span>
-                </span>
-              )}
+              <span className="flex items-center gap-1 text-xs" title="Rode kaarten">
+                <span className="w-3 h-4 rounded-[2px] bg-red-500 inline-block" />
+                <span className="font-medium text-foreground">{player.redCards}</span>
+              </span>
               {/* Match count */}
               <span className="flex items-center gap-1 text-xs text-muted-foreground" title="Wedstrijden">
                 <Trophy className="h-3.5 w-3.5" />
