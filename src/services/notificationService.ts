@@ -168,12 +168,14 @@ export const notificationService = {
   // Get active notifications for display
   async getActiveNotifications(): Promise<Notification[]> {
     try {
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('*')
-        .eq('setting_category', 'admin_messages')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('application_settings')
+          .select('*')
+          .eq('setting_category', 'admin_messages')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+      });
 
       if (error) throw error;
       return transformNotificationData(data || []);
