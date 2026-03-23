@@ -111,7 +111,7 @@ export const fetchUpcomingMatches = async (
       const { date, time } = isoToLocalDateTime(row.match_date);
       
       // Use speeldag for matchday display, with special handling for cup and playoff matches
-      let matchdayDisplay = row.speeldag || "Te bepalen";
+      let matchdayDisplay = (row.speeldag || "Te bepalen").replace('Playoff Speeldag', 'Playoff');
       const isPlayoff = (row as any).is_playoff_match === true;
       const isCup = row.is_cup_match === true;
       if (isCup && !matchdayDisplay.startsWith('🏆')) {

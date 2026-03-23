@@ -2043,7 +2043,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                                   value={selectedReferee} 
                                   className="dropdown-item-login-style opacity-75"
                                 >
-                                  {selectedReferee} {!loadingReferees && !isTeamManager && "(niet beschikbaar)"}
+                                  {selectedReferee}
                                 </SelectItem>
                               )}
                               {/* Show all available referees */}
