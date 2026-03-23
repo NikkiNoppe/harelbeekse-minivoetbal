@@ -1983,7 +1983,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         id="match-location"
                         value={matchData.location}
                         onChange={(e) => handleMatchDataChange("location", e.target.value)}
-                        disabled={!showRefereeFields}
+                        disabled={!isAdmin}
                         placeholder="Wedstrijdlocatie"
                         className="input-login-style h-8 text-sm"
                       />
