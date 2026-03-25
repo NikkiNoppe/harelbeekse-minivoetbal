@@ -49,6 +49,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   onComplete
 }) => {
   const {
+  const queryClient = useQueryClient();
     homeScore,
     setHomeScore,
     awayScore,
