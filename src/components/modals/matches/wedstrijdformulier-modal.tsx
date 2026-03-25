@@ -48,8 +48,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   teamId,
   onComplete
 }) => {
-  const {
   const queryClient = useQueryClient();
+  const {
     homeScore,
     setHomeScore,
     awayScore,
