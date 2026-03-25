@@ -229,7 +229,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     setIsLoadingPenalties(true);
     try {
       const currentDate = getCurrentDate();
-      const savedThis: Array<{ teamName: string; penaltyName: string; amount: number }> = [];
+      const savedThis: Array<{ id: number; teamName: string; penaltyName: string; amount: number }> = [];
       
       for (const penalty of validPenalties) {
         const costSetting = availablePenalties.find(cs => cs.id === penalty.costSettingId);
@@ -251,7 +251,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           }
           
           const teamName = penaltyTeamOptions.find(t => t.id === penalty.teamId)?.name || 'Team';
-          savedThis.push({ teamName, penaltyName: costSetting.name, amount: costSetting.amount });
+          // We don't have the new ID from addTransaction, use -Date.now() as temp id
+          // On next modal open, real IDs will be loaded from DB
+          savedThis.push({ id: -Date.now() - savedThis.length, teamName, penaltyName: costSetting.name, amount: costSetting.amount });
         }
       }
 
@@ -275,9 +277,33 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     }
   }, [penalties, availablePenalties, match.matchId, penaltyTeamOptions, toast]);
 
-  const removeSavedPenalty = useCallback((index: number) => {
+  const removeSavedPenalty = useCallback(async (index: number) => {
+    const penalty = savedPenalties[index];
+    if (!penalty) return;
+    
+    // If it has a real DB id (positive), delete from database
+    if (penalty.id > 0) {
+      setIsDeletingPenalty(penalty.id);
+      try {
+        const result = await withUserContext(async () => {
+          return await costSettingsService.deleteTransaction(penalty.id);
+        });
+        if (!result.success) {
+          toast({ title: "Fout", description: result.message, variant: "destructive" });
+          return;
+        }
+        toast({ title: "Boete verwijderd", description: "Boete succesvol verwijderd uit de database." });
+      } catch (error) {
+        console.error('Error deleting penalty:', error);
+        toast({ title: "Fout", description: "Kon boete niet verwijderen.", variant: "destructive" });
+        return;
+      } finally {
+        setIsDeletingPenalty(null);
+      }
+    }
+    
     setSavedPenalties(prev => prev.filter((_, i) => i !== index));
-  }, []);
+  }, [savedPenalties, toast]);
 
   const CARD_OPTIONS = [
     { value: "yellow", label: "Geel" },
