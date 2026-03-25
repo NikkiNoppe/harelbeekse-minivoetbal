@@ -41,6 +41,8 @@ interface UpdateData {
   awayPlayers?: any[];
   isCompleted?: boolean;
   referee?: string;
+  /** True only when is_submitted transitions from false→true */
+  _submissionTransition?: boolean;
 }
 
 /**
@@ -474,8 +476,10 @@ export const scheduleBackgroundSideEffects = (
       results.push(result);
     }
 
-    // 4. Sync match costs (if match completed)
-    if (updateData.isCompleted && matchInfo) {
+    // 4. Sync match costs — only on actual submission transition (false→true)
+    // Skipping this when isCompleted was already true prevents re-creating
+    // costs that the admin just deleted.
+    if (updateData.isCompleted && matchInfo && updateData._submissionTransition) {
       const result = await executeWithRetry(
         ctx,
         'match_costs',
@@ -485,8 +489,8 @@ export const scheduleBackgroundSideEffects = (
       results.push(result);
     }
 
-    // 5. Form completion penalties (if match completed)
-    if (updateData.isCompleted && matchInfo) {
+    // 5. Form completion penalties — only on submission transition or player changes
+    if (updateData.isCompleted && matchInfo && (updateData._submissionTransition || playersProvided)) {
       const result = await executeWithRetry(
         ctx,
         'form_completion',
