@@ -117,7 +117,17 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const [penalties, setPenalties] = useState<PenaltyItem[]>([]);
   const [availablePenalties, setAvailablePenalties] = useState<any[]>([]);
   const [isLoadingPenalties, setIsLoadingPenalties] = useState(false);
-  const [savedPenalties, setSavedPenalties] = useState<Array<{ teamName: string; penaltyName: string; amount: number }>>([]);
+  const [savedPenalties, setSavedPenalties] = useState<Array<{ id: number; teamName: string; penaltyName: string; amount: number }>>([]);
+  const [isFinancieelOpen, setIsFinancieelOpen] = useState(false);
+  const [matchCosts, setMatchCosts] = useState<Array<{ id: number; teamId: number; teamName: string; costName: string; category: string; amount: number; costSettingId: number | null }>>([]);
+  const [isLoadingMatchCosts, setIsLoadingMatchCosts] = useState(false);
+  const [editingCostId, setEditingCostId] = useState<number | null>(null);
+  const [editingCostAmount, setEditingCostAmount] = useState<string>("");
+  const [newCostTeamId, setNewCostTeamId] = useState<number | null>(null);
+  const [newCostSettingId, setNewCostSettingId] = useState<number | null>(null);
+  const [newCostAmount, setNewCostAmount] = useState<string>("");
+  const [allCostSettings, setAllCostSettings] = useState<any[]>([]);
+  const [isDeletingPenalty, setIsDeletingPenalty] = useState<number | null>(null);
 
   const penaltyTeamOptions = useMemo(() => ([
     { id: match.homeTeamId, name: match.homeTeamName },

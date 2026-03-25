@@ -166,7 +166,7 @@ export const enhancedMatchService = {
       // Handle scores - allow null values to clear scores
       if (updateData.homeScore !== undefined) updateObject.home_score = updateData.homeScore;
       if (updateData.awayScore !== undefined) updateObject.away_score = updateData.awayScore;
-      if (updateData.referee !== undefined) updateObject.referee = updateData.referee;
+      if (updateData.referee !== undefined) updateObject.referee = updateData.referee || null;
       if (updateData.matchday !== undefined) updateObject.speeldag = updateData.matchday;
       if (updateData.location !== undefined) updateObject.location = updateData.location;
       if (updateData.date !== undefined && updateData.time !== undefined) {
