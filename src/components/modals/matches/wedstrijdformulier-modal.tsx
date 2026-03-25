@@ -19,6 +19,8 @@ import { useTeamPlayersWithSuspensions, type TeamPlayer } from "@/components/pag
 import { PlayerDataRefreshModal, InlinePlayerRetry } from "@/components/modals";
 import MatchesCardIcon from "@/components/pages/admin/matches/components/MatchesCardIcon";
 import { costSettingsService, financialService } from "@/domains/financial";
+import { withUserContext } from "@/lib/supabaseUtils";
+import { supabase } from "@/integrations/supabase/client";
 import { getCurrentDate } from "@/lib/dateUtils";
 import { MatchFormData, PlayerSelection } from "@/components/pages/admin/matches/types";
 import { useMatchFormState } from "@/components/pages/admin/matches/hooks/useMatchFormState";
@@ -117,7 +119,17 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const [penalties, setPenalties] = useState<PenaltyItem[]>([]);
   const [availablePenalties, setAvailablePenalties] = useState<any[]>([]);
   const [isLoadingPenalties, setIsLoadingPenalties] = useState(false);
-  const [savedPenalties, setSavedPenalties] = useState<Array<{ teamName: string; penaltyName: string; amount: number }>>([]);
+  const [savedPenalties, setSavedPenalties] = useState<Array<{ id: number; teamName: string; penaltyName: string; amount: number }>>([]);
+  const [isFinancieelOpen, setIsFinancieelOpen] = useState(false);
+  const [matchCosts, setMatchCosts] = useState<Array<{ id: number; teamId: number; teamName: string; costName: string; category: string; amount: number; costSettingId: number | null }>>([]);
+  const [isLoadingMatchCosts, setIsLoadingMatchCosts] = useState(false);
+  const [editingCostId, setEditingCostId] = useState<number | null>(null);
+  const [editingCostAmount, setEditingCostAmount] = useState<string>("");
+  const [newCostTeamId, setNewCostTeamId] = useState<number | null>(null);
+  const [newCostSettingId, setNewCostSettingId] = useState<number | null>(null);
+  const [newCostAmount, setNewCostAmount] = useState<string>("");
+  const [allCostSettings, setAllCostSettings] = useState<any[]>([]);
+  const [isDeletingPenalty, setIsDeletingPenalty] = useState<number | null>(null);
 
   const penaltyTeamOptions = useMemo(() => ([
     { id: match.homeTeamId, name: match.homeTeamName },
@@ -147,6 +159,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         const matchPenalties = [...homeTeamTransactions, ...awayTeamTransactions]
           .filter(t => t.match_id === match.matchId && t.transaction_type === 'penalty')
           .map(t => ({
+            id: t.id,
             teamName: t.team_id === match.homeTeamId ? match.homeTeamName : match.awayTeamName,
             penaltyName: t.cost_settings?.name || 'Boete',
             amount: t.amount
@@ -159,6 +172,124 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     };
     loadExistingPenalties();
   }, [match.matchId, match.homeTeamId, match.awayTeamId, match.homeTeamName, match.awayTeamName]);
+
+  // Load match costs for Financieel section (admin only)
+  const loadMatchCosts = useCallback(async () => {
+    if (!isAdmin) return;
+    setIsLoadingMatchCosts(true);
+    try {
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('team_costs')
+          .select(`*, costs(name, category, amount)`)
+          .eq('match_id', match.matchId)
+          .order('team_id', { ascending: true });
+      });
+      if (error) throw error;
+      const costs = (data || []).map((tc: any) => ({
+        id: tc.id,
+        teamId: tc.team_id,
+        teamName: tc.team_id === match.homeTeamId ? match.homeTeamName : match.awayTeamName,
+        costName: tc.costs?.name || 'Onbekend',
+        category: tc.costs?.category || 'other',
+        amount: tc.amount !== null ? tc.amount : (tc.costs?.amount || 0),
+        costSettingId: tc.cost_setting_id
+      }));
+      setMatchCosts(costs);
+    } catch (error) {
+      console.error('Error loading match costs:', error);
+    } finally {
+      setIsLoadingMatchCosts(false);
+    }
+  }, [isAdmin, match.matchId, match.homeTeamId, match.awayTeamId, match.homeTeamName, match.awayTeamName]);
+
+  useEffect(() => {
+    if (isAdmin && open) {
+      loadMatchCosts();
+    }
+  }, [isAdmin, open, loadMatchCosts]);
+
+  // Load all cost settings for the add-cost dropdown
+  useEffect(() => {
+    if (!isAdmin) return;
+    const load = async () => {
+      try {
+        const settings = await costSettingsService.getCostSettings();
+        setAllCostSettings(settings);
+      } catch (error) {
+        console.error('Error loading cost settings:', error);
+      }
+    };
+    load();
+  }, [isAdmin]);
+
+  const handleDeleteMatchCost = useCallback(async (costId: number) => {
+    try {
+      const result = await withUserContext(async () => {
+        return await costSettingsService.deleteTransaction(costId);
+      });
+      if (result.success) {
+        setMatchCosts(prev => prev.filter(c => c.id !== costId));
+        toast({ title: "Kost verwijderd" });
+      } else {
+        toast({ title: "Fout", description: result.message, variant: "destructive" });
+      }
+    } catch (error) {
+      console.error('Error deleting match cost:', error);
+      toast({ title: "Fout", description: "Kon kost niet verwijderen.", variant: "destructive" });
+    }
+  }, [toast]);
+
+  const handleUpdateMatchCostAmount = useCallback(async (costId: number, newAmount: number) => {
+    try {
+      const result = await withUserContext(async () => {
+        return await costSettingsService.updateTransaction(costId, { amount: newAmount });
+      });
+      if (result.success) {
+        setMatchCosts(prev => prev.map(c => c.id === costId ? { ...c, amount: newAmount } : c));
+        setEditingCostId(null);
+        toast({ title: "Bedrag bijgewerkt" });
+      } else {
+        toast({ title: "Fout", description: result.message, variant: "destructive" });
+      }
+    } catch (error) {
+      console.error('Error updating match cost:', error);
+      toast({ title: "Fout", description: "Kon bedrag niet bijwerken.", variant: "destructive" });
+    }
+  }, [toast]);
+
+  const handleAddMatchCost = useCallback(async () => {
+    if (!newCostTeamId || !newCostSettingId) return;
+    const amount = parseFloat(newCostAmount);
+    if (isNaN(amount)) return;
+    
+    try {
+      const result = await withUserContext(async () => {
+        return await costSettingsService.addTransaction({
+          team_id: newCostTeamId,
+          amount,
+          description: null,
+          transaction_type: 'match_cost',
+          transaction_date: getCurrentDate(),
+          match_id: match.matchId,
+          penalty_type_id: null,
+          cost_setting_id: newCostSettingId
+        });
+      });
+      if (result.success) {
+        toast({ title: "Kost toegevoegd" });
+        setNewCostTeamId(null);
+        setNewCostSettingId(null);
+        setNewCostAmount("");
+        await loadMatchCosts();
+      } else {
+        toast({ title: "Fout", description: result.message, variant: "destructive" });
+      }
+    } catch (error) {
+      console.error('Error adding match cost:', error);
+      toast({ title: "Fout", description: "Kon kost niet toevoegen.", variant: "destructive" });
+    }
+  }, [newCostTeamId, newCostSettingId, newCostAmount, match.matchId, toast, loadMatchCosts]);
 
   const addPenalty = useCallback(() => {
     // Batch both state updates together synchronously for immediate UI response
@@ -218,7 +349,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     setIsLoadingPenalties(true);
     try {
       const currentDate = getCurrentDate();
-      const savedThis: Array<{ teamName: string; penaltyName: string; amount: number }> = [];
+      const savedThis: Array<{ id: number; teamName: string; penaltyName: string; amount: number }> = [];
       
       for (const penalty of validPenalties) {
         const costSetting = availablePenalties.find(cs => cs.id === penalty.costSettingId);
@@ -240,7 +371,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           }
           
           const teamName = penaltyTeamOptions.find(t => t.id === penalty.teamId)?.name || 'Team';
-          savedThis.push({ teamName, penaltyName: costSetting.name, amount: costSetting.amount });
+          // We don't have the new ID from addTransaction, use -Date.now() as temp id
+          // On next modal open, real IDs will be loaded from DB
+          savedThis.push({ id: -Date.now() - savedThis.length, teamName, penaltyName: costSetting.name, amount: costSetting.amount });
         }
       }
 
@@ -264,9 +397,33 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     }
   }, [penalties, availablePenalties, match.matchId, penaltyTeamOptions, toast]);
 
-  const removeSavedPenalty = useCallback((index: number) => {
+  const removeSavedPenalty = useCallback(async (index: number) => {
+    const penalty = savedPenalties[index];
+    if (!penalty) return;
+    
+    // If it has a real DB id (positive), delete from database
+    if (penalty.id > 0) {
+      setIsDeletingPenalty(penalty.id);
+      try {
+        const result = await withUserContext(async () => {
+          return await costSettingsService.deleteTransaction(penalty.id);
+        });
+        if (!result.success) {
+          toast({ title: "Fout", description: result.message, variant: "destructive" });
+          return;
+        }
+        toast({ title: "Boete verwijderd", description: "Boete succesvol verwijderd uit de database." });
+      } catch (error) {
+        console.error('Error deleting penalty:', error);
+        toast({ title: "Fout", description: "Kon boete niet verwijderen.", variant: "destructive" });
+        return;
+      } finally {
+        setIsDeletingPenalty(null);
+      }
+    }
+    
     setSavedPenalties(prev => prev.filter((_, i) => i !== index));
-  }, []);
+  }, [savedPenalties, toast]);
 
   const CARD_OPTIONS = [
     { value: "yellow", label: "Geel" },
@@ -2008,7 +2165,13 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       <Label htmlFor="match-referee" style={{ color: 'var(--accent)' }}>Scheidsrechter</Label>
                       <Select
                         value={refereeSelectValue}
-                        onValueChange={setSelectedReferee}
+                        onValueChange={(v) => {
+                          if (v === "__none__") {
+                            setSelectedReferee("");
+                          } else {
+                            setSelectedReferee(v);
+                          }
+                        }}
                         disabled={isTeamManager || !canEdit || loadingReferees}
                       >
                         <SelectTrigger className="dropdown-login-style min-h-[44px] h-[44px] text-sm w-full">
@@ -2037,6 +2200,10 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                             </SelectItem>
                           ) : (
                             <>
+                              {/* Option to clear referee */}
+                              <SelectItem value="__none__" className="dropdown-item-login-style text-muted-foreground">
+                                Geen scheidsrechter
+                              </SelectItem>
                               {/* Always show selected referee first, even if not in list yet (during loading or if referee was removed) */}
                               {selectedReferee && !selectedRefereeExists && (
                                 <SelectItem 
@@ -2465,6 +2632,206 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
             </Card>
           </Collapsible>
             {boetesSection}
+            
+            {/* Financieel section - admin only */}
+            {isAdmin && (
+              <Collapsible open={isFinancieelOpen} onOpenChange={setIsFinancieelOpen}>
+                <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isFinancieelOpen ? 'var(--color-100)' : 'white' }}>
+                      <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
+                        <CardTitle className="flex items-center gap-2 text-sm m-0">
+                          Financieel
+                        </CardTitle>
+                        <ChevronDown
+                          className={cn(
+                            "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out shrink-0",
+                            isFinancieelOpen && "transform rotate-180"
+                          )}
+                        />
+                      </div>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="border-t border-[var(--color-200)]">
+                    <CardContent className="pt-3">
+                      <div className="space-y-3">
+                        {isLoadingMatchCosts ? (
+                          <div className="flex items-center justify-center py-4">
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
+                            <span className="text-sm text-muted-foreground">Kosten laden...</span>
+                          </div>
+                        ) : matchCosts.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-6 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
+                            <p className="text-sm font-medium text-muted-foreground mb-1">Geen kosten voor deze wedstrijd</p>
+                            <p className="text-xs text-muted-foreground/70 text-center">Voeg een kost toe via het formulier hieronder</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-foreground">Wedstrijdkosten</span>
+                              <span className="text-xs font-medium text-muted-foreground bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
+                                {matchCosts.length}
+                              </span>
+                            </div>
+                            <div className="space-y-2">
+                              {matchCosts.map((cost) => (
+                                <div 
+                                  key={cost.id} 
+                                  className="flex items-center justify-between gap-3 p-3 text-sm border rounded-lg bg-white shadow-sm hover:shadow-md transition-all duration-150"
+                                  style={{ borderColor: 'var(--color-400)' }}
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                      <span className="text-sm font-semibold text-foreground truncate">{cost.teamName}</span>
+                                      <span className="text-muted-foreground">•</span>
+                                      <span className="text-sm text-foreground">{cost.costName}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className={cn(
+                                        "text-xs font-medium px-2 py-0.5 rounded-md border",
+                                        cost.category === 'deposit' 
+                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                          : cost.category === 'penalty'
+                                          ? "bg-destructive/10 text-destructive border-destructive/20"
+                                          : "bg-primary/10 text-primary border-primary/20"
+                                      )}>
+                                        {cost.category === 'deposit' ? 'Storting' : cost.category === 'penalty' ? 'Boete' : cost.category === 'match_cost' ? 'Wedstrijdkost' : 'Overig'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {editingCostId === cost.id ? (
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-sm">€</span>
+                                        <Input
+                                          type="number"
+                                          step="0.01"
+                                          value={editingCostAmount}
+                                          onChange={(e) => setEditingCostAmount(e.target.value)}
+                                          className="h-8 w-20 text-sm input-login-style"
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                              const val = parseFloat(editingCostAmount);
+                                              if (!isNaN(val)) handleUpdateMatchCostAmount(cost.id, val);
+                                            }
+                                            if (e.key === 'Escape') setEditingCostId(null);
+                                          }}
+                                          autoFocus
+                                        />
+                                        <Button
+                                          size="sm"
+                                          className="btn btn--primary h-8 px-2"
+                                          onClick={() => {
+                                            const val = parseFloat(editingCostAmount);
+                                            if (!isNaN(val)) handleUpdateMatchCostAmount(cost.id, val);
+                                          }}
+                                        >
+                                          <Save className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-8 px-2"
+                                          onClick={() => setEditingCostId(null)}
+                                        >
+                                          <X className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        className="text-sm font-semibold text-foreground hover:text-primary cursor-pointer transition-colors"
+                                        onClick={() => {
+                                          setEditingCostId(cost.id);
+                                          setEditingCostAmount(cost.amount.toString());
+                                        }}
+                                        title="Klik om bedrag aan te passen"
+                                      >
+                                        €{cost.amount.toFixed(2)}
+                                      </button>
+                                    )}
+                                    <Button
+                                      type="button"
+                                      onClick={() => handleDeleteMatchCost(cost.id)}
+                                      className="btn btn--icon btn--danger shrink-0"
+                                      aria-label="Kost verwijderen"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Add new cost */}
+                        <div className="pt-2 border-t border-border space-y-2">
+                          <span className="text-sm font-semibold text-foreground">Kost toevoegen</span>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                            <Select
+                              value={newCostTeamId ? newCostTeamId.toString() : undefined}
+                              onValueChange={(v) => setNewCostTeamId(parseInt(v))}
+                            >
+                              <SelectTrigger className="dropdown-login-style h-8 text-sm">
+                                <SelectValue placeholder="Team" />
+                              </SelectTrigger>
+                              <SelectContent className="dropdown-content-login-style z-50">
+                                {penaltyTeamOptions.map((team) => (
+                                  <SelectItem key={team.id} value={team.id.toString()} className="dropdown-item-login-style">
+                                    {team.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Select
+                              value={newCostSettingId ? newCostSettingId.toString() : undefined}
+                              onValueChange={(v) => {
+                                const id = parseInt(v);
+                                setNewCostSettingId(id);
+                                const cs = allCostSettings.find(c => c.id === id);
+                                if (cs && !newCostAmount) setNewCostAmount(cs.amount?.toString() || "0");
+                              }}
+                            >
+                              <SelectTrigger className="dropdown-login-style h-8 text-sm">
+                                <SelectValue placeholder="Kostentype" />
+                              </SelectTrigger>
+                              <SelectContent className="dropdown-content-login-style z-50">
+                                {allCostSettings.map((cs) => (
+                                  <SelectItem key={cs.id} value={cs.id.toString()} className="dropdown-item-login-style">
+                                    {cs.name} - €{cs.amount}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <div className="flex gap-1">
+                              <div className="flex items-center gap-1 flex-1">
+                                <span className="text-sm">€</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={newCostAmount}
+                                  onChange={(e) => setNewCostAmount(e.target.value)}
+                                  className="h-8 text-sm input-login-style"
+                                  placeholder="Bedrag"
+                                />
+                              </div>
+                              <Button
+                                onClick={handleAddMatchCost}
+                                disabled={!newCostTeamId || !newCostSettingId || !newCostAmount}
+                                className="btn btn--primary h-8 px-3"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            )}
+
             {refereeFields}
           </div>
         )}
