@@ -735,6 +735,17 @@ export type Database = {
         }
         Returns: number
       }
+      add_team_cost_as_admin: {
+        Args: {
+          p_amount: number
+          p_cost_setting_id: number
+          p_match_id?: number
+          p_team_id: number
+          p_transaction_date?: string
+          p_user_id: number
+        }
+        Returns: Json
+      }
       add_team_deposit: {
         Args: { p_amount: number; p_deposit_name: string; p_team_id: number }
         Returns: number
@@ -812,6 +823,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      delete_team_cost_as_admin: {
+        Args: { p_cost_id: number; p_user_id: number }
+        Returns: Json
       }
       get_all_users_for_admin: {
         Args: { p_user_id: number }
@@ -969,6 +984,16 @@ export type Database = {
       }
       update_player_cards: { Args: never; Returns: undefined }
       update_team_balances: { Args: never; Returns: undefined }
+      update_team_cost_as_admin: {
+        Args: {
+          p_amount?: number
+          p_cost_id: number
+          p_cost_setting_id?: number
+          p_transaction_date?: string
+          p_user_id: number
+        }
+        Returns: Json
+      }
       update_user_password: {
         Args: { new_password: string; user_id_param: number }
         Returns: boolean
