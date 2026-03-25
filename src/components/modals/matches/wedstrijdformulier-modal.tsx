@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { MatchesPenaltyShootoutModal } from "@/components/modals";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
@@ -48,6 +49,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   onComplete
 }) => {
   const {
+  const queryClient = useQueryClient();
     homeScore,
     setHomeScore,
     awayScore,
@@ -230,7 +232,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       });
       if (result.success) {
         setMatchCosts(prev => prev.filter(c => c.id !== costId));
-        toast({ title: "Kost verwijderd" });
+        toast({ title: "Kost verwijderd" }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
       } else {
         toast({ title: "Fout", description: result.message, variant: "destructive" });
       }
@@ -248,7 +250,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       if (result.success) {
         setMatchCosts(prev => prev.map(c => c.id === costId ? { ...c, amount: newAmount } : c));
         setEditingCostId(null);
-        toast({ title: "Bedrag bijgewerkt" });
+        toast({ title: "Bedrag bijgewerkt" }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
       } else {
         toast({ title: "Fout", description: result.message, variant: "destructive" });
       }
@@ -277,7 +279,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         });
       });
       if (result.success) {
-        toast({ title: "Kost toegevoegd" });
+        toast({ title: "Kost toegevoegd" }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
         setNewCostTeamId(null);
         setNewCostSettingId(null);
         setNewCostAmount("");
@@ -412,7 +414,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           toast({ title: "Fout", description: result.message, variant: "destructive" });
           return;
         }
-        toast({ title: "Boete verwijderd", description: "Boete succesvol verwijderd uit de database." });
+        toast({ title: "Boete verwijderd", description: "Boete succesvol verwijderd uit de database." }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
       } catch (error) {
         console.error('Error deleting penalty:', error);
         toast({ title: "Fout", description: "Kon boete niet verwijderen.", variant: "destructive" });
