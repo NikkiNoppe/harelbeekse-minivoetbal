@@ -227,9 +227,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
   const handleDeleteMatchCost = useCallback(async (costId: number) => {
     try {
-      const result = await withUserContext(async () => {
-        return await costSettingsService.deleteTransaction(costId);
-      });
+      const result = await costSettingsService.deleteTransaction(costId);
       if (result.success) {
         setMatchCosts(prev => prev.filter(c => c.id !== costId));
         toast({ title: "Kost verwijderd" }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
@@ -244,9 +242,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
   const handleUpdateMatchCostAmount = useCallback(async (costId: number, newAmount: number) => {
     try {
-      const result = await withUserContext(async () => {
-        return await costSettingsService.updateTransaction(costId, { amount: newAmount });
-      });
+      const result = await costSettingsService.updateTransaction(costId, { amount: newAmount });
       if (result.success) {
         setMatchCosts(prev => prev.map(c => c.id === costId ? { ...c, amount: newAmount } : c));
         setEditingCostId(null);
@@ -266,18 +262,13 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     if (isNaN(amount)) return;
     
     try {
-      const result = await withUserContext(async () => {
-        return await costSettingsService.addTransaction({
-          team_id: newCostTeamId,
-          amount,
-          description: null,
-          transaction_type: 'match_cost',
-          transaction_date: getCurrentDate(),
-          match_id: match.matchId,
-          penalty_type_id: null,
-          cost_setting_id: newCostSettingId
-        });
-      });
+      const result = await costSettingsService.addTransactionAsAdmin(
+        newCostTeamId,
+        newCostSettingId,
+        amount,
+        getCurrentDate(),
+        match.matchId
+      );
       if (result.success) {
         toast({ title: "Kost toegevoegd" }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
         setNewCostTeamId(null);
@@ -407,9 +398,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     if (penalty.id > 0) {
       setIsDeletingPenalty(penalty.id);
       try {
-        const result = await withUserContext(async () => {
-          return await costSettingsService.deleteTransaction(penalty.id);
-        });
+        const result = await costSettingsService.deleteTransaction(penalty.id);
         if (!result.success) {
           toast({ title: "Fout", description: result.message, variant: "destructive" });
           return;
