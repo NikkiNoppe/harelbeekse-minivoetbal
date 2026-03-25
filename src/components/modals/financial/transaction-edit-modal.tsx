@@ -102,7 +102,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       const result = await costSettingsService.updateTransaction(transaction.id, {
         amount: parseFloat(formData.amount),
         transaction_date: formData.transaction_date,
-        cost_setting_id: formData.cost_setting_id ? parseInt(formData.cost_setting_id) : null
+        cost_setting_id: formData.cost_setting_id ? parseInt(formData.cost_setting_id) : undefined
       });
 
       if (result.success) {
