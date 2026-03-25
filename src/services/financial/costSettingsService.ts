@@ -314,13 +314,18 @@ export const costSettingsService = {
 
   async deleteTransaction(transactionId: number): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
-        .from('team_costs')
-        .delete()
-        .eq('id', transactionId);
+      const userId = this._getAdminUserId();
+      const { data, error } = await supabase.rpc('delete_team_cost_as_admin', {
+        p_user_id: userId,
+        p_cost_id: transactionId
+      });
 
       if (error) throw error;
-      return { success: true, message: 'Transactie succesvol verwijderd' };
+      const result = data as unknown as { success: boolean; message?: string; error?: string };
+      if (!result.success) {
+        return { success: false, message: result.error || 'Fout bij verwijderen transactie' };
+      }
+      return { success: true, message: result.message || 'Transactie succesvol verwijderd' };
     } catch (error) {
       console.error('Error deleting transaction:', error);
       return { success: false, message: 'Fout bij verwijderen transactie' };
@@ -336,21 +341,71 @@ export const costSettingsService = {
     }
   ): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('Updating transaction:', transactionId, updates);
-      
-      const { error } = await supabase
-        .from('team_costs')
-        .update(updates)
-        .eq('id', transactionId);
+      const userId = this._getAdminUserId();
+      const { data, error } = await supabase.rpc('update_team_cost_as_admin', {
+        p_user_id: userId,
+        p_cost_id: transactionId,
+        p_amount: updates.amount ?? null,
+        p_transaction_date: updates.transaction_date ?? null,
+        p_cost_setting_id: updates.cost_setting_id ?? null
+      });
 
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
+      if (error) throw error;
+      const result = data as unknown as { success: boolean; message?: string; error?: string };
+      if (!result.success) {
+        return { success: false, message: result.error || 'Fout bij bijwerken transactie' };
       }
-      return { success: true, message: 'Transactie succesvol bijgewerkt' };
+      return { success: true, message: result.message || 'Transactie succesvol bijgewerkt' };
     } catch (error) {
       console.error('Error updating transaction:', error);
       return { success: false, message: 'Fout bij bijwerken transactie' };
     }
+  },
+
+  async addTransactionAsAdmin(
+    teamId: number,
+    costSettingId: number,
+    amount: number,
+    transactionDate: string,
+    matchId?: number | null
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const userId = this._getAdminUserId();
+      const { data, error } = await supabase.rpc('add_team_cost_as_admin', {
+        p_user_id: userId,
+        p_team_id: teamId,
+        p_cost_setting_id: costSettingId,
+        p_amount: amount,
+        p_transaction_date: transactionDate,
+        p_match_id: matchId ?? null
+      });
+
+      if (error) throw error;
+      const result = data as unknown as { success: boolean; message?: string; error?: string };
+      if (!result.success) {
+        return { success: false, message: result.error || 'Fout bij toevoegen transactie' };
+      }
+      return { success: true, message: result.message || 'Transactie succesvol toegevoegd' };
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+      return { success: false, message: 'Fout bij toevoegen transactie' };
+    }
+  },
+
+  _getAdminUserId(): number {
+    const authDataString = localStorage.getItem('auth_data');
+    if (authDataString) {
+      try {
+        const authData = JSON.parse(authDataString);
+        return authData?.user?.id;
+      } catch (e) { /* ignore */ }
+    }
+    const legacyUserString = localStorage.getItem('user');
+    if (legacyUserString) {
+      try {
+        return JSON.parse(legacyUserString)?.id;
+      } catch (e) { /* ignore */ }
+    }
+    throw new Error('Gebruiker niet gevonden');
   }
 };
