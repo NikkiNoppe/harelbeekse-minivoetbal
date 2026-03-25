@@ -126,57 +126,58 @@ export const enhancedMatchService = {
         const lockThreshold = new Date(matchDateTime.getTime() - settings.lock_minutes_before * 60 * 1000);
         
         if (userRole === "player_manager") {
-          // Team managers: auto-detect late submission
           isLateSubmission = now >= lockThreshold && settings.allow_late_submission;
         } else if (isAdmin && updateData.forceLatePenaltyTeamIds && updateData.forceLatePenaltyTeamIds.length > 0) {
-          // Admins: only if explicitly confirmed via dialog, with specific team IDs
           isLateSubmission = true;
         }
       }
-      
-      // Build update object with all provided values
-      const updateObject: any = {};
-      
-      console.log('💾 [enhancedMatchService] Processing referee notes:', {
-        matchId: matchId,
-        refereeNotes: updateData.refereeNotes,
-        refereeNotesType: typeof updateData.refereeNotes,
-        refereeNotesLength: updateData.refereeNotes?.length || 0,
-        isUndefined: updateData.refereeNotes === undefined,
-        isNull: updateData.refereeNotes === null,
-        isEmpty: updateData.refereeNotes === "",
-        isLateSubmission: isLateSubmission
-      });
-      
-      // Handle referee notes - no longer appending penalty text here
-      // Late submission penalties are now handled financially via backgroundSideEffects
-      if (updateData.refereeNotes !== undefined) {
-        // Only set referee_notes if not already set by late submission penalty
-        // Preserve empty strings, only convert undefined/null to null
-        updateObject.referee_notes = updateData.refereeNotes !== null && updateData.refereeNotes !== undefined ? updateData.refereeNotes : null;
-        console.log('💾 [enhancedMatchService] Set referee_notes:', {
-          finalRefereeNotes: updateObject.referee_notes,
-          finalType: typeof updateObject.referee_notes,
-          finalLength: updateObject.referee_notes?.length || 0
-        });
-      } else {
-        console.log('💾 [enhancedMatchService] refereeNotes is undefined, not setting');
+
+      // --- CHANGED-ONLY PAYLOAD ---
+      // Fetch current DB state to only send fields that actually changed.
+      // This prevents DB triggers (process_match_financial_costs) from
+      // re-creating costs when scores/is_submitted haven't changed.
+      const { data: currentMatch, error: currentMatchError } = await supabase
+        .from('matches')
+        .select('home_score, away_score, is_submitted, is_locked, referee, referee_notes, speeldag, location, match_date, home_players, away_players')
+        .eq('match_id', matchId)
+        .single();
+
+      if (currentMatchError) {
+        console.warn('⚠️ [enhancedMatchService] Could not fetch current match state, sending full payload');
       }
 
-      // Handle scores - allow null values to clear scores
-      if (updateData.homeScore !== undefined) updateObject.home_score = updateData.homeScore;
-      if (updateData.awayScore !== undefined) updateObject.away_score = updateData.awayScore;
-      if (updateData.referee !== undefined) updateObject.referee = updateData.referee || null;
-      if (updateData.matchday !== undefined) updateObject.speeldag = updateData.matchday;
-      if (updateData.location !== undefined) updateObject.location = updateData.location;
-      if (updateData.date !== undefined && updateData.time !== undefined) {
-        // Combine date and time into match_date timestamp with proper timezone handling
-        updateObject.match_date = localDateTimeToISO(updateData.date, updateData.time);
+      const updateObject: any = {};
+      const cur = currentMatch as any; // may be null
+
+      // Helper: only add field if value differs from current DB state
+      const addIfChanged = (dbField: string, newValue: any) => {
+        if (!cur || JSON.stringify(cur[dbField]) !== JSON.stringify(newValue)) {
+          updateObject[dbField] = newValue;
+        }
+      };
+
+      // Handle referee notes
+      if (updateData.refereeNotes !== undefined) {
+        const newNotes = updateData.refereeNotes !== null && updateData.refereeNotes !== undefined ? updateData.refereeNotes : null;
+        addIfChanged('referee_notes', newNotes);
       }
-      if (updateData.homePlayers !== undefined) updateObject.home_players = updateData.homePlayers;
-      if (updateData.awayPlayers !== undefined) updateObject.away_players = updateData.awayPlayers;
-      if (updateData.isCompleted !== undefined) updateObject.is_submitted = updateData.isCompleted;
-      if (updateData.isLocked !== undefined) updateObject.is_locked = updateData.isLocked;
+
+      // Handle scores
+      if (updateData.homeScore !== undefined) addIfChanged('home_score', updateData.homeScore);
+      if (updateData.awayScore !== undefined) addIfChanged('away_score', updateData.awayScore);
+      if (updateData.referee !== undefined) addIfChanged('referee', updateData.referee || null);
+      if (updateData.matchday !== undefined) addIfChanged('speeldag', updateData.matchday);
+      if (updateData.location !== undefined) addIfChanged('location', updateData.location);
+      if (updateData.date !== undefined && updateData.time !== undefined) {
+        const newMatchDate = localDateTimeToISO(updateData.date, updateData.time);
+        addIfChanged('match_date', newMatchDate);
+      }
+      if (updateData.homePlayers !== undefined) addIfChanged('home_players', updateData.homePlayers);
+      if (updateData.awayPlayers !== undefined) addIfChanged('away_players', updateData.awayPlayers);
+      if (updateData.isCompleted !== undefined) addIfChanged('is_submitted', updateData.isCompleted);
+      if (updateData.isLocked !== undefined) addIfChanged('is_locked', updateData.isLocked);
+
+      console.log('🟢 [enhancedMatchService] Changed-only payload keys:', Object.keys(updateObject));
 
       // Note: We don't add updated_at as it's not part of the matches table schema
 
@@ -246,9 +247,13 @@ export const enhancedMatchService = {
         : "Wedstrijd succesvol bijgewerkt";
 
       // FIRE-AND-FORGET: Schedule non-critical side effects without blocking
-      // These run asynchronously after success response is returned
-      // Uses hardened background processor with retry logic and failure tracking
-      scheduleBackgroundSideEffects(matchId, updateData, matchInfo, isCupMatch, isLateSubmission, updateData.forceLatePenaltyTeamIds);
+      // Detect submission transition: only trigger cost/penalty sync when is_submitted goes false→true
+      const submissionTransition = !!(cur && cur.is_submitted === false && updateData.isCompleted === true);
+      const sideEffectData = {
+        ...updateData,
+        _submissionTransition: submissionTransition
+      };
+      scheduleBackgroundSideEffects(matchId, sideEffectData, matchInfo, isCupMatch, isLateSubmission, updateData.forceLatePenaltyTeamIds);
 
       // Return SUCCESS immediately - critical path complete
       return {

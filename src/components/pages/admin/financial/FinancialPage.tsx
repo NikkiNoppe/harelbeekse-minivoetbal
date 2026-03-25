@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,8 +6,6 @@ import { Loader2, Euro, TrendingDown, TrendingUp, List, Calendar, ChevronRight }
 import { FinancialTeamDetailModal, FinancialSettingsModal } from "@/components/modals";
 import { FinancialMonthlyReportsModal } from "@/components/modals";
 import { costSettingsService } from "@/services/financial";
-import { matchCostService } from "@/services/financial/matchCostService";
-import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 interface Team {
@@ -31,13 +29,11 @@ interface SubmittedMatch {
 }
 
 const AdminFinancialPage: React.FC = () => {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [costListModalOpen, setCostListModalOpen] = useState(false);
   const [monthlyReportsModalOpen, setMonthlyReportsModalOpen] = useState(false);
-  const hasSyncedRef = useRef(false);
 
   // Fetch teams (without balance since we calculate it real-time)
   const {
@@ -138,42 +134,9 @@ const AdminFinancialPage: React.FC = () => {
     }
   });
 
-  // Automatische sync van kosten bij het mounten van de component
-  useEffect(() => {
-    // Voorkom meerdere syncs tijdens dezelfde sessie
-    if (hasSyncedRef.current) return;
-    
-    // Wacht tot de data geladen is voordat we syncen
-    if (loadingTeams || loadingMatches || loadingTransactions) return;
-
-    hasSyncedRef.current = true;
-    
-    // Voer sync uit in de achtergrond (fire-and-forget)
-    matchCostService.syncAllMatchCosts()
-      .then((result) => {
-        if (result.success) {
-          // Refresh data na succesvolle sync
-          queryClient.invalidateQueries({ queryKey: ['all-team-transactions'] });
-          queryClient.invalidateQueries({ queryKey: ['submitted-matches'] });
-          
-          // Toon alleen een toast als er daadwerkelijk iets gesynchroniseerd of bijgewerkt is
-            if ((result.syncedCount && result.syncedCount > 0) || (result.updatedCount && result.updatedCount > 0)) {
-              toast({
-                title: "Kosten gesynchroniseerd",
-                description: result.message,
-                variant: "default",
-              });
-            }
-        } else {
-          // Toon alleen een foutmelding als de sync echt faalt
-          console.error('Automatische sync mislukt:', result.message);
-        }
-      })
-      .catch((error) => {
-        console.error('Fout bij automatische sync:', error);
-        // Geen toast bij achtergrond sync fouten om de gebruiker niet te storen
-      });
-  }, [loadingTeams, loadingMatches, loadingTransactions, queryClient, toast]);
+  // Auto-sync UITGESCHAKELD: voorkomt dat handmatig verwijderde kosten
+  // opnieuw worden aangemaakt door syncAllMatchCosts().
+  // Data is al up-to-date via query refetch/invalidation na wijzigingen.
 
   // Bereken per team de financiële data in-memory
   const calculateTeamFinances = (teamId: number) => {
