@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { MatchesPenaltyShootoutModal } from "@/components/modals";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
