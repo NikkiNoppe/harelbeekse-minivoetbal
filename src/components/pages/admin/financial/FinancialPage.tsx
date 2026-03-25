@@ -29,13 +29,11 @@ interface SubmittedMatch {
 }
 
 const AdminFinancialPage: React.FC = () => {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [costListModalOpen, setCostListModalOpen] = useState(false);
   const [monthlyReportsModalOpen, setMonthlyReportsModalOpen] = useState(false);
-  const hasSyncedRef = useRef(false);
 
   // Fetch teams (without balance since we calculate it real-time)
   const {
