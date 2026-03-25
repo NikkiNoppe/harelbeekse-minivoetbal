@@ -96,6 +96,8 @@ const AdminFinancialPage: React.FC = () => {
     isLoading: loadingTransactions
   } = useQuery({
     queryKey: ['all-team-transactions'],
+    staleTime: 0,
+    refetchOnMount: 'always',
     queryFn: async () => {
       // Paginate to avoid Supabase 1000-row default limit
       let allData: any[] = [];
