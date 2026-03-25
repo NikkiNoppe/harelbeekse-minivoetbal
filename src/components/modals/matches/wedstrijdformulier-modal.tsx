@@ -152,28 +152,30 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, []);
 
   // Load existing penalties
-  useEffect(() => {
-    const loadExistingPenalties = async () => {
-      try {
-        const homeTeamTransactions = await financialService.getTeamTransactions(match.homeTeamId);
-        const awayTeamTransactions = await financialService.getTeamTransactions(match.awayTeamId);
-        
-        const matchPenalties = [...homeTeamTransactions, ...awayTeamTransactions]
-          .filter(t => t.match_id === match.matchId && t.transaction_type === 'penalty')
-          .map(t => ({
-            id: t.id,
-            teamName: t.team_id === match.homeTeamId ? match.homeTeamName : match.awayTeamName,
-            penaltyName: t.cost_settings?.name || 'Boete',
-            amount: t.amount
-          }));
-        
-        setSavedPenalties(matchPenalties);
-      } catch (error) {
-        console.error('Error loading existing penalties:', error);
-      }
-    };
-    loadExistingPenalties();
+  const loadExistingPenalties = useCallback(async () => {
+    try {
+      const homeTeamTransactions = await financialService.getTeamTransactions(match.homeTeamId);
+      const awayTeamTransactions = await financialService.getTeamTransactions(match.awayTeamId);
+
+      const matchPenalties = [...homeTeamTransactions, ...awayTeamTransactions]
+        .filter(t => t.match_id === match.matchId && t.transaction_type === 'penalty')
+        .map(t => ({
+          id: t.id,
+          teamName: t.team_id === match.homeTeamId ? match.homeTeamName : match.awayTeamName,
+          penaltyName: t.cost_settings?.name || 'Boete',
+          amount: t.amount
+        }));
+
+      setSavedPenalties(matchPenalties);
+    } catch (error) {
+      console.error('Error loading existing penalties:', error);
+    }
   }, [match.matchId, match.homeTeamId, match.awayTeamId, match.homeTeamName, match.awayTeamName]);
+
+  useEffect(() => {
+    if (!open) return;
+    loadExistingPenalties();
+  }, [open, loadExistingPenalties]);
 
   // Load match costs for Financieel section (admin only)
   const loadMatchCosts = useCallback(async () => {
@@ -344,8 +346,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     setIsLoadingPenalties(true);
     try {
       const currentDate = getCurrentDate();
-      const savedThis: Array<{ id: number; teamName: string; penaltyName: string; amount: number }> = [];
-      
+
       for (const penalty of validPenalties) {
         const costSetting = availablePenalties.find(cs => cs.id === penalty.costSettingId);
         if (costSetting) {
@@ -364,22 +365,21 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           if (!result.success) {
             throw new Error(result.message || 'Kon boete niet opslaan');
           }
-          
-          const teamName = penaltyTeamOptions.find(t => t.id === penalty.teamId)?.name || 'Team';
-          // We don't have the new ID from addTransaction, use -Date.now() as temp id
-          // On next modal open, real IDs will be loaded from DB
-          savedThis.push({ id: -Date.now() - savedThis.length, teamName, penaltyName: costSetting.name, amount: costSetting.amount });
         }
       }
 
       toast({
         title: "Boetes opgeslagen",
-        description: `${savedThis.length} boete(s) succesvol toegevoegd aan de teamtransacties.`,
+        description: `${validPenalties.length} boete(s) succesvol toegevoegd aan de teamtransacties.`,
       });
 
       // Remove only the saved penalties, keep any invalid ones
       setPenalties(prev => prev.filter(p => !p.costSettingId || !p.teamId));
-      setSavedPenalties(prev => [...savedThis, ...prev].slice(0, 10));
+      await loadExistingPenalties();
+      if (isAdmin) {
+        await loadMatchCosts();
+      }
+      queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
     } catch (error: any) {
       console.error('Error saving penalties:', error);
       toast({
@@ -390,11 +390,17 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     } finally {
       setIsLoadingPenalties(false);
     }
-  }, [penalties, availablePenalties, match.matchId, penaltyTeamOptions, toast]);
+  }, [penalties, availablePenalties, match.matchId, toast, loadExistingPenalties, isAdmin, loadMatchCosts, queryClient]);
 
   const removeSavedPenalty = useCallback(async (index: number) => {
     const penalty = savedPenalties[index];
     if (!penalty) return;
+
+    // Never perform local-only delete for saved penalties: force DB-backed ids.
+    if (penalty.id <= 0) {
+      await loadExistingPenalties();
+      return;
+    }
     
     // If it has a real DB id (positive), delete from database
     if (penalty.id > 0) {
@@ -420,7 +426,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     if (removedPenalty?.id) {
       setMatchCosts(prev => prev.filter(c => c.id !== removedPenalty.id));
     }
-  }, [savedPenalties, toast]);
+  }, [savedPenalties, toast, loadExistingPenalties]);
 
   const CARD_OPTIONS = [
     { value: "yellow", label: "Geel" },
