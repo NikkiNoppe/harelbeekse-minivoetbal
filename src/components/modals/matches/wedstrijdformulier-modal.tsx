@@ -414,7 +414,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           toast({ title: "Fout", description: result.message, variant: "destructive" });
           return;
         }
-        toast({ title: "Boete verwijderd", description: "Boete succesvol verwijderd uit de database." });
+        toast({ title: "Boete verwijderd", description: "Boete succesvol verwijderd uit de database." }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
       } catch (error) {
         console.error('Error deleting penalty:', error);
         toast({ title: "Fout", description: "Kon boete niet verwijderen.", variant: "destructive" });
