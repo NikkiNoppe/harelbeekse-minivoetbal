@@ -232,7 +232,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       });
       if (result.success) {
         setMatchCosts(prev => prev.filter(c => c.id !== costId));
-        toast({ title: "Kost verwijderd" });
+        toast({ title: "Kost verwijderd" }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
       } else {
         toast({ title: "Fout", description: result.message, variant: "destructive" });
       }
@@ -250,7 +250,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       if (result.success) {
         setMatchCosts(prev => prev.map(c => c.id === costId ? { ...c, amount: newAmount } : c));
         setEditingCostId(null);
-        toast({ title: "Bedrag bijgewerkt" });
+        toast({ title: "Bedrag bijgewerkt" }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
       } else {
         toast({ title: "Fout", description: result.message, variant: "destructive" });
       }
@@ -279,7 +279,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         });
       });
       if (result.success) {
-        toast({ title: "Kost toegevoegd" });
+        toast({ title: "Kost toegevoegd" }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
         setNewCostTeamId(null);
         setNewCostSettingId(null);
         setNewCostAmount("");
