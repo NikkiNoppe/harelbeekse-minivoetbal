@@ -290,6 +290,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     }
   }, [newCostTeamId, newCostSettingId, newCostAmount, match.matchId, toast, loadMatchCosts]);
 
+  const addPenalty = useCallback(() => {
     // Batch both state updates together synchronously for immediate UI response
     flushSync(() => {
       setIsBoetesOpen(true);
