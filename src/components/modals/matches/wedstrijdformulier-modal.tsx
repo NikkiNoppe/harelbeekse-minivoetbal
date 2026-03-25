@@ -20,6 +20,7 @@ import { PlayerDataRefreshModal, InlinePlayerRetry } from "@/components/modals";
 import MatchesCardIcon from "@/components/pages/admin/matches/components/MatchesCardIcon";
 import { costSettingsService, financialService } from "@/domains/financial";
 import { withUserContext } from "@/lib/supabaseUtils";
+import { supabase } from "@/integrations/supabase/client";
 import { getCurrentDate } from "@/lib/dateUtils";
 import { MatchFormData, PlayerSelection } from "@/components/pages/admin/matches/types";
 import { useMatchFormState } from "@/components/pages/admin/matches/hooks/useMatchFormState";
