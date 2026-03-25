@@ -313,21 +313,31 @@ export const costSettingsService = {
   },
 
   async deleteTransaction(transactionId: number): Promise<{ success: boolean; message: string }> {
+    const { userId, role } = this._getUserContext();
+    console.log('🔵 [PENALTY-CRUD] DELETE request:', { costId: transactionId, userId, role });
+    
     try {
-      const userId = this._getAdminUserId();
-      const { data, error } = await supabase.rpc('delete_team_cost_as_admin', {
+      const { data, error } = await supabase.rpc('manage_team_cost_for_match', {
         p_user_id: userId,
-        p_cost_id: transactionId
+        p_cost_id: transactionId,
+        p_operation: 'delete'
       });
 
-      if (error) throw error;
-      const result = data as unknown as { success: boolean; message?: string; error?: string };
+      if (error) {
+        console.error('❌ [PENALTY-CRUD] DELETE RPC error:', { costId: transactionId, error });
+        throw error;
+      }
+      
+      const result = data as unknown as { success: boolean; message?: string; error?: string; deleted_id?: number };
+      console.log('🔵 [PENALTY-CRUD] DELETE response:', { costId: transactionId, result });
+      
       if (!result.success) {
+        console.warn('⚠️ [PENALTY-CRUD] DELETE rejected by RPC:', { costId: transactionId, error: result.error });
         return { success: false, message: result.error || 'Fout bij verwijderen transactie' };
       }
       return { success: true, message: result.message || 'Transactie succesvol verwijderd' };
     } catch (error) {
-      console.error('Error deleting transaction:', error);
+      console.error('❌ [PENALTY-CRUD] DELETE failed:', { costId: transactionId, error });
       return { success: false, message: 'Fout bij verwijderen transactie' };
     }
   },
@@ -338,26 +348,38 @@ export const costSettingsService = {
       amount?: number;
       transaction_date?: string;
       cost_setting_id?: number;
+      team_id?: number;
     }
   ): Promise<{ success: boolean; message: string }> {
+    const { userId, role } = this._getUserContext();
+    console.log('🔵 [PENALTY-CRUD] UPDATE request:', { costId: transactionId, userId, role, updates });
+    
     try {
-      const userId = this._getAdminUserId();
-      const { data, error } = await supabase.rpc('update_team_cost_as_admin', {
+      const { data, error } = await supabase.rpc('manage_team_cost_for_match', {
         p_user_id: userId,
         p_cost_id: transactionId,
+        p_operation: 'update',
         p_amount: updates.amount ?? null,
         p_transaction_date: updates.transaction_date ?? null,
-        p_cost_setting_id: updates.cost_setting_id ?? null
+        p_cost_setting_id: updates.cost_setting_id ?? null,
+        p_team_id: updates.team_id ?? null
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [PENALTY-CRUD] UPDATE RPC error:', { costId: transactionId, error });
+        throw error;
+      }
+      
       const result = data as unknown as { success: boolean; message?: string; error?: string };
+      console.log('🔵 [PENALTY-CRUD] UPDATE response:', { costId: transactionId, result });
+      
       if (!result.success) {
+        console.warn('⚠️ [PENALTY-CRUD] UPDATE rejected by RPC:', { costId: transactionId, error: result.error });
         return { success: false, message: result.error || 'Fout bij bijwerken transactie' };
       }
       return { success: true, message: result.message || 'Transactie succesvol bijgewerkt' };
     } catch (error) {
-      console.error('Error updating transaction:', error);
+      console.error('❌ [PENALTY-CRUD] UPDATE failed:', { costId: transactionId, error });
       return { success: false, message: 'Fout bij bijwerken transactie' };
     }
   },
@@ -369,8 +391,10 @@ export const costSettingsService = {
     transactionDate: string,
     matchId?: number | null
   ): Promise<{ success: boolean; message: string }> {
+    const { userId, role } = this._getUserContext();
+    console.log('🔵 [PENALTY-CRUD] ADD request:', { teamId, costSettingId, amount, transactionDate, matchId, userId, role });
+    
     try {
-      const userId = this._getAdminUserId();
       const { data, error } = await supabase.rpc('add_team_cost_as_admin', {
         p_user_id: userId,
         p_team_id: teamId,
@@ -380,32 +404,47 @@ export const costSettingsService = {
         p_match_id: matchId ?? null
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [PENALTY-CRUD] ADD RPC error:', { teamId, error });
+        throw error;
+      }
+      
       const result = data as unknown as { success: boolean; message?: string; error?: string };
+      console.log('🔵 [PENALTY-CRUD] ADD response:', { teamId, result });
+      
       if (!result.success) {
         return { success: false, message: result.error || 'Fout bij toevoegen transactie' };
       }
       return { success: true, message: result.message || 'Transactie succesvol toegevoegd' };
     } catch (error) {
-      console.error('Error adding transaction:', error);
+      console.error('❌ [PENALTY-CRUD] ADD failed:', { teamId, error });
       return { success: false, message: 'Fout bij toevoegen transactie' };
     }
   },
 
-  _getAdminUserId(): number {
+  _getUserContext(): { userId: number; role: string } {
     const authDataString = localStorage.getItem('auth_data');
     if (authDataString) {
       try {
         const authData = JSON.parse(authDataString);
-        return authData?.user?.id;
+        return { 
+          userId: authData?.user?.id, 
+          role: authData?.user?.role || 'unknown' 
+        };
       } catch (e) { /* ignore */ }
     }
     const legacyUserString = localStorage.getItem('user');
     if (legacyUserString) {
       try {
-        return JSON.parse(legacyUserString)?.id;
+        const user = JSON.parse(legacyUserString);
+        return { userId: user?.id, role: user?.role || 'unknown' };
       } catch (e) { /* ignore */ }
     }
     throw new Error('Gebruiker niet gevonden');
+  },
+
+  /** @deprecated Use _getUserContext instead */
+  _getAdminUserId(): number {
+    return this._getUserContext().userId;
   }
 };

@@ -84,7 +84,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const [homeCardsOpen, setHomeCardsOpen] = React.useState(false);
   const [awayCardsOpen, setAwayCardsOpen] = React.useState(false);
   const [isKaartenOpen, setIsKaartenOpen] = useState(false);
-  const [isBoetesOpen, setIsBoetesOpen] = useState(false);
   const [isNotitiesOpen, setIsNotitiesOpen] = useState(false);
   const [isGegevensOpen, setIsGegevensOpen] = useState(false);
   // Referee query with robust retry logic
