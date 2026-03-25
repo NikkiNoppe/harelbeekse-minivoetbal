@@ -157,6 +157,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         const matchPenalties = [...homeTeamTransactions, ...awayTeamTransactions]
           .filter(t => t.match_id === match.matchId && t.transaction_type === 'penalty')
           .map(t => ({
+            id: t.id,
             teamName: t.team_id === match.homeTeamId ? match.homeTeamName : match.awayTeamName,
             penaltyName: t.cost_settings?.name || 'Boete',
             amount: t.amount
