@@ -1664,20 +1664,20 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     );
   }, [handleCaptainChange]);
 
-  // Boetes sectie - rendered directly (not memoized) for immediate UI updates
-  const boetesSection = showRefereeFields && (
-    <Collapsible open={isBoetesOpen} onOpenChange={setIsBoetesOpen}>
+   // Boetes + Financieel merged section - visible for admin + referee
+  const financieelSection = showRefereeFields && (
+    <Collapsible open={isFinancieelOpen} onOpenChange={setIsFinancieelOpen}>
       <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
         <CollapsibleTrigger asChild>
-          <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isBoetesOpen ? 'var(--color-100)' : 'white' }}>
+          <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isFinancieelOpen ? 'var(--color-100)' : 'white' }}>
             <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
               <CardTitle className="flex items-center gap-2 text-sm m-0">
-                Boetes
+                Financieel
               </CardTitle>
               <ChevronDown
                 className={cn(
                   "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out [&[data-state=open]]:rotate-180 shrink-0",
-                  isBoetesOpen && "transform rotate-180"
+                  isFinancieelOpen && "transform rotate-180"
                 )}
               />
             </div>
@@ -1685,228 +1685,409 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         </CollapsibleTrigger>
         <CollapsibleContent className="border-t border-[var(--color-200)]">
           <CardContent className="pt-3">
-            <div className="space-y-3">
-              {/* Empty State - Improved */}
-              {penalties.length === 0 && savedPenalties.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-6 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted mb-2.5">
-                    <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+            <div className="space-y-4">
+              {/* === BOETES SUBSECTIE === */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-foreground border-b border-border pb-1">Boetes</h4>
+                
+                {/* Empty State */}
+                {penalties.length === 0 && savedPenalties.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-6 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted mb-2.5">
+                      <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Nog geen boetes toegevoegd</p>
+                    <p className="text-xs text-muted-foreground/70 text-center max-w-xs mb-3">
+                      Klik op de knop hieronder om een boete toe te voegen
+                    </p>
+                    {canEdit && (
+                      <Button onClick={addPenalty} className="btn btn--primary h-8 px-3 text-sm">
+                        <Plus className="h-3.5 w-3.5 mr-1.5" />
+                        Eerste boete toevoegen
+                      </Button>
+                    )}
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Nog geen boetes toegevoegd</p>
-                  <p className="text-xs text-muted-foreground/70 text-center max-w-xs mb-3">
-                    Klik op de knop hieronder om een boete toe te voegen
-                  </p>
-                  {canEdit && (
-                    <Button onClick={addPenalty} className="btn btn--primary h-8 px-3 text-sm">
-                      <Plus className="h-3.5 w-3.5 mr-1.5" />
-                      Eerste boete toevoegen
-                    </Button>
-                  )}
-                </div>
-              )}
+                )}
 
-              {/* New Penalties Section */}
-              {penalties.length > 0 && (
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-semibold text-foreground">Nieuwe boetes</span>
-                      <span className="text-xs text-muted-foreground bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                        {penalties.length} {penalties.length === 1 ? 'boete' : 'boetes'}
+                {/* New Penalties Section */}
+                {penalties.length > 0 && (
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-semibold text-foreground">Nieuwe boetes</span>
+                        <span className="text-xs text-muted-foreground bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                          {penalties.length} {penalties.length === 1 ? 'boete' : 'boetes'}
+                        </span>
+                      </div>
+                      {penalties.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPenalties([])}
+                          className="h-6 px-1.5 text-xs text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-3 w-3 mr-0.5" />
+                          Alles wissen
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      {penalties.map((penalty, index) => {
+                        const isValid = penalty.teamId && penalty.costSettingId;
+                        return (
+                          <div 
+                            key={`penalty-${index}`} 
+                            className={cn(
+                              "relative flex flex-col gap-1.5 p-2.5 border rounded-lg transition-all duration-200",
+                              isValid 
+                                ? "border-primary/30 bg-primary/5 shadow-sm" 
+                                : "border-border bg-muted/50"
+                            )}
+                          >
+                            {canEdit && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPenalties(prev => prev.filter((_, i) => i !== index));
+                                }}
+                                className="absolute top-2 right-2 w-8 h-8 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md bg-background border border-border shadow-sm hover:bg-destructive/10 hover:border-destructive/30 text-muted-foreground hover:text-destructive transition-all duration-150 z-10"
+                                aria-label="Boete verwijderen"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 pr-10">
+                              <div className="space-y-0.5">
+                                <Label htmlFor={`penalty-team-${index}`} className="text-xs font-medium">Team</Label>
+                                <Select
+                                  value={penalty.teamId ? penalty.teamId.toString() : undefined}
+                                  onValueChange={(v) => updatePenalty(index, 'teamId', parseInt(v))}
+                                  disabled={!canEdit}
+                                >
+                                  <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
+                                    <SelectValue placeholder="Selecteer team" />
+                                  </SelectTrigger>
+                                  <SelectContent className="dropdown-content-login-style z-50">
+                                    {penaltyTeamOptions.map((team) => (
+                                      <SelectItem
+                                        key={team.id}
+                                        value={team.id.toString()}
+                                        className="dropdown-item-login-style"
+                                      >
+                                        {team.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-0.5">
+                                <Label htmlFor={`penalty-cost-${index}`} className="text-xs font-medium">Type Boete</Label>
+                                <Select
+                                  value={penalty.costSettingId ? penalty.costSettingId.toString() : undefined}
+                                  onValueChange={(v) => updatePenalty(index, 'costSettingId', parseInt(v))}
+                                  disabled={!canEdit || !penalty.teamId}
+                                >
+                                  <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
+                                    <SelectValue placeholder={!penalty.teamId ? "Eerst team kiezen" : "Selecteer boete type"} />
+                                  </SelectTrigger>
+                                  <SelectContent className="dropdown-content-login-style z-50">
+                                    {availablePenalties.map((costSetting) => (
+                                      <SelectItem
+                                        key={costSetting.id}
+                                        value={costSetting.id.toString()}
+                                        className="dropdown-item-login-style"
+                                      >
+                                        {costSetting.name} - €{costSetting.amount}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 pt-1.5 border-t border-border">
+                      {penalties.every(p => p.teamId && p.costSettingId) && (
+                        <Button 
+                          onClick={addPenalty} 
+                          variant="outline" 
+                          size="sm"
+                          className="btn btn--secondary h-8 px-3 w-full sm:w-auto"
+                          disabled={!canEdit || isAddPenaltyButtonDisabled}
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1.5" />
+                          Nog een boete
+                        </Button>
+                      )}
+                      <Button 
+                        onClick={savePenalties} 
+                        className={cn(
+                          "btn btn--primary h-8 px-4",
+                          penalties.every(p => p.teamId && p.costSettingId) ? "w-full sm:w-auto" : "w-full"
+                        )}
+                        disabled={isSavePenaltyButtonDisabled || isLoadingPenalties}
+                      >
+                        {isLoadingPenalties ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                            Opslaan...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-3.5 w-3.5 mr-1.5" />
+                            Boetes opslaan
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Add button when there are saved penalties but no new penalties */}
+                {penalties.length === 0 && savedPenalties.length > 0 && canEdit && (
+                  <div className="pt-1.5">
+                    <Button onClick={addPenalty} disabled={isAddPenaltyButtonDisabled} className="btn btn--secondary h-8 px-3 w-full">
+                      <Plus className="h-3.5 w-3.5 mr-1.5" />
+                      Boete toevoegen
+                    </Button>
+                  </div>
+                )}
+
+                {/* Saved Penalties Section */}
+                {savedPenalties.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 pt-2 border-t border-border">
+                      <span className="text-sm font-semibold text-foreground">Opgeslagen boetes</span>
+                      <span className="text-xs font-medium text-muted-foreground bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
+                        {savedPenalties.length} {savedPenalties.length === 1 ? 'boete' : 'boetes'}
                       </span>
                     </div>
-                    {penalties.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setPenalties([])}
-                        className="h-6 px-1.5 text-xs text-muted-foreground hover:text-destructive"
-                      >
-                        <X className="h-3 w-3 mr-0.5" />
-                        Alles wissen
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    {penalties.map((penalty, index) => {
-                      const isValid = penalty.teamId && penalty.costSettingId;
-                      return (
+                    <div className="space-y-2.5">
+                      {savedPenalties.map((p, i) => (
                         <div 
-                          key={`penalty-${index}`} 
-                          className={cn(
-                            "relative flex flex-col gap-1.5 p-2.5 border rounded-lg transition-all duration-200",
-                            isValid 
-                              ? "border-primary/30 bg-primary/5 shadow-sm" 
-                              : "border-border bg-muted/50"
-                          )}
+                          key={i} 
+                          className="flex items-center justify-between gap-3 p-3.5 text-sm border rounded-lg bg-white shadow-sm hover:shadow-md hover:bg-muted/20 transition-all duration-150"
+                          style={{ borderColor: 'var(--color-400)' }}
                         >
-                          {/* Delete button for individual penalty - show for all penalties when editable */}
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="flex items-center justify-center w-11 h-11 rounded-lg border border-border bg-muted/80 shrink-0 shadow-sm">
+                              <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <span className="text-sm font-semibold text-foreground truncate">
+                                  {p.teamName}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                                  {p.penaltyName}
+                                </span>
+                                <span className="text-xs font-semibold text-foreground">
+                                  €{p.amount}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                           {canEdit && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPenalties(prev => prev.filter((_, i) => i !== index));
-                              }}
-                              className="absolute top-2 right-2 w-8 h-8 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md bg-background border border-border shadow-sm hover:bg-destructive/10 hover:border-destructive/30 text-muted-foreground hover:text-destructive transition-all duration-150 z-10"
+                            <Button 
+                              type="button" 
+                              onClick={() => removeSavedPenalty(i)} 
+                              className="btn btn--icon btn--danger shrink-0" 
                               aria-label="Boete verwijderen"
                             >
-                              <X className="h-4 w-4" />
-                            </button>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           )}
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 pr-10">
-                            <div className="space-y-0.5">
-                              <Label htmlFor={`penalty-team-${index}`} className="text-xs font-medium">Team</Label>
-                              <Select
-                                value={penalty.teamId ? penalty.teamId.toString() : undefined}
-                                onValueChange={(v) => updatePenalty(index, 'teamId', parseInt(v))}
-                                disabled={!canEdit}
-                              >
-                                <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
-                                  <SelectValue placeholder="Selecteer team" />
-                                </SelectTrigger>
-                                <SelectContent className="dropdown-content-login-style z-50">
-                                  {penaltyTeamOptions.map((team) => (
-                                    <SelectItem
-                                      key={team.id}
-                                      value={team.id.toString()}
-                                      className="dropdown-item-login-style"
-                                    >
-                                      {team.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-0.5">
-                              <Label htmlFor={`penalty-cost-${index}`} className="text-xs font-medium">Type Boete</Label>
-                              <Select
-                                value={penalty.costSettingId ? penalty.costSettingId.toString() : undefined}
-                                onValueChange={(v) => updatePenalty(index, 'costSettingId', parseInt(v))}
-                                disabled={!canEdit || !penalty.teamId}
-                              >
-                                <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
-                                  <SelectValue placeholder={!penalty.teamId ? "Eerst team kiezen" : "Selecteer boete type"} />
-                                </SelectTrigger>
-                                <SelectContent className="dropdown-content-login-style z-50">
-                                  {availablePenalties.map((costSetting) => (
-                                    <SelectItem
-                                      key={costSetting.id}
-                                      value={costSetting.id.toString()}
-                                      className="dropdown-item-login-style"
-                                    >
-                                      {costSetting.name} - €{costSetting.amount}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
+                )}
+              </div>
 
-                  {/* Action buttons - full width on mobile */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 pt-1.5 border-t border-border">
-                    {/* Only show "Nog een boete" button if there's no blank penalty */}
-                    {penalties.every(p => p.teamId && p.costSettingId) && (
-                      <Button 
-                        onClick={addPenalty} 
-                        variant="outline" 
-                        size="sm"
-                        className="btn btn--secondary h-8 px-3 w-full sm:w-auto"
-                        disabled={!canEdit || isAddPenaltyButtonDisabled}
-                      >
-                        <Plus className="h-3.5 w-3.5 mr-1.5" />
-                        Nog een boete
-                      </Button>
-                    )}
-                    <Button 
-                      onClick={savePenalties} 
-                      className={cn(
-                        "btn btn--primary h-8 px-4",
-                        penalties.every(p => p.teamId && p.costSettingId) ? "w-full sm:w-auto" : "w-full"
-                      )}
-                      disabled={isSavePenaltyButtonDisabled || isLoadingPenalties}
-                    >
-                      {isLoadingPenalties ? (
-                        <>
-                          <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                          Opslaan...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-3.5 w-3.5 mr-1.5" />
-                          Boetes opslaan
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Add button when there are saved penalties but no new penalties */}
-              {penalties.length === 0 && savedPenalties.length > 0 && canEdit && (
-                <div className="pt-1.5">
-                  <Button onClick={addPenalty} disabled={isAddPenaltyButtonDisabled} className="btn btn--secondary h-8 px-3 w-full">
-                    <Plus className="h-3.5 w-3.5 mr-1.5" />
-                    Boete toevoegen
-                  </Button>
-                </div>
-              )}
-
-              {/* Saved Penalties Section - Improved */}
-              {savedPenalties.length > 0 && (
+              {/* === WEDSTRIJDKOSTEN SUBSECTIE (admin only) === */}
+              {isAdmin && (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 pt-2 border-t border-border">
-                    <span className="text-sm font-semibold text-foreground">Opgeslagen boetes</span>
-                    <span className="text-xs font-medium text-muted-foreground bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
-                      {savedPenalties.length} {savedPenalties.length === 1 ? 'boete' : 'boetes'}
-                    </span>
-                  </div>
-                  <div className="space-y-2.5">
-                    {savedPenalties.map((p, i) => (
-                      <div 
-                        key={i} 
-                        className="flex items-center justify-between gap-3 p-3.5 text-sm border rounded-lg bg-white shadow-sm hover:shadow-md hover:bg-muted/20 transition-all duration-150"
-                        style={{ borderColor: 'var(--color-400)' }}
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="flex items-center justify-center w-11 h-11 rounded-lg border border-border bg-muted/80 shrink-0 shadow-sm">
-                            <AlertTriangle className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <span className="text-sm font-semibold text-foreground truncate">
-                                {p.teamName}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
-                                {p.penaltyName}
-                              </span>
-                              <span className="text-xs font-semibold text-foreground">
-                                €{p.amount}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        {canEdit && (
-                          <Button 
-                            type="button" 
-                            onClick={() => removeSavedPenalty(i)} 
-                            className="btn btn--icon btn--danger shrink-0" 
-                            aria-label="Boete verwijderen"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                  <h4 className="text-sm font-bold text-foreground border-b border-border pb-1">Wedstrijdkosten</h4>
+                  
+                  {isLoadingMatchCosts ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
+                      <span className="text-sm text-muted-foreground">Kosten laden...</span>
+                    </div>
+                  ) : matchCosts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-4 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Geen kosten voor deze wedstrijd</p>
+                      <p className="text-xs text-muted-foreground/70 text-center">Voeg een kost toe via het formulier hieronder</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-foreground">Kosten</span>
+                        <span className="text-xs font-medium text-muted-foreground bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
+                          {matchCosts.length}
+                        </span>
                       </div>
-                    ))}
+                      <div className="space-y-2">
+                        {matchCosts.map((cost) => (
+                          <div 
+                            key={cost.id} 
+                            className="flex items-center justify-between gap-3 p-3 text-sm border rounded-lg bg-white shadow-sm hover:shadow-md transition-all duration-150"
+                            style={{ borderColor: 'var(--color-400)' }}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                <span className="text-sm font-semibold text-foreground truncate">{cost.teamName}</span>
+                                <span className="text-muted-foreground">•</span>
+                                <span className="text-sm text-foreground">{cost.costName}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={cn(
+                                  "text-xs font-medium px-2 py-0.5 rounded-md border",
+                                  cost.category === 'deposit' 
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                    : cost.category === 'penalty'
+                                    ? "bg-destructive/10 text-destructive border-destructive/20"
+                                    : "bg-primary/10 text-primary border-primary/20"
+                                )}>
+                                  {cost.category === 'deposit' ? 'Storting' : cost.category === 'penalty' ? 'Boete' : cost.category === 'match_cost' ? 'Wedstrijdkost' : 'Overig'}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {editingCostId === cost.id ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-sm">€</span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={editingCostAmount}
+                                    onChange={(e) => setEditingCostAmount(e.target.value)}
+                                    className="h-8 w-20 text-sm input-login-style"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        const val = parseFloat(editingCostAmount);
+                                        if (!isNaN(val)) handleUpdateMatchCostAmount(cost.id, val);
+                                      }
+                                      if (e.key === 'Escape') setEditingCostId(null);
+                                    }}
+                                    autoFocus
+                                  />
+                                  <Button
+                                    size="sm"
+                                    className="btn btn--primary h-8 px-2"
+                                    onClick={() => {
+                                      const val = parseFloat(editingCostAmount);
+                                      if (!isNaN(val)) handleUpdateMatchCostAmount(cost.id, val);
+                                    }}
+                                  >
+                                    <Save className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-8 px-2"
+                                    onClick={() => setEditingCostId(null)}
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <button
+                                  className="text-sm font-semibold text-foreground hover:text-primary cursor-pointer transition-colors"
+                                  onClick={() => {
+                                    setEditingCostId(cost.id);
+                                    setEditingCostAmount(cost.amount.toString());
+                                  }}
+                                  title="Klik om bedrag aan te passen"
+                                >
+                                  €{cost.amount.toFixed(2)}
+                                </button>
+                              )}
+                              <Button
+                                type="button"
+                                onClick={() => handleDeleteMatchCost(cost.id)}
+                                className="btn btn--icon btn--danger shrink-0"
+                                aria-label="Kost verwijderen"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Add new cost */}
+                  <div className="pt-2 border-t border-border space-y-2">
+                    <span className="text-sm font-semibold text-foreground">Kost toevoegen</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <Select
+                        value={newCostTeamId ? newCostTeamId.toString() : undefined}
+                        onValueChange={(v) => setNewCostTeamId(parseInt(v))}
+                      >
+                        <SelectTrigger className="dropdown-login-style h-8 text-sm">
+                          <SelectValue placeholder="Team" />
+                        </SelectTrigger>
+                        <SelectContent className="dropdown-content-login-style z-50">
+                          {penaltyTeamOptions.map((team) => (
+                            <SelectItem key={team.id} value={team.id.toString()} className="dropdown-item-login-style">
+                              {team.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={newCostSettingId ? newCostSettingId.toString() : undefined}
+                        onValueChange={(v) => {
+                          const id = parseInt(v);
+                          setNewCostSettingId(id);
+                          const cs = allCostSettings.find(c => c.id === id);
+                          if (cs && !newCostAmount) setNewCostAmount(cs.amount?.toString() || "0");
+                        }}
+                      >
+                        <SelectTrigger className="dropdown-login-style h-8 text-sm">
+                          <SelectValue placeholder="Kostentype" />
+                        </SelectTrigger>
+                        <SelectContent className="dropdown-content-login-style z-50">
+                          {allCostSettings.map((cs) => (
+                            <SelectItem key={cs.id} value={cs.id.toString()} className="dropdown-item-login-style">
+                              {cs.name} - €{cs.amount}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex gap-1">
+                        <div className="flex items-center gap-1 flex-1">
+                          <span className="text-sm">€</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={newCostAmount}
+                            onChange={(e) => setNewCostAmount(e.target.value)}
+                            className="h-8 text-sm input-login-style"
+                            placeholder="Bedrag"
+                          />
+                        </div>
+                        <Button
+                          onClick={handleAddMatchCost}
+                          disabled={!newCostTeamId || !newCostSettingId || !newCostAmount}
+                          className="btn btn--primary h-8 px-3"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
