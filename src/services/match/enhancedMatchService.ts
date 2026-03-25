@@ -182,7 +182,7 @@ export const enhancedMatchService = {
       // Note: We don't add updated_at as it's not part of the matches table schema
 
       // If nothing to update, return success
-      if (Object.keys(updateObject).length <= 1) {
+      if (Object.keys(updateObject).length === 0) {
         return {
           success: true,
           message: "Geen wijzigingen om bij te werken"
