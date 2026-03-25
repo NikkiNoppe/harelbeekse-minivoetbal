@@ -949,6 +949,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      manage_team_cost_for_match: {
+        Args: {
+          p_amount?: number
+          p_cost_id: number
+          p_cost_setting_id?: number
+          p_operation: string
+          p_team_id?: number
+          p_transaction_date?: string
+          p_user_id: number
+        }
+        Returns: Json
+      }
       remove_referee_assignment: {
         Args: { p_assignment_id: number; p_user_id: number }
         Returns: Json
