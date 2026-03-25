@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,8 +6,6 @@ import { Loader2, Euro, TrendingDown, TrendingUp, List, Calendar, ChevronRight }
 import { FinancialTeamDetailModal, FinancialSettingsModal } from "@/components/modals";
 import { FinancialMonthlyReportsModal } from "@/components/modals";
 import { costSettingsService } from "@/services/financial";
-import { matchCostService } from "@/services/financial/matchCostService";
-import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 interface Team {
