@@ -172,7 +172,124 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     loadExistingPenalties();
   }, [match.matchId, match.homeTeamId, match.awayTeamId, match.homeTeamName, match.awayTeamName]);
 
-  const addPenalty = useCallback(() => {
+  // Load match costs for Financieel section (admin only)
+  const loadMatchCosts = useCallback(async () => {
+    if (!isAdmin) return;
+    setIsLoadingMatchCosts(true);
+    try {
+      const { data, error } = await withUserContext(async () => {
+        return await supabase
+          .from('team_costs')
+          .select(`*, costs(name, category, amount)`)
+          .eq('match_id', match.matchId)
+          .order('team_id', { ascending: true });
+      });
+      if (error) throw error;
+      const costs = (data || []).map((tc: any) => ({
+        id: tc.id,
+        teamId: tc.team_id,
+        teamName: tc.team_id === match.homeTeamId ? match.homeTeamName : match.awayTeamName,
+        costName: tc.costs?.name || 'Onbekend',
+        category: tc.costs?.category || 'other',
+        amount: tc.amount !== null ? tc.amount : (tc.costs?.amount || 0),
+        costSettingId: tc.cost_setting_id
+      }));
+      setMatchCosts(costs);
+    } catch (error) {
+      console.error('Error loading match costs:', error);
+    } finally {
+      setIsLoadingMatchCosts(false);
+    }
+  }, [isAdmin, match.matchId, match.homeTeamId, match.awayTeamId, match.homeTeamName, match.awayTeamName]);
+
+  useEffect(() => {
+    if (isAdmin && open) {
+      loadMatchCosts();
+    }
+  }, [isAdmin, open, loadMatchCosts]);
+
+  // Load all cost settings for the add-cost dropdown
+  useEffect(() => {
+    if (!isAdmin) return;
+    const load = async () => {
+      try {
+        const settings = await costSettingsService.getCostSettings();
+        setAllCostSettings(settings);
+      } catch (error) {
+        console.error('Error loading cost settings:', error);
+      }
+    };
+    load();
+  }, [isAdmin]);
+
+  const handleDeleteMatchCost = useCallback(async (costId: number) => {
+    try {
+      const result = await withUserContext(async () => {
+        return await costSettingsService.deleteTransaction(costId);
+      });
+      if (result.success) {
+        setMatchCosts(prev => prev.filter(c => c.id !== costId));
+        toast({ title: "Kost verwijderd" });
+      } else {
+        toast({ title: "Fout", description: result.message, variant: "destructive" });
+      }
+    } catch (error) {
+      console.error('Error deleting match cost:', error);
+      toast({ title: "Fout", description: "Kon kost niet verwijderen.", variant: "destructive" });
+    }
+  }, [toast]);
+
+  const handleUpdateMatchCostAmount = useCallback(async (costId: number, newAmount: number) => {
+    try {
+      const result = await withUserContext(async () => {
+        return await costSettingsService.updateTransaction(costId, { amount: newAmount });
+      });
+      if (result.success) {
+        setMatchCosts(prev => prev.map(c => c.id === costId ? { ...c, amount: newAmount } : c));
+        setEditingCostId(null);
+        toast({ title: "Bedrag bijgewerkt" });
+      } else {
+        toast({ title: "Fout", description: result.message, variant: "destructive" });
+      }
+    } catch (error) {
+      console.error('Error updating match cost:', error);
+      toast({ title: "Fout", description: "Kon bedrag niet bijwerken.", variant: "destructive" });
+    }
+  }, [toast]);
+
+  const handleAddMatchCost = useCallback(async () => {
+    if (!newCostTeamId || !newCostSettingId) return;
+    const amount = parseFloat(newCostAmount);
+    if (isNaN(amount)) return;
+    
+    try {
+      const result = await withUserContext(async () => {
+        return await costSettingsService.addTransaction({
+          team_id: newCostTeamId,
+          amount,
+          description: null,
+          transaction_type: 'match_cost',
+          transaction_date: getCurrentDate(),
+          match_id: match.matchId,
+          penalty_type_id: null,
+          cost_setting_id: newCostSettingId
+        });
+      });
+      if (result.success) {
+        toast({ title: "Kost toegevoegd" });
+        setNewCostTeamId(null);
+        setNewCostSettingId(null);
+        setNewCostAmount("");
+        await loadMatchCosts();
+      } else {
+        toast({ title: "Fout", description: result.message, variant: "destructive" });
+      }
+    } catch (error) {
+      console.error('Error adding match cost:', error);
+      toast({ title: "Fout", description: "Kon kost niet toevoegen.", variant: "destructive" });
+    }
+  }, [newCostTeamId, newCostSettingId, newCostAmount, match.matchId, toast, loadMatchCosts]);
+
     // Batch both state updates together synchronously for immediate UI response
     flushSync(() => {
       setIsBoetesOpen(true);
