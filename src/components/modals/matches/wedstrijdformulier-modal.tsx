@@ -2046,7 +2046,13 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       <Label htmlFor="match-referee" style={{ color: 'var(--accent)' }}>Scheidsrechter</Label>
                       <Select
                         value={refereeSelectValue}
-                        onValueChange={setSelectedReferee}
+                        onValueChange={(v) => {
+                          if (v === "__none__") {
+                            setSelectedReferee("");
+                          } else {
+                            setSelectedReferee(v);
+                          }
+                        }}
                         disabled={isTeamManager || !canEdit || loadingReferees}
                       >
                         <SelectTrigger className="dropdown-login-style min-h-[44px] h-[44px] text-sm w-full">
