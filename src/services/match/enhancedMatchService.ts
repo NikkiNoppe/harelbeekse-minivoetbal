@@ -247,9 +247,13 @@ export const enhancedMatchService = {
         : "Wedstrijd succesvol bijgewerkt";
 
       // FIRE-AND-FORGET: Schedule non-critical side effects without blocking
-      // These run asynchronously after success response is returned
-      // Uses hardened background processor with retry logic and failure tracking
-      scheduleBackgroundSideEffects(matchId, updateData, matchInfo, isCupMatch, isLateSubmission, updateData.forceLatePenaltyTeamIds);
+      // Detect submission transition: only trigger cost/penalty sync when is_submitted goes false→true
+      const submissionTransition = !!(cur && cur.is_submitted === false && updateData.isCompleted === true);
+      const sideEffectData = {
+        ...updateData,
+        _submissionTransition: submissionTransition
+      };
+      scheduleBackgroundSideEffects(matchId, sideEffectData, matchInfo, isCupMatch, isLateSubmission, updateData.forceLatePenaltyTeamIds);
 
       // Return SUCCESS immediately - critical path complete
       return {
