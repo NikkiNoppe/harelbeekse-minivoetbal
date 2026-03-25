@@ -290,7 +290,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const addPenalty = useCallback(() => {
     // Batch both state updates together synchronously for immediate UI response
     flushSync(() => {
-      setIsBoetesOpen(true);
+      setIsFinancieelOpen(true);
       setPenalties(prev => {
         // Remove any empty penalties (those without both teamId and costSettingId)
         const validPenalties = prev.filter(p => p.teamId && p.costSettingId);
