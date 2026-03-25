@@ -2081,6 +2081,10 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                             </SelectItem>
                           ) : (
                             <>
+                              {/* Option to clear referee */}
+                              <SelectItem value="__none__" className="dropdown-item-login-style text-muted-foreground">
+                                Geen scheidsrechter
+                              </SelectItem>
                               {/* Always show selected referee first, even if not in list yet (during loading or if referee was removed) */}
                               {selectedReferee && !selectedRefereeExists && (
                                 <SelectItem 
