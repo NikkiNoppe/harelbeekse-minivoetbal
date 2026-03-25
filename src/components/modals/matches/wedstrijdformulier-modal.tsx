@@ -176,9 +176,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     loadExistingPenalties();
   }, [open, loadExistingPenalties]);
 
-  // Load match costs for Financieel section (admin only)
+  // Load match costs for Financieel section (admin + referee)
   const loadMatchCosts = useCallback(async () => {
-    if (!isAdmin) return;
+    if (!isAdmin && !isReferee) return;
     setIsLoadingMatchCosts(true);
     try {
       const { data, error } = await withUserContext(async () => {
@@ -204,13 +204,13 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     } finally {
       setIsLoadingMatchCosts(false);
     }
-  }, [isAdmin, match.matchId, match.homeTeamId, match.awayTeamId, match.homeTeamName, match.awayTeamName]);
+  }, [isAdmin, isReferee, match.matchId, match.homeTeamId, match.awayTeamId, match.homeTeamName, match.awayTeamName]);
 
   useEffect(() => {
-    if (isAdmin && open) {
+    if ((isAdmin || isReferee) && open) {
       loadMatchCosts();
     }
-  }, [isAdmin, open, loadMatchCosts]);
+  }, [isAdmin, isReferee, open, loadMatchCosts]);
 
   // Load all cost settings for the add-cost dropdown
   useEffect(() => {
