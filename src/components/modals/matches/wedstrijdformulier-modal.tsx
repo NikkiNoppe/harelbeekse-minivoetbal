@@ -230,6 +230,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       const result = await costSettingsService.deleteTransaction(costId);
       if (result.success) {
         setMatchCosts(prev => prev.filter(c => c.id !== costId));
+        setSavedPenalties(prev => prev.filter(p => p.id !== costId));
         toast({ title: "Kost verwijderd" }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
       } else {
         toast({ title: "Fout", description: result.message, variant: "destructive" });
@@ -245,6 +246,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       const result = await costSettingsService.updateTransaction(costId, { amount: newAmount });
       if (result.success) {
         setMatchCosts(prev => prev.map(c => c.id === costId ? { ...c, amount: newAmount } : c));
+        setSavedPenalties(prev => prev.map(p => p.id === costId ? { ...p, amount: newAmount } : p));
         setEditingCostId(null);
         toast({ title: "Bedrag bijgewerkt" }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
       } else {
@@ -413,7 +415,11 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       }
     }
     
+    const removedPenalty = savedPenalties[index];
     setSavedPenalties(prev => prev.filter((_, i) => i !== index));
+    if (removedPenalty?.id) {
+      setMatchCosts(prev => prev.filter(c => c.id !== removedPenalty.id));
+    }
   }, [savedPenalties, toast]);
 
   const CARD_OPTIONS = [
