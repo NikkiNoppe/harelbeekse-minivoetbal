@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { costSettingsService } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2, ChevronDown, Loader2 } from "lucide-react";
+import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2, ChevronDown, Loader2, CalendarIcon } from "lucide-react";
 import { formatDateShort, getCurrentDate } from "@/lib/dateUtils";
 import { TransactionEditModal } from "./transaction-edit-modal";
 import {
@@ -18,6 +18,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { nl } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Team {
   team_id: number;
@@ -38,6 +42,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [selectedCost, setSelectedCost] = useState<any>(null);
   const [customAmount, setCustomAmount] = useState('');
+  const [transactionDate, setTransactionDate] = useState<Date>(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // State for edit modal
@@ -79,6 +84,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
       setShowAddTransaction(false);
       setSelectedCost(null);
       setCustomAmount('');
+      setTransactionDate(new Date());
       setEditModalOpen(false);
       setSelectedTransaction(null);
     }
@@ -88,6 +94,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
   const handleCostSelection = (cost: any) => {
     setSelectedCost(cost);
     setCustomAmount('');
+    setTransactionDate(new Date());
     setShowAddTransaction(true);
   };
 
@@ -138,7 +145,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
         cost_setting_id: selectedCost.id,
         penalty_type_id: null,
         match_id: null,
-        transaction_date: getCurrentDate()
+        transaction_date: format(transactionDate, 'yyyy-MM-dd')
       });
 
       console.log('Transaction result:', result);
@@ -153,6 +160,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
         setShowAddTransaction(false);
         setSelectedCost(null);
         setCustomAmount('');
+        setTransactionDate(new Date());
         
         // Subtiel: 1 invalidatie + refetch enkel actieve queries voor dit team
         await queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
@@ -455,68 +463,111 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
 
               {/* Transaction Form */}
               {showAddTransaction && selectedCost && (
-                <Card className="bg-muted/50 border-2 border-purple-200">
-                  <CardContent className="p-4 space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium mb-2 block">Geselecteerde Kosten</Label>
-                      <div className="p-3 bg-card rounded-lg border border-border">
-                        <div className="font-medium text-sm mb-1">{selectedCost.name}</div>
-                        <Badge variant="outline" className="text-xs">
-                          {selectedCost.category === 'match_cost' ? 'Wedstrijd' : 
-                           selectedCost.category === 'penalty' ? 'Boete' : 
-                           selectedCost.category === 'deposit' ? 'Storting' : 'Overig'}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {selectedCost.category === 'deposit' && (
+                <Card className="border" style={{ borderColor: 'var(--accent)', borderWidth: '1px' }}>
+                  <CardContent className="!bg-transparent" style={{ padding: '12px', backgroundColor: 'unset' }}>
+                    <div className="space-y-3">
+                      {/* Selected cost preview */}
                       <div>
-                        <Label htmlFor="custom-amount" className="text-sm font-medium mb-2 block">
-                          Bedrag (€)
-                        </Label>
-                        <Input
-                          id="custom-amount"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={customAmount}
-                          onChange={(e) => setCustomAmount(e.target.value)}
-                          placeholder="0.00"
-                          className="w-full"
-                        />
+                        <Label className="text-sm font-medium mb-1.5 block">Geselecteerde Kosten</Label>
+                        <div className="p-3 rounded-lg border border-border bg-card flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Euro className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="font-medium text-sm truncate">{selectedCost.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Badge variant="outline" className="text-xs whitespace-nowrap">
+                              {selectedCost.category === 'match_cost' ? 'Wedstrijd' : 
+                               selectedCost.category === 'penalty' ? 'Boete' : 
+                               selectedCost.category === 'deposit' ? 'Storting' : 'Overig'}
+                            </Badge>
+                            {selectedCost.category !== 'deposit' && (
+                              <span className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>
+                                {new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(selectedCost.amount)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    )}
 
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <Button
-                        onClick={handleAddTransaction}
-                        className="flex-1"
-                        disabled={isSubmitting || (selectedCost.category === 'deposit' && (!customAmount || parseFloat(customAmount) <= 0))}
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Bezig...
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Transactie Toevoegen
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setShowAddTransaction(false);
-                          setSelectedCost(null);
-                          setCustomAmount('');
-                        }}
-                        disabled={isSubmitting}
-                        className="flex-1 sm:flex-initial"
-                      >
-                        Annuleren
-                      </Button>
+                      {/* Date picker */}
+                      <div>
+                        <Label className="text-sm font-medium mb-1.5 block">Datum</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !transactionDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {transactionDate ? format(transactionDate, "d MMMM yyyy", { locale: nl }) : <span>Kies een datum</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start" style={{ zIndex: 1100 }}>
+                            <Calendar
+                              mode="single"
+                              selected={transactionDate}
+                              onSelect={(date) => date && setTransactionDate(date)}
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      {/* Custom amount for deposits */}
+                      {selectedCost.category === 'deposit' && (
+                        <div>
+                          <Label htmlFor="custom-amount" className="text-sm font-medium mb-1.5 block">
+                            Bedrag (€)
+                          </Label>
+                          <Input
+                            id="custom-amount"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={customAmount}
+                            onChange={(e) => setCustomAmount(e.target.value)}
+                            placeholder="0.00"
+                            className="w-full"
+                          />
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex flex-col gap-2 pt-1">
+                        <button
+                          onClick={handleAddTransaction}
+                          className="btn btn--primary w-full flex items-center justify-center gap-2"
+                          disabled={isSubmitting || (selectedCost.category === 'deposit' && (!customAmount || parseFloat(customAmount) <= 0))}
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Bezig...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-4 w-4" />
+                              Transactie Toevoegen
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowAddTransaction(false);
+                            setSelectedCost(null);
+                            setCustomAmount('');
+                            setTransactionDate(new Date());
+                          }}
+                          disabled={isSubmitting}
+                          className="btn btn--secondary w-full"
+                        >
+                          Annuleren
+                        </button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
