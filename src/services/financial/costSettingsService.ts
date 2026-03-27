@@ -215,7 +215,12 @@ export const costSettingsService = {
 
   async addTransaction(transaction: Omit<TeamTransaction, 'id' | 'created_at'>): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('Adding transaction:', transaction);
+      const { userId, role } = this._getUserContext();
+      console.log('🔵 [FINANCIAL-CRUD] ADD request:', { 
+        ...transaction, 
+        userId, 
+        role 
+      });
       
       // For deposits, use the fixed "Storting" cost entry
       if (transaction.transaction_type === 'deposit') {
@@ -232,54 +237,79 @@ export const costSettingsService = {
         if (existingDeposit) {
           depositCostId = existingDeposit.id;
         } else {
-          // Create the fixed "Storting" cost entry
+          // Use RPC for admin to create deposit cost
+          console.log('🔵 [FINANCIAL-CRUD] Creating Storting cost entry via RPC');
           const { data: newDeposit, error: costError } = await supabase
             .from('costs')
             .insert([{
               name: 'Storting',
-              amount: 0, // Individual amounts are stored in team_costs.amount
+              amount: 0,
               category: 'deposit',
               is_active: true
             }])
             .select('id')
             .single();
 
-          if (costError) throw costError;
+          if (costError) {
+            console.error('❌ [FINANCIAL-CRUD] Failed to create Storting cost:', costError);
+            throw costError;
+          }
           depositCostId = newDeposit.id;
         }
 
-      // Insert into team_costs with individual amount
-      const { error: linkError } = await supabase
-        .from('team_costs')
-        .insert([{
-          team_id: transaction.team_id,
-          cost_setting_id: depositCostId,
-          amount: transaction.amount,
-          transaction_date: transaction.transaction_date,
-          match_id: transaction.match_id || null
-        }]);
+        // Use add_team_cost_as_admin RPC
+        const { data, error } = await supabase.rpc('add_team_cost_as_admin', {
+          p_user_id: userId,
+          p_team_id: transaction.team_id,
+          p_cost_setting_id: depositCostId,
+          p_amount: transaction.amount,
+          p_transaction_date: transaction.transaction_date,
+          p_match_id: transaction.match_id || null
+        });
 
-        if (linkError) throw linkError;
+        console.log('🔵 [FINANCIAL-CRUD] ADD deposit response:', { data, error });
+
+        if (error) {
+          console.error('❌ [FINANCIAL-CRUD] ADD deposit RPC error:', error);
+          throw error;
+        }
+
+        const result = data as any;
+        if (result && result.success === false) {
+          return { success: false, message: result.error || 'Fout bij toevoegen storting' };
+        }
+
         return { success: true, message: 'Storting succesvol toegevoegd' };
       }
 
-      // For other transaction types with cost_setting_id
+      // For other transaction types with cost_setting_id - use RPC
       if (transaction.cost_setting_id) {
-        const { error } = await supabase
-          .from('team_costs')
-          .insert([{
-            team_id: transaction.team_id,
-            cost_setting_id: transaction.cost_setting_id,
-            amount: transaction.amount,
-            transaction_date: transaction.transaction_date,
-            match_id: transaction.match_id || null
-          }]);
+        const { data, error } = await supabase.rpc('add_team_cost_as_admin', {
+          p_user_id: userId,
+          p_team_id: transaction.team_id,
+          p_cost_setting_id: transaction.cost_setting_id,
+          p_amount: transaction.amount,
+          p_transaction_date: transaction.transaction_date,
+          p_match_id: transaction.match_id || null
+        });
 
-        if (error) throw error;
+        console.log('🔵 [FINANCIAL-CRUD] ADD transaction response:', { data, error });
+
+        if (error) {
+          console.error('❌ [FINANCIAL-CRUD] ADD transaction RPC error:', error);
+          throw error;
+        }
+
+        const result = data as any;
+        if (result && result.success === false) {
+          return { success: false, message: result.error || 'Fout bij toevoegen transactie' };
+        }
+
         return { success: true, message: 'Transactie succesvol toegevoegd' };
       }
 
-      // For transaction types without cost_setting_id, create new cost entry
+      // For transaction types without cost_setting_id, create new cost entry first
+      console.log('🔵 [FINANCIAL-CRUD] Creating new cost entry for:', transaction.description);
       const { data: costData, error: costError } = await supabase
         .from('costs')
         .insert([{
@@ -292,23 +322,37 @@ export const costSettingsService = {
         .select('id')
         .single();
 
-      if (costError) throw costError;
+      if (costError) {
+        console.error('❌ [FINANCIAL-CRUD] Failed to create cost entry:', costError);
+        throw costError;
+      }
 
-      const { error: linkError } = await supabase
-        .from('team_costs')
-        .insert([{
-          team_id: transaction.team_id,
-          cost_setting_id: costData.id,
-          amount: transaction.amount,
-          transaction_date: transaction.transaction_date,
-          match_id: transaction.match_id || null
-        }]);
+      const { data, error } = await supabase.rpc('add_team_cost_as_admin', {
+        p_user_id: userId,
+        p_team_id: transaction.team_id,
+        p_cost_setting_id: costData.id,
+        p_amount: transaction.amount,
+        p_transaction_date: transaction.transaction_date,
+        p_match_id: transaction.match_id || null
+      });
 
-      if (linkError) throw linkError;
+      console.log('🔵 [FINANCIAL-CRUD] ADD custom transaction response:', { data, error });
+
+      if (error) {
+        console.error('❌ [FINANCIAL-CRUD] ADD custom transaction RPC error:', error);
+        throw error;
+      }
+
+      const result = data as any;
+      if (result && result.success === false) {
+        return { success: false, message: result.error || 'Fout bij toevoegen transactie' };
+      }
+
       return { success: true, message: 'Transactie succesvol toegevoegd' };
     } catch (error) {
-      console.error('Error adding transaction:', error);
-      return { success: false, message: 'Fout bij toevoegen transactie' };
+      console.error('❌ [FINANCIAL-CRUD] ADD failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Onbekende fout';
+      return { success: false, message: `Fout bij toevoegen transactie: ${errorMessage}` };
     }
   },
 
