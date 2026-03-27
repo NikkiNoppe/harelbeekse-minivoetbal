@@ -415,7 +415,8 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                   </DropdownMenuTrigger>
                   <DropdownMenuContent 
                     align="end"
-                    className="w-[calc(100vw-2rem)] sm:w-80 max-h-96 overflow-y-auto z-[60]"
+                    className="w-[calc(100vw-2rem)] sm:w-80 max-h-96 overflow-y-auto"
+                    style={{ zIndex: 1100 }}
                   >
                     {loadingCostSettings ? (
                       <div className="p-4 text-center text-muted-foreground">
