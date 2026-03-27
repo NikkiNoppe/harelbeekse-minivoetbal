@@ -401,31 +401,27 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       return;
     }
     
-    // If it has a real DB id (positive), delete from database
-    if (penalty.id > 0) {
-      setIsDeletingPenalty(penalty.id);
-      try {
-        const result = await costSettingsService.deleteTransaction(penalty.id);
-        if (!result.success) {
-          toast({ title: "Fout", description: result.message, variant: "destructive" });
-          return;
-        }
-        toast({ title: "Boete verwijderd", description: "Boete succesvol verwijderd uit de database." }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
-      } catch (error) {
-        console.error('Error deleting penalty:', error);
-        toast({ title: "Fout", description: "Kon boete niet verwijderen.", variant: "destructive" });
+    // Delete from database and refetch
+    setIsDeletingPenalty(penalty.id);
+    try {
+      const result = await costSettingsService.deleteTransaction(penalty.id);
+      if (!result.success) {
+        toast({ title: "Fout", description: result.message, variant: "destructive" });
+        await loadExistingPenalties();
         return;
-      } finally {
-        setIsDeletingPenalty(null);
       }
+      toast({ title: "Boete verwijderd", description: "Boete succesvol verwijderd uit de database." });
+      queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
+      await loadExistingPenalties();
+      if (isAdmin) await loadMatchCosts();
+    } catch (error) {
+      console.error('Error deleting penalty:', error);
+      toast({ title: "Fout", description: "Kon boete niet verwijderen.", variant: "destructive" });
+      await loadExistingPenalties();
+    } finally {
+      setIsDeletingPenalty(null);
     }
-    
-    const removedPenalty = savedPenalties[index];
-    setSavedPenalties(prev => prev.filter((_, i) => i !== index));
-    if (removedPenalty?.id) {
-      setMatchCosts(prev => prev.filter(c => c.id !== removedPenalty.id));
-    }
-  }, [savedPenalties, toast, loadExistingPenalties]);
+  }, [savedPenalties, toast, loadExistingPenalties, queryClient, isAdmin, loadMatchCosts]);
 
   const CARD_OPTIONS = [
     { value: "yellow", label: "Geel" },
