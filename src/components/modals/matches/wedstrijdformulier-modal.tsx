@@ -292,7 +292,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       console.error('Error adding match cost:', error);
       toast({ title: "Fout", description: "Kon kost niet toevoegen.", variant: "destructive" });
     }
-  }, [newCostTeamId, newCostSettingId, newCostAmount, match.matchId, toast, loadMatchCosts]);
+  }, [newCostTeamId, newCostSettingId, newCostAmount, match.matchId, toast, loadMatchCosts, invalidateFinancialQueries]);
 
   const addPenalty = useCallback(() => {
     // Batch both state updates together synchronously for immediate UI response
