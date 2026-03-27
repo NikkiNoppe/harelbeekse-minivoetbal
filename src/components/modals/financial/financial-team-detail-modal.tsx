@@ -463,68 +463,111 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
 
               {/* Transaction Form */}
               {showAddTransaction && selectedCost && (
-                <Card className="bg-muted/50 border-2 border-purple-200">
-                  <CardContent className="p-4 space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium mb-2 block">Geselecteerde Kosten</Label>
-                      <div className="p-3 bg-card rounded-lg border border-border">
-                        <div className="font-medium text-sm mb-1">{selectedCost.name}</div>
-                        <Badge variant="outline" className="text-xs">
-                          {selectedCost.category === 'match_cost' ? 'Wedstrijd' : 
-                           selectedCost.category === 'penalty' ? 'Boete' : 
-                           selectedCost.category === 'deposit' ? 'Storting' : 'Overig'}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {selectedCost.category === 'deposit' && (
+                <Card className="border" style={{ borderColor: 'var(--accent)', borderWidth: '1px' }}>
+                  <CardContent className="!bg-transparent" style={{ padding: '12px', backgroundColor: 'unset' }}>
+                    <div className="space-y-3">
+                      {/* Selected cost preview */}
                       <div>
-                        <Label htmlFor="custom-amount" className="text-sm font-medium mb-2 block">
-                          Bedrag (€)
-                        </Label>
-                        <Input
-                          id="custom-amount"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={customAmount}
-                          onChange={(e) => setCustomAmount(e.target.value)}
-                          placeholder="0.00"
-                          className="w-full"
-                        />
+                        <Label className="text-sm font-medium mb-1.5 block">Geselecteerde Kosten</Label>
+                        <div className="p-3 rounded-lg border border-border bg-card flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Euro className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="font-medium text-sm truncate">{selectedCost.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Badge variant="outline" className="text-xs whitespace-nowrap">
+                              {selectedCost.category === 'match_cost' ? 'Wedstrijd' : 
+                               selectedCost.category === 'penalty' ? 'Boete' : 
+                               selectedCost.category === 'deposit' ? 'Storting' : 'Overig'}
+                            </Badge>
+                            {selectedCost.category !== 'deposit' && (
+                              <span className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>
+                                {new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(selectedCost.amount)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    )}
 
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <Button
-                        onClick={handleAddTransaction}
-                        className="flex-1"
-                        disabled={isSubmitting || (selectedCost.category === 'deposit' && (!customAmount || parseFloat(customAmount) <= 0))}
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Bezig...
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Transactie Toevoegen
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setShowAddTransaction(false);
-                          setSelectedCost(null);
-                          setCustomAmount('');
-                        }}
-                        disabled={isSubmitting}
-                        className="flex-1 sm:flex-initial"
-                      >
-                        Annuleren
-                      </Button>
+                      {/* Date picker */}
+                      <div>
+                        <Label className="text-sm font-medium mb-1.5 block">Datum</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !transactionDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {transactionDate ? format(transactionDate, "d MMMM yyyy", { locale: nl }) : <span>Kies een datum</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start" style={{ zIndex: 1100 }}>
+                            <Calendar
+                              mode="single"
+                              selected={transactionDate}
+                              onSelect={(date) => date && setTransactionDate(date)}
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      {/* Custom amount for deposits */}
+                      {selectedCost.category === 'deposit' && (
+                        <div>
+                          <Label htmlFor="custom-amount" className="text-sm font-medium mb-1.5 block">
+                            Bedrag (€)
+                          </Label>
+                          <Input
+                            id="custom-amount"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={customAmount}
+                            onChange={(e) => setCustomAmount(e.target.value)}
+                            placeholder="0.00"
+                            className="w-full"
+                          />
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex flex-col gap-2 pt-1">
+                        <button
+                          onClick={handleAddTransaction}
+                          className="btn btn--primary w-full flex items-center justify-center gap-2"
+                          disabled={isSubmitting || (selectedCost.category === 'deposit' && (!customAmount || parseFloat(customAmount) <= 0))}
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Bezig...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-4 w-4" />
+                              Transactie Toevoegen
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowAddTransaction(false);
+                            setSelectedCost(null);
+                            setCustomAmount('');
+                            setTransactionDate(new Date());
+                          }}
+                          disabled={isSubmitting}
+                          className="btn btn--secondary w-full"
+                        >
+                          Annuleren
+                        </button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
