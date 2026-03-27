@@ -540,7 +540,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
               ) : (
                 <div className="space-y-1.5">
                   {groupedTransactions.map((group, groupIndex) => {
-                    const isMatchGroup = group.match_id !== null && group.transactions.length > 1;
+                    const isMatchGroup = group.match_id !== null;
                     
                     return (
                       <Card 
