@@ -226,13 +226,19 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     load();
   }, [isAdmin]);
 
+  const invalidateFinancialQueries = useCallback(() => {
+    const keys = [['all-team-transactions'], ['teams-financial'], ['submitted-matches'], ['cost-settings']];
+    keys.forEach(queryKey => queryClient.invalidateQueries({ queryKey }));
+  }, [queryClient]);
+
   const handleDeleteMatchCost = useCallback(async (costId: number) => {
     try {
       const result = await costSettingsService.deleteTransaction(costId);
       if (result.success) {
-        setMatchCosts(prev => prev.filter(c => c.id !== costId));
-        setSavedPenalties(prev => prev.filter(p => p.id !== costId));
-        toast({ title: "Kost verwijderd" }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
+        toast({ title: "Kost verwijderd" });
+        invalidateFinancialQueries();
+        await loadExistingPenalties();
+        if (isAdmin) await loadMatchCosts();
       } else {
         toast({ title: "Fout", description: result.message, variant: "destructive" });
       }
@@ -240,16 +246,17 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       console.error('Error deleting match cost:', error);
       toast({ title: "Fout", description: "Kon kost niet verwijderen.", variant: "destructive" });
     }
-  }, [toast]);
+  }, [toast, invalidateFinancialQueries, loadExistingPenalties, isAdmin, loadMatchCosts]);
 
   const handleUpdateMatchCostAmount = useCallback(async (costId: number, newAmount: number) => {
     try {
       const result = await costSettingsService.updateTransaction(costId, { amount: newAmount });
       if (result.success) {
-        setMatchCosts(prev => prev.map(c => c.id === costId ? { ...c, amount: newAmount } : c));
-        setSavedPenalties(prev => prev.map(p => p.id === costId ? { ...p, amount: newAmount } : p));
         setEditingCostId(null);
-        toast({ title: "Bedrag bijgewerkt" }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
+        toast({ title: "Bedrag bijgewerkt" });
+        invalidateFinancialQueries();
+        await loadExistingPenalties();
+        if (isAdmin) await loadMatchCosts();
       } else {
         toast({ title: "Fout", description: result.message, variant: "destructive" });
       }
@@ -257,7 +264,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       console.error('Error updating match cost:', error);
       toast({ title: "Fout", description: "Kon bedrag niet bijwerken.", variant: "destructive" });
     }
-  }, [toast]);
+  }, [toast, invalidateFinancialQueries, loadExistingPenalties, isAdmin, loadMatchCosts]);
 
   const handleAddMatchCost = useCallback(async () => {
     if (!newCostTeamId || !newCostSettingId) return;
@@ -273,7 +280,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         match.matchId
       );
       if (result.success) {
-        toast({ title: "Kost toegevoegd" }); queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
+        toast({ title: "Kost toegevoegd" }); invalidateFinancialQueries();
         setNewCostTeamId(null);
         setNewCostSettingId(null);
         setNewCostAmount("");
@@ -285,7 +292,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       console.error('Error adding match cost:', error);
       toast({ title: "Fout", description: "Kon kost niet toevoegen.", variant: "destructive" });
     }
-  }, [newCostTeamId, newCostSettingId, newCostAmount, match.matchId, toast, loadMatchCosts]);
+  }, [newCostTeamId, newCostSettingId, newCostAmount, match.matchId, toast, loadMatchCosts, invalidateFinancialQueries]);
 
   const addPenalty = useCallback(() => {
     // Batch both state updates together synchronously for immediate UI response
@@ -378,7 +385,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       if (isAdmin) {
         await loadMatchCosts();
       }
-      queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
+      invalidateFinancialQueries();
     } catch (error: any) {
       console.error('Error saving penalties:', error);
       toast({
@@ -417,7 +424,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         return;
       }
       toast({ title: "Boete verwijderd", description: "Boete succesvol verwijderd uit de database." });
-      queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
+      invalidateFinancialQueries();
       
       console.log('🗑️ [removeSavedPenalty] Reloading penalties from DB...');
       await loadExistingPenalties();
