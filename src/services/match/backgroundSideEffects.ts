@@ -489,8 +489,9 @@ export const scheduleBackgroundSideEffects = (
       results.push(result);
     }
 
-    // 5. Form completion penalties — only on submission transition or player changes
-    if (updateData.isCompleted && matchInfo && (updateData._submissionTransition || playersProvided)) {
+    // 5. Form completion penalties — only on first submission transition (false→true)
+    // NOT on subsequent saves with player changes, to prevent re-creating penalties an admin deleted
+    if (updateData.isCompleted && matchInfo && updateData._submissionTransition) {
       const result = await executeWithRetry(
         ctx,
         'form_completion',
