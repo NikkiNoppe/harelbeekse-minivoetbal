@@ -395,8 +395,11 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     const penalty = savedPenalties[index];
     if (!penalty) return;
 
+    console.log('🗑️ [removeSavedPenalty] Starting delete:', { index, penaltyId: penalty.id, penalty });
+
     // Never perform local-only delete for saved penalties: force DB-backed ids.
     if (penalty.id <= 0) {
+      console.log('🗑️ [removeSavedPenalty] Invalid ID, reloading from DB');
       await loadExistingPenalties();
       return;
     }
@@ -404,7 +407,10 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     // Delete from database and refetch
     setIsDeletingPenalty(penalty.id);
     try {
+      console.log('🗑️ [removeSavedPenalty] Calling deleteTransaction for id:', penalty.id);
       const result = await costSettingsService.deleteTransaction(penalty.id);
+      console.log('🗑️ [removeSavedPenalty] deleteTransaction result:', result);
+      
       if (!result.success) {
         toast({ title: "Fout", description: result.message, variant: "destructive" });
         await loadExistingPenalties();
@@ -412,10 +418,13 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       }
       toast({ title: "Boete verwijderd", description: "Boete succesvol verwijderd uit de database." });
       queryClient.invalidateQueries({ queryKey: ["all-team-transactions"] });
+      
+      console.log('🗑️ [removeSavedPenalty] Reloading penalties from DB...');
       await loadExistingPenalties();
+      console.log('🗑️ [removeSavedPenalty] Penalties after reload:', savedPenalties);
       if (isAdmin) await loadMatchCosts();
     } catch (error) {
-      console.error('Error deleting penalty:', error);
+      console.error('🗑️ [removeSavedPenalty] Error:', error);
       toast({ title: "Fout", description: "Kon boete niet verwijderen.", variant: "destructive" });
       await loadExistingPenalties();
     } finally {
