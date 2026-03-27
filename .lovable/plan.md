@@ -1,26 +1,33 @@
 
-Doel: Boetes en Financieel samenvoegen naar één "Financieel" sectie in het wedstrijdformulier.
 
-## Status: ✅ Afgerond
+## Plan: Fix penalty deletion in wedstrijdformulier
 
-### Uitgevoerd:
+### Root cause
 
-1. **Database migratie**: Nieuwe `manage_team_cost_for_match` SECURITY DEFINER RPC die zowel admin als referee toelaat om team_costs te verwijderen en bij te werken. Referees worden geautoriseerd op basis van hun toewijzing aan de wedstrijd.
+The `removeSavedPenalty` function in the wedstrijdformulier does local state removal (`setSavedPenalties`, `setMatchCosts`) regardless of whether the DB delete succeeded. It also never calls `loadExistingPenalties()` after deletion to verify the DB state, unlike the financial page which invalidates queries and refetches.
 
-2. **Service laag** (`costSettingsService.ts`):
-   - `deleteTransaction` en `updateTransaction` gebruiken nu de nieuwe `manage_team_cost_for_match` RPC i.p.v. de admin-only functies
-   - `_getUserContext()` haalt zowel userId als role op
-   - Gedetailleerde console.log bij elke CRUD-operatie (🔵 request, 🔵 response, ❌ error, ⚠️ warning)
-   - `updateTransaction` ondersteunt nu ook `team_id` wijziging
+Additionally, `loadExistingPenalties` is missing from the `removeSavedPenalty` dependency array.
 
-3. **UI merge** (`wedstrijdformulier-modal.tsx`):
-   - Aparte "Boetes" sectie verwijderd
-   - Eén "Financieel" sectie zichtbaar voor admin + referee
-   - Boetes subsectie: volledige CRUD (toevoegen, opslaan, verwijderen)
-   - Wedstrijdkosten subsectie: alleen zichtbaar voor admin
-   - `loadMatchCosts` werkt nu ook voor referees
+### Fix (1 file)
 
-### Zichtbaarheid:
-- **Admin + Referee**: Boetes (volledige CRUD) + Financieel sectie
-- **Admin only**: Wedstrijdkosten subsectie binnen Financieel
-- **Team managers**: Geen toegang tot Financieel sectie
+**`src/components/modals/matches/wedstrijdformulier-modal.tsx`** — `removeSavedPenalty` function (~lines 394-428):
+
+1. After successful `deleteTransaction`, call `await loadExistingPenalties()` to reload from DB (same pattern as financial page's `invalidateQueries` refetch)
+2. Remove the manual local state manipulation (`setSavedPenalties`, `setMatchCosts` filter) — let `loadExistingPenalties` handle the state
+3. On failure, also call `loadExistingPenalties()` to restore correct state
+4. Add `loadExistingPenalties` to the dependency array
+5. Invalidate financial queries for consistency with `/admin/financial`
+
+```text
+Before (simplified):
+  deleteTransaction(id)
+  if success → toast
+  setSavedPenalties(filter out)   ← local only, no DB verification
+  setMatchCosts(filter out)       ← local only
+
+After (simplified):
+  deleteTransaction(id)
+  if success → toast → loadExistingPenalties() → invalidateQueries
+  if failure → toast → loadExistingPenalties()   ← restore truth
+```
+
