@@ -8,8 +8,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { costSettingsService } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2, ChevronDown, Loader2 } from "lucide-react";
+import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2, ChevronDown, Loader2, CalendarIcon } from "lucide-react";
 import { formatDateShort, getCurrentDate } from "@/lib/dateUtils";
+import { TransactionEditModal } from "./transaction-edit-modal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { nl } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TransactionEditModal } from "./transaction-edit-modal";
 import {
   DropdownMenu,
@@ -38,6 +50,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [selectedCost, setSelectedCost] = useState<any>(null);
   const [customAmount, setCustomAmount] = useState('');
+  const [transactionDate, setTransactionDate] = useState<Date>(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // State for edit modal
@@ -79,6 +92,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
       setShowAddTransaction(false);
       setSelectedCost(null);
       setCustomAmount('');
+      setTransactionDate(new Date());
       setEditModalOpen(false);
       setSelectedTransaction(null);
     }
@@ -88,6 +102,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
   const handleCostSelection = (cost: any) => {
     setSelectedCost(cost);
     setCustomAmount('');
+    setTransactionDate(new Date());
     setShowAddTransaction(true);
   };
 
@@ -138,7 +153,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
         cost_setting_id: selectedCost.id,
         penalty_type_id: null,
         match_id: null,
-        transaction_date: getCurrentDate()
+        transaction_date: format(transactionDate, 'yyyy-MM-dd')
       });
 
       console.log('Transaction result:', result);
@@ -153,6 +168,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
         setShowAddTransaction(false);
         setSelectedCost(null);
         setCustomAmount('');
+        setTransactionDate(new Date());
         
         // Subtiel: 1 invalidatie + refetch enkel actieve queries voor dit team
         await queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
