@@ -161,7 +161,7 @@ export const monthlyReportsService = {
           .from('team_costs')
           .select(`
             *,
-            costs(name, category),
+            costs(name, category, amount),
             matches(unique_number, match_date, referee)
           `)
           .gte('transaction_date', startDateStr)
