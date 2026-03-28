@@ -1,28 +1,48 @@
 
 
-## Plan: Fix €0.00 amounts in financial history
+## Plan: Fix match costs being re-created after deletion
 
 ### Root cause
 
-The database trigger `process_match_financial_costs` inserts match costs into `team_costs` **without** an explicit `amount` value (NULL). The system is designed to fall back to `costs.amount` (the default rate from the cost settings table) when `team_costs.amount` is NULL.
+The `process_match_financial_costs` **database trigger** fires on every UPDATE to the `matches` table. When you:
+1. Open wedstrijdformulier → see Veldkosten (id=100)
+2. Delete Veldkosten → successfully deleted from `team_costs`
+3. Click "Opslaan" → updates `matches` table → trigger fires → re-inserts Veldkosten with a **new id** (id=101)
 
-However, multiple queries fetch `costs(name, category)` from the join — **missing the `amount` field**. So when the fallback logic runs `(transaction.costs?.amount || 0)`, `costs.amount` is `undefined` and it falls back to `0`.
+The trigger uses `ON CONFLICT (match_id, team_id, cost_setting_id) DO NOTHING`, but since the record was deleted, there's no conflict — it gets re-created.
 
-The match form correctly uses `costs(name, category, amount)` — that's why it shows €7.00 while the financial history shows €0.00.
+This also explains the "/admin/financial" error: the UI still shows the old ID (100) from a stale cache, but the DB now has a new ID (101).
 
-### Fix: Add `amount` to all `costs()` joins
+### Solution
 
-**6 locations across 5 files** need `costs(name, category)` changed to `costs(name, category, amount)`:
+Modify the `process_match_financial_costs` trigger to **only insert costs during the initial submission transition** (`is_submitted` going from `false` to `true`). For subsequent updates to an already-submitted match, the trigger should do nothing — costs are already created and any manual changes should be preserved.
 
-1. **`src/hooks/useFinancialData.ts`** line 140: `costs(name, category)` → `costs(name, category, amount)`
+### Changes
 
-2. **`src/services/financial/enhancedCostSettingsService.ts`** line 286 and line 363: same change
+**1. Database migration: Update `process_match_financial_costs` trigger**
 
-3. **`src/services/financial/financialService.ts`** line 49: same change
+Change the trigger condition so that match costs are only inserted when `OLD.is_submitted = false AND NEW.is_submitted = true` (first submission). The existing logic for clearing costs when scores are set to NULL is kept.
 
-4. **`src/services/financial/costSettingsService.ts`** line 171: same change
+```sql
+-- Only create costs on first submission transition
+IF NEW.is_submitted = true 
+   AND OLD.is_submitted = false  -- ← NEW: only on transition
+   AND NEW.home_score IS NOT NULL 
+   AND NEW.away_score IS NOT NULL THEN
+  -- insert costs...
+END IF;
+```
 
-5. **`src/services/financial/monthlyReportsService.ts`** line 164: same change
+This single change prevents deleted costs from being re-created on subsequent saves, while preserving the initial cost generation on first submission. No frontend changes needed.
 
-No logic changes needed — the fallback code `transaction.amount !== null ? transaction.amount : costs.amount` already exists and is correct. It just needs the `amount` field to actually be fetched from the database.
+**2. No frontend changes required**
+
+The `handleDeleteMatchCost`, `loadMatchCosts`, and cache invalidation logic already works correctly. The only issue was the trigger undoing the deletions.
+
+### Technical details
+
+- The trigger currently fires on every update where `is_submitted = true` and scores are present
+- After the fix, it only fires on the `false → true` transition of `is_submitted`
+- The score-clearing logic (deleting costs when scores become NULL) is preserved unchanged
+- The referee cost removal logic (when `assigned_referee_id` is NULL) is preserved unchanged
 
