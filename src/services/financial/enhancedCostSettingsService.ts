@@ -283,7 +283,7 @@ export const enhancedCostSettingsService = {
         .from('team_costs')
         .select(`
           *,
-          costs(name, category),
+          costs(name, category, amount),
           matches(unique_number, match_date)
         `)
         .eq('team_id', teamId)
@@ -360,7 +360,7 @@ export const enhancedCostSettingsService = {
         .from('team_costs')
         .select(`
           *,
-          costs(name, category),
+          costs(name, category, amount),
           matches(unique_number, match_date)
         `)
         .eq('cost_setting_id', costSettingId)
