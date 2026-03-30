@@ -1,48 +1,61 @@
 
 
-## Plan: Fix match costs being re-created after deletion
+## Plan: Normalize playoff speeldag labels
 
-### Root cause
+### Problem
 
-The `process_match_financial_costs` **database trigger** fires on every UPDATE to the `matches` table. When you:
-1. Open wedstrijdformulier → see Veldkosten (id=100)
-2. Delete Veldkosten → successfully deleted from `team_costs`
-3. Click "Opslaan" → updates `matches` table → trigger fires → re-inserts Veldkosten with a **new id** (id=101)
+The `speeldag` field in the database contains inconsistent values for playoff matches:
+- Some are `"Playoff Speeldag 7"` (old format)
+- Some are `"Playoff 8"` (new format)
+- Some may be `"Speeldag Playoff 9"` (variant)
 
-The trigger uses `ON CONFLICT (match_id, team_id, cost_setting_id) DO NOTHING`, but since the record was deleted, there's no conflict — it gets re-created.
-
-This also explains the "/admin/financial" error: the UI still shows the old ID (100) from a stale cache, but the DB now has a new ID (101).
+This causes duplicate or inconsistent groupings on `/playoff` (e.g., "Speeldag 7" and "8" appearing as separate groups) and on `/admin/match-forms/playoffs`.
 
 ### Solution
 
-Modify the `process_match_financial_costs` trigger to **only insert costs during the initial submission transition** (`is_submitted` going from `false` to `true`). For subsequent updates to an already-submitted match, the trigger should do nothing — costs are already created and any manual changes should be preserved.
+Two changes to normalize display everywhere:
 
-### Changes
+**1. `src/components/pages/admin/matches/services/matchesFormService.ts` (~line 114)**
 
-**1. Database migration: Update `process_match_financial_costs` trigger**
+Replace the simple `.replace('Playoff Speeldag', 'Playoff')` with a robust regex that handles all variants and normalizes to `"Playoff X"`:
 
-Change the trigger condition so that match costs are only inserted when `OLD.is_submitted = false AND NEW.is_submitted = true` (first submission). The existing logic for clearing costs when scores are set to NULL is kept.
-
-```sql
--- Only create costs on first submission transition
-IF NEW.is_submitted = true 
-   AND OLD.is_submitted = false  -- ← NEW: only on transition
-   AND NEW.home_score IS NOT NULL 
-   AND NEW.away_score IS NOT NULL THEN
-  -- insert costs...
-END IF;
+```typescript
+// Normalize all playoff speeldag variants to "Playoff X"
+let matchdayDisplay = (row.speeldag || "Te bepalen");
+if (isPlayoff || matchdayDisplay.toLowerCase().includes('playoff')) {
+  const num = matchdayDisplay.match(/(\d+)/);
+  matchdayDisplay = num ? `Playoff ${num[1]}` : 'Playoff';
+}
 ```
 
-This single change prevents deleted costs from being re-created on subsequent saves, while preserving the initial cost generation on first submission. No frontend changes needed.
+**2. `src/components/pages/public/competition/PlayOffPage.tsx` (~line 328)**
 
-**2. No frontend changes required**
+Apply the same normalization when building schedule matches. Currently it does `.replace(/^Playoff\s+/i, '')` to strip "Playoff" and keep the number. But if speeldag is `"Playoff Speeldag 7"`, the regex leaves `"Speeldag 7"`. Fix:
 
-The `handleDeleteMatchCost`, `loadMatchCosts`, and cache invalidation logic already works correctly. The only issue was the trigger undoing the deletions.
+```typescript
+const speeldagNum = match.speeldag ? match.speeldag.match(/(\d+)/) : null;
+const speeldagClean = speeldagNum ? speeldagNum[1] : null;
+```
+
+This extracts just the number regardless of prefix format. The `matchday` field (used for grouping headers) will then be just `"1"`, `"2"`, etc., which is already how the page displays them.
+
+**3. Database cleanup migration (optional but recommended)**
+
+A one-time migration to normalize all existing `speeldag` values in the `matches` table for playoff matches:
+
+```sql
+UPDATE matches
+SET speeldag = 'Playoff ' || (regexp_match(speeldag, '(\d+)'))[1]
+WHERE is_playoff_match = true
+  AND speeldag IS NOT NULL
+  AND speeldag != 'Playoff ' || (regexp_match(speeldag, '(\d+)'))[1];
+```
+
+This ensures the source data is clean, preventing future inconsistencies.
 
 ### Technical details
 
-- The trigger currently fires on every update where `is_submitted = true` and scores are present
-- After the fix, it only fires on the `false → true` transition of `is_submitted`
-- The score-clearing logic (deleting costs when scores become NULL) is preserved unchanged
-- The referee cost removal logic (when `assigned_referee_id` is NULL) is preserved unchanged
+- The root cause is that `playoffService.ts` currently generates `speeldag: \`Playoff ${matchday}\`` (correct format), but older matches may have been generated with `"Playoff Speeldag X"` before a previous rename
+- Both the public page and admin match forms need to handle any variant gracefully
+- The DB migration makes the fix permanent at the source
 
