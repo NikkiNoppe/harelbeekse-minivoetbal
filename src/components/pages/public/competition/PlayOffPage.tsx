@@ -325,7 +325,8 @@ const PlayOffPage: React.FC = () => {
       const dateStr = `${weekday} ${day} ${month}`;
       
       const poLabel = match.playoff_type === 'top' ? 'PO1' : 'PO2';
-      const speeldagClean = match.speeldag ? match.speeldag.replace(/^Playoff\s+/i, '') : null;
+      const speeldagNum = match.speeldag ? match.speeldag.match(/(\d+)/) : null;
+      const speeldagClean = speeldagNum ? speeldagNum[1] : null;
       
       return {
         matchId: match.match_id,
