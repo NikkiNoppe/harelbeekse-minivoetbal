@@ -949,6 +949,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      manage_blog_post: {
+        Args: {
+          p_id?: number
+          p_operation: string
+          p_published?: boolean
+          p_setting_value?: Json
+          p_user_id: number
+        }
+        Returns: Json
+      }
       manage_team_cost_for_match: {
         Args: {
           p_amount?: number

@@ -1,5 +1,4 @@
 import { supabase } from '@/integrations/supabase/client';
-import { withUserContext } from '@/lib/supabaseUtils';
 
 export interface BlogPostData {
   id?: number;
@@ -55,8 +54,22 @@ const transformBlogPostData = (data: any[]): BlogPost[] => {
   });
 };
 
+// Helper to get current user ID from localStorage
+const getCurrentUserId = (): number => {
+  try {
+    const userData = localStorage.getItem('auth_user');
+    if (userData) {
+      const parsed = JSON.parse(userData);
+      return parsed.user_id || -1;
+    }
+  } catch {
+    // ignore
+  }
+  return -1;
+};
+
 export const blogService = {
-  // Get all blog posts
+  // Get all blog posts (read - uses SELECT RLS policies directly)
   async getAllBlogPosts(): Promise<BlogPost[]> {
     try {
       const { data, error } = await supabase
@@ -93,100 +106,69 @@ export const blogService = {
     }
   },
 
-  // Create new blog post
+  // Create new blog post via atomic RPC
   async createBlogPost(blogPostData: Omit<BlogPostData, 'id' | 'created_at' | 'updated_at'>): Promise<void> {
-    try {
-      const data = {
-        ...blogPostData,
-        setting_name: `post_${Date.now()}`,
-        updated_at: new Date().toISOString()
-      };
+    const userId = getCurrentUserId();
+    const { data, error } = await supabase.rpc('manage_blog_post', {
+      p_user_id: userId,
+      p_operation: 'create',
+      p_setting_value: blogPostData.setting_value as any
+    });
 
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .insert([data]);
-      });
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error creating blog post:', error);
-      throw new Error('Kon blog post niet aanmaken');
+    if (error) throw error;
+    const result = data as any;
+    if (result && !result.success) {
+      throw new Error(result.error || 'Kon blog post niet aanmaken');
     }
   },
 
-  // Update existing blog post
+  // Update existing blog post via atomic RPC
   async updateBlogPost(id: number, blogPostData: Partial<BlogPostData>): Promise<void> {
-    try {
-      const data = {
-        ...blogPostData,
-        updated_at: new Date().toISOString()
-      };
+    const userId = getCurrentUserId();
+    const { data, error } = await supabase.rpc('manage_blog_post', {
+      p_user_id: userId,
+      p_operation: 'update',
+      p_id: id,
+      p_setting_value: blogPostData.setting_value as any
+    });
 
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .update(data)
-          .eq('id', id);
-      });
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error updating blog post:', error);
-      throw new Error('Kon blog post niet bijwerken');
+    if (error) throw error;
+    const result = data as any;
+    if (result && !result.success) {
+      throw new Error(result.error || 'Kon blog post niet bijwerken');
     }
   },
 
-  // Delete blog post
+  // Delete blog post via atomic RPC
   async deleteBlogPost(id: number): Promise<void> {
-    try {
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .delete()
-          .eq('id', id);
-      });
+    const userId = getCurrentUserId();
+    const { data, error } = await supabase.rpc('manage_blog_post', {
+      p_user_id: userId,
+      p_operation: 'delete',
+      p_id: id
+    });
 
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error deleting blog post:', error);
-      throw new Error('Kon blog post niet verwijderen');
+    if (error) throw error;
+    const result = data as any;
+    if (result && !result.success) {
+      throw new Error(result.error || 'Kon blog post niet verwijderen');
     }
   },
 
-  // Toggle blog post published status
+  // Toggle blog post published status via atomic RPC
   async togglePublishedStatus(id: number, published: boolean): Promise<void> {
-    try {
-      // First get the current blog post
-      const { data: currentPost, error: fetchError } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('id', id)
-        .single();
+    const userId = getCurrentUserId();
+    const { data, error } = await supabase.rpc('manage_blog_post', {
+      p_user_id: userId,
+      p_operation: 'toggle_published',
+      p_id: id,
+      p_published: published
+    });
 
-      if (fetchError) throw fetchError;
-
-      // Update the setting_value with the new published status
-      const currentValue = currentPost.setting_value || {};
-      const updatedSettingValue = Object.assign({}, currentValue, {
-        published: published,
-        published_at: published ? new Date().toISOString() : null
-      });
-
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .update({ 
-            setting_value: updatedSettingValue,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', id);
-      });
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error toggling published status:', error);
-      throw new Error('Kon publicatiestatus niet wijzigen');
+    if (error) throw error;
+    const result = data as any;
+    if (result && !result.success) {
+      throw new Error(result.error || 'Kon publicatiestatus niet wijzigen');
     }
   }
 };
