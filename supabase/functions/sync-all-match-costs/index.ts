@@ -66,45 +66,8 @@ Deno.serve(async (req) => {
 
     if (!fieldCost) throw new Error('Veldkosten niet gevonden');
 
-    // Pre-fetch all forfait penalties to avoid N+1 queries
-    const { data: allForfaitCosts, error: forfaitErr } = await supabaseServiceRole
-      .from('team_costs')
-      .select('match_id')
-      .in('cost_setting_id', [6, 25])
-      .not('match_id', 'is', null);
-
-    if (forfaitErr) console.warn('⚠️ Error fetching forfait costs:', forfaitErr);
-
-    const forfaitMatchIds = new Set((allForfaitCosts || []).map((fc: any) => fc.match_id));
-    console.log(`🚫 Found ${forfaitMatchIds.size} matches with forfait penalties`);
-
-    let syncedCount = 0;
-    let updatedCount = 0;
-    let skippedCount = 0;
+    // Match costs are always applied - forfait adjustments are done manually
     let forfaitCount = 0;
-
-    for (const match of allMatches) {
-      // Skip forfait matches - remove any existing match costs
-      if (forfaitMatchIds.has(match.match_id)) {
-        const costSettingIds = [fieldCost.id, ...(refereeCost ? [refereeCost.id] : []), ...(adminCost ? [adminCost.id] : [])];
-        const { data: existingMatchCosts } = await supabaseServiceRole
-          .from('team_costs')
-          .select('id')
-          .eq('match_id', match.match_id)
-          .in('cost_setting_id', costSettingIds);
-
-        if (existingMatchCosts && existingMatchCosts.length > 0) {
-          const idsToDelete = existingMatchCosts.map((ec: any) => ec.id);
-          await supabaseServiceRole
-            .from('team_costs')
-            .delete()
-            .in('id', idsToDelete);
-          console.log(`🚫 Removed ${idsToDelete.length} match costs for forfait match ${match.match_id}`);
-        }
-
-        forfaitCount++;
-        continue;
-      }
 
       const teamIds = [match.home_team_id, match.away_team_id].filter((id: any) => typeof id === 'number' && id > 0);
       if (teamIds.length !== 2) { skippedCount++; continue; }

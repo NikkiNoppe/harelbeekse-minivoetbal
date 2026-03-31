@@ -43,41 +43,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check for forfait penalties (cost_setting_id 6 = Forfait verwittigd, 25 = Forfait tijdens de wedstrijd)
-    const { data: forfaitCosts, error: forfaitErr } = await supabaseServiceRole
-      .from('team_costs')
-      .select('id')
-      .eq('match_id', matchId)
-      .in('cost_setting_id', [6, 25]);
-
-    if (forfaitErr) {
-      console.warn('⚠️ Error checking forfait:', forfaitErr);
-    }
-
-    if (forfaitCosts && forfaitCosts.length > 0) {
-      console.log(`🚫 Forfait detected for match ${matchId}, removing existing match costs and skipping sync`);
-      
-      // Get active match_cost IDs to delete
-      const { data: matchCostSettings } = await supabaseServiceRole
-        .from('costs')
-        .select('id')
-        .eq('category', 'match_cost')
-        .eq('is_active', true);
-
-      if (matchCostSettings && matchCostSettings.length > 0) {
-        const costIds = matchCostSettings.map((cs: any) => cs.id);
-        await supabaseServiceRole
-          .from('team_costs')
-          .delete()
-          .eq('match_id', matchId)
-          .in('cost_setting_id', costIds);
-      }
-
-      return new Response(
-        JSON.stringify({ success: true, message: 'Forfait wedstrijd: geen wedstrijdkosten toegepast', forfait: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Match costs are always applied when submitted - forfait adjustments are done manually
 
     // Load match_cost settings (active)
     const { data: matchCosts, error: costErr } = await supabaseServiceRole
