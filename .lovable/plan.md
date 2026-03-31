@@ -1,49 +1,52 @@
 
 
-## Plan: Fix Blog CRUD RLS violations
+## Plan: Forfait-uitzondering voor wedstrijdkosten
 
-### Root cause
+### Probleem
+Wanneer een forfait wordt uitgesproken, worden er momenteel wedstrijdkosten (veld, scheids, admin) toegepast op beide teams alsof de wedstrijd normaal werd gespeeld. Bij een forfait heeft de wedstrijd niet plaatsgevonden, dus mogen er geen wedstrijdkosten worden aangerekend aan beide teams.
 
-The `blogService` uses `withUserContext()` which sets PostgreSQL session variables via `set_current_user_context` RPC. However, Supabase uses connection pooling, so the context set in one RPC call may be lost by the time the subsequent INSERT/UPDATE/DELETE executes in a separate transaction on a different connection.
+### Hoe een forfait wordt gedetecteerd
+Er zijn twee forfait-boetes in de database:
+- **Forfait verwittigd** (id: 6, €25)
+- **Forfait tijdens de wedstrijd** (id: 25, €15)
 
-For SuperAdmin users specifically, `withUserContext` calls `supabase.rpc('set_config', ...)` **three separate times** (role, user_id, team_ids), each in its own transaction — making context loss even more likely.
+Een wedstrijd is een forfait als er een `team_costs` record bestaat met `cost_setting_id` IN (6, 25) voor die `match_id`. Dit is een handmatig toegevoegde boete door de admin.
 
-### Solution
+### Aanpak
+De forfait-boete wordt handmatig toegevoegd door de admin. De automatische kosten moeten achteraf gecontroleerd worden: als er een forfait-boete aanwezig is, moeten de wedstrijdkosten NIET worden aangerekend (of verwijderd als ze al bestaan).
 
-Create a database RPC function `manage_blog_post` (SECURITY DEFINER) that validates the user is admin and performs the CRUD operation atomically — same pattern as `manage_team_cost_for_match`, `update_match_with_context`, etc. This bypasses RLS entirely within a single trusted function.
+### Wijzigingen
 
-### Changes
+**1. Database trigger `process_match_financial_costs` updaten (migration)**
 
-**1. Database migration: Create `manage_blog_post` RPC**
+Voeg een forfait-check toe aan het begin van de trigger: als er een forfait-penalty bestaat voor deze match_id, sla de wedstrijdkosten over en verwijder eventueel bestaande wedstrijdkosten.
 
-A single SECURITY DEFINER function that handles all blog CRUD:
-- `create` — inserts a new blog post into `application_settings`
-- `update` — updates an existing blog post by ID
-- `delete` — deletes a blog post by ID
-- `toggle_published` — toggles the published status
+**2. Edge function `sync-match-costs` updaten**
 
-The function validates the caller is admin by checking `users.role` directly (same pattern as other admin RPCs).
+Na het laden van de wedstrijd, controleer of er forfait-boetes bestaan (`cost_setting_id IN (6, 25)` in `team_costs` voor die match). Zo ja: verwijder bestaande wedstrijdkosten en return early.
 
-**2. Update `src/services/blogService.ts`**
+**3. Edge function `sync-all-match-costs` updaten**
 
-Replace all `withUserContext` + direct Supabase queries with calls to the new `manage_blog_post` RPC:
-- `createBlogPost` → `supabase.rpc('manage_blog_post', { p_user_id, p_operation: 'create', p_setting_value: {...} })`
-- `updateBlogPost` → `supabase.rpc('manage_blog_post', { p_user_id, p_operation: 'update', p_id: id, ... })`
-- `deleteBlogPost` → `supabase.rpc('manage_blog_post', { p_user_id, p_operation: 'delete', p_id: id })`
-- `togglePublishedStatus` → `supabase.rpc('manage_blog_post', { p_user_id, p_operation: 'toggle_published', p_id: id, p_published: boolean })`
+Zelfde check per wedstrijd in de batch-loop: als er een forfait-boete is, skip de wedstrijd en verwijder eventuele bestaande wedstrijdkosten.
 
-Read operations (`getAllBlogPosts`, `getPublishedBlogPosts`) remain as direct queries since they use SELECT policies that already work.
+**4. `backgroundSideEffects.ts` - volgorde aanpassen**
 
-**3. Fix BlogPage.tsx form/modal issues**
+Geen codewijziging nodig hier; de edge function handelt de check zelf af. Maar documentatie-opmerking: forfait-boetes worden handmatig toegevoegd, dus de automatische sync zal ze correct detecteren bij volgende runs.
 
-- Move the `AppModal` outside the header `div` (currently nested inside `flex justify-between` alongside the button, which can cause layout issues)
-- Fix the form grid layout (title and content are in a 2-column grid but content/textarea should span full width)
-- Ensure `resetForm` properly opens the dialog for new posts (currently calls `resetForm()` which closes the dialog, then immediately opens it)
+### Technische details
 
-### Technical details
+De forfait-check query in de edge functions:
+```sql
+SELECT COUNT(*) FROM team_costs 
+WHERE match_id = $1 AND cost_setting_id IN (6, 25)
+```
 
-- The RPC uses the same admin verification pattern as `delete_team_cost_as_admin`: checks `users.role = 'admin'` by `user_id`
-- Returns JSONB with `success`, `message`, and optionally `id` for creates
-- User ID is read from `localStorage` auth data (same as other services)
-- No changes needed to RLS policies — the SECURITY DEFINER function bypasses RLS
+Als count > 0: skip alle wedstrijdkosten en verwijder eventuele bestaande match_cost records voor die wedstrijd.
+
+In de database trigger wordt dezelfde logica toegevoegd als eerste stap, zodat zelfs bij directe database-updates de regel wordt gerespecteerd.
+
+### Samenvatting
+- 1 database migration (trigger update)
+- 2 edge function updates (`sync-match-costs`, `sync-all-match-costs`)
+- Resultaat: bij forfait geen wedstrijdkosten voor beide teams, alleen de forfait-boete voor het schuldige team
 
