@@ -69,6 +69,7 @@ Deno.serve(async (req) => {
     // Match costs are always applied - forfait adjustments are done manually
     let forfaitCount = 0;
 
+    for (const match of allMatches) {
       const teamIds = [match.home_team_id, match.away_team_id].filter((id: any) => typeof id === 'number' && id > 0);
       if (teamIds.length !== 2) { skippedCount++; continue; }
 
