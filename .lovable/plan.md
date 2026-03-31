@@ -1,61 +1,49 @@
 
 
-## Plan: Normalize playoff speeldag labels
+## Plan: Fix Blog CRUD RLS violations
 
-### Problem
+### Root cause
 
-The `speeldag` field in the database contains inconsistent values for playoff matches:
-- Some are `"Playoff Speeldag 7"` (old format)
-- Some are `"Playoff 8"` (new format)
-- Some may be `"Speeldag Playoff 9"` (variant)
+The `blogService` uses `withUserContext()` which sets PostgreSQL session variables via `set_current_user_context` RPC. However, Supabase uses connection pooling, so the context set in one RPC call may be lost by the time the subsequent INSERT/UPDATE/DELETE executes in a separate transaction on a different connection.
 
-This causes duplicate or inconsistent groupings on `/playoff` (e.g., "Speeldag 7" and "8" appearing as separate groups) and on `/admin/match-forms/playoffs`.
+For SuperAdmin users specifically, `withUserContext` calls `supabase.rpc('set_config', ...)` **three separate times** (role, user_id, team_ids), each in its own transaction — making context loss even more likely.
 
 ### Solution
 
-Two changes to normalize display everywhere:
+Create a database RPC function `manage_blog_post` (SECURITY DEFINER) that validates the user is admin and performs the CRUD operation atomically — same pattern as `manage_team_cost_for_match`, `update_match_with_context`, etc. This bypasses RLS entirely within a single trusted function.
 
-**1. `src/components/pages/admin/matches/services/matchesFormService.ts` (~line 114)**
+### Changes
 
-Replace the simple `.replace('Playoff Speeldag', 'Playoff')` with a robust regex that handles all variants and normalizes to `"Playoff X"`:
+**1. Database migration: Create `manage_blog_post` RPC**
 
-```typescript
-// Normalize all playoff speeldag variants to "Playoff X"
-let matchdayDisplay = (row.speeldag || "Te bepalen");
-if (isPlayoff || matchdayDisplay.toLowerCase().includes('playoff')) {
-  const num = matchdayDisplay.match(/(\d+)/);
-  matchdayDisplay = num ? `Playoff ${num[1]}` : 'Playoff';
-}
-```
+A single SECURITY DEFINER function that handles all blog CRUD:
+- `create` — inserts a new blog post into `application_settings`
+- `update` — updates an existing blog post by ID
+- `delete` — deletes a blog post by ID
+- `toggle_published` — toggles the published status
 
-**2. `src/components/pages/public/competition/PlayOffPage.tsx` (~line 328)**
+The function validates the caller is admin by checking `users.role` directly (same pattern as other admin RPCs).
 
-Apply the same normalization when building schedule matches. Currently it does `.replace(/^Playoff\s+/i, '')` to strip "Playoff" and keep the number. But if speeldag is `"Playoff Speeldag 7"`, the regex leaves `"Speeldag 7"`. Fix:
+**2. Update `src/services/blogService.ts`**
 
-```typescript
-const speeldagNum = match.speeldag ? match.speeldag.match(/(\d+)/) : null;
-const speeldagClean = speeldagNum ? speeldagNum[1] : null;
-```
+Replace all `withUserContext` + direct Supabase queries with calls to the new `manage_blog_post` RPC:
+- `createBlogPost` → `supabase.rpc('manage_blog_post', { p_user_id, p_operation: 'create', p_setting_value: {...} })`
+- `updateBlogPost` → `supabase.rpc('manage_blog_post', { p_user_id, p_operation: 'update', p_id: id, ... })`
+- `deleteBlogPost` → `supabase.rpc('manage_blog_post', { p_user_id, p_operation: 'delete', p_id: id })`
+- `togglePublishedStatus` → `supabase.rpc('manage_blog_post', { p_user_id, p_operation: 'toggle_published', p_id: id, p_published: boolean })`
 
-This extracts just the number regardless of prefix format. The `matchday` field (used for grouping headers) will then be just `"1"`, `"2"`, etc., which is already how the page displays them.
+Read operations (`getAllBlogPosts`, `getPublishedBlogPosts`) remain as direct queries since they use SELECT policies that already work.
 
-**3. Database cleanup migration (optional but recommended)**
+**3. Fix BlogPage.tsx form/modal issues**
 
-A one-time migration to normalize all existing `speeldag` values in the `matches` table for playoff matches:
-
-```sql
-UPDATE matches
-SET speeldag = 'Playoff ' || (regexp_match(speeldag, '(\d+)'))[1]
-WHERE is_playoff_match = true
-  AND speeldag IS NOT NULL
-  AND speeldag != 'Playoff ' || (regexp_match(speeldag, '(\d+)'))[1];
-```
-
-This ensures the source data is clean, preventing future inconsistencies.
+- Move the `AppModal` outside the header `div` (currently nested inside `flex justify-between` alongside the button, which can cause layout issues)
+- Fix the form grid layout (title and content are in a 2-column grid but content/textarea should span full width)
+- Ensure `resetForm` properly opens the dialog for new posts (currently calls `resetForm()` which closes the dialog, then immediately opens it)
 
 ### Technical details
 
-- The root cause is that `playoffService.ts` currently generates `speeldag: \`Playoff ${matchday}\`` (correct format), but older matches may have been generated with `"Playoff Speeldag X"` before a previous rename
-- Both the public page and admin match forms need to handle any variant gracefully
-- The DB migration makes the fix permanent at the source
+- The RPC uses the same admin verification pattern as `delete_team_cost_as_admin`: checks `users.role = 'admin'` by `user_id`
+- Returns JSONB with `success`, `message`, and optionally `id` for creates
+- User ID is read from `localStorage` auth data (same as other services)
+- No changes needed to RLS policies — the SECURITY DEFINER function bypasses RLS
 
