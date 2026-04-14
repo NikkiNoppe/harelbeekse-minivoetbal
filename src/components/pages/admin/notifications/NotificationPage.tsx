@@ -427,8 +427,8 @@ const NotificationPage: React.FC = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDelete(notification.id)}
-                                className="text-[var(--color-destructive)] h-8 w-8 p-0 hover:bg-red-50"
+                                onClick={() => setDeleteConfirmId(notification.id)}
+                                className="text-destructive h-8 w-8 p-0 hover:bg-destructive/10"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -444,6 +444,17 @@ const NotificationPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      <AppAlertModal
+        open={deleteConfirmId !== null}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        title="Bericht verwijderen"
+        description="Weet je zeker dat je dit bericht wilt verwijderen? Dit kan niet ongedaan worden gemaakt."
+        confirmLabel={isDeleting ? 'Verwijderen...' : 'Verwijderen'}
+        cancelLabel="Annuleren"
+        variant="destructive"
+        onConfirm={() => deleteConfirmId !== null && handleDelete(deleteConfirmId)}
+      />
     </div>
   );
 };
