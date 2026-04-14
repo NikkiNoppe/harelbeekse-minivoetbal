@@ -29,6 +29,7 @@ const BekerPage: React.FC = () => {
   }>(null);
   const [byeTeamId, setByeTeamId] = useState<number | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [previewPlan, setPreviewPlan] = useState<Array<{
     unique_number: string;
     speeldag: string;
