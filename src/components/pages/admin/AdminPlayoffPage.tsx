@@ -730,8 +730,12 @@ const AdminPlayoffPage: React.FC = () => {
   return <div className="space-y-6 animate-slide-up">
       {/* Header */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Play-Off Beheer</h2>
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
+            Playoffs
+          </h2>
+          <p className="text-muted-foreground">Beheer de playoffs - genereren, finaliseren en overzicht</p>
         </div>
         <WorkflowStepper status={playoffStatus} />
       </div>

@@ -178,10 +178,6 @@ const AdminCompetitionPage: React.FC = () => {
   };
 
   const handleDeleteCompetition = async () => {
-    if (!confirm("Weet je zeker dat je de competitie wilt verwijderen? Dit kan niet ongedaan worden gemaakt.")) {
-      return;
-    }
-
     setLoading(true);
     try {
       const result = await competitionService.deleteCompetition();
@@ -223,11 +219,16 @@ const AdminCompetitionPage: React.FC = () => {
 
   const hasExistingCompetition = existingCompetition.length > 0;
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   return (
-    <div className="space-y-8 animate-slide-up">
+    <div className="space-y-6 animate-slide-up">
       <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Competitie</h2>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+              <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
+              Competitie
+            </h2>
             <p className="text-muted-foreground">
               Beheer de competitie - aanmaken, verwijderen en overzicht
             </p>
@@ -446,19 +447,20 @@ const AdminCompetitionPage: React.FC = () => {
 
             {/* Preview & Create Controls */}
             <div className="flex flex-col sm:flex-row gap-2">
-              <button
+              <Button
+                variant="outline"
                 disabled={isPreviewing || isCreating}
-                className="btn btn--outline sm:flex-1"
+                className="sm:flex-1"
                 onClick={handleGeneratePreview}
               >
-                {isPreviewing ? 'Preview genereren...' : 'Preview genereren'}
-              </button>
-              <button onClick={() => setShowConfirm(true)} disabled={isCreating} className="btn btn--primary sm:flex-1">
-                {isCreating ? 'Aanmaken...' : (previewPlan ? 'Bevestigen en importeren' : 'Competitie Aanmaken')}
-              </button>
-              <button onClick={handleCancel} disabled={isCreating} className="btn btn--secondary">
+                {isPreviewing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Preview genereren...</> : 'Preview genereren'}
+              </Button>
+              <Button onClick={() => setShowConfirm(true)} disabled={isCreating} className="sm:flex-1">
+                {isCreating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Aanmaken...</> : (previewPlan ? 'Bevestigen en importeren' : 'Competitie Aanmaken')}
+              </Button>
+              <Button variant="secondary" onClick={handleCancel} disabled={isCreating}>
                 Annuleren
-              </button>
+              </Button>
             </div>
 
             <AppAlertModal
@@ -595,7 +597,7 @@ const AdminCompetitionPage: React.FC = () => {
                   </AlertDescription>
                 </Alert>
                 <Button 
-                  onClick={handleDeleteCompetition}
+                  onClick={() => setShowDeleteConfirm(true)}
                   disabled={loading}
                   variant="destructive"
                   className="w-full"
@@ -624,6 +626,33 @@ const AdminCompetitionPage: React.FC = () => {
           </CardContent>
         </Card>
       </section>
+
+      <AppAlertModal
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Competitie Verwijderen?"
+        description={
+          <p className="text-sm text-muted-foreground">
+            Alle competitiewedstrijden ({existingCompetition.length}) worden permanent verwijderd. Dit kan niet ongedaan worden gemaakt.
+          </p>
+        }
+        confirmAction={{
+          label: "Verwijderen",
+          onClick: async () => {
+            setShowDeleteConfirm(false);
+            await handleDeleteCompetition();
+          },
+          variant: "destructive",
+          disabled: loading,
+          loading: loading,
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: () => setShowDeleteConfirm(false),
+          disabled: loading,
+        }}
+        size="sm"
+      />
     </div>
   );
 };
