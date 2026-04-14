@@ -155,8 +155,7 @@ const NotificationPage: React.FC = () => {
   }, []);
 
   const handleDelete = useCallback(async (id: number) => {
-    if (!confirm('Weet je zeker dat je dit bericht wilt verwijderen?')) return;
-    
+    setIsDeleting(true);
     try {
       await notificationService.deleteNotification(id);
       toast({ title: 'Succes', description: 'Bericht verwijderd' });
@@ -168,6 +167,9 @@ const NotificationPage: React.FC = () => {
         description: 'Kon bericht niet verwijderen',
         variant: 'destructive'
       });
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmId(null);
     }
   }, [toast, loadData]);
 
