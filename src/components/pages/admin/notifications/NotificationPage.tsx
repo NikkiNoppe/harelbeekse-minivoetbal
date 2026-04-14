@@ -249,7 +249,7 @@ const NotificationPage: React.FC = () => {
           </h1>
           <p className="text-muted-foreground text-sm mt-1">Beheer berichten voor gebruikers en teams</p>
         </div>
-        <Button onClick={handleOpenNew} className="w-full sm:w-auto bg-purple-light hover:bg-purple-light/90">
+        <Button onClick={handleOpenNew} className="btn--primary w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
           Nieuw Bericht
         </Button>
