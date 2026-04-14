@@ -275,16 +275,19 @@ const BekerPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <div className="text-sm text-muted-foreground">Teams laden uit database...</div>
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-slide-up">
+    <div className="space-y-6 animate-slide-up">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Beker</h2>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
+            Beker
+          </h2>
           <p className="text-muted-foreground">Beheer het bekertoernooi - aanmaken, verwijderen en overzicht</p>
         </div>
       </div>
@@ -335,23 +338,24 @@ const BekerPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <button
+                  <Button
+                    variant="outline"
                     disabled={isPreviewing || !canCreateTournament}
-                    className="btn btn--outline sm:flex-1"
+                    className="sm:flex-1"
                     onClick={handleGeneratePreview}
                   >
-                    {isPreviewing ? "Preview genereren..." : "Preview genereren"}
-                  </button>
-                  <button
+                    {isPreviewing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Preview genereren...</> : "Preview genereren"}
+                  </Button>
+                  <Button
                     disabled={!canCreateTournament || isCreating}
-                    className="btn btn--primary sm:flex-1"
+                    className="sm:flex-1"
                     onClick={() => setShowConfirm(true)}
                   >
-                    {isCreating ? "Beker aanmaken..." : (previewPlan ? "Bevestigen en importeren" : "Beker Aanmaken")}
-                  </button>
-                  <button onClick={handleCancelTournament} disabled={isCreating} className="btn btn--secondary">
+                    {isCreating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Beker aanmaken...</> : (previewPlan ? "Bevestigen en importeren" : "Beker Aanmaken")}
+                  </Button>
+                  <Button variant="secondary" onClick={handleCancelTournament} disabled={isCreating}>
                     Annuleren
-                  </button>
+                  </Button>
                 </div>
 
                 <AppAlertModal
