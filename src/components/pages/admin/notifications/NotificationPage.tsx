@@ -341,8 +341,8 @@ const NotificationPage: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDelete(notification.id)}
-                              className="text-[var(--color-destructive)] h-10 w-10 p-0 hover:bg-red-50"
+                              onClick={() => setDeleteConfirmId(notification.id)}
+                              className="text-destructive h-10 w-10 p-0 hover:bg-destructive/10"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
