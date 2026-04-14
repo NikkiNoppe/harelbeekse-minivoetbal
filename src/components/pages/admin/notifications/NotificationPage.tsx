@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { notificationService, type Notification } from '@/services/notificationService';
-import { Plus, Edit, Trash2, Users, UserCheck } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, UserCheck, Loader2, MessageSquare } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { NotificationFormModal } from '@/components/modals';
+import { AppAlertModal } from '@/components/modals/base/app-alert-modal';
 
 const NOTIFICATION_TYPES = [
   { value: 'info', label: 'Informatie' },
