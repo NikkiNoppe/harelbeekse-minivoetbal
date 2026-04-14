@@ -929,95 +929,140 @@ const AdminPlayoffPage: React.FC = () => {
             </CardContent>
           </Card>}
 
-        {/* Concept Status Card */}
-        {playoffStatus === 'concept' && <Card className="border-amber-200 dark:border-amber-800">
-            <CardContent className="p-4 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-5 h-5 text-amber-600" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-sm sm:text-base">Concept Planning</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground truncate">Wachten op eindstand om te finaliseren</p>
-                </div>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button onClick={() => setConfirmAction('finalize')} disabled={actionLoading} className="btn--primary flex-1 h-11">
-                  {actionLoading && confirmAction === 'finalize' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-                  Finaliseer
-                </Button>
-                <Button variant="outline" onClick={() => setConfirmAction('delete')} disabled={actionLoading} className="h-11 text-destructive border-destructive hover:bg-destructive/10">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Verwijder
-                </Button>
-              </div>
-            </CardContent>
-          </Card>}
-
-        {/* Finalized Status Card */}
-        {playoffStatus === 'finalized' && <Card className="border-green-200 dark:border-green-800">
-            <CardContent className="p-4 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-sm sm:text-base">Playoffs Gefinaliseerd</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground truncate">Teams zijn toegewezen aan de wedstrijden</p>
-                </div>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button variant="outline" onClick={() => setConfirmAction('unfinalize')} disabled={actionLoading} className="flex-1 h-11">
-                  {actionLoading && confirmAction === 'unfinalize' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Undo2 className="h-4 w-4 mr-2" />}
-                  Terug naar Concept
-                </Button>
-                <Button variant="outline" onClick={() => setConfirmAction('delete')} disabled={actionLoading} className="h-11 text-destructive border-destructive hover:bg-destructive/10">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Verwijder
-                </Button>
-              </div>
-            </CardContent>
-          </Card>}
-
-        {/* Playoff Matches Display - Grouped by Week (Compact) */}
+        {/* Playoffs Beheren */}
         {hasPlayoffMatches && (
-          <div className="space-y-2">
-            <h3 className="text-base font-semibold flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Planning per Week
-            </h3>
-            
-            {weeksWithMatches.map((week) => {
-              if (week.status === 'playoff' && week.matches) {
-                const matchday = getMatchdayFromWeek(week);
-                const byePosition = matchday ? byeInfoMap.get(matchday) : undefined;
-                return (
-                  <CompactWeekCard 
-                    key={week.weekStart} 
-                    week={week} 
-                    getTeamDisplay={getTeamDisplay}
-                    byePosition={byePosition}
-                    standings={standings}
-                  />
-                );
-              }
-              return <SkippedWeekCard key={week.weekStart} week={week} />;
-            })}
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Playoffs Beheren</CardTitle>
+              <CardDescription>Bekijk en beheer de huidige playoff planning</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {playoffStatus === 'concept' && (
+                <>
+                  <Alert>
+                    <Clock className="h-4 w-4" />
+                    <AlertDescription>
+                      Concept planning actief met {playoffMatches.length} wedstrijden. Wachten op eindstand om te finaliseren.
+                    </AlertDescription>
+                  </Alert>
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Playoff Statistieken:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Totaal wedstrijden: {playoffMatches.length}</li>
+                      <li>• PO1 wedstrijden: {playoffMatches.filter(m => m.playoff_type === 'top').length}</li>
+                      <li>• PO2 wedstrijden: {playoffMatches.filter(m => m.playoff_type === 'bottom').length}</li>
+                    </ul>
+                  </div>
+                  <Button onClick={() => setConfirmAction('finalize')} disabled={actionLoading} className="w-full">
+                    {actionLoading && confirmAction === 'finalize' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                    Finaliseer Playoffs
+                  </Button>
+                </>
+              )}
+              {playoffStatus === 'finalized' && (
+                <>
+                  <Alert>
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Playoffs gefinaliseerd met {playoffMatches.length} wedstrijden. Teams zijn toegewezen.
+                    </AlertDescription>
+                  </Alert>
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Playoff Statistieken:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Totaal wedstrijden: {playoffMatches.length}</li>
+                      <li>• PO1 wedstrijden: {playoffMatches.filter(m => m.playoff_type === 'top').length}</li>
+                      <li>• PO2 wedstrijden: {playoffMatches.filter(m => m.playoff_type === 'bottom').length}</li>
+                    </ul>
+                  </div>
+                  <Button variant="outline" onClick={() => setConfirmAction('unfinalize')} disabled={actionLoading} className="w-full">
+                    {actionLoading && confirmAction === 'unfinalize' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Undo2 className="h-4 w-4 mr-2" />}
+                    Terug naar Concept
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Playoffs Verwijderen */}
+        {hasPlayoffMatches && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Playoffs Verwijderen</CardTitle>
+              <CardDescription>Verwijder de volledige playoff planning. Deze actie kan niet ongedaan worden gemaakt.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Je staat op het punt {playoffMatches.length} playoff wedstrijden permanent te verwijderen.
+                </AlertDescription>
+              </Alert>
+              <Button 
+                variant="destructive" 
+                onClick={() => setConfirmAction('delete')} 
+                disabled={actionLoading} 
+                className="w-full"
+              >
+                {actionLoading && confirmAction === 'delete' ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verwijderen...</>
+                ) : (
+                  <><Trash2 className="mr-2 h-4 w-4" /> Playoffs Verwijderen</>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Planning per Week */}
+        {hasPlayoffMatches && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Planning per Week
+              </CardTitle>
+              <CardDescription>Overzicht van alle geplande playoff wedstrijden per speelweek</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {weeksWithMatches.map((week) => {
+                if (week.status === 'playoff' && week.matches) {
+                  const matchday = getMatchdayFromWeek(week);
+                  const byePosition = matchday ? byeInfoMap.get(matchday) : undefined;
+                  return (
+                    <CompactWeekCard 
+                      key={week.weekStart} 
+                      week={week} 
+                      getTeamDisplay={getTeamDisplay}
+                      byePosition={byePosition}
+                      standings={standings}
+                    />
+                  );
+                }
+                return <SkippedWeekCard key={week.weekStart} week={week} />;
+              })}
+            </CardContent>
+          </Card>
         )}
 
         {/* Empty State */}
-        {!hasPlayoffMatches && playoffStatus === 'none' && !loading && <Card>
-            <CardContent className="text-center py-10 sm:py-12">
-              <Trophy className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
-              <h3 className="text-base sm:text-lg font-semibold mb-2">Geen Playoff Planning</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto px-4">
-                Configureer de instellingen hierboven en genereer een planning op basis van posities.
-              </p>
+        {!hasPlayoffMatches && playoffStatus === 'none' && !loading && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Playoffs Beheren</CardTitle>
+              <CardDescription>Bekijk en beheer de huidige playoff planning</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Er is momenteel geen playoff planning actief. Configureer de instellingen hierboven en genereer een planning.
+                </AlertDescription>
+              </Alert>
             </CardContent>
-          </Card>}
+          </Card>
+        )}
       </section>
 
       {/* Confirmation Dialog */}
