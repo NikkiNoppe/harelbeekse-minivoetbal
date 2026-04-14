@@ -12,6 +12,7 @@ import { teamService } from "@/services/core/teamService";
 import { seasonService } from "@/services/seasonService";
 import AdminTeamSelector from "@/components/pages/admin/common/components/AdminTeamSelector";
 const AdminCompetitionPage: React.FC = () => {
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [teams, setTeams] = useState<any[]>([]);
   const [formats, setFormats] = useState<CompetitionFormat[]>([]);
@@ -42,6 +43,7 @@ const AdminCompetitionPage: React.FC = () => {
 
   const loadInitialData = async () => {
     try {
+      setInitialLoading(true);
       // Load teams
       const teamsData = await teamService.getAllTeams();
       setTeams(teamsData);
@@ -68,6 +70,8 @@ const AdminCompetitionPage: React.FC = () => {
         description: "Er is een fout opgetreden bij het laden van de data.",
         variant: "destructive"
       });
+    } finally {
+      setInitialLoading(false);
     }
   };
 
@@ -220,6 +224,14 @@ const AdminCompetitionPage: React.FC = () => {
   const hasExistingCompetition = existingCompetition.length > 0;
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  if (initialLoading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-slide-up">

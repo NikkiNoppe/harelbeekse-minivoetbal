@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AppAlertModal } from "@/components/modals";
+import { AppModal } from "@/components/modals/base/app-modal";
 import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 
 import BekerDateSelector from "./BekerDateSelector";
@@ -29,6 +30,7 @@ const BekerPage: React.FC = () => {
   }>(null);
   const [byeTeamId, setByeTeamId] = useState<number | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [previewPlan, setPreviewPlan] = useState<Array<{
     unique_number: string;
     speeldag: string;
@@ -478,7 +480,7 @@ const BekerPage: React.FC = () => {
                     Je staat op het punt een actief bekertoernooi met {cupCounts.total} wedstrijden te verwijderen.
                   </AlertDescription>
                 </Alert>
-                <Button onClick={handleDeleteCup} disabled={isDeleting} variant="destructive" className="w-full">
+                <Button onClick={() => setShowDeleteConfirm(true)} disabled={isDeleting} variant="destructive" className="w-full">
                   {isDeleting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verwijderen...
@@ -501,21 +503,51 @@ const BekerPage: React.FC = () => {
       </section>
 
       {/* Date Selector Modal */}
-      {showDateSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div>
-            <BekerDateSelector
-              onDatesSelected={handleDatesSelected}
-              onCancel={handleCancelDateSelection}
-              isLoading={isCreating}
-              weeks={selectedTeams.length === 16 ? 5 : 4}
-              allowByeSelection={selectedTeams.length % 2 === 1}
-              teamsForBye={teams.filter(t => selectedTeams.includes(t.team_id)).map(t => ({ team_id: t.team_id, team_name: t.team_name }))}
-              onByeSelected={setByeTeamId}
-            />
-          </div>
-        </div>
-      )}
+      <AppModal
+        open={showDateSelector}
+        onOpenChange={(open) => { if (!open) handleCancelDateSelection(); }}
+        title="Speeldata Selecteren"
+        subtitle="Selecteer de speeldata voor het bekertoernooi"
+        size="lg"
+      >
+        <BekerDateSelector
+          onDatesSelected={handleDatesSelected}
+          onCancel={handleCancelDateSelection}
+          isLoading={isCreating}
+          weeks={selectedTeams.length === 16 ? 5 : 4}
+          allowByeSelection={selectedTeams.length % 2 === 1}
+          teamsForBye={teams.filter(t => selectedTeams.includes(t.team_id)).map(t => ({ team_id: t.team_id, team_name: t.team_name }))}
+          onByeSelected={setByeTeamId}
+        />
+      </AppModal>
+
+      {/* Delete Confirmation */}
+      <AppAlertModal
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Beker Verwijderen?"
+        description={
+          <p className="text-sm text-muted-foreground">
+            Alle bekerwedstrijden ({cupCounts.total}) worden permanent verwijderd. Dit kan niet ongedaan worden gemaakt.
+          </p>
+        }
+        confirmAction={{
+          label: "Verwijderen",
+          onClick: async () => {
+            setShowDeleteConfirm(false);
+            await handleDeleteCup();
+          },
+          variant: "destructive",
+          disabled: isDeleting,
+          loading: isDeleting,
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: () => setShowDeleteConfirm(false),
+          disabled: isDeleting,
+        }}
+        size="sm"
+      />
     </div>
   );
 };
