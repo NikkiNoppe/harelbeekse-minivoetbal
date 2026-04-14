@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AppAlertModal } from "@/components/modals";
+import { AppModal } from "@/components/modals/base/app-modal";
 import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 
 import BekerDateSelector from "./BekerDateSelector";
@@ -502,30 +503,23 @@ const BekerPage: React.FC = () => {
       </section>
 
       {/* Date Selector Modal */}
-      <AppAlertModal
+      <AppModal
         open={showDateSelector}
         onOpenChange={(open) => { if (!open) handleCancelDateSelection(); }}
         title="Speeldata Selecteren"
-        description={
-          <BekerDateSelector
-            onDatesSelected={handleDatesSelected}
-            onCancel={handleCancelDateSelection}
-            isLoading={isCreating}
-            weeks={selectedTeams.length === 16 ? 5 : 4}
-            allowByeSelection={selectedTeams.length % 2 === 1}
-            teamsForBye={teams.filter(t => selectedTeams.includes(t.team_id)).map(t => ({ team_id: t.team_id, team_name: t.team_name }))}
-            onByeSelected={setByeTeamId}
-          />
-        }
-        confirmAction={{
-          label: "",
-          onClick: () => {},
-          variant: "primary",
-          disabled: true,
-        }}
+        subtitle="Selecteer de speeldata voor het bekertoernooi"
         size="lg"
-        className="[&_[role=alertdialog]_footer]:hidden"
-      />
+      >
+        <BekerDateSelector
+          onDatesSelected={handleDatesSelected}
+          onCancel={handleCancelDateSelection}
+          isLoading={isCreating}
+          weeks={selectedTeams.length === 16 ? 5 : 4}
+          allowByeSelection={selectedTeams.length % 2 === 1}
+          teamsForBye={teams.filter(t => selectedTeams.includes(t.team_id)).map(t => ({ team_id: t.team_id, team_name: t.team_name }))}
+          onByeSelected={setByeTeamId}
+        />
+      </AppModal>
 
       {/* Delete Confirmation */}
       <AppAlertModal
