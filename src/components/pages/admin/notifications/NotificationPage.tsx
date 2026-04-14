@@ -54,6 +54,8 @@ const NotificationPage: React.FC = () => {
   const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
   const [initialFormData, setInitialFormData] = useState<FormData>(DEFAULT_FORM_DATA);
   const [initialTargetMode, setInitialTargetMode] = useState<TargetMode>('roles');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Users for targeting
   const [users, setUsers] = useState<Array<{ user_id: number; username: string; role: string }>>([]);
