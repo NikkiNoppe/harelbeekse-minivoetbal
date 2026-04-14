@@ -411,26 +411,26 @@ p, .card-description, .text-muted-foreground {
 .btn--primary {
   background-color: var(--color-400);
   color: var(--color-white);
-  border-color: var(--color-300);
+  border: 1px solid var(--color-300);
 }
 @media (hover: hover) and (pointer: fine) {
   .btn--primary:hover {
-    background-color: var(--color-100);
-    border-color: var(--primary);
-    color: var(--primary);
+    background-color: var(--color-50);
+    border: 1.5px solid var(--color-400);
+    color: var(--color-700);
   }
 }
 .btn--primary:active,
 .btn--primary[aria-pressed="true"] {
   background-color: var(--color-100);
-  border-color: var(--primary);
-  color: var(--primary);
+  border: 1.5px solid var(--color-400);
+  color: var(--color-700);
   opacity: var(--active-opacity);
 }
 .btn--primary:focus-visible {
   background-color: var(--color-100);
-  border-color: var(--primary);
-  color: var(--primary);
+  border: 1.5px solid var(--color-400);
+  color: var(--color-700);
 }
 
 /* Secondary Button */
