@@ -453,7 +453,7 @@ const NotificationPage: React.FC = () => {
         confirmAction={{
           label: isDeleting ? 'Verwijderen...' : 'Verwijderen',
           onClick: () => deleteConfirmId !== null && handleDelete(deleteConfirmId),
-          variant: 'danger'
+          variant: 'destructive'
         }}
         cancelAction={{
           label: 'Annuleren',
