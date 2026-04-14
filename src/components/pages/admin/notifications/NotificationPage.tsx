@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { notificationService, type Notification } from '@/services/notificationService';
-import { Plus, Edit, Trash2, Users, UserCheck } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, UserCheck, Loader2, MessageSquare } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { NotificationFormModal } from '@/components/modals';
+import { AppAlertModal } from '@/components/modals/base/app-alert-modal';
 
 const NOTIFICATION_TYPES = [
   { value: 'info', label: 'Informatie' },
@@ -53,6 +54,8 @@ const NotificationPage: React.FC = () => {
   const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
   const [initialFormData, setInitialFormData] = useState<FormData>(DEFAULT_FORM_DATA);
   const [initialTargetMode, setInitialTargetMode] = useState<TargetMode>('roles');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Users for targeting
   const [users, setUsers] = useState<Array<{ user_id: number; username: string; role: string }>>([]);
@@ -152,8 +155,7 @@ const NotificationPage: React.FC = () => {
   }, []);
 
   const handleDelete = useCallback(async (id: number) => {
-    if (!confirm('Weet je zeker dat je dit bericht wilt verwijderen?')) return;
-    
+    setIsDeleting(true);
     try {
       await notificationService.deleteNotification(id);
       toast({ title: 'Succes', description: 'Bericht verwijderd' });
@@ -165,6 +167,9 @@ const NotificationPage: React.FC = () => {
         description: 'Kon bericht niet verwijderen',
         variant: 'destructive'
       });
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmId(null);
     }
   }, [toast, loadData]);
 
@@ -229,7 +234,7 @@ const NotificationPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Laden...</div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -237,8 +242,14 @@ const NotificationPage: React.FC = () => {
   return (
     <div className="container mx-auto p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-600)]">Berichten</h1>
-        <Button className="btn--primary w-full sm:w-auto" onClick={handleOpenNew}>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
+            Berichten
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">Beheer berichten voor gebruikers en teams</p>
+        </div>
+        <Button onClick={handleOpenNew} className="w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
           Nieuw Bericht
         </Button>
@@ -330,8 +341,8 @@ const NotificationPage: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDelete(notification.id)}
-                              className="text-[var(--color-destructive)] h-10 w-10 p-0 hover:bg-red-50"
+                              onClick={() => setDeleteConfirmId(notification.id)}
+                              className="text-destructive h-10 w-10 p-0 hover:bg-destructive/10"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -416,8 +427,8 @@ const NotificationPage: React.FC = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDelete(notification.id)}
-                                className="text-[var(--color-destructive)] h-8 w-8 p-0 hover:bg-red-50"
+                                onClick={() => setDeleteConfirmId(notification.id)}
+                                className="text-destructive h-8 w-8 p-0 hover:bg-destructive/10"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -433,6 +444,22 @@ const NotificationPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      <AppAlertModal
+        open={deleteConfirmId !== null}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        title="Bericht verwijderen"
+        description="Weet je zeker dat je dit bericht wilt verwijderen? Dit kan niet ongedaan worden gemaakt."
+        confirmAction={{
+          label: isDeleting ? 'Verwijderen...' : 'Verwijderen',
+          onClick: () => deleteConfirmId !== null && handleDelete(deleteConfirmId),
+          variant: 'destructive'
+        }}
+        cancelAction={{
+          label: 'Annuleren',
+          onClick: () => setDeleteConfirmId(null)
+        }}
+      />
     </div>
   );
 };
