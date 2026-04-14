@@ -450,10 +450,15 @@ const NotificationPage: React.FC = () => {
         onOpenChange={(open) => !open && setDeleteConfirmId(null)}
         title="Bericht verwijderen"
         description="Weet je zeker dat je dit bericht wilt verwijderen? Dit kan niet ongedaan worden gemaakt."
-        confirmLabel={isDeleting ? 'Verwijderen...' : 'Verwijderen'}
-        cancelLabel="Annuleren"
-        variant="destructive"
-        onConfirm={() => deleteConfirmId !== null && handleDelete(deleteConfirmId)}
+        confirmAction={{
+          label: isDeleting ? 'Verwijderen...' : 'Verwijderen',
+          onClick: () => deleteConfirmId !== null && handleDelete(deleteConfirmId),
+          variant: 'danger'
+        }}
+        cancelAction={{
+          label: 'Annuleren',
+          onClick: () => setDeleteConfirmId(null)
+        }}
       />
     </div>
   );
