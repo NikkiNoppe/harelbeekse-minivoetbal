@@ -1,52 +1,65 @@
 
 
-## Plan: Forfait-uitzondering voor wedstrijdkosten
+## Plan: Uniformiseren van Competition, Cup en Playoff admin pages
 
-### Probleem
-Wanneer een forfait wordt uitgesproken, worden er momenteel wedstrijdkosten (veld, scheids, admin) toegepast op beide teams alsof de wedstrijd normaal werd gespeeld. Bij een forfait heeft de wedstrijd niet plaatsgevonden, dus mogen er geen wedstrijdkosten worden aangerekend aan beide teams.
+### Huidige inconsistenties
 
-### Hoe een forfait wordt gedetecteerd
-Er zijn twee forfait-boetes in de database:
-- **Forfait verwittigd** (id: 6, €25)
-- **Forfait tijdens de wedstrijd** (id: 25, €15)
-
-Een wedstrijd is een forfait als er een `team_costs` record bestaat met `cost_setting_id` IN (6, 25) voor die `match_id`. Dit is een handmatig toegevoegde boete door de admin.
-
-### Aanpak
-De forfait-boete wordt handmatig toegevoegd door de admin. De automatische kosten moeten achteraf gecontroleerd worden: als er een forfait-boete aanwezig is, moeten de wedstrijdkosten NIET worden aangerekend (of verwijderd als ze al bestaan).
+| Aspect | Competitie | Beker | Playoff |
+|--------|-----------|-------|---------|
+| Page header | Geen icoon, `text-2xl font-bold` | Geen icoon, zelfde stijl | Heeft icoon, andere spacing |
+| Spacing | `space-y-8` | `space-y-8` | `space-y-6` |
+| Delete bevestiging | Browser `confirm()` | `AppAlertModal` | `AppAlertModal` |
+| Button stijl | Mix `<button className="btn">` + `<Button>` | Mix `<button className="btn">` | `<Button>` component |
+| Loading state | Geen indicator | Tekst "Teams laden..." | Loader2 spinner |
+| Beheer + Verwijder cards | 2 aparte cards | 2 aparte cards | Inline status cards |
 
 ### Wijzigingen
 
-**1. Database trigger `process_match_financial_costs` updaten (migration)**
+**1. CompetitionPage.tsx - Uniformiseren**
+- Icoon toevoegen aan header (Trophy)
+- `confirm()` vervangen door `AppAlertModal` voor verwijderen
+- Alle `<button className="btn ...">` vervangen door `<Button>` component met juiste variants
+- Loading state toevoegen met Loader2 spinner (consistent met Playoff)
+- Spacing normaliseren naar `space-y-6`
 
-Voeg een forfait-check toe aan het begin van de trigger: als er een forfait-penalty bestaat voor deze match_id, sla de wedstrijdkosten over en verwijder eventueel bestaande wedstrijdkosten.
+**2. BekerPage.tsx - Uniformiseren**
+- Icoon toevoegen aan header (Trophy)
+- Alle `<button className="btn ...">` vervangen door `<Button>` component
+- Loading state vervangen door Loader2 spinner in plaats van tekst
+- Spacing normaliseren naar `space-y-6`
+- Date selector modal: gebruik AppModal of overlay consistent met design system
 
-**2. Edge function `sync-match-costs` updaten**
+**3. AdminPlayoffPage.tsx - Kleine aanpassingen**
+- Header subtitle toevoegen zoals Competition en Beker ("Beheer de playoffs - ...")
+- Beheer/Verwijder secties herstructureren naar zelfde Card-patronen als Competition en Beker (CardHeader + CardTitle + CardDescription + CardContent)
 
-Na het laden van de wedstrijd, controleer of er forfait-boetes bestaan (`cost_setting_id IN (6, 25)` in `team_costs` voor die match). Zo ja: verwijder bestaande wedstrijdkosten en return early.
+### Gemeenschappelijk patroon na wijzigingen
 
-**3. Edge function `sync-all-match-costs` updaten**
-
-Zelfde check per wedstrijd in de batch-loop: als er een forfait-boete is, skip de wedstrijd en verwijder eventuele bestaande wedstrijdkosten.
-
-**4. `backgroundSideEffects.ts` - volgorde aanpassen**
-
-Geen codewijziging nodig hier; de edge function handelt de check zelf af. Maar documentatie-opmerking: forfait-boetes worden handmatig toegevoegd, dus de automatische sync zal ze correct detecteren bij volgende runs.
-
-### Technische details
-
-De forfait-check query in de edge functions:
-```sql
-SELECT COUNT(*) FROM team_costs 
-WHERE match_id = $1 AND cost_setting_id IN (6, 25)
+```text
+┌─────────────────────────────────────┐
+│ [Icon] Titel                        │
+│ Subtitel beschrijving               │
+├─────────────────────────────────────┤
+│ Card: Nieuwe [X] Aanmaken           │
+│   - Config velden                   │
+│   - Preview + Create + Cancel btns  │
+│   - AppAlertModal bevestiging       │
+├─────────────────────────────────────┤
+│ Card: [X] Beheren                   │
+│   - Status alert (actief/inactief)  │
+│   - Statistieken                    │
+├─────────────────────────────────────┤
+│ Card: [X] Verwijderen               │
+│   - Waarschuwing alert              │
+│   - Destructive button              │
+│   - AppAlertModal bevestiging       │
+└─────────────────────────────────────┘
 ```
 
-Als count > 0: skip alle wedstrijdkosten en verwijder eventuele bestaande match_cost records voor die wedstrijd.
+### Bestanden die worden gewijzigd
+- `src/components/pages/admin/competition/CompetitionPage.tsx`
+- `src/components/pages/admin/beker/components/BekerPage.tsx`
+- `src/components/pages/admin/AdminPlayoffPage.tsx`
 
-In de database trigger wordt dezelfde logica toegevoegd als eerste stap, zodat zelfs bij directe database-updates de regel wordt gerespecteerd.
-
-### Samenvatting
-- 1 database migration (trigger update)
-- 2 edge function updates (`sync-match-costs`, `sync-all-match-costs`)
-- Resultaat: bij forfait geen wedstrijdkosten voor beide teams, alleen de forfait-boete voor het schuldige team
+Geen backend wijzigingen. Puur visuele en UX-uniformisatie.
 
