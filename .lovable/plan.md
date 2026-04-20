@@ -1,75 +1,63 @@
 
 
-## Plan: Verdere uniformisatie van Competition, Beker en Playoff admin pages
+## Plan: Finale automatisch invullen na halve finales
 
-### Huidige structurele verschillen
+### Situatie
 
-| Sectie | Competitie | Beker | Playoff |
-|--------|-----------|-------|---------|
-| Loading state | Geen (data laadt stil) | Loader2 spinner ✓ | Loader2 spinner ✓ |
-| Aanmaken card | CardHeader patroon ✓ | CardHeader patroon ✓ | CardHeader patroon ✓ |
-| Beheren card | CardHeader + Alert + stats ✓ | CardHeader + Alert + stats ✓ | **Geen aparte card** - inline status cards met eigen stijl |
-| Verwijderen card | Aparte Card met CardHeader ✓ | Aparte Card met CardHeader ✓ | **Geen aparte card** - delete button in status cards |
-| Status cards | Alert-based | Alert-based | Custom inline cards met gekleurde borders en icon-circles |
-| Planning overzicht | Preview in tabel | Preview in tabel | Losse `<div>` met week cards, geen omsluitende Card |
-| Date selector | N.v.t. | Raw `<div>` overlay met `fixed inset-0` | N.v.t. |
-| Lege staat | Alert in Beheren card | Alert in Beheren card | Aparte centered Card |
+De halve finales zijn afgerond:
+- **SF-1**: Team 16 (9) vs Team 5 (2) → winnaar **Team 16**
+- **SF-2**: Team 2 (5) vs Team 4 (3) → winnaar **Team 2**
 
-### Wijzigingen
+Maar de **Finale** (match_id 1286) staat nog leeg (home en away = `null`). De automatische doorstroming heeft niet plaatsgevonden, vermoedelijk omdat de halve finales destijds zijn opgeslagen via een pad dat `autoAdvanceWinner` niet triggerde, of vóór de doorstroom-logica volledig werkte.
 
-**1. CompetitionPage.tsx**
-- Loading spinner toevoegen bij initieel laden (zoals Beker)
-- Geen verdere structurele wijzigingen nodig (is al het referentie-patroon)
+### Bestaande logica (geen wijziging nodig)
 
-**2. BekerPage.tsx**
-- Date selector overlay vervangen door `AppModal` component (consistent met modal design system)
-- Verder al uniform met Competition
+In `cupService.ts` bestaat al alle benodigde logica:
+- `autoAdvanceWinner(matchId)` → bepaalt winnaar uit scores
+- `getNextMatchUniqueNumber('SF-1')` → `'FINAL'`
+- `shouldBeHomeTeam('SF-1', 1)` → `true` (oneven = home)
+- `shouldBeHomeTeam('SF-2', 2)` → `false` (even = away)
 
-**3. AdminPlayoffPage.tsx** (meeste werk)
-- **Beheren card toevoegen**: Concept/Finalized status omzetten naar een "Playoffs Beheren" Card met CardHeader/CardTitle/CardDescription, met daarin de status Alert en actie-buttons (zoals Competition en Beker)
-- **Verwijderen card toevoegen**: Aparte "Playoffs Verwijderen" Card met dezelfde structuur als Competition en Beker (Alert waarschuwing + destructive Button)
-- **Planning per Week in Card**: Week-overzicht verpakken in een Card met CardHeader ("Planning per Week" als CardTitle)
-- **Lege staat uniformiseren**: Gebruik Alert in Beheren card i.p.v. aparte centered Card
+Resultaat: Team 16 thuis, Team 2 uit in de finale.
 
-### Gemeenschappelijk patroon na wijzigingen
+### Oplossing (2 stappen)
 
-```text
-┌─────────────────────────────────────┐
-│ [Trophy] Titel                      │
-│ Subtitel                            │
-│ [WorkflowStepper - alleen playoff]  │
-├─────────────────────────────────────┤
-│ Card: Nieuwe [X] Aanmaken           │
-│   CardHeader + CardTitle            │
-│   CardContent: config + buttons     │
-├─────────────────────────────────────┤
-│ Card: [X] Beheren                   │
-│   CardHeader + CardTitle            │
-│   CardContent:                      │
-│     - Alert (actief/inactief)       │
-│     - Stats/details                 │
-│     - Actie-buttons (finaliseer..)  │
-├─────────────────────────────────────┤
-│ Card: [X] Verwijderen               │
-│   CardHeader + CardTitle            │
-│   CardContent:                      │
-│     - Alert waarschuwing            │
-│     - Destructive button            │
-├─────────────────────────────────────┤
-│ Card: Overzicht/Planning (optioneel)│
-│   CardHeader + CardTitle            │
-│   CardContent: preview/week data    │
-└─────────────────────────────────────┘
+**Stap 1 — Eenmalige correctie via SQL migratie**
+
+De finale direct invullen met de huidige winnaars zodat de bracket meteen klopt:
+
+```sql
+UPDATE matches 
+SET home_team_id = 16, away_team_id = 2
+WHERE match_id = 1286 AND unique_number = 'FINAL';
 ```
 
-### Bestanden die worden gewijzigd
-- `src/components/pages/admin/competition/CompetitionPage.tsx` — loading state toevoegen
-- `src/components/pages/admin/beker/components/BekerPage.tsx` — date selector naar AppModal
-- `src/components/pages/admin/AdminPlayoffPage.tsx` — status cards herstructureren naar Beheren/Verwijderen Cards, week display in Card
+**Stap 2 — Robustness fix in `matchesFormService.updateMatchForm`**
+
+Onderzoeken waarom `autoAdvanceWinner` niet getriggerd werd toen de halve finales werden ingediend. Mogelijke oorzaken:
+- De voorwaarde `matchData.homeScore !== undefined && matchData.awayScore !== undefined` faalt als scores als `null` binnenkomen
+- De `is_cup_match` check faalt door een edge case
+
+We checken in `cupService.advanceWinner` of die call ook gebeurt bij latere score-updates en niet alleen bij eerste indiening. De huidige logica triggert wél bij score-wijzigingen — de meest waarschijnlijke oorzaak is dat de scores van de halve finales handmatig in de database zijn aangepast (niet via het wedstrijdformulier), waardoor de service-laag werd overgeslagen.
+
+Geen code-wijziging nodig hier; we voegen alleen een **defensieve fallback** toe: bij het laden van de bekerpagina checkt een lichte hook of er afgeronde matches zijn waarvan de winnaar nog niet doorgeschoven is naar de volgende ronde, en doet dat dan alsnog.
+
+Concreet: nieuwe utility `cupService.reconcileAdvancements()` die:
+1. Alle ingediende cup-matches met scores ophaalt
+2. Per match controleert of de volgende ronde de winnaar bevat
+3. Zo niet → `advanceWinner` aanroept
+
+Deze wordt aangeroepen vanuit `BekerPage.tsx` (admin) bij mount, achter een feature flag/admin-only.
+
+### Bestanden die wijzigen
+
+- **Migratie**: één UPDATE statement voor match_id 1286
+- `src/services/match/cupService.ts` — nieuwe functie `reconcileAdvancements()` toevoegen
+- `src/components/pages/admin/beker/components/BekerPage.tsx` — eenmalige call op mount voor admins
 
 ### Wat niet verandert
-- Geen backend wijzigingen
-- WorkflowStepper blijft (uniek voor playoff maar waardevol)
-- Standings tabel blijft (uniek voor playoff)
-- Alle functionaliteit blijft exact hetzelfde
+
+- Geen wijziging aan bestaande `autoAdvanceWinner` / `advanceWinner` logica
+- Geen wijziging aan RLS policies of database functies
+- Geen wijziging aan andere admin pages
 
