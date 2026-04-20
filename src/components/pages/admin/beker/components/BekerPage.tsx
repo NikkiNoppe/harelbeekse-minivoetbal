@@ -61,6 +61,24 @@ const BekerPage: React.FC = () => {
         ]);
         setTeams(teamsData);
         if (cupData) setExistingCup(cupData);
+
+        // Defensive fallback: ensure all winners are advanced to their next round.
+        // Catches edge cases where matches were updated outside the normal flow.
+        try {
+          const reconcileResult = await bekerService.reconcileAdvancements();
+          if (reconcileResult.success && reconcileResult.advancedCount > 0) {
+            console.log(`[BekerPage] Reconciled bracket: ${reconcileResult.message}`);
+            // Reload to reflect the freshly advanced winners
+            const refreshed = await bekerService.getCupMatches().catch(() => null);
+            if (refreshed) setExistingCup(refreshed);
+            toast({
+              title: "Bracket gesynchroniseerd",
+              description: reconcileResult.message,
+            });
+          }
+        } catch (reconcileErr) {
+          console.warn('[BekerPage] Reconciliation skipped:', reconcileErr);
+        }
       } catch (error) {
         console.error('Error loading initial beker data:', error);
         toast({
