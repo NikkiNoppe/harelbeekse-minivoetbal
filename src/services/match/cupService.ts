@@ -1394,5 +1394,80 @@ export const bekerService = {
       return 'Finale';
     }
     return null;
+  },
+
+  /**
+   * Defensive fallback: scan all submitted cup matches with scores and verify
+   * that their winner has been advanced to the next round. If not, advance them.
+   * This catches edge cases where matches were updated outside the normal flow
+   * (e.g. direct DB edits) and the bracket got out of sync.
+   */
+  async reconcileAdvancements(): Promise<{ success: boolean; advancedCount: number; message: string }> {
+    try {
+      const { data: cupMatches, error } = await supabase
+        .from('matches')
+        .select('match_id, unique_number, home_team_id, away_team_id, home_score, away_score, is_submitted')
+        .eq('is_cup_match', true);
+
+      if (error) throw error;
+      if (!cupMatches || cupMatches.length === 0) {
+        return { success: true, advancedCount: 0, message: 'Geen bekerwedstrijden gevonden.' };
+      }
+
+      // Index next-round matches by unique_number for quick lookup
+      const byUnique = new Map<string, any>();
+      cupMatches.forEach(m => {
+        if (m.unique_number) byUnique.set(m.unique_number, m);
+      });
+
+      let advancedCount = 0;
+
+      for (const m of cupMatches) {
+        // Skip if not playable / no winner determinable
+        if (!m.unique_number) continue;
+        if (m.home_score == null || m.away_score == null) continue;
+        if (m.home_score === m.away_score) continue;
+        if (m.home_team_id == null || m.away_team_id == null) continue;
+
+        const nextUnique = bekerService.getNextMatchUniqueNumber(m.unique_number);
+        if (!nextUnique) continue; // FINAL has no next round
+
+        const nextMatch = byUnique.get(nextUnique);
+        if (!nextMatch) continue;
+
+        const winnerTeamId = m.home_score > m.away_score ? m.home_team_id : m.away_team_id;
+        const matchNumber = bekerService.extractMatchNumber(m.unique_number);
+        const shouldBeHome = bekerService.shouldBeHomeTeam(m.unique_number, matchNumber);
+
+        const slotAlreadyFilled = shouldBeHome
+          ? nextMatch.home_team_id === winnerTeamId
+          : nextMatch.away_team_id === winnerTeamId;
+
+        if (slotAlreadyFilled) continue;
+
+        const nextRound = bekerService.getNextRound(m.unique_number);
+        if (!nextRound) continue;
+
+        const result = await bekerService.advanceWinner(m.match_id, winnerTeamId, nextRound);
+        if (result.success) {
+          advancedCount += 1;
+        }
+      }
+
+      return {
+        success: true,
+        advancedCount,
+        message: advancedCount > 0
+          ? `${advancedCount} winnaar(s) alsnog doorgeschoven.`
+          : 'Bracket was al synchroon.'
+      };
+    } catch (error) {
+      console.error('Error in reconcileAdvancements:', error);
+      return {
+        success: false,
+        advancedCount: 0,
+        message: `Reconciliatie mislukt: ${error instanceof Error ? error.message : 'Onbekende fout'}`
+      };
+    }
   }
 }; 
