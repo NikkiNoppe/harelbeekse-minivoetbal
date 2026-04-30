@@ -3,19 +3,28 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ClipboardList, Users, ShieldAlert, LayoutGrid } from 'lucide-react';
+import { ClipboardList, ShieldAlert, UserCheck } from 'lucide-react';
 import { RefereeDashboard } from '@/components/pages/public/scheidsrechters';
-import { PollManagement, AssignmentManagement, AvailabilityMatrix } from './components';
+import {
+  PollManagement,
+  AssignmentWorkspace,
+  WorkflowBanner,
+  CreatePollModal,
+  PollDetailModal,
+} from './components';
+import type { MonthlyPoll } from '@/services/scheidsrechter/types';
 import { useAuth } from '@/hooks/useAuth';
 
-// Main component
 const ScheidsrechtersPage = () => {
   const { user, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'assignments' | 'polls'>('overview');
+  const [activeTab, setActiveTab] = useState<'assign' | 'polls'>('assign');
+  const [bannerKey, setBannerKey] = useState(0);
+  const [workspaceKey, setWorkspaceKey] = useState(0);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [detailPoll, setDetailPoll] = useState<MonthlyPoll | null>(null);
 
   const userRole = user?.role || null;
 
-  // Loading state
   if (loading) {
     return (
       <div className="space-y-6 p-4 sm:p-6">
@@ -23,9 +32,7 @@ const ScheidsrechtersPage = () => {
           <CardContent className="p-8 text-center">
             <div className="animate-pulse space-y-2">
               <Skeleton className="h-4 w-1/2 mx-auto" />
-              <p className="text-sm text-muted-foreground mt-4">
-                Gebruikersgegevens laden...
-              </p>
+              <p className="text-sm text-muted-foreground mt-4">Gebruikersgegevens laden...</p>
             </div>
           </CardContent>
         </Card>
@@ -33,7 +40,6 @@ const ScheidsrechtersPage = () => {
     );
   }
 
-  // Not logged in or no role
   if (!userRole) {
     return (
       <div className="space-y-6 p-4 sm:p-6">
@@ -50,56 +56,65 @@ const ScheidsrechtersPage = () => {
     );
   }
 
-  // Admin view
   if (userRole === 'admin') {
+    const refreshAll = () => {
+      setBannerKey((k) => k + 1);
+      setWorkspaceKey((k) => k + 1);
+    };
+
     return (
       <div className="space-y-6 p-4 sm:p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Scheidsrechter Beheer</h1>
-            <p className="text-muted-foreground mt-1">
-              Beheer polls en toewijzingen
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">Scheidsrechter Beheer</h1>
+          <p className="text-muted-foreground mt-1">
+            Polls aanmaken, beschikbaarheid bekijken en wedstrijden toewijzen
+          </p>
         </div>
-        
-        {/* Admin Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'assignments' | 'polls')}>
-          <TabsList className="grid w-full grid-cols-3 max-w-lg">
-            <TabsTrigger value="overview" className="gap-2">
-              <LayoutGrid className="h-4 w-4" />
-              <span className="hidden sm:inline">Overzicht</span>
-              <span className="sm:hidden">Matrix</span>
-            </TabsTrigger>
-            <TabsTrigger value="assignments" className="gap-2">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Toewijzingen</span>
-              <span className="sm:hidden">Toewijzen</span>
+
+        <WorkflowBanner
+          refreshKey={bannerKey}
+          onCreatePoll={() => setCreateOpen(true)}
+          onOpenPollDetail={(poll) => setDetailPoll(poll)}
+          onAfterAction={refreshAll}
+        />
+
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'assign' | 'polls')}>
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="assign" className="gap-2">
+              <UserCheck className="h-4 w-4" />
+              Toewijzen
             </TabsTrigger>
             <TabsTrigger value="polls" className="gap-2">
               <ClipboardList className="h-4 w-4" />
-              <span className="hidden sm:inline">Polls</span>
-              <span className="sm:hidden">Polls</span>
+              Polls archief
             </TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="overview" className="mt-6">
-            <AvailabilityMatrix />
+
+          <TabsContent value="assign" className="mt-6">
+            <AssignmentWorkspace refreshKey={workspaceKey} onAfterChange={refreshAll} />
           </TabsContent>
-          
-          <TabsContent value="assignments" className="mt-6">
-            <AssignmentManagement />
-          </TabsContent>
-          
+
           <TabsContent value="polls" className="mt-6">
             <PollManagement />
           </TabsContent>
         </Tabs>
+
+        <CreatePollModal
+          isOpen={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onSuccess={refreshAll}
+        />
+        {detailPoll && (
+          <PollDetailModal
+            isOpen={!!detailPoll}
+            onClose={() => setDetailPoll(null)}
+            poll={detailPoll}
+          />
+        )}
       </div>
     );
   }
 
-  // Referee view
   return <RefereeDashboard />;
 };
 
