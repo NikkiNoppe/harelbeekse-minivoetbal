@@ -627,6 +627,74 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         </div>
       )}
 
+      {/* Filter & export bar */}
+      {referees.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between rounded-lg border border-[hsl(var(--color-200))] bg-card px-3 py-2">
+          <div className="flex flex-1 flex-wrap items-center gap-3">
+            <div className="relative w-full sm:w-56">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Zoek scheidsrechter…"
+                className="pl-8 h-8 text-sm"
+                aria-label="Zoek scheidsrechter"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="only-responded"
+                checked={onlyResponded}
+                onCheckedChange={setOnlyResponded}
+              />
+              <Label htmlFor="only-responded" className="text-xs cursor-pointer flex items-center gap-1">
+                <FilterIcon className="h-3 w-3" />
+                Alleen wie reageerde
+              </Label>
+            </div>
+            {(searchTerm || onlyResponded) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  setSearchTerm('');
+                  setOnlyResponded(false);
+                }}
+              >
+                <Undo2 className="h-3 w-3 mr-1" />
+                Reset
+              </Button>
+            )}
+            <span className="text-xs text-muted-foreground ml-auto sm:ml-0">
+              {filteredReferees.length}/{referees.length} refs zichtbaar
+            </span>
+          </div>
+          <div className="flex gap-1.5 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5"
+              onClick={handleExportICS}
+              title="Exporteer toegewezen wedstrijden als iCal-bestand"
+            >
+              <Download className="h-3.5 w-3.5" />
+              ICS
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5"
+              onClick={handleExportCSV}
+              title="Exporteer toegewezen wedstrijden als CSV-bestand"
+            >
+              <Download className="h-3.5 w-3.5" />
+              CSV
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Workload-overzicht */}
       {referees.length > 0 && (
         <div className="rounded-lg border border-border bg-card px-3 py-2">
