@@ -187,6 +187,11 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       setSessions(sortedSessions);
       setAvailability(availData);
       setAssignments(monthAssignments);
+
+      // Workload stats voor auto-suggest
+      const { monthCounts: mc, seasonCounts: sc } = await fetchWorkloadStats(selectedMonth);
+      setMonthCounts(mc);
+      setSeasonCounts(sc);
     } catch (error) {
       console.error('Error fetching matrix data:', error);
       toast.error('Fout bij ophalen gegevens');
