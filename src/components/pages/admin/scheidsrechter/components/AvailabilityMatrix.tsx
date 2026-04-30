@@ -115,11 +115,16 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   const [sessions, setSessions] = useState<Session[]>([]);
   const [availability, setAvailability] = useState<AvailabilityData[]>([]);
   const [assignments, setAssignments] = useState<AssignmentData[]>([]);
+  const [usersById, setUsersById] = useState<Map<number, string>>(new Map());
   const [monthCounts, setMonthCounts] = useState<Map<number, number>>(new Map());
   const [seasonCounts, setSeasonCounts] = useState<Map<number, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState<string | null>(null);
   const [bulkAssigning, setBulkAssigning] = useState(false);
+
+  // Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [onlyResponded, setOnlyResponded] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
