@@ -66,16 +66,15 @@ export function useRefereeDashboard(): RefereeDashboardData {
       setActivePoll(poll);
       
       if (poll) {
-        // Fetch poll match dates
-        const dates = await pollService.getPollMatchDates(poll.id);
+        // Fetch poll match dates + matches per group + my availability in parallel
+        const [dates, matchesByGroup, availability] = await Promise.all([
+          pollService.getPollMatchDates(poll.id),
+          pollService.getMatchesForPoll(poll.poll_month),
+          refereeAvailabilityService.getRefereeAvailability(userId, poll.poll_month),
+        ]);
         setPollMatchDates(dates);
-        
-        // Fetch my availability for this poll
-        const availability = await refereeAvailabilityService.getRefereeAvailability(
-          userId, 
-          poll.poll_month
-        );
-        
+        setPollMatchesByGroup(matchesByGroup);
+
         // Convert to map for easy lookup
         const availMap = new Map<string, boolean>();
         availability.forEach(a => {
