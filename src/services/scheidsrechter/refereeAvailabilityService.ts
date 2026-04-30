@@ -11,7 +11,8 @@ import type {
  */
 export const refereeAvailabilityService = {
   /**
-   * Dien beschikbaarheid in voor meerdere wedstrijden/poll groups
+   * Dien beschikbaarheid in voor meerdere wedstrijden/clusters.
+   * Werkt zonder poll — gebruikt rechtstreeks de cluster_key (poll_group_id).
    */
   async submitAvailability(
     refereeId: number,
@@ -19,20 +20,7 @@ export const refereeAvailabilityService = {
     availabilities: AvailabilityInput[]
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      // Valideer dat poll open is
-      const { data: poll } = await supabase
-        .from('monthly_polls' as any)
-        .select('status')
-        .eq('poll_month', pollMonth)
-        .single();
-
-      const pollData = poll as any;
-      if (pollData && pollData.status !== 'open') {
-        return { success: false, error: 'Poll is niet meer open voor indiening' };
-      }
-
       return await withUserContext(async () => {
-        // Bereid data voor voor upsert
         const dataToUpsert = availabilities.map(avail => ({
           user_id: refereeId,
           poll_month: pollMonth,
@@ -140,7 +128,9 @@ export const refereeAvailabilityService = {
   },
 
   /**
-   * Update beschikbaarheid voor een specifiek record
+   * Update beschikbaarheid voor een specifiek record.
+   * Geen poll-validatie meer — admin kan altijd toewijzen, scheidsrechter kan
+   * altijd zijn voorkeur aanduiden voor een toekomstige wedstrijd.
    */
   async updateAvailability(
     refereeId: number,
@@ -151,19 +141,6 @@ export const refereeAvailabilityService = {
     notes?: string
   ): Promise<boolean> {
     try {
-      // Check of poll nog open is
-      const { data: poll } = await supabase
-        .from('monthly_polls' as any)
-        .select('status')
-        .eq('poll_month', pollMonth)
-        .single();
-
-      const pollData = poll as any;
-      if (pollData && pollData.status !== 'open') {
-        console.error('Poll is not open for updates');
-        return false;
-      }
-
       return await withUserContext(async () => {
         const { error } = await supabase
           .from('referee_availability')
@@ -174,6 +151,8 @@ export const refereeAvailabilityService = {
             poll_month: pollMonth,
             is_available: isAvailable,
             notes: notes || null
+          } as any, {
+            onConflict: 'user_id,poll_group_id,poll_month'
           } as any);
 
         if (error) {
