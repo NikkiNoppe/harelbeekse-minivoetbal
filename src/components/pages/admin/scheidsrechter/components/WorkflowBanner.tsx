@@ -168,6 +168,9 @@ export const WorkflowBanner: React.FC<WorkflowBannerProps> = ({
 
   // === Geen poll ===
   if (!data.poll) {
+    const monthLabelEmpty = selectedMonth
+      ? format(new Date(`${selectedMonth}-01`), 'MMMM yyyy', { locale: nl })
+      : null;
     return (
       <Card className="p-5 border-l-4 border-l-primary bg-primary/5">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -177,7 +180,7 @@ export const WorkflowBanner: React.FC<WorkflowBannerProps> = ({
             </div>
             <div className="min-w-0">
               <h3 className="font-semibold text-base text-foreground">
-                Nog geen actieve poll
+                {monthLabelEmpty ? `Nog geen poll voor ${monthLabelEmpty}` : 'Nog geen actieve poll'}
               </h3>
               <p className="text-sm text-muted-foreground mt-0.5">
                 Maak een poll aan zodat scheidsrechters hun beschikbaarheid kunnen doorgeven.
