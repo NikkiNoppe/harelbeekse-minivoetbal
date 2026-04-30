@@ -975,29 +975,41 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {filteredReferees.map(ref => {
                         const available = isRefereeAvailable(session, ref.user_id);
+                        const hasResponded = hasRefereeResponded(session, ref.user_id);
                         const assignment = getSessionAssignment(session, ref.user_id);
                         const isAssigned = !!assignment;
                         const isOtherAssigned = assignedRefId !== null && assignedRefId !== ref.user_id;
                         const cellKey = `${session.matches[0]?.match_id}-${ref.user_id}`;
                         const isLoadingCell = assigning === cellKey;
 
-                        if (!available && !isAssigned) return null;
+                        // Pill-stijl op basis van status
+                        let pillClass = 'bg-card border border-dashed border-border text-muted-foreground'; // geen reactie
+                        if (isAssigned) pillClass = 'pill-success-strong shadow-sm';
+                        else if (available) pillClass = 'bg-success/15 border border-success/40 text-foreground';
+                        else if (hasResponded) pillClass = 'bg-destructive/5 border border-destructive/30 text-foreground';
 
                         return (
                           <button
                             key={ref.user_id}
                             disabled={isLoadingCell || (isOtherAssigned && !isAssigned)}
                             onClick={() => {
-                              if (isAssigned && assignment) handleRemove(assignment);
-                              else if (available) handleAssign(session, ref.user_id);
+                              if (isAssigned && assignment) {
+                                handleRemove(assignment);
+                                return;
+                              }
+                              if (isOtherAssigned) return;
+                              if (hasResponded && !available) {
+                                const ok = window.confirm(
+                                  `${ref.username} gaf NIET beschikbaar op. Toch toewijzen?`
+                                );
+                                if (!ok) return;
+                              }
+                              handleAssign(session, ref.user_id);
                             }}
                             className={`
                               inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium
                               transition-all min-h-[32px]
-                              ${isAssigned
-                                ? 'pill-success-strong shadow-sm'
-                                : 'bg-success/15 border border-success/40'
-                              }
+                              ${pillClass}
                               ${isOtherAssigned && !isAssigned ? 'opacity-40' : ''}
                               disabled:cursor-not-allowed
                             `}
@@ -1006,14 +1018,15 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                               <RefreshCw className="h-3 w-3 animate-spin" />
                             ) : isAssigned ? (
                               <Star className="h-3 w-3 fill-white" />
+                            ) : !hasResponded ? (
+                              <Minus className="h-3 w-3 opacity-60" />
+                            ) : !available ? (
+                              <X className="h-3 w-3 opacity-60" />
                             ) : null}
                             {ref.username}
                           </button>
                         );
                       })}
-                      {referees.every(ref => !isRefereeAvailable(session, ref.user_id) && !getSessionAssignment(session, ref.user_id)) && (
-                        <span className="text-xs text-muted-foreground italic">Geen beschikbaarheid</span>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
