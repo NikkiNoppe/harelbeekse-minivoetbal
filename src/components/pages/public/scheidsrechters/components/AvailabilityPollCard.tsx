@@ -159,19 +159,19 @@ export function AvailabilityPollCard({
               <label 
                 htmlFor={`avail-${date.id}`}
                 className={cn(
-                  'flex-1 cursor-pointer',
+                  'flex-1 cursor-pointer space-y-2',
                   !isPollOpen && 'cursor-not-allowed'
                 )}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                   <div className="flex items-center gap-2">
                     <CalendarDays className="h-4 w-4 text-primary" />
-                    <span className="font-medium text-sm">
+                    <span className="font-medium text-sm capitalize">
                       {format(matchDate, 'EEEE d MMMM', { locale: nl })}
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                     {date.time_slot && (
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -192,6 +192,44 @@ export function AvailabilityPollCard({
                     </span>
                   </div>
                 </div>
+
+                {/* Match details (teams + exact times) */}
+                {(() => {
+                  const groupMatches = matchesByGroup
+                    ? Array.from(matchesByGroup.values())
+                        .flat()
+                        .filter((m) => {
+                          const md = new Date(m.match_date);
+                          const sameDay =
+                            md.getUTCFullYear() === matchDate.getUTCFullYear() &&
+                            md.getUTCMonth() === matchDate.getUTCMonth() &&
+                            md.getUTCDate() === matchDate.getUTCDate();
+                          const sameLoc = !date.location || (m.location || '') === date.location;
+                          return sameDay && sameLoc;
+                        })
+                    : [];
+                  if (groupMatches.length === 0) return null;
+                  return (
+                    <div className="mt-1 pl-1 border-l-2 border-primary/20 space-y-1">
+                      {groupMatches.map((m) => {
+                        const t = new Date(m.match_date);
+                        const time = `${String(t.getUTCHours()).padStart(2, '0')}:${String(t.getUTCMinutes()).padStart(2, '0')}`;
+                        return (
+                          <div
+                            key={m.match_id}
+                            className="flex items-center gap-2 text-xs text-muted-foreground pl-2"
+                          >
+                            <span className="font-mono text-foreground/70">{time}</span>
+                            <span className="truncate">
+                              {m.home_team_name} <span className="opacity-60">vs</span>{' '}
+                              {m.away_team_name}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </label>
             </div>
           );
