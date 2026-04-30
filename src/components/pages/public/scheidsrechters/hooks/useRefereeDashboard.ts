@@ -1,121 +1,93 @@
 import { useState, useEffect, useCallback } from 'react';
-import { pollService, assignmentService, refereeAvailabilityService } from '@/services/scheidsrechter';
-import type { MonthlyPoll, PollMatchDate, RefereeAssignment, AvailabilityInput } from '@/services/scheidsrechter/types';
+import {
+  assignmentService,
+  refereeAvailabilityService,
+  monthScheduleService,
+} from '@/services/scheidsrechter';
+import type {
+  RefereeAssignment,
+  AvailabilityInput,
+} from '@/services/scheidsrechter/types';
+import type { ScheduleCluster } from '@/services/scheidsrechter/monthScheduleService';
 import { toast } from 'sonner';
 
-export interface PollGroupMatch {
-  match_id: number;
-  match_date: string;
-  location: string | null;
-  home_team_name: string;
-  away_team_name: string;
-}
-
 export interface RefereeDashboardData {
-  // Poll data
-  activePoll: MonthlyPoll | null;
-  pollMatchDates: PollMatchDate[];
-  pollMatchesByGroup: Map<string, PollGroupMatch[]>;
+  /** Geclusterde wedstrijden uit het echte speelschema (huidige + komende maand). */
+  clusters: ScheduleCluster[];
+  /** Mijn beschikbaarheid, per cluster_key. */
   myAvailability: Map<string, boolean>;
-  
+
   // Assignments
   assignments: RefereeAssignment[];
-  
+
   // Loading states
-  isLoadingPoll: boolean;
+  isLoadingSchedule: boolean;
   isLoadingAssignments: boolean;
   isSubmitting: boolean;
-  
+
   // User info
   userId: number;
   username: string;
-  
+
   // Actions
-  submitAvailability: (pollGroupId: string, isAvailable: boolean) => Promise<void>;
-  submitBulkAvailability: (availabilities: AvailabilityInput[]) => Promise<void>;
+  submitAvailability: (clusterKey: string, pollMonth: string, isAvailable: boolean) => Promise<void>;
+  submitBulkAvailability: (pollMonth: string, availabilities: AvailabilityInput[]) => Promise<void>;
   confirmAssignment: (assignmentId: number) => Promise<void>;
   declineAssignment: (assignmentId: number, reason?: string) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
 export function useRefereeDashboard(): RefereeDashboardData {
-  // User data from localStorage
   const userId = parseInt(localStorage.getItem('userId') || '0');
   const userData = localStorage.getItem('user');
   const username = userData ? JSON.parse(userData).username || 'Scheidsrechter' : 'Scheidsrechter';
-  
-  // Poll state
-  const [activePoll, setActivePoll] = useState<MonthlyPoll | null>(null);
-  const [pollMatchDates, setPollMatchDates] = useState<PollMatchDate[]>([]);
-  const [pollMatchesByGroup, setPollMatchesByGroup] = useState<Map<string, Array<{
-    match_id: number;
-    match_date: string;
-    location: string | null;
-    home_team_name: string;
-    away_team_name: string;
-  }>>>(new Map());
+
+  const [clusters, setClusters] = useState<ScheduleCluster[]>([]);
   const [myAvailability, setMyAvailability] = useState<Map<string, boolean>>(new Map());
-  const [isLoadingPoll, setIsLoadingPoll] = useState(true);
-  
-  // Assignments state
+  const [isLoadingSchedule, setIsLoadingSchedule] = useState(true);
+
   const [assignments, setAssignments] = useState<RefereeAssignment[]>([]);
   const [isLoadingAssignments, setIsLoadingAssignments] = useState(true);
-  
-  // Form state
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Fetch active poll and availability
-  const fetchPollData = useCallback(async () => {
-    if (!userId) return;
-    
-    setIsLoadingPoll(true);
-    try {
-      // Fetch active poll
-      const poll = await pollService.getActivePoll();
-      setActivePoll(poll);
-      
-      if (poll) {
-        // Fetch poll match dates + matches per group + my availability in parallel
-        const [dates, matchesByGroup, availability] = await Promise.all([
-          pollService.getPollMatchDates(poll.id),
-          pollService.getMatchesForPoll(poll.poll_month),
-          refereeAvailabilityService.getRefereeAvailability(userId, poll.poll_month),
-        ]);
-        setPollMatchDates(dates);
-        setPollMatchesByGroup(matchesByGroup);
 
-        // Convert to map for easy lookup
-        const availMap = new Map<string, boolean>();
-        availability.forEach(a => {
-          if (a.poll_group_id) {
-            availMap.set(a.poll_group_id, a.is_available);
-          }
-        });
-        setMyAvailability(availMap);
-      }
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Schedule + beschikbaarheid laden uit het echte speelschema
+  const fetchScheduleData = useCallback(async () => {
+    if (!userId) return;
+    setIsLoadingSchedule(true);
+    try {
+      const upcoming = await monthScheduleService.getUpcomingClusters(2);
+      setClusters(upcoming);
+
+      // Haal beschikbaarheid op voor alle relevante maanden
+      const months = Array.from(new Set(upcoming.map((c) => c.poll_month)));
+      const availabilityResults = await Promise.all(
+        months.map((m) => refereeAvailabilityService.getRefereeAvailability(userId, m)),
+      );
+      const availMap = new Map<string, boolean>();
+      availabilityResults.flat().forEach((a) => {
+        if (a.poll_group_id) availMap.set(a.poll_group_id, a.is_available);
+      });
+      setMyAvailability(availMap);
     } catch (error) {
-      console.error('Error fetching poll data:', error);
-      toast.error('Kon poll gegevens niet ophalen');
+      console.error('Error fetching schedule:', error);
+      toast.error('Kon speelschema niet ophalen');
     } finally {
-      setIsLoadingPoll(false);
+      setIsLoadingSchedule(false);
     }
   }, [userId]);
-  
-  // Fetch assignments
+
   const fetchAssignments = useCallback(async () => {
     if (!userId) return;
-    
     setIsLoadingAssignments(true);
     try {
       const data = await assignmentService.getAssignmentsForReferee(userId);
-      // Sort by match date (upcoming first)
       const sorted = data.sort((a, b) => {
         const dateA = new Date(a.match_date || '').getTime();
         const dateB = new Date(b.match_date || '').getTime();
         return dateA - dateB;
       });
-      // Filter to only show active assignments (not declined/cancelled)
-      const active = sorted.filter(a => a.status !== 'declined' && a.status !== 'cancelled');
+      const active = sorted.filter((a) => a.status !== 'declined' && a.status !== 'cancelled');
       setAssignments(active);
     } catch (error) {
       console.error('Error fetching assignments:', error);
@@ -124,124 +96,121 @@ export function useRefereeDashboard(): RefereeDashboardData {
       setIsLoadingAssignments(false);
     }
   }, [userId]);
-  
-  // Initial fetch
+
   useEffect(() => {
-    fetchPollData();
+    fetchScheduleData();
     fetchAssignments();
-  }, [fetchPollData, fetchAssignments]);
-  
-  // Auto-refresh assignments every 5 minutes
+  }, [fetchScheduleData, fetchAssignments]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       fetchAssignments();
     }, 5 * 60 * 1000);
-    
     return () => clearInterval(interval);
   }, [fetchAssignments]);
-  
-  // Submit single availability
-  const submitAvailability = useCallback(async (pollGroupId: string, isAvailable: boolean) => {
-    if (!activePoll || !userId) return;
-    
-    // Optimistic update
-    setMyAvailability(prev => new Map(prev).set(pollGroupId, isAvailable));
-    
-    try {
-      const success = await refereeAvailabilityService.updateAvailability(
-        userId,
-        null, // match_id
-        pollGroupId,
-        activePoll.poll_month,
-        isAvailable
-      );
-      
-      if (!success) {
-        // Revert on failure
-        setMyAvailability(prev => {
-          const next = new Map(prev);
-          next.delete(pollGroupId);
-          return next;
-        });
+
+  const submitAvailability = useCallback(
+    async (clusterKey: string, pollMonth: string, isAvailable: boolean) => {
+      if (!userId) return;
+
+      // Optimistic update
+      setMyAvailability((prev) => new Map(prev).set(clusterKey, isAvailable));
+
+      try {
+        const success = await refereeAvailabilityService.updateAvailability(
+          userId,
+          null,
+          clusterKey,
+          pollMonth,
+          isAvailable,
+        );
+        if (!success) {
+          setMyAvailability((prev) => {
+            const next = new Map(prev);
+            next.delete(clusterKey);
+            return next;
+          });
+          toast.error('Kon beschikbaarheid niet opslaan');
+        }
+      } catch (error) {
+        console.error('Error updating availability:', error);
         toast.error('Kon beschikbaarheid niet opslaan');
       }
-    } catch (error) {
-      console.error('Error updating availability:', error);
-      toast.error('Kon beschikbaarheid niet opslaan');
-    }
-  }, [activePoll, userId]);
-  
-  // Submit bulk availability
-  const submitBulkAvailability = useCallback(async (availabilities: AvailabilityInput[]) => {
-    if (!activePoll || !userId) return;
-    
-    setIsSubmitting(true);
-    try {
-      const result = await refereeAvailabilityService.submitAvailability(
-        userId,
-        activePoll.poll_month,
-        availabilities
-      );
-      
-      if (result.success) {
-        toast.success('Beschikbaarheid opgeslagen!');
-        // Refresh to get updated data
-        await fetchPollData();
-      } else {
-        toast.error(result.error || 'Kon beschikbaarheid niet opslaan');
+    },
+    [userId],
+  );
+
+  const submitBulkAvailability = useCallback(
+    async (pollMonth: string, availabilities: AvailabilityInput[]) => {
+      if (!userId) return;
+      setIsSubmitting(true);
+      try {
+        const result = await refereeAvailabilityService.submitAvailability(
+          userId,
+          pollMonth,
+          availabilities,
+        );
+        if (result.success) {
+          toast.success('Beschikbaarheid opgeslagen!');
+          await fetchScheduleData();
+        } else {
+          toast.error(result.error || 'Kon beschikbaarheid niet opslaan');
+        }
+      } catch (error) {
+        console.error('Error submitting availability:', error);
+        toast.error('Kon beschikbaarheid niet opslaan');
+      } finally {
+        setIsSubmitting(false);
       }
-    } catch (error) {
-      console.error('Error submitting availability:', error);
-      toast.error('Kon beschikbaarheid niet opslaan');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [activePoll, userId, fetchPollData]);
-  
-  // Confirm assignment
-  const confirmAssignment = useCallback(async (assignmentId: number) => {
-    try {
-      const success = await assignmentService.confirmAssignment(assignmentId);
-      if (success) {
-        toast.success('Toewijzing bevestigd!');
-        await fetchAssignments();
-      } else {
+    },
+    [userId, fetchScheduleData],
+  );
+
+  const confirmAssignment = useCallback(
+    async (assignmentId: number) => {
+      try {
+        const success = await assignmentService.confirmAssignment(assignmentId);
+        if (success) {
+          toast.success('Toewijzing bevestigd!');
+          await fetchAssignments();
+        } else {
+          toast.error('Kon toewijzing niet bevestigen');
+        }
+      } catch (error) {
+        console.error('Error confirming assignment:', error);
         toast.error('Kon toewijzing niet bevestigen');
       }
-    } catch (error) {
-      console.error('Error confirming assignment:', error);
-      toast.error('Kon toewijzing niet bevestigen');
-    }
-  }, [fetchAssignments]);
-  
-  // Decline assignment
-  const declineAssignment = useCallback(async (assignmentId: number, reason?: string) => {
-    try {
-      const success = await assignmentService.declineAssignment(assignmentId, reason);
-      if (success) {
-        toast.success('Toewijzing geweigerd');
-        await fetchAssignments();
-      } else {
+    },
+    [fetchAssignments],
+  );
+
+  const declineAssignment = useCallback(
+    async (assignmentId: number, reason?: string) => {
+      try {
+        const success = await assignmentService.declineAssignment(assignmentId, reason);
+        if (success) {
+          toast.success('Toewijzing geweigerd');
+          await fetchAssignments();
+        } else {
+          toast.error('Kon toewijzing niet weigeren');
+        }
+      } catch (error) {
+        console.error('Error declining assignment:', error);
         toast.error('Kon toewijzing niet weigeren');
       }
-    } catch (error) {
-      console.error('Error declining assignment:', error);
-      toast.error('Kon toewijzing niet weigeren');
-    }
-  }, [fetchAssignments]);
-  
-  // Refresh all data
+    },
+    [fetchAssignments],
+  );
+
   const refreshData = useCallback(async () => {
-    await Promise.all([fetchPollData(), fetchAssignments()]);
-  }, [fetchPollData, fetchAssignments]);
-  
+    await Promise.all([fetchScheduleData(), fetchAssignments()]);
+  }, [fetchScheduleData, fetchAssignments]);
+
   return {
-    activePoll,
-    pollMatchDates,
-    pollMatchesByGroup,
+    clusters,
     myAvailability,
     assignments,
-    isLoadingPoll,
+    isLoadingSchedule,
     isLoadingAssignments,
     isSubmitting,
     userId,
