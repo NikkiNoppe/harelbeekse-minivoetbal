@@ -152,7 +152,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
           .eq('poll_month', selectedMonth),
         supabase
           .from('referee_assignments' as any)
-          .select('id, match_id, referee_id, status') as any
+          .select('id, match_id, referee_id, status, assigned_by, assigned_at') as any
       ]);
 
       if (matchesRes.error) throw matchesRes.error;
