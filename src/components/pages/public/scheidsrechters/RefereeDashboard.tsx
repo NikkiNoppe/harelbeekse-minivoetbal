@@ -34,7 +34,7 @@ export function RefereeDashboard() {
   };
   
   return (
-    <div className="space-y-6 p-4 sm:p-6 max-w-4xl mx-auto">
+    <div className="scheids-page space-y-6 p-4 sm:p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
