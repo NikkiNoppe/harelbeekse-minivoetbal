@@ -957,7 +957,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {referees.map(ref => {
+                      {filteredReferees.map(ref => {
                         const available = isRefereeAvailable(session, ref.user_id);
                         const assignment = getSessionAssignment(session, ref.user_id);
                         const isAssigned = !!assignment;
