@@ -624,7 +624,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                                   {top ? `Suggereer: ${top.username}` : 'Geen suggestie'}
                                 </Button>
                                 {top && (
-                                  <span className="text-[10px] text-muted-foreground" title={top.reason}>
+                                  <span className="text-xs font-medium" style={{ color: 'var(--color-700)' }} title={top.reason}>
                                     {top.monthCount}× deze maand
                                   </span>
                                 )}
