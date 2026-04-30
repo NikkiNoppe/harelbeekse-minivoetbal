@@ -21,6 +21,7 @@ interface AvailabilityPollSectionProps {
 export function AvailabilityPollSection({
   activePoll,
   pollMatchDates,
+  pollMatchesByGroup,
   myAvailability,
   onSubmitAvailability,
   isLoading
