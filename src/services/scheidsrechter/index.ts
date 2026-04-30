@@ -22,3 +22,11 @@ export {
   fetchWorkloadStats,
   type SuggestionCandidate,
 } from './autoSuggestService';
+
+// Month schedule service — vervangt de poll-flow voor scheidsrechters
+export {
+  monthScheduleService,
+  buildClusterKey,
+  type ScheduleCluster,
+  type ScheduleMatch,
+} from './monthScheduleService';

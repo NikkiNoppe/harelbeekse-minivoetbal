@@ -8,12 +8,10 @@ import { RefereeStatsSection } from './sections/RefereeStatsSection';
 
 export function RefereeDashboard() {
   const {
-    activePoll,
-    pollMatchDates,
-    pollMatchesByGroup,
+    clusters,
     myAvailability,
     assignments,
-    isLoadingPoll,
+    isLoadingSchedule,
     isLoadingAssignments,
     username,
     submitAvailability,
@@ -21,9 +19,9 @@ export function RefereeDashboard() {
     declineAssignment,
     refreshData,
   } = useRefereeDashboard();
-  
+
   const [isRefreshing, setIsRefreshing] = React.useState(false);
-  
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -32,7 +30,7 @@ export function RefereeDashboard() {
       setIsRefreshing(false);
     }
   };
-  
+
   return (
     <div className="scheids-page space-y-6 p-4 sm:p-6 max-w-4xl mx-auto">
       {/* Header */}
@@ -46,7 +44,7 @@ export function RefereeDashboard() {
             Welkom, {username}
           </p>
         </div>
-        
+
         <Button
           variant="outline"
           size="sm"
@@ -64,18 +62,16 @@ export function RefereeDashboard() {
         assignments={assignments}
         isLoading={isLoadingAssignments}
       />
-      
+
       {/* Sections */}
       <div className="space-y-8">
         <AvailabilityPollSection
-          activePoll={activePoll}
-          pollMatchDates={pollMatchDates}
-          pollMatchesByGroup={pollMatchesByGroup}
+          clusters={clusters}
           myAvailability={myAvailability}
           onSubmitAvailability={submitAvailability}
-          isLoading={isLoadingPoll}
+          isLoading={isLoadingSchedule}
         />
-        
+
         <AssignedMatchesSection
           assignments={assignments}
           onConfirmAssignment={confirmAssignment}
