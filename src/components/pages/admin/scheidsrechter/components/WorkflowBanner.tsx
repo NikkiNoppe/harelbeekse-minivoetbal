@@ -109,7 +109,7 @@ export const WorkflowBanner: React.FC<WorkflowBannerProps> = ({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedMonth]);
 
   useEffect(() => {
     loadData();
