@@ -774,7 +774,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
               <table className="w-full text-sm border-collapse">
                 <thead className="sticky top-0 z-20">
                   <tr className="bg-muted">
-                    <th className="sticky left-0 z-30 bg-muted text-left px-4 py-3 font-semibold min-w-[260px] border-r border-b border-border text-foreground align-bottom">
+                    <th className="sticky left-0 z-30 bg-muted text-left px-2 py-2 font-semibold w-[150px] min-w-[150px] max-w-[150px] border-r border-b border-border text-foreground align-bottom">
                       Sessie
                     </th>
                     {filteredReferees.map(ref => (
