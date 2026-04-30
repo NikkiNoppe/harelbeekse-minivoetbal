@@ -940,8 +940,12 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                         <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
                         {session.location} · {formatTimeForDisplay(session.date)}
                       </div>
-                      <div className="text-xs text-muted-foreground/80 mt-1">
-                        {session.matches.map(m => `${m.home_team_name} – ${m.away_team_name}`).join(' · ')}
+                      <div className="mt-1 flex flex-col gap-0.5">
+                        {session.matches.map((m, i) => (
+                          <div key={i} className="text-[10px] leading-tight text-muted-foreground/70">
+                            {m.home_team_name} – {m.away_team_name}
+                          </div>
+                        ))}
                       </div>
                     </div>
 
