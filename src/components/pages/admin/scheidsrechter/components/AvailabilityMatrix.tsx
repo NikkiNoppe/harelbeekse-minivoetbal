@@ -845,7 +845,17 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                           if (isAssigned) {
                             cellClass = 'bg-success hover:bg-success/90 cursor-pointer ring-2 ring-success/30 ring-inset';
                             cellContent = <Star className="h-4 w-4 mx-auto text-white fill-white" />;
-                            tooltipText = `${ref.username} – Toegewezen · Klik om te verwijderen`;
+                            tooltipText = (() => {
+                              const assignerName = assignment?.assigned_by ? usersById.get(assignment.assigned_by) : null;
+                              const whenStr = assignment?.assigned_at
+                                ? format(new Date(assignment.assigned_at), 'd MMM HH:mm', { locale: nl })
+                                : null;
+                              const parts: string[] = [];
+                              if (assignerName) parts.push(`door ${assignerName}`);
+                              if (whenStr) parts.push(`op ${whenStr}`);
+                              const suffix = parts.length ? ` · ${parts.join(' ')}` : '';
+                              return `${ref.username} – Toegewezen${suffix} · Klik om te verwijderen`;
+                            })();
                             clickable = true;
                           } else if (isOtherAssigned) {
                             cellClass = 'bg-muted/40 opacity-50';
