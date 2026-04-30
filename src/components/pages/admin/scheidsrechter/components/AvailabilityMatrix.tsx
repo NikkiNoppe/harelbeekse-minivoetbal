@@ -774,15 +774,19 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
               <table className="w-full text-sm border-collapse">
                 <thead className="sticky top-0 z-20">
                   <tr className="bg-muted">
-                    <th className="sticky left-0 z-30 bg-muted text-left px-4 py-3 font-semibold min-w-[260px] border-r border-b border-border text-foreground">
+                    <th className="sticky left-0 z-30 bg-muted text-left px-4 py-3 font-semibold min-w-[260px] border-r border-b border-border text-foreground align-bottom">
                       Sessie
                     </th>
                     {filteredReferees.map(ref => (
                       <th
                         key={ref.user_id}
-                        className="px-2 py-3 text-center font-semibold min-w-[110px] border-r border-b border-border last:border-r-0 text-foreground bg-muted"
+                        className="px-1 py-2 font-semibold w-10 min-w-[40px] max-w-[40px] border-r border-b border-border last:border-r-0 text-foreground bg-muted align-bottom h-40"
                       >
-                        <div className="text-xs leading-tight" title={ref.username}>
+                        <div
+                          className="text-xs leading-tight whitespace-nowrap mx-auto"
+                          style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                          title={ref.username}
+                        >
                           {ref.username}
                         </div>
                       </th>
