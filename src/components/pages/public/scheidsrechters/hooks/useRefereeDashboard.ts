@@ -3,10 +3,19 @@ import { pollService, assignmentService, refereeAvailabilityService } from '@/se
 import type { MonthlyPoll, PollMatchDate, RefereeAssignment, AvailabilityInput } from '@/services/scheidsrechter/types';
 import { toast } from 'sonner';
 
+export interface PollGroupMatch {
+  match_id: number;
+  match_date: string;
+  location: string | null;
+  home_team_name: string;
+  away_team_name: string;
+}
+
 export interface RefereeDashboardData {
   // Poll data
   activePoll: MonthlyPoll | null;
   pollMatchDates: PollMatchDate[];
+  pollMatchesByGroup: Map<string, PollGroupMatch[]>;
   myAvailability: Map<string, boolean>;
   
   // Assignments
