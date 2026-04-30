@@ -753,7 +753,10 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
           <div className="w-5 h-5 rounded-md bg-card border border-dashed border-border flex items-center justify-center">
             <Minus className="h-3 w-3 text-muted-foreground/60" />
           </div>
-          <span className="text-foreground">Geen reactie</span>
+          <span className="text-foreground">Geen reactie <span className="text-muted-foreground">(klikbaar)</span></span>
+        </div>
+        <div className="ml-auto text-xs text-muted-foreground italic">
+          Tip: klik op elke cel om handmatig toe te wijzen
         </div>
       </div>
 
