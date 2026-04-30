@@ -15,3 +15,10 @@ export { refereeAvailabilityService } from './refereeAvailabilityService';
 
 // Assignment service
 export { assignmentService } from './assignmentService';
+
+// Auto-suggest service (Fase 5)
+export {
+  suggestRefereesForSession,
+  fetchWorkloadStats,
+  type SuggestionCandidate,
+} from './autoSuggestService';
