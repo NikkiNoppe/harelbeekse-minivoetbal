@@ -1682,3 +1682,91 @@ tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-
     padding-bottom: max(0px, env(safe-area-inset-bottom));
   }
 }
+
+/* ============================================================================
+   21. SCHEIDSRECHTERS ADMIN — page-scoped readability fixes
+   ============================================================================
+   Reden: globaal `--border: 0 0 0 0` + tailwind `border: 'transparent'` maakt
+   alle `border-border` onzichtbaar. Globale `--foreground` is geen geldige
+   hsl-tuple en zakt soms terug op zwart op niet-bg-card achtergronden.
+   We lossen dit lokaal op zonder andere pagina's te raken.
+   ============================================================================ */
+.scheids-page {
+  /* Eén hairline-kleur consistent voor de hele pagina */
+  --hairline: var(--color-200);
+  --hairline-strong: var(--color-300);
+  --text-strong: var(--color-700);
+  --text-body: var(--color-600);
+  --text-soft: var(--color-500);
+}
+.scheids-page,
+.scheids-page p,
+.scheids-page span:not([class*="text-primary"]):not([class*="text-success"]):not([class*="text-warning"]):not([class*="text-destructive"]):not([class*="text-white"]),
+.scheids-page div {
+  color: var(--text-body);
+}
+.scheids-page h1,
+.scheids-page h2,
+.scheids-page h3,
+.scheids-page h4 {
+  color: var(--text-strong);
+}
+/* Force readable color on tokens that are broken globally */
+.scheids-page .text-foreground { color: var(--text-strong) !important; }
+.scheids-page .text-muted-foreground { color: var(--text-soft) !important; }
+
+/* Hairline utility — use instead of border-border on this page */
+.scheids-page .hairline { border-color: var(--hairline) !important; }
+.scheids-page .hairline-strong { border-color: var(--hairline-strong) !important; }
+
+/* Auto-fix every transparent border-border occurrence inside this page */
+.scheids-page [class*="border-border"],
+.scheids-page .border-r,
+.scheids-page .border-l,
+.scheids-page .border-t,
+.scheids-page .border-b,
+.scheids-page table,
+.scheids-page th,
+.scheids-page td {
+  border-color: var(--hairline);
+}
+.scheids-page [class*="border-border/50"] {
+  border-color: var(--hairline);
+}
+
+/* Sticky table headers need a real divider so they don't blend on scroll */
+.scheids-page thead th {
+  background-color: hsl(var(--color-50));
+  color: var(--text-strong);
+  border-bottom: 1px solid var(--hairline-strong) !important;
+}
+.scheids-page tbody td {
+  border-top: 1px solid var(--hairline);
+}
+
+/* Workload heatmap chips: zorg dat tekst leesbaar blijft op getinte achtergrond */
+.scheids-page .workload-chip {
+  color: var(--text-strong);
+  border: 1px solid var(--hairline);
+}
+.scheids-page .workload-chip .workload-count {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+/* Success-pill op mobiel: gebruik donkergroen ipv pure success */
+.scheids-page .pill-success-strong {
+  background-color: var(--color-success);
+  color: #ffffff;
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.18);
+}
+
+/* Warning alerts: voorkom oranje-op-oranje */
+.scheids-page .alert-warning-readable {
+  border-color: var(--color-warning) !important;
+  background-color: var(--color-warning-bg);
+  color: var(--text-strong);
+}
+.scheids-page .alert-warning-readable * { color: var(--text-strong); }
+
