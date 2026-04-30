@@ -1,15 +1,16 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, User } from 'lucide-react';
 import { useRefereeDashboard } from './hooks/useRefereeDashboard';
 import { AvailabilityPollSection } from './sections/AvailabilityPollSection';
 import { AssignedMatchesSection } from './sections/AssignedMatchesSection';
+import { RefereeStatsSection } from './sections/RefereeStatsSection';
 
 export function RefereeDashboard() {
   const {
     activePoll,
     pollMatchDates,
+    pollMatchesByGroup,
     myAvailability,
     assignments,
     isLoadingPoll,
@@ -57,19 +58,24 @@ export function RefereeDashboard() {
           Vernieuwen
         </Button>
       </div>
+
+      {/* Personal stats */}
+      <RefereeStatsSection
+        assignments={assignments}
+        isLoading={isLoadingAssignments}
+      />
       
       {/* Sections */}
       <div className="space-y-8">
-        {/* Poll Section */}
         <AvailabilityPollSection
           activePoll={activePoll}
           pollMatchDates={pollMatchDates}
+          pollMatchesByGroup={pollMatchesByGroup}
           myAvailability={myAvailability}
           onSubmitAvailability={submitAvailability}
           isLoading={isLoadingPoll}
         />
         
-        {/* Assigned Matches Section */}
         <AssignedMatchesSection
           assignments={assignments}
           onConfirmAssignment={confirmAssignment}

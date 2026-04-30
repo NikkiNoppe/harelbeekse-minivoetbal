@@ -6,11 +6,13 @@ import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { DeadlineCountdown } from '../components/DeadlineCountdown';
 import { AvailabilityPollCard } from '../components/AvailabilityPollCard';
-import type { MonthlyPoll, PollMatchDate, AvailabilityInput } from '@/services/scheidsrechter/types';
+import type { MonthlyPoll, PollMatchDate } from '@/services/scheidsrechter/types';
+import type { PollGroupMatch } from '../hooks/useRefereeDashboard';
 
 interface AvailabilityPollSectionProps {
   activePoll: MonthlyPoll | null;
   pollMatchDates: PollMatchDate[];
+  pollMatchesByGroup?: Map<string, PollGroupMatch[]>;
   myAvailability: Map<string, boolean>;
   onSubmitAvailability: (pollGroupId: string, isAvailable: boolean) => Promise<void>;
   isLoading: boolean;
@@ -19,6 +21,7 @@ interface AvailabilityPollSectionProps {
 export function AvailabilityPollSection({
   activePoll,
   pollMatchDates,
+  pollMatchesByGroup,
   myAvailability,
   onSubmitAvailability,
   isLoading
@@ -100,6 +103,7 @@ export function AvailabilityPollSection({
       {/* Poll card */}
       <AvailabilityPollCard
         matchDates={pollMatchDates}
+        matchesByGroup={pollMatchesByGroup}
         myAvailability={myAvailability}
         onSubmit={onSubmitAvailability}
         isPollOpen={isPollOpen}

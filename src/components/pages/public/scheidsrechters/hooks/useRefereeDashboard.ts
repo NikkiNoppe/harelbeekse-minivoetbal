@@ -3,10 +3,19 @@ import { pollService, assignmentService, refereeAvailabilityService } from '@/se
 import type { MonthlyPoll, PollMatchDate, RefereeAssignment, AvailabilityInput } from '@/services/scheidsrechter/types';
 import { toast } from 'sonner';
 
+export interface PollGroupMatch {
+  match_id: number;
+  match_date: string;
+  location: string | null;
+  home_team_name: string;
+  away_team_name: string;
+}
+
 export interface RefereeDashboardData {
   // Poll data
   activePoll: MonthlyPoll | null;
   pollMatchDates: PollMatchDate[];
+  pollMatchesByGroup: Map<string, PollGroupMatch[]>;
   myAvailability: Map<string, boolean>;
   
   // Assignments
@@ -38,6 +47,13 @@ export function useRefereeDashboard(): RefereeDashboardData {
   // Poll state
   const [activePoll, setActivePoll] = useState<MonthlyPoll | null>(null);
   const [pollMatchDates, setPollMatchDates] = useState<PollMatchDate[]>([]);
+  const [pollMatchesByGroup, setPollMatchesByGroup] = useState<Map<string, Array<{
+    match_id: number;
+    match_date: string;
+    location: string | null;
+    home_team_name: string;
+    away_team_name: string;
+  }>>>(new Map());
   const [myAvailability, setMyAvailability] = useState<Map<string, boolean>>(new Map());
   const [isLoadingPoll, setIsLoadingPoll] = useState(true);
   
@@ -59,16 +75,15 @@ export function useRefereeDashboard(): RefereeDashboardData {
       setActivePoll(poll);
       
       if (poll) {
-        // Fetch poll match dates
-        const dates = await pollService.getPollMatchDates(poll.id);
+        // Fetch poll match dates + matches per group + my availability in parallel
+        const [dates, matchesByGroup, availability] = await Promise.all([
+          pollService.getPollMatchDates(poll.id),
+          pollService.getMatchesForPoll(poll.poll_month),
+          refereeAvailabilityService.getRefereeAvailability(userId, poll.poll_month),
+        ]);
         setPollMatchDates(dates);
-        
-        // Fetch my availability for this poll
-        const availability = await refereeAvailabilityService.getRefereeAvailability(
-          userId, 
-          poll.poll_month
-        );
-        
+        setPollMatchesByGroup(matchesByGroup);
+
         // Convert to map for easy lookup
         const availMap = new Map<string, boolean>();
         availability.forEach(a => {
@@ -223,6 +238,7 @@ export function useRefereeDashboard(): RefereeDashboardData {
   return {
     activePoll,
     pollMatchDates,
+    pollMatchesByGroup,
     myAvailability,
     assignments,
     isLoadingPoll,
