@@ -38,6 +38,13 @@ export function useRefereeDashboard(): RefereeDashboardData {
   // Poll state
   const [activePoll, setActivePoll] = useState<MonthlyPoll | null>(null);
   const [pollMatchDates, setPollMatchDates] = useState<PollMatchDate[]>([]);
+  const [pollMatchesByGroup, setPollMatchesByGroup] = useState<Map<string, Array<{
+    match_id: number;
+    match_date: string;
+    location: string | null;
+    home_team_name: string;
+    away_team_name: string;
+  }>>>(new Map());
   const [myAvailability, setMyAvailability] = useState<Map<string, boolean>>(new Map());
   const [isLoadingPoll, setIsLoadingPoll] = useState(true);
   
