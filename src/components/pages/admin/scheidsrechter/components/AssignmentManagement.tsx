@@ -40,8 +40,25 @@ const getMonthOptions = () => {
   return months;
 };
 
-const AssignmentManagement: React.FC = () => {
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+interface AssignmentManagementProps {
+  /** Externe maand (YYYY-MM) — als gezet wordt de interne selector gehide. */
+  selectedMonth?: string;
+  onSelectedMonthChange?: (m: string) => void;
+  /** Verberg interne header (parent toolbar levert al de maand-selector). */
+  hideHeader?: boolean;
+}
+
+const AssignmentManagement: React.FC<AssignmentManagementProps> = ({
+  selectedMonth: externalMonth,
+  onSelectedMonthChange,
+  hideHeader = false,
+}) => {
+  const [internalMonth, setInternalMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const selectedMonth = externalMonth ?? internalMonth;
+  const setSelectedMonth = (m: string) => {
+    if (onSelectedMonthChange) onSelectedMonthChange(m);
+    else setInternalMonth(m);
+  };
   const [statusFilter, setStatusFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
   const [matches, setMatches] = useState<MatchWithAssignment[]>([]);
   const [stats, setStats] = useState<RefereeAssignmentStats[]>([]);
