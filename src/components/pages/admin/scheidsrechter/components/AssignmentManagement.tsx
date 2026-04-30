@@ -40,8 +40,25 @@ const getMonthOptions = () => {
   return months;
 };
 
-const AssignmentManagement: React.FC = () => {
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+interface AssignmentManagementProps {
+  /** Externe maand (YYYY-MM) — als gezet wordt de interne selector gehide. */
+  selectedMonth?: string;
+  onSelectedMonthChange?: (m: string) => void;
+  /** Verberg interne header (parent toolbar levert al de maand-selector). */
+  hideHeader?: boolean;
+}
+
+const AssignmentManagement: React.FC<AssignmentManagementProps> = ({
+  selectedMonth: externalMonth,
+  onSelectedMonthChange,
+  hideHeader = false,
+}) => {
+  const [internalMonth, setInternalMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const selectedMonth = externalMonth ?? internalMonth;
+  const setSelectedMonth = (m: string) => {
+    if (onSelectedMonthChange) onSelectedMonthChange(m);
+    else setInternalMonth(m);
+  };
   const [statusFilter, setStatusFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
   const [matches, setMatches] = useState<MatchWithAssignment[]>([]);
   const [stats, setStats] = useState<RefereeAssignmentStats[]>([]);
@@ -201,36 +218,38 @@ const AssignmentManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header with filters */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Scheidsrechter Toewijzingen</h2>
-          <p className="text-sm text-muted-foreground">
-            Wijs scheidsrechters toe aan wedstrijden
-          </p>
+      {!hideHeader && (
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Scheidsrechter Toewijzingen</h2>
+            <p className="text-sm text-muted-foreground">
+              Wijs scheidsrechters toe aan wedstrijden
+            </p>
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {getMonthOptions().map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={fetchData}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {getMonthOptions().map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={fetchData}
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-      </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

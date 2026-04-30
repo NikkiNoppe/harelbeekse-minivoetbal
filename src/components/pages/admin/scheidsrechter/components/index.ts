@@ -8,3 +8,5 @@ export { default as AvailabilityModal } from './AvailabilityModal';
 export { default as AvailabilityMatrix } from './AvailabilityMatrix';
 export { default as AssignmentWorkspace } from './AssignmentWorkspace';
 export { default as WorkflowBanner } from './WorkflowBanner';
+export { default as WorkflowStepper } from './WorkflowStepper';
+export type { WorkflowStep, StepStatus } from './WorkflowStepper';
