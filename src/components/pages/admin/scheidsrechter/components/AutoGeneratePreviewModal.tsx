@@ -3,7 +3,6 @@ import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { Loader2, Sparkles, Info, CheckCircle2, AlertCircle } from 'lucide-react';
 import { AppModal } from '@/components/modals/base/app-modal';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
