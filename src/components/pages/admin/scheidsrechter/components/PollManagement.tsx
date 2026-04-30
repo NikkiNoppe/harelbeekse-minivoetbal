@@ -39,7 +39,7 @@ const PollManagement: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedPoll, setSelectedPoll] = useState<MonthlyPoll | null>(null);
   const [pollToDelete, setPollToDelete] = useState<number | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [previewMonth, setPreviewMonth] = useState<string | null>(null);
 
   const fetchPolls = async () => {
     setLoading(true);
