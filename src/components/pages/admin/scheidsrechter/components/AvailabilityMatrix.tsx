@@ -1,13 +1,28 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import { RefreshCw, Check, X, Star, Minus, Sparkles, Wand2 } from 'lucide-react';
+import {
+  RefreshCw,
+  Check,
+  X,
+  Star,
+  Minus,
+  Sparkles,
+  Wand2,
+  Download,
+  Search,
+  Filter as FilterIcon,
+  Undo2,
+} from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { assignmentService } from '@/services/scheidsrechter/assignmentService';
@@ -19,6 +34,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { formatDateWithDay, formatTimeForDisplay } from '@/lib/dateUtils';
 import { getLocationOrder } from '@/lib/matchSortingUtils';
+import { downloadICalFile, downloadCSVFile, type ICalEvent } from '@/lib/icalUtils';
 
 // Types
 interface RefereeInfo {
