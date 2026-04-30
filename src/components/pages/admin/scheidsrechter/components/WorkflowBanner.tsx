@@ -49,6 +49,7 @@ export const WorkflowBanner: React.FC<WorkflowBannerProps> = ({
   onOpenPollDetail,
   refreshKey = 0,
   onAfterAction,
+  selectedMonth,
 }) => {
   const [data, setData] = useState<BannerData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,12 +58,13 @@ export const WorkflowBanner: React.FC<WorkflowBannerProps> = ({
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Pak meest recente poll (open of gesloten) — niet alleen 'open'
+      // Pak poll voor geselecteerde maand indien aanwezig, anders meest recente actieve poll.
       const allPolls = await pollService.getAllPolls();
-      const activePoll =
-        allPolls.find((p) => p.status === 'open') ||
-        allPolls.find((p) => p.status === 'closed') ||
-        null;
+      const activePoll = selectedMonth
+        ? allPolls.find((p) => p.poll_month === selectedMonth) || null
+        : allPolls.find((p) => p.status === 'open') ||
+          allPolls.find((p) => p.status === 'closed') ||
+          null;
 
       let responded = 0;
       let totalReferees = 0;
