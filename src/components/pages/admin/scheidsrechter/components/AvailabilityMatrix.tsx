@@ -687,8 +687,10 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                                 <TooltipTrigger asChild>
                                   <div
                                     role={clickable ? 'button' : undefined}
+                                    aria-pressed={clickable ? isAssigned : undefined}
+                                    aria-label={tooltipText}
                                     tabIndex={clickable ? 0 : -1}
-                                    className={`h-10 rounded-md flex items-center justify-center transition-all ${cellClass}`}
+                                    className={`h-10 rounded-md flex items-center justify-center transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${cellClass}`}
                                     onClick={() => {
                                       if (isLoading || !clickable) return;
                                       if (isAssigned && assignment) {
