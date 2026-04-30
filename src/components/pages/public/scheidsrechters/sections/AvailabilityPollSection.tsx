@@ -103,6 +103,7 @@ export function AvailabilityPollSection({
       {/* Poll card */}
       <AvailabilityPollCard
         matchDates={pollMatchDates}
+        matchesByGroup={pollMatchesByGroup}
         myAvailability={myAvailability}
         onSubmit={onSubmitAvailability}
         isPollOpen={isPollOpen}
