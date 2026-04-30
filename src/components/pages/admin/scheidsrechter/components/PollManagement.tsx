@@ -185,6 +185,18 @@ const PollManagement: React.FC = () => {
           onClick: () => setPollToDelete(null),
         }}
       />
+
+      {previewMonth && (
+        <AutoGeneratePreviewModal
+          open={!!previewMonth}
+          onOpenChange={(o) => !o && setPreviewMonth(null)}
+          month={previewMonth}
+          onSuccess={() => {
+            setPreviewMonth(null);
+            fetchPolls();
+          }}
+        />
+      )}
     </div>
   );
 };
