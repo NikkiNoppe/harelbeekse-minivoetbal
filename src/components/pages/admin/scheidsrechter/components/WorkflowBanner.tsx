@@ -25,6 +25,8 @@ interface WorkflowBannerProps {
   onOpenPollDetail: (poll: MonthlyPoll) => void;
   refreshKey?: number;
   onAfterAction?: () => void;
+  /** Externe maand (YYYY-MM). Indien gezet, focust de banner op die maand i.p.v. de meest recente actieve poll. */
+  selectedMonth?: string;
 }
 
 interface BannerData {
