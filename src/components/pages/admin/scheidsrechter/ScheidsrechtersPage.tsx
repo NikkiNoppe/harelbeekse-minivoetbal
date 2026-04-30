@@ -63,7 +63,7 @@ const ScheidsrechtersPage = () => {
     };
 
     return (
-      <div className="space-y-6 p-4 sm:p-6">
+      <div className="scheids-page space-y-6 p-4 sm:p-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Scheidsrechter Beheer</h1>
           <p className="text-muted-foreground mt-1">

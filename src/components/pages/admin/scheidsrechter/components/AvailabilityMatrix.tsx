@@ -518,7 +518,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                 return (
                   <span
                     key={ref.user_id}
-                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border border-border"
+                    className="workload-chip inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs"
                     style={{
                       backgroundColor: count === 0
                         ? 'hsl(var(--muted) / 0.3)'
@@ -526,8 +526,8 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                     }}
                     title={`${ref.username}: ${count} deze maand · ${seasonCounts.get(ref.user_id) || 0} dit seizoen`}
                   >
-                    <span className="text-foreground">{ref.username}</span>
-                    <span className="text-muted-foreground font-mono">{count}</span>
+                    <span>{ref.username}</span>
+                    <span className="workload-count font-mono">{count}</span>
                   </span>
                 );
               })}
@@ -624,7 +624,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                                   {top ? `Suggereer: ${top.username}` : 'Geen suggestie'}
                                 </Button>
                                 {top && (
-                                  <span className="text-[10px] text-muted-foreground" title={top.reason}>
+                                  <span className="text-xs font-medium" style={{ color: 'var(--color-700)' }} title={top.reason}>
                                     {top.monthCount}× deze maand
                                   </span>
                                 )}
@@ -687,8 +687,10 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                                 <TooltipTrigger asChild>
                                   <div
                                     role={clickable ? 'button' : undefined}
+                                    aria-pressed={clickable ? isAssigned : undefined}
+                                    aria-label={tooltipText}
                                     tabIndex={clickable ? 0 : -1}
-                                    className={`h-10 rounded-md flex items-center justify-center transition-all ${cellClass}`}
+                                    className={`h-10 rounded-md flex items-center justify-center transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${cellClass}`}
                                     onClick={() => {
                                       if (isLoading || !clickable) return;
                                       if (isAssigned && assignment) {
@@ -773,8 +775,8 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                               inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium
                               transition-all min-h-[32px]
                               ${isAssigned
-                                ? 'bg-success text-white shadow-sm'
-                                : 'bg-success/15 text-foreground border border-success/40'
+                                ? 'pill-success-strong shadow-sm'
+                                : 'bg-success/15 border border-success/40'
                               }
                               ${isOtherAssigned && !isAssigned ? 'opacity-40' : ''}
                               disabled:cursor-not-allowed

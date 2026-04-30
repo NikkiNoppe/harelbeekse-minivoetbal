@@ -35,13 +35,13 @@ interface PollsTableProps {
 const getStatusBadge = (status: PollStatus) => {
   switch (status) {
     case 'open':
-      return <Badge className="bg-success text-success-foreground">🟢 Open</Badge>;
+      return <Badge className="bg-success text-white font-semibold">🟢 Open</Badge>;
     case 'closed':
       return <Badge variant="secondary">⚪ Gesloten</Badge>;
     case 'processing':
-      return <Badge className="bg-warning text-warning-foreground">🟠 Verwerking</Badge>;
+      return <Badge className="bg-warning text-white font-semibold">🟠 Verwerking</Badge>;
     case 'completed':
-      return <Badge className="bg-primary/20 text-primary">✅ Voltooid</Badge>;
+      return <Badge className="bg-success/20 border border-success/40" style={{ color: 'var(--color-success-dark)' }}>✅ Voltooid</Badge>;
     case 'draft':
       return <Badge variant="outline">📝 Concept</Badge>;
     default:

@@ -1,162 +1,166 @@
-## Analyse: /admin/scheidsrechters
+# Audit /admin/scheidsrechters
 
-### Wat er nu gebeurt
-
-De pagina is **2-in-1**: admins zien een tabbed admin-interface, scheidsrechters zien een dashboard. Onder admin zijn er drie tabs:
-
-1. **Overzicht (AvailabilityMatrix)** – Sessies × scheidsrechters matrix met klik-om-toe-te-wijzen
-2. **Toewijzingen (AssignmentManagement)** – Cards per speeldag met dropdown selectie
-3. **Polls (PollManagement)** – CRUD op maandelijkse polls
-
-De scheidsrechter-zijde toont:
-- Beschikbaarheidspoll (checkboxes per datum)
-- Toegewezen wedstrijden (bevestig/weiger)
-
-### Pijnpunten die ik vond
-
-**Admin-zijde**
-1. **Versnipperde workflow**: Polls aanmaken (tab 3) → wachten op respons → toewijzen (tab 1 of 2). Twee tabs (Overzicht + Toewijzingen) doen overlappende dingen zonder duidelijke rolverdeling. De gebruiker weet niet welke tab waarvoor te gebruiken.
-2. **Leesbaarheid matrix**: Namen worden afgekapt tot "Jan V." zonder hover-tooltip die werkt op touch. Cellen zijn klein (80px), weinig lucht. Geen sticky header op scroll. Op smalle desktop (<1280px) is de matrix bijna onleesbaar bij >6 scheidsrechters.
-3. **Geen "next-step" sturing**: Nergens een statusbar die zegt "Poll loopt — 3/8 scheidsrechters hebben gereageerd — deadline over 2 dagen — 5 wedstrijden nog niet toegewezen." Admin moet zelf afleiden wat te doen.
-4. **Stats Cards in tab 2** zijn statisch; geen klik om te filteren. "Poll respons" en "Wedstrijden" zijn redundant met de matrix.
-5. **Verwijderen poll** is zelfs niet geïmplementeerd (`toast.info('nog niet geïmplementeerd')`).
-6. **CreatePoll modal** is technisch maar niet gebruiksvriendelijk: admin moet handmatig data, locatie, tijdslot per match-datum invullen — terwijl die info al in `matches` staat. De `generate-monthly-polls` edge function bestaat al maar wordt niet gebruikt vanuit de UI.
-7. **Geen bulk-acties**: niet "open alle drafts", niet "stuur reminder aan niet-respons", niet "auto-toewijzen op basis van beschikbaarheid + spreiding".
-8. **Stats per scheidsrechter** onderaan tab 2 is een platte rij badges — geen sortering, geen historiek, geen workload-spreiding.
-9. **Empty states** zijn schraal (📋-emoji + één regel). Geen call-to-action.
-10. **Iconografie inconsistent**: ✅/🟢/⚪ emoji in PollsTable status badges naast lucide-icons elders.
-
-**Scheidsrechter-zijde**
-11. **Poll-keuze is binary** (beschikbaar ja/nee) zonder "voorkeur" of "alleen Harelbeke" of "niet na 21u". Realiteit is genuanceerder.
-12. **Geen context bij datum**: scheidsrechter ziet "vrijdag 17 mei – 20:00 – Harelbeke – 4 wedstrijden" maar niet welke teams er spelen of wie er nog meer beschikbaar is.
-13. **Geen historie**: geen overzicht van eerdere maanden, geen totaal aantal toewijzingen dit seizoen, geen kaart-conflicten ("je fluit team X waar je broer in zit").
-14. **Toegewezen wedstrijden** tonen geen tegenstander-namen op de samenvatting; pas in de card-detail.
-15. **Geen "ik kan inspringen" knop** bij andere wedstrijden waar nog geen ref is toegewezen.
-
-**Cross-cutting**
-16. **Geen audit-trail**: wie heeft wanneer toegewezen / verwijderd? Geen log zichtbaar.
-17. **Notificaties ontbreken**: scheidsrechter krijgt geen melding bij nieuwe toewijzing (uit code te leiden — geen reference naar `notificationService` in deze flow).
-18. **Mobile admin-matrix**: de mobiele card-fallback werkt, maar bij 8+ scheidsrechters is de chip-rij te lang. Geen filter op "alleen beschikbare".
+Een kritische, end-to-end review van de admin-pagina voor scheidsrechtersbeheer. Bevindingen zijn gerangschikt op impact: eerst de leesbaarheidsproblemen die je expliciet aanhaalde, dan UX-pijnpunten, dan design-system-consistentie, dan kleinere polish.
 
 ---
 
-## Voorstel: gefaseerde verbetering
+## A. Leesbaarheid & contrast (HOOG — direct fixen)
 
-### Fase 1 — Admin-workflow consolideren (hoogste impact)
+### A1. Onzichtbare borders door token-conflict
+- In `tailwind.config.ts` is `border: 'transparent'`.
+- In `src/index.css` is `--border: 0 0 0 0`.
+- Resultaat: élke `border-border`/`border` class in de matrix, kaarten, legend, workload-balk, sticky headers en zebra-rijen produceert een **onzichtbare** rand. Dat is dé reden waarom je matrix "vlak" oogt en celgrenzen wegvallen.
+- **Plekken die hierdoor lijden:** `AvailabilityMatrix` (sticky headers, cellen, mobile-buttons), `AssignmentManagement` stat-cards, `WorkflowBanner`, `RefereeStatsSection`, legend-balk.
+- **Fix-plan:** in deze view consistent een lokale rand-class gebruiken die naar `--color-200` / `--color-300` verwijst, of in `index.css` een echte hairline-token introduceren (`--hairline: var(--color-200)`) en die op de relevante elementen toepassen. We vervangen `border-border` op deze pagina door `border-[hsl(var(--hairline))]` of een Tailwind utility `border-hairline` die we in `tailwind.config.ts` toevoegen.
 
-**1.1 Vervang 3 tabs door 1 dashboard + 1 archief**
+### A2. Zwarte tekst in plaats van token-tekst
+- `Card` heeft een hardcoded `style={{ backgroundColor: 'white' }}` + `text-card-foreground`. `--card-foreground` resolved naar `var(--color-600)` (donker paars) — dat is OK qua contrast.
+- Maar in de matrix gebruiken we `text-foreground` op cellen die op `bg-card` of `bg-muted/20` staan. `--foreground` is gedefinieerd als `var(--color-600)` — eveneens een **kleur-token (paars)**, geen `hsl()`-tuple. Tailwind injecteert dat als `hsl(var(--foreground))`, wat een **ongeldige CSS-waarde** is en in veel browsers terugvalt op zwart.
+- Resultaat: de rij-titels "Sessie", scheidsrechter-namen, sessie-team-namen renderen als **zwart** in plaats van het paarse merk-tint. Dat verklaart wat je ziet.
+- **Fix-plan:** in deze view tekst expliciet stylen via `text-[hsl(var(--color-700))]` voor body en `text-[hsl(var(--color-600))]` voor headings, of een page-scoped CSS-class `.scheids-text` die `color: var(--color-700)` zet. Op iconen `text-primary` gebruiken zoals reeds.
 
-```text
-┌─ Scheidsrechter Beheer ────────────────────────────────────┐
-│                                                              │
-│  [WorkflowBanner: actieve poll status]                      │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │ 📅 Mei 2026 — Open · Deadline over 2d 4u               │ │
-│  │ 👥 5/8 scheidsrechters reageerden  · ⚠ 7/12 toegewezen │ │
-│  │ [Open poll-detail]  [Reminder sturen]  [Sluit poll]    │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                                                              │
-│  [Tabs: Toewijzen │ Polls archief]                          │
-│                                                              │
-│  ───── Toewijzen tab (default) ─────                        │
-│  [Maand selector] [Filter chips: Open · Toegewezen · Alle] │
-│  [Toggle: Matrix-view ↔ Lijst-view]                         │
-│                                                              │
-│  → Per speeldag groep: matrix-strook + auto-suggest knop   │
-└──────────────────────────────────────────────────────────────┘
-```
+### A3. Wit-op-licht-success in mobiele pill
+- `AvailabilityMatrix` mobile: `bg-success text-white` — `--color-success: #22c55e`. Wit op `#22c55e` haalt **net niet** AA voor body-tekst (≈3.0:1). In de Workflow-banner wordt `bg-warning` met `text-warning` (oranje op licht oranje) gebruikt → contrast onleesbaar.
+- **Fix-plan:** voor pills `text-success-foreground` (= wit) is OK alleen op grotere/bold tekst. Voor body labels: `bg-success/15 text-success-dark` met een donkergroene token. Voor de warning-alert bekijken: `border-warning bg-warning/10 text-foreground` ipv `text-warning`.
 
-De huidige `AvailabilityMatrix` en `AssignmentManagement` worden gefuseerd tot één **Toewijzen**-view met twee weergavemodi (toggle): de matrix voor power-users, de lijst voor stap-voor-stap.
+### A4. PollsTable badges: "🟠 Verwerking" en "✅ Voltooid"
+- `bg-primary/20 text-primary` op de "Voltooid"-badge: paars-op-paars geeft minimaal contrast.
+- **Fix-plan:** vervangen door `bg-success/15 text-success-dark` of expliciete `text-foreground`.
 
-**1.2 Workflow-banner bovenaan**
+### A5. Workload-heatmap: tekst onleesbaar bij hoge intensiteit
+- `backgroundColor: hsl(var(--primary) / 0.30)` met `text-foreground` (= broken token, valt op zwart) — bij donkere paarse achtergrond is zwart oké, maar `text-muted-foreground` voor het cijfer is **te licht**.
+- **Fix-plan:** vaste donkere tekstkleur (`color-700`) en lichtere span met betere contrast, of badges met semantisch licht/zwaar verschil (groen → oranje → rood gradient ipv pure primary-tint).
 
-Eén component dat altijd zegt wat de volgende actie is:
-- Geen actieve poll → "Maak poll voor [volgende maand]" (knop genereert via `generate-monthly-polls` edge function automatisch op basis van bestaande matches)
-- Poll open, deadline >24u → "Wacht op respons (X/Y reageerden)"
-- Poll open, deadline <24u → "⚠ Stuur reminder" (nieuwe edge function of e-mail)
-- Poll gesloten, niet alle wedstrijden toegewezen → "Wijs N wedstrijden toe"
-- Alles toegewezen → "✅ Klaar voor [maand]"
-
-**1.3 Auto-suggest toewijzing per sessie**
-
-Nieuwe knop "Suggereer" per speeldag-groep die:
-- Beschikbare scheidsrechters filtert
-- Sorteert op: minste toewijzingen deze maand → minste dit seizoen → alfabetisch
-- Eén klik = top-suggestie toepassen, met undo-toast
-
-### Fase 2 — Leesbaarheid van de matrix
-
-**2.1 Matrix herontwerp**
-- Bredere kolommen (min-w 100px), volledige naam i.p.v. afgekorte
-- **Sticky header bij verticaal scrollen** (h-thead positie sticky top-0)
-- Gestreepte rijen (zebra) en sterkere session-row contrast
-- Status per cel met heldere kleurcodering:
-  - ⬜ leeg: niet gereageerd
-  - ✓ groen-licht: beschikbaar
-  - ✗ grijs: niet beschikbaar
-  - 🎯 vol-groen + ster: toegewezen
-  - 🔒 lichtgrijs: andere ref toegewezen (niet meer klikbaar)
-- Tooltip op desktop, longpress-popover op mobile
-
-**2.2 Mobile alternatief: per-sessie-flow**
-Op mobile: niet meer alle scheidsrechters als chips, maar:
-1. Card per sessie
-2. Klik → opent sheet met gefilterde lijst (default: alleen beschikbare)
-3. Tap = toewijzen, swipe = verwijderen
-
-### Fase 3 — Slimmer poll-aanmaken
-
-**3.1 Auto-generate uit matches**
-Standaard knop "Auto-genereer voor [maand]" die de bestaande edge function aanroept en alle wedstrijden van die maand cluster naar `poll_match_dates` (date+location). Manuele toevoegingen blijven mogelijk maar zijn de uitzondering.
-
-**3.2 Default deadline**
-Bij maandkeuze: deadline = laatste vrijdag voor de eerste wedstrijd, niet "vandaag + 3 dagen".
-
-**3.3 Implementeer `deletePoll`**
-Toevoegen in `pollService` met cascade-check op `referee_availability` en `poll_match_dates`. Confirm-modal met gevolgen.
-
-### Fase 4 — Betere scheidsrechter-ervaring
-
-**4.1 Rijkere poll-card per datum**
-- Toon teams die spelen ("KRC vs FC X · 19:00", "Team Y vs Team Z · 20:00")
-- Toon "andere refs die ja zeiden: 2" (sociaal bewijs zonder namen vrij te geven aan iedereen — alleen aantallen)
-- Optionele notitie-veld per datum ("liever niet de eerste wedstrijd")
-
-**4.2 Persoonlijke statistieken-strook**
-Bovenaan dashboard:
-```text
-Mei: 3 toegewezen · Seizoen: 14 · Bevestigd: 12 · Geweigerd: 2
-```
-
-**4.3 "Beschikbaar maar niet toegewezen"-sectie**
-Sessies waarvoor de scheidsrechter beschikbaar was maar niet toegewezen werd, met link "Ik kan alsnog inspringen" wanneer er nog open plekken zijn.
-
-### Fase 5 — UX-polish (cross-cutting)
-
-- Vervang emoji-status-badges door consistente lucide-iconen + kleurtokens
-- Skeletons matchen exacte layout (geen rechthoek-soep)
-- Empty states met illustratie + primaire actie ("Maak je eerste poll")
-- Toasts: success-toast bij toewijzen toont undo-actie (5s)
-- Audit-log table (nieuw): `referee_assignment_audit` — wie/wat/wanneer; admin kan via tooltip "ℹ" zien wie laatst wijzigde
-- Notification op nieuwe toewijzing via bestaande `notificationService` — scheidsrechter krijgt bell-icon update
-
-### Wat niet verandert (om scope te bewaken)
-- Database-schema's (alleen optionele audit-tabel als losse fase)
-- RLS policies
-- Bestaande `pollService`/`assignmentService` API-contracten — alleen toevoegingen
-- Edge functions bestaan al; we voegen alleen UI-aanroepen toe
+### A6. Suggereer-knop counter-tekst
+- `text-[10px] text-muted-foreground` voor "X× deze maand" is te klein én te licht. Onleesbaar op niet-retina.
+- **Fix-plan:** minimaal `text-xs` + `text-foreground/70` (na A2-fix).
 
 ---
 
-## Vraag aan jou
+## B. UX-pijnpunten (MIDDEL — actiegericht)
 
-Dit plan dekt veel grond. Ik raad aan in **deze volgorde** te bouwen, telkens in een aparte oplevering:
+### B1. Drie maand-selectors die onafhankelijk werken
+Op één pagina staan momenteel:
+1. WorkflowBanner: leest *meest recente actieve poll* — geen selector.
+2. AssignmentWorkspace toolbar: maand-selector voor matrix.
+3. PollManagement: aparte selector voor auto-genereer-dropdown.
+4. AssignmentManagement (lijst-mode): heeft eigen interne selector → die in `AssignmentWorkspace` verborgen is in matrix-mode maar in lijst-mode toont de child zijn eigen.
+- Resultaat: je wijzigt boven de maand, maar Lijst-mode toont een andere — verwarrend.
+- **Fix:** één globale `selectedMonth` op `ScheidsrechtersPage`-niveau, doorgeven aan álle kinderen (banner, matrix, lijst, poll-dropdown).
 
-1. **Fase 1.1 + 1.2** (workflow-banner + tab-fusie) — geeft direct een veel duidelijkere admin-flow
-2. **Fase 2** (matrix-leesbaarheid)
-3. **Fase 3** (auto-generate poll + deadline default + delete)
-4. **Fase 1.3** (auto-suggest)
-5. **Fase 4** (scheidsrechter-zijde)
-6. **Fase 5** (polish + audit + notifications)
+### B2. Banner toont alleen "actieve poll" — geen maand-keuze
+Als je in september bent en wilt voorbereiden voor oktober, toont de banner nog de september-poll. Geen knop "Plan volgende maand".
+- **Fix:** banner reageert op de globale maand-selector. Toont voor die maand: "geen poll → maak aan", "open → toon stats", "gesloten → toewijzen".
 
-Wil je dat ik **start met Fase 1+2** (admin-workflow + matrix-leesbaarheid) als eerste concrete oplevering, of liever een andere fase eerst? Of moeten we bepaalde fases combineren / weglaten?
+### B3. Workflow heeft geen duidelijke 4-stappen-flow
+Admin moet weten: (1) Poll aanmaken / auto-genereren, (2) Wachten op antwoorden, (3) Toewijzen (auto+manual), (4) Bevestiging. Nu zit dat verspreid over banner + 2 tabs + auto-knop.
+- **Fix:** een **Stepper** bovenaan met 4 stappen + status (✓/in-progress/locked) en deeplinks naar de juiste sectie.
+
+### B4. Auto-genereer geeft geen preview
+Klik je op "Auto-genereer → April 2026" dan gebeurt het direct, zonder te tonen welke groepen worden aangemaakt of welke al bestaan.
+- **Fix:** dropdown vervangen door een modal die eerst groepen toont met checkboxes ("3 nieuwe groepen, 1 bestaat al") en pas op confirmatie aanmaakt.
+
+### B5. Matrix mist filter "Verberg refs zonder reactie"
+Bij 12+ scheidsrechters waarvan er 4 nog niet reageerden, krijg je een zee aan dashes. Geen filter beschikbaar.
+- **Fix:** toggle "Toon alleen wie reageerde" + zoekvak voor refnamen.
+
+### B6. Toewijzen-cel klikbaar zonder bevestiging
+Klik op een groene cel → directe assign, snelle muis-slip kost je een fout. Undo-toast verzacht het, maar 5s is kort.
+- **Fix:** of confirm-popover bij klik, of undo-toast 10s en duidelijker call-to-action.
+
+### B7. Geen bulk-undo na auto-toewijzen
+"Auto-toewijzen" maakt N toewijzingen aan zonder verzamel-undo. Eén undo per assignment zou een reeks toasts geven.
+- **Fix:** één gegroepeerde toast "5 toewijzingen aangemaakt — Alles ongedaan maken" die alle nieuwe assignments terugdraait.
+
+### B8. Geen export / printview
+Admin kan toewijzingen niet eenvoudig delen met zaalbeheerders.
+- **Fix:** "Export PDF/ICS" knop in workspace-toolbar (we hebben al `icalUtils`).
+
+### B9. Geen audit-trail / history
+Wie wees toe, wanneer? Er is een `assigned_by` kolom maar geen UI om het te zien.
+- **Fix:** in de cel-tooltip "Toegewezen door X op Y", en optioneel een log-modal.
+
+### B10. Scheidsrechter-side: poll opent niet rechtstreeks vanuit notificatie
+Geen indicator hoeveel groepen nog niet zijn aangevinkt. `RefereeStatsSection` toont assignments-stats maar niet "je moet nog 3 groepen invullen".
+- **Fix:** extra stat-tegel "Nog te beantwoorden" bovenop assignments.
+
+---
+
+## C. Code- & design-systeem-consistentie (LAAG-MIDDEL)
+
+### C1. Twee parallelle assign-services
+`AssignmentCard` gebruikt `assignRefereeToSession`, terwijl `AvailabilityMatrix` `assignReferee` met handmatige loop gebruikt. Subtiel afwijkend gedrag (cascade naar zelfde sessie).
+- **Fix:** beide via `assignRefereeToSession` laten lopen.
+
+### C2. `referee_assignments as any` casts
+Op meerdere plekken `(supabase.from('referee_assignments' as any) ...)` — types ontbreken in `supabase/types.ts`.
+- **Fix:** types regenereren of een handgeschreven interface en helper exporteren.
+
+### C3. Inconsistente tab-iconen / labels
+Tab "Toewijzen" gebruikt `UserCheck`, banner gebruikt soms `Users`, soms `CheckCircle2`. Geen vaste iconenset per concept.
+- **Fix:** mini-style-guide in commentaar bovenin de page.
+
+### C4. Geen skeletons in matrix-toolbar / WorkflowBanner toont skeleton zonder maand-selector vorm
+- **Fix:** consistent skeleton-systeem (al aanwezig, maar inconsistent toegepast).
+
+### C5. Mobile matrix verbergt refs zonder beschikbaarheid altijd
+Op mobiel toont `AvailabilityMatrix` enkel pills van available/assigned refs, met fallback "Geen beschikbaarheid". Maar geen mogelijkheid om alsnog handmatig iemand toe te wijzen die níét beschikbaar zei te zijn.
+- **Fix:** "Toon alle scheidsrechters" expand-knop op mobiel.
+
+### C6. Geen empty-state illustratie
+"Geen wedstrijden gevonden voor deze maand" is droog. Niet-admins begrijpen niet altijd waarom.
+- **Fix:** uitleg + CTA "Plan wedstrijden via /admin/wedstrijden".
+
+---
+
+## D. A11y & micro-UX (LAAG)
+
+- Sticky table-headers hebben `bg-muted` maar door A1 geen onderkant-rand → ze "kleven" zonder visuele scheiding bij scroll.
+- Cellen met `role="button"` hebben geen `aria-pressed` voor de toegewezen-state.
+- Tooltip-content bevat vrij lange zinnen — overweeg primair label + dim secundair.
+- Iconen-only knoppen (Refresh) hebben title maar geen `aria-label` consistent.
+- Focus-ring is gedefinieerd maar de matrix-cellen hebben `outline-none` impliciet.
+
+---
+
+## E. Voorgestelde implementatie-fases
+
+```text
+Fase 1 — Leesbaarheid & contrast (A-blok)
+  ├─ Voeg utility `.border-hairline` toe (tailwind config of index.css)
+  ├─ Vervang border-border in scheids-pagina door border-hairline
+  ├─ Fix text-foreground → expliciete color-700/600 tokens
+  ├─ Workload-heatmap: contrast-veilige cijfers
+  ├─ PollsTable badges + Workflow warning-alert kleur
+  └─ Mobile success-pill: text-success-dark variant
+
+Fase 2 — Eén globale maand + Stepper (B1, B2, B3)
+  ├─ Lift selectedMonth naar ScheidsrechtersPage
+  ├─ Banner + Matrix + Lijst + PollManagement consumeren
+  └─ 4-stappen Stepper-component bovenaan
+
+Fase 3 — Slimmere acties (B4, B6, B7, B8)
+  ├─ Auto-genereer-modal met preview
+  ├─ Bulk-undo toast voor auto-assign
+  ├─ Export-PDF/ICS knop
+  └─ Cel-confirm of langere undo-window
+
+Fase 4 — Filter + history + a11y (B5, B9, D)
+  ├─ Matrix-filters (alleen-reactie, zoek)
+  ├─ Audit-trail in tooltip
+  ├─ Aria-pressed, focus-ring, betere semantics
+  └─ Mobile expand-toggle
+
+Fase 5 — Code-cleanup (C1, C2, C3)
+  ├─ assignRefereeToSession overal
+  ├─ Types voor referee_assignments
+  └─ Iconenset consistent
+```
+
+---
+
+## F. Concreet startpunt
+
+Ik raad aan **Fase 1 nu uit te voeren** want dat lost direct de "zwart/wit-onleesbaar" klacht op én herstelt zichtbaarheid van de matrix. Daarna kan Fase 2 (één globale maand + stepper) — dat is een grondige refactor maar geeft duidelijkheid voor admin.
+
+Wil je dat ik direct met Fase 1 start, of eerst een specifiek subblok (bv. enkel kleuren/tokens, of enkel de stepper)?

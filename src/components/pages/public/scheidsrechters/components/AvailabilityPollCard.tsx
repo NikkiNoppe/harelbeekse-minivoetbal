@@ -121,9 +121,9 @@ export function AvailabilityPollCard({
         )}
         
         {!isPollOpen && (
-          <Alert className="mb-4 border-warning bg-warning/10">
-            <AlertTriangle className="h-4 w-4 text-warning" />
-            <AlertDescription className="text-warning">
+          <Alert className="alert-warning-readable mb-4">
+            <AlertTriangle className="h-4 w-4" style={{ color: 'var(--color-warning)' }} />
+            <AlertDescription>
               Deze poll is gesloten. Je kunt je beschikbaarheid niet meer wijzigen.
             </AlertDescription>
           </Alert>
