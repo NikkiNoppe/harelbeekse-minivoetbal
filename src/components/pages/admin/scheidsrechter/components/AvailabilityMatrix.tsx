@@ -905,12 +905,19 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                                     tabIndex={clickable ? 0 : -1}
                                     className={`h-10 rounded-md flex items-center justify-center transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${cellClass}`}
                                     onClick={() => {
-                                      if (isLoading || !clickable) return;
+                                      if (isLoading || !clickable || isOtherAssigned) return;
                                       if (isAssigned && assignment) {
                                         handleRemove(assignment);
-                                      } else if (available && !isOtherAssigned) {
-                                        handleAssign(session, ref.user_id);
+                                        return;
                                       }
+                                      if (forceAssign && hasResponded && !available) {
+                                        // Expliciet niet-beschikbaar — vraag bevestiging.
+                                        const ok = window.confirm(
+                                          `${ref.username} heeft aangegeven NIET beschikbaar te zijn voor deze sessie.\n\nToch toewijzen?`
+                                        );
+                                        if (!ok) return;
+                                      }
+                                      handleAssign(session, ref.user_id);
                                     }}
                                   >
                                     {cellContent}
