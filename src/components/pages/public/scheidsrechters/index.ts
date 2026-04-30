@@ -7,6 +7,7 @@ export { RefereeDashboard } from './RefereeDashboard';
 // Sections
 export { AvailabilityPollSection } from './sections/AvailabilityPollSection';
 export { AssignedMatchesSection } from './sections/AssignedMatchesSection';
+export { RefereeStatsSection } from './sections/RefereeStatsSection';
 
 // Components
 export { AvailabilityPollCard } from './components/AvailabilityPollCard';
