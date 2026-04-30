@@ -609,6 +609,28 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                           <div className="text-xs text-muted-foreground/80 mt-1.5 leading-relaxed">
                             {session.matches.map(m => `${m.home_team_name} – ${m.away_team_name}`).join(' · ')}
                           </div>
+                          {assignedRefId === null && (() => {
+                            const top = getSuggestionForSession(session);
+                            return (
+                              <div className="mt-2 flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-2 text-xs gap-1"
+                                  disabled={!top || assigning !== null}
+                                  onClick={() => handleSuggestForSession(session)}
+                                >
+                                  <Sparkles className="h-3 w-3" />
+                                  {top ? `Suggereer: ${top.username}` : 'Geen suggestie'}
+                                </Button>
+                                {top && (
+                                  <span className="text-[10px] text-muted-foreground" title={top.reason}>
+                                    {top.monthCount}× deze maand
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </td>
                         {referees.map(ref => {
                           const available = isRefereeAvailable(session, ref.user_id);
