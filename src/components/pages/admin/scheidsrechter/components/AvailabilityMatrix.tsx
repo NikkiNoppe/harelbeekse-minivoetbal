@@ -495,6 +495,69 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   const totalSessions = sessions.length;
   const assignedSessions = sessions.filter(s => getSessionAssignedReferee(s) !== null).length;
 
+  // ─── FILTERS ───────────────────────────────────────────────────────────
+  // Per-sessie: heeft een gegeven ref gereageerd?
+  const respondedSet = useMemo(() => {
+    const set = new Set<number>();
+    availability.forEach((a) => set.add(a.user_id));
+    return set;
+  }, [availability]);
+
+  const filteredReferees = useMemo(() => {
+    let list = referees;
+    const q = searchTerm.trim().toLowerCase();
+    if (q) list = list.filter((r) => r.username.toLowerCase().includes(q));
+    if (onlyResponded) list = list.filter((r) => respondedSet.has(r.user_id));
+    return list;
+  }, [referees, searchTerm, onlyResponded, respondedSet]);
+
+  // ─── EXPORT ────────────────────────────────────────────────────────────
+  const buildAssignedEvents = useCallback((): ICalEvent[] => {
+    const events: ICalEvent[] = [];
+    sessions.forEach((session) => {
+      const assignedRefId = getSessionAssignedReferee(session);
+      if (!assignedRefId) return;
+      const refName = referees.find((r) => r.user_id === assignedRefId)?.username || 'Scheidsrechter';
+      session.matches.forEach((m) => {
+        const dateOnly = m.match_date.split('T')[0];
+        const time = formatTimeForDisplay(m.match_date);
+        events.push({
+          id: m.match_id,
+          title: `${m.home_team_name} – ${m.away_team_name} (ref: ${refName})`,
+          date: dateOnly,
+          time,
+          location: session.location,
+          description: `Scheidsrechter: ${refName}`,
+          duration: 60,
+        });
+      });
+    });
+    return events;
+  }, [sessions, referees, getSessionAssignedReferee]);
+
+  const handleExportICS = () => {
+    const events = buildAssignedEvents();
+    if (events.length === 0) {
+      toast.info('Geen toegewezen wedstrijden om te exporteren');
+      return;
+    }
+    const ok = downloadICalFile(events, `scheidsrechters-${selectedMonth}`, `Scheidsrechters ${selectedMonth}`);
+    if (ok) toast.success(`${events.length} wedstrijd${events.length === 1 ? '' : 'en'} geëxporteerd (ICS)`);
+    else toast.error('Export mislukt');
+  };
+
+  const handleExportCSV = () => {
+    const events = buildAssignedEvents();
+    if (events.length === 0) {
+      toast.info('Geen toegewezen wedstrijden om te exporteren');
+      return;
+    }
+    const ok = downloadCSVFile(events, `scheidsrechters-${selectedMonth}`);
+    if (ok) toast.success(`${events.length} wedstrijd${events.length === 1 ? '' : 'en'} geëxporteerd (CSV)`);
+    else toast.error('Export mislukt');
+  };
+
+
   if (loading) {
     return (
       <div className="space-y-4">
