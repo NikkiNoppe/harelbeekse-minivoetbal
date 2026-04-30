@@ -753,7 +753,10 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
           <div className="w-5 h-5 rounded-md bg-card border border-dashed border-border flex items-center justify-center">
             <Minus className="h-3 w-3 text-muted-foreground/60" />
           </div>
-          <span className="text-foreground">Geen reactie</span>
+          <span className="text-foreground">Geen reactie <span className="text-muted-foreground">(klikbaar)</span></span>
+        </div>
+        <div className="ml-auto text-xs text-muted-foreground italic">
+          Tip: klik op elke cel om handmatig toe te wijzen
         </div>
       </div>
 
@@ -835,12 +838,14 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                           const cellKey = `${session.matches[0]?.match_id}-${ref.user_id}`;
                           const isLoading = assigning === cellKey;
 
-                          let cellClass = 'bg-card border border-dashed border-border';
+                          // Default: "Geen reactie" — admin kan toch handmatig toewijzen.
+                          let cellClass = 'bg-card hover:bg-primary/10 cursor-pointer border border-dashed border-border';
                           let cellContent: React.ReactNode = (
-                            <Minus className="h-3.5 w-3.5 mx-auto text-muted-foreground/40" />
+                            <Minus className="h-3.5 w-3.5 mx-auto text-muted-foreground/60" />
                           );
-                          let tooltipText = `${ref.username} – Geen reactie`;
-                          let clickable = false;
+                          let tooltipText = `${ref.username} – Geen reactie · Klik om handmatig toe te wijzen`;
+                          let clickable = true;
+                          let forceAssign = true;
 
                           if (isAssigned) {
                             cellClass = 'bg-success hover:bg-success/90 cursor-pointer ring-2 ring-success/30 ring-inset';
@@ -857,6 +862,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                               return `${ref.username} – Toegewezen${suffix} · Klik om te verwijderen`;
                             })();
                             clickable = true;
+                            forceAssign = false;
                           } else if (isOtherAssigned) {
                             cellClass = 'bg-muted/40 opacity-50';
                             cellContent = available ? (
@@ -867,15 +873,21 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                               <Minus className="h-3.5 w-3.5 mx-auto text-muted-foreground/40" />
                             );
                             tooltipText = `${ref.username} – Andere scheidsrechter al toegewezen`;
+                            clickable = false;
+                            forceAssign = false;
                           } else if (available) {
                             cellClass = 'bg-success/15 hover:bg-success/30 cursor-pointer border border-success/40';
                             cellContent = <Check className="h-4 w-4 mx-auto text-success" />;
                             tooltipText = `${ref.username} – Beschikbaar · Klik om toe te wijzen`;
                             clickable = true;
+                            forceAssign = false;
                           } else if (hasResponded) {
-                            cellClass = 'bg-muted/50 border border-border';
-                            cellContent = <X className="h-3.5 w-3.5 mx-auto text-muted-foreground" />;
-                            tooltipText = `${ref.username} – Niet beschikbaar`;
+                            // Ref is expliciet niet-beschikbaar — admin kan met waarschuwing toch toewijzen.
+                            cellClass = 'bg-destructive/5 hover:bg-destructive/15 cursor-pointer border border-destructive/30';
+                            cellContent = <X className="h-3.5 w-3.5 mx-auto text-destructive/70" />;
+                            tooltipText = `${ref.username} – Niet beschikbaar · Klik om alsnog toe te wijzen`;
+                            clickable = true;
+                            forceAssign = true;
                           }
 
                           if (isLoading) {
@@ -896,12 +908,19 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                                     tabIndex={clickable ? 0 : -1}
                                     className={`h-10 rounded-md flex items-center justify-center transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${cellClass}`}
                                     onClick={() => {
-                                      if (isLoading || !clickable) return;
+                                      if (isLoading || !clickable || isOtherAssigned) return;
                                       if (isAssigned && assignment) {
                                         handleRemove(assignment);
-                                      } else if (available && !isOtherAssigned) {
-                                        handleAssign(session, ref.user_id);
+                                        return;
                                       }
+                                      if (forceAssign && hasResponded && !available) {
+                                        // Expliciet niet-beschikbaar — vraag bevestiging.
+                                        const ok = window.confirm(
+                                          `${ref.username} heeft aangegeven NIET beschikbaar te zijn voor deze sessie.\n\nToch toewijzen?`
+                                        );
+                                        if (!ok) return;
+                                      }
+                                      handleAssign(session, ref.user_id);
                                     }}
                                   >
                                     {cellContent}
@@ -959,29 +978,41 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {filteredReferees.map(ref => {
                         const available = isRefereeAvailable(session, ref.user_id);
+                        const hasResponded = hasRefereeResponded(session, ref.user_id);
                         const assignment = getSessionAssignment(session, ref.user_id);
                         const isAssigned = !!assignment;
                         const isOtherAssigned = assignedRefId !== null && assignedRefId !== ref.user_id;
                         const cellKey = `${session.matches[0]?.match_id}-${ref.user_id}`;
                         const isLoadingCell = assigning === cellKey;
 
-                        if (!available && !isAssigned) return null;
+                        // Pill-stijl op basis van status
+                        let pillClass = 'bg-card border border-dashed border-border text-muted-foreground'; // geen reactie
+                        if (isAssigned) pillClass = 'pill-success-strong shadow-sm';
+                        else if (available) pillClass = 'bg-success/15 border border-success/40 text-foreground';
+                        else if (hasResponded) pillClass = 'bg-destructive/5 border border-destructive/30 text-foreground';
 
                         return (
                           <button
                             key={ref.user_id}
                             disabled={isLoadingCell || (isOtherAssigned && !isAssigned)}
                             onClick={() => {
-                              if (isAssigned && assignment) handleRemove(assignment);
-                              else if (available) handleAssign(session, ref.user_id);
+                              if (isAssigned && assignment) {
+                                handleRemove(assignment);
+                                return;
+                              }
+                              if (isOtherAssigned) return;
+                              if (hasResponded && !available) {
+                                const ok = window.confirm(
+                                  `${ref.username} gaf NIET beschikbaar op. Toch toewijzen?`
+                                );
+                                if (!ok) return;
+                              }
+                              handleAssign(session, ref.user_id);
                             }}
                             className={`
                               inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium
                               transition-all min-h-[32px]
-                              ${isAssigned
-                                ? 'pill-success-strong shadow-sm'
-                                : 'bg-success/15 border border-success/40'
-                              }
+                              ${pillClass}
                               ${isOtherAssigned && !isAssigned ? 'opacity-40' : ''}
                               disabled:cursor-not-allowed
                             `}
@@ -990,14 +1021,15 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                               <RefreshCw className="h-3 w-3 animate-spin" />
                             ) : isAssigned ? (
                               <Star className="h-3 w-3 fill-white" />
+                            ) : !hasResponded ? (
+                              <Minus className="h-3 w-3 opacity-60" />
+                            ) : !available ? (
+                              <X className="h-3 w-3 opacity-60" />
                             ) : null}
                             {ref.username}
                           </button>
                         );
                       })}
-                      {referees.every(ref => !isRefereeAvailable(session, ref.user_id) && !getSessionAssignment(session, ref.user_id)) && (
-                        <span className="text-xs text-muted-foreground italic">Geen beschikbaarheid</span>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
