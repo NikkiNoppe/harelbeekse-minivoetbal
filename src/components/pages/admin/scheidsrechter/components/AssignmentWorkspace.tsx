@@ -25,6 +25,9 @@ type ViewMode = 'matrix' | 'list';
 interface AssignmentWorkspaceProps {
   refreshKey?: number;
   onAfterChange?: () => void;
+  /** Externe maand (YYYY-MM). */
+  selectedMonth?: string;
+  onSelectedMonthChange?: (m: string) => void;
 }
 
 /**
@@ -34,9 +37,16 @@ interface AssignmentWorkspaceProps {
 export const AssignmentWorkspace: React.FC<AssignmentWorkspaceProps> = ({
   refreshKey = 0,
   onAfterChange,
+  selectedMonth: externalMonth,
+  onSelectedMonthChange,
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('matrix');
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [internalMonth, setInternalMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const selectedMonth = externalMonth ?? internalMonth;
+  const setSelectedMonth = (m: string) => {
+    if (onSelectedMonthChange) onSelectedMonthChange(m);
+    else setInternalMonth(m);
+  };
   const [innerKey, setInnerKey] = useState(0);
 
   const handleRefresh = () => {
@@ -84,21 +94,19 @@ export const AssignmentWorkspace: React.FC<AssignmentWorkspaceProps> = ({
             </button>
           </div>
 
-          {/* Maand selector — alleen in matrix-mode (lijst heeft eigen) */}
-          {viewMode === 'matrix' && (
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {getMonthOptions().map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          {/* Eén maand-selector — stuurt zowel matrix als lijst */}
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {getMonthOptions().map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           <Button variant="outline" size="icon" onClick={handleRefresh} title="Vernieuwen">
             <RefreshCw className="h-4 w-4" />
@@ -115,7 +123,11 @@ export const AssignmentWorkspace: React.FC<AssignmentWorkspaceProps> = ({
             onSelectedMonthChange={setSelectedMonth}
           />
         ) : (
-          <AssignmentManagement />
+          <AssignmentManagement
+            hideHeader
+            selectedMonth={selectedMonth}
+            onSelectedMonthChange={setSelectedMonth}
+          />
         )}
       </div>
     </div>
