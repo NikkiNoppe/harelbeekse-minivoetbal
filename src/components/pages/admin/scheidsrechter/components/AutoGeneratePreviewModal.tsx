@@ -167,21 +167,20 @@ export const AutoGeneratePreviewModal: React.FC<AutoGeneratePreviewModalProps> =
       open={open}
       onOpenChange={onOpenChange}
       title={`Auto-genereer poll-groepen — ${monthLabel}`}
-      icon={Sparkles}
-      maxWidth="2xl"
-      footer={
-        <div className="flex justify-end gap-2 w-full">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={running}>
-            Annuleren
-          </Button>
-          <Button onClick={handleConfirm} disabled={running || loading || newGroups.length === 0} className="gap-1.5">
-            {running && <Loader2 className="h-4 w-4 animate-spin" />}
-            {newGroups.length > 0
-              ? `Maak ${newGroups.length} groep${newGroups.length === 1 ? '' : 'en'} aan`
-              : 'Niets te genereren'}
-          </Button>
-        </div>
-      }
+      size="lg"
+      primaryAction={{
+        label:
+          newGroups.length > 0
+            ? `Maak ${newGroups.length} groep${newGroups.length === 1 ? '' : 'en'} aan`
+            : 'Niets te genereren',
+        onClick: handleConfirm,
+        disabled: running || loading || newGroups.length === 0,
+        loading: running,
+      }}
+      secondaryAction={{
+        label: 'Annuleren',
+        onClick: () => onOpenChange(false),
+      }}
     >
       <div className="space-y-3 text-sm">
         {loading ? (
