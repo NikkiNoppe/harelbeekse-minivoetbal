@@ -22,6 +22,7 @@ interface AvailabilityPollCardProps {
 
 export function AvailabilityPollCard({ 
   matchDates, 
+  matchesByGroup,
   myAvailability, 
   onSubmit,
   isLoading = false,
