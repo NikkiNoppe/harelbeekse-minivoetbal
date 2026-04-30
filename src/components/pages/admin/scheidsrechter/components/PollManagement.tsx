@@ -90,27 +90,9 @@ const PollManagement: React.FC = () => {
     setPollToDelete(null);
   };
 
-  const handleAutoGenerate = async (month: string) => {
-    setIsGenerating(true);
-    try {
-      const result = await scheidsrechterService.generateMonthlyPolls(month);
-      if (result.success) {
-        const created = (result as any).groups_created ?? 0;
-        toast.success(
-          created > 0
-            ? `${created} poll-groepen aangemaakt voor ${month}`
-            : `Geen nieuwe groepen gevonden voor ${month}`
-        );
-        fetchPolls();
-      } else {
-        toast.error('Kon polls niet automatisch genereren');
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error('Fout bij automatisch genereren');
-    } finally {
-      setIsGenerating(false);
-    }
+  // Open de preview-modal — pas op confirmatie wordt de edge function aangeroepen.
+  const handleAutoGenerate = (month: string) => {
+    setPreviewMonth(month);
   };
 
   const monthOptions = getMonthOptions();
