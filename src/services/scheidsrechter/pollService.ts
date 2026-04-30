@@ -246,8 +246,66 @@ export const pollService = {
   },
 
   /**
-   * Voeg match dates toe aan een poll
+   * Haal de wedstrijden op die horen bij een poll (gegroepeerd per poll_group_id)
+   * Geeft per group_id de lijst wedstrijden + thuis/uit teamnamen terug.
    */
+  async getMatchesForPoll(pollMonth: string): Promise<Map<string, Array<{
+    match_id: number;
+    match_date: string;
+    location: string | null;
+    home_team_name: string;
+    away_team_name: string;
+  }>>> {
+    try {
+      const [year, monthNum] = pollMonth.split('-').map(Number);
+      const nextMonth = monthNum === 12
+        ? `${year + 1}-01`
+        : `${year}-${String(monthNum + 1).padStart(2, '0')}`;
+
+      const { data: matches, error } = await supabase
+        .from('matches')
+        .select('match_id, match_date, location, home_team_id, away_team_id, poll_group_id')
+        .gte('match_date', `${pollMonth}-01`)
+        .lt('match_date', `${nextMonth}-01`)
+        .not('poll_group_id', 'is', null);
+
+      if (error || !matches) return new Map();
+
+      const teamIds = new Set<number>();
+      matches.forEach(m => {
+        if (m.home_team_id) teamIds.add(m.home_team_id);
+        if (m.away_team_id) teamIds.add(m.away_team_id);
+      });
+
+      const { data: teams } = await supabase
+        .from('teams')
+        .select('team_id, team_name')
+        .in('team_id', Array.from(teamIds));
+
+      const teamMap = new Map(teams?.map(t => [t.team_id, t.team_name]) || []);
+
+      const grouped = new Map<string, Array<any>>();
+      matches.forEach(m => {
+        const gid = m.poll_group_id as string;
+        if (!gid) return;
+        if (!grouped.has(gid)) grouped.set(gid, []);
+        grouped.get(gid)!.push({
+          match_id: m.match_id,
+          match_date: m.match_date,
+          location: m.location,
+          home_team_name: teamMap.get(m.home_team_id!) || 'Onbekend',
+          away_team_name: teamMap.get(m.away_team_id!) || 'Onbekend',
+        });
+      });
+
+      // Sort each group by date
+      grouped.forEach((arr) => arr.sort((a, b) => a.match_date.localeCompare(b.match_date)));
+      return grouped;
+    } catch (e) {
+      console.error('Error in getMatchesForPoll:', e);
+      return new Map();
+    }
+  },
   async addMatchDates(pollId: number, matchDates: PollMatchDateInput[]): Promise<boolean> {
     try {
       return await withUserContext(async () => {
