@@ -413,6 +413,9 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       let assigned = 0;
       let skipped = 0;
 
+      // Verzamel nieuw aangemaakte assignment-IDs voor één gegroepeerde undo
+      const createdIds: number[] = [];
+
       for (const session of openSessions) {
         const list = suggestRefereesForSession({
           session: {
@@ -439,6 +442,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         const result = await assignToSessionInternal(session, top.user_id, refName, false);
         if (result.ok) {
           assigned++;
+          if (result.assignmentId) createdIds.push(result.assignmentId);
           localMonth.set(top.user_id, (localMonth.get(top.user_id) || 0) + 1);
           localSeason.set(top.user_id, (localSeason.get(top.user_id) || 0) + 1);
           dayUsed.add(top.user_id);
@@ -451,6 +455,25 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       if (assigned > 0) {
         toast.success(`${assigned} toewijzing${assigned === 1 ? '' : 'en'} aangemaakt`, {
           description: skipped > 0 ? `${skipped} sessie(s) overgeslagen — geen kandidaat` : undefined,
+          duration: 10000,
+          action:
+            createdIds.length > 0
+              ? {
+                  label: 'Alles ongedaan',
+                  onClick: async () => {
+                    const results = await Promise.all(
+                      createdIds.map((id) => assignmentService.removeAssignment(id, user?.id)),
+                    );
+                    const undone = results.filter(Boolean).length;
+                    if (undone > 0) {
+                      toast.success(`${undone} toewijzing${undone === 1 ? '' : 'en'} teruggedraaid`);
+                      await fetchData();
+                    } else {
+                      toast.error('Kon toewijzingen niet ongedaan maken');
+                    }
+                  },
+                }
+              : undefined,
         });
         await fetchData();
       } else {
