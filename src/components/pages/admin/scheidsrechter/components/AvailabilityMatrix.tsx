@@ -774,7 +774,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
               <table className="w-full text-sm border-collapse">
                 <thead className="sticky top-0 z-20">
                   <tr className="bg-muted">
-                    <th className="sticky left-0 z-30 bg-muted text-left px-4 py-3 font-semibold min-w-[260px] border-r border-b border-border text-foreground align-bottom">
+                    <th className="sticky left-0 z-30 bg-muted text-left px-2 py-2 font-semibold w-[150px] min-w-[150px] max-w-[150px] border-r border-b border-border text-foreground align-bottom">
                       Sessie
                     </th>
                     {filteredReferees.map(ref => (
@@ -799,17 +799,17 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                     const rowBg = sessionIdx % 2 === 0 ? 'bg-card' : 'bg-muted/20';
                     return (
                       <tr key={session.key} className={`${rowBg} hover:bg-primary/5 transition-colors`}>
-                        <td className={`sticky left-0 z-10 ${rowBg} px-4 py-3 border-r border-t border-border align-top`}>
-                          <div className="font-semibold text-foreground text-sm">
+                        <td className={`sticky left-0 z-10 ${rowBg} px-2 py-2 border-r border-t border-border align-top w-[150px] min-w-[150px] max-w-[150px]`}>
+                          <div className="font-semibold text-foreground text-xs leading-tight">
                             {formatDateWithDay(session.date)}
                           </div>
-                          <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
-                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
-                            {session.location} · {formatTimeForDisplay(session.date)}
+                          <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1 leading-tight">
+                            <span className="inline-block w-1 h-1 rounded-full bg-primary shrink-0" />
+                            <span className="truncate">{session.location} · {formatTimeForDisplay(session.date)}</span>
                           </div>
-                          <div className="mt-1.5 flex flex-col gap-0.5">
+                          <div className="mt-1 flex flex-col gap-0.5">
                             {session.matches.map((m, i) => (
-                              <div key={i} className="text-[10px] leading-tight text-muted-foreground/70">
+                              <div key={i} className="text-[9px] leading-tight text-muted-foreground/70 break-words">
                                 {m.home_team_name} – {m.away_team_name}
                               </div>
                             ))}
