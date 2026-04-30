@@ -469,6 +469,72 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         </div>
       )}
 
+      {/* Auto-toewijs actiebalk */}
+      {sessions.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between bg-primary/5 border border-primary/20 rounded-lg px-3 py-2.5">
+          <div className="flex items-center gap-2 text-sm">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-foreground font-medium">
+              {openSessionsCount === 0
+                ? 'Alle sessies zijn toegewezen'
+                : `${openSessionsCount} open sessie${openSessionsCount === 1 ? '' : 's'}`}
+            </span>
+            {openSessionsCount > 0 && (
+              <span className="text-xs text-muted-foreground hidden sm:inline">
+                · suggesties op basis van beschikbaarheid + workload-spreiding
+              </span>
+            )}
+          </div>
+          <Button
+            size="sm"
+            onClick={handleBulkAutoAssign}
+            disabled={bulkAssigning || openSessionsCount === 0}
+            className="gap-1.5"
+          >
+            {bulkAssigning ? (
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Wand2 className="h-3.5 w-3.5" />
+            )}
+            Auto-toewijzen
+          </Button>
+        </div>
+      )}
+
+      {/* Workload-overzicht */}
+      {referees.length > 0 && (
+        <div className="rounded-lg border border-border bg-card px-3 py-2">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-semibold text-foreground">Workload deze maand</div>
+            <div className="text-xs text-muted-foreground">aantal toewijzingen per ref</div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {[...referees]
+              .sort((a, b) => (monthCounts.get(a.user_id) || 0) - (monthCounts.get(b.user_id) || 0))
+              .map((ref) => {
+                const count = monthCounts.get(ref.user_id) || 0;
+                const max = Math.max(1, ...Array.from(monthCounts.values()));
+                const intensity = count === 0 ? 0 : count / max;
+                return (
+                  <span
+                    key={ref.user_id}
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border border-border"
+                    style={{
+                      backgroundColor: count === 0
+                        ? 'hsl(var(--muted) / 0.3)'
+                        : `hsl(var(--primary) / ${0.08 + intensity * 0.22})`,
+                    }}
+                    title={`${ref.username}: ${count} deze maand · ${seasonCounts.get(ref.user_id) || 0} dit seizoen`}
+                  >
+                    <span className="text-foreground">{ref.username}</span>
+                    <span className="text-muted-foreground font-mono">{count}</span>
+                  </span>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
       {/* Legend */}
       <div className="flex flex-wrap gap-4 text-xs items-center bg-muted/30 px-3 py-2 rounded-lg border border-border/50">
         <div className="flex items-center gap-1.5">
