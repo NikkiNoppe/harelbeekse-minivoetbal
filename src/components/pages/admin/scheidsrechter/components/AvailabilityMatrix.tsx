@@ -238,26 +238,63 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
     return null;
   }, [assignments]);
 
+  // Wijs een ref toe aan de eerste niet-toegewezen wedstrijd in de sessie.
+  // Als showUndo true is, toont een 5s undo-toast.
+  const assignToSessionInternal = async (
+    session: Session,
+    refereeId: number,
+    refereeName: string,
+    showUndo: boolean,
+  ): Promise<{ assignmentId?: number; ok: boolean }> => {
+    const targetMatch = session.matches.find((m) => !m.assigned_referee_id);
+    if (!targetMatch) {
+      toast.error('Alle wedstrijden in deze sessie zijn al toegewezen');
+      return { ok: false };
+    }
+    const userId = user?.id || 0;
+    const result = await assignmentService.assignReferee(
+      { match_id: targetMatch.match_id, referee_id: refereeId },
+      userId,
+    );
+    if (!result.success) {
+      toast.error(result.error || 'Toewijzing mislukt');
+      return { ok: false };
+    }
+    // Haal nieuw aangemaakte assignment id terug om undo te kunnen doen
+    const fresh = await assignmentService.getAssignmentForMatch(targetMatch.match_id);
+    if (showUndo && fresh) {
+      toast.success(`${refereeName} toegewezen`, {
+        description: formatDateWithDay(session.date) + ' · ' + session.location,
+        action: {
+          label: 'Ongedaan maken',
+          onClick: async () => {
+            const ok = await assignmentService.removeAssignment(fresh.id, user?.id);
+            if (ok) {
+              toast.success('Toewijzing teruggedraaid');
+              await fetchData();
+            } else {
+              toast.error('Kon toewijzing niet ongedaan maken');
+            }
+          },
+        },
+        duration: 5000,
+      });
+    }
+    return { ok: true, assignmentId: fresh?.id };
+  };
+
   const handleAssign = async (session: Session, refereeId: number) => {
-    const targetMatch = session.matches.find(m => !m.assigned_referee_id);
+    const targetMatch = session.matches.find((m) => !m.assigned_referee_id);
     if (!targetMatch) {
       toast.error('Alle wedstrijden in deze sessie zijn al toegewezen');
       return;
     }
+    const refName = referees.find((r) => r.user_id === refereeId)?.username || 'Scheidsrechter';
     const cellKey = `${targetMatch.match_id}-${refereeId}`;
     setAssigning(cellKey);
     try {
-      const userId = user?.id || 0;
-      const result = await assignmentService.assignReferee(
-        { match_id: targetMatch.match_id, referee_id: refereeId },
-        userId
-      );
-      if (result.success) {
-        toast.success('Scheidsrechter toegewezen');
-        await fetchData();
-      } else {
-        toast.error(result.error || 'Toewijzing mislukt');
-      }
+      await assignToSessionInternal(session, refereeId, refName, true);
+      await fetchData();
     } catch {
       toast.error('Onverwachte fout');
     } finally {
@@ -281,6 +318,116 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       setAssigning(null);
     }
   };
+
+  // Suggest: top kandidaat voor één sessie
+  const getSuggestionForSession = useCallback(
+    (session: Session): SuggestionCandidate | null => {
+      if (getSessionAssignedReferee(session) !== null) return null;
+      const list = suggestRefereesForSession({
+        session: {
+          sessionKey: session.key,
+          matchIds: session.matches.map((m) => m.match_id),
+          dateOnly: session.dateOnly,
+        },
+        referees,
+        availability,
+        assignments,
+        pollMonth: selectedMonth,
+        monthCounts,
+        seasonCounts,
+      });
+      return list[0] || null;
+    },
+    [referees, availability, assignments, selectedMonth, monthCounts, seasonCounts, getSessionAssignedReferee],
+  );
+
+  const handleSuggestForSession = async (session: Session) => {
+    const top = getSuggestionForSession(session);
+    if (!top) {
+      toast.error('Geen geschikte scheidsrechter gevonden', {
+        description: 'Geen beschikbare ref of allemaal al ingezet',
+      });
+      return;
+    }
+    await handleAssign(session, top.user_id);
+  };
+
+  // Bulk: wijs alle nog-open sessies toe aan hun beste kandidaat,
+  // met workload-spreiding (telling wordt incrementeel bijgewerkt).
+  const handleBulkAutoAssign = async () => {
+    setBulkAssigning(true);
+    try {
+      const openSessions = sessions.filter(
+        (s) => getSessionAssignedReferee(s) === null,
+      );
+      if (openSessions.length === 0) {
+        toast.info('Alle sessies zijn al toegewezen');
+        return;
+      }
+
+      // Lokale kopie van counts zodat spreiding ook intra-bulk geldt
+      const localMonth = new Map(monthCounts);
+      const localSeason = new Map(seasonCounts);
+      const usedOnDate = new Map<string, Set<number>>(); // dateOnly -> refIds
+
+      let assigned = 0;
+      let skipped = 0;
+
+      for (const session of openSessions) {
+        const list = suggestRefereesForSession({
+          session: {
+            sessionKey: session.key,
+            matchIds: session.matches.map((m) => m.match_id),
+            dateOnly: session.dateOnly,
+          },
+          referees,
+          availability,
+          assignments,
+          pollMonth: selectedMonth,
+          monthCounts: localMonth,
+          seasonCounts: localSeason,
+        });
+
+        const dayUsed = usedOnDate.get(session.dateOnly) || new Set<number>();
+        const top = list.find((c) => !dayUsed.has(c.user_id));
+        if (!top) {
+          skipped++;
+          continue;
+        }
+
+        const refName = referees.find((r) => r.user_id === top.user_id)?.username || '';
+        const result = await assignToSessionInternal(session, top.user_id, refName, false);
+        if (result.ok) {
+          assigned++;
+          localMonth.set(top.user_id, (localMonth.get(top.user_id) || 0) + 1);
+          localSeason.set(top.user_id, (localSeason.get(top.user_id) || 0) + 1);
+          dayUsed.add(top.user_id);
+          usedOnDate.set(session.dateOnly, dayUsed);
+        } else {
+          skipped++;
+        }
+      }
+
+      if (assigned > 0) {
+        toast.success(`${assigned} toewijzing${assigned === 1 ? '' : 'en'} aangemaakt`, {
+          description: skipped > 0 ? `${skipped} sessie(s) overgeslagen — geen kandidaat` : undefined,
+        });
+        await fetchData();
+      } else {
+        toast.warning('Geen sessies konden automatisch toegewezen worden');
+      }
+    } catch (e) {
+      console.error('Bulk assign error:', e);
+      toast.error('Onverwachte fout bij auto-toewijzen');
+    } finally {
+      setBulkAssigning(false);
+    }
+  };
+
+  const openSessionsCount = useMemo(
+    () => sessions.filter((s) => getSessionAssignedReferee(s) === null).length,
+    [sessions, getSessionAssignedReferee],
+  );
 
   const totalSessions = sessions.length;
   const assignedSessions = sessions.filter(s => getSessionAssignedReferee(s) !== null).length;
