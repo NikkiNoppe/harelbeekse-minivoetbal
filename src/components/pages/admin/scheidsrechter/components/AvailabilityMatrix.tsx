@@ -518,7 +518,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                 return (
                   <span
                     key={ref.user_id}
-                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border border-border"
+                    className="workload-chip inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs"
                     style={{
                       backgroundColor: count === 0
                         ? 'hsl(var(--muted) / 0.3)'
@@ -526,8 +526,8 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                     }}
                     title={`${ref.username}: ${count} deze maand · ${seasonCounts.get(ref.user_id) || 0} dit seizoen`}
                   >
-                    <span className="text-foreground">{ref.username}</span>
-                    <span className="text-muted-foreground font-mono">{count}</span>
+                    <span>{ref.username}</span>
+                    <span className="workload-count font-mono">{count}</span>
                   </span>
                 );
               })}
