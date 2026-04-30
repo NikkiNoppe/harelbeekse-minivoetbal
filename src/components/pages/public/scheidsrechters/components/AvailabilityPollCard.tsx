@@ -9,9 +9,11 @@ import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { PollMatchDate } from '@/services/scheidsrechter/types';
+import type { PollGroupMatch } from '../hooks/useRefereeDashboard';
 
 interface AvailabilityPollCardProps {
   matchDates: PollMatchDate[];
+  matchesByGroup?: Map<string, PollGroupMatch[]>;
   myAvailability: Map<string, boolean>;
   onSubmit: (pollGroupId: string, isAvailable: boolean) => Promise<void>;
   isLoading?: boolean;
