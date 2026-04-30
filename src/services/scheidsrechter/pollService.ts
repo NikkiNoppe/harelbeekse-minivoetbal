@@ -299,6 +299,58 @@ export const pollService = {
   },
 
   /**
+   * Verwijder een poll volledig (incl. match dates en availability records)
+   * Alleen toegestaan voor draft of closed polls.
+   */
+  async deletePoll(pollId: number): Promise<{ success: boolean; error?: string }> {
+    try {
+      return await withUserContext(async () => {
+        // Check status
+        const { data: pollRow } = await supabase
+          .from('monthly_polls' as any)
+          .select('id, status, poll_month')
+          .eq('id', pollId)
+          .single();
+
+        const pollData = pollRow as any;
+        if (!pollData) {
+          return { success: false, error: 'Poll niet gevonden' };
+        }
+        if (!['draft', 'closed'].includes(pollData.status)) {
+          return { success: false, error: 'Alleen concept- of gesloten polls kunnen verwijderd worden' };
+        }
+
+        // Verwijder match dates
+        await supabase
+          .from('poll_match_dates' as any)
+          .delete()
+          .eq('poll_id', pollId);
+
+        // Verwijder availability records voor deze maand
+        await supabase
+          .from('referee_availability')
+          .delete()
+          .eq('poll_month', pollData.poll_month);
+
+        // Verwijder de poll zelf
+        const { error: delError } = await supabase
+          .from('monthly_polls' as any)
+          .delete()
+          .eq('id', pollId);
+
+        if (delError) {
+          console.error('Error deleting poll:', delError);
+          return { success: false, error: 'Kon poll niet verwijderen' };
+        }
+        return { success: true };
+      });
+    } catch (error) {
+      console.error('Error in deletePoll:', error);
+      return { success: false, error: 'Onverwachte fout bij verwijderen' };
+    }
+  },
+
+  /**
    * Haal poll summary op (voor admin dashboard)
    */
   async getPollSummary(pollId: number): Promise<PollSummary | null> {
