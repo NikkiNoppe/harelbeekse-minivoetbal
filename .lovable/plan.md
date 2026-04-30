@@ -1,63 +1,162 @@
+## Analyse: /admin/scheidsrechters
 
+### Wat er nu gebeurt
 
-## Plan: Finale automatisch invullen na halve finales
+De pagina is **2-in-1**: admins zien een tabbed admin-interface, scheidsrechters zien een dashboard. Onder admin zijn er drie tabs:
 
-### Situatie
+1. **Overzicht (AvailabilityMatrix)** – Sessies × scheidsrechters matrix met klik-om-toe-te-wijzen
+2. **Toewijzingen (AssignmentManagement)** – Cards per speeldag met dropdown selectie
+3. **Polls (PollManagement)** – CRUD op maandelijkse polls
 
-De halve finales zijn afgerond:
-- **SF-1**: Team 16 (9) vs Team 5 (2) → winnaar **Team 16**
-- **SF-2**: Team 2 (5) vs Team 4 (3) → winnaar **Team 2**
+De scheidsrechter-zijde toont:
+- Beschikbaarheidspoll (checkboxes per datum)
+- Toegewezen wedstrijden (bevestig/weiger)
 
-Maar de **Finale** (match_id 1286) staat nog leeg (home en away = `null`). De automatische doorstroming heeft niet plaatsgevonden, vermoedelijk omdat de halve finales destijds zijn opgeslagen via een pad dat `autoAdvanceWinner` niet triggerde, of vóór de doorstroom-logica volledig werkte.
+### Pijnpunten die ik vond
 
-### Bestaande logica (geen wijziging nodig)
+**Admin-zijde**
+1. **Versnipperde workflow**: Polls aanmaken (tab 3) → wachten op respons → toewijzen (tab 1 of 2). Twee tabs (Overzicht + Toewijzingen) doen overlappende dingen zonder duidelijke rolverdeling. De gebruiker weet niet welke tab waarvoor te gebruiken.
+2. **Leesbaarheid matrix**: Namen worden afgekapt tot "Jan V." zonder hover-tooltip die werkt op touch. Cellen zijn klein (80px), weinig lucht. Geen sticky header op scroll. Op smalle desktop (<1280px) is de matrix bijna onleesbaar bij >6 scheidsrechters.
+3. **Geen "next-step" sturing**: Nergens een statusbar die zegt "Poll loopt — 3/8 scheidsrechters hebben gereageerd — deadline over 2 dagen — 5 wedstrijden nog niet toegewezen." Admin moet zelf afleiden wat te doen.
+4. **Stats Cards in tab 2** zijn statisch; geen klik om te filteren. "Poll respons" en "Wedstrijden" zijn redundant met de matrix.
+5. **Verwijderen poll** is zelfs niet geïmplementeerd (`toast.info('nog niet geïmplementeerd')`).
+6. **CreatePoll modal** is technisch maar niet gebruiksvriendelijk: admin moet handmatig data, locatie, tijdslot per match-datum invullen — terwijl die info al in `matches` staat. De `generate-monthly-polls` edge function bestaat al maar wordt niet gebruikt vanuit de UI.
+7. **Geen bulk-acties**: niet "open alle drafts", niet "stuur reminder aan niet-respons", niet "auto-toewijzen op basis van beschikbaarheid + spreiding".
+8. **Stats per scheidsrechter** onderaan tab 2 is een platte rij badges — geen sortering, geen historiek, geen workload-spreiding.
+9. **Empty states** zijn schraal (📋-emoji + één regel). Geen call-to-action.
+10. **Iconografie inconsistent**: ✅/🟢/⚪ emoji in PollsTable status badges naast lucide-icons elders.
 
-In `cupService.ts` bestaat al alle benodigde logica:
-- `autoAdvanceWinner(matchId)` → bepaalt winnaar uit scores
-- `getNextMatchUniqueNumber('SF-1')` → `'FINAL'`
-- `shouldBeHomeTeam('SF-1', 1)` → `true` (oneven = home)
-- `shouldBeHomeTeam('SF-2', 2)` → `false` (even = away)
+**Scheidsrechter-zijde**
+11. **Poll-keuze is binary** (beschikbaar ja/nee) zonder "voorkeur" of "alleen Harelbeke" of "niet na 21u". Realiteit is genuanceerder.
+12. **Geen context bij datum**: scheidsrechter ziet "vrijdag 17 mei – 20:00 – Harelbeke – 4 wedstrijden" maar niet welke teams er spelen of wie er nog meer beschikbaar is.
+13. **Geen historie**: geen overzicht van eerdere maanden, geen totaal aantal toewijzingen dit seizoen, geen kaart-conflicten ("je fluit team X waar je broer in zit").
+14. **Toegewezen wedstrijden** tonen geen tegenstander-namen op de samenvatting; pas in de card-detail.
+15. **Geen "ik kan inspringen" knop** bij andere wedstrijden waar nog geen ref is toegewezen.
 
-Resultaat: Team 16 thuis, Team 2 uit in de finale.
+**Cross-cutting**
+16. **Geen audit-trail**: wie heeft wanneer toegewezen / verwijderd? Geen log zichtbaar.
+17. **Notificaties ontbreken**: scheidsrechter krijgt geen melding bij nieuwe toewijzing (uit code te leiden — geen reference naar `notificationService` in deze flow).
+18. **Mobile admin-matrix**: de mobiele card-fallback werkt, maar bij 8+ scheidsrechters is de chip-rij te lang. Geen filter op "alleen beschikbare".
 
-### Oplossing (2 stappen)
+---
 
-**Stap 1 — Eenmalige correctie via SQL migratie**
+## Voorstel: gefaseerde verbetering
 
-De finale direct invullen met de huidige winnaars zodat de bracket meteen klopt:
+### Fase 1 — Admin-workflow consolideren (hoogste impact)
 
-```sql
-UPDATE matches 
-SET home_team_id = 16, away_team_id = 2
-WHERE match_id = 1286 AND unique_number = 'FINAL';
+**1.1 Vervang 3 tabs door 1 dashboard + 1 archief**
+
+```text
+┌─ Scheidsrechter Beheer ────────────────────────────────────┐
+│                                                              │
+│  [WorkflowBanner: actieve poll status]                      │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │ 📅 Mei 2026 — Open · Deadline over 2d 4u               │ │
+│  │ 👥 5/8 scheidsrechters reageerden  · ⚠ 7/12 toegewezen │ │
+│  │ [Open poll-detail]  [Reminder sturen]  [Sluit poll]    │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                                                              │
+│  [Tabs: Toewijzen │ Polls archief]                          │
+│                                                              │
+│  ───── Toewijzen tab (default) ─────                        │
+│  [Maand selector] [Filter chips: Open · Toegewezen · Alle] │
+│  [Toggle: Matrix-view ↔ Lijst-view]                         │
+│                                                              │
+│  → Per speeldag groep: matrix-strook + auto-suggest knop   │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-**Stap 2 — Robustness fix in `matchesFormService.updateMatchForm`**
+De huidige `AvailabilityMatrix` en `AssignmentManagement` worden gefuseerd tot één **Toewijzen**-view met twee weergavemodi (toggle): de matrix voor power-users, de lijst voor stap-voor-stap.
 
-Onderzoeken waarom `autoAdvanceWinner` niet getriggerd werd toen de halve finales werden ingediend. Mogelijke oorzaken:
-- De voorwaarde `matchData.homeScore !== undefined && matchData.awayScore !== undefined` faalt als scores als `null` binnenkomen
-- De `is_cup_match` check faalt door een edge case
+**1.2 Workflow-banner bovenaan**
 
-We checken in `cupService.advanceWinner` of die call ook gebeurt bij latere score-updates en niet alleen bij eerste indiening. De huidige logica triggert wél bij score-wijzigingen — de meest waarschijnlijke oorzaak is dat de scores van de halve finales handmatig in de database zijn aangepast (niet via het wedstrijdformulier), waardoor de service-laag werd overgeslagen.
+Eén component dat altijd zegt wat de volgende actie is:
+- Geen actieve poll → "Maak poll voor [volgende maand]" (knop genereert via `generate-monthly-polls` edge function automatisch op basis van bestaande matches)
+- Poll open, deadline >24u → "Wacht op respons (X/Y reageerden)"
+- Poll open, deadline <24u → "⚠ Stuur reminder" (nieuwe edge function of e-mail)
+- Poll gesloten, niet alle wedstrijden toegewezen → "Wijs N wedstrijden toe"
+- Alles toegewezen → "✅ Klaar voor [maand]"
 
-Geen code-wijziging nodig hier; we voegen alleen een **defensieve fallback** toe: bij het laden van de bekerpagina checkt een lichte hook of er afgeronde matches zijn waarvan de winnaar nog niet doorgeschoven is naar de volgende ronde, en doet dat dan alsnog.
+**1.3 Auto-suggest toewijzing per sessie**
 
-Concreet: nieuwe utility `cupService.reconcileAdvancements()` die:
-1. Alle ingediende cup-matches met scores ophaalt
-2. Per match controleert of de volgende ronde de winnaar bevat
-3. Zo niet → `advanceWinner` aanroept
+Nieuwe knop "Suggereer" per speeldag-groep die:
+- Beschikbare scheidsrechters filtert
+- Sorteert op: minste toewijzingen deze maand → minste dit seizoen → alfabetisch
+- Eén klik = top-suggestie toepassen, met undo-toast
 
-Deze wordt aangeroepen vanuit `BekerPage.tsx` (admin) bij mount, achter een feature flag/admin-only.
+### Fase 2 — Leesbaarheid van de matrix
 
-### Bestanden die wijzigen
+**2.1 Matrix herontwerp**
+- Bredere kolommen (min-w 100px), volledige naam i.p.v. afgekorte
+- **Sticky header bij verticaal scrollen** (h-thead positie sticky top-0)
+- Gestreepte rijen (zebra) en sterkere session-row contrast
+- Status per cel met heldere kleurcodering:
+  - ⬜ leeg: niet gereageerd
+  - ✓ groen-licht: beschikbaar
+  - ✗ grijs: niet beschikbaar
+  - 🎯 vol-groen + ster: toegewezen
+  - 🔒 lichtgrijs: andere ref toegewezen (niet meer klikbaar)
+- Tooltip op desktop, longpress-popover op mobile
 
-- **Migratie**: één UPDATE statement voor match_id 1286
-- `src/services/match/cupService.ts` — nieuwe functie `reconcileAdvancements()` toevoegen
-- `src/components/pages/admin/beker/components/BekerPage.tsx` — eenmalige call op mount voor admins
+**2.2 Mobile alternatief: per-sessie-flow**
+Op mobile: niet meer alle scheidsrechters als chips, maar:
+1. Card per sessie
+2. Klik → opent sheet met gefilterde lijst (default: alleen beschikbare)
+3. Tap = toewijzen, swipe = verwijderen
 
-### Wat niet verandert
+### Fase 3 — Slimmer poll-aanmaken
 
-- Geen wijziging aan bestaande `autoAdvanceWinner` / `advanceWinner` logica
-- Geen wijziging aan RLS policies of database functies
-- Geen wijziging aan andere admin pages
+**3.1 Auto-generate uit matches**
+Standaard knop "Auto-genereer voor [maand]" die de bestaande edge function aanroept en alle wedstrijden van die maand cluster naar `poll_match_dates` (date+location). Manuele toevoegingen blijven mogelijk maar zijn de uitzondering.
 
+**3.2 Default deadline**
+Bij maandkeuze: deadline = laatste vrijdag voor de eerste wedstrijd, niet "vandaag + 3 dagen".
+
+**3.3 Implementeer `deletePoll`**
+Toevoegen in `pollService` met cascade-check op `referee_availability` en `poll_match_dates`. Confirm-modal met gevolgen.
+
+### Fase 4 — Betere scheidsrechter-ervaring
+
+**4.1 Rijkere poll-card per datum**
+- Toon teams die spelen ("KRC vs FC X · 19:00", "Team Y vs Team Z · 20:00")
+- Toon "andere refs die ja zeiden: 2" (sociaal bewijs zonder namen vrij te geven aan iedereen — alleen aantallen)
+- Optionele notitie-veld per datum ("liever niet de eerste wedstrijd")
+
+**4.2 Persoonlijke statistieken-strook**
+Bovenaan dashboard:
+```text
+Mei: 3 toegewezen · Seizoen: 14 · Bevestigd: 12 · Geweigerd: 2
+```
+
+**4.3 "Beschikbaar maar niet toegewezen"-sectie**
+Sessies waarvoor de scheidsrechter beschikbaar was maar niet toegewezen werd, met link "Ik kan alsnog inspringen" wanneer er nog open plekken zijn.
+
+### Fase 5 — UX-polish (cross-cutting)
+
+- Vervang emoji-status-badges door consistente lucide-iconen + kleurtokens
+- Skeletons matchen exacte layout (geen rechthoek-soep)
+- Empty states met illustratie + primaire actie ("Maak je eerste poll")
+- Toasts: success-toast bij toewijzen toont undo-actie (5s)
+- Audit-log table (nieuw): `referee_assignment_audit` — wie/wat/wanneer; admin kan via tooltip "ℹ" zien wie laatst wijzigde
+- Notification op nieuwe toewijzing via bestaande `notificationService` — scheidsrechter krijgt bell-icon update
+
+### Wat niet verandert (om scope te bewaken)
+- Database-schema's (alleen optionele audit-tabel als losse fase)
+- RLS policies
+- Bestaande `pollService`/`assignmentService` API-contracten — alleen toevoegingen
+- Edge functions bestaan al; we voegen alleen UI-aanroepen toe
+
+---
+
+## Vraag aan jou
+
+Dit plan dekt veel grond. Ik raad aan in **deze volgorde** te bouwen, telkens in een aparte oplevering:
+
+1. **Fase 1.1 + 1.2** (workflow-banner + tab-fusie) — geeft direct een veel duidelijkere admin-flow
+2. **Fase 2** (matrix-leesbaarheid)
+3. **Fase 3** (auto-generate poll + deadline default + delete)
+4. **Fase 1.3** (auto-suggest)
+5. **Fase 4** (scheidsrechter-zijde)
+6. **Fase 5** (polish + audit + notifications)
+
+Wil je dat ik **start met Fase 1+2** (admin-workflow + matrix-leesbaarheid) als eerste concrete oplevering, of liever een andere fase eerst? Of moeten we bepaalde fases combineren / weglaten?
