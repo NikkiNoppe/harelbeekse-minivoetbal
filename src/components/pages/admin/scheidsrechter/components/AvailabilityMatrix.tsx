@@ -211,6 +211,23 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       setAvailability(availData);
       setAssignments(monthAssignments);
 
+      // Bouw users-by-id map: referees + assigners (voor audit-tooltip)
+      const userIds = new Set<number>(refereesData.map((r) => r.user_id));
+      monthAssignments.forEach((a) => {
+        if (a.assigned_by) userIds.add(a.assigned_by);
+      });
+      if (userIds.size > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('user_id, username')
+          .in('user_id', Array.from(userIds));
+        const map = new Map<number, string>();
+        (usersData || []).forEach((u: any) => map.set(u.user_id, u.username));
+        setUsersById(map);
+      } else {
+        setUsersById(new Map());
+      }
+
       // Workload stats voor auto-suggest
       const { monthCounts: mc, seasonCounts: sc } = await fetchWorkloadStats(selectedMonth);
       setMonthCounts(mc);
