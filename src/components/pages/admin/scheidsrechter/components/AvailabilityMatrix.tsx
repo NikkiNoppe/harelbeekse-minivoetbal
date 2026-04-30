@@ -826,7 +826,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                             );
                           })()}
                         </td>
-                        {referees.map(ref => {
+                        {filteredReferees.map(ref => {
                           const available = isRefereeAvailable(session, ref.user_id);
                           const hasResponded = hasRefereeResponded(session, ref.user_id);
                           const assignment = getSessionAssignment(session, ref.user_id);
