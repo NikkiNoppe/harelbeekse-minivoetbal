@@ -13,12 +13,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { pollService } from '@/services/scheidsrechter/pollService';
-import { scheidsrechterService } from '@/services/scheidsrechter/scheidsrechterService';
 import type { MonthlyPoll } from '@/services/scheidsrechter/types';
 import CreatePollModal from './CreatePollModal';
 import { AppAlertModal } from '@/components/modals/base/app-alert-modal';
 import PollsTable from './PollsTable';
 import PollDetailModal from './PollDetailModal';
+import AutoGeneratePreviewModal from './AutoGeneratePreviewModal';
 
 const getMonthOptions = () => {
   const months: { value: string; label: string }[] = [];
@@ -39,7 +39,7 @@ const PollManagement: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedPoll, setSelectedPoll] = useState<MonthlyPoll | null>(null);
   const [pollToDelete, setPollToDelete] = useState<number | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [previewMonth, setPreviewMonth] = useState<string | null>(null);
 
   const fetchPolls = async () => {
     setLoading(true);
@@ -90,27 +90,9 @@ const PollManagement: React.FC = () => {
     setPollToDelete(null);
   };
 
-  const handleAutoGenerate = async (month: string) => {
-    setIsGenerating(true);
-    try {
-      const result = await scheidsrechterService.generateMonthlyPolls(month);
-      if (result.success) {
-        const created = (result as any).groups_created ?? 0;
-        toast.success(
-          created > 0
-            ? `${created} poll-groepen aangemaakt voor ${month}`
-            : `Geen nieuwe groepen gevonden voor ${month}`
-        );
-        fetchPolls();
-      } else {
-        toast.error('Kon polls niet automatisch genereren');
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error('Fout bij automatisch genereren');
-    } finally {
-      setIsGenerating(false);
-    }
+  // Open de preview-modal — pas op confirmatie wordt de edge function aangeroepen.
+  const handleAutoGenerate = (month: string) => {
+    setPreviewMonth(month);
   };
 
   const monthOptions = getMonthOptions();
@@ -138,9 +120,9 @@ const PollManagement: React.FC = () => {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" disabled={isGenerating} className="gap-1.5">
-                <Sparkles className={`h-4 w-4 ${isGenerating ? 'animate-pulse' : ''}`} />
-                {isGenerating ? 'Bezig...' : 'Auto-genereer'}
+              <Button variant="outline" className="gap-1.5">
+                <Sparkles className="h-4 w-4" />
+                Auto-genereer
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -203,6 +185,18 @@ const PollManagement: React.FC = () => {
           onClick: () => setPollToDelete(null),
         }}
       />
+
+      {previewMonth && (
+        <AutoGeneratePreviewModal
+          open={!!previewMonth}
+          onOpenChange={(o) => !o && setPreviewMonth(null)}
+          month={previewMonth}
+          onSuccess={() => {
+            setPreviewMonth(null);
+            fetchPolls();
+          }}
+        />
+      )}
     </div>
   );
 };

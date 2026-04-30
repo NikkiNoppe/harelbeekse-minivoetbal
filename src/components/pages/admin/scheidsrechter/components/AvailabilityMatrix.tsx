@@ -1,13 +1,28 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import { RefreshCw, Check, X, Star, Minus, Sparkles, Wand2 } from 'lucide-react';
+import {
+  RefreshCw,
+  Check,
+  X,
+  Star,
+  Minus,
+  Sparkles,
+  Wand2,
+  Download,
+  Search,
+  Filter as FilterIcon,
+  Undo2,
+} from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { assignmentService } from '@/services/scheidsrechter/assignmentService';
@@ -19,6 +34,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { formatDateWithDay, formatTimeForDisplay } from '@/lib/dateUtils';
 import { getLocationOrder } from '@/lib/matchSortingUtils';
+import { downloadICalFile, downloadCSVFile, type ICalEvent } from '@/lib/icalUtils';
 
 // Types
 interface RefereeInfo {
@@ -57,6 +73,8 @@ interface AssignmentData {
   match_id: number;
   referee_id: number;
   status: string;
+  assigned_by: number | null;
+  assigned_at: string | null;
 }
 
 const getMonthOptions = () => {
@@ -97,11 +115,16 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   const [sessions, setSessions] = useState<Session[]>([]);
   const [availability, setAvailability] = useState<AvailabilityData[]>([]);
   const [assignments, setAssignments] = useState<AssignmentData[]>([]);
+  const [usersById, setUsersById] = useState<Map<number, string>>(new Map());
   const [monthCounts, setMonthCounts] = useState<Map<number, number>>(new Map());
   const [seasonCounts, setSeasonCounts] = useState<Map<number, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState<string | null>(null);
   const [bulkAssigning, setBulkAssigning] = useState(false);
+
+  // Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [onlyResponded, setOnlyResponded] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -129,7 +152,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
           .eq('poll_month', selectedMonth),
         supabase
           .from('referee_assignments' as any)
-          .select('id, match_id, referee_id, status') as any
+          .select('id, match_id, referee_id, status, assigned_by, assigned_at') as any
       ]);
 
       if (matchesRes.error) throw matchesRes.error;
@@ -187,6 +210,23 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       setSessions(sortedSessions);
       setAvailability(availData);
       setAssignments(monthAssignments);
+
+      // Bouw users-by-id map: referees + assigners (voor audit-tooltip)
+      const userIds = new Set<number>(refereesData.map((r) => r.user_id));
+      monthAssignments.forEach((a) => {
+        if (a.assigned_by) userIds.add(a.assigned_by);
+      });
+      if (userIds.size > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('user_id, username')
+          .in('user_id', Array.from(userIds));
+        const map = new Map<number, string>();
+        (usersData || []).forEach((u: any) => map.set(u.user_id, u.username));
+        setUsersById(map);
+      } else {
+        setUsersById(new Map());
+      }
 
       // Workload stats voor auto-suggest
       const { monthCounts: mc, seasonCounts: sc } = await fetchWorkloadStats(selectedMonth);
@@ -373,6 +413,9 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       let assigned = 0;
       let skipped = 0;
 
+      // Verzamel nieuw aangemaakte assignment-IDs voor één gegroepeerde undo
+      const createdIds: number[] = [];
+
       for (const session of openSessions) {
         const list = suggestRefereesForSession({
           session: {
@@ -399,6 +442,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         const result = await assignToSessionInternal(session, top.user_id, refName, false);
         if (result.ok) {
           assigned++;
+          if (result.assignmentId) createdIds.push(result.assignmentId);
           localMonth.set(top.user_id, (localMonth.get(top.user_id) || 0) + 1);
           localSeason.set(top.user_id, (localSeason.get(top.user_id) || 0) + 1);
           dayUsed.add(top.user_id);
@@ -411,6 +455,25 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       if (assigned > 0) {
         toast.success(`${assigned} toewijzing${assigned === 1 ? '' : 'en'} aangemaakt`, {
           description: skipped > 0 ? `${skipped} sessie(s) overgeslagen — geen kandidaat` : undefined,
+          duration: 10000,
+          action:
+            createdIds.length > 0
+              ? {
+                  label: 'Alles ongedaan',
+                  onClick: async () => {
+                    const results = await Promise.all(
+                      createdIds.map((id) => assignmentService.removeAssignment(id, user?.id)),
+                    );
+                    const undone = results.filter(Boolean).length;
+                    if (undone > 0) {
+                      toast.success(`${undone} toewijzing${undone === 1 ? '' : 'en'} teruggedraaid`);
+                      await fetchData();
+                    } else {
+                      toast.error('Kon toewijzingen niet ongedaan maken');
+                    }
+                  },
+                }
+              : undefined,
         });
         await fetchData();
       } else {
@@ -431,6 +494,69 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
 
   const totalSessions = sessions.length;
   const assignedSessions = sessions.filter(s => getSessionAssignedReferee(s) !== null).length;
+
+  // ─── FILTERS ───────────────────────────────────────────────────────────
+  // Per-sessie: heeft een gegeven ref gereageerd?
+  const respondedSet = useMemo(() => {
+    const set = new Set<number>();
+    availability.forEach((a) => set.add(a.user_id));
+    return set;
+  }, [availability]);
+
+  const filteredReferees = useMemo(() => {
+    let list = referees;
+    const q = searchTerm.trim().toLowerCase();
+    if (q) list = list.filter((r) => r.username.toLowerCase().includes(q));
+    if (onlyResponded) list = list.filter((r) => respondedSet.has(r.user_id));
+    return list;
+  }, [referees, searchTerm, onlyResponded, respondedSet]);
+
+  // ─── EXPORT ────────────────────────────────────────────────────────────
+  const buildAssignedEvents = useCallback((): ICalEvent[] => {
+    const events: ICalEvent[] = [];
+    sessions.forEach((session) => {
+      const assignedRefId = getSessionAssignedReferee(session);
+      if (!assignedRefId) return;
+      const refName = referees.find((r) => r.user_id === assignedRefId)?.username || 'Scheidsrechter';
+      session.matches.forEach((m) => {
+        const dateOnly = m.match_date.split('T')[0];
+        const time = formatTimeForDisplay(m.match_date);
+        events.push({
+          id: m.match_id,
+          title: `${m.home_team_name} – ${m.away_team_name} (ref: ${refName})`,
+          date: dateOnly,
+          time,
+          location: session.location,
+          description: `Scheidsrechter: ${refName}`,
+          duration: 60,
+        });
+      });
+    });
+    return events;
+  }, [sessions, referees, getSessionAssignedReferee]);
+
+  const handleExportICS = () => {
+    const events = buildAssignedEvents();
+    if (events.length === 0) {
+      toast.info('Geen toegewezen wedstrijden om te exporteren');
+      return;
+    }
+    const ok = downloadICalFile(events, `scheidsrechters-${selectedMonth}`, `Scheidsrechters ${selectedMonth}`);
+    if (ok) toast.success(`${events.length} wedstrijd${events.length === 1 ? '' : 'en'} geëxporteerd (ICS)`);
+    else toast.error('Export mislukt');
+  };
+
+  const handleExportCSV = () => {
+    const events = buildAssignedEvents();
+    if (events.length === 0) {
+      toast.info('Geen toegewezen wedstrijden om te exporteren');
+      return;
+    }
+    const ok = downloadCSVFile(events, `scheidsrechters-${selectedMonth}`);
+    if (ok) toast.success(`${events.length} wedstrijd${events.length === 1 ? '' : 'en'} geëxporteerd (CSV)`);
+    else toast.error('Export mislukt');
+  };
+
 
   if (loading) {
     return (
@@ -498,6 +624,74 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             )}
             Auto-toewijzen
           </Button>
+        </div>
+      )}
+
+      {/* Filter & export bar */}
+      {referees.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between rounded-lg border border-[hsl(var(--color-200))] bg-card px-3 py-2">
+          <div className="flex flex-1 flex-wrap items-center gap-3">
+            <div className="relative w-full sm:w-56">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Zoek scheidsrechter…"
+                className="pl-8 h-8 text-sm"
+                aria-label="Zoek scheidsrechter"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="only-responded"
+                checked={onlyResponded}
+                onCheckedChange={setOnlyResponded}
+              />
+              <Label htmlFor="only-responded" className="text-xs cursor-pointer flex items-center gap-1">
+                <FilterIcon className="h-3 w-3" />
+                Alleen wie reageerde
+              </Label>
+            </div>
+            {(searchTerm || onlyResponded) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  setSearchTerm('');
+                  setOnlyResponded(false);
+                }}
+              >
+                <Undo2 className="h-3 w-3 mr-1" />
+                Reset
+              </Button>
+            )}
+            <span className="text-xs text-muted-foreground ml-auto sm:ml-0">
+              {filteredReferees.length}/{referees.length} refs zichtbaar
+            </span>
+          </div>
+          <div className="flex gap-1.5 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5"
+              onClick={handleExportICS}
+              title="Exporteer toegewezen wedstrijden als iCal-bestand"
+            >
+              <Download className="h-3.5 w-3.5" />
+              ICS
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5"
+              onClick={handleExportCSV}
+              title="Exporteer toegewezen wedstrijden als CSV-bestand"
+            >
+              <Download className="h-3.5 w-3.5" />
+              CSV
+            </Button>
+          </div>
         </div>
       )}
 
@@ -580,7 +774,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                     <th className="sticky left-0 z-30 bg-muted text-left px-4 py-3 font-semibold min-w-[260px] border-r border-b border-border text-foreground">
                       Sessie
                     </th>
-                    {referees.map(ref => (
+                    {filteredReferees.map(ref => (
                       <th
                         key={ref.user_id}
                         className="px-2 py-3 text-center font-semibold min-w-[110px] border-r border-b border-border last:border-r-0 text-foreground bg-muted"
@@ -632,7 +826,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                             );
                           })()}
                         </td>
-                        {referees.map(ref => {
+                        {filteredReferees.map(ref => {
                           const available = isRefereeAvailable(session, ref.user_id);
                           const hasResponded = hasRefereeResponded(session, ref.user_id);
                           const assignment = getSessionAssignment(session, ref.user_id);
@@ -651,7 +845,17 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                           if (isAssigned) {
                             cellClass = 'bg-success hover:bg-success/90 cursor-pointer ring-2 ring-success/30 ring-inset';
                             cellContent = <Star className="h-4 w-4 mx-auto text-white fill-white" />;
-                            tooltipText = `${ref.username} – Toegewezen · Klik om te verwijderen`;
+                            tooltipText = (() => {
+                              const assignerName = assignment?.assigned_by ? usersById.get(assignment.assigned_by) : null;
+                              const whenStr = assignment?.assigned_at
+                                ? format(new Date(assignment.assigned_at), 'd MMM HH:mm', { locale: nl })
+                                : null;
+                              const parts: string[] = [];
+                              if (assignerName) parts.push(`door ${assignerName}`);
+                              if (whenStr) parts.push(`op ${whenStr}`);
+                              const suffix = parts.length ? ` · ${parts.join(' ')}` : '';
+                              return `${ref.username} – Toegewezen${suffix} · Klik om te verwijderen`;
+                            })();
                             clickable = true;
                           } else if (isOtherAssigned) {
                             cellClass = 'bg-muted/40 opacity-50';
@@ -753,7 +957,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {referees.map(ref => {
+                      {filteredReferees.map(ref => {
                         const available = isRefereeAvailable(session, ref.user_id);
                         const assignment = getSessionAssignment(session, ref.user_id);
                         const isAssigned = !!assignment;
