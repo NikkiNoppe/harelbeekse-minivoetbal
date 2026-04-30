@@ -806,28 +806,6 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                           <div className="text-xs text-muted-foreground/80 mt-1.5 leading-relaxed">
                             {session.matches.map(m => `${m.home_team_name} – ${m.away_team_name}`).join(' · ')}
                           </div>
-                          {assignedRefId === null && (() => {
-                            const top = getSuggestionForSession(session);
-                            return (
-                              <div className="mt-2 flex items-center gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 px-2 text-xs gap-1"
-                                  disabled={!top || assigning !== null}
-                                  onClick={() => handleSuggestForSession(session)}
-                                >
-                                  <Sparkles className="h-3 w-3" />
-                                  {top ? `Suggereer: ${top.username}` : 'Geen suggestie'}
-                                </Button>
-                                {top && (
-                                  <span className="text-xs font-medium" style={{ color: 'var(--color-700)' }} title={top.reason}>
-                                    {top.monthCount}× deze maand
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })()}
                         </td>
                         {filteredReferees.map(ref => {
                           const available = isRefereeAvailable(session, ref.user_id);
@@ -957,22 +935,6 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                       <div className="text-xs text-muted-foreground/80 mt-1">
                         {session.matches.map(m => `${m.home_team_name} – ${m.away_team_name}`).join(' · ')}
                       </div>
-                      {assignedRefId === null && (() => {
-                        const top = getSuggestionForSession(session);
-                        if (!top) return null;
-                        return (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 px-2 text-xs gap-1 mt-2 w-full justify-center"
-                            disabled={assigning !== null}
-                            onClick={() => handleSuggestForSession(session)}
-                          >
-                            <Sparkles className="h-3 w-3" />
-                            Suggereer: {top.username} ({top.monthCount}×)
-                          </Button>
-                        );
-                      })()}
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
