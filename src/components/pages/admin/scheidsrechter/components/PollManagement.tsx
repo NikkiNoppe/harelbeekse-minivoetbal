@@ -13,12 +13,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { pollService } from '@/services/scheidsrechter/pollService';
-import { scheidsrechterService } from '@/services/scheidsrechter/scheidsrechterService';
 import type { MonthlyPoll } from '@/services/scheidsrechter/types';
 import CreatePollModal from './CreatePollModal';
 import { AppAlertModal } from '@/components/modals/base/app-alert-modal';
 import PollsTable from './PollsTable';
 import PollDetailModal from './PollDetailModal';
+import AutoGeneratePreviewModal from './AutoGeneratePreviewModal';
 
 const getMonthOptions = () => {
   const months: { value: string; label: string }[] = [];
