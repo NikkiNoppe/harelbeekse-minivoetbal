@@ -835,12 +835,14 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                           const cellKey = `${session.matches[0]?.match_id}-${ref.user_id}`;
                           const isLoading = assigning === cellKey;
 
-                          let cellClass = 'bg-card border border-dashed border-border';
+                          // Default: "Geen reactie" — admin kan toch handmatig toewijzen.
+                          let cellClass = 'bg-card hover:bg-primary/10 cursor-pointer border border-dashed border-border';
                           let cellContent: React.ReactNode = (
-                            <Minus className="h-3.5 w-3.5 mx-auto text-muted-foreground/40" />
+                            <Minus className="h-3.5 w-3.5 mx-auto text-muted-foreground/60" />
                           );
-                          let tooltipText = `${ref.username} – Geen reactie`;
-                          let clickable = false;
+                          let tooltipText = `${ref.username} – Geen reactie · Klik om handmatig toe te wijzen`;
+                          let clickable = true;
+                          let forceAssign = true;
 
                           if (isAssigned) {
                             cellClass = 'bg-success hover:bg-success/90 cursor-pointer ring-2 ring-success/30 ring-inset';
@@ -857,6 +859,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                               return `${ref.username} – Toegewezen${suffix} · Klik om te verwijderen`;
                             })();
                             clickable = true;
+                            forceAssign = false;
                           } else if (isOtherAssigned) {
                             cellClass = 'bg-muted/40 opacity-50';
                             cellContent = available ? (
@@ -867,15 +870,21 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                               <Minus className="h-3.5 w-3.5 mx-auto text-muted-foreground/40" />
                             );
                             tooltipText = `${ref.username} – Andere scheidsrechter al toegewezen`;
+                            clickable = false;
+                            forceAssign = false;
                           } else if (available) {
                             cellClass = 'bg-success/15 hover:bg-success/30 cursor-pointer border border-success/40';
                             cellContent = <Check className="h-4 w-4 mx-auto text-success" />;
                             tooltipText = `${ref.username} – Beschikbaar · Klik om toe te wijzen`;
                             clickable = true;
+                            forceAssign = false;
                           } else if (hasResponded) {
-                            cellClass = 'bg-muted/50 border border-border';
-                            cellContent = <X className="h-3.5 w-3.5 mx-auto text-muted-foreground" />;
-                            tooltipText = `${ref.username} – Niet beschikbaar`;
+                            // Ref is expliciet niet-beschikbaar — admin kan met waarschuwing toch toewijzen.
+                            cellClass = 'bg-destructive/5 hover:bg-destructive/15 cursor-pointer border border-destructive/30';
+                            cellContent = <X className="h-3.5 w-3.5 mx-auto text-destructive/70" />;
+                            tooltipText = `${ref.username} – Niet beschikbaar · Klik om alsnog toe te wijzen`;
+                            clickable = true;
+                            forceAssign = true;
                           }
 
                           if (isLoading) {
