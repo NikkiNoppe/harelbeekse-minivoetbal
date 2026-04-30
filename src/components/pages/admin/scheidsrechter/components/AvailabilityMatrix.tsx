@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import { RefreshCw, Check, X } from 'lucide-react';
+import { RefreshCw, Check, X, Star, Minus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { assignmentService } from '@/services/scheidsrechter/assignmentService';
@@ -53,7 +54,6 @@ interface AssignmentData {
   status: string;
 }
 
-// Month options helper
 const getMonthOptions = () => {
   const months = [];
   const currentDate = new Date();
@@ -67,15 +67,33 @@ const getMonthOptions = () => {
   return months;
 };
 
-const AvailabilityMatrix: React.FC = () => {
+interface AvailabilityMatrixProps {
+  /** Verberg de header (maand-selector + refresh + counter) — handig wanneer parent al een toolbar heeft */
+  hideHeader?: boolean;
+  /** Externe maand-controle */
+  selectedMonth?: string;
+  onSelectedMonthChange?: (month: string) => void;
+}
+
+const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
+  hideHeader = false,
+  selectedMonth: externalMonth,
+  onSelectedMonthChange,
+}) => {
   const { user } = useAuth();
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [internalMonth, setInternalMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const selectedMonth = externalMonth ?? internalMonth;
+  const setSelectedMonth = (m: string) => {
+    if (onSelectedMonthChange) onSelectedMonthChange(m);
+    else setInternalMonth(m);
+  };
+
   const [referees, setReferees] = useState<RefereeInfo[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [availability, setAvailability] = useState<AvailabilityData[]>([]);
   const [assignments, setAssignments] = useState<AssignmentData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [assigning, setAssigning] = useState<string | null>(null); // "matchId-refId"
+  const [assigning, setAssigning] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -85,7 +103,6 @@ const AvailabilityMatrix: React.FC = () => {
         ? `${year + 1}-01`
         : `${year}-${String(monthNum + 1).padStart(2, '0')}`;
 
-      // Parallel fetch: matches, referees, availability, assignments
       const [matchesRes, refereesRes, availRes, assignRes] = await Promise.all([
         supabase
           .from('matches')
@@ -112,13 +129,11 @@ const AvailabilityMatrix: React.FC = () => {
       const matchesData = matchesRes.data || [];
       const refereesData = (refereesRes.data || []) as RefereeInfo[];
       const availData = (availRes.data || []) as AvailabilityData[];
-      
-      // Filter assignments to only this month's matches
+
       const matchIds = new Set(matchesData.map(m => m.match_id));
       const allAssignments = (assignRes.data || []) as AssignmentData[];
       const monthAssignments = allAssignments.filter(a => matchIds.has(a.match_id));
 
-      // Get team names
       const teamIds = new Set<number>();
       matchesData.forEach(m => {
         if (m.home_team_id) teamIds.add(m.home_team_id);
@@ -132,7 +147,6 @@ const AvailabilityMatrix: React.FC = () => {
 
       const teamMap = new Map(teams?.map(t => [t.team_id, t.team_name]) || []);
 
-      // Group matches into sessions (date + location)
       const sessionMap = new Map<string, Session>();
       matchesData.forEach(m => {
         const dateOnly = m.match_date.split('T')[0];
@@ -175,22 +189,25 @@ const AvailabilityMatrix: React.FC = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Check if referee is available for a session (by match_id or poll_group_id)
   const isRefereeAvailable = useCallback((session: Session, refereeId: number): boolean => {
-    // Check by match_id for any match in the session
     for (const match of session.matches) {
       const avail = availability.find(a => a.user_id === refereeId && a.match_id === match.match_id);
       if (avail) return avail.is_available;
     }
-    // Check by poll_group_id pattern
     const pollGroupId = `${selectedMonth}_${session.matches[0]?.match_id || 'general'}`;
     const byGroup = availability.find(a => a.user_id === refereeId && a.poll_group_id === pollGroupId);
     if (byGroup) return byGroup.is_available;
-    
     return false;
   }, [availability, selectedMonth]);
 
-  // Check if referee is assigned to any match in the session
+  const hasRefereeResponded = useCallback((session: Session, refereeId: number): boolean => {
+    if (session.matches.some(m =>
+      availability.some(a => a.user_id === refereeId && a.match_id === m.match_id)
+    )) return true;
+    const pollGroupId = `${selectedMonth}_${session.matches[0]?.match_id || 'general'}`;
+    return availability.some(a => a.user_id === refereeId && a.poll_group_id === pollGroupId);
+  }, [availability, selectedMonth]);
+
   const getSessionAssignment = useCallback((session: Session, refereeId: number): AssignmentData | null => {
     for (const match of session.matches) {
       const assignment = assignments.find(a => a.match_id === match.match_id && a.referee_id === refereeId);
@@ -199,7 +216,6 @@ const AvailabilityMatrix: React.FC = () => {
     return null;
   }, [assignments]);
 
-  // Check if session already has an assigned referee
   const getSessionAssignedReferee = useCallback((session: Session): number | null => {
     for (const match of session.matches) {
       if (match.assigned_referee_id) return match.assigned_referee_id;
@@ -209,27 +225,22 @@ const AvailabilityMatrix: React.FC = () => {
     return null;
   }, [assignments]);
 
-  // Handle assign click
   const handleAssign = async (session: Session, refereeId: number) => {
-    // Find first unassigned match in this session
     const targetMatch = session.matches.find(m => !m.assigned_referee_id);
     if (!targetMatch) {
       toast.error('Alle wedstrijden in deze sessie zijn al toegewezen');
       return;
     }
-
     const cellKey = `${targetMatch.match_id}-${refereeId}`;
     setAssigning(cellKey);
-
     try {
       const userId = user?.id || 0;
       const result = await assignmentService.assignReferee(
         { match_id: targetMatch.match_id, referee_id: refereeId },
         userId
       );
-
       if (result.success) {
-        toast.success(`Scheidsrechter toegewezen`);
+        toast.success('Scheidsrechter toegewezen');
         await fetchData();
       } else {
         toast.error(result.error || 'Toewijzing mislukt');
@@ -241,7 +252,6 @@ const AvailabilityMatrix: React.FC = () => {
     }
   };
 
-  // Handle remove assignment
   const handleRemove = async (assignment: AssignmentData) => {
     setAssigning(`${assignment.match_id}-${assignment.referee_id}`);
     try {
@@ -259,17 +269,18 @@ const AvailabilityMatrix: React.FC = () => {
     }
   };
 
-  // Stats
   const totalSessions = sessions.length;
   const assignedSessions = sessions.filter(s => getSessionAssignedReferee(s) !== null).length;
 
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="flex gap-2 items-center">
-          <Skeleton className="h-10 w-[160px]" />
-          <Skeleton className="h-10 w-10" />
-        </div>
+        {!hideHeader && (
+          <div className="flex gap-2 items-center">
+            <Skeleton className="h-10 w-[160px]" />
+            <Skeleton className="h-10 w-10" />
+          </div>
+        )}
         <Skeleton className="h-64 w-full" />
       </div>
     );
@@ -277,43 +288,52 @@ const AvailabilityMatrix: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {getMonthOptions().map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="icon" onClick={fetchData} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-        <div className="flex gap-2 items-center text-sm text-muted-foreground">
+      {!hideHeader && (
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {getMonthOptions().map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon" onClick={fetchData} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
           <Badge variant="outline">{assignedSessions}/{totalSessions} sessies toegewezen</Badge>
         </div>
-      </div>
+      )}
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-3 text-xs">
+      <div className="flex flex-wrap gap-4 text-xs items-center bg-muted/30 px-3 py-2 rounded-lg border border-border/50">
         <div className="flex items-center gap-1.5">
-          <div className="w-5 h-5 rounded bg-[var(--color-success)]/20 border border-[var(--color-success)]/40" />
-          <span>Beschikbaar</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-5 h-5 rounded bg-[var(--color-success)] flex items-center justify-center">
-            <X className="h-3 w-3 text-white" />
+          <div className="w-5 h-5 rounded-md bg-success flex items-center justify-center shadow-sm">
+            <Star className="h-3 w-3 text-white fill-white" />
           </div>
-          <span>Toegewezen</span>
+          <span className="text-foreground font-medium">Toegewezen</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-5 h-5 rounded bg-muted border border-border" />
-          <span>Niet beschikbaar</span>
+          <div className="w-5 h-5 rounded-md bg-success/15 border border-success/40 flex items-center justify-center">
+            <Check className="h-3 w-3 text-success" />
+          </div>
+          <span className="text-foreground">Beschikbaar</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-5 h-5 rounded-md bg-muted border border-border flex items-center justify-center">
+            <X className="h-3 w-3 text-muted-foreground" />
+          </div>
+          <span className="text-foreground">Niet beschikbaar</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-5 h-5 rounded-md bg-card border border-dashed border-border flex items-center justify-center">
+            <Minus className="h-3 w-3 text-muted-foreground/60" />
+          </div>
+          <span className="text-foreground">Geen reactie</span>
         </div>
       </div>
 
@@ -324,89 +344,128 @@ const AvailabilityMatrix: React.FC = () => {
           </CardContent>
         </Card>
       ) : (
-        <>
+        <TooltipProvider delayDuration={200}>
           {/* Desktop Matrix */}
-          <div className="hidden md:block overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="sticky left-0 z-10 bg-muted/90 backdrop-blur-sm text-left p-3 font-semibold min-w-[200px] border-r border-border">
-                    Sessie
-                  </th>
-                  {referees.map(ref => (
-                    <th key={ref.user_id} className="p-2 text-center font-medium min-w-[80px] border-r border-border last:border-r-0">
-                      <span className="block truncate max-w-[80px]" title={ref.username}>
-                        {ref.username.split(' ').map((w, i) => i === 0 ? w : w[0] + '.').join(' ')}
-                      </span>
+          <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+            <div className="overflow-auto max-h-[70vh]">
+              <table className="w-full text-sm border-collapse">
+                <thead className="sticky top-0 z-20">
+                  <tr className="bg-muted">
+                    <th className="sticky left-0 z-30 bg-muted text-left px-4 py-3 font-semibold min-w-[260px] border-r border-b border-border text-foreground">
+                      Sessie
                     </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {sessions.map((session) => {
-                  const assignedRefId = getSessionAssignedReferee(session);
-                  return (
-                    <tr key={session.key} className="border-t border-border hover:bg-muted/20 transition-colors">
-                      <td className="sticky left-0 z-10 bg-card backdrop-blur-sm p-3 border-r border-border">
-                        <div className="font-medium text-foreground">
-                          {formatDateWithDay(session.date)}
+                    {referees.map(ref => (
+                      <th
+                        key={ref.user_id}
+                        className="px-2 py-3 text-center font-semibold min-w-[110px] border-r border-b border-border last:border-r-0 text-foreground bg-muted"
+                      >
+                        <div className="text-xs leading-tight" title={ref.username}>
+                          {ref.username}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          {session.location} · {formatTimeForDisplay(session.date)}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          {session.matches.map(m => `${m.home_team_name} - ${m.away_team_name}`).join(' · ')}
-                        </div>
-                      </td>
-                      {referees.map(ref => {
-                        const available = isRefereeAvailable(session, ref.user_id);
-                        const assignment = getSessionAssignment(session, ref.user_id);
-                        const isAssigned = !!assignment;
-                        const isOtherAssigned = assignedRefId !== null && assignedRefId !== ref.user_id;
-                        const cellKey = `${session.matches[0]?.match_id}-${ref.user_id}`;
-                        const isLoading = assigning === cellKey;
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sessions.map((session, sessionIdx) => {
+                    const assignedRefId = getSessionAssignedReferee(session);
+                    const rowBg = sessionIdx % 2 === 0 ? 'bg-card' : 'bg-muted/20';
+                    return (
+                      <tr key={session.key} className={`${rowBg} hover:bg-primary/5 transition-colors`}>
+                        <td className={`sticky left-0 z-10 ${rowBg} px-4 py-3 border-r border-t border-border align-top`}>
+                          <div className="font-semibold text-foreground text-sm">
+                            {formatDateWithDay(session.date)}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
+                            {session.location} · {formatTimeForDisplay(session.date)}
+                          </div>
+                          <div className="text-xs text-muted-foreground/80 mt-1.5 leading-relaxed">
+                            {session.matches.map(m => `${m.home_team_name} – ${m.away_team_name}`).join(' · ')}
+                          </div>
+                        </td>
+                        {referees.map(ref => {
+                          const available = isRefereeAvailable(session, ref.user_id);
+                          const hasResponded = hasRefereeResponded(session, ref.user_id);
+                          const assignment = getSessionAssignment(session, ref.user_id);
+                          const isAssigned = !!assignment;
+                          const isOtherAssigned = assignedRefId !== null && assignedRefId !== ref.user_id;
+                          const cellKey = `${session.matches[0]?.match_id}-${ref.user_id}`;
+                          const isLoading = assigning === cellKey;
 
-                        return (
-                          <td
-                            key={ref.user_id}
-                            className={`p-1 text-center border-r border-border last:border-r-0 transition-colors ${
-                              isAssigned
-                                ? 'bg-[var(--color-success)] cursor-pointer'
-                                : available
-                                ? 'bg-[var(--color-success)]/20 cursor-pointer hover:bg-[var(--color-success)]/35'
-                                : 'bg-transparent'
-                            } ${isOtherAssigned && !isAssigned ? 'opacity-40' : ''}`}
-                            onClick={() => {
-                              if (isLoading) return;
-                              if (isAssigned && assignment) {
-                                handleRemove(assignment);
-                              } else if (available && !isOtherAssigned) {
-                                handleAssign(session, ref.user_id);
-                              }
-                            }}
-                            title={
-                              isAssigned
-                                ? `${ref.username} - Klik om te verwijderen`
-                                : available
-                                ? `${ref.username} - Klik om toe te wijzen`
-                                : `${ref.username} - Niet beschikbaar`
-                            }
-                          >
-                            {isLoading ? (
-                              <RefreshCw className="h-4 w-4 mx-auto animate-spin text-muted-foreground" />
-                            ) : isAssigned ? (
-                              <X className="h-4 w-4 mx-auto text-white font-bold" />
-                            ) : available ? (
-                              <Check className="h-3.5 w-3.5 mx-auto text-[var(--color-success-dark)] opacity-50" />
-                            ) : null}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                          let cellClass = 'bg-card border border-dashed border-border';
+                          let cellContent: React.ReactNode = (
+                            <Minus className="h-3.5 w-3.5 mx-auto text-muted-foreground/40" />
+                          );
+                          let tooltipText = `${ref.username} – Geen reactie`;
+                          let clickable = false;
+
+                          if (isAssigned) {
+                            cellClass = 'bg-success hover:bg-success/90 cursor-pointer ring-2 ring-success/30 ring-inset';
+                            cellContent = <Star className="h-4 w-4 mx-auto text-white fill-white" />;
+                            tooltipText = `${ref.username} – Toegewezen · Klik om te verwijderen`;
+                            clickable = true;
+                          } else if (isOtherAssigned) {
+                            cellClass = 'bg-muted/40 opacity-50';
+                            cellContent = available ? (
+                              <Check className="h-3.5 w-3.5 mx-auto text-muted-foreground" />
+                            ) : hasResponded ? (
+                              <X className="h-3.5 w-3.5 mx-auto text-muted-foreground/60" />
+                            ) : (
+                              <Minus className="h-3.5 w-3.5 mx-auto text-muted-foreground/40" />
+                            );
+                            tooltipText = `${ref.username} – Andere scheidsrechter al toegewezen`;
+                          } else if (available) {
+                            cellClass = 'bg-success/15 hover:bg-success/30 cursor-pointer border border-success/40';
+                            cellContent = <Check className="h-4 w-4 mx-auto text-success" />;
+                            tooltipText = `${ref.username} – Beschikbaar · Klik om toe te wijzen`;
+                            clickable = true;
+                          } else if (hasResponded) {
+                            cellClass = 'bg-muted/50 border border-border';
+                            cellContent = <X className="h-3.5 w-3.5 mx-auto text-muted-foreground" />;
+                            tooltipText = `${ref.username} – Niet beschikbaar`;
+                          }
+
+                          if (isLoading) {
+                            cellContent = <RefreshCw className="h-4 w-4 mx-auto animate-spin text-foreground" />;
+                          }
+
+                          return (
+                            <td
+                              key={ref.user_id}
+                              className="border-r border-t border-border last:border-r-0 p-1"
+                            >
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div
+                                    role={clickable ? 'button' : undefined}
+                                    tabIndex={clickable ? 0 : -1}
+                                    className={`h-10 rounded-md flex items-center justify-center transition-all ${cellClass}`}
+                                    onClick={() => {
+                                      if (isLoading || !clickable) return;
+                                      if (isAssigned && assignment) {
+                                        handleRemove(assignment);
+                                      } else if (available && !isOtherAssigned) {
+                                        handleAssign(session, ref.user_id);
+                                      }
+                                    }}
+                                  >
+                                    {cellContent}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs">
+                                  {tooltipText}
+                                </TooltipContent>
+                              </Tooltip>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Mobile: Card per session */}
@@ -416,19 +475,18 @@ const AvailabilityMatrix: React.FC = () => {
               return (
                 <Card key={session.key}>
                   <CardContent className="p-3 space-y-2">
-                    {/* Session header */}
                     <div>
-                      <div className="font-medium text-sm">{formatDateWithDay(session.date)}</div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="font-semibold text-sm">{formatDateWithDay(session.date)}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
                         {session.location} · {formatTimeForDisplay(session.date)}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {session.matches.map(m => `${m.home_team_name} - ${m.away_team_name}`).join(' · ')}
+                      <div className="text-xs text-muted-foreground/80 mt-1">
+                        {session.matches.map(m => `${m.home_team_name} – ${m.away_team_name}`).join(' · ')}
                       </div>
                     </div>
 
-                    {/* Referee chips */}
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1.5 pt-1">
                       {referees.map(ref => {
                         const available = isRefereeAvailable(session, ref.user_id);
                         const assignment = getSessionAssignment(session, ref.user_id);
@@ -437,25 +495,22 @@ const AvailabilityMatrix: React.FC = () => {
                         const cellKey = `${session.matches[0]?.match_id}-${ref.user_id}`;
                         const isLoadingCell = assigning === cellKey;
 
-                        if (!available && !isAssigned) return null; // Hide unavailable refs on mobile
+                        if (!available && !isAssigned) return null;
 
                         return (
                           <button
                             key={ref.user_id}
                             disabled={isLoadingCell || (isOtherAssigned && !isAssigned)}
                             onClick={() => {
-                              if (isAssigned && assignment) {
-                                handleRemove(assignment);
-                              } else if (available) {
-                                handleAssign(session, ref.user_id);
-                              }
+                              if (isAssigned && assignment) handleRemove(assignment);
+                              else if (available) handleAssign(session, ref.user_id);
                             }}
                             className={`
                               inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium
                               transition-all min-h-[32px]
                               ${isAssigned
-                                ? 'bg-[var(--color-success)] text-white'
-                                : 'bg-[var(--color-success)]/20 text-[var(--color-success-dark)] border border-[var(--color-success)]/40'
+                                ? 'bg-success text-white shadow-sm'
+                                : 'bg-success/15 text-foreground border border-success/40'
                               }
                               ${isOtherAssigned && !isAssigned ? 'opacity-40' : ''}
                               disabled:cursor-not-allowed
@@ -464,13 +519,12 @@ const AvailabilityMatrix: React.FC = () => {
                             {isLoadingCell ? (
                               <RefreshCw className="h-3 w-3 animate-spin" />
                             ) : isAssigned ? (
-                              <X className="h-3 w-3" />
+                              <Star className="h-3 w-3 fill-white" />
                             ) : null}
-                            {ref.username.split(' ').map((w, i) => i === 0 ? w : w[0] + '.').join(' ')}
+                            {ref.username}
                           </button>
                         );
                       })}
-                      {/* Show if no one is available */}
                       {referees.every(ref => !isRefereeAvailable(session, ref.user_id) && !getSessionAssignment(session, ref.user_id)) && (
                         <span className="text-xs text-muted-foreground italic">Geen beschikbaarheid</span>
                       )}
@@ -480,7 +534,7 @@ const AvailabilityMatrix: React.FC = () => {
               );
             })}
           </div>
-        </>
+        </TooltipProvider>
       )}
     </div>
   );
