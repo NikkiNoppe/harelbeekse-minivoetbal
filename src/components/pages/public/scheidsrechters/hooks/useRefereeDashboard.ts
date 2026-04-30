@@ -238,6 +238,7 @@ export function useRefereeDashboard(): RefereeDashboardData {
   return {
     activePoll,
     pollMatchDates,
+    pollMatchesByGroup,
     myAvailability,
     assignments,
     isLoadingPoll,
