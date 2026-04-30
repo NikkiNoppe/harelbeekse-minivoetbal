@@ -120,9 +120,9 @@ const PollManagement: React.FC = () => {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" disabled={isGenerating} className="gap-1.5">
-                <Sparkles className={`h-4 w-4 ${isGenerating ? 'animate-pulse' : ''}`} />
-                {isGenerating ? 'Bezig...' : 'Auto-genereer'}
+              <Button variant="outline" className="gap-1.5">
+                <Sparkles className="h-4 w-4" />
+                Auto-genereer
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
