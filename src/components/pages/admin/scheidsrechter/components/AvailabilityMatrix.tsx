@@ -771,7 +771,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
           {/* Desktop Matrix */}
           <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
             <div className="overflow-auto max-h-[70vh]">
-              <table className="text-sm border-collapse">
+              <table className="w-full text-sm border-collapse">
                 <thead className="sticky top-0 z-20">
                   <tr className="bg-muted">
                     <th className="sticky left-0 z-30 bg-muted text-left px-2 py-2 font-semibold w-[150px] min-w-[150px] max-w-[150px] border-r border-b border-border text-foreground align-bottom">
