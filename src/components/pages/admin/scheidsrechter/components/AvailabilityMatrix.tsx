@@ -463,30 +463,11 @@ const AvailabilityMatrix: React.FC = () => {
               </table>
             </div>
           </div>
-        </TooltipProvider>
-      )}
-      {/* (re-open conditional for mobile fallback below) */}
-      {sessions.length > 0 && (
-        <></>
-      )}
-      {sessions.length > 0 && (
-        <></>
-      )}
-      {sessions.length > 0 && (
-        <></>
-      )}
-      {sessions.length > 0 && (
-        <></>
-      )}
-      {/* Mobile: Card per session — kept identical */}
-      {sessions.length > 0 && (
-        <></>
-      )}
-      {/* placeholder so subsequent block remains valid */}
-      {false && (
-        <>
-          {/* legacy */}
-          <div></div>
+
+          {/* Mobile fallback (kept simple) */}
+          {false && (
+            <>
+              <div>
 
           {/* Mobile: Card per session */}
           <div className="md:hidden space-y-3">
