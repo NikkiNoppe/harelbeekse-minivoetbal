@@ -773,8 +773,8 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                               inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium
                               transition-all min-h-[32px]
                               ${isAssigned
-                                ? 'bg-success text-white shadow-sm'
-                                : 'bg-success/15 text-foreground border border-success/40'
+                                ? 'pill-success-strong shadow-sm'
+                                : 'bg-success/15 border border-success/40'
                               }
                               ${isOtherAssigned && !isAssigned ? 'opacity-40' : ''}
                               disabled:cursor-not-allowed
