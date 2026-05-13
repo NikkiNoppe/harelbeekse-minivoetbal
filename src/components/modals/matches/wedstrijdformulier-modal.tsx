@@ -389,17 +389,15 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [toast, refreshFinancialState]);
 
   const addPenalty = useCallback(() => {
-    // Batch both state updates together synchronously for immediate UI response
-    flushSync(() => {
-      setIsFinancieelOpen(true);
-      setPenalties(prev => {
-        // Remove any empty penalties (those without both teamId and costSettingId)
-        const validPenalties = prev.filter(p => p.teamId && p.costSettingId);
-        // Add one new empty penalty
-        return [...validPenalties, {
-          costSettingId: null,
-          teamId: null,
-        }];
+    setIsFinancieelOpen(true);
+    setPenalties(prev => {
+      const validPenalties = prev.filter(p => p.teamId && p.costSettingId);
+      return [...validPenalties, { costSettingId: null, teamId: null }];
+    });
+    requestAnimationFrame(() => {
+      document.getElementById('penalties-new-list')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
       });
     });
   }, []);
