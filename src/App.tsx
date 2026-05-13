@@ -20,6 +20,7 @@ import { useThemeColorsInit } from "@/hooks/useThemeColors";
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 
 /** Initializes dynamic theme colors from DB */
 function ThemeColorsInitializer({ children }: { children: React.ReactNode }) {
@@ -213,6 +214,12 @@ const App = () => (
                       </Suspense>
                     } />
                     
+                    <Route path="/unsubscribe" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Unsubscribe />
+                      </Suspense>
+                    } />
+
                     {/* Catch-all for unknown routes - Lazy loaded with Suspense */}
                     <Route path="*" element={
                       <Suspense fallback={<LoadingSpinner />}>
