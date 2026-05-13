@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     // Fetch all matches with scores
     const { data: allMatches, error: matchesErr } = await supabaseServiceRole
       .from('matches')
-      .select('match_id, home_team_id, away_team_id, match_date, home_score, away_score, is_submitted, is_cup_match, is_playoff_match, assigned_referee_id, skip_auto_match_costs')
+      .select('match_id, home_team_id, away_team_id, match_date, home_score, away_score, is_submitted, is_cup_match, is_playoff_match, assigned_referee_id, referee, skip_auto_match_costs')
       .not('home_score', 'is', null)
       .not('away_score', 'is', null)
       .not('home_team_id', 'is', null)
