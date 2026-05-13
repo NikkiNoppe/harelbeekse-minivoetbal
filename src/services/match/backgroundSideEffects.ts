@@ -551,6 +551,7 @@ export const getFailedSideEffects = async (matchId?: number): Promise<any[]> => 
     .from('application_settings')
     .select('*')
     .eq('setting_category', 'failed_side_effects')
+    .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(50);
 
