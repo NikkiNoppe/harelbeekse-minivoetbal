@@ -4,6 +4,7 @@ import { enhancedMatchService } from "@/services/match";
 import { MatchFormData } from "../types";
 import { useToast } from "@/hooks/use-toast";
 import { type MatchFormSettings } from "@/hooks/useMatchFormSettings";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useEnhancedMatchFormSubmission = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
