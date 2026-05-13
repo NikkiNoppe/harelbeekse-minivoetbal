@@ -60,8 +60,7 @@ Deno.serve(async (req) => {
     const { data: costSettings, error: costErr } = await supabaseServiceRole
       .from('costs')
       .select('id, amount, name, category')
-      .eq('category', 'match_cost')
-      .eq('is_active', true);
+      .eq('category', 'match_cost');
 
     if (costErr) throw new Error(`Failed to fetch cost settings: ${costErr.message}`);
 
