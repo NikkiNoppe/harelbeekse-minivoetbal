@@ -1947,7 +1947,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         variant="outline"
                         onClick={addForfaitPenaltyPreset}
                         disabled={isAddPenaltyButtonDisabled}
-                        className="h-8 px-3 w-full sm:flex-1 border-[var(--color-400)]"
+                        className="h-8 px-3 w-full sm:w-auto sm:flex-none border-[var(--color-400)]"
                       >
                         <AlertTriangle className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                         Forfait verwittigd (€{Number(forfaitVerwittigdPenaltyCost.amount).toFixed(0)})
@@ -1961,10 +1961,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted mb-2.5">
                       <AlertTriangle className="h-5 w-5 text-muted-foreground" />
                     </div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Nog geen boetes toegevoegd</p>
-                    <p className="text-xs text-muted-foreground/70 text-center max-w-xs">
-                      Gebruik bovenstaande knoppen. &quot;Forfait verwittigd&quot; slaat direct op bij een bekende stand (bv. 0–10); anders kies je het team en klik je op Boetes opslaan.
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">Nog geen boetes. Gebruik de knoppen hierboven.</p>
                   </div>
                 )}
 
