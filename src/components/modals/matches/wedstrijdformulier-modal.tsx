@@ -1967,7 +1967,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
                 {/* New Penalties Section */}
                 {penalties.length > 0 && (
-                  <div className="space-y-2.5">
+                  <div id="penalties-new-list" className="space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-semibold text-foreground">Nieuwe boetes</span>
