@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useEffect, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { MatchesPenaltyShootoutModal } from "@/components/modals";
+import { ForfaitEmailModal } from "./forfait-email-modal";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChevronDown } from "lucide-react";
@@ -137,6 +138,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const [skipAutoMatchCosts, setSkipAutoMatchCosts] = useState(false);
   const [hasForfaitPenalty, setHasForfaitPenalty] = useState(false);
   const [restoringAutoMatchCosts, setRestoringAutoMatchCosts] = useState(false);
+  const [forfaitEmailModalOpen, setForfaitEmailModalOpen] = useState(false);
+  const [forfaitEmailContext, setForfaitEmailContext] = useState<{ forfaitTeamName: string } | null>(null);
 
   const penaltyTeamOptions = useMemo(() => ([
     { id: match.homeTeamId, name: match.homeTeamName },
@@ -536,11 +539,17 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     const draft: PenaltyItem = { teamId: suggestedTeamId, costSettingId: forfaitCost.id };
 
     if (suggestedTeamId != null) {
-      await persistPenaltyItems([draft], {
+      const ok = await persistPenaltyItems([draft], {
         successTitle: "Forfait verwittigd opgeslagen",
         successDescription:
           "De boete Forfait verwittigd is bewaard. Standaard wedstrijdkosten zijn verwijderd en de scheidsrechter-toewijzing is opgeheven.",
       });
+      if (ok) {
+        const forfaitTeamName =
+          suggestedTeamId === match.homeTeamId ? match.homeTeamName : match.awayTeamName;
+        setForfaitEmailContext({ forfaitTeamName });
+        setForfaitEmailModalOpen(true);
+      }
       return;
     }
 
@@ -563,6 +572,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     match.awayScore,
     match.homeTeamId,
     match.awayTeamId,
+    match.homeTeamName,
+    match.awayTeamName,
     persistPenaltyItems,
     toast,
   ]);
@@ -3049,6 +3060,22 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
             </p>
           </div>
         </AppModal>
+
+        {forfaitEmailContext && (
+          <ForfaitEmailModal
+            open={forfaitEmailModalOpen}
+            onOpenChange={(o) => {
+              setForfaitEmailModalOpen(o);
+              if (!o) setForfaitEmailContext(null);
+            }}
+            homeTeamName={match.homeTeamName}
+            awayTeamName={match.awayTeamName}
+            forfaitTeamName={forfaitEmailContext.forfaitTeamName}
+            matchDate={match.date}
+            matchTime={match.time}
+            location={match.location}
+          />
+        )}
       </div>
     </AppModal>
   );
