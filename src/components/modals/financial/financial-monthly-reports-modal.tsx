@@ -46,7 +46,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
         }
       }
       if (!ac.signal.aborted) {
-        timeoutId = window.setTimeout(() => {
+        timeoutId = setTimeout(() => {
           if (!ac.signal.aborted) setCostSyncUi((s) => (s === "ok" || s === "err" ? "idle" : s));
         }, 2200);
       }
