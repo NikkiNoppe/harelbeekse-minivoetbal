@@ -6,4 +6,4 @@
 export { default as TeamSuspensionsPage } from '@/components/pages/admin/schorsingen/SchorsingenPage';
 
 // Admin Page (full management of all suspensions)
-export { default as AdminSuspensionsPage } from '@/components/pages/admin/suspensions/AdminSuspensionsPage';
+export { default as AdminSuspensionsPage } from '@/components/pages/admin/schorsingen/SchorsingenPage';

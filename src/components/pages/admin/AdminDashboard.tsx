@@ -1,5 +1,7 @@
 
-import React from "react";
+import React, { useMemo } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import PlayerPage from "@/components/pages/admin/players/PlayerPage.tsx";
@@ -15,12 +17,14 @@ import NotAvailable from "@/components/common/NotAvailable";
 import AlgemeenPage from "@/components/pages/public/information/AlgemeenPage";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 
-import AdminSuspensionsPage from "@/components/pages/admin/suspensions/AdminSuspensionsPage";
 import AdminPlayoffMatchesPage from "@/components/pages/admin/matches/AdminPlayoffMatchesPage";
 import ScheidsrechtersPage from "@/components/pages/admin/scheidsrechter/ScheidsrechtersPage";
 import BlogPage from "@/components/pages/admin/blog/BlogPage";
 import NotificationPage from "@/components/pages/admin/notifications/NotificationPage";
 import SchorsingenPage from "@/components/pages/admin/schorsingen/SchorsingenPage";
+import { useSuspensionsData } from "@/domains/cards-suspensions";
+import { formatDateForDisplay } from "@/lib/dateUtils";
+import { Ban } from "lucide-react";
 
 type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "match-forms-playoffs" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup" | "suspensions" | "schorsingen" | "polls" | "scheidsrechters" | "blog-management" | "notification";
 
@@ -28,6 +32,61 @@ interface AdminDashboardProps {
   activeTab: TabName;
   setActiveTab: (tab: TabName) => void;
 }
+
+const TeamManagerSuspensionNotice: React.FC = () => {
+  const { user } = useAuth();
+  const { suspensions, isLoading } = useSuspensionsData();
+
+  const activeTeamSuspensions = useMemo(() => {
+    if (!user?.teamId || !suspensions) return [];
+    return suspensions
+      .filter((suspension) => suspension.teamId === user.teamId && suspension.status === 'active')
+      .sort((a, b) => {
+        const dateA = a.suspendedForMatch?.date || a.endDate || a.cardDate || '';
+        const dateB = b.suspendedForMatch?.date || b.endDate || b.cardDate || '';
+        return dateA.localeCompare(dateB);
+      });
+  }, [suspensions, user?.teamId]);
+
+  if (isLoading || activeTeamSuspensions.length === 0) return null;
+
+  return (
+    <Alert className="mb-4 border-destructive/30 bg-destructive/10">
+      <Ban className="h-4 w-4 text-destructive" />
+      <AlertTitle className="text-destructive">
+        Speler geschorst voor komende wedstrijd
+      </AlertTitle>
+      <AlertDescription className="space-y-2">
+        {activeTeamSuspensions.map((suspension) => (
+          <div key={suspension.id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <span className="font-medium text-foreground">{suspension.playerName}</span>
+              <span className="text-muted-foreground"> · {suspension.reason}</span>
+              {suspension.suspendedForMatches && suspension.suspendedForMatches.length > 0 ? (
+                <span className="text-muted-foreground">
+                  {' '}· {suspension.suspendedForMatches.map((match) => `${formatDateForDisplay(match.date)} tegen ${match.opponent}`).join(' + ')}
+                </span>
+              ) : suspension.suspendedForMatch && (
+                <span className="text-muted-foreground">
+                  {' '}· {formatDateForDisplay(suspension.suspendedForMatch.date)} tegen {suspension.suspendedForMatch.opponent}
+                </span>
+              )}
+              {suspension.notes && (
+                <span className="block mt-1 text-sm text-foreground/90 border-l-2 border-primary/30 pl-2">
+                  <span className="font-medium">Bericht: </span>
+                  {suspension.notes}
+                </span>
+              )}
+            </div>
+            <Badge variant="destructive" className="w-fit">
+              Niet speelgerechtigd
+            </Badge>
+          </div>
+        ))}
+      </AlertDescription>
+    </Alert>
+  );
+};
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab }) => {
   const { user } = useAuth();
@@ -48,6 +107,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
     <div className="w-full admin-dashboard">
       {/* Tab Content */}
       <div className="container-adaptive px-4 sm:px-6 lg:px-8 py-8 w-full">
+        {isTeamManager && <TeamManagerSuspensionNotice />}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
           <div className="animate-fade-in">
             <TabsContent value="match-forms" className="mt-0">
@@ -92,11 +152,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 <TeamsPage />
               </TabsContent>
             )}
+
+            {isTeamManager && (
+              <TabsContent value="schorsingen" className="mt-0">
+                <SchorsingenPage />
+              </TabsContent>
+            )}
             
             {isAdmin && (
               <>
                 <TabsContent value="suspensions" className="mt-0">
-                  <AdminSuspensionsPage />
+                  <SchorsingenPage />
                 </TabsContent>
                 
                 <TabsContent value="schorsingen" className="mt-0">

@@ -22,12 +22,20 @@ import MatchesCardIcon from "@/components/pages/admin/matches/components/Matches
 import { costSettingsService, financialService } from "@/domains/financial";
 import { withUserContext } from "@/lib/supabaseUtils";
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentDate } from "@/lib/dateUtils";
+import { getCurrentDate, localDateTimeToISO } from "@/lib/dateUtils";
 import { MatchFormData, PlayerSelection } from "@/components/pages/admin/matches/types";
 import { useMatchFormState } from "@/components/pages/admin/matches/hooks/useMatchFormState";
 import { useEnhancedMatchFormSubmission } from "@/components/pages/admin/matches/hooks/useEnhancedMatchFormSubmission";
 import { canEditMatch, canTeamManagerEdit, shouldAutoLockMatch } from "@/lib/matchLockUtils";
 import { useMatchFormSettings } from "@/hooks/useMatchFormSettings";
+import {
+  clearSkipAutoMatchCostsForAdmin,
+  costNameImpliesMatchCostSuppression,
+  findForfaitVerwittigdPenaltyCost,
+  costNameIsForfaitVerwittigd,
+  invokeSyncMatchCostsForMatch,
+  matchHasForfaitPenalty,
+} from "@/services/financial/matchCostService";
 
 interface WedstrijdformulierModalProps {
   open: boolean;
@@ -126,19 +134,78 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const [isLoadingMatchCosts, setIsLoadingMatchCosts] = useState(false);
   const [editingCostId, setEditingCostId] = useState<number | null>(null);
   const [editingCostAmount, setEditingCostAmount] = useState<string>("");
-  const [newCostTeamId, setNewCostTeamId] = useState<number | null>(null);
-  const [newCostSettingId, setNewCostSettingId] = useState<number | null>(null);
-  const [newCostAmount, setNewCostAmount] = useState<string>("");
-  const [allCostSettings, setAllCostSettings] = useState<any[]>([]);
   const [isDeletingPenalty, setIsDeletingPenalty] = useState<number | null>(null);
+  const [skipAutoMatchCosts, setSkipAutoMatchCosts] = useState(false);
+  const [hasForfaitPenalty, setHasForfaitPenalty] = useState(false);
+  const [restoringAutoMatchCosts, setRestoringAutoMatchCosts] = useState(false);
 
   const penaltyTeamOptions = useMemo(() => ([
     { id: match.homeTeamId, name: match.homeTeamName },
     { id: match.awayTeamId, name: match.awayTeamName },
   ]), [match.homeTeamId, match.homeTeamName, match.awayTeamId, match.awayTeamName]);
 
-  // Load available penalties
+  /** Standaard snelknop: «Forfait verwittigd» (€25). */
+  const forfaitVerwittigdPenaltyCost = useMemo(
+    () => findForfaitVerwittigdPenaltyCost(availablePenalties),
+    [availablePenalties]
+  );
+
+  /** Boetelijst: suppressie/forfait bovenaan voor snellere keuze bij handmatige invoer. */
+  const sortedPenaltyOptions = useMemo(() => {
+    return [...availablePenalties].sort((a, b) => {
+      const sa = costNameImpliesMatchCostSuppression(a.name);
+      const sb = costNameImpliesMatchCostSuppression(b.name);
+      if (sa !== sb) return sa ? -1 : 1;
+      return (a.name || "").localeCompare(b.name || "");
+    });
+  }, [availablePenalties]);
+
+  const loadExistingPenalties = useCallback(async () => {
+    try {
+      const penaltyCostIds = new Set(
+        (availablePenalties.length > 0
+          ? availablePenalties
+          : await costSettingsService.getPenalties()
+        ).map((cs) => Number(cs.id))
+      );
+
+      const { data, error } = await withUserContext(async () =>
+        supabase
+          .from('team_costs')
+          .select(`*, costs(name, category, amount)`)
+          .eq('match_id', match.matchId)
+          .order('team_id', { ascending: true })
+      );
+      if (error) throw error;
+
+      const matchPenalties = (data || [])
+        .filter((tc: { cost_setting_id?: number; costs?: { category?: string } }) =>
+          tc.costs?.category === 'penalty' ||
+          (tc.cost_setting_id != null && penaltyCostIds.has(Number(tc.cost_setting_id)))
+        )
+        .map((tc: { id: number; team_id: number; amount: number | null; costs?: { name?: string; amount?: number } }) => ({
+          id: tc.id,
+          teamName: tc.team_id === match.homeTeamId ? match.homeTeamName : match.awayTeamName,
+          penaltyName: tc.costs?.name || 'Boete',
+          amount: tc.amount !== null && tc.amount !== undefined ? Number(tc.amount) : Number(tc.costs?.amount || 0),
+        }));
+
+      setSavedPenalties(matchPenalties);
+    } catch (error) {
+      console.error('Error loading existing penalties:', error);
+    }
+  }, [
+    match.matchId,
+    match.homeTeamId,
+    match.awayTeamId,
+    match.homeTeamName,
+    match.awayTeamName,
+    availablePenalties,
+  ]);
+
   useEffect(() => {
+    if (!open) return;
+    setPenalties([]);
     const loadAvailablePenalties = async () => {
       try {
         const costSettings = await costSettingsService.getPenalties();
@@ -148,33 +215,13 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       }
     };
     loadAvailablePenalties();
-  }, []);
-
-  // Load existing penalties
-  const loadExistingPenalties = useCallback(async () => {
-    try {
-      const homeTeamTransactions = await financialService.getTeamTransactions(match.homeTeamId);
-      const awayTeamTransactions = await financialService.getTeamTransactions(match.awayTeamId);
-
-      const matchPenalties = [...homeTeamTransactions, ...awayTeamTransactions]
-        .filter(t => t.match_id === match.matchId && t.transaction_type === 'penalty')
-        .map(t => ({
-          id: t.id,
-          teamName: t.team_id === match.homeTeamId ? match.homeTeamName : match.awayTeamName,
-          penaltyName: t.cost_settings?.name || 'Boete',
-          amount: t.amount
-        }));
-
-      setSavedPenalties(matchPenalties);
-    } catch (error) {
-      console.error('Error loading existing penalties:', error);
-    }
-  }, [match.matchId, match.homeTeamId, match.awayTeamId, match.homeTeamName, match.awayTeamName]);
-
-  useEffect(() => {
-    if (!open) return;
     loadExistingPenalties();
   }, [open, loadExistingPenalties]);
+
+  useEffect(() => {
+    if (!open || availablePenalties.length === 0) return;
+    loadExistingPenalties();
+  }, [open, availablePenalties, loadExistingPenalties]);
 
   // Load match costs for Financieel section (admin + referee)
   const loadMatchCosts = useCallback(async () => {
@@ -189,7 +236,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           .order('team_id', { ascending: true });
       });
       if (error) throw error;
-      const costs = (data || []).map((tc: any) => ({
+      const costs = (data || [])
+        .filter((tc: any) => tc.costs?.category !== "penalty")
+        .map((tc: any) => ({
         id: tc.id,
         teamId: tc.team_id,
         teamName: tc.team_id === match.homeTeamId ? match.homeTeamName : match.awayTeamName,
@@ -212,33 +261,62 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     }
   }, [isAdmin, isReferee, open, loadMatchCosts]);
 
-  // Load all cost settings for the add-cost dropdown
-  useEffect(() => {
+  const refreshSkipAutoMatchCosts = useCallback(async () => {
     if (!isAdmin) return;
-    const load = async () => {
-      try {
-        const settings = await costSettingsService.getCostSettings();
-        setAllCostSettings(settings);
-      } catch (error) {
-        console.error('Error loading cost settings:', error);
-      }
-    };
-    load();
-  }, [isAdmin]);
+    try {
+      const { data, error } = await withUserContext(async () =>
+        supabase.from("matches").select("skip_auto_match_costs").eq("match_id", match.matchId).maybeSingle()
+      );
+      if (error) return;
+      setSkipAutoMatchCosts(!!data?.skip_auto_match_costs);
+    } catch {
+      /* ignore */
+    }
+  }, [isAdmin, match.matchId]);
+
+  const refreshForfaitPenaltyState = useCallback(async () => {
+    try {
+      const has = await matchHasForfaitPenalty(match.matchId);
+      setHasForfaitPenalty(has);
+    } catch {
+      /* ignore */
+    }
+  }, [match.matchId]);
 
   const invalidateFinancialQueries = useCallback(() => {
     const keys = [['all-team-transactions'], ['teams-financial'], ['submitted-matches'], ['cost-settings']];
     keys.forEach(queryKey => queryClient.invalidateQueries({ queryKey }));
   }, [queryClient]);
 
+  const refreshFinancialState = useCallback(async () => {
+    await loadExistingPenalties();
+    await refreshForfaitPenaltyState();
+    if (isAdmin) {
+      await loadMatchCosts();
+      await refreshSkipAutoMatchCosts();
+    }
+    invalidateFinancialQueries();
+  }, [
+    loadExistingPenalties,
+    refreshForfaitPenaltyState,
+    isAdmin,
+    loadMatchCosts,
+    refreshSkipAutoMatchCosts,
+    invalidateFinancialQueries,
+  ]);
+
+  useEffect(() => {
+    if (!open || !isAdmin) return;
+    refreshSkipAutoMatchCosts();
+    refreshForfaitPenaltyState();
+  }, [open, isAdmin, refreshSkipAutoMatchCosts, refreshForfaitPenaltyState]);
+
   const handleDeleteMatchCost = useCallback(async (costId: number) => {
     try {
       const result = await costSettingsService.deleteTransaction(costId);
       if (result.success) {
         toast({ title: "Kost verwijderd" });
-        invalidateFinancialQueries();
-        await loadExistingPenalties();
-        if (isAdmin) await loadMatchCosts();
+        await refreshFinancialState();
       } else {
         toast({ title: "Fout", description: result.message, variant: "destructive" });
       }
@@ -246,7 +324,53 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       console.error('Error deleting match cost:', error);
       toast({ title: "Fout", description: "Kon kost niet verwijderen.", variant: "destructive" });
     }
-  }, [toast, invalidateFinancialQueries, loadExistingPenalties, isAdmin, loadMatchCosts]);
+  }, [toast, refreshFinancialState]);
+
+  const handleRestoreAutoMatchCosts = useCallback(async () => {
+    setRestoringAutoMatchCosts(true);
+    try {
+      const cleared = await clearSkipAutoMatchCostsForAdmin(match.matchId);
+      if (!cleared.success) {
+        toast({ title: "Fout", description: cleared.message, variant: "destructive" });
+        return;
+      }
+      const syncRes = await invokeSyncMatchCostsForMatch({
+        matchId: match.matchId,
+        matchDateISO: localDateTimeToISO(match.date, match.time),
+        homeTeamId: match.homeTeamId,
+        awayTeamId: match.awayTeamId,
+        isSubmitted: !!match.isCompleted,
+        referee: selectedReferee ?? null,
+      });
+      if (!syncRes.success) {
+        toast({
+          title: "Reset gelukt, sync mislukt",
+          description:
+            syncRes.message ||
+            "Vlag is gewist; probeer opnieuw na te controleren dat de wedstrijd ingediend is.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Standaard wedstrijdkosten",
+          description: "Automatische sync staat weer aan; kosten zijn bijgewerkt waar mogelijk.",
+        });
+      }
+      await refreshFinancialState();
+    } finally {
+      setRestoringAutoMatchCosts(false);
+    }
+  }, [
+    match.matchId,
+    match.date,
+    match.time,
+    match.homeTeamId,
+    match.awayTeamId,
+    match.isCompleted,
+    selectedReferee,
+    toast,
+    refreshFinancialState,
+  ]);
 
   const handleUpdateMatchCostAmount = useCallback(async (costId: number, newAmount: number) => {
     try {
@@ -254,9 +378,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       if (result.success) {
         setEditingCostId(null);
         toast({ title: "Bedrag bijgewerkt" });
-        invalidateFinancialQueries();
-        await loadExistingPenalties();
-        if (isAdmin) await loadMatchCosts();
+        await refreshFinancialState();
       } else {
         toast({ title: "Fout", description: result.message, variant: "destructive" });
       }
@@ -264,35 +386,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       console.error('Error updating match cost:', error);
       toast({ title: "Fout", description: "Kon bedrag niet bijwerken.", variant: "destructive" });
     }
-  }, [toast, invalidateFinancialQueries, loadExistingPenalties, isAdmin, loadMatchCosts]);
-
-  const handleAddMatchCost = useCallback(async () => {
-    if (!newCostTeamId || !newCostSettingId) return;
-    const amount = parseFloat(newCostAmount);
-    if (isNaN(amount)) return;
-    
-    try {
-      const result = await costSettingsService.addTransactionAsAdmin(
-        newCostTeamId,
-        newCostSettingId,
-        amount,
-        getCurrentDate(),
-        match.matchId
-      );
-      if (result.success) {
-        toast({ title: "Kost toegevoegd" }); invalidateFinancialQueries();
-        setNewCostTeamId(null);
-        setNewCostSettingId(null);
-        setNewCostAmount("");
-        await loadMatchCosts();
-      } else {
-        toast({ title: "Fout", description: result.message, variant: "destructive" });
-      }
-    } catch (error) {
-      console.error('Error adding match cost:', error);
-      toast({ title: "Fout", description: "Kon kost niet toevoegen.", variant: "destructive" });
-    }
-  }, [newCostTeamId, newCostSettingId, newCostAmount, match.matchId, toast, loadMatchCosts, invalidateFinancialQueries]);
+  }, [toast, refreshFinancialState]);
 
   const addPenalty = useCallback(() => {
     // Batch both state updates together synchronously for immediate UI response
@@ -309,6 +403,175 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       });
     });
   }, []);
+
+  const parseFormOrMatchScore = useCallback((formValue: string, matchValue: number | null | undefined) => {
+    if (formValue !== "") return parseInt(formValue, 10);
+    if (matchValue != null) return matchValue;
+    return NaN;
+  }, []);
+
+  const persistPenaltyItems = useCallback(async (
+    items: PenaltyItem[],
+    options?: { successTitle?: string; successDescription?: string }
+  ): Promise<boolean> => {
+    const validItems = items.filter((p) => p.costSettingId && p.teamId);
+    if (validItems.length === 0) return false;
+
+    setIsLoadingPenalties(true);
+    try {
+      const currentDate = getCurrentDate();
+      let savedCount = 0;
+
+      await withUserContext(async () => {
+        for (const penalty of validItems) {
+          const teamId = Number(penalty.teamId);
+          const costSettingId = Number(penalty.costSettingId);
+          const costSetting = availablePenalties.find((cs) => Number(cs.id) === costSettingId);
+
+          if (!costSetting) {
+            throw new Error(
+              `Boetetype (id ${costSettingId}) niet gevonden. Vernieuw het formulier en probeer opnieuw.`
+            );
+          }
+
+          const result = await financialService.addTransaction({
+            team_id: teamId,
+            amount: Number(costSetting.amount),
+            description: null,
+            transaction_type: 'penalty',
+            transaction_date: currentDate,
+            match_id: Number(match.matchId),
+            penalty_type_id: null,
+            cost_setting_id: costSettingId,
+          });
+
+          if (!result.success) {
+            throw new Error(result.message || 'Kon boete niet opslaan');
+          }
+          savedCount += 1;
+        }
+      });
+
+      if (savedCount !== validItems.length) {
+        throw new Error('Niet alle boetes konden worden opgeslagen.');
+      }
+
+      const hadForfaitVerwittigd = validItems.some((p) => {
+        const cs = availablePenalties.find((x) => Number(x.id) === Number(p.costSettingId));
+        return cs != null && costNameIsForfaitVerwittigd(cs.name);
+      });
+
+      const hadForfait = validItems.some((p) => {
+        const cs = availablePenalties.find((x) => Number(x.id) === Number(p.costSettingId));
+        return cs != null && costNameImpliesMatchCostSuppression(cs.name);
+      });
+
+      if (hadForfaitVerwittigd) {
+        setSelectedReferee("");
+      }
+
+      const savedKeys = new Set(
+        validItems.map((p) => `${p.teamId}:${p.costSettingId}`)
+      );
+      setPenalties((prev) =>
+        prev.filter((p) => !p.costSettingId || !p.teamId || !savedKeys.has(`${p.teamId}:${p.costSettingId}`))
+      );
+      await refreshFinancialState();
+
+      const forfaitVerwittigdNote = hadForfaitVerwittigd
+        ? " Scheidsrechter-toewijzing is verwijderd (wedstrijd niet gespeeld)."
+        : "";
+
+      toast({
+        title: options?.successTitle ?? "Boetes opgeslagen",
+        description:
+          options?.successDescription ??
+          (hadForfait
+            ? `${savedCount} boete(s) toegevoegd. Forfait: wedstrijdkosten (veld/scheids/admin) voor deze wedstrijd zijn verwijderd.${forfaitVerwittigdNote}`
+            : `${savedCount} boete(s) succesvol toegevoegd aan de teamtransacties.`),
+      });
+      return true;
+    } catch (error: unknown) {
+      console.error('Error saving penalties:', error);
+      toast({
+        title: "Fout bij opslaan boetes",
+        description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het opslaan van de boetes.",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setIsLoadingPenalties(false);
+    }
+  }, [availablePenalties, match.matchId, toast, refreshFinancialState, setSelectedReferee]);
+
+  /** Standaard forfait-regel: vult boetype + verliezend team in en slaat direct op wanneer het team bekend is. */
+  const addForfaitPenaltyPreset = useCallback(async () => {
+    const forfaitCost = forfaitVerwittigdPenaltyCost;
+    if (!forfaitCost) {
+      toast({
+        title: "Geen forfait-boete gevonden",
+        description:
+          "Configureer in beheer een boete ‘Forfait verwittigd’, of gebruik ‘Boete toevoegen’.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (
+      hasForfaitPenalty ||
+      savedPenalties.some((p) => costNameImpliesMatchCostSuppression(p.penaltyName))
+    ) {
+      toast({
+        title: "Forfait bestaat al",
+        description: "Er staat al een forfait-boete op deze wedstrijd.",
+      });
+      return;
+    }
+
+    const h = parseFormOrMatchScore(homeScore, match.homeScore);
+    const a = parseFormOrMatchScore(awayScore, match.awayScore);
+    let suggestedTeamId: number | null = null;
+    if (!Number.isNaN(h) && !Number.isNaN(a) && h !== a) {
+      suggestedTeamId = h < a ? match.homeTeamId : match.awayTeamId;
+    }
+
+    setIsFinancieelOpen(true);
+
+    const draft: PenaltyItem = { teamId: suggestedTeamId, costSettingId: forfaitCost.id };
+
+    if (suggestedTeamId != null) {
+      await persistPenaltyItems([draft], {
+        successTitle: "Forfait verwittigd opgeslagen",
+        successDescription:
+          "De boete Forfait verwittigd is bewaard. Standaard wedstrijdkosten zijn verwijderd en de scheidsrechter-toewijzing is opgeheven.",
+      });
+      return;
+    }
+
+    flushSync(() => {
+      setPenalties((prev) => {
+        const valid = prev.filter((p) => p.teamId && p.costSettingId);
+        return [...valid, draft];
+      });
+    });
+    toast({
+      title: "Forfait toegevoegd",
+      description: "Kies het team dat forfait kreeg en klik op Boetes opslaan.",
+    });
+  }, [
+    forfaitVerwittigdPenaltyCost,
+    hasForfaitPenalty,
+    savedPenalties,
+    parseFormOrMatchScore,
+    homeScore,
+    awayScore,
+    match.homeScore,
+    match.awayScore,
+    match.homeTeamId,
+    match.awayTeamId,
+    persistPenaltyItems,
+    toast,
+  ]);
 
   const updatePenalty = useCallback((index: number, field: keyof PenaltyItem, value: any) => {
     setPenalties(prev => {
@@ -336,108 +599,87 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     });
   }, []);
 
-  const savePenalties = useCallback(async () => {
-    // Filter only valid penalties (with both teamId and costSettingId)
-    const validPenalties = penalties.filter(p => p.costSettingId && p.teamId);
-    
+  const savePenalties = useCallback(async (): Promise<boolean> => {
+    const validPenalties = penalties.filter((p) => p.costSettingId && p.teamId);
+
     if (validPenalties.length === 0) {
       toast({
         title: "Geen geldige boetes",
         description: "Vul ten minste één boete volledig in (team en type) voordat je opslaat.",
         variant: "destructive",
       });
-      return;
+      return false;
     }
 
-    setIsLoadingPenalties(true);
-    try {
-      const currentDate = getCurrentDate();
-
-      for (const penalty of validPenalties) {
-        const costSetting = availablePenalties.find(cs => cs.id === penalty.costSettingId);
-        if (costSetting) {
-          const result = await financialService.addTransaction({
-            team_id: penalty.teamId,
-            amount: costSetting.amount,
-            description: null,
-            transaction_type: 'penalty',
-            transaction_date: currentDate,
-            match_id: match.matchId,
-            penalty_type_id: null,
-            cost_setting_id: penalty.costSettingId
-          });
-          
-          // Check for errors from the service
-          if (!result.success) {
-            throw new Error(result.message || 'Kon boete niet opslaan');
-          }
-        }
-      }
-
-      toast({
-        title: "Boetes opgeslagen",
-        description: `${validPenalties.length} boete(s) succesvol toegevoegd aan de teamtransacties.`,
-      });
-
-      // Remove only the saved penalties, keep any invalid ones
-      setPenalties(prev => prev.filter(p => !p.costSettingId || !p.teamId));
-      await loadExistingPenalties();
-      if (isAdmin) {
-        await loadMatchCosts();
-      }
-      invalidateFinancialQueries();
-    } catch (error: any) {
-      console.error('Error saving penalties:', error);
-      toast({
-        title: "Fout bij opslaan boetes",
-        description: error.message || "Er is een fout opgetreden bij het opslaan van de boetes.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingPenalties(false);
-    }
-  }, [penalties, availablePenalties, match.matchId, toast, loadExistingPenalties, isAdmin, loadMatchCosts, queryClient]);
+    return persistPenaltyItems(validPenalties);
+  }, [penalties, persistPenaltyItems, toast]);
 
   const removeSavedPenalty = useCallback(async (index: number) => {
     const penalty = savedPenalties[index];
     if (!penalty) return;
 
-    console.log('🗑️ [removeSavedPenalty] Starting delete:', { index, penaltyId: penalty.id, penalty });
+    const wasForfaitPenalty = costNameImpliesMatchCostSuppression(penalty.penaltyName);
 
     // Never perform local-only delete for saved penalties: force DB-backed ids.
     if (penalty.id <= 0) {
-      console.log('🗑️ [removeSavedPenalty] Invalid ID, reloading from DB');
-      await loadExistingPenalties();
+      await refreshFinancialState();
       return;
     }
     
     // Delete from database and refetch
     setIsDeletingPenalty(penalty.id);
     try {
-      console.log('🗑️ [removeSavedPenalty] Calling deleteTransaction for id:', penalty.id);
       const result = await costSettingsService.deleteTransaction(penalty.id);
-      console.log('🗑️ [removeSavedPenalty] deleteTransaction result:', result);
       
       if (!result.success) {
         toast({ title: "Fout", description: result.message, variant: "destructive" });
-        await loadExistingPenalties();
+        await refreshFinancialState();
         return;
       }
       toast({ title: "Boete verwijderd", description: "Boete succesvol verwijderd uit de database." });
-      invalidateFinancialQueries();
-      
-      console.log('🗑️ [removeSavedPenalty] Reloading penalties from DB...');
-      await loadExistingPenalties();
-      console.log('🗑️ [removeSavedPenalty] Penalties after reload:', savedPenalties);
-      if (isAdmin) await loadMatchCosts();
+      await refreshFinancialState();
+
+      if (wasForfaitPenalty && match.isCompleted && isAdmin) {
+        const stillForfait = await matchHasForfaitPenalty(match.matchId);
+        const stillSkip = (await supabase
+          .from("matches")
+          .select("skip_auto_match_costs")
+          .eq("match_id", match.matchId)
+          .maybeSingle()).data?.skip_auto_match_costs;
+        if (!stillForfait && !stillSkip) {
+          const syncRes = await invokeSyncMatchCostsForMatch({
+            matchId: match.matchId,
+            matchDateISO: localDateTimeToISO(match.date, match.time),
+            homeTeamId: match.homeTeamId,
+            awayTeamId: match.awayTeamId,
+            isSubmitted: true,
+            referee: selectedReferee ?? null,
+          });
+          if (syncRes.success) {
+            await refreshFinancialState();
+          }
+        }
+      }
     } catch (error) {
-      console.error('🗑️ [removeSavedPenalty] Error:', error);
+      console.error('Error removing saved penalty:', error);
       toast({ title: "Fout", description: "Kon boete niet verwijderen.", variant: "destructive" });
-      await loadExistingPenalties();
+      await refreshFinancialState();
     } finally {
       setIsDeletingPenalty(null);
     }
-  }, [savedPenalties, toast, loadExistingPenalties, queryClient, isAdmin, loadMatchCosts]);
+  }, [
+    savedPenalties,
+    toast,
+    refreshFinancialState,
+    match.matchId,
+    match.isCompleted,
+    match.date,
+    match.time,
+    match.homeTeamId,
+    match.awayTeamId,
+    isAdmin,
+    selectedReferee,
+  ]);
 
   const CARD_OPTIONS = [
     { value: "yellow", label: "Geel" },
@@ -829,6 +1071,12 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const handleSubmit = useCallback(async () => {
     const parsedHomeScore = homeScore !== "" ? parseInt(homeScore) : null;
     const parsedAwayScore = awayScore !== "" ? parseInt(awayScore) : null;
+
+    const pendingValidPenalties = penalties.filter((p) => p.costSettingId && p.teamId);
+    if (pendingValidPenalties.length > 0) {
+      const penaltiesSaved = await savePenalties();
+      if (!penaltiesSaved) return;
+    }
     
     if (isCupMatch && parsedHomeScore !== null && parsedAwayScore !== null && parsedHomeScore === parsedAwayScore) {
       const updatedMatch = createUpdatedMatch(parsedHomeScore, parsedAwayScore);
@@ -838,27 +1086,14 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     }
     
     setIsSubmitting(true);
+    let shouldCloseModal = false;
     try {
-      console.log('💾 [WedstrijdformulierModal] handleSubmit - Before createUpdatedMatch:', {
-        refereeNotes: refereeNotes,
-        refereeNotesType: typeof refereeNotes,
-        refereeNotesLength: refereeNotes?.length || 0
-      });
-      
       const updatedMatch = createUpdatedMatch(parsedHomeScore, parsedAwayScore);
-      
-      console.log('💾 [WedstrijdformulierModal] handleSubmit - After createUpdatedMatch:', {
-        matchId: updatedMatch.matchId,
-        refereeNotes: updatedMatch.refereeNotes,
-        refereeNotesType: typeof updatedMatch.refereeNotes,
-        refereeNotesLength: updatedMatch.refereeNotes?.length || 0
-      });
       
       // Check if admin is submitting after match date → show styled penalty modal
       if (isAdmin && updatedMatch.date && updatedMatch.time) {
         const matchDateTime = new Date(`${updatedMatch.date}T${updatedMatch.time}`);
         if (new Date() > matchDateTime) {
-          // Detect which teams had player changes
           const getPlayerIds = (players: any[]) => (players || []).filter((p: any) => p?.playerId != null).map((p: any) => p.playerId).sort((a: number, b: number) => a - b);
           const origHome = getPlayerIds(match.homePlayers);
           const origAway = getPlayerIds(match.awayPlayers);
@@ -878,28 +1113,24 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
             setLatePenaltyTeamIds(teamIds);
             setPendingLatePenaltyMatch(updatedMatch);
             setShowLatePenaltyModal(true);
-            setIsSubmitting(false);
             return;
           }
         }
       }
       
       const result = await submitMatchForm(updatedMatch, isAdmin, userRole, matchFormSettings, []);
-      
-      console.log('💾 [WedstrijdformulierModal] handleSubmit - After submitMatchForm:', {
-        success: result.success,
-        error: result.error
-      });
-      
       if (result.success) {
-        handleComplete();
+        shouldCloseModal = true;
       }
     } catch (error) {
       console.error('❌ [WedstrijdformulierModal] Error submitting match form:', error);
     } finally {
       setIsSubmitting(false);
+      if (shouldCloseModal) {
+        handleComplete();
+      }
     }
-  }, [homeScore, awayScore, isCupMatch, createUpdatedMatch, submitMatchForm, isAdmin, userRole, handleComplete, setIsSubmitting, match, matchFormSettings]);
+  }, [homeScore, awayScore, penalties, savePenalties, isCupMatch, createUpdatedMatch, submitMatchForm, isAdmin, userRole, handleComplete, setIsSubmitting, match, matchFormSettings]);
 
   const handleLatePenaltySubmit = useCallback(async (applyPenalty: boolean) => {
     if (!pendingLatePenaltyMatch) return;
@@ -1701,23 +1932,41 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
               {/* === BOETES SUBSECTIE === */}
               <div className="space-y-3">
                 <h4 className="text-sm font-bold text-foreground border-b border-border pb-1">Boetes</h4>
-                
-                {/* Empty State */}
+
+                {canEdit && (
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button
+                      onClick={addPenalty}
+                      disabled={isAddPenaltyButtonDisabled}
+                      className="btn btn--primary h-8 px-3 w-full sm:flex-1"
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1.5" />
+                      Boete toevoegen
+                    </Button>
+                    {forfaitVerwittigdPenaltyCost ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addForfaitPenaltyPreset}
+                        disabled={isAddPenaltyButtonDisabled}
+                        className="h-8 px-3 w-full sm:flex-1 border-[var(--color-400)]"
+                      >
+                        <AlertTriangle className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                        Forfait verwittigd (€{Number(forfaitVerwittigdPenaltyCost.amount).toFixed(0)})
+                      </Button>
+                    ) : null}
+                  </div>
+                )}
+
                 {penalties.length === 0 && savedPenalties.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-6 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
+                  <div className="flex flex-col items-center justify-center py-4 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted mb-2.5">
                       <AlertTriangle className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <p className="text-sm font-medium text-muted-foreground mb-1">Nog geen boetes toegevoegd</p>
-                    <p className="text-xs text-muted-foreground/70 text-center max-w-xs mb-3">
-                      Klik op de knop hieronder om een boete toe te voegen
+                    <p className="text-xs text-muted-foreground/70 text-center max-w-xs">
+                      Gebruik bovenstaande knoppen. &quot;Forfait verwittigd&quot; slaat direct op bij een bekende stand (bv. 0–10); anders kies je het team en klik je op Boetes opslaan.
                     </p>
-                    {canEdit && (
-                      <Button onClick={addPenalty} className="btn btn--primary h-8 px-3 text-sm">
-                        <Plus className="h-3.5 w-3.5 mr-1.5" />
-                        Eerste boete toevoegen
-                      </Button>
-                    )}
                   </div>
                 )}
 
@@ -1807,7 +2056,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                                     <SelectValue placeholder={!penalty.teamId ? "Eerst team kiezen" : "Selecteer boete type"} />
                                   </SelectTrigger>
                                   <SelectContent className="dropdown-content-login-style z-50">
-                                    {availablePenalties.map((costSetting) => (
+                                    {sortedPenaltyOptions.map((costSetting) => (
                                       <SelectItem
                                         key={costSetting.id}
                                         value={costSetting.id.toString()}
@@ -1825,26 +2074,11 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       })}
                     </div>
 
-                    {/* Action buttons */}
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 pt-1.5 border-t border-border">
-                      {penalties.every(p => p.teamId && p.costSettingId) && (
-                        <Button 
-                          onClick={addPenalty} 
-                          variant="outline" 
-                          size="sm"
-                          className="btn btn--secondary h-8 px-3 w-full sm:w-auto"
-                          disabled={!canEdit || isAddPenaltyButtonDisabled}
-                        >
-                          <Plus className="h-3.5 w-3.5 mr-1.5" />
-                          Nog een boete
-                        </Button>
-                      )}
+                    {/* Save draft penalties */}
+                    <div className="flex justify-end pt-1.5 border-t border-border">
                       <Button 
                         onClick={savePenalties} 
-                        className={cn(
-                          "btn btn--primary h-8 px-4",
-                          penalties.every(p => p.teamId && p.costSettingId) ? "w-full sm:w-auto" : "w-full"
-                        )}
+                        className="btn btn--primary h-8 px-4 w-full sm:w-auto"
                         disabled={isSavePenaltyButtonDisabled || isLoadingPenalties}
                       >
                         {isLoadingPenalties ? (
@@ -1860,16 +2094,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         )}
                       </Button>
                     </div>
-                  </div>
-                )}
-
-                {/* Add button when there are saved penalties but no new penalties */}
-                {penalties.length === 0 && savedPenalties.length > 0 && canEdit && (
-                  <div className="pt-1.5">
-                    <Button onClick={addPenalty} disabled={isAddPenaltyButtonDisabled} className="btn btn--secondary h-8 px-3 w-full">
-                      <Plus className="h-3.5 w-3.5 mr-1.5" />
-                      Boete toevoegen
-                    </Button>
                   </div>
                 )}
 
@@ -1930,6 +2154,44 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
               {isAdmin && (
                 <div className="space-y-3">
                   <h4 className="text-sm font-bold text-foreground border-b border-border pb-1">Wedstrijdkosten</h4>
+
+                  {hasForfaitPenalty && (
+                    <div className="rounded-lg border border-blue-200 bg-blue-50/80 px-3 py-2.5 text-sm text-blue-950">
+                      <p>
+                        Forfait actief: standaard wedstrijdkosten (veld/scheids/admin) zijn niet van toepassing voor deze wedstrijd.
+                        Boetes beheer je in het blok hierboven.
+                      </p>
+                    </div>
+                  )}
+
+                  {skipAutoMatchCosts && !hasForfaitPenalty && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2.5 text-sm text-amber-950">
+                      <p className="mb-2">
+                        Je hebt wedstrijdkosten handmatig verwijderd. Automatisch aanvullen bij opslaan staat{" "}
+                        <strong>uit</strong> tot je hieronder opnieuw standaardkosten toepast.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 border-amber-300 bg-white hover:bg-amber-50"
+                        disabled={restoringAutoMatchCosts || !match.isCompleted}
+                        onClick={handleRestoreAutoMatchCosts}
+                      >
+                        {restoringAutoMatchCosts ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                            Bezig…
+                          </>
+                        ) : (
+                          "Standaard wedstrijdkosten opnieuw toepassen"
+                        )}
+                      </Button>
+                      {!match.isCompleted ? (
+                        <p className="text-xs text-amber-900/80 mt-1.5">Alleen mogelijk zodra de wedstrijd ingediend is.</p>
+                      ) : null}
+                    </div>
+                  )}
                   
                   {isLoadingMatchCosts ? (
                     <div className="flex items-center justify-center py-4">
@@ -1939,7 +2201,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                   ) : matchCosts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-4 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
                       <p className="text-sm font-medium text-muted-foreground mb-1">Geen kosten voor deze wedstrijd</p>
-                      <p className="text-xs text-muted-foreground/70 text-center">Voeg een kost toe via het formulier hieronder</p>
+                      <p className="text-xs text-muted-foreground/70 text-center">Standaardkosten worden automatisch aangemaakt bij indiening.</p>
                     </div>
                   ) : (
                     <div className="space-y-2.5">
@@ -2040,67 +2302,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                     </div>
                   )}
 
-                  {/* Add new cost */}
-                  <div className="pt-2 border-t border-border space-y-2">
-                    <span className="text-sm font-semibold text-foreground">Kost toevoegen</span>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                      <Select
-                        value={newCostTeamId ? newCostTeamId.toString() : undefined}
-                        onValueChange={(v) => setNewCostTeamId(parseInt(v))}
-                      >
-                        <SelectTrigger className="dropdown-login-style h-8 text-sm">
-                          <SelectValue placeholder="Team" />
-                        </SelectTrigger>
-                        <SelectContent className="dropdown-content-login-style z-50">
-                          {penaltyTeamOptions.map((team) => (
-                            <SelectItem key={team.id} value={team.id.toString()} className="dropdown-item-login-style">
-                              {team.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={newCostSettingId ? newCostSettingId.toString() : undefined}
-                        onValueChange={(v) => {
-                          const id = parseInt(v);
-                          setNewCostSettingId(id);
-                          const cs = allCostSettings.find(c => c.id === id);
-                          if (cs && !newCostAmount) setNewCostAmount(cs.amount?.toString() || "0");
-                        }}
-                      >
-                        <SelectTrigger className="dropdown-login-style h-8 text-sm">
-                          <SelectValue placeholder="Kostentype" />
-                        </SelectTrigger>
-                        <SelectContent className="dropdown-content-login-style z-50">
-                          {allCostSettings.map((cs) => (
-                            <SelectItem key={cs.id} value={cs.id.toString()} className="dropdown-item-login-style">
-                              {cs.name} - €{cs.amount}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <div className="flex gap-1">
-                        <div className="flex items-center gap-1 flex-1">
-                          <span className="text-sm">€</span>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={newCostAmount}
-                            onChange={(e) => setNewCostAmount(e.target.value)}
-                            className="h-8 text-sm input-login-style"
-                            placeholder="Bedrag"
-                          />
-                        </div>
-                        <Button
-                          onClick={handleAddMatchCost}
-                          disabled={!newCostTeamId || !newCostSettingId || !newCostAmount}
-                          className="btn btn--primary h-8 px-3"
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>

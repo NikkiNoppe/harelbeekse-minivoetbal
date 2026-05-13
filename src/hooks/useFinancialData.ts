@@ -204,11 +204,14 @@ export const useFinancialData = () => {
       .filter(t => t.transaction_type === 'deposit')
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
-    // Veldkosten: alle match_cost transacties met 'veld' in de naam
+    // Veldkosten: match_cost met 'veld' of 'field' in de naam (zelfde als sync-match-costs)
     const fieldCosts = teamTransactions
-      .filter(t => t.transaction_type === 'match_cost' && 
-        (t.cost_settings?.name?.toLowerCase().includes('veld') || 
-         t.description?.toLowerCase().includes('veld')))
+      .filter(t => {
+        if (t.transaction_type !== 'match_cost') return false;
+        const n = (t.cost_settings?.name || '').toLowerCase();
+        const d = (t.description || '').toLowerCase();
+        return n.includes('veld') || n.includes('field') || d.includes('veld') || d.includes('field');
+      })
       .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
     
     // Scheidsrechterkosten: alle match_cost transacties met 'scheidsrechter' in de naam

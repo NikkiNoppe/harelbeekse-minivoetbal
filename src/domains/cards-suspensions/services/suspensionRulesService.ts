@@ -14,7 +14,7 @@ export interface YellowCardRule {
 export interface RedCardRules {
   default_suspension_matches: number;
   admin_can_modify: boolean;
-  max_suspension_matches: number;
+  max_suspension_matches?: number;
 }
 
 export interface ResetRules {
@@ -38,8 +38,7 @@ const DEFAULT_SUSPENSION_RULES: SuspensionRules = {
   ],
   red_card_rules: {
     default_suspension_matches: 1,
-    admin_can_modify: true,
-    max_suspension_matches: 5
+    admin_can_modify: true
   },
   reset_rules: {
     reset_at_season_end: true
@@ -125,19 +124,28 @@ class SuspensionRulesService {
     }
   }
 
-  // Calculate suspension matches for yellow cards - exact match on card_count
+  // Calculate suspension matches for yellow cards using the highest threshold reached.
   calculateYellowCardSuspension(yellowCards: number): number {
     const rules = this.cachedRules?.yellow_card_rules || DEFAULT_SUSPENSION_RULES.yellow_card_rules;
     return this.findSuspensionMatches(yellowCards, rules);
   }
 
+  findApplicableYellowCardRule(yellowCards: number, rules?: YellowCardRule[]): YellowCardRule | null {
+    const yellowCardRules = rules || this.cachedRules?.yellow_card_rules || DEFAULT_SUSPENSION_RULES.yellow_card_rules;
+    const sortedRules = [...yellowCardRules].sort((a, b) => {
+      const cardCountA = a.card_count ?? a.min_cards ?? 0;
+      const cardCountB = b.card_count ?? b.min_cards ?? 0;
+      return cardCountB - cardCountA;
+    });
+
+    return sortedRules.find((rule) => {
+      const cardCount = rule.card_count ?? rule.min_cards ?? 0;
+      return yellowCards >= cardCount;
+    }) || null;
+  }
+
   private findSuspensionMatches(cards: number, rules: YellowCardRule[]): number {
-    for (const rule of rules) {
-      if (cards === rule.card_count) {
-        return rule.suspension_matches;
-      }
-    }
-    return 0;
+    return this.findApplicableYellowCardRule(cards, rules)?.suspension_matches || 0;
   }
 
   clearCache(): void {

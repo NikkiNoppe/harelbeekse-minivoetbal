@@ -10,6 +10,11 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { bekerService } from "@/services/match/cupService";
+import {
+  matchHasForfaitPenalty,
+  matchSkipAutoMatchCosts,
+  shouldSyncMatchCostsAfterMatchUpdate,
+} from "@/services/financial/matchCostService";
 
 // Correlation ID for tracing related logs
 const generateCorrelationId = () => `se-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -245,6 +250,14 @@ const syncMatchCosts = async (
   matchInfo: MatchInfo,
   updateData: UpdateData
 ): Promise<void> => {
+  if (await matchSkipAutoMatchCosts(matchId)) {
+    logSideEffect(ctx, 'match_costs', 'info', 'Skipped: handmatig gewiste wedstrijdkosten (skip_auto_match_costs)');
+    return;
+  }
+  if (await matchHasForfaitPenalty(matchId)) {
+    logSideEffect(ctx, 'match_costs', 'info', 'Skipped: forfait penalty on match (no match_cost sync)');
+    return;
+  }
   const { data, error } = await supabase.functions.invoke('sync-match-costs', {
     body: {
       matchId,
@@ -476,17 +489,22 @@ export const scheduleBackgroundSideEffects = (
       results.push(result);
     }
 
-    // 4. Sync match costs — only on actual submission transition (false→true)
-    // Skipping this when isCompleted was already true prevents re-creating
-    // costs that the admin just deleted.
-    if (updateData.isCompleted && matchInfo && updateData._submissionTransition) {
-      const result = await executeWithRetry(
-        ctx,
-        'match_costs',
-        () => syncMatchCosts(ctx, matchId, matchInfo, updateData),
-        1500
+    // 4. Sync match costs — on submission transition (false→true), or when veldkosten ontbreken (< 2).
+    //    Nooit bij forfait/suppressie-boetes (centrale check in shouldSyncMatchCostsAfterMatchUpdate).
+    if (updateData.isCompleted && matchInfo) {
+      const shouldSyncMatchCosts = await shouldSyncMatchCostsAfterMatchUpdate(
+        matchId,
+        !!updateData._submissionTransition
       );
-      results.push(result);
+      if (shouldSyncMatchCosts) {
+        const result = await executeWithRetry(
+          ctx,
+          'match_costs',
+          () => syncMatchCosts(ctx, matchId, matchInfo, updateData),
+          1500
+        );
+        results.push(result);
+      }
     }
 
     // 5. Form completion penalties — only on first submission transition (false→true)

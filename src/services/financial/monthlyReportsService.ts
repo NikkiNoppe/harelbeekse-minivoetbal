@@ -1,10 +1,39 @@
 import { supabase } from "@/integrations/supabase/client";
 
+/** Eén geboekte veldlijn (per ploeg); wedstrijdinfo uit join. */
+export interface FieldCostLineDetail {
+  matchId: number;
+  uniqueNumber: string;
+  matchDate: string | null;
+  homeTeam: string;
+  awayTeam: string;
+  billedTeam: string;
+  amount: number;
+}
+
 export interface MonthlyFieldCosts {
   month: string;
   season: string;
   totalCost: number;
+  /** Aantal wedstrijden met minstens één geboekte veldtransactie (distinct match_id) */
   matchCount: number;
+  /** Totaal aantal veld-boekingen (meestal 2× matchCount) */
+  bookingLines?: number;
+  /** Gedetailleerde boekingsregels (compact voor modal) */
+  lines?: FieldCostLineDetail[];
+}
+
+/** Eén boete-regel in team_costs */
+export interface FineLineDetail {
+  amount: number;
+  teamId: number | null;
+  teamName: string;
+  matchId: number | null;
+  uniqueNumber: string;
+  matchDate: string | null;
+  homeTeam: string;
+  awayTeam: string;
+  costLabel: string;
 }
 
 export interface MonthlyRefereeCosts {
@@ -29,6 +58,7 @@ export interface MonthlyFines {
   season: string;
   totalFines: number;
   fineCount: number;
+  lines?: FineLineDetail[];
 }
 
 export interface MonthlyMatchStats {
@@ -72,16 +102,94 @@ const getSeasonDates = (seasonData: SeasonData) => {
   return { startDate, endDate };
 };
 
-const getSeasonFromDate = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = date.getMonth(); // 0-indexed
-  // If month is July (6) or later, it's the start of a new season
-  if (month >= 6) {
-    return `${year}/${year + 1}`;
-  } else {
-    return `${year - 1}/${year}`;
-  }
+/** YYYY-MM uit DB-datum (YYYY-MM-DD of ISO) — voorkomt dat locale timezone de maand verschuift. */
+function calendarMonthKeyFromDbDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const s = String(value);
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 7);
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function seasonFromCalendarMonthKey(monthKey: string): string {
+  const [yStr, mStr] = monthKey.split('-');
+  const y = parseInt(yStr, 10);
+  const m = parseInt(mStr, 10);
+  if (Number.isNaN(y) || Number.isNaN(m)) return '';
+  if (m >= 7) return `${y}/${y + 1}`;
+  return `${y - 1}/${y}`;
+}
+
+function nlMonthYearFromKey(monthKey: string): string {
+  const [yStr, mStr] = monthKey.split('-');
+  const y = parseInt(yStr, 10);
+  const m = parseInt(mStr, 10);
+  if (Number.isNaN(y) || Number.isNaN(m)) return monthKey;
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
+}
+
+/** Zelfde logica als sync-match-costs edge function */
+function isFieldCostName(name: string | null | undefined): boolean {
+  const n = (name || '').toLowerCase();
+  return n.includes('veld') || n.includes('field');
+}
+
+function isAdminCostName(name: string | null | undefined): boolean {
+  const n = (name || '').toLowerCase();
+  return n.includes('administratie') || n.includes('admin');
+}
+
+type FieldAdminBucket = {
+  month: string;
+  season: string;
+  totalCost: number;
+  matchIds: Set<number>;
+  lineCount: number;
+  lines?: FieldCostLineDetail[];
 };
+
+function finalizeFieldAdminBucket(b: FieldAdminBucket): MonthlyFieldCosts {
+  const matchCount =
+    b.matchIds.size > 0
+      ? b.matchIds.size
+      : b.lineCount > 0
+        ? Math.max(1, Math.ceil(b.lineCount / 2))
+        : 0;
+  const lines = [...(b.lines || [])].sort((a, b) => {
+    const da = a.matchDate || "";
+    const db = b.matchDate || "";
+    if (da !== db) return da.localeCompare(db);
+    return a.uniqueNumber.localeCompare(b.uniqueNumber, "nl");
+  });
+  return {
+    month: b.month,
+    season: b.season,
+    totalCost: b.totalCost,
+    matchCount,
+    bookingLines: b.lineCount,
+    lines
+  };
+}
+
+function rowLabelFromMatchJoin(m: any): {
+  uniqueNumber: string;
+  matchDate: string | null;
+  homeTeam: string;
+  awayTeam: string;
+} {
+  if (!m) {
+    return { uniqueNumber: "—", matchDate: null, homeTeam: "—", awayTeam: "—" };
+  }
+  const th = m.teams_home as { team_name?: string } | undefined;
+  const ta = m.teams_away as { team_name?: string } | undefined;
+  return {
+    uniqueNumber: m.unique_number || "—",
+    matchDate: m.match_date ?? null,
+    homeTeam: th?.team_name || "—",
+    awayTeam: ta?.team_name || "—"
+  };
+}
 
 export const monthlyReportsService = {
   // Get available seasons based on actual match data (not just transactions)
@@ -162,7 +270,13 @@ export const monthlyReportsService = {
           .select(`
             *,
             costs(name, category, amount),
-            matches(unique_number, match_date, referee)
+            teams!team_costs_team_id_fkey(team_name),
+            matches(
+              unique_number,
+              match_date,
+              teams_home:teams!home_team_id(team_name),
+              teams_away:teams!away_team_id(team_name)
+            )
           `)
           .gte('transaction_date', startDateStr)
           .lte('transaction_date', endDateStr)
@@ -217,87 +331,131 @@ export const monthlyReportsService = {
       const refereeCostPerMatch = refereeCostSetting?.amount || 0;
 
       // Group data by month
-      const fieldCostsByMonth: Record<string, MonthlyFieldCosts> = {};
-      const adminCostsByMonth: Record<string, MonthlyFieldCosts> = {};
+      const fieldCostsByMonth: Record<string, FieldAdminBucket> = {};
+      const adminCostsByMonth: Record<string, FieldAdminBucket> = {};
       const finesByMonth: Record<string, MonthlyFines> = {};
       const matchStatsByMonth: Record<string, MonthlyMatchStats> = {};
 
       // Process transactions for field costs and fines
       transactions?.forEach(transaction => {
-        const date = new Date(transaction.transaction_date);
-        const season = getSeasonFromDate(date);
-        const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        const monthName = (month && year) ? 
-          date.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' }) :
-          `Seizoen ${season}`;
+        const txMonthKey = calendarMonthKeyFromDbDate(transaction.transaction_date);
+        if (!txMonthKey) return;
+
+        const key = month && year ? txMonthKey : 'season-total';
+        const monthName =
+          month && year ? nlMonthYearFromKey(txMonthKey) : `Seizoen ${seasonData.season}`;
+        const seasonLabel =
+          month && year ? seasonFromCalendarMonthKey(txMonthKey) : seasonData.season;
 
         const category = transaction.costs?.category;
-        const costName = transaction.costs?.name?.toLowerCase() || '';
+        const costNameRaw = transaction.costs?.name;
 
-        // Field costs
-        if (category === 'match_cost' && costName.includes('veld')) {
-          const key = (month && year) ? monthKey : 'season-total';
+        // Field costs (zelfde detectie als sync-match-costs: veld / field)
+        if (category === 'match_cost' && isFieldCostName(costNameRaw)) {
           if (!fieldCostsByMonth[key]) {
             fieldCostsByMonth[key] = {
               month: monthName,
-              season,
+              season: seasonLabel,
               totalCost: 0,
-              matchCount: 0
+              matchIds: new Set(),
+              lineCount: 0,
+              lines: [],
             };
           }
           fieldCostsByMonth[key].totalCost += Number(transaction.amount || 0);
-          fieldCostsByMonth[key].matchCount++;
+          fieldCostsByMonth[key].lineCount++;
+          const mid = transaction.match_id;
+          if (typeof mid === 'number' && mid > 0) {
+            fieldCostsByMonth[key].matchIds.add(mid);
+          }
+          const m = transaction.matches as { unique_number?: string; match_date?: string; teams_home?: { team_name?: string }; teams_away?: { team_name?: string } } | null;
+          const meta = rowLabelFromMatchJoin(m);
+          const teamRow = transaction.teams as { team_name?: string } | null | undefined;
+          const billedTeam =
+            teamRow?.team_name ||
+            (typeof transaction.team_id === "number" ? `Team ${transaction.team_id}` : "—");
+          fieldCostsByMonth[key].lines!.push({
+            matchId: typeof mid === "number" && mid > 0 ? mid : 0,
+            uniqueNumber: meta.uniqueNumber,
+            matchDate: meta.matchDate,
+            homeTeam: meta.homeTeam,
+            awayTeam: meta.awayTeam,
+            billedTeam,
+            amount: Number(transaction.amount || 0),
+          });
         }
 
         // Admin costs
-        if (category === 'match_cost' && costName.includes('administratie')) {
-          const key = (month && year) ? monthKey : 'season-total';
+        if (category === 'match_cost' && isAdminCostName(costNameRaw)) {
           if (!adminCostsByMonth[key]) {
             adminCostsByMonth[key] = {
               month: monthName,
-              season,
+              season: seasonLabel,
               totalCost: 0,
-              matchCount: 0
+              matchIds: new Set(),
+              lineCount: 0,
+              lines: [],
             };
           }
           adminCostsByMonth[key].totalCost += Number(transaction.amount || 0);
-          adminCostsByMonth[key].matchCount++;
+          adminCostsByMonth[key].lineCount++;
+          const mid = transaction.match_id;
+          if (typeof mid === 'number' && mid > 0) {
+            adminCostsByMonth[key].matchIds.add(mid);
+          }
         }
 
         // Penalties/Fines
         if (category === 'penalty') {
-          const key = (month && year) ? monthKey : 'season-total';
           if (!finesByMonth[key]) {
             finesByMonth[key] = {
               month: monthName,
-              season,
+              season: seasonLabel,
               totalFines: 0,
-              fineCount: 0
+              fineCount: 0,
+              lines: [],
             };
           }
           finesByMonth[key].totalFines += Number(transaction.amount || 0);
           finesByMonth[key].fineCount++;
+          const m = transaction.matches as { unique_number?: string; match_date?: string; teams_home?: { team_name?: string }; teams_away?: { team_name?: string } } | null;
+          const meta = rowLabelFromMatchJoin(m);
+          const teamRow = transaction.teams as { team_name?: string } | null | undefined;
+          const billedTeam =
+            teamRow?.team_name ||
+            (typeof transaction.team_id === "number" ? `Team ${transaction.team_id}` : "—");
+          finesByMonth[key].lines!.push({
+            amount: Number(transaction.amount || 0),
+            teamId: typeof transaction.team_id === "number" ? transaction.team_id : null,
+            teamName: billedTeam,
+            matchId: typeof transaction.match_id === "number" ? transaction.match_id : null,
+            uniqueNumber: meta.uniqueNumber,
+            matchDate: meta.matchDate,
+            homeTeam: meta.homeTeam,
+            awayTeam: meta.awayTeam,
+            costLabel: costNameRaw || "Boete",
+          });
         }
       });
 
-      // Build referee costs DIRECTLY from matches table
-      // This ensures the data is always current and accurate
+      // Build referee costs DIRECTLY from matches table (competitie + beker + play-offs)
       const refereeCostsByReferee: Record<string, MonthlyRefereeCosts> = {};
 
       allMatches?.forEach(match => {
-        const date = new Date(match.match_date);
-        const season = getSeasonFromDate(date);
-        const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        const monthName = (month && year) ? 
-          date.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' }) :
-          `Seizoen ${season}`;
+        const mMonthKey = calendarMonthKeyFromDbDate(match.match_date);
+        if (!mMonthKey) return;
+
+        const seasonLabel =
+          month && year ? seasonFromCalendarMonthKey(mMonthKey) : seasonData.season;
+        const monthName =
+          month && year ? nlMonthYearFromKey(mMonthKey) : `Seizoen ${seasonData.season}`;
 
         // Track match stats
-        const statsKey = (month && year) ? monthKey : 'season-total';
+        const statsKey = month && year ? mMonthKey : 'season-total';
         if (!matchStatsByMonth[statsKey]) {
           matchStatsByMonth[statsKey] = {
             month: monthName,
-            season,
+            season: seasonLabel,
             totalMatches: 0
           };
         }
@@ -305,20 +463,19 @@ export const monthlyReportsService = {
 
         // Track referee data directly from matches
         const referee = match.referee || 'Niet toegewezen';
-        const refereeKey = (month && year) ? `${monthKey}-${referee}` : `season-${referee}`;
-        
+        const refereeKey = month && year ? `${mMonthKey}-${referee}` : `season-${referee}`;
+
         if (!refereeCostsByReferee[refereeKey]) {
           refereeCostsByReferee[refereeKey] = {
             month: monthName,
-            season,
+            season: seasonLabel,
             referee,
             totalCost: 0,
             matchCount: 0,
             matches: []
           };
         }
-        
-        // Add match info
+
         // Each team pays 7€, so per match it's 14€ total (7€ from home team + 7€ from away team)
         refereeCostsByReferee[refereeKey].matchCount++;
         refereeCostsByReferee[refereeKey].totalCost += refereeCostPerMatch * 2;
@@ -331,10 +488,22 @@ export const monthlyReportsService = {
         });
       });
 
-      const fieldCosts = Object.values(fieldCostsByMonth);
-      const adminCosts = Object.values(adminCostsByMonth);
+      const fieldCosts = Object.values(fieldCostsByMonth).map(finalizeFieldAdminBucket);
+      const adminCosts = Object.values(adminCostsByMonth).map(finalizeFieldAdminBucket);
       const refereeCosts = Object.values(refereeCostsByReferee).sort((a, b) => b.matchCount - a.matchCount);
-      const fines = Object.values(finesByMonth);
+      const fines = Object.values(finesByMonth).map((f) => ({
+        ...f,
+        lines: f.lines
+          ? [...f.lines].sort((a, b) => {
+              const da = a.matchDate || "";
+              const db = b.matchDate || "";
+              if (da !== db) return da.localeCompare(db);
+              const c = a.teamName.localeCompare(b.teamName, "nl");
+              if (c !== 0) return c;
+              return a.costLabel.localeCompare(b.costLabel, "nl");
+            })
+          : [],
+      }));
       const matchStats = Object.values(matchStatsByMonth);
 
       return {

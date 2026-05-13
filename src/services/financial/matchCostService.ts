@@ -1,5 +1,194 @@
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * Zelfde regels als DB public.cost_name_implies_match_cost_suppression.
+ * Boete-typen waarvoor géén standaard wedstrijdkosten (veld/scheids/admin) horen.
+ */
+export function costNameImpliesMatchCostSuppression(name: string | null | undefined): boolean {
+  const n = (name || "").toLowerCase().trim();
+  if (!n) return false;
+  return (
+    n.includes("forfait") ||
+    (n.includes("walk") && n.includes("over")) ||
+    n.includes("vrijstelling") ||
+    n.includes("niet gespeeld") ||
+    n.includes("niet afgewerkt")
+  );
+}
+
+/** Standaard snelknop-boete: «Forfait verwittigd» (€25), niet «tijdens de wedstrijd». */
+export function findForfaitVerwittigdPenaltyCost<
+  T extends { id: number; name?: string | null; amount?: number | string | null },
+>(penalties: T[]): T | undefined {
+  const forfaits = penalties.filter((cs) => costNameImpliesMatchCostSuppression(cs.name));
+  const verwittigd = forfaits.find((cs) => (cs.name || "").toLowerCase().includes("verwittigd"));
+  if (verwittigd) return verwittigd;
+
+  const sortedForfaits = [...forfaits]
+    .filter((cs) => (cs.name || "").toLowerCase().includes("forfait"))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || "", "nl"));
+  return sortedForfaits[1] ?? sortedForfaits[0];
+}
+
+/** Forfait vóór aanvang — geen wedstrijd gespeeld; scheidsrechter hoort niet toegewezen te blijven. */
+export function costNameIsForfaitVerwittigd(name: string | null | undefined): boolean {
+  const n = (name || "").toLowerCase().trim();
+  return n.includes("forfait") && n.includes("verwittigd");
+}
+
+/** Matches DB public.match_has_forfait_penalty (via RPC + fallback). */
+export async function matchHasForfaitPenalty(matchId: number): Promise<boolean> {
+  if (!matchId) return false;
+
+  const { data: rpcData, error: rpcError } = await supabase.rpc("match_has_forfait_penalty", {
+    p_match_id: matchId,
+  });
+  if (!rpcError && typeof rpcData === "boolean") return rpcData;
+
+  const { data: rows, error } = await supabase
+    .from("team_costs")
+    .select("costs!inner(name, category, is_active)")
+    .eq("match_id", matchId)
+    .eq("costs.category", "penalty");
+
+  if (error || !rows?.length) return false;
+
+  return rows.some((row: { costs?: { name?: string; is_active?: boolean | null } }) => {
+    const c = row.costs;
+    if (!c || c.is_active === false) return false;
+    return costNameImpliesMatchCostSuppression(c.name);
+  });
+}
+
+/** True wanneer admin handmatig standaard wedstrijdkosten heeft verwijderd — geen auto sync tot reset. */
+export async function matchSkipAutoMatchCosts(matchId: number): Promise<boolean> {
+  if (!matchId) return false;
+  const { data, error } = await supabase
+    .from("matches")
+    .select("skip_auto_match_costs")
+    .eq("match_id", matchId)
+    .maybeSingle();
+  if (error || !data) return false;
+  return data.skip_auto_match_costs === true;
+}
+
+export async function clearSkipAutoMatchCostsForAdmin(matchId: number): Promise<{ success: boolean; message?: string }> {
+  try {
+    const authDataString = localStorage.getItem("auth_data");
+    let userId: number | null = null;
+    if (authDataString) {
+      try {
+        const authData = JSON.parse(authDataString);
+        userId = authData?.user?.id ?? null;
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!userId) {
+      return { success: false, message: "Niet ingelogd." };
+    }
+    const { data, error } = await supabase.rpc("admin_clear_skip_auto_match_costs", {
+      p_match_id: matchId,
+      p_user_id: userId,
+    });
+    if (error) return { success: false, message: error.message };
+    const result = data as { success?: boolean; error?: string } | null;
+    if (result && result.success === false) {
+      return { success: false, message: result.error || "Reset geweigerd" };
+    }
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e instanceof Error ? e.message : "Onbekende fout" };
+  }
+}
+
+async function needsMatchCostBackfillCore(matchId: number): Promise<boolean> {
+  const fieldCostId = await getActiveFieldMatchCostSettingId();
+  if (!fieldCostId) return false;
+  const { count, error } = await supabase
+    .from("team_costs")
+    .select("id", { count: "exact", head: true })
+    .eq("match_id", matchId)
+    .eq("cost_setting_id", fieldCostId);
+  if (error) return false;
+  return (count ?? 0) < 2;
+}
+
+/**
+ * Eén plek voor “mag sync-match-costs lopen na een wedstrijd-update?”.
+ * Voorkomt terugkerende 6 kosten: bij suppressie-boetes is veldbackfill altijd “tekort” maar sync mag niet.
+ */
+export async function shouldSyncMatchCostsAfterMatchUpdate(
+  matchId: number,
+  submissionTransition: boolean
+): Promise<boolean> {
+  if (!matchId) return false;
+  if (await matchSkipAutoMatchCosts(matchId)) return false;
+  if (await matchHasForfaitPenalty(matchId)) return false;
+  return submissionTransition || (await needsMatchCostBackfillCore(matchId));
+}
+
+async function getActiveFieldMatchCostSettingId(): Promise<number | null> {
+  const { data: costRows, error } = await supabase
+    .from("costs")
+    .select("id, name")
+    .eq("category", "match_cost")
+    .eq("is_active", true);
+  if (error || !costRows?.length) return null;
+  const fieldRow = costRows.find((cs) => {
+    const n = (cs.name || "").toLowerCase();
+    return n.includes("veld") || n.includes("field");
+  });
+  return fieldRow?.id ?? null;
+}
+
+/**
+ * True wanneer er minder dan 2 veldkostenregels zijn voor deze wedstrijd (thuis + uit verwacht).
+ * Gebruikt om ontbrekende sync na te laten lopen zonder bij elke wijziging kosten opnieuw op te bouwen
+ * zolang beide veldlijnen aanwezig zijn.
+ */
+export async function needsMatchCostBackfill(matchId: number): Promise<boolean> {
+  if (!matchId) return false;
+  if (await matchSkipAutoMatchCosts(matchId)) return false;
+  if (await matchHasForfaitPenalty(matchId)) return false;
+  return needsMatchCostBackfillCore(matchId);
+}
+
+export async function invokeSyncMatchCostsForMatch(params: {
+  matchId: number;
+  matchDateISO: string | null;
+  homeTeamId: number;
+  awayTeamId: number;
+  isSubmitted: boolean;
+  referee?: string | null;
+}): Promise<{ success: boolean; message?: string }> {
+  try {
+    if (await matchSkipAutoMatchCosts(params.matchId)) {
+      return { success: true };
+    }
+    if (await matchHasForfaitPenalty(params.matchId)) {
+      return { success: true };
+    }
+    const { data, error } = await supabase.functions.invoke("sync-match-costs", {
+      body: {
+        matchId: params.matchId,
+        matchDateISO: params.matchDateISO,
+        homeTeamId: params.homeTeamId,
+        awayTeamId: params.awayTeamId,
+        isSubmitted: params.isSubmitted,
+        referee: params.referee ?? null,
+      },
+    });
+    if (error) return { success: false, message: error.message };
+    if (data && typeof data === "object" && "success" in data && (data as { success?: boolean }).success === false) {
+      return { success: false, message: (data as { message?: string }).message };
+    }
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e instanceof Error ? e.message : "Unknown error" };
+  }
+}
+
 interface ServiceResponse {
   success: boolean;
   message: string;

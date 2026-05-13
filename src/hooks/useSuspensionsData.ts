@@ -24,8 +24,9 @@ export const useSuspensionsData = () => {
   });
 
   const suspensionsQuery = useQuery({
-    queryKey: ['suspensions'],
-    queryFn: suspensionService.getActiveSuspensions,
+    queryKey: ['suspensions', playerCardsQuery.dataUpdatedAt],
+    queryFn: () => suspensionService.getActiveSuspensions(playerCardsQuery.data || []),
+    enabled: playerCardsQuery.isSuccess,
     staleTime: 2 * 60 * 1000, // 2 minutes - suspensions can be updated
     gcTime: 10 * 60 * 1000, // 10 minutes cache
     retry: 2,

@@ -145,6 +145,7 @@ export type Database = {
           poll_month: string | null
           referee: string | null
           referee_notes: string | null
+          skip_auto_match_costs: boolean
           speeldag: string | null
           unique_number: string | null
         }
@@ -171,6 +172,7 @@ export type Database = {
           poll_month?: string | null
           referee?: string | null
           referee_notes?: string | null
+          skip_auto_match_costs?: boolean
           speeldag?: string | null
           unique_number?: string | null
         }
@@ -197,6 +199,7 @@ export type Database = {
           poll_month?: string | null
           referee?: string | null
           referee_notes?: string | null
+          skip_auto_match_costs?: boolean
           speeldag?: string | null
           unique_number?: string | null
         }

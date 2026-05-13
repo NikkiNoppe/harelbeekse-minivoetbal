@@ -1,13 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useQuery } from "@tanstack/react-query";
-import { monthlyReportsService, type MonthlyRefereeCosts } from "@/services/financial";
-import { Calendar, Download, Euro, ChevronDown, ChevronRight, Users } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { monthlyReportsService, matchCostService, type MonthlyRefereeCosts } from "@/services/financial";
+import { Download, Euro, ChevronDown, ChevronRight, Users, Loader2 } from "lucide-react";
 
 interface FinancialMonthlyReportsModalProps {
   open: boolean;
@@ -15,6 +15,7 @@ interface FinancialMonthlyReportsModalProps {
 }
 
 export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> = ({ open, onOpenChange }) => {
+  const queryClient = useQueryClient();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
   // Determine current season: if we're in Aug-Dec, it's currentYear/currentYear+1, else (currentYear-1)/currentYear
@@ -23,6 +24,38 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
   const [selectedSeasonYear, setSelectedSeasonYear] = useState(currentSeasonYear);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [expandedReferees, setExpandedReferees] = useState<Set<string>>(new Set());
+  const [costSyncUi, setCostSyncUi] = useState<"idle" | "busy" | "ok" | "err">("idle");
+
+  useEffect(() => {
+    if (!open) {
+      setCostSyncUi("idle");
+      return;
+    }
+    setCostSyncUi("busy");
+    const ac = new AbortController();
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    void (async () => {
+      try {
+        await matchCostService.syncAllMatchCosts();
+        if (!ac.signal.aborted) setCostSyncUi("ok");
+      } catch {
+        if (!ac.signal.aborted) setCostSyncUi("err");
+      } finally {
+        if (!ac.signal.aborted) {
+          await queryClient.invalidateQueries({ queryKey: ["season-report"] });
+        }
+      }
+      if (!ac.signal.aborted) {
+        timeoutId = window.setTimeout(() => {
+          if (!ac.signal.aborted) setCostSyncUi((s) => (s === "ok" || s === "err" ? "idle" : s));
+        }, 2200);
+      }
+    })();
+    return () => {
+      ac.abort();
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [open, queryClient]);
 
   // Fetch available seasons from actual transaction data
   const { data: availableSeasons } = useQuery({
@@ -104,7 +137,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
       }];
 
   // Update selected season if it's not available in the fetched seasons
-  React.useEffect(() => {
+  useEffect(() => {
     if (availableSeasons && availableSeasons.length > 0) {
       const isCurrentSeasonAvailable = availableSeasons.some(s => s.startYear === selectedSeasonYear);
       if (!isCurrentSeasonAvailable) {
@@ -152,7 +185,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
       open={open}
       onOpenChange={onOpenChange}
       title="Seizoen Kostenrapportage"
-      subtitle="Bekijk seizoen/maandelijkse kosten, scheidsrechterbetalingen en boetes voor teams"
+      subtitle="Wedstrijdkosten sync bij openen; daarna cijfers en detailtabellen (compact)."
       size="lg"
       className="max-w-6xl max-h-[80vh] overflow-y-auto"
     >
@@ -237,6 +270,26 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                 }
 
               `}</style>
+
+              {(costSyncUi === "busy" || costSyncUi === "ok" || costSyncUi === "err") && (
+                <div
+                  role="status"
+                  className="flex items-center gap-2 rounded-md border border-border/70 bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
+                >
+                  {costSyncUi === "busy" && (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin opacity-80" aria-hidden />
+                      <span>Wedstrijdkosten worden gesynchroniseerd; het rapport ververst daarna.</span>
+                    </>
+                  )}
+                  {costSyncUi === "ok" && <span>Klaar — boekingen bijgewerkt.</span>}
+                  {costSyncUi === "err" && (
+                    <span className="text-destructive">
+                      Sync mislukt. Probeer op de financiële pagina opnieuw.
+                    </span>
+                  )}
+                </div>
+              )}
             </>
           )}
 
@@ -520,72 +573,128 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
             </Card>
           )}
 
-          {/* Boetes per Seizoen/Maand */}
+          {/* Boetes — compact: totaal per periode + detail per regel */}
           {report?.fines && report.fines.length > 0 && (
             <Card className="border-purple-light">
-              <CardHeader className="bg-purple-100">
-                <CardTitle className="text-purple-light">
-                  {selectedMonth ? 'Boetes per Maand' : 'Boetes per Seizoen'}
+              <CardHeader className="bg-purple-100 py-3">
+                <CardTitle className="text-purple-light text-sm font-semibold">
+                  {selectedMonth != null ? "Boetes (maand)" : "Boetes (seizoen)"}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="bg-white">
-                <Table className="table">
-                  <TableHeader>
-                    <TableRow className="bg-purple-100">
-                      <TableHead className="text-purple-dark">
-                        {selectedMonth ? 'Maand' : 'Seizoen'}
-                      </TableHead>
-                      <TableHead className="text-center text-purple-dark">Aantal Boetes</TableHead>
-                      <TableHead className="text-right text-purple-dark">Totaal Bedrag</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="bg-white">
-                    {report.fines.map((month, index) => (
-                      <TableRow key={index} className="bg-white hover:bg-purple-50">
-                        <TableCell className="font-medium text-purple-dark">{month.month}</TableCell>
-                        <TableCell className="text-center text-purple-dark">{month.fineCount}</TableCell>
-                        <TableCell className="text-right font-semibold text-purple-dark">
-                          {formatCurrency(month.totalFines)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <CardContent className="divide-y divide-border bg-white p-0">
+                {report.fines.map((bucket, index) => (
+                  <div key={index} className="space-y-2 px-3 py-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs">
+                      <span className="font-medium text-purple-dark">{bucket.month}</span>
+                      <span className="tabular-nums text-muted-foreground">
+                        {bucket.fineCount}× · {formatCurrency(bucket.totalFines)}
+                      </span>
+                    </div>
+                    {bucket.lines && bucket.lines.length > 0 ? (
+                      <div className="overflow-x-auto rounded border border-border/60">
+                        <table className="w-full min-w-[520px] border-collapse text-[11px] sm:text-xs">
+                          <thead>
+                            <tr className="border-b border-border/80 bg-muted/40 text-left text-muted-foreground">
+                              <th className="px-2 py-1.5 font-medium">Datum</th>
+                              <th className="px-2 py-1.5 font-medium">Nr.</th>
+                              <th className="px-2 py-1.5 font-medium">Wedstrijd</th>
+                              <th className="px-2 py-1.5 font-medium">Ploeg</th>
+                              <th className="px-2 py-1.5 font-medium">Soort</th>
+                              <th className="px-2 py-1.5 text-right font-medium">€</th>
+                            </tr>
+                          </thead>
+                          <tbody className="text-purple-dark">
+                            {bucket.lines.map((line, li) => (
+                              <tr key={li} className="border-b border-border/50 last:border-0">
+                                <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">
+                                  {line.matchDate ? formatDate(line.matchDate) : "—"}
+                                </td>
+                                <td className="px-2 py-1.5 font-mono text-[10px] sm:text-xs">{line.uniqueNumber}</td>
+                                <td className="max-w-[200px] px-2 py-1.5" title={`${line.homeTeam} – ${line.awayTeam}`}>
+                                  <span className="line-clamp-2 leading-tight">
+                                    {line.homeTeam} – {line.awayTeam}
+                                  </span>
+                                </td>
+                                <td className="max-w-[120px] truncate px-2 py-1.5" title={line.teamName}>
+                                  {line.teamName}
+                                </td>
+                                <td className="max-w-[140px] truncate px-2 py-1.5 text-muted-foreground" title={line.costLabel}>
+                                  {line.costLabel}
+                                </td>
+                                <td className="whitespace-nowrap px-2 py-1.5 text-right tabular-nums font-medium">
+                                  {formatCurrency(line.amount)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">Geen detailregels (alleen totaal).</p>
+                    )}
+                  </div>
+                ))}
               </CardContent>
             </Card>
           )}
 
-          {/* Veldkosten per Seizoen/Maand */}
+          {/* Veldkosten — compact: totaal per periode + welke wedstrijden / welke ploeg */}
           {report?.fieldCosts && report.fieldCosts.length > 0 && (
             <Card className="border-purple-light">
-              <CardHeader className="bg-purple-100">
-                <CardTitle className="text-purple-light">
-                  {selectedMonth ? 'Veldkosten per Maand' : 'Veldkosten per Seizoen'}
+              <CardHeader className="bg-purple-100 py-3">
+                <CardTitle className="text-purple-light text-sm font-semibold">
+                  {selectedMonth != null ? "Veldkosten (maand)" : "Veldkosten (seizoen)"}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="bg-white">
-                <Table className="table">
-                  <TableHeader>
-                    <TableRow className="bg-purple-100">
-                      <TableHead className="text-purple-dark">
-                        {selectedMonth ? 'Maand' : 'Seizoen'}
-                      </TableHead>
-                      <TableHead className="text-center text-purple-dark">Aantal Wedstrijden</TableHead>
-                      <TableHead className="text-right text-purple-dark">Totale Kosten</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="bg-white">
-                    {report.fieldCosts.map((month, index) => (
-                      <TableRow key={index} className="bg-white hover:bg-purple-50">
-                        <TableCell className="font-medium text-purple-dark">{month.month}</TableCell>
-                        <TableCell className="text-center text-purple-dark">{month.matchCount}</TableCell>
-                        <TableCell className="text-right font-semibold text-purple-dark">
-                          {formatCurrency(month.totalCost)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <CardContent className="divide-y divide-border bg-white p-0">
+                {report.fieldCosts.map((bucket, index) => (
+                  <div key={index} className="space-y-2 px-3 py-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs">
+                      <span className="font-medium text-purple-dark">{bucket.month}</span>
+                      <span className="tabular-nums text-muted-foreground">
+                        {bucket.matchCount} wd · {bucket.bookingLines ?? "—"} lijnen · {formatCurrency(bucket.totalCost)}
+                      </span>
+                    </div>
+                    {bucket.lines && bucket.lines.length > 0 ? (
+                      <div className="overflow-x-auto rounded border border-border/60">
+                        <table className="w-full min-w-[480px] border-collapse text-[11px] sm:text-xs">
+                          <thead>
+                            <tr className="border-b border-border/80 bg-muted/40 text-left text-muted-foreground">
+                              <th className="px-2 py-1.5 font-medium">Datum</th>
+                              <th className="px-2 py-1.5 font-medium">Nr.</th>
+                              <th className="px-2 py-1.5 font-medium">Wedstrijd</th>
+                              <th className="px-2 py-1.5 font-medium">Ploeg</th>
+                              <th className="px-2 py-1.5 text-right font-medium">€</th>
+                            </tr>
+                          </thead>
+                          <tbody className="text-purple-dark">
+                            {bucket.lines.map((line, li) => (
+                              <tr key={li} className="border-b border-border/50 last:border-0">
+                                <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">
+                                  {line.matchDate ? formatDate(line.matchDate) : "—"}
+                                </td>
+                                <td className="px-2 py-1.5 font-mono text-[10px] sm:text-xs">{line.uniqueNumber}</td>
+                                <td className="max-w-[220px] px-2 py-1.5" title={`${line.homeTeam} – ${line.awayTeam}`}>
+                                  <span className="line-clamp-2 leading-tight">
+                                    {line.homeTeam} – {line.awayTeam}
+                                  </span>
+                                </td>
+                                <td className="max-w-[120px] truncate px-2 py-1.5" title={line.billedTeam}>
+                                  {line.billedTeam}
+                                </td>
+                                <td className="whitespace-nowrap px-2 py-1.5 text-right tabular-nums font-medium">
+                                  {formatCurrency(line.amount)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">Geen veldboekingen voor deze periode.</p>
+                    )}
+                  </div>
+                ))}
               </CardContent>
             </Card>
           )}

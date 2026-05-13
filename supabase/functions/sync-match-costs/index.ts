@@ -25,6 +25,50 @@ interface SyncMatchCostsRequest {
   referee?: string | null;
 }
 
+function costNameImpliesMatchCostSuppression(name: string | null | undefined): boolean {
+  const n = (name || '').toLowerCase().trim();
+  if (!n) return false;
+  return (
+    n.includes('forfait') ||
+    (n.includes('walk') && n.includes('over')) ||
+    n.includes('vrijstelling') ||
+    n.includes('niet gespeeld') ||
+    n.includes('niet afgewerkt')
+  );
+}
+
+async function matchHasForfaitPenalty(matchId: number): Promise<boolean> {
+  const { data: rpcData, error: rpcError } = await supabaseServiceRole.rpc('match_has_forfait_penalty', {
+    p_match_id: matchId,
+  });
+  if (!rpcError && typeof rpcData === 'boolean') return rpcData;
+
+  const { data, error } = await supabaseServiceRole
+    .from('team_costs')
+    .select('costs!inner(name, category, is_active)')
+    .eq('match_id', matchId)
+    .eq('costs.category', 'penalty');
+
+  if (error || !data?.length) return false;
+  return data.some((r: { costs?: { name?: string | null; is_active?: boolean | null } }) => {
+    const c = r.costs;
+    if (!c || c.is_active === false) return false;
+    return costNameImpliesMatchCostSuppression(c.name);
+  });
+}
+
+async function deleteActiveMatchCostsForMatch(matchId: number): Promise<void> {
+  const { data: mcRows, error: mcErr } = await supabaseServiceRole
+    .from('costs')
+    .select('id')
+    .eq('category', 'match_cost')
+    .eq('is_active', true);
+  if (mcErr) throw new Error(mcErr.message);
+  const ids = (mcRows || []).map((c: { id: number }) => c.id);
+  if (ids.length === 0) return;
+  await supabaseServiceRole.from('team_costs').delete().eq('match_id', matchId).in('cost_setting_id', ids);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -43,7 +87,38 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Match costs are always applied when submitted - forfait adjustments are done manually
+    if (await matchHasForfaitPenalty(matchId)) {
+      await deleteActiveMatchCostsForMatch(matchId);
+      console.log('Forfait penalty on match; removed wedstrijdkosten');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Forfait: geen veld/scheids/admin-wedstrijdkosten (alleen boete)',
+          forfait: true,
+          skipped: true,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { data: skipRow, error: skipErr } = await supabaseServiceRole
+      .from('matches')
+      .select('skip_auto_match_costs')
+      .eq('match_id', matchId)
+      .maybeSingle();
+    if (!skipErr && skipRow?.skip_auto_match_costs === true) {
+      console.log('skip_auto_match_costs: skipping automatic match cost sync');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message:
+            'Automatische wedstrijdkosten uitgeschakeld na handmatig verwijderen. Gebruik reset in wedstrijdformulier.',
+          skipped: true,
+          skipAutoMatchCosts: true,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Load match_cost settings (active)
     const { data: matchCosts, error: costErr } = await supabaseServiceRole
@@ -58,12 +133,12 @@ Deno.serve(async (req) => {
     console.log('Loaded match cost settings:', costSettings);
 
     const findCostByType = (type: 'veld' | 'scheids' | 'administratie') => {
-      const searchTerms = type === 'veld' 
-        ? ['veld', 'field'] 
+      const searchTerms = type === 'veld'
+        ? ['veld', 'field']
         : type === 'scheids'
         ? ['scheidsrechter', 'scheids', 'referee']
         : ['administratie', 'admin'];
-      
+
       return costSettings.find(cs => {
         const name = (cs.name || '').toLowerCase();
         return searchTerms.some(term => name.includes(term));
@@ -83,9 +158,11 @@ Deno.serve(async (req) => {
         return;
       }
 
+      const desired = Number(costSetting.amount ?? 0);
+
       const { data: existingRows, error: existErr } = await supabaseServiceRole
         .from('team_costs')
-        .select('id')
+        .select('id, amount')
         .eq('team_id', teamId)
         .eq('match_id', matchId)
         .eq('cost_setting_id', costSetting.id)
@@ -101,14 +178,14 @@ Deno.serve(async (req) => {
           .insert({
             team_id: teamId,
             cost_setting_id: costSetting.id,
-            amount: costSetting.amount ?? 0,
+            amount: desired,
             transaction_date: transactionDate,
             match_id: matchId,
             is_auto_card_penalty: false
           });
 
         if (insertErr) throw new Error(`Failed to insert ${costType} cost: ${insertErr.message}`);
-        processedCosts[`${costType}_team_${teamId}`] = { inserted: true, amount: costSetting.amount };
+        processedCosts[`${costType}_team_${teamId}`] = { inserted: true, amount: desired };
       } else if (existingCount > 1) {
         const idsToDelete = (existingRows || []).slice(1).map(r => r.id);
         if (idsToDelete.length > 0) {
@@ -118,9 +195,32 @@ Deno.serve(async (req) => {
             .in('id', idsToDelete);
           if (delErr) console.error(`Failed to clean up duplicate ${costType} costs:`, delErr);
         }
-        processedCosts[`${costType}_team_${teamId}`] = { exists: true, cleaned: idsToDelete.length };
+        const keepId = (existingRows || [])[0].id;
+        const cur = (existingRows || [])[0].amount;
+        const curNum = cur == null ? null : Number(cur);
+        if (curNum !== desired) {
+          const { error: upErr } = await supabaseServiceRole
+            .from('team_costs')
+            .update({ amount: desired, transaction_date: transactionDate })
+            .eq('id', keepId);
+          if (upErr) throw new Error(`Failed to update ${costType} amount: ${upErr.message}`);
+          processedCosts[`${costType}_team_${teamId}`] = { exists: true, cleaned: idsToDelete.length, updatedAmount: true };
+        } else {
+          processedCosts[`${costType}_team_${teamId}`] = { exists: true, cleaned: idsToDelete.length };
+        }
       } else {
-        processedCosts[`${costType}_team_${teamId}`] = { exists: true };
+        const row = (existingRows || [])[0];
+        const curNum = row.amount == null ? null : Number(row.amount);
+        if (curNum !== desired) {
+          const { error: upErr } = await supabaseServiceRole
+            .from('team_costs')
+            .update({ amount: desired, transaction_date: transactionDate })
+            .eq('id', row.id);
+          if (upErr) throw new Error(`Failed to update ${costType} amount: ${upErr.message}`);
+          processedCosts[`${costType}_team_${teamId}`] = { exists: true, updatedAmount: true };
+        } else {
+          processedCosts[`${costType}_team_${teamId}`] = { exists: true };
+        }
       }
     };
 

@@ -4,5 +4,12 @@
 export { financialService, type FinancialSettings } from './financialService';
 export { costSettingsService, type CostSetting } from './costSettingsService';
 export { enhancedCostSettingsService, type TeamTransaction } from './enhancedCostSettingsService';
-export { monthlyReportsService, type MonthlyReport, type MonthlyRefereeCosts, type RefereeMatchInfo } from './monthlyReportsService';
+export {
+  monthlyReportsService,
+  type MonthlyReport,
+  type MonthlyRefereeCosts,
+  type RefereeMatchInfo,
+  type FieldCostLineDetail,
+  type FineLineDetail,
+} from './monthlyReportsService';
 export { matchCostService } from './matchCostService';

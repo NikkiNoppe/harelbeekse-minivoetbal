@@ -237,7 +237,12 @@ const AdminPlayoffMatchesPage: React.FC = () => {
       {selectedMatch && (
         <WedstrijdformulierModal
           open={isModalOpen}
-          onOpenChange={setIsModalOpen}
+          onOpenChange={(open) => {
+            setIsModalOpen(open);
+            if (!open) {
+              handleModalClose();
+            }
+          }}
           match={selectedMatch}
           isAdmin={isAdmin}
           isReferee={isReferee}

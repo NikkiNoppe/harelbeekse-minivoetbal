@@ -16,6 +16,18 @@ const supabaseServiceRole = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
+function costNameImpliesMatchCostSuppression(name: string | null | undefined): boolean {
+  const n = (name || '').toLowerCase().trim();
+  if (!n) return false;
+  return (
+    n.includes('forfait') ||
+    (n.includes('walk') && n.includes('over')) ||
+    n.includes('vrijstelling') ||
+    n.includes('niet gespeeld') ||
+    n.includes('niet afgewerkt')
+  );
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,7 +39,7 @@ Deno.serve(async (req) => {
     // Fetch all matches with scores
     const { data: allMatches, error: matchesErr } = await supabaseServiceRole
       .from('matches')
-      .select('match_id, home_team_id, away_team_id, match_date, home_score, away_score, is_submitted, is_cup_match, is_playoff_match, assigned_referee_id')
+      .select('match_id, home_team_id, away_team_id, match_date, home_score, away_score, is_submitted, is_cup_match, is_playoff_match, assigned_referee_id, skip_auto_match_costs')
       .not('home_score', 'is', null)
       .not('away_score', 'is', null)
       .not('home_team_id', 'is', null)
@@ -60,18 +72,67 @@ Deno.serve(async (req) => {
       );
     }
 
-    const fieldCost = costSettings.find((cs: any) => cs.name?.toLowerCase().includes('veld'));
+    const fieldCost = costSettings.find((cs: any) => {
+      const n = (cs.name || '').toLowerCase();
+      return n.includes('veld') || n.includes('field');
+    });
     const refereeCost = costSettings.find((cs: any) => cs.name?.toLowerCase().includes('scheids'));
-    const adminCost = costSettings.find((cs: any) => cs.name?.toLowerCase().includes('administratie'));
+    const adminCost = costSettings.find((cs: any) => {
+      const n = (cs.name || '').toLowerCase();
+      return n.includes('administratie') || n.includes('admin');
+    });
 
     if (!fieldCost) throw new Error('Veldkosten niet gevonden');
 
-    // Match costs are always applied - forfait adjustments are done manually
+    const allMatchCostSettingIds = costSettings.map((c: { id: number }) => c.id);
+
+    const matchIds = allMatches.map((m: { match_id: number }) => m.match_id);
+    const { data: forfaitPenaltyRows, error: forfaitErr } = await supabaseServiceRole
+      .from('team_costs')
+      .select('match_id, costs!inner(name, category)')
+      .in('match_id', matchIds)
+      .eq('costs.category', 'penalty');
+
+    if (forfaitErr) console.warn('⚠️ Forfait check query:', forfaitErr);
+
+    const forfaitMatchIds = new Set<number>();
+    for (const row of forfaitPenaltyRows || []) {
+      const r = row as { match_id: number | null; costs?: { name?: string | null; is_active?: boolean | null } };
+      const c = r.costs;
+      if (c?.is_active === false) continue;
+      if (costNameImpliesMatchCostSuppression(c?.name) && r.match_id != null) forfaitMatchIds.add(r.match_id);
+    }
+
     let forfaitCount = 0;
+    let syncedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    const normalizedAmount = (v: unknown) => {
+      if (v == null) return null as number | null;
+      const n = Number(v);
+      return Number.isNaN(n) ? null : n;
+    };
 
     for (const match of allMatches) {
       const teamIds = [match.home_team_id, match.away_team_id].filter((id: any) => typeof id === 'number' && id > 0);
       if (teamIds.length !== 2) { skippedCount++; continue; }
+
+      if (forfaitMatchIds.has(match.match_id)) {
+        const { error: delErr } = await supabaseServiceRole
+          .from('team_costs')
+          .delete()
+          .eq('match_id', match.match_id)
+          .in('cost_setting_id', allMatchCostSettingIds);
+        if (!delErr) forfaitCount++;
+        else console.error(`❌ Forfait cleanup failed match ${match.match_id}:`, delErr);
+        continue;
+      }
+
+      if ((match as { skip_auto_match_costs?: boolean | null }).skip_auto_match_costs === true) {
+        skippedCount++;
+        continue;
+      }
 
       const transactionDate = match.match_date?.slice(0, 10) || new Date().toISOString().slice(0, 10);
       const hasReferee = match.assigned_referee_id != null;
@@ -95,20 +156,28 @@ Deno.serve(async (req) => {
         // Field cost - always applied
         const fieldKey = `${teamId}-${fieldCost.id}`;
         const existingField = existingCostsMap.get(fieldKey);
+        const fieldTarget = Number(fieldCost.amount ?? 0);
         if (!existingField) {
-          costsToInsert.push({ team_id: teamId, cost_setting_id: fieldCost.id, amount: fieldCost.amount ?? 0, transaction_date: transactionDate, match_id: match.match_id });
-        } else if (existingField.amount !== fieldCost.amount) {
-          costsToUpdate.push({ id: existingField.id, amount: fieldCost.amount ?? 0 });
+          costsToInsert.push({ team_id: teamId, cost_setting_id: fieldCost.id, amount: fieldTarget, transaction_date: transactionDate, match_id: match.match_id });
+        } else {
+          const cur = normalizedAmount(existingField.amount);
+          if (cur !== fieldTarget) {
+            costsToUpdate.push({ id: existingField.id, amount: fieldTarget });
+          }
         }
 
         // Referee cost - only when referee is assigned
         if (refereeCost && hasReferee) {
           const refereeKey = `${teamId}-${refereeCost.id}`;
           const existingReferee = existingCostsMap.get(refereeKey);
+          const refTarget = Number(refereeCost.amount ?? 0);
           if (!existingReferee) {
-            costsToInsert.push({ team_id: teamId, cost_setting_id: refereeCost.id, amount: refereeCost.amount ?? 0, transaction_date: transactionDate, match_id: match.match_id });
-          } else if (existingReferee.amount !== refereeCost.amount) {
-            costsToUpdate.push({ id: existingReferee.id, amount: refereeCost.amount ?? 0 });
+            costsToInsert.push({ team_id: teamId, cost_setting_id: refereeCost.id, amount: refTarget, transaction_date: transactionDate, match_id: match.match_id });
+          } else {
+            const cur = normalizedAmount(existingReferee.amount);
+            if (cur !== refTarget) {
+              costsToUpdate.push({ id: existingReferee.id, amount: refTarget });
+            }
           }
         }
 
@@ -116,10 +185,14 @@ Deno.serve(async (req) => {
         if (adminCost) {
           const adminKey = `${teamId}-${adminCost.id}`;
           const existingAdmin = existingCostsMap.get(adminKey);
+          const admTarget = Number(adminCost.amount ?? 0);
           if (!existingAdmin) {
-            costsToInsert.push({ team_id: teamId, cost_setting_id: adminCost.id, amount: adminCost.amount ?? 0, transaction_date: transactionDate, match_id: match.match_id });
-          } else if (existingAdmin.amount !== adminCost.amount) {
-            costsToUpdate.push({ id: existingAdmin.id, amount: adminCost.amount ?? 0 });
+            costsToInsert.push({ team_id: teamId, cost_setting_id: adminCost.id, amount: admTarget, transaction_date: transactionDate, match_id: match.match_id });
+          } else {
+            const cur = normalizedAmount(existingAdmin.amount);
+            if (cur !== admTarget) {
+              costsToUpdate.push({ id: existingAdmin.id, amount: admTarget });
+            }
           }
         }
       }

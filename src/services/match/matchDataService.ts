@@ -164,9 +164,9 @@ export const fetchAllCards = async (): Promise<CardData[]> => {
         if (normalized === 'yellow') pushCard(teamName, player, 'yellow');
         else if (normalized === 'red') pushCard(teamName, player, 'red');
         else if (normalized === 'double_yellow') {
-          // Represent double yellow as both a yellow and a red entry
+          // "2x geel" counts as two yellow cards for card totals.
           pushCard(teamName, player, 'yellow');
-          pushCard(teamName, player, 'red');
+          pushCard(teamName, player, 'yellow');
         }
       }
     };

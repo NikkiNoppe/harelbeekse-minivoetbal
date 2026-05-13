@@ -6,6 +6,10 @@ import { normalizeTeamsPreferences, scoreTeamForDetails, TeamPreferencesNormaliz
 import { localDateTimeToISO } from "@/lib/dateUtils";
 import { normalizeVenueName } from "@/lib/utils";
 import { withUserContext } from "@/lib/supabaseUtils";
+import {
+  invokeSyncMatchCostsForMatch,
+  shouldSyncMatchCostsAfterMatchUpdate,
+} from "@/services/financial/matchCostService";
 
 export interface CupMatch {
   match_id: number;
@@ -973,6 +977,8 @@ export const bekerService = {
 
   async updateCupMatch(matchId: number, updateData: Partial<CupMatch>): Promise<{ success: boolean; message: string }> {
     try {
+      const prior = await bekerService.getCupMatchById(matchId);
+
       const updateObject: any = {};
       
       if (updateData.home_score !== undefined) updateObject.home_score = updateData.home_score;
@@ -1014,6 +1020,36 @@ export const bekerService = {
         }
       } catch (advErr) {
         console.warn('Warning: advancement update after cup match edit failed', advErr);
+      }
+
+      try {
+        const after = await bekerService.getCupMatchById(matchId);
+        if (
+          after &&
+          after.is_submitted &&
+          after.home_score != null &&
+          after.away_score != null &&
+          after.home_team_id &&
+          after.away_team_id
+        ) {
+          const submissionTransition = !!(prior && !prior.is_submitted && after.is_submitted);
+          const shouldSyncCosts = await shouldSyncMatchCostsAfterMatchUpdate(matchId, submissionTransition);
+          if (shouldSyncCosts) {
+            const res = await invokeSyncMatchCostsForMatch({
+              matchId,
+              matchDateISO: after.match_date,
+              homeTeamId: after.home_team_id,
+              awayTeamId: after.away_team_id,
+              isSubmitted: true,
+              referee: after.referee ?? null,
+            });
+            if (!res.success) {
+              console.warn("[updateCupMatch] sync-match-costs failed:", res.message);
+            }
+          }
+        }
+      } catch (costSyncErr) {
+        console.warn("[updateCupMatch] match cost sync error:", costSyncErr);
       }
 
       return { success: true, message: "Bekerwedstrijd succesvol bijgewerkt!" };

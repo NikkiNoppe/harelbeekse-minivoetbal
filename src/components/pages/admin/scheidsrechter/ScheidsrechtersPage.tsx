@@ -9,7 +9,6 @@ import { useAuth } from '@/hooks/useAuth';
 
 const ScheidsrechtersPage = () => {
   const { user, loading } = useAuth();
-  const [workspaceKey, setWorkspaceKey] = useState(0);
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
 
   const userRole = user?.role || null;
@@ -46,8 +45,6 @@ const ScheidsrechtersPage = () => {
   }
 
   if (userRole === 'admin') {
-    const refreshAll = () => setWorkspaceKey((k) => k + 1);
-
     return (
       <div className="scheids-page space-y-6 p-4 sm:p-6">
         <div>
@@ -59,8 +56,6 @@ const ScheidsrechtersPage = () => {
         </div>
 
         <AssignmentWorkspace
-          refreshKey={workspaceKey}
-          onAfterChange={refreshAll}
           selectedMonth={selectedMonth}
           onSelectedMonthChange={setSelectedMonth}
         />

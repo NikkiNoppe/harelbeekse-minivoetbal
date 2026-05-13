@@ -64,7 +64,7 @@ export const CARDS_SUSPENSIONS_ROUTES = {
   },
   admin: {
     suspensions: '/admin/suspensions',
-    teamSuspensions: '/admin/schorsingen', // Team manager view
+    teamSuspensions: '/admin/schorsingen',
   },
 } as const;
 
@@ -185,7 +185,6 @@ export const ROUTE_GUARDS = {
     ADMIN_ROUTES.financial,
     ADMIN_ROUTES.settings,
     ADMIN_ROUTES.suspensions,
-    ADMIN_ROUTES.schorsingen,
     ADMIN_ROUTES['blog-management'],
     ADMIN_ROUTES['notification'],
   ],

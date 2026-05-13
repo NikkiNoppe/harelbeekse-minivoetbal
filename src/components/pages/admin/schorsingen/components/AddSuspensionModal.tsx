@@ -59,6 +59,7 @@ export const AddSuspensionModal: React.FC<AddSuspensionModalProps> = ({
 
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['suspensions'] });
+      queryClient.invalidateQueries({ queryKey: ['manualSuspensions'] });
       queryClient.invalidateQueries({ queryKey: ['playerCards'] });
 
       // Reset form and close

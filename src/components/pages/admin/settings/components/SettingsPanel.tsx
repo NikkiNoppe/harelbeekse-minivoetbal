@@ -19,6 +19,7 @@ import MatchFormSettings from "@/components/pages/admin/settings/components/Matc
 import { SuspensionRulesSettings } from "@/components/pages/admin/settings/components/SuspensionRulesSettings";
 
 const settingsSections = [
+  { id: "suspension-rules", label: "Kaarten & Schorsingen", icon: ShieldAlert, component: SuspensionRulesSettings },
   { id: "tab-visibility", label: "Tab Zichtbaarheid", icon: Eye, component: TabVisibilitySettingsUpdated },
   { id: "player-lock", label: "Spelerslijst Vergrendeling", icon: Lock, component: PlayerListLockSettings },
   { id: "formats", label: "Competitie Formaten", icon: Trophy, component: CompetitionDataSettings },
@@ -28,7 +29,6 @@ const settingsSections = [
   { id: "season", label: "Seizoensdata", icon: Calendar, component: SeasonDataSettings },
   { id: "colors", label: "Kleuren", icon: Palette, component: ThemeColorsSettings },
   { id: "match-forms", label: "Wedstrijdformulieren", icon: FileText, component: MatchFormSettings },
-  { id: "suspension-rules", label: "Kaarten & Schorsingen", icon: ShieldAlert, component: SuspensionRulesSettings },
 ];
 
 const AdminSettingsPanel: React.FC = () => {

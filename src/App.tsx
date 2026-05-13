@@ -169,7 +169,7 @@ const App = () => (
                       </ProtectedRoute>
                     } />
                     <Route path={ADMIN_ROUTES.schorsingen} element={
-                      <ProtectedRoute requireAdmin>
+                      <ProtectedRoute>
                         <Suspense fallback={<LoadingSpinner />}>
                           <Index />
                         </Suspense>

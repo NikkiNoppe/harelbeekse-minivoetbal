@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { format } from 'date-fns';
+import { createPortal } from 'react-dom';
+import { addMinutes, format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import {
   RefreshCw,
@@ -7,12 +8,9 @@ import {
   X,
   Star,
   Minus,
-  Sparkles,
   Wand2,
-  Download,
-  Search,
-  Filter as FilterIcon,
-  Undo2,
+  ChevronDown,
+  Copy,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,9 +18,14 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { assignmentService } from '@/services/scheidsrechter/assignmentService';
@@ -32,14 +35,20 @@ import {
   type SuggestionCandidate,
 } from '@/services/scheidsrechter/autoSuggestService';
 import { useAuth } from '@/hooks/useAuth';
+import { withUserContext } from '@/lib/supabaseUtils';
 import { formatDateWithDay, formatTimeForDisplay } from '@/lib/dateUtils';
 import { getLocationOrder } from '@/lib/matchSortingUtils';
-import { downloadICalFile, downloadCSVFile, type ICalEvent } from '@/lib/icalUtils';
 
 // Types
 interface RefereeInfo {
   user_id: number;
   username: string;
+}
+
+interface AdminUserInfo {
+  user_id: number;
+  username: string;
+  role: string;
 }
 
 interface SessionMatch {
@@ -77,6 +86,15 @@ interface AssignmentData {
   assigned_at: string | null;
 }
 
+type AdminAvailabilityStatus = boolean | null;
+
+interface RefereeCopyMessage {
+  refereeId: number;
+  refereeName: string;
+  text: string;
+  assignmentCount: number;
+}
+
 const getMonthOptions = () => {
   const months = [];
   const currentDate = new Date();
@@ -96,12 +114,24 @@ interface AvailabilityMatrixProps {
   /** Externe maand-controle */
   selectedMonth?: string;
   onSelectedMonthChange?: (month: string) => void;
+  /** Optionele externe plek voor matrixacties, zoals Auto-toewijzen naast de maandselector. */
+  toolbarContainer?: HTMLElement | null;
 }
+
+const SESSION_COLUMN_WIDTH = 220;
+const REFEREE_COLUMN_WIDTH = 64;
+const SESSION_ROW_HEIGHT = 76;
+
+const formatSessionLocation = (location: string) => {
+  const [place] = location.split(' - ');
+  return place?.trim() || location;
+};
 
 const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   hideHeader = false,
   selectedMonth: externalMonth,
   onSelectedMonthChange,
+  toolbarContainer,
 }) => {
   const { user } = useAuth();
   const [internalMonth, setInternalMonth] = useState(format(new Date(), 'yyyy-MM'));
@@ -121,10 +151,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState<string | null>(null);
   const [bulkAssigning, setBulkAssigning] = useState(false);
-
-  // Filters
-  const [searchTerm, setSearchTerm] = useState('');
-  const [onlyResponded, setOnlyResponded] = useState(false);
+  const [copyMessagesOpen, setCopyMessagesOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -133,33 +160,62 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       const nextMonth = monthNum === 12
         ? `${year + 1}-01`
         : `${year}-${String(monthNum + 1).padStart(2, '0')}`;
+      const storedAuth = localStorage.getItem('auth_data');
+      const storedUserId = storedAuth ? JSON.parse(storedAuth)?.user?.id : null;
+      const currentUserId = user?.id ?? storedUserId;
 
-      const [matchesRes, refereesRes, availRes, assignRes] = await Promise.all([
-        supabase
-          .from('matches')
-          .select('match_id, match_date, location, home_team_id, away_team_id, assigned_referee_id')
-          .gte('match_date', `${selectedMonth}-01`)
-          .lt('match_date', `${nextMonth}-01`)
-          .order('match_date', { ascending: true }),
-        supabase
-          .from('users')
-          .select('user_id, username')
-          .eq('role', 'referee')
-          .order('username'),
-        supabase
-          .from('referee_availability')
-          .select('user_id, match_id, poll_group_id, is_available')
-          .eq('poll_month', selectedMonth),
-        supabase
-          .from('referee_assignments' as any)
-          .select('id, match_id, referee_id, status, assigned_by, assigned_at') as any
-      ]);
+      if (!currentUserId) {
+        throw new Error('Niet ingelogd');
+      }
+
+      const [matchesRes, usersRes, assignRes] = await withUserContext(() =>
+        Promise.all([
+          supabase
+            .from('matches')
+            .select('match_id, match_date, location, home_team_id, away_team_id, assigned_referee_id')
+            .gte('match_date', `${selectedMonth}-01`)
+            .lt('match_date', `${nextMonth}-01`)
+            .order('match_date', { ascending: true }),
+          supabase
+            .rpc('get_all_users_for_admin', { p_user_id: currentUserId }),
+          supabase
+            .from('referee_assignments' as any)
+            .select('id, match_id, referee_id, status, assigned_by, assigned_at') as any
+        ])
+      );
 
       if (matchesRes.error) throw matchesRes.error;
+      if (usersRes.error) throw usersRes.error;
+      if (assignRes.error) throw assignRes.error;
+
+      let availData: AvailabilityData[] = [];
+      const availabilityRes = await supabase.rpc('admin_get_referee_availability' as any, {
+        p_admin_user_id: currentUserId,
+        p_poll_month: selectedMonth,
+      });
+
+      if (!availabilityRes.error) {
+        availData = (availabilityRes.data || []) as AvailabilityData[];
+      } else {
+        console.warn('Admin availability RPC unavailable, falling back to direct read:', availabilityRes.error);
+        const fallbackAvailabilityRes = await supabase
+          .from('referee_availability')
+          .select('user_id, match_id, poll_group_id, is_available')
+          .eq('poll_month', selectedMonth);
+
+        if (fallbackAvailabilityRes.error) {
+          console.warn('Could not fetch referee availability fallback:', fallbackAvailabilityRes.error);
+        } else {
+          availData = (fallbackAvailabilityRes.data || []) as AvailabilityData[];
+        }
+      }
 
       const matchesData = matchesRes.data || [];
-      const refereesData = (refereesRes.data || []) as RefereeInfo[];
-      const availData = (availRes.data || []) as AvailabilityData[];
+      const allUsersData = (usersRes.data || []) as AdminUserInfo[];
+      const refereesData = allUsersData
+        .filter((u) => u.role === 'referee')
+        .map((u) => ({ user_id: u.user_id, username: u.username }))
+        .sort((a, b) => a.username.localeCompare(b.username));
 
       const matchIds = new Set(matchesData.map(m => m.match_id));
       const allAssignments = (assignRes.data || []) as AssignmentData[];
@@ -217,12 +273,10 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         if (a.assigned_by) userIds.add(a.assigned_by);
       });
       if (userIds.size > 0) {
-        const { data: usersData } = await supabase
-          .from('users')
-          .select('user_id, username')
-          .in('user_id', Array.from(userIds));
         const map = new Map<number, string>();
-        (usersData || []).forEach((u: any) => map.set(u.user_id, u.username));
+        allUsersData
+          .filter((u) => userIds.has(u.user_id))
+          .forEach((u) => map.set(u.user_id, u.username));
         setUsersById(map);
       } else {
         setUsersById(new Map());
@@ -238,7 +292,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [selectedMonth]);
+  }, [selectedMonth, user?.id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -265,6 +319,16 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
     for (const match of session.matches) {
       const assignment = assignments.find(a => a.match_id === match.match_id && a.referee_id === refereeId);
       if (assignment) return assignment;
+      if (match.assigned_referee_id === refereeId) {
+        return {
+          id: -match.match_id,
+          match_id: match.match_id,
+          referee_id: refereeId,
+          status: 'assigned',
+          assigned_by: null,
+          assigned_at: null,
+        };
+      }
     }
     return null;
   }, [assignments]);
@@ -278,40 +342,96 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
     return null;
   }, [assignments]);
 
-  // Wijs een ref toe aan de eerste niet-toegewezen wedstrijd in de sessie.
+  const applyLocalSessionAssignment = useCallback((session: Session, refereeId: number) => {
+    const matchIds = new Set(session.matches.map((match) => match.match_id));
+    const assignedAt = new Date().toISOString();
+
+    setSessions((current) =>
+      current.map((item) =>
+        item.key === session.key
+          ? {
+              ...item,
+              matches: item.matches.map((match) => ({
+                ...match,
+                assigned_referee_id: refereeId,
+              })),
+            }
+          : item
+      )
+    );
+
+    setAssignments((current) => [
+      ...current.filter((assignment) => !matchIds.has(assignment.match_id)),
+      ...session.matches.map((match) => ({
+        id: -match.match_id,
+        match_id: match.match_id,
+        referee_id: refereeId,
+        status: 'pending',
+        assigned_by: user?.id ?? null,
+        assigned_at: assignedAt,
+      })),
+    ]);
+  }, [user?.id]);
+
+  const clearLocalSessionAssignment = useCallback((session: Session) => {
+    const matchIds = new Set(session.matches.map((match) => match.match_id));
+
+    setSessions((current) =>
+      current.map((item) =>
+        item.key === session.key
+          ? {
+              ...item,
+              matches: item.matches.map((match) => ({
+                ...match,
+                assigned_referee_id: null,
+              })),
+            }
+          : item
+      )
+    );
+
+    setAssignments((current) => current.filter((assignment) => !matchIds.has(assignment.match_id)));
+  }, []);
+
+  // Wijs een ref toe aan alle wedstrijden in dezelfde sessie (zelfde datum + locatie).
   // Als showUndo true is, toont een 5s undo-toast.
   const assignToSessionInternal = async (
     session: Session,
     refereeId: number,
     refereeName: string,
     showUndo: boolean,
-  ): Promise<{ assignmentId?: number; ok: boolean }> => {
+  ): Promise<{ assignmentId?: number; anchorMatchId?: number; ok: boolean }> => {
     const targetMatch = session.matches.find((m) => !m.assigned_referee_id);
     if (!targetMatch) {
       toast.error('Alle wedstrijden in deze sessie zijn al toegewezen');
       return { ok: false };
     }
     const userId = user?.id || 0;
-    const result = await assignmentService.assignReferee(
-      { match_id: targetMatch.match_id, referee_id: refereeId },
+    const result = await assignmentService.assignRefereeToSession(
+      targetMatch.match_id,
+      refereeId,
       userId,
     );
     if (!result.success) {
       toast.error(result.error || 'Toewijzing mislukt');
       return { ok: false };
     }
-    // Haal nieuw aangemaakte assignment id terug om undo te kunnen doen
-    const fresh = await assignmentService.getAssignmentForMatch(targetMatch.match_id);
-    if (showUndo && fresh) {
+    applyLocalSessionAssignment(session, refereeId);
+
+    // Haal enkel voor undo een vers assignment op; gewone toewijzing blijft volledig lokaal.
+    const fresh = showUndo
+      ? await assignmentService.getAssignmentForMatch(targetMatch.match_id)
+      : null;
+    if (fresh) {
       toast.success(`${refereeName} toegewezen`, {
         description: formatDateWithDay(session.date) + ' · ' + session.location,
         action: {
           label: 'Ongedaan maken',
           onClick: async () => {
-            const ok = await assignmentService.removeAssignment(fresh.id, user?.id);
+            const ok = await assignmentService.removeSessionAssignment(fresh.match_id, user?.id || 0);
             if (ok) {
               toast.success('Toewijzing teruggedraaid');
-              await fetchData();
+              clearLocalSessionAssignment(session);
             } else {
               toast.error('Kon toewijzing niet ongedaan maken');
             }
@@ -320,7 +440,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         duration: 5000,
       });
     }
-    return { ok: true, assignmentId: fresh?.id };
+    return { ok: true, assignmentId: fresh?.id, anchorMatchId: targetMatch.match_id };
   };
 
   const handleAssign = async (session: Session, refereeId: number) => {
@@ -333,8 +453,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
     const cellKey = `${targetMatch.match_id}-${refereeId}`;
     setAssigning(cellKey);
     try {
-      await assignToSessionInternal(session, refereeId, refName, true);
-      await fetchData();
+      await assignToSessionInternal(session, refereeId, refName, false);
     } catch {
       toast.error('Onverwachte fout');
     } finally {
@@ -342,13 +461,90 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
     }
   };
 
+  const handleSetAvailabilityStatus = async (
+    session: Session,
+    refereeId: number,
+    status: AdminAvailabilityStatus,
+  ) => {
+    const firstMatch = session.matches[0];
+    if (!firstMatch) {
+      toast.error('Geen wedstrijd gevonden voor deze sessie');
+      return;
+    }
+
+    const adminUserId = user?.id;
+
+    if (!adminUserId) {
+      toast.error('Geen admin gebruiker gevonden');
+      return;
+    }
+
+    const cellKey = `${firstMatch.match_id}-${refereeId}`;
+    setAssigning(cellKey);
+    try {
+      const results = await Promise.all(
+        session.matches.map((match) =>
+          supabase.rpc('admin_set_referee_availability' as any, {
+            p_admin_user_id: adminUserId,
+            p_referee_id: refereeId,
+            p_match_id: match.match_id,
+            p_poll_group_id: `${selectedMonth}_${match.match_id}`,
+            p_poll_month: selectedMonth,
+            p_is_available: status,
+            p_notes: status === null
+              ? null
+              : `Door admin als ${status ? 'beschikbaar' : 'niet beschikbaar'} gemarkeerd`,
+          })
+        )
+      );
+
+      const failed = results.find((result) => result.error);
+      if (!failed) {
+        setAvailability((current) => {
+          const keys = new Set(session.matches.map((match) => `${refereeId}:${selectedMonth}_${match.match_id}`));
+          const withoutSession = current.filter((item) => !keys.has(`${item.user_id}:${item.poll_group_id}`));
+
+          if (status === null) return withoutSession;
+
+          return [
+            ...withoutSession,
+            ...session.matches.map((match) => ({
+              user_id: refereeId,
+              match_id: match.match_id,
+              poll_group_id: `${selectedMonth}_${match.match_id}`,
+              is_available: status,
+            })),
+          ];
+        });
+      } else {
+        console.error('Admin availability update failed:', failed.error);
+        const errorMessage = String(failed.error?.message || '');
+        if (failed.error?.code === 'PGRST202' || errorMessage.includes('admin_set_referee_availability')) {
+          toast.error('Database-migratie ontbreekt', {
+            description: 'Pas eerst de admin_set_referee_availability migratie toe in Supabase.',
+          });
+        } else {
+          toast.error('Kon beschikbaarheid niet opslaan');
+        }
+      }
+    } catch {
+      toast.error('Onverwachte fout bij beschikbaar maken');
+    } finally {
+      setAssigning(null);
+    }
+  };
+
   const handleRemove = async (assignment: AssignmentData) => {
+    const session = sessions.find((item) =>
+      item.matches.some((match) => match.match_id === assignment.match_id)
+    );
     setAssigning(`${assignment.match_id}-${assignment.referee_id}`);
     try {
-      const success = await assignmentService.removeAssignment(assignment.id, user?.id);
+      const success = await assignmentService.removeSessionAssignment(assignment.match_id, user?.id || 0);
       if (success) {
-        toast.success('Toewijzing verwijderd');
-        await fetchData();
+        if (session) {
+          clearLocalSessionAssignment(session);
+        }
       } else {
         toast.error('Kon toewijzing niet verwijderen');
       }
@@ -413,8 +609,9 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       let assigned = 0;
       let skipped = 0;
 
-      // Verzamel nieuw aangemaakte assignment-IDs voor één gegroepeerde undo
-      const createdIds: number[] = [];
+      // Verzamel sessies voor één gegroepeerde undo
+      const createdSessionMatchIds: number[] = [];
+      const createdSessions: Session[] = [];
 
       for (const session of openSessions) {
         const list = suggestRefereesForSession({
@@ -442,7 +639,8 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         const result = await assignToSessionInternal(session, top.user_id, refName, false);
         if (result.ok) {
           assigned++;
-          if (result.assignmentId) createdIds.push(result.assignmentId);
+          if (result.anchorMatchId) createdSessionMatchIds.push(result.anchorMatchId);
+          createdSessions.push(session);
           localMonth.set(top.user_id, (localMonth.get(top.user_id) || 0) + 1);
           localSeason.set(top.user_id, (localSeason.get(top.user_id) || 0) + 1);
           dayUsed.add(top.user_id);
@@ -457,17 +655,19 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
           description: skipped > 0 ? `${skipped} sessie(s) overgeslagen — geen kandidaat` : undefined,
           duration: 10000,
           action:
-            createdIds.length > 0
+            createdSessionMatchIds.length > 0
               ? {
                   label: 'Alles ongedaan',
                   onClick: async () => {
                     const results = await Promise.all(
-                      createdIds.map((id) => assignmentService.removeAssignment(id, user?.id)),
+                      createdSessionMatchIds.map((matchId) =>
+                        assignmentService.removeSessionAssignment(matchId, user?.id || 0)
+                      ),
                     );
                     const undone = results.filter(Boolean).length;
                     if (undone > 0) {
                       toast.success(`${undone} toewijzing${undone === 1 ? '' : 'en'} teruggedraaid`);
-                      await fetchData();
+                      createdSessions.forEach(clearLocalSessionAssignment);
                     } else {
                       toast.error('Kon toewijzingen niet ongedaan maken');
                     }
@@ -475,7 +675,6 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                 }
               : undefined,
         });
-        await fetchData();
       } else {
         toast.warning('Geen sessies konden automatisch toegewezen worden');
       }
@@ -494,67 +693,63 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
 
   const totalSessions = sessions.length;
   const assignedSessions = sessions.filter(s => getSessionAssignedReferee(s) !== null).length;
+  const matrixMinWidth = SESSION_COLUMN_WIDTH + referees.length * REFEREE_COLUMN_WIDTH;
+  const refereeCopyMessages = useMemo<RefereeCopyMessage[]>(() => {
+    return referees.map((referee) => {
+      const assignedSessionsForReferee = sessions.filter(
+        (session) => getSessionAssignedReferee(session) === referee.user_id
+      );
+      const lines = assignedSessionsForReferee.map((session) => {
+        const start = new Date(session.date);
+        const durationMinutes = Math.max(session.matches.length, 1) * 60;
+        const end = addMinutes(start, durationMinutes);
+        const dateText = format(start, 'EEEE d MMMM yyyy', { locale: nl });
+        const startText = format(start, "H'u'mm", { locale: nl });
+        const endText = format(end, "H'u'mm", { locale: nl });
 
-  // ─── FILTERS ───────────────────────────────────────────────────────────
-  // Per-sessie: heeft een gegeven ref gereageerd?
-  const respondedSet = useMemo(() => {
-    const set = new Set<number>();
-    availability.forEach((a) => set.add(a.user_id));
-    return set;
-  }, [availability]);
-
-  const filteredReferees = useMemo(() => {
-    let list = referees;
-    const q = searchTerm.trim().toLowerCase();
-    if (q) list = list.filter((r) => r.username.toLowerCase().includes(q));
-    if (onlyResponded) list = list.filter((r) => respondedSet.has(r.user_id));
-    return list;
-  }, [referees, searchTerm, onlyResponded, respondedSet]);
-
-  // ─── EXPORT ────────────────────────────────────────────────────────────
-  const buildAssignedEvents = useCallback((): ICalEvent[] => {
-    const events: ICalEvent[] = [];
-    sessions.forEach((session) => {
-      const assignedRefId = getSessionAssignedReferee(session);
-      if (!assignedRefId) return;
-      const refName = referees.find((r) => r.user_id === assignedRefId)?.username || 'Scheidsrechter';
-      session.matches.forEach((m) => {
-        const dateOnly = m.match_date.split('T')[0];
-        const time = formatTimeForDisplay(m.match_date);
-        events.push({
-          id: m.match_id,
-          title: `${m.home_team_name} – ${m.away_team_name} (ref: ${refName})`,
-          date: dateOnly,
-          time,
-          location: session.location,
-          description: `Scheidsrechter: ${refName}`,
-          duration: 60,
-        });
+        return `${dateText} – ${formatSessionLocation(session.location)} – ${startText}-${endText}`;
       });
+
+      return {
+        refereeId: referee.user_id,
+        refereeName: referee.username,
+        assignmentCount: lines.length,
+        text: [
+          `Beste ${referee.username}, je wedstrijden voor komende maand zijn:`,
+          lines.length > 0 ? lines.join('\n') : 'Geen wedstrijden gevonden.',
+        ].join('\n'),
+      };
     });
-    return events;
-  }, [sessions, referees, getSessionAssignedReferee]);
+  }, [referees, sessions, getSessionAssignedReferee]);
 
-  const handleExportICS = () => {
-    const events = buildAssignedEvents();
-    if (events.length === 0) {
-      toast.info('Geen toegewezen wedstrijden om te exporteren');
-      return;
-    }
-    const ok = downloadICalFile(events, `scheidsrechters-${selectedMonth}`, `Scheidsrechters ${selectedMonth}`);
-    if (ok) toast.success(`${events.length} wedstrijd${events.length === 1 ? '' : 'en'} geëxporteerd (ICS)`);
-    else toast.error('Export mislukt');
-  };
+  const autoAssignButton = sessions.length > 0 ? (
+    <Button
+      size="sm"
+      onClick={handleBulkAutoAssign}
+      disabled={bulkAssigning || openSessionsCount === 0 || referees.length === 0}
+      className="btn btn--primary btn--sm h-10 !min-h-10 w-full min-w-0 gap-1.5 !rounded-md px-3 shadow-sm lg:w-auto"
+      title={openSessionsCount === 0 ? 'Alle sessies zijn al toegewezen' : 'Wijs open sessies automatisch toe'}
+    >
+      {bulkAssigning ? (
+        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <Wand2 className="h-3.5 w-3.5" />
+      )}
+      Auto-toewijzen
+    </Button>
+  ) : null;
 
-  const handleExportCSV = () => {
-    const events = buildAssignedEvents();
-    if (events.length === 0) {
-      toast.info('Geen toegewezen wedstrijden om te exporteren');
-      return;
+  const toolbarPortal = toolbarContainer && autoAssignButton
+    ? createPortal(autoAssignButton, toolbarContainer)
+    : null;
+
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Tekst gekopieerd');
+    } catch {
+      toast.error('Kopiëren mislukt');
     }
-    const ok = downloadCSVFile(events, `scheidsrechters-${selectedMonth}`);
-    if (ok) toast.success(`${events.length} wedstrijd${events.length === 1 ? '' : 'en'} geëxporteerd (CSV)`);
-    else toast.error('Export mislukt');
   };
 
 
@@ -574,6 +769,8 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
 
   return (
     <div className="space-y-4">
+      {toolbarPortal}
+
       {!hideHeader && (
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
           <div className="flex items-center gap-3">
@@ -590,175 +787,11 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             <Button variant="outline" size="icon" onClick={fetchData} disabled={loading}>
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
+            {!toolbarContainer && autoAssignButton}
           </div>
           <Badge variant="outline">{assignedSessions}/{totalSessions} sessies toegewezen</Badge>
         </div>
       )}
-
-      {/* Auto-toewijs actiebalk */}
-      {sessions.length > 0 && (
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between bg-primary/5 border border-primary/20 rounded-lg px-3 py-2.5">
-          <div className="flex items-center gap-2 text-sm">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-foreground font-medium">
-              {openSessionsCount === 0
-                ? 'Alle sessies zijn toegewezen'
-                : `${openSessionsCount} open sessie${openSessionsCount === 1 ? '' : 's'}`}
-            </span>
-            {openSessionsCount > 0 && (
-              <span className="text-xs text-muted-foreground hidden sm:inline">
-                · suggesties op basis van beschikbaarheid + workload-spreiding
-              </span>
-            )}
-          </div>
-          <Button
-            size="sm"
-            onClick={handleBulkAutoAssign}
-            disabled={bulkAssigning || openSessionsCount === 0}
-            className="gap-1.5"
-          >
-            {bulkAssigning ? (
-              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Wand2 className="h-3.5 w-3.5" />
-            )}
-            Auto-toewijzen
-          </Button>
-        </div>
-      )}
-
-      {/* Filter & export bar */}
-      {referees.length > 0 && (
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between rounded-lg border border-[hsl(var(--color-200))] bg-card px-3 py-2">
-          <div className="flex flex-1 flex-wrap items-center gap-3">
-            <div className="relative w-full sm:w-56">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Zoek scheidsrechter…"
-                className="pl-8 h-8 text-sm"
-                aria-label="Zoek scheidsrechter"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                id="only-responded"
-                checked={onlyResponded}
-                onCheckedChange={setOnlyResponded}
-              />
-              <Label htmlFor="only-responded" className="text-xs cursor-pointer flex items-center gap-1">
-                <FilterIcon className="h-3 w-3" />
-                Alleen wie reageerde
-              </Label>
-            </div>
-            {(searchTerm || onlyResponded) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => {
-                  setSearchTerm('');
-                  setOnlyResponded(false);
-                }}
-              >
-                <Undo2 className="h-3 w-3 mr-1" />
-                Reset
-              </Button>
-            )}
-            <span className="text-xs text-muted-foreground ml-auto sm:ml-0">
-              {filteredReferees.length}/{referees.length} refs zichtbaar
-            </span>
-          </div>
-          <div className="flex gap-1.5 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5"
-              onClick={handleExportICS}
-              title="Exporteer toegewezen wedstrijden als iCal-bestand"
-            >
-              <Download className="h-3.5 w-3.5" />
-              ICS
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5"
-              onClick={handleExportCSV}
-              title="Exporteer toegewezen wedstrijden als CSV-bestand"
-            >
-              <Download className="h-3.5 w-3.5" />
-              CSV
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Workload-overzicht */}
-      {referees.length > 0 && (
-        <div className="rounded-lg border border-border bg-card px-3 py-2">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-xs font-semibold text-foreground">Workload deze maand</div>
-            <div className="text-xs text-muted-foreground">aantal toewijzingen per ref</div>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {[...referees]
-              .sort((a, b) => (monthCounts.get(a.user_id) || 0) - (monthCounts.get(b.user_id) || 0))
-              .map((ref) => {
-                const count = monthCounts.get(ref.user_id) || 0;
-                const max = Math.max(1, ...Array.from(monthCounts.values()));
-                const intensity = count === 0 ? 0 : count / max;
-                return (
-                  <span
-                    key={ref.user_id}
-                    className="workload-chip inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs"
-                    style={{
-                      backgroundColor: count === 0
-                        ? 'hsl(var(--muted) / 0.3)'
-                        : `hsl(var(--primary) / ${0.08 + intensity * 0.22})`,
-                    }}
-                    title={`${ref.username}: ${count} deze maand · ${seasonCounts.get(ref.user_id) || 0} dit seizoen`}
-                  >
-                    <span>{ref.username}</span>
-                    <span className="workload-count font-mono">{count}</span>
-                  </span>
-                );
-              })}
-          </div>
-        </div>
-      )}
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-xs items-center bg-muted/30 px-3 py-2 rounded-lg border border-border/50">
-        <div className="flex items-center gap-1.5">
-          <div className="w-5 h-5 rounded-md bg-success flex items-center justify-center shadow-sm">
-            <Star className="h-3 w-3 text-white fill-white" />
-          </div>
-          <span className="text-foreground font-medium">Toegewezen</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-5 h-5 rounded-md bg-success/15 border border-success/40 flex items-center justify-center">
-            <Check className="h-3 w-3 text-success" />
-          </div>
-          <span className="text-foreground">Beschikbaar</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-5 h-5 rounded-md bg-muted border border-border flex items-center justify-center">
-            <X className="h-3 w-3 text-muted-foreground" />
-          </div>
-          <span className="text-foreground">Niet beschikbaar</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-5 h-5 rounded-md bg-card border border-dashed border-border flex items-center justify-center">
-            <Minus className="h-3 w-3 text-muted-foreground/60" />
-          </div>
-          <span className="text-foreground">Geen reactie <span className="text-muted-foreground">(klikbaar)</span></span>
-        </div>
-        <div className="ml-auto text-xs text-muted-foreground italic">
-          Tip: klik op elke cel om handmatig toe te wijzen
-        </div>
-      </div>
 
       {sessions.length === 0 ? (
         <Card>
@@ -766,21 +799,81 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             <p className="text-muted-foreground">Geen wedstrijden gevonden voor deze maand</p>
           </CardContent>
         </Card>
+      ) : referees.length === 0 ? (
+        <Card className="border border-destructive/30 bg-destructive/5">
+          <CardContent className="p-5">
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold text-foreground">Geen scheidsrechters gevonden</h3>
+              <p className="text-sm text-muted-foreground">
+                Er zijn wedstrijden voor deze maand, maar er zijn geen gebruikers met de rol scheidsrechter gevonden.
+                Voeg eerst scheidsrechters toe voor je deze matrix kan gebruiken.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       ) : (
         <TooltipProvider delayDuration={200}>
           {/* Desktop Matrix */}
           <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
             <div className="overflow-auto max-h-[70vh]">
-              <table className="w-full text-sm border-collapse">
+              <table
+                className="w-full table-fixed text-sm border-collapse"
+                style={{ minWidth: `${matrixMinWidth}px` }}
+              >
+                <colgroup>
+                  <col style={{ width: SESSION_COLUMN_WIDTH }} />
+                  {referees.map(ref => (
+                    <col key={ref.user_id} style={{ width: REFEREE_COLUMN_WIDTH }} />
+                  ))}
+                </colgroup>
                 <thead className="sticky top-0 z-20">
-                  <tr className="bg-muted">
-                    <th className="sticky left-0 z-30 bg-muted text-left px-2 py-2 font-semibold w-[150px] min-w-[150px] max-w-[150px] border-r border-b border-border text-foreground align-bottom">
-                      Sessie
+                  <tr className="bg-card">
+                    <th
+                      aria-label="Sessie"
+                      className="sticky left-0 z-30 bg-card text-left px-2 py-2 font-semibold border-r border-b-2 border-[hsl(var(--color-200))] text-foreground align-middle shadow-[0_1px_0_hsl(var(--color-200))]"
+                      style={{
+                        width: SESSION_COLUMN_WIDTH,
+                        minWidth: SESSION_COLUMN_WIDTH,
+                      }}
+                    >
+                      <div className="mx-auto flex max-w-[180px] flex-col gap-1 text-[10px] leading-tight">
+                        <div className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2">
+                          <span className="flex h-4 w-4 items-center justify-center rounded bg-success shadow-sm">
+                            <Star className="h-2.5 w-2.5 fill-white text-white" />
+                          </span>
+                          <span className="truncate">Toegewezen</span>
+                        </div>
+                        <div className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2">
+                          <span className="flex h-4 w-4 items-center justify-center rounded border border-success/40 bg-success/15">
+                            <Check className="h-2.5 w-2.5 text-success" />
+                          </span>
+                          <span className="truncate">Beschikbaar</span>
+                        </div>
+                        <div className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2">
+                          <span className="flex h-4 w-4 items-center justify-center rounded border border-border bg-muted">
+                            <X className="h-2.5 w-2.5 text-muted-foreground" />
+                          </span>
+                          <span className="truncate">Niet beschikbaar</span>
+                        </div>
+                        <div className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2">
+                          <span className="flex h-4 w-4 items-center justify-center rounded border border-dashed border-border bg-card">
+                            <Minus className="h-2.5 w-2.5 text-muted-foreground/60" />
+                          </span>
+                          <span className="truncate">Geen reactie</span>
+                        </div>
+                        <div className="mt-1 border-t border-border/60 pt-1 text-[9px] font-normal italic text-muted-foreground">
+                          Klik op een cel om handmatig toe te wijzen.
+                        </div>
+                      </div>
                     </th>
-                    {filteredReferees.map(ref => (
+                    {referees.map(ref => (
                       <th
                         key={ref.user_id}
-                        className="px-1 py-2 font-semibold w-10 min-w-[40px] max-w-[40px] border-r border-b border-border last:border-r-0 text-foreground bg-muted align-bottom h-40"
+                        className="h-36 border-r border-b-2 border-[hsl(var(--color-200))] bg-card px-1 py-2 align-bottom font-semibold text-foreground shadow-[0_1px_0_hsl(var(--color-200))] last:border-r-0"
+                        style={{
+                          width: REFEREE_COLUMN_WIDTH,
+                          minWidth: REFEREE_COLUMN_WIDTH,
+                        }}
                       >
                         <div
                           className="text-xs leading-tight whitespace-nowrap mx-auto"
@@ -798,24 +891,37 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                     const assignedRefId = getSessionAssignedReferee(session);
                     const rowBg = sessionIdx % 2 === 0 ? 'bg-card' : 'bg-muted/20';
                     return (
-                      <tr key={session.key} className={`${rowBg} hover:bg-primary/5 transition-colors`}>
-                        <td className={`sticky left-0 z-10 ${rowBg} px-2 py-2 border-r border-t border-border align-top w-[150px] min-w-[150px] max-w-[150px]`}>
-                          <div className="font-semibold text-foreground text-xs leading-tight">
-                            {formatDateWithDay(session.date)}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1 leading-tight">
-                            <span className="inline-block w-1 h-1 rounded-full bg-primary shrink-0" />
-                            <span className="truncate">{session.location} · {formatTimeForDisplay(session.date)}</span>
-                          </div>
-                          <div className="mt-1 flex flex-col gap-0.5">
-                            {session.matches.map((m, i) => (
-                              <div key={i} className="text-[9px] leading-tight text-muted-foreground/70 break-words">
-                                {m.home_team_name} – {m.away_team_name}
-                              </div>
-                            ))}
+                      <tr
+                        key={session.key}
+                        className={`${rowBg} hover:bg-primary/5 transition-colors`}
+                        style={{ height: SESSION_ROW_HEIGHT }}
+                      >
+                        <td
+                          className={`sticky left-0 z-10 ${rowBg} border-r border-t border-border p-0 align-middle`}
+                          style={{
+                            width: SESSION_COLUMN_WIDTH,
+                            minWidth: SESSION_COLUMN_WIDTH,
+                            height: SESSION_ROW_HEIGHT,
+                          }}
+                        >
+                          <div className="flex h-full min-w-0 flex-col items-center justify-center px-2 py-2 text-center">
+                            <div className="flex max-w-full min-w-0 items-center justify-center gap-1.5 text-xs font-semibold leading-tight text-foreground">
+                              <span className="shrink-0">{formatDateWithDay(session.date)}</span>
+                              <span className="h-1 w-1 shrink-0 rounded-full bg-primary" />
+                              <span className="truncate">{formatSessionLocation(session.location)}</span>
+                              <span className="h-1 w-1 shrink-0 rounded-full bg-primary" />
+                              <span className="shrink-0">{formatTimeForDisplay(session.date)}</span>
+                            </div>
+                            <div className="mt-1.5 flex max-h-[28px] w-full flex-col items-center gap-0.5 overflow-hidden border-t border-border/60 pt-1.5">
+                              {session.matches.map((m, i) => (
+                                <div key={i} className="max-w-full truncate text-center text-[9px] leading-tight text-muted-foreground/70">
+                                  {m.home_team_name} – {m.away_team_name}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </td>
-                        {filteredReferees.map(ref => {
+                        {referees.map(ref => {
                           const available = isRefereeAvailable(session, ref.user_id);
                           const hasResponded = hasRefereeResponded(session, ref.user_id);
                           const assignment = getSessionAssignment(session, ref.user_id);
@@ -824,14 +930,13 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                           const cellKey = `${session.matches[0]?.match_id}-${ref.user_id}`;
                           const isLoading = assigning === cellKey;
 
-                          // Default: "Geen reactie" — admin kan toch handmatig toewijzen.
-                          let cellClass = 'bg-card hover:bg-primary/10 cursor-pointer border border-dashed border-border';
+                          // Default: "Geen reactie" — admin zet eerst beschikbaarheid, daarna pas toewijzen.
+                          let cellClass = 'bg-card hover:bg-primary/10 cursor-pointer';
                           let cellContent: React.ReactNode = (
                             <Minus className="h-3.5 w-3.5 mx-auto text-muted-foreground/60" />
                           );
-                          let tooltipText = `${ref.username} – Geen reactie · Klik om handmatig toe te wijzen`;
+                          let tooltipText = `${ref.username} – Geen reactie · Klik om beschikbaar te zetten`;
                           let clickable = true;
-                          let forceAssign = true;
 
                           if (isAssigned) {
                             cellClass = 'bg-success hover:bg-success/90 cursor-pointer ring-2 ring-success/30 ring-inset';
@@ -848,7 +953,6 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                               return `${ref.username} – Toegewezen${suffix} · Klik om te verwijderen`;
                             })();
                             clickable = true;
-                            forceAssign = false;
                           } else if (isOtherAssigned) {
                             cellClass = 'bg-muted/40 opacity-50';
                             cellContent = available ? (
@@ -860,20 +964,17 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                             );
                             tooltipText = `${ref.username} – Andere scheidsrechter al toegewezen`;
                             clickable = false;
-                            forceAssign = false;
                           } else if (available) {
-                            cellClass = 'bg-success/15 hover:bg-success/30 cursor-pointer border border-success/40';
+                            cellClass = 'bg-success/15 hover:bg-success/30 cursor-pointer';
                             cellContent = <Check className="h-4 w-4 mx-auto text-success" />;
                             tooltipText = `${ref.username} – Beschikbaar · Klik om toe te wijzen`;
                             clickable = true;
-                            forceAssign = false;
                           } else if (hasResponded) {
-                            // Ref is expliciet niet-beschikbaar — admin kan met waarschuwing toch toewijzen.
-                            cellClass = 'bg-destructive/5 hover:bg-destructive/15 cursor-pointer border border-destructive/30';
+                            // Ref is expliciet niet-beschikbaar — admin kan hem eerst beschikbaar zetten.
+                            cellClass = 'bg-destructive/5 hover:bg-destructive/15 cursor-pointer';
                             cellContent = <X className="h-3.5 w-3.5 mx-auto text-destructive/70" />;
-                            tooltipText = `${ref.username} – Niet beschikbaar · Klik om alsnog toe te wijzen`;
+                            tooltipText = `${ref.username} – Niet beschikbaar · Klik om beschikbaar te zetten`;
                             clickable = true;
-                            forceAssign = true;
                           }
 
                           if (isLoading) {
@@ -883,39 +984,60 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                           return (
                             <td
                               key={ref.user_id}
-                              className="border-r border-t border-border last:border-r-0 p-1"
+                              className="border-r border-t border-border p-0 align-middle last:border-r-0"
+                              style={{
+                                width: REFEREE_COLUMN_WIDTH,
+                                minWidth: REFEREE_COLUMN_WIDTH,
+                                height: SESSION_ROW_HEIGHT,
+                              }}
                             >
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div
-                                    role={clickable ? 'button' : undefined}
-                                    aria-pressed={clickable ? isAssigned : undefined}
-                                    aria-label={tooltipText}
-                                    tabIndex={clickable ? 0 : -1}
-                                    className={`h-10 rounded-md flex items-center justify-center transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${cellClass}`}
-                                    onClick={() => {
-                                      if (isLoading || !clickable || isOtherAssigned) return;
-                                      if (isAssigned && assignment) {
-                                        handleRemove(assignment);
-                                        return;
-                                      }
-                                      if (forceAssign && hasResponded && !available) {
-                                        // Expliciet niet-beschikbaar — vraag bevestiging.
-                                        const ok = window.confirm(
-                                          `${ref.username} heeft aangegeven NIET beschikbaar te zijn voor deze sessie.\n\nToch toewijzen?`
-                                        );
-                                        if (!ok) return;
-                                      }
-                                      handleAssign(session, ref.user_id);
-                                    }}
-                                  >
-                                    {cellContent}
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="text-xs">
-                                  {tooltipText}
-                                </TooltipContent>
-                              </Tooltip>
+                              <DropdownMenu>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <DropdownMenuTrigger asChild disabled={isLoading || !clickable || isOtherAssigned}>
+                                      <button
+                                        type="button"
+                                        aria-pressed={clickable ? isAssigned : undefined}
+                                        aria-label={tooltipText}
+                                        className={`flex h-full w-full items-center justify-center transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:cursor-not-allowed ${cellClass}`}
+                                        style={{ height: SESSION_ROW_HEIGHT }}
+                                      >
+                                        {cellContent}
+                                      </button>
+                                    </DropdownMenuTrigger>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">
+                                    {tooltipText}
+                                  </TooltipContent>
+                                </Tooltip>
+                                <DropdownMenuContent align="center" className="w-44 border border-[hsl(var(--color-200))] shadow-sm">
+                                  <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, ref.user_id, true)}>
+                                    <Check className="mr-2 h-3.5 w-3.5 text-success" />
+                                    Beschikbaar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, ref.user_id, false)}>
+                                    <X className="mr-2 h-3.5 w-3.5 text-destructive/80" />
+                                    Niet beschikbaar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, ref.user_id, null)}>
+                                    <Minus className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                                    Geen reactie
+                                  </DropdownMenuItem>
+                                  {(available || isAssigned) && <DropdownMenuSeparator />}
+                                  {available && !isAssigned && !isOtherAssigned && (
+                                    <DropdownMenuItem onSelect={() => handleAssign(session, ref.user_id)}>
+                                      <Star className="mr-2 h-3.5 w-3.5 text-success" />
+                                      Toewijzen
+                                    </DropdownMenuItem>
+                                  )}
+                                  {isAssigned && assignment && (
+                                    <DropdownMenuItem onSelect={() => handleRemove(assignment)}>
+                                      <X className="mr-2 h-3.5 w-3.5 text-destructive/80" />
+                                      Toewijzing verwijderen
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </td>
                           );
                         })}
@@ -949,8 +1071,8 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {filteredReferees.map(ref => {
+                    <div className="grid grid-cols-1 gap-1.5 pt-1 lg:grid-cols-2">
+                      {referees.map(ref => {
                         const available = isRefereeAvailable(session, ref.user_id);
                         const hasResponded = hasRefereeResponded(session, ref.user_id);
                         const assignment = getSessionAssignment(session, ref.user_id);
@@ -960,48 +1082,64 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                         const isLoadingCell = assigning === cellKey;
 
                         // Pill-stijl op basis van status
-                        let pillClass = 'bg-card border border-dashed border-border text-muted-foreground'; // geen reactie
+                        let pillClass = 'bg-card border border-border/60 text-muted-foreground'; // geen reactie
                         if (isAssigned) pillClass = 'pill-success-strong shadow-sm';
                         else if (available) pillClass = 'bg-success/15 border border-success/40 text-foreground';
                         else if (hasResponded) pillClass = 'bg-destructive/5 border border-destructive/30 text-foreground';
 
                         return (
-                          <button
-                            key={ref.user_id}
-                            disabled={isLoadingCell || (isOtherAssigned && !isAssigned)}
-                            onClick={() => {
-                              if (isAssigned && assignment) {
-                                handleRemove(assignment);
-                                return;
-                              }
-                              if (isOtherAssigned) return;
-                              if (hasResponded && !available) {
-                                const ok = window.confirm(
-                                  `${ref.username} gaf NIET beschikbaar op. Toch toewijzen?`
-                                );
-                                if (!ok) return;
-                              }
-                              handleAssign(session, ref.user_id);
-                            }}
-                            className={`
-                              inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium
-                              transition-all min-h-[32px]
-                              ${pillClass}
-                              ${isOtherAssigned && !isAssigned ? 'opacity-40' : ''}
-                              disabled:cursor-not-allowed
-                            `}
-                          >
-                            {isLoadingCell ? (
-                              <RefreshCw className="h-3 w-3 animate-spin" />
-                            ) : isAssigned ? (
-                              <Star className="h-3 w-3 fill-white" />
-                            ) : !hasResponded ? (
-                              <Minus className="h-3 w-3 opacity-60" />
-                            ) : !available ? (
-                              <X className="h-3 w-3 opacity-60" />
-                            ) : null}
-                            {ref.username}
-                          </button>
+                          <DropdownMenu key={ref.user_id}>
+                            <DropdownMenuTrigger asChild disabled={isLoadingCell || (isOtherAssigned && !isAssigned)}>
+                              <button
+                                type="button"
+                                className={`
+                                  inline-flex min-h-[36px] w-full min-w-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium
+                                  transition-all
+                                  ${pillClass}
+                                  ${isOtherAssigned && !isAssigned ? 'opacity-40' : ''}
+                                  disabled:cursor-not-allowed
+                                `}
+                              >
+                                {isLoadingCell ? (
+                                  <RefreshCw className="h-3 w-3 shrink-0 animate-spin" />
+                                ) : isAssigned ? (
+                                  <Star className="h-3 w-3 shrink-0 fill-white" />
+                                ) : !hasResponded ? (
+                                  <Minus className="h-3 w-3 shrink-0 opacity-60" />
+                                ) : !available ? (
+                                  <X className="h-3 w-3 shrink-0 opacity-60" />
+                                ) : null}
+                                <span className="truncate">{ref.username}</span>
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-44 border border-[hsl(var(--color-200))] shadow-sm">
+                              <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, ref.user_id, true)}>
+                                <Check className="mr-2 h-3.5 w-3.5 text-success" />
+                                Beschikbaar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, ref.user_id, false)}>
+                                <X className="mr-2 h-3.5 w-3.5 text-destructive/80" />
+                                Niet beschikbaar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, ref.user_id, null)}>
+                                <Minus className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                                Geen reactie
+                              </DropdownMenuItem>
+                              {(available || isAssigned) && <DropdownMenuSeparator />}
+                              {available && !isAssigned && !isOtherAssigned && (
+                                <DropdownMenuItem onSelect={() => handleAssign(session, ref.user_id)}>
+                                  <Star className="mr-2 h-3.5 w-3.5 text-success" />
+                                  Toewijzen
+                                </DropdownMenuItem>
+                              )}
+                              {isAssigned && assignment && (
+                                <DropdownMenuItem onSelect={() => handleRemove(assignment)}>
+                                  <X className="mr-2 h-3.5 w-3.5 text-destructive/80" />
+                                  Toewijzing verwijderen
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         );
                       })}
                     </div>
@@ -1010,6 +1148,63 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
               );
             })}
           </div>
+
+          <Collapsible
+            open={copyMessagesOpen}
+            onOpenChange={setCopyMessagesOpen}
+            className="rounded-xl border border-border bg-card shadow-sm"
+          >
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+              >
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-foreground">Copy/paste berichten</div>
+                  <div className="text-xs text-muted-foreground">
+                    Kant-en-klare tekst per scheidsrechter voor de toegewezen wedstrijden.
+                  </div>
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                    copyMessagesOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="space-y-3 border-t border-border p-3">
+                {refereeCopyMessages.map((message) => (
+                  <div key={message.refereeId} className="rounded-lg border border-border/70 bg-muted/20 p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-foreground">{message.refereeName}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {message.assignmentCount} wedstrijdblok{message.assignmentCount === 1 ? '' : 'ken'}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 shrink-0 gap-1.5 px-2"
+                        onClick={() => copyText(message.text)}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Kopieer
+                      </Button>
+                    </div>
+                    <textarea
+                      readOnly
+                      value={message.text}
+                      className="min-h-[96px] w-full resize-y rounded-md border border-border bg-background p-2 font-mono text-xs leading-relaxed text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onFocus={(event) => event.currentTarget.select()}
+                    />
+                  </div>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </TooltipProvider>
       )}
     </div>
