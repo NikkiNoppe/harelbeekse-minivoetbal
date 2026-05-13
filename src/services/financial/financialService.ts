@@ -28,7 +28,6 @@ export interface PenaltyType {
   name: string;
   description: string | null;
   amount: number;
-  is_active: boolean;
 }
 
 export interface FinancialSettings {
