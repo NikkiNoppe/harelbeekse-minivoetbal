@@ -3060,6 +3060,22 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
             </p>
           </div>
         </AppModal>
+
+        {forfaitEmailContext && (
+          <ForfaitEmailModal
+            open={forfaitEmailModalOpen}
+            onOpenChange={(o) => {
+              setForfaitEmailModalOpen(o);
+              if (!o) setForfaitEmailContext(null);
+            }}
+            homeTeamName={match.homeTeamName}
+            awayTeamName={match.awayTeamName}
+            forfaitTeamName={forfaitEmailContext.forfaitTeamName}
+            matchDate={match.date}
+            matchTime={match.time}
+            location={match.location}
+          />
+        )}
       </div>
     </AppModal>
   );
