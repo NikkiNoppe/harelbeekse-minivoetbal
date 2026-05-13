@@ -6,7 +6,6 @@ export interface CostSetting {
   name: string;
   amount: number;
   category: 'match_cost' | 'penalty' | 'other' | 'deposit';
-  is_active: boolean;
   created_at?: string;
   updated_at?: string;
 }
