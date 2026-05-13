@@ -394,12 +394,10 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
                       type="button"
                       size="sm"
                       className="h-8 gap-1.5 bg-[#25D366] px-2 text-white hover:bg-[#1ebe57]"
-                      asChild
+                      onClick={() => window.open(waUrl, "_blank", "noopener,noreferrer")}
                     >
-                      <a href={waUrl} target="_blank" rel="noopener noreferrer">
-                        <MessageCircle className="h-3.5 w-3.5" />
-                        Open WhatsApp
-                      </a>
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      Open WhatsApp
                     </Button>
                   </div>
                   <textarea
