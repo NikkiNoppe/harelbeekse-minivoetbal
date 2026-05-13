@@ -1961,17 +1961,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       <Plus className="h-3.5 w-3.5 mr-1.5" />
                       Boete toevoegen
                     </Button>
-                    {forfaitVerwittigdPenaltyCost ? (
-                      <Button
-                        type="button"
-                        onClick={addForfaitPenaltyPreset}
-                        disabled={isAddPenaltyButtonDisabled}
-                        className="btn btn--secondary h-8 px-3 w-full sm:w-auto sm:flex-none"
-                      >
-                        <AlertTriangle className="h-3.5 w-3.5 mr-1.5 shrink-0" />
-                        Forfait verwittigd (€{Number(forfaitVerwittigdPenaltyCost.amount).toFixed(0)})
-                      </Button>
-                    ) : null}
                   </div>
                 )}
 
