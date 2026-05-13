@@ -20,7 +20,6 @@ const EMPTY_FORM = {
   name: '',
   amount: '',
   category: 'penalty' as 'match_cost' | 'penalty' | 'other',
-  description: ''
 };
 
 export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProps> = ({ open, onOpenChange }) => {
@@ -55,8 +54,6 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
       name: formData.name,
       amount: parseFloat(formData.amount),
       category: formData.category,
-      description: formData.description || null,
-      is_active: true
     };
 
     let result;
@@ -94,7 +91,6 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
     setEditingId(item.id);
     setFormData({
       name: item.name,
-      description: item.description || '',
       amount: item.amount?.toString() || '0',
       category: item.category
     });
@@ -222,16 +218,6 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                   placeholder="0.00"
-                  className="modal__input"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label>Beschrijving</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Optionele beschrijving..."
-                  rows={2}
                   className="modal__input"
                 />
               </div>

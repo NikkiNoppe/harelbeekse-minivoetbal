@@ -47,15 +47,15 @@ export async function matchHasForfaitPenalty(matchId: number): Promise<boolean> 
 
   const { data: rows, error } = await supabase
     .from("team_costs")
-    .select("costs!inner(name, category, is_active)")
+    .select("costs!inner(name, category)")
     .eq("match_id", matchId)
     .eq("costs.category", "penalty");
 
   if (error || !rows?.length) return false;
 
-  return rows.some((row: { costs?: { name?: string; is_active?: boolean | null } }) => {
+  return rows.some((row: { costs?: { name?: string } }) => {
     const c = row.costs;
-    if (!c || c.is_active === false) return false;
+    if (!c) return false;
     return costNameImpliesMatchCostSuppression(c.name);
   });
 }
@@ -133,7 +133,6 @@ async function getActiveFieldMatchCostSettingId(): Promise<number | null> {
     .from("costs")
     .select("id, name")
     .eq("category", "match_cost")
-    .eq("is_active", true);
   if (error || !costRows?.length) return null;
   const fieldRow = costRows.find((cs) => {
     const n = (cs.name || "").toLowerCase();
@@ -304,7 +303,6 @@ export const matchCostService = {
         .from('costs')
         .select('id, amount, name, category')
         .eq('category', 'match_cost')
-        .eq('is_active', true);
 
       if (costErr) {
         console.error('❌ [matchCostService] Failed to fetch cost settings:', costErr);

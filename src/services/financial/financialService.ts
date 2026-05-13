@@ -28,7 +28,6 @@ export interface PenaltyType {
   name: string;
   description: string | null;
   amount: number;
-  is_active: boolean;
 }
 
 export interface FinancialSettings {
@@ -98,9 +97,8 @@ export const financialService = {
       return costSettings.map(cs => ({
         id: cs.id,
         name: cs.name,
-        description: cs.name, // Use name as description
+        description: cs.name,
         amount: cs.amount,
-        is_active: cs.is_active
       }));
     } catch (error) {
       console.error('Error fetching penalty types:', error);

@@ -6,7 +6,6 @@ export interface CostSetting {
   name: string;
   amount: number;
   category: 'match_cost' | 'penalty' | 'other' | 'deposit';
-  is_active: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -38,7 +37,6 @@ export const costSettingsService = {
       const { data, error } = await supabase
         .from('costs')
         .select('*')
-        .eq('is_active', true)
         .order('category', { ascending: true })
         .order('name', { ascending: true });
 
@@ -59,7 +57,6 @@ export const costSettingsService = {
         .from('costs')
         .select('*')
         .eq('category', 'match_cost')
-        .eq('is_active', true)
         .order('name');
 
       if (error) throw error;
@@ -79,7 +76,6 @@ export const costSettingsService = {
         .from('costs')
         .select('*')
         .eq('category', 'penalty')
-        .eq('is_active', true)
         .order('name');
 
       if (error) throw error;
@@ -245,7 +241,6 @@ export const costSettingsService = {
               name: 'Storting',
               amount: 0,
               category: 'deposit',
-              is_active: true
             }])
             .select('id')
             .single();
@@ -317,7 +312,6 @@ export const costSettingsService = {
           amount: transaction.amount,
           category: transaction.transaction_type === 'penalty' ? 'penalty' : 
                    transaction.transaction_type === 'match_cost' ? 'match_cost' : 'other',
-          is_active: true
         }])
         .select('id')
         .single();
