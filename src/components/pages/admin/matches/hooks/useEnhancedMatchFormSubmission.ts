@@ -4,6 +4,7 @@ import { enhancedMatchService } from "@/services/match";
 import { MatchFormData } from "../types";
 import { useToast } from "@/hooks/use-toast";
 import { type MatchFormSettings } from "@/hooks/useMatchFormSettings";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useEnhancedMatchFormSubmission = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -133,6 +134,19 @@ export const useEnhancedMatchFormSubmission = () => {
         await queryClient.invalidateQueries({ queryKey: ['teamMatches'] });
         await queryClient.invalidateQueries({ queryKey: ['match', matchData.matchId] });
         console.log('🔄 [useEnhancedMatchFormSubmission] Query invalidation complete');
+
+        // Trigger auto-suspension notification email (fire-and-forget)
+        try {
+          supabase.functions.invoke('notify-auto-suspension', {
+            body: { matchId: matchData.matchId }
+          }).then((res) => {
+            console.log('📧 [notify-auto-suspension] result:', res);
+          }).catch((err) => {
+            console.error('📧 [notify-auto-suspension] error:', err);
+          });
+        } catch (e) {
+          console.error('📧 [notify-auto-suspension] invoke failed:', e);
+        }
 
         return { success: true };
       } else {
