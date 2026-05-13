@@ -467,6 +467,18 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
       if (hadForfaitVerwittigd) {
         setSelectedReferee("");
+        const forfaitItem = validItems.find((p) => {
+          const cs = availablePenalties.find((x) => Number(x.id) === Number(p.costSettingId));
+          return cs != null && costNameIsForfaitVerwittigd(cs.name);
+        });
+        if (forfaitItem) {
+          const forfaitTeamName =
+            Number(forfaitItem.teamId) === Number(match.homeTeamId)
+              ? match.homeTeamName
+              : match.awayTeamName;
+          setForfaitEmailContext({ forfaitTeamName });
+          setForfaitEmailModalOpen(true);
+        }
       }
 
       const savedKeys = new Set(
