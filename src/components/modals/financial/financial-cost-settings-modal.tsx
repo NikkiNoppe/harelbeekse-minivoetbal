@@ -91,7 +91,6 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
     setEditingId(item.id);
     setFormData({
       name: item.name,
-      description: item.description || '',
       amount: item.amount?.toString() || '0',
       category: item.category
     });
