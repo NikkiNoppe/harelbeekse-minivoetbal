@@ -222,14 +222,8 @@ Deno.serve(async (req) => {
           .from('team_costs')
           .delete()
           .eq('match_id', matchId)
-          .or([
-            // Any penalty category (active/inactive)
-            `cost_setting_id.in.(${allPenaltyIds.join(',')})`,
-            // Explicitly auto-generated rows
-            'is_auto_card_penalty.eq.true',
-            // Rows tied to the match date (common convention for card penalties)
-            ...(matchDateISO ? [`transaction_date.eq.${matchDateISO.slice(0,10)}`] : [])
-          ].filter(Boolean).join(','));
+          .eq('is_auto_card_penalty', true)
+          .in('cost_setting_id', allPenaltyIds);
         if (delAllErr) {
           throw new Error(`Failed to delete all obsolete penalty rows: ${delAllErr.message}`);
         }
