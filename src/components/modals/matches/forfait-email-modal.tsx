@@ -129,23 +129,38 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
     }
     setSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-forfait-notification", {
-        body: {
-          recipients: selectedEmails,
-          homeTeamName,
-          awayTeamName,
-          forfaitTeamName,
-          matchDate,
-          matchTime,
-          location,
-        },
-      });
-      if (error || (data && (data as any).error)) {
-        throw new Error(error?.message || (data as any)?.error || "Versturen mislukt");
+      const baseKey = `forfait-${homeTeamId ?? 'h'}-${awayTeamId ?? 'a'}-${matchDate ?? ''}-${matchTime ?? ''}`;
+      const results = await Promise.all(
+        selectedEmails.map((recipientEmail) =>
+          supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "forfait-notification",
+              recipientEmail,
+              idempotencyKey: `${baseKey}-${recipientEmail}`,
+              templateData: {
+                homeTeamName,
+                awayTeamName,
+                forfaitTeamName,
+                matchDate,
+                matchTime,
+                location,
+              },
+            },
+          })
+        )
+      );
+      const failed = results.filter((r) => r.error || (r.data as any)?.error);
+      if (failed.length === selectedEmails.length) {
+        throw new Error(
+          failed[0].error?.message || (failed[0].data as any)?.error || "Versturen mislukt"
+        );
       }
       toast({
-        title: "Email verzonden",
-        description: `Verzonden naar ${selectedEmails.length} ontvanger(s).`,
+        title: failed.length ? "Deels verzonden" : "Email verzonden",
+        description: failed.length
+          ? `${selectedEmails.length - failed.length}/${selectedEmails.length} verzonden.`
+          : `Verzonden naar ${selectedEmails.length} ontvanger(s).`,
+        variant: failed.length ? "destructive" : "default",
       });
       setSelected({});
       onOpenChange(false);
