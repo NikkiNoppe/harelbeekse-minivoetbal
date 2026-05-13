@@ -133,7 +133,8 @@ Deno.serve(async (req) => {
       }
 
       const transactionDate = match.match_date?.slice(0, 10) || new Date().toISOString().slice(0, 10);
-      const hasReferee = match.assigned_referee_id != null;
+      const refereeText = (match as { referee?: string | null }).referee;
+      const hasReferee = match.assigned_referee_id != null || (typeof refereeText === 'string' && refereeText.trim() !== '');
 
       const costSettingIds = [fieldCost.id, ...(refereeCost ? [refereeCost.id] : []), ...(adminCost ? [adminCost.id] : [])];
       const { data: existingCosts, error: existingCostsErr } = await supabaseServiceRole
