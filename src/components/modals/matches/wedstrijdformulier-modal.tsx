@@ -572,6 +572,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     match.awayScore,
     match.homeTeamId,
     match.awayTeamId,
+    match.homeTeamName,
+    match.awayTeamName,
     persistPenaltyItems,
     toast,
   ]);
