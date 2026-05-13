@@ -2152,10 +2152,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
                   {hasForfaitPenalty && (
                     <div className="rounded-lg border border-blue-200 bg-blue-50/80 px-3 py-2.5 text-sm text-blue-950">
-                      <p>
-                        Forfait actief: standaard wedstrijdkosten (veld/scheids/admin) zijn niet van toepassing voor deze wedstrijd.
-                        Boetes beheer je in het blok hierboven.
-                      </p>
+                      <p>Forfait actief — standaard wedstrijdkosten vervallen voor deze wedstrijd.</p>
                     </div>
                   )}
 
