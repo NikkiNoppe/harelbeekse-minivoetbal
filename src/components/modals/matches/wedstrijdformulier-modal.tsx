@@ -3080,6 +3080,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
               setForfaitEmailModalOpen(o);
               if (!o) setForfaitEmailContext(null);
             }}
+            homeTeamId={match.homeTeamId}
+            awayTeamId={match.awayTeamId}
             homeTeamName={match.homeTeamName}
             awayTeamName={match.awayTeamName}
             forfaitTeamName={forfaitEmailContext.forfaitTeamName}
