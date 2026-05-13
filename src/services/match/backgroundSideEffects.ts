@@ -357,7 +357,6 @@ const syncFormCompletionPenalties = async (
     .from('costs')
     .select('id, name, amount')
     .in('name', ['Wedstrijdformulier niet ingevuld', 'Wedstrijdformulier niet correct ingevuld'])
-    .eq('is_active', true);
 
   if (costError || !costSettings || costSettings.length === 0) {
     throw new Error('Could not find form completion penalty cost settings');
@@ -551,7 +550,6 @@ export const getFailedSideEffects = async (matchId?: number): Promise<any[]> => 
     .from('application_settings')
     .select('*')
     .eq('setting_category', 'failed_side_effects')
-    .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(50);
 
