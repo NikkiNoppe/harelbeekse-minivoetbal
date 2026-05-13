@@ -362,10 +362,20 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
       });
     });
     
-    // Sort by date (newest first)
-    return grouped.sort((a, b) => 
-      new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
-    );
+    // Sort by date (newest first), prefer match_date when available, tie-break on max transaction id
+    const getSortDate = (g: any) => {
+      const d = g?.match_info?.match_date || g?.transaction_date;
+      return d ? new Date(d).getTime() : 0;
+    };
+    const getMaxId = (g: any) => {
+      const ids = (g?.transactions || []).map((t: any) => Number(t?.id) || 0);
+      return ids.length ? Math.max(...ids) : 0;
+    };
+    return grouped.sort((a, b) => {
+      const diff = getSortDate(b) - getSortDate(a);
+      if (diff !== 0) return diff;
+      return getMaxId(b) - getMaxId(a);
+    });
   };
 
   const groupedTransactions = groupTransactionsByMatch();
