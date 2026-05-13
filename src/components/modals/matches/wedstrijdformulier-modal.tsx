@@ -1953,15 +1953,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                   </div>
                 )}
 
-                {penalties.length === 0 && savedPenalties.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-4 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted mb-2.5">
-                      <AlertTriangle className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <p className="text-sm font-medium text-muted-foreground">Nog geen boetes. Gebruik de knoppen hierboven.</p>
-                  </div>
-                )}
-
                 {/* New Penalties Section */}
                 {penalties.length > 0 && (
                   <div id="penalties-new-list" className="space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
