@@ -221,16 +221,6 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
                   className="modal__input"
                 />
               </div>
-              <div className="md:col-span-2">
-                <Label>Beschrijving</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Optionele beschrijving..."
-                  rows={2}
-                  className="modal__input"
-                />
-              </div>
             </div>
             <div className="modal__actions mt-4">
               <button onClick={handleSave} disabled={isSaving} className="btn btn--primary">
