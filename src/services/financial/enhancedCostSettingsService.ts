@@ -6,7 +6,6 @@ export interface CostSetting {
   name: string;
   amount: number;
   category: 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost';
-  is_active: boolean;
 }
 
 export interface TeamTransaction {
