@@ -54,8 +54,6 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
       name: formData.name,
       amount: parseFloat(formData.amount),
       category: formData.category,
-      description: formData.description || null,
-      is_active: true
     };
 
     let result;
