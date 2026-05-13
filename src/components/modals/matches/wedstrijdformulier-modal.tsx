@@ -1909,7 +1909,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                     value={selection.playerId!.toString()}
                     className="dropdown-item-login-style"
                   >
-                    {selection.playerName || `Speler #${selection.playerId}`}
+                    {selection.jerseyNumber ? `#${selection.jerseyNumber} ` : ''}{selection.playerName || `Speler #${selection.playerId}`}
                   </SelectItem>
                 ))}
               </>
