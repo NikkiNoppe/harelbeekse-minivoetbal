@@ -1332,6 +1332,34 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           title: "Spelers opgeslagen",
           description: "De spelersselectie is succesvol opgeslagen.",
         });
+
+        // Waarschuwing voor teamverantwoordelijken: ontbrekende rugnummers of aanvoerder kan boete opleveren
+        if (isTeamManager) {
+          const checkTeam = (selections: any[] | undefined) => {
+            if (!selections) return { missingJersey: false, missingCaptain: false };
+            const activePlayers = selections.filter(s => s.playerId);
+            const missingJersey = activePlayers.some(s => !s.jerseyNumber || String(s.jerseyNumber).trim() === "");
+            const missingCaptain = activePlayers.length > 0 && !activePlayers.some(s => s.isCaptain);
+            return { missingJersey, missingCaptain };
+          };
+          const home = checkTeam(homePlayersToSave as any[]);
+          const away = checkTeam(awayPlayersToSave as any[]);
+          const missingJersey = home.missingJersey || away.missingJersey;
+          const missingCaptain = home.missingCaptain || away.missingCaptain;
+
+          if (missingJersey || missingCaptain) {
+            const parts: string[] = [];
+            if (missingJersey) parts.push("rugnummers ontbreken");
+            if (missingCaptain) parts.push("er is geen aanvoerder aangeduid");
+            toast({
+              title: "⚠️ Let op: mogelijke boete",
+              description: `Sommige ${parts.join(" en ")}. Dit kan een boete opleveren — vul dit aan om boetes te vermijden.`,
+              variant: "destructive",
+              duration: 8000,
+            });
+          }
+        }
+
         handleComplete(); // Sluit modal na succes
       }
     } catch (error) {
