@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
-import { flushSync } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { MatchesPenaltyShootoutModal } from "@/components/modals";
@@ -215,8 +214,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       }
     };
     loadAvailablePenalties();
-    loadExistingPenalties();
-  }, [open, loadExistingPenalties]);
+  }, [open, match.matchId]);
 
   useEffect(() => {
     if (!open || availablePenalties.length === 0) return;
@@ -389,12 +387,10 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [toast, refreshFinancialState]);
 
   const addPenalty = useCallback(() => {
-    flushSync(() => {
-      setIsFinancieelOpen(true);
-      setPenalties(prev => {
-        const validPenalties = prev.filter(p => p.teamId && p.costSettingId);
-        return [...validPenalties, { costSettingId: null, teamId: null }];
-      });
+    setIsFinancieelOpen(true);
+    setPenalties(prev => {
+      const validPenalties = prev.filter(p => p.teamId && p.costSettingId);
+      return [...validPenalties, { costSettingId: null, teamId: null }];
     });
     requestAnimationFrame(() => {
       document.getElementById('penalties-new-list')?.scrollIntoView({
@@ -548,11 +544,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       return;
     }
 
-    flushSync(() => {
-      setPenalties((prev) => {
-        const valid = prev.filter((p) => p.teamId && p.costSettingId);
-        return [...valid, draft];
-      });
+    setPenalties((prev) => {
+      const valid = prev.filter((p) => p.teamId && p.costSettingId);
+      return [...valid, draft];
     });
     toast({
       title: "Forfait toegevoegd",
