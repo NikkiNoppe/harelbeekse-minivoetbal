@@ -4,6 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { withUserContext } from "@/lib/supabaseUtils";
 import { useToast } from "@/hooks/use-toast";
 
 const DEFAULT_RECIPIENTS = [
