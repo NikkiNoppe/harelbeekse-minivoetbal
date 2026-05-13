@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useEffect, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { MatchesPenaltyShootoutModal } from "@/components/modals";
+import { ForfaitEmailModal } from "./forfait-email-modal";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChevronDown } from "lucide-react";
