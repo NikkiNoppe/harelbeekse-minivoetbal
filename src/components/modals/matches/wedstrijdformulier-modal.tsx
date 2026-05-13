@@ -513,7 +513,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     } finally {
       setIsLoadingPenalties(false);
     }
-  }, [availablePenalties, match.matchId, toast, refreshFinancialState, setSelectedReferee]);
+  }, [availablePenalties, match.matchId, match.homeTeamId, match.homeTeamName, match.awayTeamName, toast, refreshFinancialState, setSelectedReferee]);
 
   /** Standaard forfait-regel: vult boetype + verliezend team in en slaat direct op wanneer het team bekend is. */
   const addForfaitPenaltyPreset = useCallback(async () => {
