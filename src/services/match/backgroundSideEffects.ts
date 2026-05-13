@@ -357,6 +357,7 @@ const syncFormCompletionPenalties = async (
     .from('costs')
     .select('id, name, amount')
     .in('name', ['Wedstrijdformulier niet ingevuld', 'Wedstrijdformulier niet correct ingevuld'])
+    .eq('category', 'penalty');
 
   if (costError || !costSettings || costSettings.length === 0) {
     throw new Error('Could not find form completion penalty cost settings');
