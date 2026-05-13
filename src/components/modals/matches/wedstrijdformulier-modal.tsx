@@ -2191,10 +2191,11 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       <span className="text-sm text-muted-foreground">Kosten laden...</span>
                     </div>
                   ) : matchCosts.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-4 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Geen kosten voor deze wedstrijd</p>
-                      <p className="text-xs text-muted-foreground/70 text-center">Standaardkosten worden automatisch aangemaakt bij indiening.</p>
-                    </div>
+                    hasForfaitPenalty ? null : (
+                      <div className="flex items-center justify-center py-3 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
+                        <p className="text-sm text-muted-foreground text-center">Nog geen kosten. Worden automatisch aangemaakt bij indiening.</p>
+                      </div>
+                    )
                   ) : (
                     <div className="space-y-2.5">
                       <div className="flex items-center gap-2">
