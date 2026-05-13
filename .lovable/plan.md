@@ -1,166 +1,91 @@
-# Audit /admin/scheidsrechters
+# Plan: Financieel-sectie opschonen + bug "Boete toevoegen" oplossen
 
-Een kritische, end-to-end review van de admin-pagina voor scheidsrechtersbeheer. Bevindingen zijn gerangschikt op impact: eerst de leesbaarheidsproblemen die je expliciet aanhaalde, dan UX-pijnpunten, dan design-system-consistentie, dan kleinere polish.
+Bestand: `src/components/modals/matches/wedstrijdformulier-modal.tsx` (regio rond regels 391–405 en 1910–2210).
 
----
+## Deel 1 — UI/UX evaluatie & verbeteringen
 
-## A. Leesbaarheid & contrast (HOOG — direct fixen)
+### Wat overbodig of verwarrend is vandaag
 
-### A1. Onzichtbare borders door token-conflict
-- In `tailwind.config.ts` is `border: 'transparent'`.
-- In `src/index.css` is `--border: 0 0 0 0`.
-- Resultaat: élke `border-border`/`border` class in de matrix, kaarten, legend, workload-balk, sticky headers en zebra-rijen produceert een **onzichtbare** rand. Dat is dé reden waarom je matrix "vlak" oogt en celgrenzen wegvallen.
-- **Plekken die hierdoor lijden:** `AvailabilityMatrix` (sticky headers, cellen, mobile-buttons), `AssignmentManagement` stat-cards, `WorkflowBanner`, `RefereeStatsSection`, legend-balk.
-- **Fix-plan:** in deze view consistent een lokale rand-class gebruiken die naar `--color-200` / `--color-300` verwijst, of in `index.css` een echte hairline-token introduceren (`--hairline: var(--color-200)`) en die op de relevante elementen toepassen. We vervangen `border-border` op deze pagina door `border-[hsl(var(--hairline))]` of een Tailwind utility `border-hairline` die we in `tailwind.config.ts` toevoegen.
+1. **Dubbele/verbose lege-state tekst (regel 1967–1969)**
+   `"Gebruik bovenstaande knoppen. 'Forfait verwittigd' slaat direct op bij een bekende stand (bv. 0–10); anders kies je het team en klik je op Boetes opslaan."`
+   → Te lang, herhaalt wat de knoppen al zeggen.
+2. **Sub-koppen "Boetes" en "Wedstrijdkosten"** binnen een al gelabelde "Financieel"-collapsible voegen visueel ruis toe maar zijn nuttig als scheiding. Ze blijven, maar styling kan rustiger (geen border-bottom als er direct een knoppenrij volgt).
+3. **"Forfait actief"-banner (regel 2158–2165)** is correct maar de zin _"Boetes beheer je in het blok hierboven."_ is overbodig — gebruiker ziet het blok hierboven al.
+4. **Lege-kosten state (regel 2201–2205)** toont _"Standaardkosten worden automatisch aangemaakt bij indiening."_ óók wanneer forfait actief is. Dat is misleidend: bij forfait worden ze juist NIET aangemaakt. Deze placeholder moet verborgen worden als `hasForfaitPenalty === true` (de blauwe banner is dan voldoende).
+5. **Opgeslagen boete-rij**: "Gildeg Genoeg" + "Forfait verwittigd" + "€25" staat nu op 2 regels met een 44px icoon-tegel. Kan compacter (1 regel op desktop, badge inline).
+6. **Knoppenrij**: "Boete toevoegen" en "Forfait verwittigd (€25)" hebben beide `flex-1` → op desktop worden ze even breed. Primaire actie hoort visueel dominant; "Forfait verwittigd" is een snelkoppeling, mag smaller (`sm:flex-none`).
 
-### A2. Zwarte tekst in plaats van token-tekst
-- `Card` heeft een hardcoded `style={{ backgroundColor: 'white' }}` + `text-card-foreground`. `--card-foreground` resolved naar `var(--color-600)` (donker paars) — dat is OK qua contrast.
-- Maar in de matrix gebruiken we `text-foreground` op cellen die op `bg-card` of `bg-muted/20` staan. `--foreground` is gedefinieerd als `var(--color-600)` — eveneens een **kleur-token (paars)**, geen `hsl()`-tuple. Tailwind injecteert dat als `hsl(var(--foreground))`, wat een **ongeldige CSS-waarde** is en in veel browsers terugvalt op zwart.
-- Resultaat: de rij-titels "Sessie", scheidsrechter-namen, sessie-team-namen renderen als **zwart** in plaats van het paarse merk-tint. Dat verklaart wat je ziet.
-- **Fix-plan:** in deze view tekst expliciet stylen via `text-[hsl(var(--color-700))]` voor body en `text-[hsl(var(--color-600))]` voor headings, of een page-scoped CSS-class `.scheids-text` die `color: var(--color-700)` zet. Op iconen `text-primary` gebruiken zoals reeds.
+### Concrete tekst-/layoutwijzigingen
 
-### A3. Wit-op-licht-success in mobiele pill
-- `AvailabilityMatrix` mobile: `bg-success text-white` — `--color-success: #22c55e`. Wit op `#22c55e` haalt **net niet** AA voor body-tekst (≈3.0:1). In de Workflow-banner wordt `bg-warning` met `text-warning` (oranje op licht oranje) gebruikt → contrast onleesbaar.
-- **Fix-plan:** voor pills `text-success-foreground` (= wit) is OK alleen op grotere/bold tekst. Voor body labels: `bg-success/15 text-success-dark` met een donkergroene token. Voor de warning-alert bekijken: `border-warning bg-warning/10 text-foreground` ipv `text-warning`.
+| Plek | Huidig | Voorstel |
+|---|---|---|
+| Lege state boetes | Lange uitleg | _"Nog geen boetes. Gebruik de knoppen hierboven."_ |
+| Forfait-banner | 2 zinnen | _"Forfait actief — standaard wedstrijdkosten vervallen voor deze wedstrijd."_ |
+| Lege kosten (zonder forfait) | 2 regels | _"Nog geen kosten. Worden automatisch aangemaakt bij indiening."_ (1 regel) |
+| Lege kosten (met forfait) | toon placeholder | **niet tonen** — banner dekt de lading |
+| Knoppenrij desktop | 50/50 split | Primair full-flex, snelkoppeling auto-breed |
 
-### A4. PollsTable badges: "🟠 Verwerking" en "✅ Voltooid"
-- `bg-primary/20 text-primary` op de "Voltooid"-badge: paars-op-paars geeft minimaal contrast.
-- **Fix-plan:** vervangen door `bg-success/15 text-success-dark` of expliciete `text-foreground`.
+Geen wijzigingen aan business-logica, queries of services.
 
-### A5. Workload-heatmap: tekst onleesbaar bij hoge intensiteit
-- `backgroundColor: hsl(var(--primary) / 0.30)` met `text-foreground` (= broken token, valt op zwart) — bij donkere paarse achtergrond is zwart oké, maar `text-muted-foreground` voor het cijfer is **te licht**.
-- **Fix-plan:** vaste donkere tekstkleur (`color-700`) en lichtere span met betere contrast, of badges met semantisch licht/zwaar verschil (groen → oranje → rood gradient ipv pure primary-tint).
+## Deel 2 — Bug "Boete toevoegen klapt niet correct uit"
 
-### A6. Suggereer-knop counter-tekst
-- `text-[10px] text-muted-foreground` voor "X× deze maand" is te klein én te licht. Onleesbaar op niet-retina.
-- **Fix-plan:** minimaal `text-xs` + `text-foreground/70` (na A2-fix).
+### Verwacht gedrag
+Klik op "Boete toevoegen" → Financieel-collapsible opent (indien dicht) + er verschijnt een blok "Nieuwe boetes" met één lege rij (Team-select + Type Boete-select) tussen de knoppenrij en het "Opgeslagen boetes"-blok.
 
----
-
-## B. UX-pijnpunten (MIDDEL — actiegericht)
-
-### B1. Drie maand-selectors die onafhankelijk werken
-Op één pagina staan momenteel:
-1. WorkflowBanner: leest *meest recente actieve poll* — geen selector.
-2. AssignmentWorkspace toolbar: maand-selector voor matrix.
-3. PollManagement: aparte selector voor auto-genereer-dropdown.
-4. AssignmentManagement (lijst-mode): heeft eigen interne selector → die in `AssignmentWorkspace` verborgen is in matrix-mode maar in lijst-mode toont de child zijn eigen.
-- Resultaat: je wijzigt boven de maand, maar Lijst-mode toont een andere — verwarrend.
-- **Fix:** één globale `selectedMonth` op `ScheidsrechtersPage`-niveau, doorgeven aan álle kinderen (banner, matrix, lijst, poll-dropdown).
-
-### B2. Banner toont alleen "actieve poll" — geen maand-keuze
-Als je in september bent en wilt voorbereiden voor oktober, toont de banner nog de september-poll. Geen knop "Plan volgende maand".
-- **Fix:** banner reageert op de globale maand-selector. Toont voor die maand: "geen poll → maak aan", "open → toon stats", "gesloten → toewijzen".
-
-### B3. Workflow heeft geen duidelijke 4-stappen-flow
-Admin moet weten: (1) Poll aanmaken / auto-genereren, (2) Wachten op antwoorden, (3) Toewijzen (auto+manual), (4) Bevestiging. Nu zit dat verspreid over banner + 2 tabs + auto-knop.
-- **Fix:** een **Stepper** bovenaan met 4 stappen + status (✓/in-progress/locked) en deeplinks naar de juiste sectie.
-
-### B4. Auto-genereer geeft geen preview
-Klik je op "Auto-genereer → April 2026" dan gebeurt het direct, zonder te tonen welke groepen worden aangemaakt of welke al bestaan.
-- **Fix:** dropdown vervangen door een modal die eerst groepen toont met checkboxes ("3 nieuwe groepen, 1 bestaat al") en pas op confirmatie aanmaakt.
-
-### B5. Matrix mist filter "Verberg refs zonder reactie"
-Bij 12+ scheidsrechters waarvan er 4 nog niet reageerden, krijg je een zee aan dashes. Geen filter beschikbaar.
-- **Fix:** toggle "Toon alleen wie reageerde" + zoekvak voor refnamen.
-
-### B6. Toewijzen-cel klikbaar zonder bevestiging
-Klik op een groene cel → directe assign, snelle muis-slip kost je een fout. Undo-toast verzacht het, maar 5s is kort.
-- **Fix:** of confirm-popover bij klik, of undo-toast 10s en duidelijker call-to-action.
-
-### B7. Geen bulk-undo na auto-toewijzen
-"Auto-toewijzen" maakt N toewijzingen aan zonder verzamel-undo. Eén undo per assignment zou een reeks toasts geven.
-- **Fix:** één gegroepeerde toast "5 toewijzingen aangemaakt — Alles ongedaan maken" die alle nieuwe assignments terugdraait.
-
-### B8. Geen export / printview
-Admin kan toewijzingen niet eenvoudig delen met zaalbeheerders.
-- **Fix:** "Export PDF/ICS" knop in workspace-toolbar (we hebben al `icalUtils`).
-
-### B9. Geen audit-trail / history
-Wie wees toe, wanneer? Er is een `assigned_by` kolom maar geen UI om het te zien.
-- **Fix:** in de cel-tooltip "Toegewezen door X op Y", en optioneel een log-modal.
-
-### B10. Scheidsrechter-side: poll opent niet rechtstreeks vanuit notificatie
-Geen indicator hoeveel groepen nog niet zijn aangevinkt. `RefereeStatsSection` toont assignments-stats maar niet "je moet nog 3 groepen invullen".
-- **Fix:** extra stat-tegel "Nog te beantwoorden" bovenop assignments.
-
----
-
-## C. Code- & design-systeem-consistentie (LAAG-MIDDEL)
-
-### C1. Twee parallelle assign-services
-`AssignmentCard` gebruikt `assignRefereeToSession`, terwijl `AvailabilityMatrix` `assignReferee` met handmatige loop gebruikt. Subtiel afwijkend gedrag (cascade naar zelfde sessie).
-- **Fix:** beide via `assignRefereeToSession` laten lopen.
-
-### C2. `referee_assignments as any` casts
-Op meerdere plekken `(supabase.from('referee_assignments' as any) ...)` — types ontbreken in `supabase/types.ts`.
-- **Fix:** types regenereren of een handgeschreven interface en helper exporteren.
-
-### C3. Inconsistente tab-iconen / labels
-Tab "Toewijzen" gebruikt `UserCheck`, banner gebruikt soms `Users`, soms `CheckCircle2`. Geen vaste iconenset per concept.
-- **Fix:** mini-style-guide in commentaar bovenin de page.
-
-### C4. Geen skeletons in matrix-toolbar / WorkflowBanner toont skeleton zonder maand-selector vorm
-- **Fix:** consistent skeleton-systeem (al aanwezig, maar inconsistent toegepast).
-
-### C5. Mobile matrix verbergt refs zonder beschikbaarheid altijd
-Op mobiel toont `AvailabilityMatrix` enkel pills van available/assigned refs, met fallback "Geen beschikbaarheid". Maar geen mogelijkheid om alsnog handmatig iemand toe te wijzen die níét beschikbaar zei te zijn.
-- **Fix:** "Toon alle scheidsrechters" expand-knop op mobiel.
-
-### C6. Geen empty-state illustratie
-"Geen wedstrijden gevonden voor deze maand" is droog. Niet-admins begrijpen niet altijd waarom.
-- **Fix:** uitleg + CTA "Plan wedstrijden via /admin/wedstrijden".
-
----
-
-## D. A11y & micro-UX (LAAG)
-
-- Sticky table-headers hebben `bg-muted` maar door A1 geen onderkant-rand → ze "kleven" zonder visuele scheiding bij scroll.
-- Cellen met `role="button"` hebben geen `aria-pressed` voor de toegewezen-state.
-- Tooltip-content bevat vrij lange zinnen — overweeg primair label + dim secundair.
-- Iconen-only knoppen (Refresh) hebben title maar geen `aria-label` consistent.
-- Focus-ring is gedefinieerd maar de matrix-cellen hebben `outline-none` impliciet.
-
----
-
-## E. Voorgestelde implementatie-fases
-
-```text
-Fase 1 — Leesbaarheid & contrast (A-blok)
-  ├─ Voeg utility `.border-hairline` toe (tailwind config of index.css)
-  ├─ Vervang border-border in scheids-pagina door border-hairline
-  ├─ Fix text-foreground → expliciete color-700/600 tokens
-  ├─ Workload-heatmap: contrast-veilige cijfers
-  ├─ PollsTable badges + Workflow warning-alert kleur
-  └─ Mobile success-pill: text-success-dark variant
-
-Fase 2 — Eén globale maand + Stepper (B1, B2, B3)
-  ├─ Lift selectedMonth naar ScheidsrechtersPage
-  ├─ Banner + Matrix + Lijst + PollManagement consumeren
-  └─ 4-stappen Stepper-component bovenaan
-
-Fase 3 — Slimmere acties (B4, B6, B7, B8)
-  ├─ Auto-genereer-modal met preview
-  ├─ Bulk-undo toast voor auto-assign
-  ├─ Export-PDF/ICS knop
-  └─ Cel-confirm of langere undo-window
-
-Fase 4 — Filter + history + a11y (B5, B9, D)
-  ├─ Matrix-filters (alleen-reactie, zoek)
-  ├─ Audit-trail in tooltip
-  ├─ Aria-pressed, focus-ring, betere semantics
-  └─ Mobile expand-toggle
-
-Fase 5 — Code-cleanup (C1, C2, C3)
-  ├─ assignRefereeToSession overal
-  ├─ Types voor referee_assignments
-  └─ Iconenset consistent
+### Code-pad (regel 391–405)
+```ts
+const addPenalty = useCallback(() => {
+  flushSync(() => {
+    setIsFinancieelOpen(true);
+    setPenalties(prev => {
+      const validPenalties = prev.filter(p => p.teamId && p.costSettingId);
+      return [...validPenalties, { costSettingId: null, teamId: null }];
+    });
+  });
+}, []);
 ```
 
----
+### Hypotheses (in volgorde van waarschijnlijkheid)
 
-## F. Concreet startpunt
+1. **`flushSync` in een React-event-handler binnen een Radix `CollapsibleTrigger`** — Radix wikkelt de trigger met `asChild` rond `CardHeader`. `flushSync` mag niet aangeroepen worden tijdens een lopende render-fase; in DEV geeft dat soms een warning + state-update wordt gemist. Het renderpad van Radix kan triggeren dat de eerste klik enkel de collapsible toggelt en de `setPenalties`-update verloren gaat.
+2. **CSS-overflow op de Card**: `Card` heeft `overflow-hidden`. Het nieuwe rijtje renderen mét `Select`-dropdowns binnen een `overflow-hidden` parent kan ervoor zorgen dat de eerste keer een layout-shift "klein" lijkt (rij verschijnt achter de bestaande "Opgeslagen boetes"-divider zonder visuele cue).
+3. **Geen scroll-into-view**: het nieuwe rijtje wordt onder de knoppenrij ingevoegd, maar als de modal-scrollpositie laag staat (gebruiker scrollt naar Financieel onderaan) blijft de nieuwe rij buiten het viewport en lijkt het "niet uitgeklapt".
+4. **`canEdit` flikkert**: na opslaan van forfait wordt `match.isLocked` mogelijk waar (auto-lock) → `isAddPenaltyButtonDisabled` wordt true → klik registreert maar handler wordt niet uitgevoerd. Verklaart "klapt niet correct uit".
 
-Ik raad aan **Fase 1 nu uit te voeren** want dat lost direct de "zwart/wit-onleesbaar" klacht op én herstelt zichtbaarheid van de matrix. Daarna kan Fase 2 (één globale maand + stepper) — dat is een grondige refactor maar geeft duidelijkheid voor admin.
+### Onderzoekstap (vóór elke fix)
+- Console-log toevoegen in `addPenalty` om te zien of de handler überhaupt vuurt en wat `penalties.length` is direct erna.
+- React-DevTools: state `penalties` inspecteren na klik.
+- Visueel: scroll naar de Financieel-sectie en klik nogmaals.
 
-Wil je dat ik direct met Fase 1 start, of eerst een specifiek subblok (bv. enkel kleuren/tokens, of enkel de stepper)?
+### Voorgestelde fix (na bevestiging hypothese 1+3)
+
+```ts
+const addPenalty = useCallback(() => {
+  setIsFinancieelOpen(true);
+  setPenalties(prev => {
+    const valid = prev.filter(p => p.teamId && p.costSettingId);
+    return [...valid, { costSettingId: null, teamId: null }];
+  });
+  // Scroll de nieuwe rij in beeld op de volgende frame
+  requestAnimationFrame(() => {
+    document.getElementById('penalties-new-list')?.scrollIntoView({
+      behavior: 'smooth', block: 'center'
+    });
+  });
+}, []);
+```
+
+- `flushSync` weghalen (niet nodig — React batcht state-updates al, Collapsible re-rendert prima).
+- `id="penalties-new-list"` op de wrapper rond de "Nieuwe boetes"-lijst zetten.
+- Visuele cue: korte `animate-in slide-in-from-top-1 fade-in duration-200` op de nieuwe rij.
+
+## Stappen
+
+1. UI/UX-tekstwijzigingen + knoplayout aanpassen (Deel 1).
+2. `addPenalty` herschrijven zonder `flushSync` + scroll-into-view + animatie (Deel 2).
+3. Lege-kosten-placeholder verbergen wanneer `hasForfaitPenalty` true is.
+4. Visueel verifiëren in preview op /admin/match-forms/playoffs voor de wedstrijd Gildeg Genoeg vs MVC Timeless.
+
+## Out of scope
+- Database, RPC's, edge functions, financial services — niet aanraken.
+- Layout van andere collapsible-secties.

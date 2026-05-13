@@ -389,17 +389,15 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [toast, refreshFinancialState]);
 
   const addPenalty = useCallback(() => {
-    // Batch both state updates together synchronously for immediate UI response
-    flushSync(() => {
-      setIsFinancieelOpen(true);
-      setPenalties(prev => {
-        // Remove any empty penalties (those without both teamId and costSettingId)
-        const validPenalties = prev.filter(p => p.teamId && p.costSettingId);
-        // Add one new empty penalty
-        return [...validPenalties, {
-          costSettingId: null,
-          teamId: null,
-        }];
+    setIsFinancieelOpen(true);
+    setPenalties(prev => {
+      const validPenalties = prev.filter(p => p.teamId && p.costSettingId);
+      return [...validPenalties, { costSettingId: null, teamId: null }];
+    });
+    requestAnimationFrame(() => {
+      document.getElementById('penalties-new-list')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
       });
     });
   }, []);
@@ -1949,7 +1947,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         variant="outline"
                         onClick={addForfaitPenaltyPreset}
                         disabled={isAddPenaltyButtonDisabled}
-                        className="h-8 px-3 w-full sm:flex-1 border-[var(--color-400)]"
+                        className="h-8 px-3 w-full sm:w-auto sm:flex-none border-[var(--color-400)]"
                       >
                         <AlertTriangle className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                         Forfait verwittigd (€{Number(forfaitVerwittigdPenaltyCost.amount).toFixed(0)})
@@ -1963,16 +1961,13 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted mb-2.5">
                       <AlertTriangle className="h-5 w-5 text-muted-foreground" />
                     </div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Nog geen boetes toegevoegd</p>
-                    <p className="text-xs text-muted-foreground/70 text-center max-w-xs">
-                      Gebruik bovenstaande knoppen. &quot;Forfait verwittigd&quot; slaat direct op bij een bekende stand (bv. 0–10); anders kies je het team en klik je op Boetes opslaan.
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">Nog geen boetes. Gebruik de knoppen hierboven.</p>
                   </div>
                 )}
 
                 {/* New Penalties Section */}
                 {penalties.length > 0 && (
-                  <div className="space-y-2.5">
+                  <div id="penalties-new-list" className="space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-semibold text-foreground">Nieuwe boetes</span>
@@ -2157,10 +2152,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
                   {hasForfaitPenalty && (
                     <div className="rounded-lg border border-blue-200 bg-blue-50/80 px-3 py-2.5 text-sm text-blue-950">
-                      <p>
-                        Forfait actief: standaard wedstrijdkosten (veld/scheids/admin) zijn niet van toepassing voor deze wedstrijd.
-                        Boetes beheer je in het blok hierboven.
-                      </p>
+                      <p>Forfait actief — standaard wedstrijdkosten vervallen voor deze wedstrijd.</p>
                     </div>
                   )}
 
@@ -2199,10 +2191,11 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       <span className="text-sm text-muted-foreground">Kosten laden...</span>
                     </div>
                   ) : matchCosts.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-4 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Geen kosten voor deze wedstrijd</p>
-                      <p className="text-xs text-muted-foreground/70 text-center">Standaardkosten worden automatisch aangemaakt bij indiening.</p>
-                    </div>
+                    hasForfaitPenalty ? null : (
+                      <div className="flex items-center justify-center py-3 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
+                        <p className="text-sm text-muted-foreground text-center">Nog geen kosten. Worden automatisch aangemaakt bij indiening.</p>
+                      </div>
+                    )
                   ) : (
                     <div className="space-y-2.5">
                       <div className="flex items-center gap-2">
