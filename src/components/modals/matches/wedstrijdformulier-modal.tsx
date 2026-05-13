@@ -138,6 +138,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const [skipAutoMatchCosts, setSkipAutoMatchCosts] = useState(false);
   const [hasForfaitPenalty, setHasForfaitPenalty] = useState(false);
   const [restoringAutoMatchCosts, setRestoringAutoMatchCosts] = useState(false);
+  const [forfaitEmailModalOpen, setForfaitEmailModalOpen] = useState(false);
+  const [forfaitEmailContext, setForfaitEmailContext] = useState<{ forfaitTeamName: string } | null>(null);
 
   const penaltyTeamOptions = useMemo(() => ([
     { id: match.homeTeamId, name: match.homeTeamName },
