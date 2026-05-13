@@ -65,11 +65,11 @@ const handler = async (req: Request): Promise<Response> => {
     if (dateStr) detailsLines.push(`<strong>Datum:</strong> ${escapeHtml(dateStr)}${matchTime ? ` om ${escapeHtml(matchTime)}` : ""}`);
     if (location) detailsLines.push(`<strong>Locatie:</strong> ${escapeHtml(location)}`);
 
-    const subject = `Forfait verwittigd: ${homeTeamName} - ${awayTeamName}`;
+    const subject = `Forfait: ${homeTeamName} - ${awayTeamName}`;
 
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
-        <h2 style="color: #7c3aed; margin: 0 0 16px;">Forfait verwittigd</h2>
+        <h2 style="color: #7c3aed; margin: 0 0 16px;">Forfait</h2>
         <p>Beste,</p>
         <p>
           Hierbij melden wij dat de onderstaande wedstrijd <strong>niet zal doorgaan</strong>.
