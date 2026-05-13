@@ -112,12 +112,12 @@ export default {
 						height: '0'
 					},
 					to: {
-						height: 'var(--radix-accordion-content-height)'
+						height: 'var(--radix-accordion-content-height, var(--radix-collapsible-content-height))'
 					}
 				},
 				'accordion-up': {
 					from: {
-						height: 'var(--radix-accordion-content-height)'
+						height: 'var(--radix-accordion-content-height, var(--radix-collapsible-content-height))'
 					},
 					to: {
 						height: '0'

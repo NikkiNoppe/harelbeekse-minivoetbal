@@ -389,10 +389,12 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [toast, refreshFinancialState]);
 
   const addPenalty = useCallback(() => {
-    setIsFinancieelOpen(true);
-    setPenalties(prev => {
-      const validPenalties = prev.filter(p => p.teamId && p.costSettingId);
-      return [...validPenalties, { costSettingId: null, teamId: null }];
+    flushSync(() => {
+      setIsFinancieelOpen(true);
+      setPenalties(prev => {
+        const validPenalties = prev.filter(p => p.teamId && p.costSettingId);
+        return [...validPenalties, { costSettingId: null, teamId: null }];
+      });
     });
     requestAnimationFrame(() => {
       document.getElementById('penalties-new-list')?.scrollIntoView({
@@ -1934,6 +1936,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                 {canEdit && (
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Button
+                      type="button"
                       onClick={addPenalty}
                       disabled={isAddPenaltyButtonDisabled}
                       className="btn btn--primary h-8 px-3 w-full sm:flex-1"
