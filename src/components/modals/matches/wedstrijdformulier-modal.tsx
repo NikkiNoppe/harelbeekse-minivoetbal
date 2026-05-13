@@ -467,6 +467,18 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
       if (hadForfaitVerwittigd) {
         setSelectedReferee("");
+        const forfaitItem = validItems.find((p) => {
+          const cs = availablePenalties.find((x) => Number(x.id) === Number(p.costSettingId));
+          return cs != null && costNameIsForfaitVerwittigd(cs.name);
+        });
+        if (forfaitItem) {
+          const forfaitTeamName =
+            Number(forfaitItem.teamId) === Number(match.homeTeamId)
+              ? match.homeTeamName
+              : match.awayTeamName;
+          setForfaitEmailContext({ forfaitTeamName });
+          setForfaitEmailModalOpen(true);
+        }
       }
 
       const savedKeys = new Set(
@@ -501,7 +513,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     } finally {
       setIsLoadingPenalties(false);
     }
-  }, [availablePenalties, match.matchId, toast, refreshFinancialState, setSelectedReferee]);
+  }, [availablePenalties, match.matchId, match.homeTeamId, match.homeTeamName, match.awayTeamName, toast, refreshFinancialState, setSelectedReferee]);
 
   /** Standaard forfait-regel: vult boetype + verliezend team in en slaat direct op wanneer het team bekend is. */
   const addForfaitPenaltyPreset = useCallback(async () => {
