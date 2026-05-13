@@ -293,7 +293,6 @@ const syncLatePenalty = async (
     .select('id, amount')
     .eq('name', 'Boete te laat ingevuld')
     .eq('category', 'penalty')
-    .eq('is_active', true)
     .single();
 
   if (costError || !costSetting) {
@@ -358,7 +357,6 @@ const syncFormCompletionPenalties = async (
     .from('costs')
     .select('id, name, amount')
     .in('name', ['Wedstrijdformulier niet ingevuld', 'Wedstrijdformulier niet correct ingevuld'])
-    .eq('category', 'penalty')
     .eq('is_active', true);
 
   if (costError || !costSettings || costSettings.length === 0) {

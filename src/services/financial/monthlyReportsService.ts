@@ -322,7 +322,6 @@ export const monthlyReportsService = {
         .from('costs')
         .select('id, name, amount, category')
         .eq('category', 'match_cost')
-        .eq('is_active', true);
 
       const refereeCostSetting = costSettings?.find(cs => 
         cs.name?.toLowerCase().includes('scheidsrechter') || 
@@ -534,7 +533,6 @@ export const monthlyReportsService = {
         .from('costs')
         .select('id, name, amount, category')
         .eq('category', 'match_cost')
-        .eq('is_active', true);
 
       const refereeCostSetting = costSettings?.find(cs => 
         cs.name?.toLowerCase().includes('scheidsrechter') || 

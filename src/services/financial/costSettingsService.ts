@@ -37,7 +37,6 @@ export const costSettingsService = {
       const { data, error } = await supabase
         .from('costs')
         .select('*')
-        .eq('is_active', true)
         .order('category', { ascending: true })
         .order('name', { ascending: true });
 
@@ -58,7 +57,6 @@ export const costSettingsService = {
         .from('costs')
         .select('*')
         .eq('category', 'match_cost')
-        .eq('is_active', true)
         .order('name');
 
       if (error) throw error;
@@ -78,7 +76,6 @@ export const costSettingsService = {
         .from('costs')
         .select('*')
         .eq('category', 'penalty')
-        .eq('is_active', true)
         .order('name');
 
       if (error) throw error;

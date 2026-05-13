@@ -28,7 +28,6 @@ export const cardPenaltyService = {
         .from('costs')
         .select('id, name, amount')
         .eq('category', 'penalty')
-        .eq('is_active', true);
 
       if (penErr) throw penErr;
       const penaltySettings = penalties || [];

@@ -41,7 +41,6 @@ export const enhancedCostSettingsService = {
       const { data, error } = await supabase
         .from('costs')
         .select('*')
-        .eq('is_active', true)
         .order('category', { ascending: true })
         .order('name', { ascending: true });
 
@@ -72,7 +71,6 @@ export const enhancedCostSettingsService = {
         .from('costs')
         .select('*')
         .eq('category', 'match_cost')
-        .eq('is_active', true)
         .order('name');
 
       logOperation('getMatchCosts - QUERY RESULT', { data, error });
@@ -102,7 +100,6 @@ export const enhancedCostSettingsService = {
         .from('costs')
         .select('*')
         .eq('category', 'penalty')
-        .eq('is_active', true)
         .order('name');
 
       logOperation('getPenalties - QUERY RESULT', { data, error });

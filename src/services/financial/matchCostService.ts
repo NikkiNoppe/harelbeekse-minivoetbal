@@ -133,7 +133,6 @@ async function getActiveFieldMatchCostSettingId(): Promise<number | null> {
     .from("costs")
     .select("id, name")
     .eq("category", "match_cost")
-    .eq("is_active", true);
   if (error || !costRows?.length) return null;
   const fieldRow = costRows.find((cs) => {
     const n = (cs.name || "").toLowerCase();
@@ -304,7 +303,6 @@ export const matchCostService = {
         .from('costs')
         .select('id, amount, name, category')
         .eq('category', 'match_cost')
-        .eq('is_active', true);
 
       if (costErr) {
         console.error('❌ [matchCostService] Failed to fetch cost settings:', costErr);
