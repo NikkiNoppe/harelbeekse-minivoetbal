@@ -2900,8 +2900,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         </div>
                       )}
 
-                      {/* Add button when there are saved cards but no new cards */}
-                      {!isLoadingCards && cardItems.length === 0 && savedCards.length > 0 && canEdit && (
+                      {/* Add button when no new cards (always available) */}
+                      {!isLoadingCards && cardItems.length === 0 && canEdit && (
                         <div className="pt-1.5">
                           <Button onClick={addCardItem} className="btn btn--secondary h-8 px-3 w-full">
                             <Plus className="h-3.5 w-3.5 mr-1.5" />
