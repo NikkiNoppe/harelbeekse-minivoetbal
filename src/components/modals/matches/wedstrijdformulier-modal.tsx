@@ -1933,7 +1933,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       type="button"
                       onClick={addPenalty}
                       disabled={isAddPenaltyButtonDisabled}
-                      className="btn btn--primary h-8 px-3 w-full sm:flex-1"
+                      className="btn btn--secondary h-8 px-3 w-full sm:flex-1"
                     >
                       <Plus className="h-3.5 w-3.5 mr-1.5" />
                       Boete toevoegen
@@ -1941,10 +1941,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                     {forfaitVerwittigdPenaltyCost ? (
                       <Button
                         type="button"
-                        variant="outline"
                         onClick={addForfaitPenaltyPreset}
                         disabled={isAddPenaltyButtonDisabled}
-                        className="h-8 px-3 w-full sm:w-auto sm:flex-none border-[var(--color-400)]"
+                        className="btn btn--secondary h-8 px-3 w-full sm:w-auto sm:flex-none"
                       >
                         <AlertTriangle className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                         Forfait verwittigd (€{Number(forfaitVerwittigdPenaltyCost.amount).toFixed(0)})
