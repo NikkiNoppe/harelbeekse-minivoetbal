@@ -63,7 +63,7 @@ describe("matchHasForfaitPenalty", () => {
     mockRpc.mockResolvedValueOnce({ data: null, error: { message: "rpc missing" } });
     mockFrom.mockReturnValueOnce(
       chain({
-        data: [{ costs: { name: "Forfait", category: "penalty", is_active: true } }],
+        data: [{ costs: { name: "Forfait", category: "penalty" } }],
         error: null,
       }) as never
     );

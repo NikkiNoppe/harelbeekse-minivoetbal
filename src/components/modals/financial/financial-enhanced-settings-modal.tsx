@@ -77,7 +77,6 @@ export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsM
       name: formData.name,
       amount: parseFloat(formData.amount),
       category: formData.category,
-      is_active: true
     };
 
     console.log(`[${timestamp}] EnhancedCostSettingsModal - Prepared data:`, { settingData });

@@ -241,7 +241,6 @@ export const costSettingsService = {
               name: 'Storting',
               amount: 0,
               category: 'deposit',
-              is_active: true
             }])
             .select('id')
             .single();
@@ -313,7 +312,6 @@ export const costSettingsService = {
           amount: transaction.amount,
           category: transaction.transaction_type === 'penalty' ? 'penalty' : 
                    transaction.transaction_type === 'match_cost' ? 'match_cost' : 'other',
-          is_active: true
         }])
         .select('id')
         .single();
