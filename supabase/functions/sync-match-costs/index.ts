@@ -61,8 +61,7 @@ async function deleteActiveMatchCostsForMatch(matchId: number): Promise<void> {
   const { data: mcRows, error: mcErr } = await supabaseServiceRole
     .from('costs')
     .select('id')
-    .eq('category', 'match_cost')
-    .eq('is_active', true);
+    .eq('category', 'match_cost');
   if (mcErr) throw new Error(mcErr.message);
   const ids = (mcRows || []).map((c: { id: number }) => c.id);
   if (ids.length === 0) return;
