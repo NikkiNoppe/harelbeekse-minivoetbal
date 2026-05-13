@@ -539,11 +539,17 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     const draft: PenaltyItem = { teamId: suggestedTeamId, costSettingId: forfaitCost.id };
 
     if (suggestedTeamId != null) {
-      await persistPenaltyItems([draft], {
+      const ok = await persistPenaltyItems([draft], {
         successTitle: "Forfait verwittigd opgeslagen",
         successDescription:
           "De boete Forfait verwittigd is bewaard. Standaard wedstrijdkosten zijn verwijderd en de scheidsrechter-toewijzing is opgeheven.",
       });
+      if (ok) {
+        const forfaitTeamName =
+          suggestedTeamId === match.homeTeamId ? match.homeTeamName : match.awayTeamName;
+        setForfaitEmailContext({ forfaitTeamName });
+        setForfaitEmailModalOpen(true);
+      }
       return;
     }
 
