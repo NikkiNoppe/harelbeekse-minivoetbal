@@ -753,6 +753,31 @@ export type Database = {
         Args: { p_amount: number; p_deposit_name: string; p_team_id: number }
         Returns: number
       }
+      admin_clear_skip_auto_match_costs: {
+        Args: { p_match_id: number; p_user_id: number }
+        Returns: Json
+      }
+      admin_get_referee_availability: {
+        Args: { p_admin_user_id: number; p_poll_month: string }
+        Returns: {
+          is_available: boolean
+          match_id: number
+          poll_group_id: string
+          user_id: number
+        }[]
+      }
+      admin_set_referee_availability: {
+        Args: {
+          p_admin_user_id: number
+          p_is_available: boolean
+          p_match_id: number
+          p_notes?: string
+          p_poll_group_id: string
+          p_poll_month: string
+          p_referee_id: number
+        }
+        Returns: boolean
+      }
       apply_suspension_after_match: {
         Args: { match_id_param: number }
         Returns: undefined
@@ -804,6 +829,14 @@ export type Database = {
       }
       check_referee_conflict: {
         Args: { p_match_id: number; p_referee_id: number }
+        Returns: boolean
+      }
+      cost_name_implies_match_cost_suppression: {
+        Args: { p_name: string }
+        Returns: boolean
+      }
+      cost_name_is_forfait_verwittigd: {
+        Args: { p_name: string }
         Returns: boolean
       }
       create_user_with_hashed_password: {
@@ -973,6 +1006,10 @@ export type Database = {
           p_user_id: number
         }
         Returns: Json
+      }
+      match_has_forfait_penalty: {
+        Args: { p_match_id: number }
+        Returns: boolean
       }
       remove_referee_assignment: {
         Args: { p_assignment_id: number; p_user_id: number }
