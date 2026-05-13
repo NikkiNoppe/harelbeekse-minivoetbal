@@ -2071,7 +2071,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                     <div className="flex justify-end pt-1.5 border-t border-border">
                       <Button 
                         onClick={savePenalties} 
-                        className="btn btn--primary h-8 px-4 w-full sm:w-auto"
+                        className="btn btn--secondary h-8 px-4 w-full sm:w-auto"
                         disabled={isSavePenaltyButtonDisabled || isLoadingPenalties}
                       >
                         {isLoadingPenalties ? (
