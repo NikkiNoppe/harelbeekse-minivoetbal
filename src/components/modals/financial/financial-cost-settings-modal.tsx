@@ -20,7 +20,6 @@ const EMPTY_FORM = {
   name: '',
   amount: '',
   category: 'penalty' as 'match_cost' | 'penalty' | 'other',
-  description: ''
 };
 
 export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProps> = ({ open, onOpenChange }) => {
