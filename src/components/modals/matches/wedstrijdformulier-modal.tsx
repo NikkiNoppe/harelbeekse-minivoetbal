@@ -2847,7 +2847,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                                         <SelectContent className="dropdown-content-login-style z-50">
                                           {teamPlayers.map(sel => (
                                             <SelectItem key={sel.playerId!} value={String(sel.playerId!)} className="dropdown-item-login-style">
-                                              {sel.playerName || `Speler #${sel.playerId}`}
+                                              {sel.jerseyNumber ? `#${sel.jerseyNumber} ` : ''}{sel.playerName || `Speler #${sel.playerId}`}
                                             </SelectItem>
                                           ))}
                                         </SelectContent>
