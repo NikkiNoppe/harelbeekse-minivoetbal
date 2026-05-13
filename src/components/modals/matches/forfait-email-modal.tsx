@@ -18,6 +18,25 @@ interface TeamManager {
   teamName: string;
 }
 
+const addTeamRecipient = (
+  list: TeamManager[],
+  seen: Set<string>,
+  recipient: { team_id: number; team_name?: string | null; email?: string | null; username?: string | null }
+) => {
+  const email = recipient.email?.trim();
+  if (!email) return;
+
+  const key = `${email.toLowerCase()}|${recipient.team_id}`;
+  if (seen.has(key)) return;
+
+  seen.add(key);
+  list.push({
+    email,
+    username: recipient.username?.trim() || "Team contact",
+    teamName: recipient.team_name ?? "",
+  });
+};
+
 export interface ForfaitEmailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -51,41 +70,78 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
 
   useEffect(() => {
     if (!open) return;
-    const teamIds = [homeTeamId, awayTeamId].filter((id): id is number => typeof id === "number");
-    if (teamIds.length === 0) {
+    const teamIds = [homeTeamId, awayTeamId].filter(
+      (id): id is number => typeof id === "number" && Number.isFinite(id) && id > 0
+    );
+    const teamNames = [homeTeamName, awayTeamName].map((name) => name.trim()).filter(Boolean);
+    if (teamIds.length === 0 && teamNames.length === 0) {
       setManagers([]);
       return;
     }
     let cancelled = false;
     (async () => {
       setLoadingManagers(true);
+      const list: TeamManager[] = [];
+      const seen = new Set<string>();
       try {
-        const { data, error } = await withUserContext(async () =>
-          await (supabase as any).rpc("get_team_recipients", { p_team_ids: teamIds })
-        );
-        if (error) throw error;
-        const list: TeamManager[] = [];
-        const seen = new Set<string>();
-        for (const row of (data ?? []) as Array<{
+        if (teamIds.length > 0) {
+          const { data, error } = await withUserContext(async () =>
+            await (supabase as any).rpc("get_team_recipients", { p_team_ids: teamIds })
+          );
+          if (error) throw error;
+
+          for (const row of (data ?? []) as Array<{
+            team_id: number;
+            team_name: string;
+            email: string;
+            username: string;
+          }>) {
+            addTeamRecipient(list, seen, row);
+          }
+        }
+      } catch (e) {
+        console.warn("[forfait-email] RPC recipients unavailable, falling back to teams.contact_email", e);
+      }
+
+      try {
+        let contactRows: Array<{
           team_id: number;
           team_name: string;
-          email: string;
-          username: string;
-        }>) {
-          if (!row.email) continue;
-          const key = `${row.email}|${row.team_id}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          list.push({
-            email: row.email,
-            username: row.username,
-            teamName: row.team_name ?? "",
-          });
+          contact_person: string | null;
+          contact_email: string | null;
+        }> = [];
+
+        if (teamIds.length > 0) {
+          const { data, error } = await supabase
+            .from("teams")
+            .select("team_id, team_name, contact_person, contact_email")
+            .in("team_id", teamIds);
+          if (error) throw error;
+          contactRows = data ?? [];
         }
+
+        if (contactRows.length === 0 && teamNames.length > 0) {
+          const { data, error } = await supabase
+            .from("teams")
+            .select("team_id, team_name, contact_person, contact_email")
+            .in("team_name", teamNames);
+          if (error) throw error;
+          contactRows = data ?? [];
+        }
+
+        contactRows.forEach((row) =>
+          addTeamRecipient(list, seen, {
+            team_id: row.team_id,
+            team_name: row.team_name,
+            email: row.contact_email,
+            username: row.contact_person || "Team contact",
+          })
+        );
+
         if (!cancelled) setManagers(list);
       } catch (e) {
-        console.error("[forfait-email] load managers failed", e);
-        if (!cancelled) setManagers([]);
+        console.error("[forfait-email] load team contacts failed", e);
+        if (!cancelled) setManagers(list);
       } finally {
         if (!cancelled) setLoadingManagers(false);
       }
@@ -93,7 +149,7 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [open, homeTeamId, awayTeamId]);
+  }, [open, homeTeamId, awayTeamId, homeTeamName, awayTeamName]);
 
   const allRecipients = useMemo(() => {
     const set = new Set<string>(DEFAULT_RECIPIENTS);
