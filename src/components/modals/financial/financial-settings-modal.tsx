@@ -75,7 +75,6 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
       name: formData.name.trim(),
       amount,
       category: formData.category,
-      is_active: true
     });
     setIsSubmitting(false);
     if (result.success) {
