@@ -339,13 +339,6 @@ export type Database = {
             referencedColumns: ["match_id"]
           },
           {
-            foreignKeyName: "referee_assignments_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: true
-            referencedRelation: "matches_with_poll_info"
-            referencedColumns: ["match_id"]
-          },
-          {
             foreignKeyName: "referee_assignments_referee_id_fkey"
             columns: ["referee_id"]
             isOneToOne: false
@@ -403,13 +396,6 @@ export type Database = {
             referencedRelation: "matches"
             referencedColumns: ["match_id"]
           },
-          {
-            foreignKeyName: "referee_availability_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: false
-            referencedRelation: "matches_with_poll_info"
-            referencedColumns: ["match_id"]
-          },
         ]
       }
       team_costs: {
@@ -453,13 +439,6 @@ export type Database = {
             columns: ["match_id"]
             isOneToOne: false
             referencedRelation: "matches"
-            referencedColumns: ["match_id"]
-          },
-          {
-            foreignKeyName: "team_costs_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: false
-            referencedRelation: "matches_with_poll_info"
             referencedColumns: ["match_id"]
           },
           {
@@ -574,48 +553,6 @@ export type Database = {
       }
     }
     Views: {
-      matches_with_poll_info: {
-        Row: {
-          assigned_referee_id: number | null
-          away_players: Json | null
-          away_score: number | null
-          away_team_id: number | null
-          has_poll_data: boolean | null
-          home_players: Json | null
-          home_score: number | null
-          home_team_id: number | null
-          is_cup_match: boolean | null
-          is_locked: boolean | null
-          is_playoff_match: boolean | null
-          is_submitted: boolean | null
-          location: string | null
-          match_date: string | null
-          match_id: number | null
-          poll_group_id: string | null
-          poll_month: string | null
-          referee: string | null
-          referee_available_for_poll: boolean | null
-          referee_notes: string | null
-          speeldag: string | null
-          unique_number: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "matches_away_team_id_fkey"
-            columns: ["away_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["team_id"]
-          },
-          {
-            foreignKeyName: "matches_home_team_id_fkey"
-            columns: ["home_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["team_id"]
-          },
-        ]
-      }
       referees_public: {
         Row: {
           role: Database["public"]["Enums"]["user_role"] | null
