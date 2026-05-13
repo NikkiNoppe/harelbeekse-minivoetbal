@@ -60,57 +60,26 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
     (async () => {
       setLoadingManagers(true);
       try {
-        const { data: tu, error: tuErr } = await withUserContext(async () =>
-          await supabase
-            .from("team_users")
-            .select("user_id, team_id")
-            .in("team_id", teamIds)
+        const { data, error } = await withUserContext(async () =>
+          await (supabase as any).rpc("get_team_recipients", { p_team_ids: teamIds })
         );
-        if (tuErr) throw tuErr;
-        const userIds = Array.from(new Set((tu ?? []).map((r) => r.user_id).filter(Boolean))) as number[];
-        if (userIds.length === 0) {
-          if (!cancelled) setManagers([]);
-          return;
-        }
-        const [{ data: users, error: uErr }, { data: teams, error: tErr }] = await Promise.all([
-          withUserContext(async () =>
-            await supabase.from("users").select("user_id, username, email").in("user_id", userIds)
-          ),
-          withUserContext(async () =>
-            await supabase.from("teams").select("team_id, team_name, contact_email").in("team_id", teamIds)
-          ),
-        ]);
-        if (uErr) throw uErr;
-        if (tErr) throw tErr;
-        const teamMap = new Map((teams ?? []).map((t) => [t.team_id, t]));
-        const userMap = new Map((users ?? []).map((u) => [u.user_id, u]));
+        if (error) throw error;
         const list: TeamManager[] = [];
         const seen = new Set<string>();
-        for (const row of tu ?? []) {
-          const u = userMap.get(row.user_id as number);
-          if (!u || !u.email) continue;
-          const key = `${u.email}|${row.team_id}`;
+        for (const row of (data ?? []) as Array<{
+          team_id: number;
+          team_name: string;
+          email: string;
+          username: string;
+        }>) {
+          if (!row.email) continue;
+          const key = `${row.email}|${row.team_id}`;
           if (seen.has(key)) continue;
           seen.add(key);
           list.push({
-            email: u.email,
-            username: u.username,
-            teamName: teamMap.get(row.team_id as number)?.team_name ?? "",
-          });
-        }
-        // Also add team contact_email entries from the teams table
-        for (const t of teams ?? []) {
-          const ce = (t as any).contact_email as string | null | undefined;
-          if (!ce) continue;
-          const email = ce.trim();
-          if (!email) continue;
-          const key = `${email}|${t.team_id}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          list.push({
-            email,
-            username: "Team contact",
-            teamName: t.team_name ?? "",
+            email: row.email,
+            username: row.username,
+            teamName: row.team_name ?? "",
           });
         }
         if (!cancelled) setManagers(list);

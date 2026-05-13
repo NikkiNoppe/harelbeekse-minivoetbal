@@ -917,6 +917,16 @@ export type Database = {
           team_id: number
         }[]
       }
+      get_team_recipients: {
+        Args: { p_team_ids: number[] }
+        Returns: {
+          email: string
+          source: string
+          team_id: number
+          team_name: string
+          username: string
+        }[]
+      }
       get_user_team_ids_secure: {
         Args: { p_user_id: number }
         Returns: number[]
