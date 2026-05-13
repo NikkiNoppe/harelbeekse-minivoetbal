@@ -96,9 +96,8 @@ Deno.serve(async (req) => {
 
     const forfaitMatchIds = new Set<number>();
     for (const row of forfaitPenaltyRows || []) {
-      const r = row as { match_id: number | null; costs?: { name?: string | null; is_active?: boolean | null } };
+      const r = row as { match_id: number | null; costs?: { name?: string | null } };
       const c = r.costs;
-      if (c?.is_active === false) continue;
       if (costNameImpliesMatchCostSuppression(c?.name) && r.match_id != null) forfaitMatchIds.add(r.match_id);
     }
 
