@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
-import { flushSync } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { MatchesPenaltyShootoutModal } from "@/components/modals";
@@ -215,8 +214,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       }
     };
     loadAvailablePenalties();
-    loadExistingPenalties();
-  }, [open, loadExistingPenalties]);
+  }, [open, match.matchId]);
 
   useEffect(() => {
     if (!open || availablePenalties.length === 0) return;
