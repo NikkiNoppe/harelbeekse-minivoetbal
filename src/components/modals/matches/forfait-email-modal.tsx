@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const DEFAULT_RECIPIENTS = [
   "noppe.nikki@icloud.com",
-  "nikkinoppe@hotmail.com",
+  "sandrine.vergote@harelbeke.be",
 ];
 
 interface TeamManager {
