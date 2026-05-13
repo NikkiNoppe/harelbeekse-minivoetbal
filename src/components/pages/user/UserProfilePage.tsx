@@ -509,7 +509,7 @@ const UserTeamInfoCard: React.FC<{
   };
 
   const fetchBackupData = useCallback(async () => {
-    const tables = ['teams', 'players', 'matches', 'users', 'team_users', 'competition_standings', 'costs', 'team_costs', 'application_settings', 'referee_assignments', 'referee_availability', 'monthly_polls', 'poll_match_dates'] as const;
+    const tables = ['teams', 'players', 'matches', 'users', 'team_users', 'competition_standings', 'costs', 'team_costs', 'application_settings', 'referee_assignments', 'referee_availability'] as const;
     const backup: Record<string, any[]> = {};
     
     for (const table of tables) {
