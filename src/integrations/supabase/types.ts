@@ -98,25 +98,19 @@ export type Database = {
         Row: {
           amount: number | null
           category: string
-          description: string | null
           id: number
-          is_active: boolean | null
           name: string
         }
         Insert: {
           amount?: number | null
           category: string
-          description?: string | null
           id?: number
-          is_active?: boolean | null
           name: string
         }
         Update: {
           amount?: number | null
           category?: string
-          description?: string | null
           id?: number
-          is_active?: boolean | null
           name?: string
         }
         Relationships: []
@@ -946,39 +940,6 @@ export type Database = {
           success: boolean
         }[]
       }
-      insert_transaction_with_auto_data:
-        | {
-            Args: {
-              p_amount?: number
-              p_cost_setting_id?: number
-              p_description?: string
-              p_match_id?: number
-              p_team_id: number
-              p_transaction_type?: string
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_cost_setting_id: number
-              p_date?: string
-              p_match_id?: number
-              p_notes?: string
-              p_team_id: number
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_description?: string
-              p_match_id?: number
-              p_team_id: number
-              p_transaction_type: string
-            }
-            Returns: number
-          }
       is_admin_user: { Args: never; Returns: boolean }
       is_current_user_admin: { Args: never; Returns: boolean }
       is_player_list_locked: { Args: never; Returns: boolean }
