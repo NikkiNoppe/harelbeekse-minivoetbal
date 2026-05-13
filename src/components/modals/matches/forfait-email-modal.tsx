@@ -77,12 +77,12 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
             await supabase.from("users").select("user_id, username, email").in("user_id", userIds)
           ),
           withUserContext(async () =>
-            await supabase.from("teams").select("team_id, team_name").in("team_id", teamIds)
+            await supabase.from("teams").select("team_id, team_name, contact_email").in("team_id", teamIds)
           ),
         ]);
         if (uErr) throw uErr;
         if (tErr) throw tErr;
-        const teamMap = new Map((teams ?? []).map((t) => [t.team_id, t.team_name]));
+        const teamMap = new Map((teams ?? []).map((t) => [t.team_id, t]));
         const userMap = new Map((users ?? []).map((u) => [u.user_id, u]));
         const list: TeamManager[] = [];
         const seen = new Set<string>();
@@ -95,7 +95,22 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
           list.push({
             email: u.email,
             username: u.username,
-            teamName: teamMap.get(row.team_id as number) ?? "",
+            teamName: teamMap.get(row.team_id as number)?.team_name ?? "",
+          });
+        }
+        // Also add team contact_email entries from the teams table
+        for (const t of teams ?? []) {
+          const ce = (t as any).contact_email as string | null | undefined;
+          if (!ce) continue;
+          const email = ce.trim();
+          if (!email) continue;
+          const key = `${email}|${t.team_id}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          list.push({
+            email,
+            username: "Team contact",
+            teamName: t.team_name ?? "",
           });
         }
         if (!cancelled) setManagers(list);
