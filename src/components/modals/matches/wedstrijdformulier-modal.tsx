@@ -2755,25 +2755,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                 <CardContent className="pt-3">
                   {showRefereeFields && (
                     <div className="space-y-3">
-                      {/* Empty State - Improved */}
-                      {!isLoadingCards && cardItems.length === 0 && savedCards.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-6 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
-                          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted mb-2.5">
-                            <MatchesCardIcon type="yellow" size={20} />
-                          </div>
-                          <p className="text-sm font-medium text-muted-foreground mb-1">Nog geen kaarten toegevoegd</p>
-                          <p className="text-xs text-muted-foreground/70 text-center max-w-xs mb-3">
-                            Klik op de knop hieronder om een kaart toe te voegen
-                          </p>
-                          {canEdit && (
-                            <Button onClick={addCardItem} className="btn btn--primary h-8 px-3 text-sm">
-                              <Plus className="h-3.5 w-3.5 mr-1.5" />
-                              Eerste kaart toevoegen
-                            </Button>
-                          )}
-                        </div>
-                      )}
-
                       {/* Loading State */}
                       {isLoadingCards && (
                         <div className="flex items-center justify-center py-6">
