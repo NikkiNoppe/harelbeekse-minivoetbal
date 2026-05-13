@@ -1,0 +1,1 @@
+DROP VIEW IF EXISTS public.matches_with_poll_info;
