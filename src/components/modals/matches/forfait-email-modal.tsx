@@ -323,6 +323,96 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
             )}
           </div>
         </div>
+
+        {(() => {
+          const dateStr = matchDate
+            ? new Date(matchDate + "T00:00:00").toLocaleDateString("nl-BE", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })
+            : null;
+          const lines: string[] = [
+            `⚠️ *Forfait* — ${homeTeamName} - ${awayTeamName}`,
+            "",
+            `Het team *${forfaitTeamName}* heeft forfait gegeven. De wedstrijd gaat *niet* door.`,
+          ];
+          if (dateStr) lines.push("", `📅 ${dateStr}${matchTime ? ` om ${matchTime}` : ""}`);
+          if (location) lines.push(`📍 ${location}`);
+          lines.push("", "Gelieve hier rekening mee te houden.", "", "— Harelbeekse Minivoetbal");
+          const message = lines.join("\n");
+          const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+          const copyText = async () => {
+            try {
+              await navigator.clipboard.writeText(message);
+              toast({ title: "Gekopieerd", description: "Bericht staat in je klembord." });
+            } catch {
+              toast({ title: "Kopiëren mislukt", variant: "destructive" });
+            }
+          };
+
+          return (
+            <Collapsible
+              open={waOpen}
+              onOpenChange={setWaOpen}
+              className="rounded-xl border border-border bg-card shadow-sm"
+            >
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-foreground">WhatsApp / copy bericht</div>
+                    <div className="text-xs text-muted-foreground">
+                      Kant-en-klare tekst om door te sturen via WhatsApp.
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                      waOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="space-y-3 border-t border-border p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 px-2"
+                      onClick={copyText}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Kopieer
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-8 gap-1.5 bg-[#25D366] px-2 text-white hover:bg-[#1ebe57]"
+                      asChild
+                    >
+                      <a href={waUrl} target="_blank" rel="noopener noreferrer">
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        Open WhatsApp
+                      </a>
+                    </Button>
+                  </div>
+                  <textarea
+                    readOnly
+                    value={message}
+                    className="min-h-[140px] w-full resize-y rounded-md border border-border bg-background p-2 font-mono text-xs leading-relaxed text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })()}
       </div>
     </AppModal>
   );
