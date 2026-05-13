@@ -50,8 +50,7 @@ Deno.serve(async (req) => {
     const { data: penalties, error: penErr } = await supabaseServiceRole
       .from('costs')
       .select('id, name, amount')
-      .eq('category', 'penalty')
-      .eq('is_active', true);
+      .eq('category', 'penalty');
 
     if (penErr) {
       throw new Error(`Failed to load penalty settings: ${penErr.message}`);
