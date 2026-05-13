@@ -45,14 +45,14 @@ async function matchHasForfaitPenalty(matchId: number): Promise<boolean> {
 
   const { data, error } = await supabaseServiceRole
     .from('team_costs')
-    .select('costs!inner(name, category, is_active)')
+    .select('costs!inner(name, category)')
     .eq('match_id', matchId)
     .eq('costs.category', 'penalty');
 
   if (error || !data?.length) return false;
-  return data.some((r: { costs?: { name?: string | null; is_active?: boolean | null } }) => {
+  return data.some((r: { costs?: { name?: string | null } }) => {
     const c = r.costs;
-    if (!c || c.is_active === false) return false;
+    if (!c) return false;
     return costNameImpliesMatchCostSuppression(c.name);
   });
 }
@@ -61,8 +61,7 @@ async function deleteActiveMatchCostsForMatch(matchId: number): Promise<void> {
   const { data: mcRows, error: mcErr } = await supabaseServiceRole
     .from('costs')
     .select('id')
-    .eq('category', 'match_cost')
-    .eq('is_active', true);
+    .eq('category', 'match_cost');
   if (mcErr) throw new Error(mcErr.message);
   const ids = (mcRows || []).map((c: { id: number }) => c.id);
   if (ids.length === 0) return;
@@ -120,12 +119,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Load match_cost settings (active)
+    // Load match_cost settings
     const { data: matchCosts, error: costErr } = await supabaseServiceRole
       .from('costs')
       .select('id, name, amount')
-      .eq('category', 'match_cost')
-      .eq('is_active', true);
+      .eq('category', 'match_cost');
 
     if (costErr) throw new Error(`Failed to load cost settings: ${costErr.message}`);
 

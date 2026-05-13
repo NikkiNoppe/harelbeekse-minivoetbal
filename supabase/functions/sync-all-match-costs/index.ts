@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     // Fetch all matches with scores
     const { data: allMatches, error: matchesErr } = await supabaseServiceRole
       .from('matches')
-      .select('match_id, home_team_id, away_team_id, match_date, home_score, away_score, is_submitted, is_cup_match, is_playoff_match, assigned_referee_id, skip_auto_match_costs')
+      .select('match_id, home_team_id, away_team_id, match_date, home_score, away_score, is_submitted, is_cup_match, is_playoff_match, assigned_referee_id, referee, skip_auto_match_costs')
       .not('home_score', 'is', null)
       .not('away_score', 'is', null)
       .not('home_team_id', 'is', null)
@@ -60,8 +60,7 @@ Deno.serve(async (req) => {
     const { data: costSettings, error: costErr } = await supabaseServiceRole
       .from('costs')
       .select('id, amount, name, category')
-      .eq('category', 'match_cost')
-      .eq('is_active', true);
+      .eq('category', 'match_cost');
 
     if (costErr) throw new Error(`Failed to fetch cost settings: ${costErr.message}`);
 
@@ -97,9 +96,8 @@ Deno.serve(async (req) => {
 
     const forfaitMatchIds = new Set<number>();
     for (const row of forfaitPenaltyRows || []) {
-      const r = row as { match_id: number | null; costs?: { name?: string | null; is_active?: boolean | null } };
+      const r = row as { match_id: number | null; costs?: { name?: string | null } };
       const c = r.costs;
-      if (c?.is_active === false) continue;
       if (costNameImpliesMatchCostSuppression(c?.name) && r.match_id != null) forfaitMatchIds.add(r.match_id);
     }
 
@@ -135,7 +133,8 @@ Deno.serve(async (req) => {
       }
 
       const transactionDate = match.match_date?.slice(0, 10) || new Date().toISOString().slice(0, 10);
-      const hasReferee = match.assigned_referee_id != null;
+      const refereeText = (match as { referee?: string | null }).referee;
+      const hasReferee = match.assigned_referee_id != null || (typeof refereeText === 'string' && refereeText.trim() !== '');
 
       const costSettingIds = [fieldCost.id, ...(refereeCost ? [refereeCost.id] : []), ...(adminCost ? [adminCost.id] : [])];
       const { data: existingCosts, error: existingCostsErr } = await supabaseServiceRole
