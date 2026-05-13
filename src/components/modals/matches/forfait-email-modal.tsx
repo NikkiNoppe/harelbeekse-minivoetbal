@@ -69,6 +69,7 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
   const [sending, setSending] = useState(false);
   const [managers, setManagers] = useState<TeamManager[]>([]);
   const [loadingManagers, setLoadingManagers] = useState(false);
+  const [waOpen, setWaOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
