@@ -60,10 +60,12 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
     (async () => {
       setLoadingManagers(true);
       try {
-        const { data: tu, error: tuErr } = await supabase
-          .from("team_users")
-          .select("user_id, team_id")
-          .in("team_id", teamIds);
+        const { data: tu, error: tuErr } = await withUserContext(() =>
+          supabase
+            .from("team_users")
+            .select("user_id, team_id")
+            .in("team_id", teamIds)
+        );
         if (tuErr) throw tuErr;
         const userIds = Array.from(new Set((tu ?? []).map((r) => r.user_id).filter(Boolean))) as number[];
         if (userIds.length === 0) {
@@ -71,8 +73,12 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
           return;
         }
         const [{ data: users, error: uErr }, { data: teams, error: tErr }] = await Promise.all([
-          supabase.from("users").select("user_id, username, email").in("user_id", userIds),
-          supabase.from("teams").select("team_id, team_name").in("team_id", teamIds),
+          withUserContext(() =>
+            supabase.from("users").select("user_id, username, email").in("user_id", userIds)
+          ),
+          withUserContext(() =>
+            supabase.from("teams").select("team_id, team_name").in("team_id", teamIds)
+          ),
         ]);
         if (uErr) throw uErr;
         if (tErr) throw tErr;
