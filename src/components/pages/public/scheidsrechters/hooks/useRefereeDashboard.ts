@@ -87,8 +87,7 @@ export function useRefereeDashboard(): RefereeDashboardData {
         const dateB = new Date(b.match_date || '').getTime();
         return dateA - dateB;
       });
-      const active = sorted.filter((a) => a.status !== 'declined' && a.status !== 'cancelled');
-      setAssignments(active);
+      setAssignments(sorted);
     } catch (error) {
       console.error('Error fetching assignments:', error);
       toast.error('Kon toewijzingen niet ophalen');
