@@ -387,7 +387,6 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         id: -match.match_id,
         match_id: match.match_id,
         referee_id: refereeId,
-        status: 'pending',
         assigned_by: user?.id ?? null,
         assigned_at: assignedAt,
       })),
