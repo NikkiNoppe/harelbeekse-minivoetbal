@@ -124,17 +124,14 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = ({
       if (matchIds.length > 0) {
         const { data: assignments, error: assignmentsError } = await (supabase
           .from('referee_matches' as any)
-          .select('id, match_id, referee_id, status, assigned_by, assigned_at, confirmed_at, assignment_notes')
+          .select('id, match_id, referee_id, assigned_by, assigned_at')
           .in('match_id', matchIds)
-          .not('status', 'is', null) as any);
-        
+          .not('assigned_at', 'is', null) as any);
+
         if (assignmentsError) {
           console.warn('[AssignmentManagement] Assignments fetch error:', assignmentsError);
         } else {
-          assignmentMap = new Map(((assignments as any[]) || []).map((a: any) => [a.match_id, {
-            ...a,
-            notes: a.assignment_notes,
-          }]));
+          assignmentMap = new Map(((assignments as any[]) || []).map((a: any) => [a.match_id, a]));
         }
       }
 
