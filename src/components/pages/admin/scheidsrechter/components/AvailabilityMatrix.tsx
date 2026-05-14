@@ -127,6 +127,16 @@ const formatSessionLocation = (location: string) => {
   return place?.trim() || location;
 };
 
+/** Format de tijdrange van een sessie in UTC (zoals in de tabel), bv. "21u00-23u00". */
+const formatSessionTimeRange = (isoDate: string, matchCount: number): string => {
+  const start = new Date(isoDate);
+  const durationMinutes = Math.max(matchCount, 1) * 60;
+  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+  const fmt = (d: Date) =>
+    `${d.getUTCHours()}u${String(d.getUTCMinutes()).padStart(2, '0')}`;
+  return `${fmt(start)}-${fmt(end)}`;
+};
+
 const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   hideHeader = false,
   selectedMonth: externalMonth,
