@@ -14,6 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
+      _old_referee_assignments: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: number | null
+          confirmed_at: string | null
+          id: number
+          match_id: number
+          notes: string | null
+          referee_id: number
+          status: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: number | null
+          confirmed_at?: string | null
+          id?: number
+          match_id: number
+          notes?: string | null
+          referee_id: number
+          status?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: number | null
+          confirmed_at?: string | null
+          id?: number
+          match_id?: number
+          notes?: string | null
+          referee_id?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referee_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referee_assignments_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "referee_assignments_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      _old_referee_availability: {
+        Row: {
+          created_at: string | null
+          id: number
+          is_available: boolean
+          match_id: number | null
+          notes: string | null
+          poll_group_id: string
+          poll_month: string
+          updated_at: string | null
+          user_id: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          is_available?: boolean
+          match_id?: number | null
+          notes?: string | null
+          poll_group_id: string
+          poll_month: string
+          updated_at?: string | null
+          user_id: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          is_available?: boolean
+          match_id?: number | null
+          notes?: string | null
+          poll_group_id?: string
+          poll_month?: string
+          updated_at?: string | null
+          user_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referee_availability_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["match_id"]
+          },
+        ]
+      }
       application_settings: {
         Row: {
           created_at: string | null
@@ -285,104 +384,56 @@ export type Database = {
           },
         ]
       }
-      referee_assignments: {
+      referee_matches: {
         Row: {
           assigned_at: string | null
           assigned_by: number | null
+          assignment_notes: string | null
+          availability_notes: string | null
           confirmed_at: string | null
+          created_at: string
           id: number
-          match_id: number
-          notes: string | null
-          referee_id: number
-          status: string
-        }
-        Insert: {
-          assigned_at?: string | null
-          assigned_by?: number | null
-          confirmed_at?: string | null
-          id?: number
-          match_id: number
-          notes?: string | null
-          referee_id: number
-          status?: string
-        }
-        Update: {
-          assigned_at?: string | null
-          assigned_by?: number | null
-          confirmed_at?: string | null
-          id?: number
-          match_id?: number
-          notes?: string | null
-          referee_id?: number
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "referee_assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "referee_assignments_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: true
-            referencedRelation: "matches"
-            referencedColumns: ["match_id"]
-          },
-          {
-            foreignKeyName: "referee_assignments_referee_id_fkey"
-            columns: ["referee_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      referee_availability: {
-        Row: {
-          created_at: string | null
-          id: number
-          is_available: boolean
+          is_available: boolean | null
           match_id: number | null
-          notes: string | null
-          poll_group_id: string
-          poll_month: string
-          updated_at: string | null
-          user_id: number
+          poll_group_id: string | null
+          poll_month: string | null
+          referee_id: number
+          status: string | null
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          assigned_at?: string | null
+          assigned_by?: number | null
+          assignment_notes?: string | null
+          availability_notes?: string | null
+          confirmed_at?: string | null
+          created_at?: string
           id?: number
-          is_available?: boolean
+          is_available?: boolean | null
           match_id?: number | null
-          notes?: string | null
-          poll_group_id: string
-          poll_month: string
-          updated_at?: string | null
-          user_id: number
+          poll_group_id?: string | null
+          poll_month?: string | null
+          referee_id: number
+          status?: string | null
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          assigned_at?: string | null
+          assigned_by?: number | null
+          assignment_notes?: string | null
+          availability_notes?: string | null
+          confirmed_at?: string | null
+          created_at?: string
           id?: number
-          is_available?: boolean
+          is_available?: boolean | null
           match_id?: number | null
-          notes?: string | null
-          poll_group_id?: string
-          poll_month?: string
-          updated_at?: string | null
-          user_id?: number
+          poll_group_id?: string | null
+          poll_month?: string | null
+          referee_id?: number
+          status?: string | null
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "referee_availability_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: false
-            referencedRelation: "matches"
-            referencedColumns: ["match_id"]
-          },
-        ]
+        Relationships: []
       }
       team_costs: {
         Row: {
