@@ -72,8 +72,6 @@ export function RefereeDashboard() {
 
         <AssignedMatchesSection
           assignments={assignments}
-          onConfirmAssignment={confirmAssignment}
-          onDeclineAssignment={declineAssignment}
           isLoading={isLoadingAssignments}
         />
       </div>
