@@ -31,8 +31,9 @@ const fetchReferees = async (signal?: AbortSignal): Promise<Referee[]> => {
     const result = await Promise.race([
       (async () => {
         const { data, error } = await supabase
-          .from('referees_public' as 'users')
+          .from('users')
           .select('user_id, username')
+          .eq('role', 'referee')
           .order('username');
         
         if (error) throw error;
