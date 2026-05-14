@@ -321,13 +321,6 @@ export type Database = {
             foreignKeyName: "referee_assignments_assigned_by_fkey"
             columns: ["assigned_by"]
             isOneToOne: false
-            referencedRelation: "referees_public"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "referee_assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
           },
@@ -337,13 +330,6 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "matches"
             referencedColumns: ["match_id"]
-          },
-          {
-            foreignKeyName: "referee_assignments_referee_id_fkey"
-            columns: ["referee_id"]
-            isOneToOne: false
-            referencedRelation: "referees_public"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "referee_assignments_referee_id_fkey"
@@ -478,13 +464,6 @@ export type Database = {
             foreignKeyName: "team_managers_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "referees_public"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "team_managers_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
           },
@@ -553,24 +532,7 @@ export type Database = {
       }
     }
     Views: {
-      referees_public: {
-        Row: {
-          role: Database["public"]["Enums"]["user_role"] | null
-          user_id: number | null
-          username: string | null
-        }
-        Insert: {
-          role?: Database["public"]["Enums"]["user_role"] | null
-          user_id?: number | null
-          username?: string | null
-        }
-        Update: {
-          role?: Database["public"]["Enums"]["user_role"] | null
-          user_id?: number | null
-          username?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       add_team_cost: {
