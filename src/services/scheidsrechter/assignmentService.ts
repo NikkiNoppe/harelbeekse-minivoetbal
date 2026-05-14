@@ -109,11 +109,12 @@ export const assignmentService = {
     month?: string
   ): Promise<RefereeAssignment[]> {
     try {
-      // Haal assignments op
+      // Haal assignments op (alleen rijen met daadwerkelijke status = toewijzing)
       const { data, error } = await supabase
-        .from('referee_assignments' as any)
-        .select('*')
+        .from('referee_matches' as any)
+        .select('id, match_id, referee_id, assigned_by, assigned_at, status, confirmed_at, assignment_notes')
         .eq('referee_id', refereeId)
+        .not('status', 'is', null)
         .order('assigned_at', { ascending: false });
 
       if (error) {
