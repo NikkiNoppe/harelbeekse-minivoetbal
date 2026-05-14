@@ -153,9 +153,7 @@ export function suggestRefereesForSession(args: {
       const alreadyOnThisSession = assignments.some(
         (a) =>
           session.matchIds.includes(a.match_id) &&
-          a.referee_id === ref.user_id &&
-          a.status !== 'declined' &&
-          a.status !== 'cancelled',
+          a.referee_id === ref.user_id,
       );
       if (alreadyOnThisSession) return false;
       return !busyOnSameDay.has(ref.user_id);
