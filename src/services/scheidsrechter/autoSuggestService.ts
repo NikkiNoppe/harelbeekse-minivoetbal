@@ -34,7 +34,6 @@ export interface AvailabilityRecord {
 export interface AssignmentRecord {
   match_id: number;
   referee_id: number;
-  status: string;
 }
 
 export interface RefereeInfo {
