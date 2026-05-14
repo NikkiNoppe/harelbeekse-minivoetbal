@@ -29,7 +29,6 @@ export const refereeAvailabilityService = {
             poll_group_id: pollGroupId,
             poll_month: pollMonth,
             is_available: avail.is_available,
-            availability_notes: avail.notes || null,
           };
 
           const { error } = await supabase
@@ -140,7 +139,6 @@ export const refereeAvailabilityService = {
             poll_group_id: pollGroupId,
             poll_month: pollMonth,
             is_available: isAvailable,
-            availability_notes: notes || null,
           } as any, {
             onConflict: matchId ? 'referee_id,match_id' : 'referee_id,poll_group_id,poll_month',
           } as any);
