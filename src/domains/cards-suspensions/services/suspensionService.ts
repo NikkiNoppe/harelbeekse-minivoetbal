@@ -379,6 +379,34 @@ export const suspensionService = {
         }
       });
 
+      // ALSO check automatic (yellow/red card) suspensions calculated client-side,
+      // since the DB RPC only checks `suspended_matches_remaining` and manual suspensions.
+      // A player must be marked ineligible if the given matchDate is in their
+      // suspendedForMatches list of any active automatic suspension.
+      try {
+        const matchDateKey = (() => {
+          const y = matchDate.getUTCFullYear();
+          const m = String(matchDate.getUTCMonth() + 1).padStart(2, '0');
+          const d = String(matchDate.getUTCDate()).padStart(2, '0');
+          return `${y}-${m}-${d}`;
+        })();
+
+        const activeSuspensions = await suspensionService.getActiveSuspensions();
+        const suspendedSet = new Set<number>();
+        for (const s of activeSuspensions) {
+          if (!playerIds.includes(s.playerId)) continue;
+          const dates = s.suspendedForMatches?.map(m => m.date) || [];
+          if (dates.includes(matchDateKey)) {
+            suspendedSet.add(s.playerId);
+          }
+        }
+        suspendedSet.forEach(pid => {
+          result[pid] = false;
+        });
+      } catch (e) {
+        console.warn('Could not enrich eligibility with automatic suspensions:', e);
+      }
+
       // Cache the result
       batchCache.set(batchCacheKey, { value: result, ts: now });
       return result;
