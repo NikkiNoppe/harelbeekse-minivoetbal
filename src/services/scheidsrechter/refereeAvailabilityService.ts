@@ -62,7 +62,7 @@ export const refereeAvailabilityService = {
 
       const { data: availability, error: availError } = await supabase
         .from(TABLE)
-        .select('referee_id, match_id, poll_group_id, is_available, availability_notes')
+        .select('referee_id, match_id, poll_group_id, is_available')
         .eq('poll_month', pollMonth)
         .not('is_available', 'is', null);
 
@@ -77,7 +77,7 @@ export const refereeAvailabilityService = {
             match_id: a.match_id || undefined,
             poll_group_id: a.poll_group_id,
             is_available: a.is_available,
-            notes: a.availability_notes || undefined,
+,
           }));
 
         return {
@@ -100,7 +100,7 @@ export const refereeAvailabilityService = {
     try {
       const { data, error } = await supabase
         .from(TABLE)
-        .select('match_id, poll_group_id, is_available, availability_notes')
+        .select('match_id, poll_group_id, is_available')
         .eq('referee_id', refereeId)
         .eq('poll_month', pollMonth)
         .not('is_available', 'is', null);
@@ -114,7 +114,7 @@ export const refereeAvailabilityService = {
         match_id: a.match_id || undefined,
         poll_group_id: a.poll_group_id,
         is_available: a.is_available,
-        notes: a.availability_notes || undefined,
+,
       }));
     } catch (error) {
       console.error('Error in getRefereeAvailability:', error);
@@ -200,7 +200,7 @@ export const refereeAvailabilityService = {
         // Wis availability-velden
         const { error: updateErr } = await supabase
           .from(TABLE)
-          .update({ is_available: null, availability_notes: null } as any)
+          .update({ is_available: null} as any)
           .eq('referee_id', refereeId)
           .eq('poll_month', pollMonth);
 
