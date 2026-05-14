@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { addMinutes, format } from 'date-fns';
+import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import {
   RefreshCw,
