@@ -61,8 +61,9 @@ export async function fetchWorkloadStats(
   const seasonEnd = `${seasonStartYear + 1}-08-01`;
 
   const { data: assignments } = await supabase
-    .from('referee_assignments' as any)
-    .select('referee_id, match_id, status');
+    .from('referee_matches' as any)
+    .select('referee_id, match_id, status')
+    .not('status', 'is', null);
 
   const allAssignments = ((assignments as any[]) || []).filter(
     (a) => a.status !== 'declined' && a.status !== 'cancelled',

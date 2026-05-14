@@ -395,9 +395,10 @@ export const scheidsrechterService = {
       if (refError || !referees) return [];
 
       const { data: availability, error: availError } = await supabase
-        .from('referee_availability')
-        .select('user_id, poll_group_id, is_available')
-        .eq('poll_month', month);
+        .from('referee_matches' as any)
+        .select('referee_id, poll_group_id, is_available')
+        .eq('poll_month', month)
+        .not('is_available', 'is', null);
 
       if (availError) return [];
 
@@ -405,8 +406,8 @@ export const scheidsrechterService = {
       return referees.map(referee => {
         const refAvailability: Record<string, boolean> = {};
         
-        availability?.forEach(avail => {
-          if (avail.user_id === referee.user_id) {
+        ((availability as any[]) || []).forEach((avail: any) => {
+          if (avail.referee_id === referee.user_id && avail.poll_group_id) {
             refAvailability[avail.poll_group_id] = avail.is_available;
           }
         });
@@ -433,13 +434,15 @@ export const scheidsrechterService = {
   ): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('referee_availability')
+        .from('referee_matches' as any)
         .upsert({
-          user_id: userId,
+          referee_id: userId,
           poll_group_id: pollGroupId,
           poll_month: month,
-          is_available: isAvailable
-        });
+          is_available: isAvailable,
+        } as any, {
+          onConflict: 'referee_id,poll_group_id,poll_month',
+        } as any);
 
       return !error;
     } catch (error) {
@@ -515,11 +518,12 @@ export const scheidsrechterService = {
   // Get match-level availability for a referee
   async getRefereeMatchAvailability(userId: number, matchIds: number[]): Promise<Map<number, boolean>> {
     const { data, error } = await supabase
-      .from('referee_availability')
+      .from('referee_matches' as any)
       .select('match_id, is_available')
-      .eq('user_id', userId)
+      .eq('referee_id', userId)
       .in('match_id', matchIds)
-      .not('match_id', 'is', null);
+      .not('match_id', 'is', null)
+      .not('is_available', 'is', null);
     
     if (error) {
       console.error('Error fetching referee match availability:', error);
@@ -527,7 +531,7 @@ export const scheidsrechterService = {
     }
     
     const availabilityMap = new Map<number, boolean>();
-    data?.forEach(item => {
+    ((data as any[]) || []).forEach((item: any) => {
       if (item.match_id) {
         availabilityMap.set(item.match_id, item.is_available);
       }
@@ -539,13 +543,15 @@ export const scheidsrechterService = {
   // Update match-level availability
   async updateMatchAvailability(userId: number, matchId: number, isAvailable: boolean, month: string): Promise<void> {
     const { error } = await supabase
-      .from('referee_availability')
+      .from('referee_matches' as any)
       .upsert({
-        user_id: userId,
+        referee_id: userId,
         match_id: matchId,
         is_available: isAvailable,
         poll_month: month,
-        poll_group_id: null
+        poll_group_id: null,
+      } as any, {
+        onConflict: 'referee_id,match_id',
       } as any);
     
     if (error) throw error;
