@@ -509,7 +509,7 @@ const UserTeamInfoCard: React.FC<{
   };
 
   const fetchBackupData = useCallback(async () => {
-    const tables = ['teams', 'players', 'matches', 'users', 'team_users', 'competition_standings', 'costs', 'team_costs', 'application_settings', 'referee_assignments', 'referee_availability'] as const;
+    const tables = ['teams', 'players', 'matches', 'users', 'team_users', 'competition_standings', 'costs', 'team_costs', 'application_settings', 'referee_matches'] as const;
     const backup: Record<string, any[]> = {};
     
     for (const table of tables) {
@@ -519,7 +519,7 @@ const UserTeamInfoCard: React.FC<{
       
       while (true) {
         const { data, error } = await supabase
-          .from(table)
+          .from(table as any)
           .select('*')
           .range(from, from + batchSize - 1);
         
