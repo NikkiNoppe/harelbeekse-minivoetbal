@@ -346,7 +346,6 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
           id: -match.match_id,
           match_id: match.match_id,
           referee_id: refereeId,
-          status: 'assigned',
           assigned_by: null,
           assigned_at: null,
         };
@@ -358,7 +357,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   const getSessionAssignedReferee = useCallback((session: Session): number | null => {
     for (const match of session.matches) {
       if (match.assigned_referee_id) return match.assigned_referee_id;
-      const assignment = assignments.find(a => a.match_id === match.match_id && a.status !== 'declined' && a.status !== 'cancelled');
+      const assignment = assignments.find(a => a.match_id === match.match_id);
       if (assignment) return assignment.referee_id;
     }
     return null;
