@@ -32,8 +32,6 @@ export interface RefereeDashboardData {
   // Actions
   submitAvailability: (clusterKey: string, pollMonth: string, isAvailable: boolean) => Promise<void>;
   submitBulkAvailability: (pollMonth: string, availabilities: AvailabilityInput[]) => Promise<void>;
-  confirmAssignment: (assignmentId: number) => Promise<void>;
-  declineAssignment: (assignmentId: number, reason?: string) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
