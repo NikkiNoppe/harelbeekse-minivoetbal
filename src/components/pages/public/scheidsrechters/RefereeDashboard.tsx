@@ -15,8 +15,6 @@ export function RefereeDashboard() {
     isLoadingAssignments,
     username,
     submitAvailability,
-    confirmAssignment,
-    declineAssignment,
     refreshData,
   } = useRefereeDashboard();
 
@@ -74,8 +72,6 @@ export function RefereeDashboard() {
 
         <AssignedMatchesSection
           assignments={assignments}
-          onConfirmAssignment={confirmAssignment}
-          onDeclineAssignment={declineAssignment}
           isLoading={isLoadingAssignments}
         />
       </div>

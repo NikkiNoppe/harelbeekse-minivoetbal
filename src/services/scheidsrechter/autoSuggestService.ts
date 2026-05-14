@@ -34,7 +34,6 @@ export interface AvailabilityRecord {
 export interface AssignmentRecord {
   match_id: number;
   referee_id: number;
-  status: string;
 }
 
 export interface RefereeInfo {
@@ -62,12 +61,10 @@ export async function fetchWorkloadStats(
 
   const { data: assignments } = await supabase
     .from('referee_matches' as any)
-    .select('referee_id, match_id, status')
-    .not('status', 'is', null);
+    .select('referee_id, match_id, assigned_at')
+    .not('assigned_at', 'is', null);
 
-  const allAssignments = ((assignments as any[]) || []).filter(
-    (a) => a.status !== 'declined' && a.status !== 'cancelled',
-  );
+  const allAssignments = ((assignments as any[]) || []);
 
   if (allAssignments.length === 0) {
     return { monthCounts: new Map(), seasonCounts: new Map() };
@@ -156,9 +153,7 @@ export function suggestRefereesForSession(args: {
       const alreadyOnThisSession = assignments.some(
         (a) =>
           session.matchIds.includes(a.match_id) &&
-          a.referee_id === ref.user_id &&
-          a.status !== 'declined' &&
-          a.status !== 'cancelled',
+          a.referee_id === ref.user_id,
       );
       if (alreadyOnThisSession) return false;
       return !busyOnSameDay.has(ref.user_id);

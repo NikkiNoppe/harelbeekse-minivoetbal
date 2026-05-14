@@ -4,6 +4,7 @@
 
 // Basis types
 export type PollStatus = 'draft' | 'open' | 'closed' | 'processing' | 'completed';
+/** @deprecated Status is dropped from referee_matches; type kept for legacy refs. */
 export type AssignmentStatus = 'pending' | 'confirmed' | 'declined' | 'cancelled';
 
 // Monthly Poll
@@ -77,9 +78,6 @@ export interface RefereeAssignment {
   referee_id: number;
   assigned_at: string;
   assigned_by: number | null;
-  status: AssignmentStatus;
-  confirmed_at: string | null;
-  notes: string | null;
   // Joined data
   referee_name?: string;
   match_date?: string;

@@ -1,13 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { withUserContext } from "@/lib/supabaseUtils";
-import type { 
+import type {
   AvailabilityInput,
-  RefereeWithAvailability 
+  RefereeWithAvailability
 } from "./types";
 
 /**
- * Service voor scheidsrechter beschikbaarheid
- * Werkt op de samengevoegde tabel `referee_matches`.
+ * Service voor scheidsrechter beschikbaarheid op `referee_matches`.
  */
 const TABLE = 'referee_matches' as any;
 
@@ -19,7 +18,6 @@ export const refereeAvailabilityService = {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       return await withUserContext(async () => {
-        // Per item: bepaal conflict-key en gebruik passende upsert
         for (const avail of availabilities) {
           const matchId = avail.match_id || null;
           const pollGroupId = avail.poll_group_id || `${pollMonth}_${matchId || 'general'}`;
@@ -29,7 +27,6 @@ export const refereeAvailabilityService = {
             poll_group_id: pollGroupId,
             poll_month: pollMonth,
             is_available: avail.is_available,
-            availability_notes: avail.notes || null,
           };
 
           const { error } = await supabase
@@ -62,7 +59,7 @@ export const refereeAvailabilityService = {
 
       const { data: availability, error: availError } = await supabase
         .from(TABLE)
-        .select('referee_id, match_id, poll_group_id, is_available, availability_notes')
+        .select('referee_id, match_id, poll_group_id, is_available')
         .eq('poll_month', pollMonth)
         .not('is_available', 'is', null);
 
@@ -77,7 +74,6 @@ export const refereeAvailabilityService = {
             match_id: a.match_id || undefined,
             poll_group_id: a.poll_group_id,
             is_available: a.is_available,
-            notes: a.availability_notes || undefined,
           }));
 
         return {
@@ -94,13 +90,13 @@ export const refereeAvailabilityService = {
   },
 
   async getRefereeAvailability(
-    refereeId: number, 
+    refereeId: number,
     pollMonth: string
   ): Promise<AvailabilityInput[]> {
     try {
       const { data, error } = await supabase
         .from(TABLE)
-        .select('match_id, poll_group_id, is_available, availability_notes')
+        .select('match_id, poll_group_id, is_available')
         .eq('referee_id', refereeId)
         .eq('poll_month', pollMonth)
         .not('is_available', 'is', null);
@@ -114,7 +110,6 @@ export const refereeAvailabilityService = {
         match_id: a.match_id || undefined,
         poll_group_id: a.poll_group_id,
         is_available: a.is_available,
-        notes: a.availability_notes || undefined,
       }));
     } catch (error) {
       console.error('Error in getRefereeAvailability:', error);
@@ -128,7 +123,7 @@ export const refereeAvailabilityService = {
     pollGroupId: string,
     pollMonth: string,
     isAvailable: boolean,
-    notes?: string
+    _notes?: string
   ): Promise<boolean> {
     try {
       return await withUserContext(async () => {
@@ -140,7 +135,6 @@ export const refereeAvailabilityService = {
             poll_group_id: pollGroupId,
             poll_month: pollMonth,
             is_available: isAvailable,
-            availability_notes: notes || null,
           } as any, {
             onConflict: matchId ? 'referee_id,match_id' : 'referee_id,poll_group_id,poll_month',
           } as any);
@@ -190,17 +184,12 @@ export const refereeAvailabilityService = {
     }
   },
 
-  /**
-   * Wis alle beschikbaarheid voor een scheidsrechter in een maand.
-   * Behoudt rij als er een toewijzing aan hangt; wist enkel de availability-velden.
-   */
   async clearAvailability(refereeId: number, pollMonth: string): Promise<boolean> {
     try {
       return await withUserContext(async () => {
-        // Wis availability-velden
         const { error: updateErr } = await supabase
           .from(TABLE)
-          .update({ is_available: null, availability_notes: null } as any)
+          .update({ is_available: null } as any)
           .eq('referee_id', refereeId)
           .eq('poll_month', pollMonth);
 
@@ -209,14 +198,13 @@ export const refereeAvailabilityService = {
           return false;
         }
 
-        // Verwijder rijen die nu helemaal leeg zijn (geen status, geen availability)
         await supabase
           .from(TABLE)
           .delete()
           .eq('referee_id', refereeId)
           .eq('poll_month', pollMonth)
           .is('is_available', null)
-          .is('status', null);
+          .is('assigned_at', null);
 
         return true;
       });

@@ -1,20 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
 import { withUserContext } from "@/lib/supabaseUtils";
-import type { 
-  RefereeAssignment, 
+import type {
+  RefereeAssignment,
   CreateAssignmentInput,
-  AssignmentStatus,
   AvailableReferee,
-  RefereeAssignmentStats 
+  RefereeAssignmentStats
 } from "./types";
 
 /**
- * Service voor scheidsrechter toewijzingen
+ * Service voor scheidsrechter toewijzingen.
+ * Een rij in `referee_matches` geldt als toewijzing zodra `assigned_at` ingevuld is.
  */
 export const assignmentService = {
-  /**
-   * Wijs een scheidsrechter toe aan een wedstrijd (single match)
-   */
   async assignReferee(
     input: CreateAssignmentInput,
     assignedBy: number
@@ -44,9 +41,6 @@ export const assignmentService = {
     }
   },
 
-  /**
-   * Wijs een scheidsrechter toe aan alle wedstrijden in een sessie (zelfde datum+locatie)
-   */
   async assignRefereeToSession(
     matchId: number,
     refereeId: number,
@@ -78,9 +72,6 @@ export const assignmentService = {
     }
   },
 
-  /**
-   * Verwijder toewijzingen voor alle wedstrijden in een sessie
-   */
   async removeSessionAssignment(matchId: number, userId: number): Promise<boolean> {
     try {
       const { data, error } = await supabase.rpc('remove_referee_from_session' as any, {
@@ -101,20 +92,16 @@ export const assignmentService = {
     }
   },
 
-  /**
-   * Haal alle toewijzingen op voor een scheidsrechter
-   */
   async getAssignmentsForReferee(
-    refereeId: number, 
+    refereeId: number,
     month?: string
   ): Promise<RefereeAssignment[]> {
     try {
-      // Haal assignments op (alleen rijen met daadwerkelijke status = toewijzing)
       const { data, error } = await supabase
         .from('referee_matches' as any)
-        .select('id, match_id, referee_id, assigned_by, assigned_at, status, confirmed_at, assignment_notes')
+        .select('id, match_id, referee_id, assigned_by, assigned_at')
         .eq('referee_id', refereeId)
-        .not('status', 'is', null)
+        .not('assigned_at', 'is', null)
         .order('assigned_at', { ascending: false });
 
       if (error) {
@@ -125,7 +112,6 @@ export const assignmentService = {
       const assignments = data as any[] || [];
       if (assignments.length === 0) return [];
 
-      // Haal match data op
       const matchIds = assignments.map(a => a.match_id);
       const { data: matches } = await supabase
         .from('matches')
@@ -134,13 +120,12 @@ export const assignmentService = {
 
       const matchMap = new Map((matches || []).map(m => [m.match_id, m]));
 
-      // Filter op maand als opgegeven
       let filteredAssignments = assignments;
       if (month) {
         const [year, monthNum] = month.split('-').map(Number);
         const startDate = new Date(year, monthNum - 1, 1);
         const endDate = new Date(year, monthNum, 1);
-        
+
         filteredAssignments = assignments.filter(a => {
           const match = matchMap.get(a.match_id);
           if (!match) return false;
@@ -149,7 +134,6 @@ export const assignmentService = {
         });
       }
 
-      // Haal team names op
       const teamIds = new Set<number>();
       (matches || []).forEach(m => {
         if (m.home_team_id) teamIds.add(m.home_team_id);
@@ -171,9 +155,6 @@ export const assignmentService = {
           referee_id: a.referee_id,
           assigned_at: a.assigned_at,
           assigned_by: a.assigned_by,
-          status: a.status,
-          confirmed_at: a.confirmed_at,
-          notes: a.assignment_notes,
           match_date: match?.match_date,
           location: match?.location,
           home_team_name: teamMap.get(match?.home_team_id) || 'Onbekend',
@@ -186,17 +167,13 @@ export const assignmentService = {
     }
   },
 
-  /**
-   * Haal niet-toegewezen wedstrijden op voor een maand
-   */
   async getUnassignedMatches(month: string): Promise<any[]> {
     try {
       const [year, monthNum] = month.split('-').map(Number);
-      const nextMonth = monthNum === 12 
-        ? `${year + 1}-01` 
+      const nextMonth = monthNum === 12
+        ? `${year + 1}-01`
         : `${year}-${String(monthNum + 1).padStart(2, '0')}`;
 
-      // Haal wedstrijden op die nog geen toewijzing hebben
       const { data: matches, error } = await supabase
         .from('matches')
         .select(`
@@ -217,7 +194,6 @@ export const assignmentService = {
         return [];
       }
 
-      // Haal team names op
       const teamIds = new Set<number>();
       (matches || []).forEach(m => {
         if (m.home_team_id) teamIds.add(m.home_team_id);
@@ -242,9 +218,6 @@ export const assignmentService = {
     }
   },
 
-  /**
-   * Verwijder een toewijzing
-   */
   async removeAssignment(assignmentId: number, userId?: number): Promise<boolean> {
     try {
       const resolvedUserId = userId || 0;
@@ -266,80 +239,6 @@ export const assignmentService = {
     }
   },
 
-  /**
-   * Update de status van een toewijzing
-   */
-  async updateAssignmentStatus(
-    assignmentId: number,
-    status: AssignmentStatus,
-    notes?: string
-  ): Promise<boolean> {
-    try {
-      return await withUserContext(async () => {
-        const updateData: any = { status };
-        
-        if (status === 'confirmed') {
-          updateData.confirmed_at = new Date().toISOString();
-        }
-        if (notes !== undefined) {
-          updateData.assignment_notes = notes;
-        }
-
-        const { error } = await supabase
-          .from('referee_matches' as any)
-          .update(updateData)
-          .eq('id', assignmentId);
-
-        if (error) {
-          console.error('Error updating assignment status:', error);
-          return false;
-        }
-
-        // Als geweigerd, verwijder ook uit matches tabel
-        if (status === 'declined' || status === 'cancelled') {
-          const { data: assignment } = await supabase
-            .from('referee_matches' as any)
-            .select('match_id')
-            .eq('id', assignmentId)
-            .single();
-
-          const assignmentData = assignment as any;
-          if (assignmentData) {
-            await supabase
-              .from('matches')
-              .update({
-                assigned_referee_id: null,
-                referee: null
-              })
-              .eq('match_id', assignmentData.match_id);
-          }
-        }
-
-        return true;
-      });
-    } catch (error) {
-      console.error('Error in updateAssignmentStatus:', error);
-      return false;
-    }
-  },
-
-  /**
-   * Bevestig een toewijzing (door scheidsrechter)
-   */
-  async confirmAssignment(assignmentId: number): Promise<boolean> {
-    return this.updateAssignmentStatus(assignmentId, 'confirmed');
-  },
-
-  /**
-   * Weiger een toewijzing (door scheidsrechter)
-   */
-  async declineAssignment(assignmentId: number, reason?: string): Promise<boolean> {
-    return this.updateAssignmentStatus(assignmentId, 'declined', reason);
-  },
-
-  /**
-   * Haal beschikbare scheidsrechters op voor een wedstrijd
-   */
   async getAvailableRefereesForMatch(matchId: number): Promise<AvailableReferee[]> {
     try {
       const { data, error } = await supabase
@@ -364,13 +263,9 @@ export const assignmentService = {
     }
   },
 
-  /**
-   * Haal toewijzings statistieken op per scheidsrechter
-   */
-  async getAssignmentStats(month?: string): Promise<RefereeAssignmentStats[]> {
+  async getAssignmentStats(_month?: string): Promise<RefereeAssignmentStats[]> {
     try {
       return await withUserContext(async () => {
-        // Haal alle referees op
         const { data: referees } = await supabase
           .from('users')
           .select('user_id, username')
@@ -378,13 +273,11 @@ export const assignmentService = {
 
         if (!referees) return [];
 
-        // Haal alle assignments op (met status = echte toewijzingen)
         const { data: assignments } = await supabase
           .from('referee_matches' as any)
-          .select('referee_id, status')
-          .not('status', 'is', null);
+          .select('referee_id, assigned_at')
+          .not('assigned_at', 'is', null);
 
-        // Bereken stats per referee
         return referees.map(ref => {
           const refAssignments = (assignments as any[] || []).filter(
             a => a.referee_id === ref.user_id
@@ -394,9 +287,9 @@ export const assignmentService = {
             referee_id: ref.user_id,
             referee_name: ref.username,
             total_assignments: refAssignments.length,
-            pending_count: refAssignments.filter(a => a.status === 'pending').length,
-            confirmed_count: refAssignments.filter(a => a.status === 'confirmed').length,
-            declined_count: refAssignments.filter(a => a.status === 'declined').length
+            pending_count: 0,
+            confirmed_count: refAssignments.length,
+            declined_count: 0
           };
         });
       });
@@ -406,16 +299,13 @@ export const assignmentService = {
     }
   },
 
-  /**
-   * Haal assignment op voor een specifieke wedstrijd
-   */
   async getAssignmentForMatch(matchId: number): Promise<RefereeAssignment | null> {
     try {
       const { data, error } = await supabase
         .from('referee_matches' as any)
-        .select('id, match_id, referee_id, assigned_by, assigned_at, status, confirmed_at, assignment_notes')
+        .select('id, match_id, referee_id, assigned_by, assigned_at')
         .eq('match_id', matchId)
-        .not('status', 'is', null)
+        .not('assigned_at', 'is', null)
         .maybeSingle();
 
       if (error || !data) return null;
@@ -426,9 +316,6 @@ export const assignmentService = {
         referee_id: a.referee_id,
         assigned_by: a.assigned_by,
         assigned_at: a.assigned_at,
-        status: a.status,
-        confirmed_at: a.confirmed_at,
-        notes: a.assignment_notes,
       } as unknown as RefereeAssignment;
     } catch (error) {
       console.error('Error in getAssignmentForMatch:', error);

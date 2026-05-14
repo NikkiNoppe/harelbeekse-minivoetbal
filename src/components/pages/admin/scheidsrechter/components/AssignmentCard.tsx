@@ -41,7 +41,7 @@ const AssignmentCard: React.FC<SessionAssignmentCardProps> = ({
   const assignedMatch = matches.find(m => m.assigned_referee_id || m.current_referee_name);
   const isAssigned = !!assignedMatch;
   const refereeName = assignedMatch?.current_referee_name;
-  const assignmentStatus = assignedMatch?.current_assignment?.status;
+  
 
   // Use first match to fetch available referees
   const firstMatch = matches[0];
@@ -147,13 +147,6 @@ const AssignmentCard: React.FC<SessionAssignmentCardProps> = ({
               <Badge variant="outline" className="text-xs">
                 {matches.length} {matches.length === 1 ? 'wedstrijd' : 'wedstrijden'}
               </Badge>
-              {assignmentStatus && (
-                <Badge variant="outline" className="text-xs">
-                  {assignmentStatus === 'confirmed' && '✅ Bevestigd'}
-                  {assignmentStatus === 'pending' && '⏳ In afwachting'}
-                  {assignmentStatus === 'declined' && '❌ Afgewezen'}
-                </Badge>
-              )}
             </div>
             <Button
               variant="ghost"

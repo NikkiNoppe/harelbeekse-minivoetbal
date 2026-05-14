@@ -32,8 +32,6 @@ export interface RefereeDashboardData {
   // Actions
   submitAvailability: (clusterKey: string, pollMonth: string, isAvailable: boolean) => Promise<void>;
   submitBulkAvailability: (pollMonth: string, availabilities: AvailabilityInput[]) => Promise<void>;
-  confirmAssignment: (assignmentId: number) => Promise<void>;
-  declineAssignment: (assignmentId: number, reason?: string) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -87,8 +85,7 @@ export function useRefereeDashboard(): RefereeDashboardData {
         const dateB = new Date(b.match_date || '').getTime();
         return dateA - dateB;
       });
-      const active = sorted.filter((a) => a.status !== 'declined' && a.status !== 'cancelled');
-      setAssignments(active);
+      setAssignments(sorted);
     } catch (error) {
       console.error('Error fetching assignments:', error);
       toast.error('Kon toewijzingen niet ophalen');
@@ -166,42 +163,6 @@ export function useRefereeDashboard(): RefereeDashboardData {
     [userId, fetchScheduleData],
   );
 
-  const confirmAssignment = useCallback(
-    async (assignmentId: number) => {
-      try {
-        const success = await assignmentService.confirmAssignment(assignmentId);
-        if (success) {
-          toast.success('Toewijzing bevestigd!');
-          await fetchAssignments();
-        } else {
-          toast.error('Kon toewijzing niet bevestigen');
-        }
-      } catch (error) {
-        console.error('Error confirming assignment:', error);
-        toast.error('Kon toewijzing niet bevestigen');
-      }
-    },
-    [fetchAssignments],
-  );
-
-  const declineAssignment = useCallback(
-    async (assignmentId: number, reason?: string) => {
-      try {
-        const success = await assignmentService.declineAssignment(assignmentId, reason);
-        if (success) {
-          toast.success('Toewijzing geweigerd');
-          await fetchAssignments();
-        } else {
-          toast.error('Kon toewijzing niet weigeren');
-        }
-      } catch (error) {
-        console.error('Error declining assignment:', error);
-        toast.error('Kon toewijzing niet weigeren');
-      }
-    },
-    [fetchAssignments],
-  );
-
   const refreshData = useCallback(async () => {
     await Promise.all([fetchScheduleData(), fetchAssignments()]);
   }, [fetchScheduleData, fetchAssignments]);
@@ -217,8 +178,6 @@ export function useRefereeDashboard(): RefereeDashboardData {
     username,
     submitAvailability,
     submitBulkAvailability,
-    confirmAssignment,
-    declineAssignment,
     refreshData,
   };
 }

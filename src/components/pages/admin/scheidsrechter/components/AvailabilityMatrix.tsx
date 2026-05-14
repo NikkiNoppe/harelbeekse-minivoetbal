@@ -81,7 +81,6 @@ interface AssignmentData {
   id: number;
   match_id: number;
   referee_id: number;
-  status: string;
   assigned_by: number | null;
   assigned_at: string | null;
 }
@@ -190,8 +189,8 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             .rpc('get_all_users_for_admin', { p_user_id: currentUserId }),
           supabase
             .from('referee_matches' as any)
-            .select('id, match_id, referee_id, status, assigned_by, assigned_at')
-            .not('status', 'is', null) as any
+            .select('id, match_id, referee_id, assigned_by, assigned_at')
+            .not('assigned_at', 'is', null) as any
         ])
       );
 
@@ -199,10 +198,9 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       if (usersRes.error) throw usersRes.error;
       if (assignRes.error) throw assignRes.error;
 
-      // Normalize assignment rows to legacy shape
       const assignRows = ((assignRes.data as any[]) || []).map((a: any) => ({
         id: a.id, match_id: a.match_id, referee_id: a.referee_id,
-        status: a.status, assigned_by: a.assigned_by, assigned_at: a.assigned_at,
+        assigned_by: a.assigned_by, assigned_at: a.assigned_at,
       }));
       (assignRes as any).data = assignRows;
 
@@ -348,7 +346,6 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
           id: -match.match_id,
           match_id: match.match_id,
           referee_id: refereeId,
-          status: 'assigned',
           assigned_by: null,
           assigned_at: null,
         };
@@ -360,7 +357,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   const getSessionAssignedReferee = useCallback((session: Session): number | null => {
     for (const match of session.matches) {
       if (match.assigned_referee_id) return match.assigned_referee_id;
-      const assignment = assignments.find(a => a.match_id === match.match_id && a.status !== 'declined' && a.status !== 'cancelled');
+      const assignment = assignments.find(a => a.match_id === match.match_id);
       if (assignment) return assignment.referee_id;
     }
     return null;
@@ -390,7 +387,6 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         id: -match.match_id,
         match_id: match.match_id,
         referee_id: refereeId,
-        status: 'pending',
         assigned_by: user?.id ?? null,
         assigned_at: assignedAt,
       })),
