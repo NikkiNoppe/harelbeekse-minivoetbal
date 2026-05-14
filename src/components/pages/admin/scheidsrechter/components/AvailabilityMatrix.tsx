@@ -81,7 +81,6 @@ interface AssignmentData {
   id: number;
   match_id: number;
   referee_id: number;
-  status: string;
   assigned_by: number | null;
   assigned_at: string | null;
 }
