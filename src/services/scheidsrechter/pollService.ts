@@ -384,10 +384,10 @@ export const pollService = {
           .delete()
           .eq('poll_id', pollId);
 
-        // Wis availability-velden voor deze maand (rijen blijven als toewijzing aanhangt)
+        // Wis availability voor deze maand (rijen blijven als toewijzing aanhangt)
         await supabase
           .from('referee_matches' as any)
-          .update({ is_available: null, availability_notes: null } as any)
+          .update({ is_available: null } as any)
           .eq('poll_month', pollData.poll_month);
 
         // Verwijder rijen die nu helemaal leeg zijn
@@ -396,7 +396,7 @@ export const pollService = {
           .delete()
           .eq('poll_month', pollData.poll_month)
           .is('is_available', null)
-          .is('status', null);
+          .is('assigned_at', null);
 
         // Verwijder de poll zelf
         const { error: delError } = await supabase
