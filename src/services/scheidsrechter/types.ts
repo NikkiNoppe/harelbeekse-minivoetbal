@@ -4,6 +4,7 @@
 
 // Basis types
 export type PollStatus = 'draft' | 'open' | 'closed' | 'processing' | 'completed';
+/** @deprecated Status is dropped from referee_matches; type kept for legacy refs. */
 export type AssignmentStatus = 'pending' | 'confirmed' | 'declined' | 'cancelled';
 
 // Monthly Poll
