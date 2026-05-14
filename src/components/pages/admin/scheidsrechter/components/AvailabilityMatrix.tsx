@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { addMinutes, format } from 'date-fns';
+import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import {
   RefreshCw,
@@ -125,6 +125,16 @@ const SESSION_ROW_HEIGHT = 76;
 const formatSessionLocation = (location: string) => {
   const [place] = location.split(' - ');
   return place?.trim() || location;
+};
+
+/** Format de tijdrange van een sessie in UTC (zoals in de tabel), bv. "21u00-23u00". */
+const formatSessionTimeRange = (isoDate: string, matchCount: number): string => {
+  const start = new Date(isoDate);
+  const durationMinutes = Math.max(matchCount, 1) * 60;
+  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+  const fmt = (d: Date) =>
+    `${d.getUTCHours()}u${String(d.getUTCMinutes()).padStart(2, '0')}`;
+  return `${fmt(start)}-${fmt(end)}`;
 };
 
 const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
@@ -715,13 +725,13 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       );
       const lines = assignedSessionsForReferee.map((session) => {
         const start = new Date(session.date);
-        const durationMinutes = Math.max(session.matches.length, 1) * 60;
-        const end = addMinutes(start, durationMinutes);
-        const dateText = format(start, 'EEEE d MMMM yyyy', { locale: nl });
-        const startText = format(start, "H'u'mm", { locale: nl });
-        const endText = format(end, "H'u'mm", { locale: nl });
-
-        return `${dateText} – ${formatSessionLocation(session.location)} – ${startText}-${endText}`;
+        const dateText = format(
+          new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate())),
+          'EEEE d MMMM yyyy',
+          { locale: nl },
+        );
+        const range = formatSessionTimeRange(session.date, session.matches.length);
+        return `${dateText} – ${formatSessionLocation(session.location)} – ${range}`;
       });
 
       return {
@@ -735,6 +745,43 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       };
     });
   }, [referees, sessions, getSessionAssignedReferee]);
+
+  const allSessionsCopyMessage = useMemo(() => {
+    const sortedSessions = [...sessions].sort((a, b) => {
+      const da = new Date(a.date).getTime();
+      const db = new Date(b.date).getTime();
+      if (da !== db) return da - db;
+      return formatSessionLocation(a.location).localeCompare(formatSessionLocation(b.location));
+    });
+
+    const lines = sortedSessions.map((session) => {
+      const start = new Date(session.date);
+      const dateText = format(
+        new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate())),
+        'EEEE d MMMM yyyy',
+        { locale: nl },
+      );
+      const range = formatSessionTimeRange(session.date, session.matches.length);
+      return `${dateText} – ${formatSessionLocation(session.location)} – ${range}`;
+    });
+
+    const [year, monthNum] = selectedMonth.split('-').map(Number);
+    const monthLabel = format(
+      new Date(Date.UTC(year, (monthNum || 1) - 1, 1)),
+      'MMMM yyyy',
+      { locale: nl },
+    );
+
+    return {
+      sessionCount: sortedSessions.length,
+      text: [
+        'Beste scheidsrechters, gelieve door te geven wanneer je beschikbaar bent.',
+        '',
+        `Overzicht speeldata voor ${monthLabel}:`,
+        lines.length > 0 ? lines.join('\n') : 'Geen wedstrijden gevonden.',
+      ].join('\n'),
+    };
+  }, [sessions, selectedMonth]);
 
   const autoAssignButton = sessions.length > 0 ? (
     <Button
@@ -1188,6 +1235,35 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="space-y-3 border-t border-border p-3">
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-foreground">
+                        Overzicht alle te spelen wedstrijden
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {allSessionsCopyMessage.sessionCount} wedstrijdblok
+                        {allSessionsCopyMessage.sessionCount === 1 ? '' : 'ken'} · vraag beschikbaarheid op
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 shrink-0 gap-1.5 px-2"
+                      onClick={() => copyText(allSessionsCopyMessage.text)}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Kopieer
+                    </Button>
+                  </div>
+                  <textarea
+                    readOnly
+                    value={allSessionsCopyMessage.text}
+                    className="min-h-[140px] w-full resize-y rounded-md border border-border bg-background p-2 font-mono text-xs leading-relaxed text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                </div>
                 {refereeCopyMessages.map((message) => (
                   <div key={message.refereeId} className="rounded-lg border border-border/70 bg-muted/20 p-3">
                     <div className="mb-2 flex items-center justify-between gap-2">
