@@ -41,7 +41,7 @@ const AssignmentCard: React.FC<SessionAssignmentCardProps> = ({
   const assignedMatch = matches.find(m => m.assigned_referee_id || m.current_referee_name);
   const isAssigned = !!assignedMatch;
   const refereeName = assignedMatch?.current_referee_name;
-  const assignmentStatus = assignedMatch?.current_assignment?.status;
+  
 
   // Use first match to fetch available referees
   const firstMatch = matches[0];
