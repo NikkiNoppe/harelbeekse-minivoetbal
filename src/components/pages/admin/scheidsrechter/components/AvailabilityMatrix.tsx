@@ -725,13 +725,13 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       );
       const lines = assignedSessionsForReferee.map((session) => {
         const start = new Date(session.date);
-        const durationMinutes = Math.max(session.matches.length, 1) * 60;
-        const end = addMinutes(start, durationMinutes);
-        const dateText = format(start, 'EEEE d MMMM yyyy', { locale: nl });
-        const startText = format(start, "H'u'mm", { locale: nl });
-        const endText = format(end, "H'u'mm", { locale: nl });
-
-        return `${dateText} – ${formatSessionLocation(session.location)} – ${startText}-${endText}`;
+        const dateText = format(
+          new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate())),
+          'EEEE d MMMM yyyy',
+          { locale: nl },
+        );
+        const range = formatSessionTimeRange(session.date, session.matches.length);
+        return `${dateText} – ${formatSessionLocation(session.location)} – ${range}`;
       });
 
       return {
@@ -745,6 +745,43 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       };
     });
   }, [referees, sessions, getSessionAssignedReferee]);
+
+  const allSessionsCopyMessage = useMemo(() => {
+    const sortedSessions = [...sessions].sort((a, b) => {
+      const da = new Date(a.date).getTime();
+      const db = new Date(b.date).getTime();
+      if (da !== db) return da - db;
+      return formatSessionLocation(a.location).localeCompare(formatSessionLocation(b.location));
+    });
+
+    const lines = sortedSessions.map((session) => {
+      const start = new Date(session.date);
+      const dateText = format(
+        new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate())),
+        'EEEE d MMMM yyyy',
+        { locale: nl },
+      );
+      const range = formatSessionTimeRange(session.date, session.matches.length);
+      return `${dateText} – ${formatSessionLocation(session.location)} – ${range}`;
+    });
+
+    const [year, monthNum] = selectedMonth.split('-').map(Number);
+    const monthLabel = format(
+      new Date(Date.UTC(year, (monthNum || 1) - 1, 1)),
+      'MMMM yyyy',
+      { locale: nl },
+    );
+
+    return {
+      sessionCount: sortedSessions.length,
+      text: [
+        'Beste scheidsrechters, gelieve door te geven wanneer je beschikbaar bent.',
+        '',
+        `Overzicht speeldata voor ${monthLabel}:`,
+        lines.length > 0 ? lines.join('\n') : 'Geen wedstrijden gevonden.',
+      ].join('\n'),
+    };
+  }, [sessions, selectedMonth]);
 
   const autoAssignButton = sessions.length > 0 ? (
     <Button
