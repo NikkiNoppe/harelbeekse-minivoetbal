@@ -179,14 +179,22 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
           supabase
             .rpc('get_all_users_for_admin', { p_user_id: currentUserId }),
           supabase
-            .from('referee_assignments' as any)
-            .select('id, match_id, referee_id, status, assigned_by, assigned_at') as any
+            .from('referee_matches' as any)
+            .select('id, match_id, referee_id, status, assigned_by, assigned_at')
+            .not('status', 'is', null) as any
         ])
       );
 
       if (matchesRes.error) throw matchesRes.error;
       if (usersRes.error) throw usersRes.error;
       if (assignRes.error) throw assignRes.error;
+
+      // Normalize assignment rows to legacy shape
+      const assignRows = ((assignRes.data as any[]) || []).map((a: any) => ({
+        id: a.id, match_id: a.match_id, referee_id: a.referee_id,
+        status: a.status, assigned_by: a.assigned_by, assigned_at: a.assigned_at,
+      }));
+      (assignRes as any).data = assignRows;
 
       let availData: AvailabilityData[] = [];
       const availabilityRes = await supabase.rpc('admin_get_referee_availability' as any, {
@@ -199,14 +207,20 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       } else {
         console.warn('Admin availability RPC unavailable, falling back to direct read:', availabilityRes.error);
         const fallbackAvailabilityRes = await supabase
-          .from('referee_availability')
-          .select('user_id, match_id, poll_group_id, is_available')
-          .eq('poll_month', selectedMonth);
+          .from('referee_matches' as any)
+          .select('referee_id, match_id, poll_group_id, is_available')
+          .eq('poll_month', selectedMonth)
+          .not('is_available', 'is', null);
 
         if (fallbackAvailabilityRes.error) {
           console.warn('Could not fetch referee availability fallback:', fallbackAvailabilityRes.error);
         } else {
-          availData = (fallbackAvailabilityRes.data || []) as AvailabilityData[];
+          availData = ((fallbackAvailabilityRes.data as any[]) || []).map((r: any) => ({
+            user_id: r.referee_id,
+            match_id: r.match_id,
+            poll_group_id: r.poll_group_id,
+            is_available: r.is_available,
+          })) as AvailabilityData[];
         }
       }
 

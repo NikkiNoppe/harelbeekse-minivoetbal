@@ -1,19 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
 import { withUserContext } from "@/lib/supabaseUtils";
 import type { 
-  RefereeAvailabilityRecord, 
   AvailabilityInput,
   RefereeWithAvailability 
 } from "./types";
 
 /**
  * Service voor scheidsrechter beschikbaarheid
+ * Werkt op de samengevoegde tabel `referee_matches`.
  */
+const TABLE = 'referee_matches' as any;
+
 export const refereeAvailabilityService = {
-  /**
-   * Dien beschikbaarheid in voor meerdere wedstrijden/clusters.
-   * Werkt zonder poll — gebruikt rechtstreeks de cluster_key (poll_group_id).
-   */
   async submitAvailability(
     refereeId: number,
     pollMonth: string,
@@ -21,26 +19,30 @@ export const refereeAvailabilityService = {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       return await withUserContext(async () => {
-        const dataToUpsert = availabilities.map(avail => ({
-          user_id: refereeId,
-          poll_month: pollMonth,
-          match_id: avail.match_id || null,
-          poll_group_id: avail.poll_group_id || `${pollMonth}_${avail.match_id || 'general'}`,
-          is_available: avail.is_available,
-          notes: avail.notes || null
-        }));
+        // Per item: bepaal conflict-key en gebruik passende upsert
+        for (const avail of availabilities) {
+          const matchId = avail.match_id || null;
+          const pollGroupId = avail.poll_group_id || `${pollMonth}_${matchId || 'general'}`;
+          const row: any = {
+            referee_id: refereeId,
+            match_id: matchId,
+            poll_group_id: pollGroupId,
+            poll_month: pollMonth,
+            is_available: avail.is_available,
+            availability_notes: avail.notes || null,
+          };
 
-        const { error } = await supabase
-          .from('referee_availability')
-          .upsert(dataToUpsert as any, {
-            onConflict: 'user_id,poll_group_id,poll_month'
-          } as any);
+          const { error } = await supabase
+            .from(TABLE)
+            .upsert(row, {
+              onConflict: matchId ? 'referee_id,match_id' : 'referee_id,poll_group_id,poll_month',
+            } as any);
 
-        if (error) {
-          console.error('Error submitting availability:', error);
-          return { success: false, error: 'Kon beschikbaarheid niet opslaan' };
+          if (error) {
+            console.error('Error submitting availability:', error);
+            return { success: false, error: 'Kon beschikbaarheid niet opslaan' };
+          }
         }
-
         return { success: true };
       });
     } catch (error) {
@@ -49,12 +51,8 @@ export const refereeAvailabilityService = {
     }
   },
 
-  /**
-   * Haal alle beschikbaarheid op voor een poll maand
-   */
   async getAvailabilityForPoll(pollMonth: string): Promise<RefereeWithAvailability[]> {
     try {
-      // Haal alle referees op
       const { data: referees, error: refError } = await supabase
         .from('users')
         .select('user_id, username, email')
@@ -62,32 +60,31 @@ export const refereeAvailabilityService = {
 
       if (refError || !referees) return [];
 
-      // Haal beschikbaarheid op voor deze maand
       const { data: availability, error: availError } = await supabase
-        .from('referee_availability')
-        .select('*')
-        .eq('poll_month', pollMonth);
+        .from(TABLE)
+        .select('referee_id, match_id, poll_group_id, is_available, availability_notes')
+        .eq('poll_month', pollMonth)
+        .not('is_available', 'is', null);
 
       if (availError) {
         console.error('Error fetching availability:', availError);
       }
 
-      // Combineer data
       return referees.map(referee => {
-        const refAvailability = (availability || [])
-          .filter(a => a.user_id === referee.user_id)
+        const refAvailability = ((availability as any[]) || [])
+          .filter(a => a.referee_id === referee.user_id)
           .map(a => ({
             match_id: a.match_id || undefined,
             poll_group_id: a.poll_group_id,
             is_available: a.is_available,
-            notes: (a as any).notes || undefined
+            notes: a.availability_notes || undefined,
           }));
 
         return {
           user_id: referee.user_id,
           username: referee.username,
           email: referee.email || undefined,
-          availability: refAvailability
+          availability: refAvailability,
         };
       });
     } catch (error) {
@@ -96,30 +93,28 @@ export const refereeAvailabilityService = {
     }
   },
 
-  /**
-   * Haal beschikbaarheid op voor een specifieke scheidsrechter
-   */
   async getRefereeAvailability(
     refereeId: number, 
     pollMonth: string
   ): Promise<AvailabilityInput[]> {
     try {
       const { data, error } = await supabase
-        .from('referee_availability')
-        .select('match_id, poll_group_id, is_available, notes')
-        .eq('user_id', refereeId)
-        .eq('poll_month', pollMonth);
+        .from(TABLE)
+        .select('match_id, poll_group_id, is_available, availability_notes')
+        .eq('referee_id', refereeId)
+        .eq('poll_month', pollMonth)
+        .not('is_available', 'is', null);
 
       if (error) {
         console.error('Error fetching referee availability:', error);
         return [];
       }
 
-      return (data || []).map(a => ({
+      return ((data as any[]) || []).map(a => ({
         match_id: a.match_id || undefined,
         poll_group_id: a.poll_group_id,
         is_available: a.is_available,
-        notes: (a as any).notes || undefined
+        notes: a.availability_notes || undefined,
       }));
     } catch (error) {
       console.error('Error in getRefereeAvailability:', error);
@@ -127,11 +122,6 @@ export const refereeAvailabilityService = {
     }
   },
 
-  /**
-   * Update beschikbaarheid voor een specifiek record.
-   * Geen poll-validatie meer — admin kan altijd toewijzen, scheidsrechter kan
-   * altijd zijn voorkeur aanduiden voor een toekomstige wedstrijd.
-   */
   async updateAvailability(
     refereeId: number,
     matchId: number | null,
@@ -143,16 +133,16 @@ export const refereeAvailabilityService = {
     try {
       return await withUserContext(async () => {
         const { error } = await supabase
-          .from('referee_availability')
+          .from(TABLE)
           .upsert({
-            user_id: refereeId,
+            referee_id: refereeId,
             match_id: matchId,
             poll_group_id: pollGroupId,
             poll_month: pollMonth,
             is_available: isAvailable,
-            notes: notes || null
+            availability_notes: notes || null,
           } as any, {
-            onConflict: 'user_id,poll_group_id,poll_month'
+            onConflict: matchId ? 'referee_id,match_id' : 'referee_id,poll_group_id,poll_month',
           } as any);
 
         if (error) {
@@ -167,9 +157,6 @@ export const refereeAvailabilityService = {
     }
   },
 
-  /**
-   * Haal beschikbaarheid op voor specifieke wedstrijden (bulk)
-   */
   async getAvailabilityForMatches(
     refereeId: number,
     matchIds: number[]
@@ -178,10 +165,11 @@ export const refereeAvailabilityService = {
       if (matchIds.length === 0) return new Map();
 
       const { data, error } = await supabase
-        .from('referee_availability')
+        .from(TABLE)
         .select('match_id, is_available')
-        .eq('user_id', refereeId)
-        .in('match_id', matchIds);
+        .eq('referee_id', refereeId)
+        .in('match_id', matchIds)
+        .not('is_available', 'is', null);
 
       if (error) {
         console.error('Error fetching match availability:', error);
@@ -189,7 +177,7 @@ export const refereeAvailabilityService = {
       }
 
       const availabilityMap = new Map<number, boolean>();
-      (data || []).forEach(item => {
+      ((data as any[]) || []).forEach(item => {
         if (item.match_id) {
           availabilityMap.set(item.match_id, item.is_available);
         }
@@ -203,21 +191,33 @@ export const refereeAvailabilityService = {
   },
 
   /**
-   * Verwijder alle beschikbaarheid voor een scheidsrechter in een maand
+   * Wis alle beschikbaarheid voor een scheidsrechter in een maand.
+   * Behoudt rij als er een toewijzing aan hangt; wist enkel de availability-velden.
    */
   async clearAvailability(refereeId: number, pollMonth: string): Promise<boolean> {
     try {
       return await withUserContext(async () => {
-        const { error } = await supabase
-          .from('referee_availability')
-          .delete()
-          .eq('user_id', refereeId)
+        // Wis availability-velden
+        const { error: updateErr } = await supabase
+          .from(TABLE)
+          .update({ is_available: null, availability_notes: null } as any)
+          .eq('referee_id', refereeId)
           .eq('poll_month', pollMonth);
 
-        if (error) {
-          console.error('Error clearing availability:', error);
+        if (updateErr) {
+          console.error('Error clearing availability:', updateErr);
           return false;
         }
+
+        // Verwijder rijen die nu helemaal leeg zijn (geen status, geen availability)
+        await supabase
+          .from(TABLE)
+          .delete()
+          .eq('referee_id', refereeId)
+          .eq('poll_month', pollMonth)
+          .is('is_available', null)
+          .is('status', null);
+
         return true;
       });
     } catch (error) {
@@ -226,35 +226,29 @@ export const refereeAvailabilityService = {
     }
   },
 
-  /**
-   * Haal statistieken op voor beschikbaarheid
-   */
   async getAvailabilityStats(pollMonth: string): Promise<{
     total_referees: number;
     responded_count: number;
     available_by_date: Record<string, number>;
   }> {
     try {
-      // Tel totaal aantal referees
       const { count: totalReferees } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true })
         .eq('role', 'referee');
 
-      // Haal alle beschikbaarheid op
       const { data: availability } = await supabase
-        .from('referee_availability')
-        .select('user_id, poll_group_id, is_available')
-        .eq('poll_month', pollMonth);
+        .from(TABLE)
+        .select('referee_id, poll_group_id, is_available')
+        .eq('poll_month', pollMonth)
+        .not('is_available', 'is', null);
 
-      // Tel unieke respondenten
       const uniqueRespondents = new Set(
-        (availability || []).map(a => a.user_id)
+        ((availability as any[]) || []).map(a => a.referee_id)
       );
 
-      // Tel beschikbaarheid per poll_group (datum/locatie)
       const availableByDate: Record<string, number> = {};
-      (availability || []).forEach(a => {
+      ((availability as any[]) || []).forEach(a => {
         if (a.is_available && a.poll_group_id) {
           availableByDate[a.poll_group_id] = (availableByDate[a.poll_group_id] || 0) + 1;
         }
@@ -263,15 +257,15 @@ export const refereeAvailabilityService = {
       return {
         total_referees: totalReferees || 0,
         responded_count: uniqueRespondents.size,
-        available_by_date: availableByDate
+        available_by_date: availableByDate,
       };
     } catch (error) {
       console.error('Error in getAvailabilityStats:', error);
       return {
         total_referees: 0,
         responded_count: 0,
-        available_by_date: {}
+        available_by_date: {},
       };
     }
-  }
+  },
 };

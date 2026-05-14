@@ -384,11 +384,19 @@ export const pollService = {
           .delete()
           .eq('poll_id', pollId);
 
-        // Verwijder availability records voor deze maand
+        // Wis availability-velden voor deze maand (rijen blijven als toewijzing aanhangt)
         await supabase
-          .from('referee_availability')
-          .delete()
+          .from('referee_matches' as any)
+          .update({ is_available: null, availability_notes: null } as any)
           .eq('poll_month', pollData.poll_month);
+
+        // Verwijder rijen die nu helemaal leeg zijn
+        await supabase
+          .from('referee_matches' as any)
+          .delete()
+          .eq('poll_month', pollData.poll_month)
+          .is('is_available', null)
+          .is('status', null);
 
         // Verwijder de poll zelf
         const { error: delError } = await supabase
@@ -426,10 +434,11 @@ export const pollService = {
 
         // Tel referees die gereageerd hebben
         const { data: respondedReferees } = await supabase
-          .from('referee_availability')
-          .select('user_id')
-          .eq('poll_month', poll.poll_month);
-        const uniqueResponded = new Set(respondedReferees?.map(r => r.user_id) || []);
+          .from('referee_matches' as any)
+          .select('referee_id')
+          .eq('poll_month', poll.poll_month)
+          .not('is_available', 'is', null);
+        const uniqueResponded = new Set(((respondedReferees as any[]) || []).map(r => r.referee_id));
 
         // Tel totaal aantal referees
         const { count: totalReferees } = await supabase
@@ -439,8 +448,9 @@ export const pollService = {
 
         // Tel toegewezen wedstrijden voor deze maand
         const { count: assignedMatches } = await supabase
-          .from('referee_assignments' as any)
+          .from('referee_matches' as any)
           .select('*', { count: 'exact', head: true })
+          .not('status', 'is', null)
           .not('status', 'in', '("declined","cancelled")');
 
         // Tel totaal wedstrijden deze maand
