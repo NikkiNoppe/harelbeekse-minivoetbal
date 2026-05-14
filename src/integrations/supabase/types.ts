@@ -388,50 +388,32 @@ export type Database = {
         Row: {
           assigned_at: string | null
           assigned_by: number | null
-          assignment_notes: string | null
-          availability_notes: string | null
-          confirmed_at: string | null
-          created_at: string
           id: number
           is_available: boolean | null
           match_id: number | null
           poll_group_id: string | null
           poll_month: string | null
           referee_id: number
-          status: string | null
-          updated_at: string
         }
         Insert: {
           assigned_at?: string | null
           assigned_by?: number | null
-          assignment_notes?: string | null
-          availability_notes?: string | null
-          confirmed_at?: string | null
-          created_at?: string
           id?: number
           is_available?: boolean | null
           match_id?: number | null
           poll_group_id?: string | null
           poll_month?: string | null
           referee_id: number
-          status?: string | null
-          updated_at?: string
         }
         Update: {
           assigned_at?: string | null
           assigned_by?: number | null
-          assignment_notes?: string | null
-          availability_notes?: string | null
-          confirmed_at?: string | null
-          created_at?: string
           id?: number
           is_available?: boolean | null
           match_id?: number | null
           poll_group_id?: string | null
           poll_month?: string | null
           referee_id?: number
-          status?: string | null
-          updated_at?: string
         }
         Relationships: []
       }
