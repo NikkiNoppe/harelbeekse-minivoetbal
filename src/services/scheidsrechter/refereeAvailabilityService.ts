@@ -214,7 +214,7 @@ export const refereeAvailabilityService = {
           .eq('referee_id', refereeId)
           .eq('poll_month', pollMonth)
           .is('is_available', null)
-          .is('status', null);
+          .is('assigned_at', null);
 
         return true;
       });
