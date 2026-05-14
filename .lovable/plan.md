@@ -1,79 +1,58 @@
-# Plan: Samenvoegen tot `referee_matches`
+# Opkuis `referee_matches`
 
-## Haalbaarheid: ja, maar met aandachtspunten
+## Analyse op echte data (53 rijen)
 
-Beide tables zijn al gekoppeld aan dezelfde sleutel (`user_id` / `referee_id` + `match_id`). Data is klein: 26 availability-rijen + 48 assignment-rijen → migratie is veilig. **1 edge-case:** 1 availability-rij zonder `match_id` (cluster-only) — die wordt gemigreerd met `match_id = NULL` of weggegooid.
+| kolom | gevuld | nuttig? | actie |
+|---|---|---|---|
+| `created_at` | 53 | nee (user) | **DROP** |
+| `updated_at` | 53 | nee (user) | **DROP** |
+| `assignment_notes` | 0 | nooit gebruikt | **DROP** |
+| `confirmed_at` | 0 | nooit gezet (geen confirm-flow actief) | **DROP** |
+| `availability_notes` | 25 | enkel auto-string "Door admin als beschikbaar gemarkeerd" → ruis | **DROP** |
+| `status` | 48× pending, 5× null | enkel pending → discriminator zonder waarde | **zie hieronder** |
+| `poll_group_id` | 26 | gebruikt in availability poll | behouden |
+| `poll_month` | 53 | gebruikt voor maand-filtering | behouden |
+| `assigned_at` | 48 | gebruikt | behouden |
+| `assigned_by` | 48 | gebruikt (audit wie toewees) | behouden |
+| `is_available` | 26 | kern van availability | behouden |
+| `match_id` / `referee_id` | kern | behouden |
 
-## Nieuwe table: `referee_matches`
+## Voorstel voor `status`
 
-Eén rij per (referee, match). Eén rij dekt zowel "is beschikbaar" als "is toegewezen".
+Twee opties — kies er één:
 
-| kolom | bron |
-|---|---|
-| `id`, `referee_id`, `match_id` | uniek samen |
-| `is_available` (bool, nullable) | uit availability — `null` = nog niet gereageerd |
-| `availability_notes` (text) | uit availability.notes |
-| `poll_group_id`, `poll_month` | uit availability |
-| `status` (enum, nullable) | uit assignments — `null` = enkel beschikbaarheid, anders pending/confirmed/declined/cancelled |
-| `assigned_by`, `assigned_at`, `confirmed_at` | uit assignments |
-| `assignment_notes` (text) | uit assignments.notes |
-| `created_at`, `updated_at` | nieuw |
+**Optie A — volledig droppen.** Een rij is "toegewezen" zodra `assigned_at IS NOT NULL`. Confirm/decline-knoppen in het scheidsrechter-dashboard verdwijnen (worden toch niet gebruikt — 0 confirmed, 0 declined in DB).
 
-**Unique constraint:** `(referee_id, match_id)` — vervangt beide huidige uniques.
+**Optie B — behouden maar enkel als de confirm/decline-flow blijft.** Dan blijft de kolom nuttig voor toekomstig gebruik, ook al staat alles nu op pending.
 
-## Migratie-stappen (1 SQL migration)
+→ Mijn aanbeveling: **Optie A**. De flow wordt niet gebruikt en `assigned_at` is een betere waarheidsbron.
 
-1. Maak `referee_matches` aan + RLS policies + indexes + grants
-2. Backfill: 
-   - INSERT vanuit `referee_availability` (status = NULL)
-   - UPSERT vanuit `referee_assignments` op `(referee_id, match_id)` — zet status-velden, behoud is_available
-3. Verwijder oude tables `referee_availability` + `referee_assignments`
-4. Drop oude RPCs die ernaar wijzen (zie hieronder)
+## Eindstructuur `referee_matches` (na opkuis)
 
-## RLS policies (zelfde als nu, op nieuwe table)
+```
+id, referee_id, match_id,
+is_available,
+poll_group_id, poll_month,
+assigned_at, assigned_by
+```
 
-- Admins: full access
-- Referees: `SELECT` + `UPDATE` op eigen rijen (`referee_id = current_user_id`)
+8 kolommen i.p.v. 15. Eén rij per (referee, match) blijft de regel.
 
-## RPCs aanpassen (9 stuks)
+## Migratie-stappen
 
-Alle SECURITY DEFINER RPCs moeten naar `referee_matches` schrijven i.p.v. de oude tables:
+1. **Code aanpassen eerst** — alle services/RPCs/UI strippen van `status`, `confirmed_at`, `assignment_notes`, `availability_notes`, `created_at`, `updated_at`.
+   - `assignmentService.ts`: filter `.not('status', 'is', null)` → `.not('assigned_at', 'is', null)`. Insert zet `assigned_at = now()` i.p.v. `status='pending'`.
+   - `refereeAvailabilityService.ts`: drop alle `availability_notes`.
+   - `RefereeDashboard` + `AssignedMatchesSection`: confirm/decline-knoppen verwijderen.
+   - 9 RPCs herschrijven (zelfde lijst als vorige merge: `assign_referee_to_match`, `assign_referee_to_session`, `remove_*`, `check_referee_conflict`, `get_available_referees_for_match`, `admin_set_referee_availability`, `admin_get_referee_availability`, `finalize_poll_assignments`) — schrappen referenties naar `status` etc.
+   - `clearAvailability`: voorwaarde `is_available IS NULL AND status IS NULL` → enkel `is_available IS NULL AND assigned_at IS NULL`.
+2. **Migratie** — `ALTER TABLE referee_matches DROP COLUMN ...` voor de 6 kolommen (+ status indien Optie A). Unique constraints behouden.
+3. Smoke-test op `/admin/scheidsrechters` en referee dashboard.
 
-- `assign_referee_to_match`, `assign_referee_to_session` → UPSERT op (referee_id, match_id), zet status='pending'
-- `remove_referee_assignment`, `remove_referee_from_session` → zet status=NULL (rij blijft bestaan als availability-info aanwezig is) of DELETE als is_available ook null
-- `admin_set_referee_availability`, `admin_get_referee_availability` → schrijft/leest `is_available`
-- `check_referee_conflict`, `get_available_referees_for_match` → JOIN niet meer nodig, single table
-- `finalize_poll_assignments` (indien aanwezig) → idem
+## Risico
 
-## Frontend services aanpassen (6 bestanden)
+Klein — geen van de te droppen kolommen wordt voor business-logica gebruikt (data bewijst het). Het enige beslispunt is `status` (Optie A vs B).
 
-- `assignmentService.ts` — alle queries naar `referee_matches`, filter op `status IS NOT NULL` voor "echte" assignments
-- `refereeAvailabilityService.ts` — queries naar `referee_matches`, filter/upsert op `is_available`
-- `autoSuggestService.ts` — single-table query i.p.v. JOIN
-- `pollService.ts` — idem
-- `monthScheduleService.ts` — idem
-- `scheidsrechterService.ts` — idem
+## Vraag aan jou
 
-UI-componenten (`AssignmentManagement.tsx`, `AvailabilityMatrix.tsx`, `UserProfilePage.tsx` backup-export) blijven werken via de service-laag. Geen UI-wijzigingen.
-
-## Voordelen na merge
-
-- **1 query** voor "beschikbare + toegewezen referees per match" i.p.v. JOIN op 2 tables
-- Geen sync-issues meer tussen availability en assignment
-- Eenvoudigere RLS (1 policy-set)
-- Auto-suggest service wordt aanzienlijk sneller (1 SELECT i.p.v. 2 + merge in code)
-
-## Risico's
-
-- **Grote refactor:** ~9 RPCs + 6 services + 1 migratie. Eén bug kan de hele scheidsrechter-flow breken
-- **`matches.assigned_referee_id` blijft bestaan** als denormalised cache — moet in sync blijven (zoals nu)
-- **De cluster-only availability rij (1 stuk)** moet je beslissen: meenemen als `match_id NULL` (vereist dat unique constraint NULLs toelaat — standaard zo) of negeren
-- **Rollback** vereist dat we oude tables niet droppen tot je hebt gevalideerd. Aanbeveling: in stap 3 hernoem ik `referee_availability` → `_old_referee_availability` en `referee_assignments` → `_old_referee_assignments` i.p.v. te droppen. Na 1-2 weken handmatig droppen.
-
-## Volgorde van implementatie
-
-1. Migratie aanmaken (table + RLS + grants + backfill + rename oude tables)
-2. Alle 9 RPCs herschrijven in dezelfde migratie
-3. 6 services aanpassen om `referee_matches` te gebruiken
-4. Smoke-test op `/admin/scheidsrechters` en `/profiel` (referee view)
-5. Na validatie: aparte cleanup-migratie om `_old_*` tables te droppen
+Optie **A** (status ook weg, confirm/decline-knoppen weg) of Optie **B** (status behouden voor later)?
