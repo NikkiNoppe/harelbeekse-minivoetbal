@@ -173,7 +173,7 @@ export const assignmentService = {
           assigned_by: a.assigned_by,
           status: a.status,
           confirmed_at: a.confirmed_at,
-          notes: a.notes,
+          notes: a.assignment_notes,
           match_date: match?.match_date,
           location: match?.location,
           home_team_name: teamMap.get(match?.home_team_id) || 'Onbekend',
@@ -282,11 +282,11 @@ export const assignmentService = {
           updateData.confirmed_at = new Date().toISOString();
         }
         if (notes !== undefined) {
-          updateData.notes = notes;
+          updateData.assignment_notes = notes;
         }
 
         const { error } = await supabase
-          .from('referee_assignments' as any)
+          .from('referee_matches' as any)
           .update(updateData)
           .eq('id', assignmentId);
 
@@ -298,7 +298,7 @@ export const assignmentService = {
         // Als geweigerd, verwijder ook uit matches tabel
         if (status === 'declined' || status === 'cancelled') {
           const { data: assignment } = await supabase
-            .from('referee_assignments' as any)
+            .from('referee_matches' as any)
             .select('match_id')
             .eq('id', assignmentId)
             .single();
@@ -378,10 +378,11 @@ export const assignmentService = {
 
         if (!referees) return [];
 
-        // Haal alle assignments op
+        // Haal alle assignments op (met status = echte toewijzingen)
         const { data: assignments } = await supabase
-          .from('referee_assignments' as any)
-          .select('referee_id, status');
+          .from('referee_matches' as any)
+          .select('referee_id, status')
+          .not('status', 'is', null);
 
         // Bereken stats per referee
         return referees.map(ref => {
@@ -411,13 +412,24 @@ export const assignmentService = {
   async getAssignmentForMatch(matchId: number): Promise<RefereeAssignment | null> {
     try {
       const { data, error } = await supabase
-        .from('referee_assignments' as any)
-        .select('*')
+        .from('referee_matches' as any)
+        .select('id, match_id, referee_id, assigned_by, assigned_at, status, confirmed_at, assignment_notes')
         .eq('match_id', matchId)
-        .single();
+        .not('status', 'is', null)
+        .maybeSingle();
 
       if (error || !data) return null;
-      return data as unknown as RefereeAssignment;
+      const a = data as any;
+      return {
+        id: a.id,
+        match_id: a.match_id,
+        referee_id: a.referee_id,
+        assigned_by: a.assigned_by,
+        assigned_at: a.assigned_at,
+        status: a.status,
+        confirmed_at: a.confirmed_at,
+        notes: a.assignment_notes,
+      } as unknown as RefereeAssignment;
     } catch (error) {
       console.error('Error in getAssignmentForMatch:', error);
       return null;
