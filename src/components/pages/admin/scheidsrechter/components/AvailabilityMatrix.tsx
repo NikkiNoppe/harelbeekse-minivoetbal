@@ -189,8 +189,8 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             .rpc('get_all_users_for_admin', { p_user_id: currentUserId }),
           supabase
             .from('referee_matches' as any)
-            .select('id, match_id, referee_id, status, assigned_by, assigned_at')
-            .not('status', 'is', null) as any
+            .select('id, match_id, referee_id, assigned_by, assigned_at')
+            .not('assigned_at', 'is', null) as any
         ])
       );
 
@@ -198,10 +198,9 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       if (usersRes.error) throw usersRes.error;
       if (assignRes.error) throw assignRes.error;
 
-      // Normalize assignment rows to legacy shape
       const assignRows = ((assignRes.data as any[]) || []).map((a: any) => ({
         id: a.id, match_id: a.match_id, referee_id: a.referee_id,
-        status: a.status, assigned_by: a.assigned_by, assigned_at: a.assigned_at,
+        assigned_by: a.assigned_by, assigned_at: a.assigned_at,
       }));
       (assignRes as any).data = assignRows;
 
