@@ -147,13 +147,6 @@ const AssignmentCard: React.FC<SessionAssignmentCardProps> = ({
               <Badge variant="outline" className="text-xs">
                 {matches.length} {matches.length === 1 ? 'wedstrijd' : 'wedstrijden'}
               </Badge>
-              {assignmentStatus && (
-                <Badge variant="outline" className="text-xs">
-                  {assignmentStatus === 'confirmed' && '✅ Bevestigd'}
-                  {assignmentStatus === 'pending' && '⏳ In afwachting'}
-                  {assignmentStatus === 'declined' && '❌ Afgewezen'}
-                </Badge>
-              )}
             </div>
             <Button
               variant="ghost"
