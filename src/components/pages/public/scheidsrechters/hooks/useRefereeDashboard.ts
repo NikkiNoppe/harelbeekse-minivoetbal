@@ -163,42 +163,6 @@ export function useRefereeDashboard(): RefereeDashboardData {
     [userId, fetchScheduleData],
   );
 
-  const confirmAssignment = useCallback(
-    async (assignmentId: number) => {
-      try {
-        const success = await assignmentService.confirmAssignment(assignmentId);
-        if (success) {
-          toast.success('Toewijzing bevestigd!');
-          await fetchAssignments();
-        } else {
-          toast.error('Kon toewijzing niet bevestigen');
-        }
-      } catch (error) {
-        console.error('Error confirming assignment:', error);
-        toast.error('Kon toewijzing niet bevestigen');
-      }
-    },
-    [fetchAssignments],
-  );
-
-  const declineAssignment = useCallback(
-    async (assignmentId: number, reason?: string) => {
-      try {
-        const success = await assignmentService.declineAssignment(assignmentId, reason);
-        if (success) {
-          toast.success('Toewijzing geweigerd');
-          await fetchAssignments();
-        } else {
-          toast.error('Kon toewijzing niet weigeren');
-        }
-      } catch (error) {
-        console.error('Error declining assignment:', error);
-        toast.error('Kon toewijzing niet weigeren');
-      }
-    },
-    [fetchAssignments],
-  );
-
   const refreshData = useCallback(async () => {
     await Promise.all([fetchScheduleData(), fetchAssignments()]);
   }, [fetchScheduleData, fetchAssignments]);
@@ -214,8 +178,6 @@ export function useRefereeDashboard(): RefereeDashboardData {
     username,
     submitAvailability,
     submitBulkAvailability,
-    confirmAssignment,
-    declineAssignment,
     refreshData,
   };
 }
