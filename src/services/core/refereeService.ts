@@ -4,7 +4,7 @@ import { withUserContext } from "@/lib/supabaseUtils";
 export interface Referee {
   user_id: number;
   username: string;
-  email?: string;
+  email?: string; // no longer fetched client-side; kept optional for backward compat
 }
 
 export const refereeService = {
@@ -14,9 +14,8 @@ export const refereeService = {
       // Use withUserContext to ensure RLS policies work correctly
       return await withUserContext(async () => {
         const { data, error } = await supabase
-          .from('users')
-          .select('user_id, username, email')
-          .eq('role', 'referee')
+          .from('referees_public' as any)
+          .select('user_id, username')
           .order('username');
 
         if (error) {
@@ -24,7 +23,7 @@ export const refereeService = {
           throw error;
         }
 
-        return data || [];
+        return (data as unknown as Referee[]) || [];
       });
     } catch (error) {
       console.error('Error in refereeService.getReferees:', error);
@@ -38,10 +37,9 @@ export const refereeService = {
       // Use withUserContext to ensure RLS policies work correctly
       return await withUserContext(async () => {
         const { data, error } = await supabase
-          .from('users')
-          .select('user_id, username, email')
+          .from('referees_public' as any)
+          .select('user_id, username')
           .eq('user_id', userId)
-          .eq('role', 'referee')
           .single();
 
         if (error) {
@@ -49,7 +47,7 @@ export const refereeService = {
           throw error;
         }
 
-        return data;
+        return data as unknown as Referee | null;
       });
     } catch (error) {
       console.error('Error in refereeService.getRefereeById:', error);

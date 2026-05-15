@@ -388,9 +388,8 @@ export const scheidsrechterService = {
   async getRefereeAvailability(month: string): Promise<RefereeAvailability[]> {
     try {
       const { data: referees, error: refError } = await supabase
-        .from('users')
-        .select('user_id, username, email')
-        .eq('role', 'referee');
+        .from('referees_public' as any)
+        .select('user_id, username') as { data: Array<{ user_id: number; username: string }> | null; error: any };
 
       if (refError || !referees) return [];
 
@@ -415,7 +414,7 @@ export const scheidsrechterService = {
         return {
           user_id: referee.user_id,
           username: referee.username,
-          email: referee.email,
+          email: undefined,
           availability: refAvailability
         };
       });
