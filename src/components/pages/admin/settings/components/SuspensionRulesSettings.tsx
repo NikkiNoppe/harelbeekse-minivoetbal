@@ -203,7 +203,7 @@ export const SuspensionRulesSettings: React.FC = () => {
               size="sm"
               onClick={handleSave}
               disabled={isSaving || !isDirty}
-              variant={isDirty ? 'default' : 'outline'}
+              className="btn btn--primary"
             >
               <Save className="h-4 w-4 mr-2" />
               {isSaving ? 'Opslaan...' : 'Opslaan'}
