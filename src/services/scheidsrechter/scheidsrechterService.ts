@@ -414,7 +414,7 @@ export const scheidsrechterService = {
         return {
           user_id: referee.user_id,
           username: referee.username,
-          email: referee.email,
+          email: undefined,
           availability: refAvailability
         };
       });
