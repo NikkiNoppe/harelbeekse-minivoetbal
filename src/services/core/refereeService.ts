@@ -4,7 +4,7 @@ import { withUserContext } from "@/lib/supabaseUtils";
 export interface Referee {
   user_id: number;
   username: string;
-  email?: string;
+  email?: string; // no longer fetched client-side; kept optional for backward compat
 }
 
 export const refereeService = {
