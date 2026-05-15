@@ -23,7 +23,7 @@ export const refereeService = {
           throw error;
         }
 
-        return data || [];
+        return (data as unknown as Referee[]) || [];
       });
     } catch (error) {
       console.error('Error in refereeService.getReferees:', error);
