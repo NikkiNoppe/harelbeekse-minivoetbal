@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS referee_matches_updated_at ON public.referee_matches;
