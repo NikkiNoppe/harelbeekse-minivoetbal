@@ -1,58 +1,79 @@
-# Opkuis `referee_matches`
+## Security fixes — gefaseerde aanpak
 
-## Analyse op echte data (53 rijen)
+Ik wil de security issues oplossen in **3 fasen** om je workflows niet te breken. Fase 1 en 2 zijn veilig & snel. Fase 3 (auth-model) is groot en risicovol — daar wil ik je expliciete go voor.
 
-| kolom | gevuld | nuttig? | actie |
-|---|---|---|---|
-| `created_at` | 53 | nee (user) | **DROP** |
-| `updated_at` | 53 | nee (user) | **DROP** |
-| `assignment_notes` | 0 | nooit gebruikt | **DROP** |
-| `confirmed_at` | 0 | nooit gezet (geen confirm-flow actief) | **DROP** |
-| `availability_notes` | 25 | enkel auto-string "Door admin als beschikbaar gemarkeerd" → ruis | **DROP** |
-| `status` | 48× pending, 5× null | enkel pending → discriminator zonder waarde | **zie hieronder** |
-| `poll_group_id` | 26 | gebruikt in availability poll | behouden |
-| `poll_month` | 53 | gebruikt voor maand-filtering | behouden |
-| `assigned_at` | 48 | gebruikt | behouden |
-| `assigned_by` | 48 | gebruikt (audit wie toewees) | behouden |
-| `is_available` | 26 | kern van availability | behouden |
-| `match_id` / `referee_id` | kern | behouden |
+---
 
-## Voorstel voor `status`
+### FASE 1 — Quick wins (lage risico, geen workflow-impact)
 
-Twee opties — kies er één:
+1. **Dead code verwijderen**
+   - `src/components/pages/admin/AdminPanel.tsx` verwijderen (nergens geïmporteerd, bevat hardcoded `admin/admin123`).
 
-**Optie A — volledig droppen.** Een rij is "toegewezen" zodra `assigned_at IS NOT NULL`. Confirm/decline-knoppen in het scheidsrechter-dashboard verdwijnen (worden toch niet gebruikt — 0 confirmed, 0 declined in DB).
+2. **Referee email exposure dichten**
+   - `src/services/core/refereeService.ts` en `src/services/scheidsrechter/scheidsrechterService.ts` laten lezen uit `referees_public` view i.p.v. `users` (email weglaten).
+   - Veld `email` optioneel maken in de `Referee` interface.
 
-**Optie B — behouden maar enkel als de confirm/decline-flow blijft.** Dan blijft de kolom nuttig voor toekomstig gebruik, ook al staat alles nu op pending.
+3. **Hardcoded fallback secret in delete-user opruimen** (cosmetic, fix komt mee in fase 2).
 
-→ Mijn aanbeveling: **Optie A**. De flow wordt niet gebruikt en `assigned_at` is een betere waarheidsbron.
+---
 
-## Eindstructuur `referee_matches` (na opkuis)
+### FASE 2 — Edge functions auth + RLS finetuning
 
-```
-id, referee_id, match_id,
-is_available,
-poll_group_id, poll_month,
-assigned_at, assigned_by
-```
+#### Edge functions: admin-only afdwingen
+Patroon: bovenaan elke handler een `requireAdmin(req)` helper die:
+- Authorization header leest
+- `verify_user_password`-style auth gebruikt of `app.current_user_id` valideert via een service-role lookup in `users` tabel
+- `role = 'admin'` checkt
 
-8 kolommen i.p.v. 15. Eén rij per (referee, match) blijft de regel.
+Toevoegen aan:
+- `delete-user`
+- `send-welcome-email` (ook: valideer dat `email` overeenkomt met user's geregistreerde email óf admin-only)
+- `send-forfait-notification` (admin/manager only; valideer recipients tegen DB)
+- `sync-card-penalties`, `sync-match-costs`, `sync-all-match-costs`
+- `generate-monthly-polls`
+- `notify-auto-suspension`
+- `generate-competition-schedule`
 
-## Migratie-stappen
+**Workflow-check:** alle aanroepen vanuit de frontend lopen al via ingelogde admin-flows. Ik audit elke `supabase.functions.invoke('<naam>')` callsite zodat de Authorization header meegestuurd wordt.
 
-1. **Code aanpassen eerst** — alle services/RPCs/UI strippen van `status`, `confirmed_at`, `assignment_notes`, `availability_notes`, `created_at`, `updated_at`.
-   - `assignmentService.ts`: filter `.not('status', 'is', null)` → `.not('assigned_at', 'is', null)`. Insert zet `assigned_at = now()` i.p.v. `status='pending'`.
-   - `refereeAvailabilityService.ts`: drop alle `availability_notes`.
-   - `RefereeDashboard` + `AssignedMatchesSection`: confirm/decline-knoppen verwijderen.
-   - 9 RPCs herschrijven (zelfde lijst als vorige merge: `assign_referee_to_match`, `assign_referee_to_session`, `remove_*`, `check_referee_conflict`, `get_available_referees_for_match`, `admin_set_referee_availability`, `admin_get_referee_availability`, `finalize_poll_assignments`) — schrappen referenties naar `status` etc.
-   - `clearAvailability`: voorwaarde `is_available IS NULL AND status IS NULL` → enkel `is_available IS NULL AND assigned_at IS NULL`.
-2. **Migratie** — `ALTER TABLE referee_matches DROP COLUMN ...` voor de 6 kolommen (+ status indien Optie A). Unique constraints behouden.
-3. Smoke-test op `/admin/scheidsrechters` en referee dashboard.
+#### RLS policies aanscherpen
 
-## Risico
+| Tabel | Probleem | Fix |
+|---|---|---|
+| `teams` | `Public can read basic team info` lekt contact_phone/email | View `teams_public` (team_id, team_name, club_colors, preferred_play_moments) + base policy alleen voor admin/manager. Frontend public reads omleiden naar view. |
+| `users` | `password` kolom leesbaar | View `users_safe` zonder password; SELECT policies op base table verstrengen tot SECURITY DEFINER paden. Login blijft via `verify_user_password` RPC. |
+| `team_costs` | Volledig publiek | SELECT beperken tot admin + eigen team manager. Public pagina's die kosten tonen → audit (vermoedelijk geen). |
+| `matches.referee_notes` | Publiek | View `matches_public` zonder `referee_notes` (en evt. zonder `home_players`/`away_players` JSONB). Frontend public schedule/standings via view. |
 
-Klein — geen van de te droppen kolommen wordt voor business-logica gebruikt (data bewijst het). Het enige beslispunt is `status` (Optie A vs B).
+**Workflow-check per tabel:** ik grep elke `.from('teams'|'users'|'team_costs'|'matches')` callsite; publieke (anon) reads → naar view, ingelogde admin/manager reads → blijven op base table.
 
-## Vraag aan jou
+#### SECURITY DEFINER functies
+- Lijst opvragen via linter, dan per functie `REVOKE EXECUTE FROM anon, authenticated` waar niet bedoeld voor publiek.
+- Alleen functies die expliciet door publiek/clients worden aangeroepen behouden execute rechten.
 
-Optie **A** (status ook weg, confirm/decline-knoppen weg) of Optie **B** (status behouden voor later)?
+---
+
+### FASE 3 — Session-variable auth model (GROOT, apart traject)
+
+Het kritieke issue **"Any user can escalate to admin by setting session variables"** betekent dat het hele custom auth-model (`current_setting('app.current_user_role')`) onveilig is: elke client kan via `SET app.current_user_role = 'admin'` alle RLS bypassen.
+
+**Echte fix** = migratie naar Supabase native `auth.uid()` / `auth.jwt()`:
+- Echte Supabase auth users aanmaken voor elke bestaande user
+- Login flow vervangen
+- Alle ~20 RLS policies herschrijven
+- Alle frontend services aanpassen
+- Edge functions aanpassen
+
+Dit is een **meerdaags project** met hoog risico op breken. Aanrader: aparte branch + gefaseerde rollout.
+
+**Tijdelijke mitigatie in Fase 2** die ik wel kan doen:
+- SECURITY DEFINER wrapper-functies introduceren die identity verifiëren via een server-side mechanisme (bv. token in `password_reset_tokens`-stijl tabel, of Supabase auth voor admin-only).
+- Echter: zolang policies leunen op `current_setting` blijft het lek bestaan voor alle non-admin tables.
+
+→ **Vraag aan jou:** doen we Fase 3 nu mee of plannen we die apart?
+
+---
+
+### Wat ik ga opleveren in deze loop
+
+Standaard pak ik **Fase 1 + Fase 2 volledig** aan. Voor Fase 3 wacht ik op je akkoord (en zou ik een nieuw plan maken). Laat het weten als je liever eerst alleen Fase 1, of juist meteen alles wil.
