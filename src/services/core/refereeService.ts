@@ -37,10 +37,9 @@ export const refereeService = {
       // Use withUserContext to ensure RLS policies work correctly
       return await withUserContext(async () => {
         const { data, error } = await supabase
-          .from('users')
-          .select('user_id, username, email')
+          .from('referees_public' as any)
+          .select('user_id, username')
           .eq('user_id', userId)
-          .eq('role', 'referee')
           .single();
 
         if (error) {
@@ -48,7 +47,7 @@ export const refereeService = {
           throw error;
         }
 
-        return data;
+        return data as unknown as Referee | null;
       });
     } catch (error) {
       console.error('Error in refereeService.getRefereeById:', error);
