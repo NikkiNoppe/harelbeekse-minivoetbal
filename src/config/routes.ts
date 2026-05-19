@@ -84,6 +84,7 @@ export const SYSTEM_ROUTES = {
   public: {
     info: '/algemeen',
     regulations: '/reglement',
+    archive: '/archief',
   },
   admin: {
     users: '/admin/users',
