@@ -6,7 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AppAlertModal } from "@/components/modals";
 import { AppModal } from "@/components/modals/base/app-modal";
-import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
+import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2, Archive } from "lucide-react";
+import ArchiveCupModal from "@/components/modals/admin/ArchiveCupModal";
 
 import BekerDateSelector from "./BekerDateSelector";
 import { teamService, Team } from "@/services/core";
