@@ -150,6 +150,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
         'kaarten',
         'reglement',
         'scheidsrechters',
+        'archief',
       ] as const
     ).filter((key) => Boolean((tabContents as any)[key]));
   }, [tabContents]);
