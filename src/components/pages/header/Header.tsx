@@ -59,6 +59,7 @@ const Header: React.FC<HeaderProps> = ({
     playoff: PUBLIC_ROUTES.playoff,
     reglement: PUBLIC_ROUTES.reglement,
     kaarten: PUBLIC_ROUTES.kaarten,
+    archief: PUBLIC_ROUTES.archief,
     // Admin
     'match-forms': ADMIN_ROUTES['match-forms'],
     'match-forms-league': ADMIN_ROUTES['match-forms-league'],
