@@ -3,13 +3,20 @@ import { useArchives } from '@/hooks/useArchives';
 import SeasonSelector from './SeasonSelector';
 import StandingsArchiveCard from './StandingsArchiveCard';
 import CupWinnerCard from './CupWinnerCard';
+import PlayoffArchiveCard from './PlayoffArchiveCard';
 import { Archive, Loader2 } from 'lucide-react';
+import { PLAYOFF_ARCHIVE, getPlayoffArchiveFor } from '@/data/playoffArchive';
 
 const ArchiefPage: React.FC = () => {
   const { data: archives, isLoading } = useArchives();
   const [selected, setSelected] = useState<string | null>(null);
 
-  const seasons = useMemo(() => (archives || []).map((a) => a.season_label), [archives]);
+  const seasons = useMemo(() => {
+    const set = new Set<string>();
+    (archives || []).forEach((a) => set.add(a.season_label));
+    PLAYOFF_ARCHIVE.forEach((p) => set.add(p.season_label));
+    return Array.from(set).sort((a, b) => b.localeCompare(a));
+  }, [archives]);
 
   useEffect(() => {
     if (!selected && seasons.length > 0) setSelected(seasons[0]);
@@ -19,6 +26,7 @@ const ArchiefPage: React.FC = () => {
     () => (archives || []).find((a) => a.season_label === selected) || null,
     [archives, selected]
   );
+  const activePlayoff = useMemo(() => getPlayoffArchiveFor(selected), [selected]);
 
   if (isLoading) {
     return (
@@ -37,7 +45,7 @@ const ArchiefPage: React.FC = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-purple-900">Archief</h1>
           <p className="text-sm text-muted-foreground">
-            Eindklassementen en bekerwinnaars per seizoen.
+            Eindklassementen, playoffs en bekerwinnaars per seizoen.
           </p>
         </div>
       </div>
@@ -47,18 +55,19 @@ const ArchiefPage: React.FC = () => {
           <Archive className="w-10 h-10 mx-auto text-purple-300 mb-3" />
           <p className="text-purple-800 font-medium">Nog geen gearchiveerde seizoenen</p>
           <p className="text-sm text-muted-foreground mt-1">
-            Een beheerder kan het huidige seizoen archiveren via de competitie- en bekerbeheerpagina.
+            Een beheerder kan het huidige seizoen archiveren via de competitie-, playoff- en bekerbeheerpagina.
           </p>
         </div>
       ) : (
         <>
           <SeasonSelector seasons={seasons} selected={selected} onSelect={setSelected} />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 space-y-6">
               <CupWinnerCard cup={active?.cup_winner ?? null} />
             </div>
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-6">
               <StandingsArchiveCard standings={active?.competition_standings ?? []} />
+              <PlayoffArchiveCard entry={activePlayoff} />
             </div>
           </div>
         </>
