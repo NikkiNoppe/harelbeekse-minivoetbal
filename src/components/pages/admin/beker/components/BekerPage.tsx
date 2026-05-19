@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 const BekerPage: React.FC = () => {
   const { toast } = useToast();
   const [showDateSelector, setShowDateSelector] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [tournamentDates, setTournamentDates] = useState<string[]>([]);
   const [isCreating, setIsCreating] = useState(false);
