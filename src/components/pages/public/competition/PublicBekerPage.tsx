@@ -1,7 +1,8 @@
 import React, { memo, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trophy, Award, AlertCircle } from "lucide-react";
+import { Trophy, Award, AlertCircle, Archive } from "lucide-react";
+import { Link } from "react-router-dom";
 import MatchesCupCard from "../../admin/matches/components/MatchesCupCard";
 import { useCupData, CupMatchDisplay } from "@/hooks/useCupData";
 import { PageHeader } from "@/components/layout";
