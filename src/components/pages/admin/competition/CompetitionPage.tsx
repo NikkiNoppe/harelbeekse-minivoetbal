@@ -15,6 +15,7 @@ import AdminTeamSelector from "@/components/pages/admin/common/components/AdminT
 const AdminCompetitionPage: React.FC = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [teams, setTeams] = useState<any[]>([]);
   const [formats, setFormats] = useState<CompetitionFormat[]>([]);
   const [selectedFormat, setSelectedFormat] = useState<string>("");
