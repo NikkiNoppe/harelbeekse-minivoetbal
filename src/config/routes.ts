@@ -291,6 +291,12 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     requiresAuth: false,
     requiresAdmin: false,
   },
+  [PUBLIC_ROUTES.archief]: {
+    title: 'Archief',
+    description: 'Eindklassementen en bekerwinnaars per seizoen',
+    requiresAuth: false,
+    requiresAdmin: false,
+  },
   
   // Admin routes
   [ADMIN_ROUTES['match-forms']]: {
