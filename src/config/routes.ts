@@ -118,6 +118,7 @@ export const PUBLIC_ROUTES = {
   reglement: SYSTEM_ROUTES.public.regulations,
   kaarten: CARDS_SUSPENSIONS_ROUTES.public.cards,
   teams: TEAMS_PLAYERS_ROUTES.public.teams,
+  archief: SYSTEM_ROUTES.public.archive,
 } as const;
 
 // Admin routes (legacy format)
