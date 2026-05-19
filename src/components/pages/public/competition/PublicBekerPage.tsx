@@ -1,7 +1,8 @@
 import React, { memo, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trophy, Award, AlertCircle } from "lucide-react";
+import { Trophy, Award, AlertCircle, Archive } from "lucide-react";
+import { Link } from "react-router-dom";
 import MatchesCupCard from "../../admin/matches/components/MatchesCupCard";
 import { useCupData, CupMatchDisplay } from "@/hooks/useCupData";
 import { PageHeader } from "@/components/layout";
@@ -419,6 +420,17 @@ const TournamentContent = memo(({
         title="Beker" 
         subtitle="Seizoen 2025/2026"
       />
+
+      <div className="flex justify-end">
+        <Link
+          to="/archief"
+          className="inline-flex items-center gap-1.5 text-sm text-purple-700 hover:text-purple-900 hover:underline font-medium"
+        >
+          <Archive className="w-4 h-4" />
+          Vorige seizoenen
+        </Link>
+      </div>
+
 
       {/* FEATURE: Progress Indicator - Remove this section if not needed */}
       <ProgressIndicator 

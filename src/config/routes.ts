@@ -84,6 +84,7 @@ export const SYSTEM_ROUTES = {
   public: {
     info: '/algemeen',
     regulations: '/reglement',
+    archive: '/archief',
   },
   admin: {
     users: '/admin/users',
@@ -117,6 +118,7 @@ export const PUBLIC_ROUTES = {
   reglement: SYSTEM_ROUTES.public.regulations,
   kaarten: CARDS_SUSPENSIONS_ROUTES.public.cards,
   teams: TEAMS_PLAYERS_ROUTES.public.teams,
+  archief: SYSTEM_ROUTES.public.archive,
 } as const;
 
 // Admin routes (legacy format)
@@ -286,6 +288,12 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   [PUBLIC_ROUTES.kaarten]: {
     title: 'Kaarten',
     description: 'Overzicht van kaarten en schorsingen',
+    requiresAuth: false,
+    requiresAdmin: false,
+  },
+  [PUBLIC_ROUTES.archief]: {
+    title: 'Archief',
+    description: 'Eindklassementen en bekerwinnaars per seizoen',
     requiresAuth: false,
     requiresAdmin: false,
   },

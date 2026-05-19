@@ -417,6 +417,36 @@ export type Database = {
         }
         Relationships: []
       }
+      season_archives: {
+        Row: {
+          archived_at: string
+          archived_by: number | null
+          competition_standings: Json | null
+          cup_winner: Json | null
+          id: string
+          season_label: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string
+          archived_by?: number | null
+          competition_standings?: Json | null
+          cup_winner?: Json | null
+          id?: string
+          season_label: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string
+          archived_by?: number | null
+          competition_standings?: Json | null
+          cup_winner?: Json | null
+          id?: string
+          season_label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       team_costs: {
         Row: {
           amount: number | null

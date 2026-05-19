@@ -2,7 +2,7 @@ import React, { memo, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Trophy } from "lucide-react";
+import { AlertCircle, Trophy, Archive } from "lucide-react";
 import { Link } from "react-router-dom";
 import MatchesCard from "../../admin/matches/components/MatchesCard";
 import ResponsiveStandingsTable from "@/components/tables/ResponsiveStandingsTable";
@@ -351,6 +351,16 @@ const CompetitiePage: React.FC = () => {
         title="Competitiestand" 
         subtitle="Seizoen 2025/2026"
       />
+
+      <div className="flex justify-end">
+        <Link
+          to="/archief"
+          className="inline-flex items-center gap-1.5 text-sm text-purple-700 hover:text-purple-900 hover:underline font-medium"
+        >
+          <Archive className="w-4 h-4" />
+          Vorige seizoenen
+        </Link>
+      </div>
 
       {/* Competitie afgelopen melding */}
       <Alert className="border-primary/30 bg-primary/5">

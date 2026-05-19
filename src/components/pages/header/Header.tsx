@@ -8,7 +8,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Menu, User, LogOut, Settings, Shield, Users, Calendar, Trophy, Award, DollarSign, Home, BookOpen, Ban, AlertTriangle, Target, ChevronDown, MessageSquare } from "lucide-react";
+import { Menu, User, LogOut, Settings, Shield, Users, Calendar, Trophy, Award, DollarSign, Home, BookOpen, Ban, AlertTriangle, Target, ChevronDown, MessageSquare, Archive } from "lucide-react";
 import HamburgerIcon from "@/components/ui/hamburger-icon";
 import Logo from "./Logo";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
@@ -59,6 +59,7 @@ const Header: React.FC<HeaderProps> = ({
     playoff: PUBLIC_ROUTES.playoff,
     reglement: PUBLIC_ROUTES.reglement,
     kaarten: PUBLIC_ROUTES.kaarten,
+    archief: PUBLIC_ROUTES.archief,
     // Admin
     'match-forms': ADMIN_ROUTES['match-forms'],
     'match-forms-league': ADMIN_ROUTES['match-forms-league'],
@@ -89,6 +90,7 @@ const Header: React.FC<HeaderProps> = ({
     { key: "competitie", label: "Competitie", icon: <Trophy size={18} /> },
     { key: "beker", label: "Beker", icon: <Award size={18} /> },
     { key: "playoff", label: "Play-off", icon: <Target size={18} /> },
+    { key: "archief", label: "Archief", icon: <Archive size={18} /> },
   ];
 
   // Normalize role - map team_manager variants to player_manager
@@ -111,7 +113,7 @@ const Header: React.FC<HeaderProps> = ({
     : 'Gebruiker';
 
   // Filter public items based on tab visibility settings and enforce desired order
-  const desiredPublicOrder = ['algemeen', 'competitie', 'playoff', 'beker', 'reglement'] as const;
+  const desiredPublicOrder = ['algemeen', 'competitie', 'playoff', 'beker', 'archief', 'reglement'] as const;
   const visiblePublicItems = desiredPublicOrder
     .map((key) => publicNavItems.find((i) => i.key === key))
     .filter((i): i is NonNullable<typeof i> => Boolean(i))

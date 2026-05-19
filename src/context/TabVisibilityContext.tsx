@@ -181,7 +181,7 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     // Essential public tabs that should always be visible as fallback
-    const alwaysVisiblePublicTabs = ['algemeen', 'competitie', 'beker', 'reglement', 'teams'];
+    const alwaysVisiblePublicTabs = ['algemeen', 'competitie', 'beker', 'reglement', 'teams', 'archief'];
 
     // Find the setting for public tabs
     const setting = settings.find(s => s.setting_name === mappedTab);

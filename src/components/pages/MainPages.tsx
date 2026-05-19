@@ -11,6 +11,7 @@ import PublicBekerPage from "./public/competition/PublicBekerPage";
 import KaartenPage from "./public/information/KaartenPage";
 import ReglementPage from "./public/information/ReglementPage";
 import ScheidsrechtersPage from "./admin/scheidsrechter/ScheidsrechtersPage";
+import ArchiefPage from "./public/archive/ArchiefPage";
 
 interface MainPagesProps {
   activeTab: TabName;
@@ -47,6 +48,7 @@ const MemoizedBekerPage = memo(PublicBekerPage);
 const MemoizedKaartenPage = memo(KaartenPage);
 const MemoizedReglementPage = memo(ReglementPage);
 const MemoizedScheidsrechtersPage = memo(ScheidsrechtersPage);
+const MemoizedArchiefPage = memo(ArchiefPage);
 
 MemoizedAlgemeenPage.displayName = 'MemoizedAlgemeenPage';
 MemoizedCompetitiePage.displayName = 'MemoizedCompetitiePage';
@@ -126,6 +128,14 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
           <MemoizedScheidsrechtersPage />
         </TabContentWrapper>
       </TabsContent>
+    ),
+
+    archief: isTabVisible("archief") && (
+      <TabsContent value="archief" className="mt-0" key="archief">
+        <TabContentWrapper>
+          <MemoizedArchiefPage />
+        </TabContentWrapper>
+      </TabsContent>
     )
   }), [isTabVisible]);
 
@@ -140,6 +150,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
         'kaarten',
         'reglement',
         'scheidsrechters',
+        'archief',
       ] as const
     ).filter((key) => Boolean((tabContents as any)[key]));
   }, [tabContents]);
@@ -183,6 +194,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
           {tabContents.kaarten}
           {tabContents.reglement}
           {tabContents.scheidsrechters}
+          {tabContents.archief}
         </Tabs>
       </div>
     </div>

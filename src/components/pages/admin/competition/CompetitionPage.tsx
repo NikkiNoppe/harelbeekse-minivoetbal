@@ -5,7 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AppAlertModal } from "@/components/modals";
-import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
+import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2, Archive } from "lucide-react";
+import ArchiveSeasonModal from "@/components/modals/admin/ArchiveSeasonModal";
 import { useToast } from "@/hooks/use-toast";
 import { competitionService, CompetitionConfig, CompetitionFormat } from "@/services/match/competitionService";
 import { teamService } from "@/services/core/teamService";
@@ -14,6 +15,7 @@ import AdminTeamSelector from "@/components/pages/admin/common/components/AdminT
 const AdminCompetitionPage: React.FC = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [teams, setTeams] = useState<any[]>([]);
   const [formats, setFormats] = useState<CompetitionFormat[]>([]);
   const [selectedFormat, setSelectedFormat] = useState<string>("");
@@ -235,7 +237,7 @@ const AdminCompetitionPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
               <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -245,7 +247,17 @@ const AdminCompetitionPage: React.FC = () => {
               Beheer de competitie - aanmaken, verwijderen en overzicht
             </p>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => setShowArchiveModal(true)}
+            className="border-purple-300 text-purple-800 hover:bg-purple-50"
+          >
+            <Archive className="w-4 h-4 mr-2" />
+            Seizoen archiveren
+          </Button>
         </div>
+
+      <ArchiveSeasonModal open={showArchiveModal} onOpenChange={setShowArchiveModal} />
 
       <section className="space-y-6 mt-6">
         {/* Competitie Aanmaken */}
