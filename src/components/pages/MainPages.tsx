@@ -194,6 +194,7 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
           {tabContents.kaarten}
           {tabContents.reglement}
           {tabContents.scheidsrechters}
+          {tabContents.archief}
         </Tabs>
       </div>
     </div>
