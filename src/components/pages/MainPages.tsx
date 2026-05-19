@@ -48,6 +48,7 @@ const MemoizedBekerPage = memo(PublicBekerPage);
 const MemoizedKaartenPage = memo(KaartenPage);
 const MemoizedReglementPage = memo(ReglementPage);
 const MemoizedScheidsrechtersPage = memo(ScheidsrechtersPage);
+const MemoizedArchiefPage = memo(ArchiefPage);
 
 MemoizedAlgemeenPage.displayName = 'MemoizedAlgemeenPage';
 MemoizedCompetitiePage.displayName = 'MemoizedCompetitiePage';
