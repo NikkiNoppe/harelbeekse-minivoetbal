@@ -160,15 +160,19 @@ export const archiveService = {
     const as = (data as any).away_score;
     let winner = home;
     let runner_up = away;
+    let winnerScore = hs;
+    let runnerScore = as;
     if (typeof hs === 'number' && typeof as === 'number' && as > hs) {
       winner = away;
       runner_up = home;
+      winnerScore = as;
+      runnerScore = hs;
     }
     return {
       winner,
       runner_up,
-      home_score: hs ?? null,
-      away_score: as ?? null,
+      home_score: typeof winnerScore === 'number' ? winnerScore : null,
+      away_score: typeof runnerScore === 'number' ? runnerScore : null,
       match_date: (data as any).match_date ?? null,
     };
   },
