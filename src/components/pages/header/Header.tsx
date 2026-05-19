@@ -90,6 +90,7 @@ const Header: React.FC<HeaderProps> = ({
     { key: "competitie", label: "Competitie", icon: <Trophy size={18} /> },
     { key: "beker", label: "Beker", icon: <Award size={18} /> },
     { key: "playoff", label: "Play-off", icon: <Target size={18} /> },
+    { key: "archief", label: "Archief", icon: <Archive size={18} /> },
   ];
 
   // Normalize role - map team_manager variants to player_manager
