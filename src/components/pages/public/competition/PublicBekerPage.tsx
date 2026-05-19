@@ -421,6 +421,17 @@ const TournamentContent = memo(({
         subtitle="Seizoen 2025/2026"
       />
 
+      <div className="flex justify-end">
+        <Link
+          to="/archief"
+          className="inline-flex items-center gap-1.5 text-sm text-purple-700 hover:text-purple-900 hover:underline font-medium"
+        >
+          <Archive className="w-4 h-4" />
+          Vorige seizoenen
+        </Link>
+      </div>
+
+
       {/* FEATURE: Progress Indicator - Remove this section if not needed */}
       <ProgressIndicator 
         rounds={progressRounds.rounds} 
