@@ -352,6 +352,16 @@ const CompetitiePage: React.FC = () => {
         subtitle="Seizoen 2025/2026"
       />
 
+      <div className="flex justify-end">
+        <Link
+          to="/archief"
+          className="inline-flex items-center gap-1.5 text-sm text-purple-700 hover:text-purple-900 hover:underline font-medium"
+        >
+          <Archive className="w-4 h-4" />
+          Vorige seizoenen
+        </Link>
+      </div>
+
       {/* Competitie afgelopen melding */}
       <Alert className="border-primary/30 bg-primary/5">
         <Trophy className="h-4 w-4 text-primary" />
