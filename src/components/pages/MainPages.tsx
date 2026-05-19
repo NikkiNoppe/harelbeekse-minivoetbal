@@ -128,6 +128,14 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
           <MemoizedScheidsrechtersPage />
         </TabContentWrapper>
       </TabsContent>
+    ),
+
+    archief: isTabVisible("archief") && (
+      <TabsContent value="archief" className="mt-0" key="archief">
+        <TabContentWrapper>
+          <MemoizedArchiefPage />
+        </TabContentWrapper>
+      </TabsContent>
     )
   }), [isTabVisible]);
 
