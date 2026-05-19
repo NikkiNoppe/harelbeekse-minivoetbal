@@ -11,6 +11,7 @@ import PublicBekerPage from "./public/competition/PublicBekerPage";
 import KaartenPage from "./public/information/KaartenPage";
 import ReglementPage from "./public/information/ReglementPage";
 import ScheidsrechtersPage from "./admin/scheidsrechter/ScheidsrechtersPage";
+import ArchiefPage from "./public/archive/ArchiefPage";
 
 interface MainPagesProps {
   activeTab: TabName;
