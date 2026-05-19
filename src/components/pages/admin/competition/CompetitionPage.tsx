@@ -5,7 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AppAlertModal } from "@/components/modals";
-import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
+import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2, Archive } from "lucide-react";
+import ArchiveSeasonModal from "@/components/modals/admin/ArchiveSeasonModal";
 import { useToast } from "@/hooks/use-toast";
 import { competitionService, CompetitionConfig, CompetitionFormat } from "@/services/match/competitionService";
 import { teamService } from "@/services/core/teamService";
