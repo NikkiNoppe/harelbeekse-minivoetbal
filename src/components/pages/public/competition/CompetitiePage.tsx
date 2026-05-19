@@ -2,7 +2,7 @@ import React, { memo, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Trophy } from "lucide-react";
+import { AlertCircle, Trophy, Archive } from "lucide-react";
 import { Link } from "react-router-dom";
 import MatchesCard from "../../admin/matches/components/MatchesCard";
 import ResponsiveStandingsTable from "@/components/tables/ResponsiveStandingsTable";
