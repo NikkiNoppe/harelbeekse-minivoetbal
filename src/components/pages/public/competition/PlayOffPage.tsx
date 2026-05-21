@@ -665,6 +665,8 @@ const PlayOffPage: React.FC = () => {
           </CardContent>
         </Card>
       </section>
+
+      <PlayoffRules />
     </div>
   );
 };
