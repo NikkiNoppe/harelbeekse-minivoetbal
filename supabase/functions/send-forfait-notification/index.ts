@@ -1,11 +1,9 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-// @ts-ignore
-import { Resend } from "https://esm.sh/resend@2.0.0";
 
 declare const Deno: { env: { get(key: string): string | undefined } };
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,6 +39,11 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY is not configured");
+
     const body: ForfaitNotificationRequest = await req.json();
     const { recipients, homeTeamName, awayTeamName, forfaitTeamName, matchDate, matchTime, location } = body;
 
@@ -84,16 +87,38 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     `;
 
-    const emailResponse = await resend.emails.send({
-      from: "Harelbeekse Minivoetbal <noreply@resend.dev>",
-      to: validRecipients,
-      subject,
-      html,
-    });
+    const results = await Promise.all(
+      validRecipients.map(async (to) => {
+        try {
+          const response = await fetch(`${GATEWAY_URL}/emails`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "X-Connection-Api-Key": RESEND_API_KEY,
+            },
+            body: JSON.stringify({
+              from: "Harelbeekse Minivoetbal <onboarding@resend.dev>",
+              to: [to],
+              subject,
+              html,
+            }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            return { recipient: to, ok: false, error: `[${response.status}] ${JSON.stringify(data)}` };
+          }
+          return { recipient: to, ok: true };
+        } catch (e) {
+          return { recipient: to, ok: false, error: e instanceof Error ? e.message : "Onbekende fout" };
+        }
+      })
+    );
 
-    console.log("Forfait notification sent:", emailResponse);
+    const okCount = results.filter((r) => r.ok).length;
+    console.log("Forfait notification results:", { okCount, total: results.length, results });
 
-    return new Response(JSON.stringify({ success: true, sentTo: validRecipients }), {
+    return new Response(JSON.stringify({ success: okCount > 0, results }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
