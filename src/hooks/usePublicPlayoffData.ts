@@ -378,12 +378,32 @@ export const usePublicPlayoffData = () => {
       const upcomingMatches = playoffMatches.filter(m => !m.is_completed && new Date(m.match_date) >= now);
       const pastMatches = playoffMatches.filter(m => m.is_completed);
 
+      // Bouw lijst van alle submitted onderlinge wedstrijden (regulier + playoff)
+      // voor weergave in de tiebreaker-notice
+      const headToHeadMatches: HeadToHeadMatch[] = allMatchesForH2H
+        .filter(m =>
+          m.is_submitted &&
+          m.home_team_id !== null && m.away_team_id !== null &&
+          m.home_score !== null && m.away_score !== null
+        )
+        .map(m => ({
+          match_date: m.match_date ?? null,
+          home_team_id: m.home_team_id as number,
+          away_team_id: m.away_team_id as number,
+          home_team_name: teamMap.get(m.home_team_id as number) || 'Onbekend',
+          away_team_name: teamMap.get(m.away_team_id as number) || 'Onbekend',
+          home_score: m.home_score as number,
+          away_score: m.away_score as number,
+          is_playoff: !!m.is_playoff,
+        }));
+
       return {
         po1Teams,
         po2Teams,
         allMatches: playoffMatches,
         upcomingMatches,
         pastMatches,
+        headToHeadMatches,
         hasData: regularStandings.length > 0,
         isFinalized,
       };
