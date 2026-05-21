@@ -47,14 +47,108 @@ const getDecidingCriterion = (group: PlayoffTeam[]): DecidingCriterion => {
   return { type: 'alphabetical' };
 };
 
+// Format match date as "do 14 mei" (UTC, mobile-first compact)
+const formatMatchDate = (iso: string | null): string => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const weekday = d.toLocaleDateString('nl-BE', { weekday: 'short', timeZone: 'UTC' });
+  const day = d.toLocaleDateString('nl-BE', { day: 'numeric', timeZone: 'UTC' });
+  const month = d.toLocaleDateString('nl-BE', { month: 'short', timeZone: 'UTC' });
+  return `${weekday} ${day} ${month}`;
+};
+
+// Tabel met onderlinge wedstrijden + mini-stand (punten / saldo) per team
+const H2HBlock = memo(({
+  group,
+  matches,
+}: {
+  group: PlayoffTeam[];
+  matches: HeadToHeadMatch[];
+}) => {
+  const groupIds = new Set(group.map(t => t.team_id));
+  const between = matches
+    .filter(m => groupIds.has(m.home_team_id) && groupIds.has(m.away_team_id))
+    .sort((a, b) => (a.match_date || '').localeCompare(b.match_date || ''));
+
+  if (between.length === 0) {
+    return (
+      <div className="mt-1 italic">
+        Geen onderlinge wedstrijden gespeeld tussen deze teams.
+      </div>
+    );
+  }
+
+  // Mini-stand opbouwen
+  const mini = new Map<number, { pts: number; gf: number; ga: number }>();
+  group.forEach(t => mini.set(t.team_id, { pts: 0, gf: 0, ga: 0 }));
+  between.forEach(m => {
+    const h = mini.get(m.home_team_id)!;
+    const a = mini.get(m.away_team_id)!;
+    h.gf += m.home_score; h.ga += m.away_score;
+    a.gf += m.away_score; a.ga += m.home_score;
+    if (m.home_score > m.away_score) h.pts += 3;
+    else if (m.home_score < m.away_score) a.pts += 3;
+    else { h.pts += 1; a.pts += 1; }
+  });
+
+  return (
+    <div className="mt-2 space-y-2">
+      <div className="rounded border" style={{ borderColor: 'var(--accent)' }}>
+        {between.map((m, i) => (
+          <div
+            key={i}
+            className="grid grid-cols-[auto_1fr_auto_1fr_auto] items-center gap-2 px-2 py-1 border-b last:border-b-0"
+            style={{ borderColor: 'var(--accent)' }}
+          >
+            <span className="tabular-nums opacity-75 text-[11px]">
+              {formatMatchDate(m.match_date)}
+            </span>
+            <span className="text-right truncate">{m.home_team_name}</span>
+            <span className="font-semibold tabular-nums">
+              {m.home_score} – {m.away_score}
+            </span>
+            <span className="truncate">{m.away_team_name}</span>
+            <span className="text-[10px] uppercase tracking-wide opacity-70">
+              {m.is_playoff ? 'PO' : 'comp.'}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="text-[11px]">
+        <span className="font-medium" style={{ color: 'var(--accent-foreground)' }}>
+          Onderlinge stand:
+        </span>{' '}
+        {group.map((t, i) => {
+          const s = mini.get(t.team_id)!;
+          const diff = s.gf - s.ga;
+          return (
+            <span key={t.team_id}>
+              {t.team_name} <strong>{s.pts}</strong> pt (saldo {diff > 0 ? '+' : ''}{diff})
+              {i < group.length - 1 ? ' · ' : ''}
+            </span>
+          );
+        })}
+        .
+      </div>
+    </div>
+  );
+});
+H2HBlock.displayName = 'H2HBlock';
+
 // Subtle notice about applied tiebreaker rules for tied teams
-const TiebreakerNotice = memo(({ teams }: { teams: PlayoffTeam[] }) => {
+const TiebreakerNotice = memo(({
+  teams,
+  headToHeadMatches,
+}: {
+  teams: PlayoffTeam[];
+  headToHeadMatches: HeadToHeadMatch[];
+}) => {
   const tied = findTiedGroups(teams);
   if (tied.length === 0) return null;
 
   return (
     <div
-      className="mt-3 space-y-2 rounded-md border border-dashed px-3 py-2 text-xs"
+      className="mt-3 space-y-3 rounded-md border border-dashed px-3 py-2 text-xs"
       style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
       role="note"
     >
@@ -64,7 +158,7 @@ const TiebreakerNotice = memo(({ teams }: { teams: PlayoffTeam[] }) => {
         return (
           <div key={idx} className="flex items-start gap-2">
             <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-            <div>
+            <div className="flex-1 min-w-0">
               <div>
                 <span className="font-medium" style={{ color: 'var(--accent-foreground)' }}>
                   Gelijke stand op {points} punten:
@@ -79,25 +173,36 @@ const TiebreakerNotice = memo(({ teams }: { teams: PlayoffTeam[] }) => {
               </div>
 
               {crit.type === 'wins' && (
-                <div className="mt-1">
-                  Volgorde bepaald op <strong>aantal gewonnen wedstrijden</strong> (regulier + play-off samengeteld):{' '}
-                  {g.map((t, i) => (
-                    <span key={t.team_id}>
-                      {t.team_name} <strong>{t.total_wins}</strong> wins
-                      {i < g.length - 1 ? ', ' : ''}
-                    </span>
-                  ))}
-                  . Daardoor komen onderlinge wedstrijden hier niet aan te pas.
-                </div>
+                <>
+                  <div className="mt-1">
+                    Volgorde bepaald op <strong>aantal gewonnen wedstrijden</strong> (competitie + play-offs samengeteld):{' '}
+                    {g.map((t, i) => (
+                      <span key={t.team_id}>
+                        {t.team_name} <strong>{t.total_wins}</strong> wins
+                        {i < g.length - 1 ? ', ' : ''}
+                      </span>
+                    ))}
+                    . Daardoor komen onderlinge wedstrijden hier niet aan te pas.
+                  </div>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer select-none underline-offset-2 hover:underline">
+                      Toon onderlinge wedstrijden ter info
+                    </summary>
+                    <H2HBlock group={g} matches={headToHeadMatches} />
+                  </details>
+                </>
               )}
 
               {crit.type === 'h2h' && (
-                <div className="mt-1">
-                  Wins zijn gelijk ({g[0].total_wins} elk). De volgorde wordt dan bepaald door de{' '}
-                  <strong>onderlinge wedstrijden</strong> (punten en doelsaldo in de duels tussen
-                  deze teams, regulier + play-off samen). Daarna volgen algemeen doelsaldo en
-                  totaal gemaakte doelpunten — zie reglement onderaan.
-                </div>
+                <>
+                  <div className="mt-1">
+                    Wins zijn gelijk ({g[0].total_wins} elk, competitie + play-offs). De volgorde wordt
+                    dan bepaald door de <strong>onderlinge wedstrijden</strong> — eerst punten, dan
+                    doelsaldo in de duels tussen deze teams (regulier + play-off samen). Daarna
+                    volgen algemeen doelsaldo en totaal gemaakte doelpunten — zie reglement onderaan.
+                  </div>
+                  <H2HBlock group={g} matches={headToHeadMatches} />
+                </>
               )}
 
               {crit.type === 'alphabetical' && (
