@@ -179,24 +179,57 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
     }
     setSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-forfait-notification", {
-        body: {
-          recipients: selectedEmails,
-          homeTeamName,
-          awayTeamName,
-          forfaitTeamName,
-          matchDate,
-          matchTime,
-          location,
-        },
-      });
-      if (error || (data as any)?.error) {
-        throw new Error(error?.message || (data as any)?.error || "Versturen mislukt");
+      const dateStr = matchDate
+        ? new Date(matchDate + "T00:00:00").toLocaleDateString("nl-BE", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })
+        : undefined;
+
+      const baseKey = `forfait-${homeTeamName}-${awayTeamName}-${matchDate ?? "nodate"}-${matchTime ?? "notime"}`
+        .replace(/\s+/g, "_");
+
+      const results = await Promise.all(
+        selectedEmails.map(async (recipient) => {
+          const { data, error } = await supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "forfait-notification",
+              recipientEmail: recipient,
+              idempotencyKey: `${baseKey}-${recipient}`,
+              templateData: {
+                homeTeamName,
+                awayTeamName,
+                forfaitTeamName,
+                matchDate: dateStr,
+                matchTime: matchTime ?? undefined,
+                location: location ?? undefined,
+              },
+            },
+          });
+          const errMsg = error?.message || (data as any)?.error;
+          return { recipient, ok: !errMsg, error: errMsg };
+        })
+      );
+
+      const failed = results.filter((r) => !r.ok);
+      if (failed.length === results.length) {
+        throw new Error(failed[0]?.error || "Versturen mislukt");
       }
-      toast({
-        title: "Email verzonden",
-        description: `Verzonden naar ${selectedEmails.length} ontvanger(s).`,
-      });
+
+      if (failed.length > 0) {
+        toast({
+          title: "Gedeeltelijk verzonden",
+          description: `${results.length - failed.length} ok, ${failed.length} mislukt.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Email verzonden",
+          description: `Verzonden naar ${selectedEmails.length} ontvanger(s).`,
+        });
+      }
       setSelected({});
       onOpenChange(false);
     } catch (e) {
