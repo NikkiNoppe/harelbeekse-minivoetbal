@@ -728,7 +728,7 @@ const PlayOffPage: React.FC = () => {
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <CompactStandings teams={po1Teams} title="Play-Off 1" />
-            <TiebreakerNotice teams={po1Teams} />
+            <TiebreakerNotice teams={po1Teams} headToHeadMatches={headToHeadMatches} />
           </CardContent>
         </Card>
       </section>
