@@ -49,6 +49,20 @@ interface MatchRow {
   home_score: number | null;
   away_score: number | null;
   is_submitted: boolean | null;
+  match_date?: string | null;
+  is_playoff?: boolean;
+}
+
+/** Eén onderlinge wedstrijd, zoals aan de UI doorgegeven. */
+export interface HeadToHeadMatch {
+  match_date: string | null;
+  home_team_id: number;
+  away_team_id: number;
+  home_team_name: string;
+  away_team_name: string;
+  home_score: number;
+  away_score: number;
+  is_playoff: boolean;
 }
 
 interface TeamStats {
