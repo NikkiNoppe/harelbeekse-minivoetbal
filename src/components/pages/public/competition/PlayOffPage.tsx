@@ -3,12 +3,86 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Trophy } from "lucide-react";
+import { AlertCircle, Trophy, Info } from "lucide-react";
 import { usePublicPlayoffData, PlayoffTeam, PlayoffMatchData } from "@/hooks/usePublicPlayoffData";
 import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 import { PageHeader } from "@/components/layout";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import DownloadScheduleButton from "@/components/common/DownloadScheduleButton";
+
+// Detect groups of teams with equal total points (potential tiebreaker cases)
+const findTiedGroups = (teams: PlayoffTeam[]): PlayoffTeam[][] => {
+  const groups: PlayoffTeam[][] = [];
+  let current: PlayoffTeam[] = [];
+  teams.forEach((t, i) => {
+    if (i === 0 || t.total_points !== teams[i - 1].total_points) {
+      if (current.length > 1) groups.push(current);
+      current = [t];
+    } else {
+      current.push(t);
+    }
+  });
+  if (current.length > 1) groups.push(current);
+  return groups;
+};
+
+// Subtle notice about applied tiebreaker rules for tied teams
+const TiebreakerNotice = memo(({ teams }: { teams: PlayoffTeam[] }) => {
+  const tied = findTiedGroups(teams);
+  if (tied.length === 0) return null;
+  return (
+    <div
+      className="mt-3 flex items-start gap-2 rounded-md border border-dashed px-3 py-2 text-xs"
+      style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
+      role="note"
+    >
+      <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+      <div>
+        <span className="font-medium">Gelijke stand: </span>
+        {tied.map((g, idx) => (
+          <span key={idx}>
+            {g.map(t => t.team_name).join(' & ')}
+            {idx < tied.length - 1 ? '; ' : ''}
+          </span>
+        ))}
+        . Volgorde bepaald via de officiële tiebreakers (zie onderaan).
+      </div>
+    </div>
+  );
+});
+TiebreakerNotice.displayName = 'TiebreakerNotice';
+
+// Compact rules summary
+const PlayoffRules = memo(() => (
+  <section role="region" aria-labelledby="rules-heading">
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle id="rules-heading" className="flex items-center gap-2 text-sm">
+          <Info className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+          Reglement &amp; tiebreakers
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-4 pt-0 text-xs leading-relaxed" style={{ color: 'var(--accent)' }}>
+        <p className="mb-2">
+          Top 8 uit de reguliere competitie speelt <strong>Play-Off 1</strong>, de overige teams
+          <strong> Play-Off 2</strong>. De eindstand combineert alle wedstrijden (regulier + play-off).
+        </p>
+        <p className="mb-1 font-medium" style={{ color: 'var(--accent-foreground)' }}>
+          Bij gelijke punten:
+        </p>
+        <ol className="list-decimal pl-5 space-y-0.5">
+          <li>Aantal gewonnen wedstrijden</li>
+          <li>Punten in onderlinge wedstrijden</li>
+          <li>Doelsaldo in onderlinge wedstrijden</li>
+          <li>Algemeen doelsaldo</li>
+          <li>Totaal gemaakte doelpunten</li>
+          <li>Testmatch of loting, indien nodig</li>
+        </ol>
+      </CardContent>
+    </Card>
+  </section>
+));
+PlayoffRules.displayName = 'PlayoffRules';
 
 // Skeleton components
 const StandingsTableSkeleton = memo(() => (
@@ -486,6 +560,7 @@ const PlayOffPage: React.FC = () => {
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <CompactStandings teams={po1Teams} title="Play-Off 1" />
+            <TiebreakerNotice teams={po1Teams} />
           </CardContent>
         </Card>
       </section>
@@ -498,6 +573,7 @@ const PlayOffPage: React.FC = () => {
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <CompactStandings teams={po2Teams} title="Play-Off 2" />
+            <TiebreakerNotice teams={po2Teams} />
           </CardContent>
         </Card>
       </section>
@@ -589,6 +665,8 @@ const PlayOffPage: React.FC = () => {
           </CardContent>
         </Card>
       </section>
+
+      <PlayoffRules />
     </div>
   );
 };
