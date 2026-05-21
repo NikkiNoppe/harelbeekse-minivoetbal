@@ -180,11 +180,11 @@ const sortWithTiebreakers = <T extends SortableTeam>(
 const fetchRegularMatches = async (): Promise<MatchRow[]> => {
   const { data, error } = await supabase
     .from('matches')
-    .select('home_team_id, away_team_id, home_score, away_score, is_submitted')
+    .select('home_team_id, away_team_id, home_score, away_score, is_submitted, match_date')
     .eq('is_cup_match', false)
     .eq('is_playoff_match', false);
   if (error) throw error;
-  return (data || []) as MatchRow[];
+  return ((data || []) as MatchRow[]).map(m => ({ ...m, is_playoff: false }));
 };
 
 const fetchPlayoffMatches = async (): Promise<any[]> => {
