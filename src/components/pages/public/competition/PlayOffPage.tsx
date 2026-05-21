@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Trophy, Info } from "lucide-react";
-import { usePublicPlayoffData, PlayoffTeam, PlayoffMatchData } from "@/hooks/usePublicPlayoffData";
+import { usePublicPlayoffData, PlayoffTeam, PlayoffMatchData, HeadToHeadMatch } from "@/hooks/usePublicPlayoffData";
 import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 import { PageHeader } from "@/components/layout";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
