@@ -178,16 +178,6 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
       return;
     }
     const recipients = [...selectedEmails];
-    const dateStr = matchDate
-      ? new Date(matchDate + "T00:00:00").toLocaleDateString("nl-BE", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
-      : undefined;
-    const baseKey = `forfait-${homeTeamName}-${awayTeamName}-${matchDate ?? "nodate"}-${matchTime ?? "notime"}`
-      .replace(/\s+/g, "_");
 
     // Sluit de modal meteen
     setSelected({});
@@ -198,35 +188,25 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
       description: `Bezig met versturen naar ${recipients.length} ontvanger(s).`,
     });
 
-    const results = await Promise.all(
-      recipients.map(async (recipient) => {
-        try {
-          const { data, error } = await supabase.functions.invoke("send-transactional-email", {
-            body: {
-              templateName: "forfait-notification",
-              recipientEmail: recipient,
-              idempotencyKey: `${baseKey}-${recipient}`,
-              templateData: {
-                homeTeamName,
-                awayTeamName,
-                forfaitTeamName,
-                matchDate: dateStr,
-                matchTime: matchTime ?? undefined,
-                location: location ?? undefined,
-              },
-            },
-          });
-          const errMsg = error?.message || (data as any)?.error;
-          return { recipient, ok: !errMsg, error: errMsg as string | undefined };
-        } catch (e) {
-          return {
-            recipient,
-            ok: false,
-            error: e instanceof Error ? e.message : "Onbekende fout",
-          };
-        }
-      })
-    );
+    let results: Array<{ recipient: string; ok: boolean; error?: string }> = [];
+    try {
+      const { data, error } = await supabase.functions.invoke("send-forfait-notification", {
+        body: {
+          recipients,
+          homeTeamName,
+          awayTeamName,
+          forfaitTeamName,
+          matchDate: matchDate ?? null,
+          matchTime: matchTime ?? null,
+          location: location ?? null,
+        },
+      });
+      if (error) throw error;
+      results = ((data as any)?.results as typeof results) ?? recipients.map((r) => ({ recipient: r, ok: true }));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Onbekende fout";
+      results = recipients.map((r) => ({ recipient: r, ok: false, error: msg }));
+    }
 
     const okCount = results.filter((r) => r.ok).length;
     const failCount = results.length - okCount;
