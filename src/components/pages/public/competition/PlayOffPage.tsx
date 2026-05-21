@@ -707,7 +707,7 @@ const PlayOffPage: React.FC = () => {
     return <PlayoffEmptyState />;
   }
 
-  const { po1Teams, po2Teams } = data;
+  const { po1Teams, po2Teams, headToHeadMatches = [] } = data;
 
   return (
     <div className="space-y-6 animate-slide-up">
