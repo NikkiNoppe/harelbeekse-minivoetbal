@@ -194,16 +194,22 @@ const TiebreakerNotice = memo(({
               )}
 
               {crit.type === 'h2h' && (
-                <>
-                  <div className="mt-1">
-                    Wins zijn gelijk ({g[0].total_wins} elk, competitie + play-offs). De volgorde wordt
-                    dan bepaald door de <strong>onderlinge wedstrijden</strong> — eerst punten, dan
-                    doelsaldo in de duels tussen deze teams (regulier + play-off samen). Daarna
-                    volgen algemeen doelsaldo en totaal gemaakte doelpunten — zie reglement onderaan.
-                  </div>
-                  <H2HBlock group={g} matches={headToHeadMatches} />
-                </>
+                <div className="mt-1">
+                  Volgens het reglement (zie onderaan):
+                  <ol className="mt-1 ml-4 list-decimal space-y-2">
+                    <li>
+                      <strong>Aantal gewonnen wedstrijden.</strong> Gewonnen
+                      wedstrijden zijn gelijk ({g[0].total_wins} elk, competitie
+                      + play-offs).
+                    </li>
+                    <li>
+                      <strong>Onderlinge wedstrijden.</strong>
+                      <H2HBlock group={g} matches={headToHeadMatches} />
+                    </li>
+                  </ol>
+                </div>
               )}
+
 
               {crit.type === 'alphabetical' && (
                 <div className="mt-1">
