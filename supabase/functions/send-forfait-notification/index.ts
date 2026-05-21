@@ -98,7 +98,7 @@ const handler = async (req: Request): Promise<Response> => {
               "X-Connection-Api-Key": RESEND_API_KEY,
             },
             body: JSON.stringify({
-              from: "Harelbeekse Minivoetbal <onboarding@resend.dev>",
+              from: "Harelbeekse Minivoetbal <info@harelbekeminivoetbal.be>",
               to: [to],
               subject,
               html,
