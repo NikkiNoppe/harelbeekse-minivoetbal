@@ -1,104 +1,62 @@
+# Playoff-sortering correct maken
+
 ## Doel
+De rangschikking op `/playoff` (PO1 en PO2) én de onderliggende reguliere standings sorteren volgens het officiële reglement, waarbij voor de eindstand **alle wedstrijden** (reguliere competitie + playoff) samen tellen.
 
-Nieuwe **Archief / Geschiedenis** sectie waar per seizoen het eindklassement van de competitie en de bekerwinnaar (+ finale-uitslag) permanent bewaard worden. De admin maakt snapshots via één knop op het einde van het seizoen — zo blijven gegevens behouden ook nadat de actieve competitie/beker gewist wordt.
+## Officiële tiebreaker-hiërarchie
+Bij gelijke punten:
+1. Aantal gewonnen wedstrijden
+2. Punten in onderlinge wedstrijden
+3. Doelsaldo in onderlinge wedstrijden
+4. Algemeen doelsaldo
+5. Totaal aantal gemaakte doelpunten
+6. Testmatch / loting (handmatig — niet geautomatiseerd)
 
-## Wat er bewaard wordt per seizoen
+## Huidige situatie (kort)
+`src/hooks/usePublicPlayoffData.ts` sorteert:
+- Reguliere stand: alleen op `points`
+- PO1/PO2: `total_points` → `playoff_goal_diff` (alleen playoff-wedstrijden)
 
-**Competitie:** eindklassement (positie, team, gespeeld, W/G/V, doelpunten voor/tegen, doelsaldo, punten) + seizoenlabel (bv. `2025-2026`).
+Wins, onderlinge resultaten, totaal goals en het combineren van regulier + playoff voor het algemeen saldo ontbreken.
 
-**Beker:** winnaar, verliezer, eindstand finale, datum finale (optioneel strafschoppen). Geen halvefinalisten.
+## Aanpak
 
-Geen losse wedstrijduitslagen.
+### Stap 1 — Gecombineerde statistieken berekenen
+In `usePublicPlayoffData.ts`:
+- Alle **reguliere** wedstrijden ophalen (`is_cup_match = false`, `is_playoff_match = false`, `is_submitted = true`).
+- Alle **playoff**-wedstrijden ophalen (al aanwezig in de hook).
+- Per team één gecombineerd statistiek-object opbouwen met: `played`, `wins`, `draws`, `losses`, `points`, `goals_for`, `goals_against`, `goal_diff`.
+- Dit vervangt voor de PO-stand het huidige onderscheid `regular_points + playoff_points` qua sortering. De kolommen op het scherm (reguliere pt, playoff pt, totaal) blijven behouden voor weergave.
 
-## UI/UX
+### Stap 2 — Onderlinge resultaten (head-to-head)
+Een generieke comparator schrijven die, bij gelijke punten tussen 2+ teams, een mini-stand maakt over de wedstrijden tussen exact die teams (regulier + playoff samen):
+- punten in onderlinge wedstrijden
+- doelsaldo in onderlinge wedstrijden
 
-### Admin: archiveren
+### Stap 3 — Tiebreaker-comparator
+Vergelijkingsvolgorde:
+1. `points` (DESC)
+2. `wins` (DESC)
+3. head-to-head punten (DESC) — alleen tussen de nog-gelijke teams
+4. head-to-head doelsaldo (DESC)
+5. `goal_diff` algemeen (DESC)
+6. `goals_for` (DESC)
+7. fallback: alfabetisch op teamnaam (stabiel, voorkomt random volgorde; testmatch/loting blijft handmatig)
 
-Twee nieuwe knoppen bovenaan de bestaande admin-pagina's, enkel zichtbaar voor `admin`:
+De comparator wordt toegepast in een "groeperen op gelijke punten → tiebreak binnen groep" patroon, zodat head-to-head correct werkt bij 3+ teams op gelijke punten.
 
-1. **Competitiepagina (admin)** → knop `Seizoen archiveren` (primair, `Archive` icoon). Modal:
-   - Seizoenlabel (auto-ingevuld, bewerkbaar)
-   - Preview van het huidige eindklassement
-   - Bij bestaand label: bevestigingswaarschuwing → admin kan overschrijven
-   - Bevestigingsknop `Archiveer competitie`
+### Stap 4 — Reguliere standings ook correct sorteren
+Dezelfde tiebreaker-logica toepassen op de reguliere stand (gebruikt om PO1/PO2 te splitsen op plaats 8/9). Dit kan in dezelfde hook met alleen de reguliere wedstrijden, zodat de splitsing PO1 vs PO2 ook deterministisch en correct is.
 
-2. **Bekerpagina (admin)** → knop `Beker archiveren`. Modal:
-   - Seizoenlabel
-   - Auto-detectie finale (winnaar/verliezer/score/datum) met manuele override (dropdown op cup-matches)
-   - Bevestigingsknop
+### Stap 5 — Verificatie
+- Concreet geval De Florre vs MVC De Plakkers in PO2 nakijken: De Florre moet boven De Plakkers staan (meer wins, beter algemeen saldo, meer goals).
+- Eventueel admin-pagina playoffs (`AdminPlayoffPage` / `usePlayoffData`) controleren of die dezelfde logica nodig heeft (mock-data hook, waarschijnlijk niet relevant voor productie-stand).
 
-Beker en competitie kunnen los van elkaar gearchiveerd worden (UPSERT per veld).
+## Bestanden die wijzigen
+- `src/hooks/usePublicPlayoffData.ts` — hoofdwijziging: data ophalen reguliere wedstrijden, gecombineerde stats, tiebreaker-comparator, head-to-head helper.
+- Geen UI-wijzigingen nodig — `PlayoffTeam`-interface blijft compatibel (eventueel `wins`/`goals_for` toevoegen indien nog niet aanwezig voor sortering).
+- Geen database- of RLS-wijzigingen.
 
-### Publieke archiefpagina
-
-Nieuwe route `/archief`, opgenomen in hoofdnavigatie naast `Competitie` / `Beker`. Daarnaast een **"Vorige seizoenen"** link/knop bovenaan zowel de publieke Competitie- als Bekerpagina die hier naartoe linkt.
-
-**Layout:**
-```text
-+----------------------------------------------+
-|  Archief                                     |
-|  [2025-2026] [2024-2025] [2023-2024] ...    |  ← seizoen-chips
-+----------------------------------------------+
-|  ┌─ Bekerwinnaar ──┐ ┌─ Eindklassement ────┐|
-|  │   🏆            │ │ 1. Team A   42 pts  │|
-|  │  Team X         │ │ 2. Team B   38 pts  │|
-|  │  4 - 2          │ │ 3. Team C   35 pts  │|
-|  │  vs Team Y      │ │ ...                 │|
-|  └─────────────────┘ └─────────────────────┘|
-+----------------------------------------------+
-```
-
-- Mobile-first: verticaal gestapeld, bekerkaart eerst (visueel sterkst), dan klassement.
-- Seizoenchips: horizontaal scrollbaar, meest recente links, actief seizoen geaccentueerd met primaire kleur.
-- Lege state: vriendelijke melding "Nog geen gearchiveerde seizoenen".
-- Klassement hergebruikt styling van `ResponsiveStandingsTable` voor consistentie.
-- Bekerkaart: subtiele gradient + `Trophy` icoon uit lucide, accent op winnaar-teamnaam.
-
-## Technisch
-
-### Database
-
-Nieuwe tabel `season_archives`:
-- `season_label` (text, uniek) — bv. `2025-2026`
-- `competition_standings` (jsonb, nullable) — array `{position, team_name, played, won, draw, lost, goals_for, goals_against, goal_diff, points}`
-- `cup_winner` (jsonb, nullable) — `{winner, runner_up, score, date, penalties?}`
-- `archived_at`, `archived_by`
-
-**RLS:**
-- `SELECT` voor `anon` + `authenticated`
-- `INSERT/UPDATE/DELETE` enkel admin via `get_current_user_role() = 'admin'`
-- Expliciete `GRANT SELECT` op `anon, authenticated` (volgens project-conventie, mem://security/supabase-grants-new-tables)
-
-UPSERT op `season_label` met `COALESCE` zodat los archiveren van competitie/beker elkaar niet overschrijft. Overschrijven van een bestaand veld mag (bevestigd via modal).
-
-### Frontend
-
-Nieuwe bestanden:
-- `src/services/archiveService.ts` — `getArchives()`, `getArchive(label)`, `archiveCompetition(label, standings)`, `archiveCup(label, cupData)`
-- `src/hooks/useArchives.ts` — react-query hooks
-- `src/components/pages/public/archive/ArchivePage.tsx`
-- `src/components/pages/public/archive/SeasonSelector.tsx`
-- `src/components/pages/public/archive/StandingsArchiveCard.tsx`
-- `src/components/pages/public/archive/CupWinnerCard.tsx`
-- `src/components/modals/admin/archive-season-modal.tsx`
-- `src/components/modals/admin/archive-cup-modal.tsx`
-
-Aanpassingen:
-- `src/config/routes.ts` — route `/archief`
-- `Header.tsx` — navigatielink
-- `CompetitionPage.tsx` (admin) — knop `Seizoen archiveren`
-- `BekerPage.tsx` (admin) — knop `Beker archiveren`
-- Publieke `CompetitiePage.tsx` + `PublicBekerPage.tsx` — "Vorige seizoenen" link naar `/archief`
-- `sitemap.xml` + SEO-meta voor de nieuwe pagina
-
-### Snapshot-logica
-
-- **Competitie:** snapshot uit `competition_standings` + `teams` join, volledig denormaliseerd in jsonb zodat verwijdering van teams het archief niet breekt.
-- **Beker:** auto-detect = meest recente cup-match in het seizoen; in modal kan admin via dropdown een andere cup-match als finale kiezen indien auto-detect faalt.
-
-## Scope-grenzen
-
-- ❌ Geen losse match-archivering (behalve finale-meta).
-- ❌ Geen kaarten/schorsingen/topscorers (kan later toegevoegd worden).
-- ❌ Geen automatische trigger — admin doet het bewust.
-- ✅ Verwijderen van actieve competitie blijft volledig los van dit archief.
+## Niet in scope
+- Testmatch/loting-afhandeling (blijft handmatig).
+- Wijzigen van hoe `competition_standings` in de DB wordt opgebouwd — we sorteren client-side op basis van wedstrijden, wat consistent is met hoe playoff-stats al berekend worden.
