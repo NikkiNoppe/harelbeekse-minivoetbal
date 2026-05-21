@@ -26,27 +26,90 @@ const findTiedGroups = (teams: PlayoffTeam[]): PlayoffTeam[][] => {
   return groups;
 };
 
+// Bepaal welk criterium de doorslag gaf binnen een tied groep
+type DecidingCriterion =
+  | { type: 'wins' }
+  | { type: 'h2h' }
+  | { type: 'goal_diff' }
+  | { type: 'goals_scored' }
+  | { type: 'alphabetical' };
+
+const getDecidingCriterion = (group: PlayoffTeam[]): DecidingCriterion => {
+  const allEqual = <K extends keyof PlayoffTeam>(k: K) =>
+    group.every(t => t[k] === group[0][k]);
+  if (!allEqual('total_wins')) return { type: 'wins' };
+  // Wins gelijk → head-to-head (punten + doelsaldo in onderlinge wedstrijden)
+  // We tonen dit als de eerstvolgende toegepaste tiebreaker. Als ook algemeen
+  // saldo & gemaakte goals identiek zijn, was het effectief alfabetisch.
+  if (!allEqual('total_goal_diff') || !allEqual('total_goals_scored')) {
+    return { type: 'h2h' };
+  }
+  return { type: 'alphabetical' };
+};
+
 // Subtle notice about applied tiebreaker rules for tied teams
 const TiebreakerNotice = memo(({ teams }: { teams: PlayoffTeam[] }) => {
   const tied = findTiedGroups(teams);
   if (tied.length === 0) return null;
+
   return (
     <div
-      className="mt-3 flex items-start gap-2 rounded-md border border-dashed px-3 py-2 text-xs"
+      className="mt-3 space-y-2 rounded-md border border-dashed px-3 py-2 text-xs"
       style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
       role="note"
     >
-      <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-      <div>
-        <span className="font-medium">Gelijke stand: </span>
-        {tied.map((g, idx) => (
-          <span key={idx}>
-            {g.map(t => t.team_name).join(' & ')}
-            {idx < tied.length - 1 ? '; ' : ''}
-          </span>
-        ))}
-        . Volgorde bepaald via de officiële tiebreakers (zie onderaan).
-      </div>
+      {tied.map((g, idx) => {
+        const crit = getDecidingCriterion(g);
+        const points = g[0].total_points;
+        return (
+          <div key={idx} className="flex items-start gap-2">
+            <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+            <div>
+              <div>
+                <span className="font-medium" style={{ color: 'var(--accent-foreground)' }}>
+                  Gelijke stand op {points} punten:
+                </span>{' '}
+                {g.map((t, i) => (
+                  <span key={t.team_id}>
+                    {t.team_name}
+                    {i < g.length - 1 ? ' & ' : ''}
+                  </span>
+                ))}
+                .
+              </div>
+
+              {crit.type === 'wins' && (
+                <div className="mt-1">
+                  Volgorde bepaald op <strong>aantal gewonnen wedstrijden</strong> (regulier + play-off samengeteld):{' '}
+                  {g.map((t, i) => (
+                    <span key={t.team_id}>
+                      {t.team_name} <strong>{t.total_wins}</strong> wins
+                      {i < g.length - 1 ? ', ' : ''}
+                    </span>
+                  ))}
+                  . Daardoor komen onderlinge wedstrijden hier niet aan te pas.
+                </div>
+              )}
+
+              {crit.type === 'h2h' && (
+                <div className="mt-1">
+                  Wins zijn gelijk ({g[0].total_wins} elk). De volgorde wordt dan bepaald door de{' '}
+                  <strong>onderlinge wedstrijden</strong> (punten en doelsaldo in de duels tussen
+                  deze teams, regulier + play-off samen). Daarna volgen algemeen doelsaldo en
+                  totaal gemaakte doelpunten — zie reglement onderaan.
+                </div>
+              )}
+
+              {crit.type === 'alphabetical' && (
+                <div className="mt-1">
+                  Alle sportieve criteria zijn gelijk — volgens reglement zou hier een{' '}
+                  <strong>testmatch of loting</strong> volgen. Voorlopig alfabetisch weergegeven.
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 });
