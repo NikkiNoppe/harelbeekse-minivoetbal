@@ -177,22 +177,30 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
       });
       return;
     }
-    setSending(true);
-    try {
-      const dateStr = matchDate
-        ? new Date(matchDate + "T00:00:00").toLocaleDateString("nl-BE", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })
-        : undefined;
+    const recipients = [...selectedEmails];
+    const dateStr = matchDate
+      ? new Date(matchDate + "T00:00:00").toLocaleDateString("nl-BE", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : undefined;
+    const baseKey = `forfait-${homeTeamName}-${awayTeamName}-${matchDate ?? "nodate"}-${matchTime ?? "notime"}`
+      .replace(/\s+/g, "_");
 
-      const baseKey = `forfait-${homeTeamName}-${awayTeamName}-${matchDate ?? "nodate"}-${matchTime ?? "notime"}`
-        .replace(/\s+/g, "_");
+    // Sluit de modal meteen
+    setSelected({});
+    onOpenChange(false);
 
-      const results = await Promise.all(
-        selectedEmails.map(async (recipient) => {
+    const pendingToastId = toast({
+      title: "Forfait melding versturen...",
+      description: `Bezig met versturen naar ${recipients.length} ontvanger(s).`,
+    }).id;
+
+    const results = await Promise.all(
+      recipients.map(async (recipient) => {
+        try {
           const { data, error } = await supabase.functions.invoke("send-transactional-email", {
             body: {
               templateName: "forfait-notification",
@@ -209,38 +217,47 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
             },
           });
           const errMsg = error?.message || (data as any)?.error;
-          return { recipient, ok: !errMsg, error: errMsg };
-        })
-      );
+          return { recipient, ok: !errMsg, error: errMsg as string | undefined };
+        } catch (e) {
+          return {
+            recipient,
+            ok: false,
+            error: e instanceof Error ? e.message : "Onbekende fout",
+          };
+        }
+      })
+    );
 
-      const failed = results.filter((r) => !r.ok);
-      if (failed.length === results.length) {
-        throw new Error(failed[0]?.error || "Versturen mislukt");
-      }
+    const okCount = results.filter((r) => r.ok).length;
+    const failCount = results.length - okCount;
+    const allOk = failCount === 0;
+    const allFail = okCount === 0;
 
-      if (failed.length > 0) {
-        toast({
-          title: "Gedeeltelijk verzonden",
-          description: `${results.length - failed.length} ok, ${failed.length} mislukt.`,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Email verzonden",
-          description: `Verzonden naar ${selectedEmails.length} ontvanger(s).`,
-        });
-      }
-      setSelected({});
-      onOpenChange(false);
-    } catch (e) {
-      toast({
-        title: "Fout bij verzenden",
-        description: e instanceof Error ? e.message : "Onbekende fout",
-        variant: "destructive",
-      });
-    } finally {
-      setSending(false);
-    }
+    toast({
+      id: pendingToastId,
+      title: allOk
+        ? "Forfait melding verzonden"
+        : allFail
+        ? "Versturen mislukt"
+        : "Gedeeltelijk verzonden",
+      description: (
+        <div className="mt-1 space-y-1 text-sm">
+          <div className="font-medium">
+            {okCount} verzonden · {failCount} mislukt
+          </div>
+          <ul className="space-y-0.5">
+            {results.map((r) => (
+              <li key={r.recipient} className="flex items-start gap-2">
+                <span>{r.ok ? "✅" : "❌"}</span>
+                <span className="break-all">{r.recipient}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ),
+      variant: allOk ? "default" : "destructive",
+      duration: allOk ? 6000 : 10000,
+    });
   };
 
   const managersByEmail = useMemo(() => {
