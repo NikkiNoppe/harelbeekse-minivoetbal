@@ -193,10 +193,10 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
     setSelected({});
     onOpenChange(false);
 
-    const pendingToastId = toast({
+    const pending = toast({
       title: "Forfait melding versturen...",
       description: `Bezig met versturen naar ${recipients.length} ontvanger(s).`,
-    }).id;
+    });
 
     const results = await Promise.all(
       recipients.map(async (recipient) => {
