@@ -233,8 +233,8 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
     const allOk = failCount === 0;
     const allFail = okCount === 0;
 
+    pending.dismiss();
     toast({
-      id: pendingToastId,
       title: allOk
         ? "Forfait melding verzonden"
         : allFail
