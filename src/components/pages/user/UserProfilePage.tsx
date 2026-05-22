@@ -509,7 +509,7 @@ const UserTeamInfoCard: React.FC<{
   };
 
   const fetchBackupData = useCallback(async () => {
-    const tables = ['teams', 'players', 'matches', 'users', 'team_users', 'competition_standings', 'costs', 'team_costs', 'application_settings', 'referee_matches'] as const;
+    const tables = ['teams', 'players', 'matches', 'users', 'team_users', '_old_competition_standings', 'costs', 'team_costs', 'application_settings', 'referee_matches'] as const;
     const backup: Record<string, any[]> = {};
     
     for (const table of tables) {
@@ -1169,10 +1169,9 @@ const AdminMessageCardContent: React.FC = memo(() => {
       const result = await withUserContext(async () => {
         const { data, error } = await supabase
           .from('application_settings')
-          .select('setting_value, updated_at')
+          .select('setting_value')
           .eq('setting_category', 'admin_messages')
-          .eq('is_active', true)
-          .order('updated_at', { ascending: false })
+          .order('id', { ascending: false })
           .limit(20);
         if (error) return [];
         return data || [];
@@ -1260,9 +1259,9 @@ const AdminMessageCardContent: React.FC = memo(() => {
                   <p className="text-sm text-foreground">
                     {sv?.message || 'Bericht'}
                   </p>
-                  {msg.updated_at && (
+                  {sv?.start_date && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(msg.updated_at).toLocaleDateString('nl-BE')}
+                      {new Date(sv.start_date).toLocaleDateString('nl-BE')}
                     </p>
                   )}
                 </div>

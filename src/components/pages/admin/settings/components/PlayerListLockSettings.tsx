@@ -8,18 +8,21 @@ import { Lock, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateShort } from "@/lib/dateUtils";
+import {
+  applicationSettingInsert,
+  applicationSettingUpdate,
+} from "@/services/applicationSettingsUtils";
 
 interface LockSettings {
   id: number;
   lock_from_date: string | null;
-  is_active: boolean;
-  created_by: number | null;
+  lock_enabled: boolean;
 }
 
 const PlayerListLockSettings: React.FC = () => {
   const [settings, setSettings] = useState<LockSettings | null>(null);
   const [lockDate, setLockDate] = useState<string>("");
-  const [isActive, setIsActive] = useState<boolean>(false);
+  const [lockEnabled, setLockEnabled] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -32,7 +35,7 @@ const PlayerListLockSettings: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('application_settings')
-        .select('id, setting_value, is_active')
+        .select('id, setting_value')
         .eq('setting_category', 'player_list_lock')
         .eq('setting_name', 'global_lock')
         .single();
@@ -42,32 +45,30 @@ const PlayerListLockSettings: React.FC = () => {
       }
 
       if (data) {
-        const settingValue = data.setting_value as any;
+        const settingValue = data.setting_value as { lock_from_date?: string | null; lock_enabled?: boolean };
+        const enabled = settingValue?.lock_enabled ?? true;
         const mappedSettings: LockSettings = {
           id: data.id,
           lock_from_date: settingValue?.lock_from_date || null,
-          is_active: data.is_active,
-          created_by: null
+          lock_enabled: enabled,
         };
-        
+
         setSettings(mappedSettings);
         setLockDate(settingValue?.lock_from_date || "");
-        setIsActive(data.is_active);
+        setLockEnabled(enabled);
       } else {
-        // Create default settings if none exist
         const defaultSettingValue = {
           lock_from_date: null,
-          updated_at: new Date().toISOString()
+          lock_enabled: false,
         };
 
         const { data: newData, error: insertError } = await supabase
           .from('application_settings')
-          .insert({
+          .insert(applicationSettingInsert({
             setting_category: 'player_list_lock',
             setting_name: 'global_lock',
             setting_value: defaultSettingValue,
-            is_active: false
-          })
+          }))
           .select()
           .single();
 
@@ -76,13 +77,12 @@ const PlayerListLockSettings: React.FC = () => {
         const mappedSettings: LockSettings = {
           id: newData.id,
           lock_from_date: null,
-          is_active: false,
-          created_by: null
+          lock_enabled: false,
         };
 
         setSettings(mappedSettings);
         setLockDate("");
-        setIsActive(false);
+        setLockEnabled(false);
       }
     } catch (error) {
       console.error('Error fetching player list lock settings:', error);
@@ -98,21 +98,17 @@ const PlayerListLockSettings: React.FC = () => {
 
   const saveSettings = async () => {
     if (!settings) return;
-    
+
     setSaving(true);
     try {
       const settingValue = {
         lock_from_date: lockDate || null,
-        updated_at: new Date().toISOString()
+        lock_enabled: lockEnabled,
       };
 
       const { error } = await supabase
         .from('application_settings')
-        .update({
-          setting_value: settingValue,
-          is_active: isActive,
-          updated_at: new Date().toISOString()
-        })
+        .update(applicationSettingUpdate({ setting_value: settingValue }))
         .eq('id', settings.id);
 
       if (error) throw error;
@@ -120,7 +116,7 @@ const PlayerListLockSettings: React.FC = () => {
       setSettings({
         ...settings,
         lock_from_date: lockDate || null,
-        is_active: isActive,
+        lock_enabled: lockEnabled,
       });
 
       toast({
@@ -140,7 +136,7 @@ const PlayerListLockSettings: React.FC = () => {
   };
 
   const isCurrentlyLocked = (): boolean => {
-    if (!isActive || !lockDate) return false;
+    if (!lockEnabled || !lockDate) return false;
     const today = new Date();
     const lockDateObj = new Date(lockDate);
     return today >= lockDateObj;
@@ -177,8 +173,8 @@ const PlayerListLockSettings: React.FC = () => {
         <div className="flex items-center space-x-2">
           <Switch
             id="lock-enabled"
-            checked={isActive}
-            onCheckedChange={setIsActive}
+            checked={lockEnabled}
+            onCheckedChange={setLockEnabled}
           />
           <Label htmlFor="lock-enabled">
             Vergrendeling inschakelen
@@ -195,12 +191,12 @@ const PlayerListLockSettings: React.FC = () => {
             type="date"
             value={lockDate}
             onChange={(e) => setLockDate(e.target.value)}
-            disabled={!isActive}
+            disabled={!lockEnabled}
           />
         </div>
 
-        <Button 
-          onClick={saveSettings} 
+        <Button
+          onClick={saveSettings}
           disabled={saving}
           className="btn btn--primary"
         >
@@ -212,7 +208,7 @@ const PlayerListLockSettings: React.FC = () => {
             <h4 className="font-medium mb-2">Status</h4>
             <div className="space-y-1 text-sm">
               <div>
-                <strong>Actief:</strong> {isActive ? "Ja" : "Nee"}
+                <strong>Actief:</strong> {lockEnabled ? "Ja" : "Nee"}
               </div>
               {lockDate && (
                 <div>
@@ -233,4 +229,4 @@ const PlayerListLockSettings: React.FC = () => {
   );
 };
 
-export default PlayerListLockSettings; 
+export default PlayerListLockSettings;

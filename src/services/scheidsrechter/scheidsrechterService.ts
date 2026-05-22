@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { applicationSettingInsert } from "@/services/applicationSettingsUtils";
 
 export interface PollGroup {
   poll_group_id: string;
@@ -129,14 +130,14 @@ export const scheidsrechterService = {
     try {
       const { data, error } = await supabase
         .from('application_settings')
-        .select('setting_value, is_active')
+        .select('setting_value')
         .eq('setting_category', 'referee_polls')
         .eq('setting_name', 'system_enabled')
         .single();
 
       if (error || !data) return false;
-      const settingValue = data.setting_value as any;
-      return data.is_active && settingValue?.enabled === true;
+      const settingValue = data.setting_value as { enabled?: boolean };
+      return settingValue?.enabled === true;
     } catch (error) {
       console.error('Error checking poll system status:', error);
       return false;
@@ -166,7 +167,7 @@ export const scheidsrechterService = {
       const settingName = `active_range_${month}`;
       const { data, error } = await supabase
         .from('application_settings')
-        .select('setting_value, is_active')
+        .select('setting_value')
         .eq('setting_category', 'referee_polls')
         .eq('setting_name', settingName)
         .single();
@@ -175,12 +176,12 @@ export const scheidsrechterService = {
         return null;
       }
 
-      const val = data.setting_value as any;
+      const val = data.setting_value as { start_date?: string; end_date?: string; enabled?: boolean };
       return {
         month,
         start_date: val?.start_date ?? null,
         end_date: val?.end_date ?? null,
-        enabled: data.is_active ?? false,
+        enabled: val?.enabled ?? false,
       };
     } catch (error) {
       console.error('Error fetching active range:', error);
@@ -200,8 +201,8 @@ export const scheidsrechterService = {
             setting_value: {
               start_date: range.start_date,
               end_date: range.end_date,
+              enabled: !!range.enabled,
             },
-            is_active: !!range.enabled,
           },
           { onConflict: 'setting_category,setting_name' }
         );
@@ -222,7 +223,6 @@ export const scheidsrechterService = {
             setting_category: 'referee_polls',
             setting_name: 'system_enabled',
             setting_value: { enabled },
-            is_active: true
           },
           {
             onConflict: 'setting_category,setting_name'
@@ -592,18 +592,17 @@ export const scheidsrechterService = {
 
 
   // Get latest announcements
-  async getAnnouncements(limit: number = 5): Promise<{ message: string; created_at?: string; type?: string }[]> {
+  async getAnnouncements(limit: number = 5): Promise<{ message: string; type?: string }[]> {
     try {
       const { data, error } = await supabase
         .from('application_settings')
-        .select('setting_value, created_at')
+        .select('setting_value')
         .eq('setting_category', 'admin_notifications')
-        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .limit(limit);
       if (error || !data) return [];
       return data.map((row: any) => ({
         message: row.setting_value?.message || '',
-        created_at: row.created_at,
         type: row.setting_value?.type,
       }));
     } catch (error) {
@@ -621,17 +620,15 @@ export const scheidsrechterService = {
     try {
       const { error } = await supabase
         .from('application_settings')
-        .insert({
+        .insert(applicationSettingInsert({
           setting_category: 'admin_notifications',
           setting_name: `notification_${Date.now()}`,
           setting_value: {
             message,
             target_roles: targetRoles,
-            created_at: new Date().toISOString(),
-            type: category
+            type: category,
           },
-          is_active: true
-        });
+        }));
 
       return !error;
     } catch (error) {

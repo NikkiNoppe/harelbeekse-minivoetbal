@@ -69,7 +69,6 @@ const BlogPage: React.FC = () => {
           setting_category: 'blog_posts',
           setting_name: `blog_post_${Date.now()}`,
           setting_value: settingValue,
-          is_active: true
         });
         toast({ title: 'Success', description: 'Blog post aangemaakt' });
       }
@@ -237,7 +236,9 @@ const BlogPage: React.FC = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {new Date(post.created_at).toLocaleDateString('nl-NL')}
+                          {post.setting_value.published_at
+                            ? new Date(post.setting_value.published_at).toLocaleDateString('nl-NL')
+                            : '—'}
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center gap-1">

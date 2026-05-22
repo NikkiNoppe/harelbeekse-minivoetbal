@@ -157,7 +157,6 @@ export const priorityOrderService = {
         .select('setting_value')
         .eq('setting_category', 'priority_order')
         .eq('setting_name', 'fast_access')
-        .eq('is_active', true)
         .single();
 
       if (error) {
@@ -190,7 +189,6 @@ export const priorityOrderService = {
         .select('setting_value')
         .eq('setting_category', 'season_data')
         .eq('setting_name', 'main_config')
-        .eq('is_active', true)
         .single();
 
       if (error) {
@@ -225,7 +223,6 @@ export const priorityOrderService = {
         .select('setting_value')
         .eq('setting_category', 'season_data')
         .eq('setting_name', 'main_config')
-        .eq('is_active', true)
         .single();
 
       if (error) {

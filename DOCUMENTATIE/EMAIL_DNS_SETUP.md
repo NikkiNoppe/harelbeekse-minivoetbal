@@ -1,3 +1,5 @@
+# E-mail & DNS Setup
+
 ## Doel
 
 1. **Uitgaand:** forfait-mails versturen vanaf `info@harelbekeminivoetbal.be` via Resend.

@@ -64,7 +64,7 @@ const BlogPostItem = memo(({ post }: { post: BlogPost }) => {
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start mb-2 gap-2">
           <span className="text-xs text-muted-foreground flex-shrink-0">
-            {formatDateShort(post.created_at)}
+            {post.setting_value.published_at && formatDateShort(post.setting_value.published_at)}
           </span>
         </div>
         {post.setting_value?.title && (

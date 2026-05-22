@@ -10,6 +10,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { bekerService } from "@/services/match/cupService";
+import { applicationSettingInsert } from "@/services/applicationSettingsUtils";
 import {
   matchHasForfaitPenalty,
   matchSkipAutoMatchCosts,
@@ -104,12 +105,11 @@ const recordFailure = async (
 
     await supabase
       .from('application_settings')
-      .insert({
+      .insert(applicationSettingInsert({
         setting_category: 'failed_side_effects',
         setting_name: `${name}_${ctx.matchId}_${Date.now()}`,
         setting_value: failureData,
-        is_active: true
-      });
+      }));
 
     logSideEffect(ctx, name, 'info', 'Failure recorded for admin review');
   } catch (recordErr) {
@@ -551,8 +551,7 @@ export const getFailedSideEffects = async (matchId?: number): Promise<any[]> => 
     .from('application_settings')
     .select('*')
     .eq('setting_category', 'failed_side_effects')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(50);
 
   if (matchId) {
@@ -639,7 +638,7 @@ export const retryFailedSideEffect = async (failureId: number): Promise<boolean>
     // Mark as resolved
     await supabase
       .from('application_settings')
-      .update({ is_active: false })
+      .delete()
       .eq('id', failureId);
 
     return true;

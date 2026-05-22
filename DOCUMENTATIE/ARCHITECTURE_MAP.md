@@ -1,6 +1,6 @@
 # 🏗️ Architectuur Overzicht - Harelbeekse Minivoetbal
 
-> Laatste update: 24 december 2024
+> Laatste update: 22 mei 2026
 
 Dit document biedt een volledig overzicht van de architectuur van de Harelbeekse Minivoetbal webapp.
 
@@ -10,12 +10,12 @@ Dit document biedt een volledig overzicht van de architectuur van de Harelbeekse
 
 | Categorie | Aantal |
 |-----------|--------|
-| Publieke Pagina's | 8 |
-| Admin Pagina's | 14 |
-| Modals | 18 |
-| Context Providers | 5 |
+| Publieke Pagina's | 7 |
+| Admin Pagina's | 16 |
+| Modals | 25 |
+| Context Providers | 6 |
 | Shared UI Components | 40+ |
-| Edge Functions | 8 |
+| Edge Functions | 15 |
 
 ---
 
@@ -352,16 +352,23 @@ graph TD
 
 ## ⚡ Edge Functions
 
-| Functie | Bestand | Beschrijving | Auth |
-|---------|---------|--------------|------|
-| `send-password-reset` | `send-password-reset/index.ts` | Wachtwoord reset emails | Public |
-| `send-welcome-email` | `send-welcome-email/index.ts` | Welkom emails | Public |
-| `delete-user` | `delete-user/index.ts` | Gebruiker verwijderen | Protected |
-| `generate-competition-schedule` | `generate-competition-schedule/index.ts` | Competitie schema genereren | Protected |
-| `generate-monthly-polls` | `generate-monthly-polls/index.ts` | Maandelijkse polls | Protected |
-| `sync-card-penalties` | `sync-card-penalties/index.ts` | Kaart boetes sync | Protected |
-| `sync-match-costs` | `sync-match-costs/index.ts` | Wedstrijd kosten sync | Protected |
-| `update-season-data` | `update-season-data/index.ts` | Seizoen data update | Protected |
+| Functie | Bestand | Beschrijving | JWT |
+|---------|---------|--------------|-----|
+| `send-password-reset` | `send-password-reset/index.ts` | Wachtwoord reset emails | uit |
+| `send-welcome-email` | `send-welcome-email/index.ts` | Welkom emails | uit |
+| `delete-user` | `delete-user/index.ts` | Gebruiker verwijderen | uit |
+| `generate-competition-schedule` | `generate-competition-schedule/index.ts` | Competitie schema genereren | uit |
+| `generate-monthly-polls` | `generate-monthly-polls/index.ts` | Maandelijkse polls | uit |
+| `sync-card-penalties` | `sync-card-penalties/index.ts` | Kaartboetes sync | uit |
+| `sync-match-costs` | `sync-match-costs/index.ts` | Wedstrijdkosten sync (enkel) | uit |
+| `sync-all-match-costs` | `sync-all-match-costs/index.ts` | Wedstrijdkosten batch sync | uit |
+| `update-season-data` | `update-season-data/index.ts` | Seizoensdata update | uit |
+| `send-forfait-notification` | `send-forfait-notification/index.ts` | Forfait e-mail via Resend | uit |
+| `send-transactional-email` | `send-transactional-email/index.ts` | Transactionele e-mails | aan |
+| `preview-transactional-email` | `preview-transactional-email/index.ts` | E-mail preview | uit |
+| `handle-email-unsubscribe` | `handle-email-unsubscribe/index.ts` | Uitschrijflink afhandeling | uit |
+| `handle-email-suppression` | `handle-email-suppression/index.ts` | Bounce/suppression afhandeling | uit |
+| `notify-auto-suspension` | `notify-auto-suspension/index.ts` | Auto-schorsing notificatie | uit |
 
 ---
 
@@ -562,11 +569,9 @@ const form = useForm<FormSchema>({
 
 ## 📚 Gerelateerde Documentatie
 
-- [ROUTING.md](./DOCUMENTATIE/ROUTING.md) - Routing strategie
-- [MODAL_SYSTEM_GUIDELINES.md](./DOCUMENTATIE/MODAL_SYSTEM_GUIDELINES.md) - Modal richtlijnen
-- [DESIGN_TOKENS.md](./DOCUMENTATIE/DESIGN_TOKENS.md) - Design systeem
-- [UI_COMPONENTS_AUDIT.md](./DOCUMENTATIE/UI_COMPONENTS_AUDIT.md) - Component audit
-
----
-
-*Dit document wordt automatisch bijgewerkt bij significante architectuurwijzigingen.*
+- [README.md](./README.md) - Index van alle documentatie
+- [ROUTING.md](./ROUTING.md) - Routing strategie
+- [MODAL_SYSTEM_GUIDELINES.md](./MODAL_SYSTEM_GUIDELINES.md) - Modal richtlijnen
+- [DESIGN_TOKENS.md](./DESIGN_TOKENS.md) - Design systeem
+- [SUPABASE_GRANTS_CONVENTION.md](./SUPABASE_GRANTS_CONVENTION.md) - Database grants conventie
+- [EMAIL_DNS_SETUP.md](./EMAIL_DNS_SETUP.md) - E-mail DNS setup

@@ -1,7 +1,7 @@
 # Modal System Guidelines
 
 **Versie:** 1.0  
-**Laatst bijgewerkt:** December 2023  
+**Laatst bijgewerkt:** mei 2026  
 **Status:** ✅ VERPLICHT - Alle modals moeten deze richtlijnen volgen
 
 ---
@@ -701,7 +701,7 @@ Gebruik deze checklist bij het reviewen van modal implementaties:
 
 ### Documentatie
 - **Design Tokens:** `DESIGN_TOKENS.md`
-- **Routing:** `DOCUMENTATIE/ROUTING.md`
+- **Routing:** [ROUTING.md](./ROUTING.md)
 
 ### Externe Resources
 - [Radix UI Dialog](https://www.radix-ui.com/docs/primitives/components/dialog)

@@ -1,5 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
+const ARCHIVE_CATEGORY = 'season_archives';
+
 function getAdminUserId(): number {
   const authDataString = localStorage.getItem('auth_data');
   if (authDataString) {
@@ -23,6 +25,24 @@ function getAdminUserId(): number {
   }
 
   throw new Error('Gebruiker niet gevonden');
+}
+
+async function upsertArchiveField(
+  seasonLabel: string,
+  field: 'competition_standings' | 'cup_winner' | 'playoff',
+  value: unknown,
+): Promise<void> {
+  const { data, error } = await supabase.rpc('upsert_season_archive', {
+    p_user_id: getAdminUserId(),
+    p_season_label: seasonLabel,
+    p_field: field,
+    p_value: value as any,
+  });
+  if (error) throw error;
+  const result = data as { success?: boolean; error?: string } | null;
+  if (result && result.success === false) {
+    throw new Error(result.error || 'Archiveren mislukt');
+  }
 }
 
 export interface ArchivedStanding {
@@ -52,29 +72,18 @@ export interface ArchivedPlayoffRanking {
   total_points?: number;
 }
 
-export interface ArchivedPlayoffFinal {
-  home_team: string;
-  away_team: string;
-  home_score: number | null;
-  away_score: number | null;
-  match_date?: string | null;
-}
-
 export interface ArchivedPlayoff {
   top_ranking: ArchivedPlayoffRanking[];
   bottom_ranking: ArchivedPlayoffRanking[];
-  final?: ArchivedPlayoffFinal | null;
   notes?: string;
 }
 
 export interface SeasonArchive {
-  id: string;
+  id: number;
   season_label: string;
   competition_standings: ArchivedStanding[] | null;
   cup_winner: ArchivedCupWinner | null;
   playoff: ArchivedPlayoff | null;
-  archived_at: string;
-  updated_at: string;
 }
 
 /** Derive a season label like "2025-2026" from the current season config. */
@@ -89,73 +98,62 @@ export function deriveSeasonLabel(startDate?: string, endDate?: string): string 
   return `${startY}-${endY}`;
 }
 
+function mapArchiveRow(row: {
+  id: number;
+  setting_name: string;
+  setting_value: unknown;
+}): SeasonArchive {
+  const value = (typeof row.setting_value === 'object' && row.setting_value !== null
+    ? row.setting_value
+    : {}) as Record<string, unknown>;
+
+  return {
+    id: row.id,
+    season_label: row.setting_name,
+    competition_standings: (value.competition_standings as ArchivedStanding[] | undefined) ?? null,
+    cup_winner: (value.cup_winner as ArchivedCupWinner | undefined) ?? null,
+    playoff: (value.playoff as ArchivedPlayoff | undefined) ?? null,
+  };
+}
+
 export const archiveService = {
   async listArchives(): Promise<SeasonArchive[]> {
     const { data, error } = await supabase
-      .from('season_archives')
-      .select('*')
-      .order('season_label', { ascending: false });
+      .from('application_settings')
+      .select('id, setting_name, setting_value')
+      .eq('setting_category', ARCHIVE_CATEGORY)
+      .order('setting_name', { ascending: false });
     if (error) throw error;
-    return (data || []) as unknown as SeasonArchive[];
+    return (data || []).map(mapArchiveRow);
   },
 
   async upsertCompetition(seasonLabel: string, standings: ArchivedStanding[]): Promise<void> {
-    const { error } = await supabase.rpc('admin_upsert_season_competition', {
-      p_admin_user_id: getAdminUserId(),
-      p_season_label: seasonLabel,
-      p_competition_standings: standings,
-    });
-    if (error) throw error;
+    await upsertArchiveField(seasonLabel, 'competition_standings', standings);
   },
 
   async upsertCup(seasonLabel: string, cupWinner: ArchivedCupWinner): Promise<void> {
-    const { error } = await supabase.rpc('admin_upsert_season_cup', {
-      p_admin_user_id: getAdminUserId(),
-      p_season_label: seasonLabel,
-      p_cup_winner: cupWinner,
-    });
-    if (error) throw error;
+    await upsertArchiveField(seasonLabel, 'cup_winner', cupWinner);
   },
 
   async upsertPlayoff(seasonLabel: string, playoff: ArchivedPlayoff): Promise<void> {
-    const { error } = await supabase.rpc('admin_upsert_season_playoff', {
-      p_admin_user_id: getAdminUserId(),
-      p_season_label: seasonLabel,
-      p_playoff: playoff,
-    });
-    if (error) throw error;
+    await upsertArchiveField(seasonLabel, 'playoff', playoff);
   },
 
   /** Pull the current live standings and shape them for archiving. */
   async snapshotCurrentStandings(): Promise<ArchivedStanding[]> {
-    const { data, error } = await supabase
-      .from('competition_standings')
-      .select(`
-        team_id,
-        matches_played,
-        wins,
-        draws,
-        losses,
-        goals_scored,
-        goals_against,
-        goal_difference,
-        points,
-        teams(team_name)
-      `)
-      .order('points', { ascending: false })
-      .order('goal_difference', { ascending: false });
-    if (error) throw error;
-    return (data || []).map((row: any, idx: number) => ({
-      position: idx + 1,
-      team_name: row.teams?.team_name || 'Onbekend team',
-      played: row.matches_played ?? 0,
-      won: row.wins ?? 0,
-      draw: row.draws ?? 0,
-      lost: row.losses ?? 0,
-      goals_for: row.goals_scored ?? 0,
-      goals_against: row.goals_against ?? 0,
-      goal_diff: row.goal_difference ?? 0,
-      points: row.points ?? 0,
+    const { fetchRegularStandings } = await import('@/services/standings/standingsService');
+    const standings = await fetchRegularStandings();
+    return standings.map((s) => ({
+      position: s.position,
+      team_name: s.team_name,
+      played: s.played,
+      won: s.won,
+      draw: s.draw,
+      lost: s.lost,
+      goals_for: s.goals_for,
+      goals_against: s.goals_against,
+      goal_diff: s.goal_diff,
+      points: s.points,
     }));
   },
 
@@ -205,40 +203,17 @@ export const archiveService = {
     const { fetchPublicPlayoffData } = await import('@/hooks/usePublicPlayoffData');
     const data = await fetchPublicPlayoffData();
 
-    const top_ranking = data.po1Teams.map((team, idx) => ({
-      position: idx + 1,
-      team_name: team.team_name,
-      total_points: team.total_points,
-    }));
-
-    const bottom_ranking = data.po2Teams.map((team, idx) => ({
-      position: idx + 1,
-      team_name: team.team_name,
-      total_points: team.total_points,
-    }));
-
-    let final: ArchivedPlayoffFinal | null = null;
-    const leader = data.po1Teams[0];
-    const runnerUp = data.po1Teams[1];
-
-    if (leader && runnerUp) {
-      const headToHead = data.allMatches.find(
-        (m) =>
-          m.is_completed &&
-          m.playoff_type === 'top' &&
-          ((m.home_team_id === leader.team_id && m.away_team_id === runnerUp.team_id) ||
-            (m.home_team_id === runnerUp.team_id && m.away_team_id === leader.team_id)),
-      );
-
-      final = {
-        home_team: headToHead?.home_team_name ?? leader.team_name,
-        away_team: headToHead?.away_team_name ?? runnerUp.team_name,
-        home_score: headToHead?.home_score ?? null,
-        away_score: headToHead?.away_score ?? null,
-        match_date: headToHead?.match_date ?? null,
-      };
-    }
-
-    return { top_ranking, bottom_ranking, final };
+    return {
+      top_ranking: data.po1Teams.map((team, idx) => ({
+        position: idx + 1,
+        team_name: team.team_name,
+        total_points: team.total_points,
+      })),
+      bottom_ranking: data.po2Teams.map((team, idx) => ({
+        position: idx + 1,
+        team_name: team.team_name,
+        total_points: team.total_points,
+      })),
+    };
   },
 };

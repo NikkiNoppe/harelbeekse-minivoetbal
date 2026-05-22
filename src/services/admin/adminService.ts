@@ -86,7 +86,8 @@ export const createGenericCRUD = <T extends { id?: number | string }>(
   entityName: string,
   queryKey: readonly unknown[],
   endpoint: keyof any,
-  transformData?: (data: any) => T
+  transformData?: (data: any) => T,
+  orderColumn: string = 'created_at',
 ) => {
   // Fetch all
   const useFetchAll = () => {
@@ -96,7 +97,7 @@ export const createGenericCRUD = <T extends { id?: number | string }>(
         const { data, error } = await supabase
           .from(endpoint as any)
           .select('*')
-          .order('created_at', { ascending: false });
+          .order(orderColumn, { ascending: false });
         
         if (error) throw error;
         return transformData ? data.map(transformData) : data;
@@ -217,7 +218,8 @@ export const blogPostCRUD = createGenericCRUD<BlogPost>(
     content: data.setting_value.content,
     date: data.setting_value.date,
     tags: data.setting_value.tags || [],
-  })
+  }),
+  'id',
 );
 
 // Bulk operations

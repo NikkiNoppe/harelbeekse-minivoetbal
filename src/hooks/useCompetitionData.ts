@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { fetchCompetitionMatches } from "@/services/match";
+import { fetchRegularStandings } from "@/services/standings/standingsService";
 
 export interface Team {
   id: number;
@@ -26,59 +26,17 @@ export interface MatchData {
   uniqueNumber?: string;
 }
 
-// Function to fetch competition standings from Supabase
 const fetchCompetitionStandings = async (): Promise<Team[]> => {
-  // First check if there are any submitted matches
-  const { data: matchesData, error: matchesError } = await supabase
-    .from('matches')
-    .select('match_id')
-    .eq('is_submitted', true)
-    .not('home_score', 'is', null)
-    .not('away_score', 'is', null);
-
-  if (matchesError) {
-    console.error("Error checking matches:", matchesError);
-    throw new Error(`Error checking matches: ${matchesError.message}`);
-  }
-
-  // If no submitted matches, return empty array
-  if (!matchesData || matchesData.length === 0) {
-    return [];
-  }
-
-  // If there are submitted matches, fetch standings
-  const { data, error } = await supabase
-    .from('competition_standings')
-    .select(`
-      standing_id,
-      team_id,
-      matches_played,
-      wins,
-      draws,
-      losses,
-      goal_difference,
-      goals_scored,
-      goals_against,
-      points,
-      teams(team_name)
-    `)
-    .order('points', { ascending: false })
-    .order('goal_difference', { ascending: false });
-    
-  if (error) {
-    console.error("Error fetching standings:", error);
-    throw new Error(`Error fetching standings: ${error.message}`);
-  }
-  
-  return data.map(standing => ({
-    id: standing.team_id,
-    name: standing.teams?.team_name || 'Unknown Team',
-    played: standing.matches_played,
-    won: standing.wins,
-    draw: standing.draws,
-    lost: standing.losses,
-    goalDiff: standing.goal_difference,
-    points: standing.points
+  const standings = await fetchRegularStandings();
+  return standings.map((s) => ({
+    id: s.team_id,
+    name: s.team_name,
+    played: s.played,
+    won: s.won,
+    draw: s.draw,
+    lost: s.lost,
+    goalDiff: s.goal_diff,
+    points: s.points,
   }));
 };
 
@@ -86,11 +44,11 @@ export const useCompetitionStandings = () => {
   return useQuery({
     queryKey: ['competitionStandings'],
     queryFn: fetchCompetitionStandings,
-    staleTime: 2 * 60 * 1000, // 2 minutes - standings change often during match days
-    gcTime: 10 * 60 * 1000, // 10 minutes cache
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     retry: 2,
     refetchOnWindowFocus: false,
-    refetchOnReconnect: true
+    refetchOnReconnect: true,
   });
 };
 
@@ -98,61 +56,58 @@ export const useCompetitionMatches = () => {
   return useQuery({
     queryKey: ['competitionMatches'],
     queryFn: fetchCompetitionMatches,
-    staleTime: 1 * 60 * 1000, // 1 minute - matches change frequently
-    gcTime: 5 * 60 * 1000, // 5 minutes cache
+    staleTime: 1 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
     retry: 2,
     refetchOnWindowFocus: false,
-    refetchOnReconnect: true
+    refetchOnReconnect: true,
   });
 };
 
 export const useCompetitionData = () => {
   const standingsQuery = useCompetitionStandings();
   const matchesQuery = useCompetitionMatches();
-  
-  // Process matches data
-  const processedMatches = matchesQuery.data ? {
-    upcoming: matchesQuery.data.upcoming || [],
-    past: matchesQuery.data.past || [],
-    all: [...(matchesQuery.data.upcoming || []), ...(matchesQuery.data.past || [])]
-  } : { upcoming: [], past: [], all: [] };
-  
-  // Get filter options - sorted numerically for matchdays, alphabetically for teams
-  const matchdays = [...new Set(processedMatches.all.map(match => match.matchday))]
+
+  const processedMatches = matchesQuery.data
+    ? {
+        upcoming: matchesQuery.data.upcoming || [],
+        past: matchesQuery.data.past || [],
+        all: [...(matchesQuery.data.upcoming || []), ...(matchesQuery.data.past || [])],
+      }
+    : { upcoming: [], past: [], all: [] };
+
+  const matchdays = [...new Set(processedMatches.all.map((match) => match.matchday))]
     .filter(Boolean)
     .sort((a, b) => {
-      // Extract number from matchday string (e.g., "Speeldag 1" -> 1)
       const numA = parseInt(a.replace(/\D/g, '')) || 0;
       const numB = parseInt(b.replace(/\D/g, '')) || 0;
       return numA - numB;
     });
-  
-  const teamNames = [...new Set([
-    ...processedMatches.all.map(match => match.homeTeamName),
-    ...processedMatches.all.map(match => match.awayTeamName)
-  ])]
+
+  const teamNames = [
+    ...new Set([
+      ...processedMatches.all.map((match) => match.homeTeamName),
+      ...processedMatches.all.map((match) => match.awayTeamName),
+    ]),
+  ]
     .filter(Boolean)
     .sort((a, b) => a.localeCompare(b, 'nl'));
-  
+
   return {
-    // Standings
     teams: standingsQuery.data,
     standingsLoading: standingsQuery.isLoading,
     standingsError: standingsQuery.error,
     refetchStandings: standingsQuery.refetch,
-    
-    // Matches
+
     matches: processedMatches,
     matchesLoading: matchesQuery.isLoading,
     matchesError: matchesQuery.error,
     refetchMatches: matchesQuery.refetch,
-    
-    // Filter options
+
     matchdays,
     teamNames,
-    
-    // Combined loading state
+
     isLoading: standingsQuery.isLoading || matchesQuery.isLoading,
-    hasError: !!standingsQuery.error || !!matchesQuery.error
+    hasError: !!standingsQuery.error || !!matchesQuery.error,
   };
-}; 
+};

@@ -2,6 +2,7 @@
 // Moved from src/services/suspensionRulesService.ts
 
 import { supabase } from "@/integrations/supabase/client";
+import { applicationSettingUpdate } from "@/services/applicationSettingsUtils";
 
 export interface YellowCardRule {
   card_count: number;
@@ -72,7 +73,6 @@ class SuspensionRulesService {
         .select('setting_value')
         .eq('setting_category', 'suspension_rules')
         .eq('setting_name', 'default_rules')
-        .eq('is_active', true)
         .single();
 
       if (error || !data) {
@@ -102,10 +102,7 @@ class SuspensionRulesService {
     try {
       const { error } = await supabase
         .from('application_settings')
-        .update({ 
-          setting_value: rules as any,
-          updated_at: new Date().toISOString()
-        })
+        .update(applicationSettingUpdate({ setting_value: rules as any }))
         .eq('setting_category', 'suspension_rules')
         .eq('setting_name', 'default_rules');
 

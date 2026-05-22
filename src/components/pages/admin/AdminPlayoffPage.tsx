@@ -13,8 +13,8 @@ import { Loader2, Trophy, AlertCircle, Trash2, Calendar, CheckCircle, Clock, Und
 import ArchivePlayoffModal from "@/components/modals/admin/ArchivePlayoffModal";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { competitionService, CompetitionMatch } from "@/services/match/competitionService";
 import { playoffService, PlayoffMatch } from "@/services/match/playoffService";
+import { fetchRegularStandings } from "@/services/standings/standingsService";
 import { teamService } from "@/services/core/teamService";
 import { seasonService } from "@/services/seasonService";
 import { supabase } from "@/integrations/supabase/client";
@@ -341,10 +341,22 @@ const AdminPlayoffPage: React.FC = () => {
       setLoading(true);
       const teamsData = await teamService.getAllTeams();
       setTeams(teamsData);
-      const matches = await competitionService.getCompetitionMatches();
-      const regularMatches = matches.filter(match => !match.is_playoff_match);
-      const calculatedStandings = calculateStandings(teamsData, regularMatches);
-      setStandings(calculatedStandings);
+      const calculatedStandings = await fetchRegularStandings();
+      setStandings(
+        calculatedStandings.map((s) => ({
+          team_id: s.team_id,
+          team_name: s.team_name,
+          points: s.points,
+          matches_played: s.played,
+          wins: s.won,
+          draws: s.draw,
+          losses: s.lost,
+          goals_for: s.goals_for,
+          goals_against: s.goals_against,
+          goal_difference: s.goal_diff,
+          position: s.position,
+        })),
+      );
       const playoffData = await playoffService.getPlayoffMatches();
       setPlayoffMatches(playoffData);
       if (playoffData.length === 0) {
@@ -380,65 +392,6 @@ const AdminPlayoffPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const calculateStandings = (teams: any[], matches: CompetitionMatch[]): TeamStanding[] => {
-    const standings: { [key: number]: TeamStanding } = {};
-    teams.forEach(team => {
-      standings[team.team_id] = {
-        team_id: team.team_id,
-        team_name: team.team_name,
-        points: 0,
-        matches_played: 0,
-        wins: 0,
-        draws: 0,
-        losses: 0,
-        goals_for: 0,
-        goals_against: 0,
-        goal_difference: 0,
-        position: 0
-      };
-    });
-    matches.forEach(match => {
-      if (match.home_score !== null && match.away_score !== null && match.home_team_id && match.away_team_id) {
-        const homeTeam = standings[match.home_team_id];
-        const awayTeam = standings[match.away_team_id];
-        if (homeTeam && awayTeam) {
-          homeTeam.matches_played++;
-          awayTeam.matches_played++;
-          homeTeam.goals_for += match.home_score;
-          homeTeam.goals_against += match.away_score;
-          awayTeam.goals_for += match.away_score;
-          awayTeam.goals_against += match.home_score;
-          if (match.home_score > match.away_score) {
-            homeTeam.wins++;
-            homeTeam.points += 3;
-            awayTeam.losses++;
-          } else if (match.home_score < match.away_score) {
-            awayTeam.wins++;
-            awayTeam.points += 3;
-            homeTeam.losses++;
-          } else {
-            homeTeam.draws++;
-            awayTeam.draws++;
-            homeTeam.points += 1;
-            awayTeam.points += 1;
-          }
-        }
-      }
-    });
-    const sorted = Object.values(standings).map(team => ({
-      ...team,
-      goal_difference: team.goals_for - team.goals_against
-    })).sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points;
-      if (b.goal_difference !== a.goal_difference) return b.goal_difference - a.goal_difference;
-      return b.goals_for - a.goals_for;
-    });
-    return sorted.map((team, index) => ({
-      ...team,
-      position: index + 1
-    }));
   };
 
   // Group matches by week with vacation/cup indication

@@ -4,6 +4,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { suspensionRulesService } from "./suspensionRulesService";
 import { withUserContext } from "@/lib/supabaseUtils";
+import {
+  applicationSettingInsert,
+  applicationSettingUpdate,
+} from "@/services/applicationSettingsUtils";
 
 const AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY = 'automatic_suspension_overrides' as const;
 
@@ -425,20 +429,18 @@ export const suspensionService = {
       const { error } = await withUserContext(async () => {
         return await supabase
           .from('application_settings')
-          .insert({
+          .insert(applicationSettingInsert({
             setting_category: 'manual_suspensions',
             setting_name: playerId.toString(),
             setting_value: {
               reason,
               matches,
               start_date: new Date().toISOString(),
-              end_date: new Date(Date.now() + (matches * 7 * 24 * 60 * 60 * 1000)).toISOString(), // Rough estimate
+              end_date: new Date(Date.now() + (matches * 7 * 24 * 60 * 60 * 1000)).toISOString(),
               notes,
-              created_by: 'admin', // Could be dynamic based on current user
-              type: 'manual'
+              type: 'manual',
             },
-            is_active: true
-          });
+          }));
       });
 
       if (error) {
@@ -458,12 +460,10 @@ export const suspensionService = {
         .select(`
           id,
           setting_name,
-          setting_value,
-          created_at,
-          is_active
+          setting_value
         `)
         .eq('setting_category', 'manual_suspensions')
-        .order('created_at', { ascending: false });
+        .order('id', { ascending: false });
 
       if (error) {
         console.error('Error fetching manual suspensions:', error);
@@ -481,8 +481,8 @@ export const suspensionService = {
           endDate: settingValue?.end_date || '',
           notes: settingValue?.notes || '',
           type: settingValue?.type || 'manual',
-          isActive: suspension.is_active,
-          createdAt: suspension.created_at
+          isActive: true,
+          createdAt: settingValue?.start_date || '',
         };
       });
     } catch (error) {
@@ -495,7 +495,7 @@ export const suspensionService = {
     try {
       const { data: current, error: fetchError } = await supabase
         .from('application_settings')
-        .select('setting_value, is_active')
+        .select('setting_value')
         .eq('id', suspensionId)
         .single();
 
@@ -504,7 +504,13 @@ export const suspensionService = {
         throw fetchError;
       }
 
+      if (updates.isActive === false) {
+        await this.deleteSuspension(suspensionId);
+        return;
+      }
+
       const { isActive, ...settingValueUpdates } = updates;
+      void isActive;
       const nextSettingValue = {
         ...((current?.setting_value as Record<string, unknown>) || {}),
         ...settingValueUpdates
@@ -513,10 +519,9 @@ export const suspensionService = {
       const { error } = await withUserContext(async () => {
         return await supabase
           .from('application_settings')
-          .update({
+          .update(applicationSettingUpdate({
             setting_value: nextSettingValue,
-            is_active: isActive ?? current?.is_active ?? true
-          })
+          }))
           .eq('id', suspensionId);
       });
 
@@ -554,8 +559,7 @@ export const suspensionService = {
       const { data, error } = await supabase
         .from('application_settings')
         .select('id, setting_name, setting_value')
-        .eq('setting_category', AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY)
-        .eq('is_active', true);
+        .eq('setting_category', AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY);
 
       if (error) {
         console.error('Error fetching automatic suspension overrides:', error);
@@ -622,7 +626,7 @@ export const suspensionService = {
       const { error } = await withUserContext(async () => {
         return await supabase
           .from('application_settings')
-          .update({ setting_value, is_active: true })
+          .update(applicationSettingUpdate({ setting_value }))
           .eq('id', existing.id);
       });
       if (error) {
@@ -631,12 +635,13 @@ export const suspensionService = {
       }
     } else {
       const { error } = await withUserContext(async () => {
-        return await supabase.from('application_settings').insert({
-          setting_category: AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY,
-          setting_name,
-          setting_value,
-          is_active: true,
-        });
+        return await supabase.from('application_settings').insert(
+          applicationSettingInsert({
+            setting_category: AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY,
+            setting_name,
+            setting_value,
+          }),
+        );
       });
       if (error) {
         console.error('Error inserting automatic suspension override:', error);

@@ -1,5 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  computeStats,
+  fetchRegularMatches,
+  fetchTeams,
+  sortWithTiebreakers,
+  type MatchRow,
+  type SortableTeam,
+  type TeamStats,
+} from "@/services/standings/standingsService";
 
 export interface PlayoffTeam {
   team_id: number;
@@ -43,16 +52,6 @@ export interface PlayoffMatchData {
   is_finalized: boolean;
 }
 
-interface MatchRow {
-  home_team_id: number | null;
-  away_team_id: number | null;
-  home_score: number | null;
-  away_score: number | null;
-  is_submitted: boolean | null;
-  match_date?: string | null;
-  is_playoff?: boolean;
-}
-
 /** Eén onderlinge wedstrijd, zoals aan de UI doorgegeven. */
 export interface HeadToHeadMatch {
   match_date: string | null;
@@ -64,128 +63,6 @@ export interface HeadToHeadMatch {
   away_score: number;
   is_playoff: boolean;
 }
-
-interface TeamStats {
-  played: number;
-  wins: number;
-  draws: number;
-  losses: number;
-  goalsScored: number;
-  goalsAgainst: number;
-  points: number;
-}
-
-const emptyStats = (): TeamStats => ({
-  played: 0, wins: 0, draws: 0, losses: 0,
-  goalsScored: 0, goalsAgainst: 0, points: 0,
-});
-
-/** Tel statistieken op uit een set wedstrijden, alleen voor de meegegeven team-ids. */
-const computeStats = (matches: MatchRow[], teamIds: Set<number>): Map<number, TeamStats> => {
-  const stats = new Map<number, TeamStats>();
-  teamIds.forEach(id => stats.set(id, emptyStats()));
-
-  matches
-    .filter(m =>
-      m.is_submitted &&
-      m.home_score !== null && m.away_score !== null &&
-      m.home_team_id !== null && m.away_team_id !== null &&
-      teamIds.has(m.home_team_id) && teamIds.has(m.away_team_id)
-    )
-    .forEach(m => {
-      const home = stats.get(m.home_team_id!)!;
-      const away = stats.get(m.away_team_id!)!;
-      const hs = m.home_score as number;
-      const as = m.away_score as number;
-
-      home.played++; away.played++;
-      home.goalsScored += hs; home.goalsAgainst += as;
-      away.goalsScored += as; away.goalsAgainst += hs;
-
-      if (hs > as) { home.wins++; home.points += 3; away.losses++; }
-      else if (hs < as) { away.wins++; away.points += 3; home.losses++; }
-      else { home.draws++; away.draws++; home.points++; away.points++; }
-    });
-
-  return stats;
-};
-
-/**
- * Sorteer teams volgens officieel reglement.
- * Bij gelijke punten:
- *   1. aantal gewonnen wedstrijden
- *   2. punten in onderlinge wedstrijden (mini-stand binnen tied groep)
- *   3. doelsaldo in onderlinge wedstrijden
- *   4. algemeen doelsaldo
- *   5. totaal gemaakte doelpunten
- *   6. fallback alfabetisch (testmatch/loting blijft handmatig)
- */
-interface SortableTeam {
-  team_id: number;
-  team_name: string;
-  points: number;
-  wins: number;
-  goal_diff: number;
-  goals_scored: number;
-}
-
-const sortWithTiebreakers = <T extends SortableTeam>(
-  teams: T[],
-  allMatchesForHeadToHead: MatchRow[],
-): T[] => {
-  // Groepeer op punten → wins
-  const sorted = [...teams].sort((a, b) =>
-    b.points - a.points || b.wins - a.wins
-  );
-
-  // Identificeer groepen met gelijke (points, wins) en breek met head-to-head + rest
-  const result: T[] = [];
-  let i = 0;
-  while (i < sorted.length) {
-    let j = i;
-    while (
-      j + 1 < sorted.length &&
-      sorted[j + 1].points === sorted[i].points &&
-      sorted[j + 1].wins === sorted[i].wins
-    ) {
-      j++;
-    }
-    if (j === i) {
-      result.push(sorted[i]);
-    } else {
-      const group = sorted.slice(i, j + 1);
-      const groupIds = new Set(group.map(t => t.team_id));
-      const h2h = computeStats(allMatchesForHeadToHead, groupIds);
-
-      const broken = group.sort((a, b) => {
-        const ah = h2h.get(a.team_id)!;
-        const bh = h2h.get(b.team_id)!;
-        const ahDiff = ah.goalsScored - ah.goalsAgainst;
-        const bhDiff = bh.goalsScored - bh.goalsAgainst;
-        return (
-          bh.points - ah.points ||
-          bhDiff - ahDiff ||
-          b.goal_diff - a.goal_diff ||
-          b.goals_scored - a.goals_scored ||
-          a.team_name.localeCompare(b.team_name)
-        );
-      });
-      result.push(...broken);
-    }
-    i = j + 1;
-  }
-  return result;
-};
-
-const fetchRegularMatches = async (): Promise<MatchRow[]> => {
-  const { data, error } = await supabase
-    .from('matches')
-    .select('home_team_id, away_team_id, home_score, away_score, is_submitted, match_date')
-    .eq('is_cup_match', false)
-    .eq('is_playoff_match', false);
-  if (error) throw error;
-  return ((data || []) as MatchRow[]).map(m => ({ ...m, is_playoff: false }));
-};
 
 const fetchPlayoffMatches = async (): Promise<any[]> => {
   const { data, error } = await supabase
@@ -212,17 +89,6 @@ const fetchPlayoffMatches = async (): Promise<any[]> => {
   return data || [];
 };
 
-const fetchTeams = async (): Promise<Map<number, string>> => {
-  const { data, error } = await supabase
-    .from('teams')
-    .select('team_id, team_name');
-
-  if (error) throw error;
-  const map = new Map<number, string>();
-  (data || []).forEach(t => map.set(t.team_id, t.team_name));
-  return map;
-};
-
 export const fetchPublicPlayoffData = async () => {
   const [regularMatches, playoffMatchesRaw, teamMap] = await Promise.all([
     fetchRegularMatches(),
@@ -233,18 +99,17 @@ export const fetchPublicPlayoffData = async () => {
   const allTeamIds = new Set(teamMap.keys());
 
   const regularStats = computeStats(regularMatches, allTeamIds);
-  const regularSortable: (SortableTeam & { team_name: string })[] =
-    Array.from(allTeamIds).map(id => {
-      const s = regularStats.get(id)!;
-      return {
-        team_id: id,
-        team_name: teamMap.get(id) || 'Onbekend',
-        points: s.points,
-        wins: s.wins,
-        goal_diff: s.goalsScored - s.goalsAgainst,
-        goals_scored: s.goalsScored,
-      };
-    });
+  const regularSortable: SortableTeam[] = Array.from(allTeamIds).map((id) => {
+    const s = regularStats.get(id)!;
+    return {
+      team_id: id,
+      team_name: teamMap.get(id) || 'Onbekend',
+      points: s.points,
+      wins: s.wins,
+      goal_diff: s.goalsScored - s.goalsAgainst,
+      goals_scored: s.goalsScored,
+    };
+  });
   const regularSorted = sortWithTiebreakers(regularSortable, regularMatches);
   const regularStandings = regularSorted.map((t, idx) => ({
     team_id: t.team_id,
@@ -262,7 +127,7 @@ export const fetchPublicPlayoffData = async () => {
   );
 
   const combinedStats = new Map<number, TeamStats>();
-  allTeamIds.forEach(id => {
+  allTeamIds.forEach((id) => {
     const r = regularStats.get(id)!;
     const p = playoffStats.get(id)!;
     combinedStats.set(id, {
@@ -285,7 +150,7 @@ export const fetchPublicPlayoffData = async () => {
     regularTeams: typeof regularStandings,
     type: 'top' | 'bottom',
   ): PlayoffTeam[] => {
-    const teams: PlayoffTeam[] = regularTeams.map(team => {
+    const teams: PlayoffTeam[] = regularTeams.map((team) => {
       const p = playoffStats.get(team.team_id)!;
       const c = combinedStats.get(team.team_id)!;
       return {
@@ -309,7 +174,7 @@ export const fetchPublicPlayoffData = async () => {
       };
     });
 
-    const sortable: SortableTeam[] = teams.map(t => ({
+    const sortable: SortableTeam[] = teams.map((t) => ({
       team_id: t.team_id,
       team_name: t.team_name,
       points: t.total_points,
@@ -320,7 +185,7 @@ export const fetchPublicPlayoffData = async () => {
     const sorted = sortWithTiebreakers(sortable, allMatchesForH2H);
     const orderMap = new Map(sorted.map((t, i) => [t.team_id, i]));
     return teams.sort(
-      (a, b) => (orderMap.get(a.team_id)! - orderMap.get(b.team_id)!),
+      (a, b) => orderMap.get(a.team_id)! - orderMap.get(b.team_id)!,
     );
   };
 
@@ -337,9 +202,9 @@ export const fetchPublicPlayoffData = async () => {
     return 'Onbekend';
   };
 
-  const isFinalized = playoffMatchesRaw.some(m => m.is_playoff_finalized === true);
+  const isFinalized = playoffMatchesRaw.some((m) => m.is_playoff_finalized === true);
 
-  const playoffMatches: PlayoffMatchData[] = playoffMatchesRaw.map(match => {
+  const playoffMatches: PlayoffMatchData[] = playoffMatchesRaw.map((match) => {
     const matchDate = new Date(match.match_date);
     const time = `${String(matchDate.getUTCHours()).padStart(2, '0')}:${String(matchDate.getUTCMinutes()).padStart(2, '0')}`;
 
@@ -364,16 +229,19 @@ export const fetchPublicPlayoffData = async () => {
   });
 
   const now = new Date();
-  const upcomingMatches = playoffMatches.filter(m => !m.is_completed && new Date(m.match_date) >= now);
-  const pastMatches = playoffMatches.filter(m => m.is_completed);
+  const upcomingMatches = playoffMatches.filter((m) => !m.is_completed && new Date(m.match_date) >= now);
+  const pastMatches = playoffMatches.filter((m) => m.is_completed);
 
   const headToHeadMatches: HeadToHeadMatch[] = allMatchesForH2H
-    .filter(m =>
-      m.is_submitted &&
-      m.home_team_id !== null && m.away_team_id !== null &&
-      m.home_score !== null && m.away_score !== null
+    .filter(
+      (m) =>
+        m.is_submitted &&
+        m.home_team_id !== null &&
+        m.away_team_id !== null &&
+        m.home_score !== null &&
+        m.away_score !== null,
     )
-    .map(m => ({
+    .map((m) => ({
       match_date: m.match_date ?? null,
       home_team_id: m.home_team_id as number,
       away_team_id: m.away_team_id as number,

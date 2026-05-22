@@ -1,4 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
+import {
+  applicationSettingInsert,
+  applicationSettingUpdate,
+} from '@/services/applicationSettingsUtils';
 
 export interface SeasonData {
   season_start_date: string;
@@ -21,7 +25,6 @@ export const seasonService = {
         .select('setting_value')
         .eq('setting_category', 'season_data')
         .eq('setting_name', 'main_config')
-        .eq('is_active', true)
         .single();
 
       if (error || !data?.setting_value) {
@@ -91,19 +94,33 @@ export const seasonService = {
       console.log('💾 Saving season data:', data);
       // Store in localStorage for immediate persistence
       localStorage.setItem('seasonData', JSON.stringify(data));
-      // Save to database in application_settings table
-      const { error: upsertError } = await supabase
+
+      const { data: existing, error: fetchError } = await supabase
         .from('application_settings')
-        .upsert({
-          setting_category: 'season_data',
-          setting_name: 'main_config',
-          setting_value: data as any,
-          is_active: true
-        }, {
-          onConflict: 'setting_category,setting_name'
-        });
-      if (upsertError) {
-        throw upsertError;
+        .select('id')
+        .eq('setting_category', 'season_data')
+        .eq('setting_name', 'main_config')
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      if (existing?.id) {
+        const { error: updateError } = await supabase
+          .from('application_settings')
+          .update(applicationSettingUpdate({
+            setting_value: data as any,
+          }))
+          .eq('id', existing.id);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('application_settings')
+          .insert(applicationSettingInsert({
+            setting_category: 'season_data',
+            setting_name: 'main_config',
+            setting_value: data,
+          }));
+        if (insertError) throw insertError;
       }
       console.log('✅ Season data saved to database successfully');
       return {

@@ -2,6 +2,10 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  applicationSettingInsert,
+  applicationSettingUpdate,
+} from "@/services/applicationSettingsUtils";
 
 export type RoleKey = 'public' | 'player_manager' | 'referee' | 'admin';
 
@@ -56,7 +60,7 @@ export const useTabVisibilitySettings = () => {
     try {
       const { data, error } = await supabase
         .from('application_settings')
-        .select('id, setting_name, setting_value, is_active')
+        .select('id, setting_name, setting_value')
         .eq('setting_category', 'tab_visibility')
         .order('setting_name');
 
@@ -73,12 +77,7 @@ export const useTabVisibilitySettings = () => {
         const settingValue = item.setting_value as any;
         
         // Parse new visibility structure or fallback to legacy
-        const visibility: RoleVisibility = settingValue?.visibility || {
-          public: item.is_active ?? true,
-          player_manager: true,
-          referee: true,
-          admin: true,
-        };
+        const visibility: RoleVisibility = settingValue?.visibility || DEFAULT_VISIBILITY;
         
         // Debug logging for tab visibility settings (only in development)
         // Removed verbose logging for production performance
@@ -86,7 +85,7 @@ export const useTabVisibilitySettings = () => {
         return {
           id: item.id,
           setting_name: item.setting_name,
-          is_visible: item.is_active ?? true,
+          is_visible: Object.values(visibility).some(v => v),
           requires_login: settingValue?.requires_login ?? false,
           visibility,
         };
@@ -153,22 +152,17 @@ export const useTabVisibilitySettings = () => {
       };
       
       // Create the setting in database
-      const nowIso = new Date().toISOString();
       const { data: newSetting, error: createError } = await supabase
         .from('application_settings')
-        .insert({
+        .insert(applicationSettingInsert({
           setting_category: 'tab_visibility',
           setting_name: settingName,
           setting_value: {
             visibility: defaultVisibility,
             requires_login: true,
-            updated_at: nowIso,
-          } as any,
-          is_active: false,
-          created_at: nowIso,
-          updated_at: nowIso,
-        })
-        .select('id, setting_name, setting_value, is_active')
+          },
+        }))
+        .select('id, setting_name, setting_value')
         .single();
       
       if (createError || !newSetting) {
@@ -181,7 +175,7 @@ export const useTabVisibilitySettings = () => {
       originalSetting = {
         id: newSetting.id,
         setting_name: newSetting.setting_name,
-        is_visible: newSetting.is_active ?? false,
+        is_visible: Object.values(settingValue?.visibility || defaultVisibility).some(v => v),
         requires_login: settingValue?.requires_login ?? true,
         visibility: settingValue?.visibility || defaultVisibility,
       };
@@ -196,17 +190,13 @@ export const useTabVisibilitySettings = () => {
         [role]: isVisible,
       };
 
-      const nowIso = new Date().toISOString();
       const newSettingValue = {
         visibility: newVisibility,
         requires_login: originalSetting.requires_login,
-        updated_at: nowIso,
       };
 
-      // Also update is_active based on whether any role can see it
       const anyVisible = Object.values(newVisibility).some(v => v);
 
-      // Optimistic update immediately for responsive UI
       setSettings(prev =>
         prev.map(setting =>
           setting.setting_name === settingName
@@ -216,14 +206,11 @@ export const useTabVisibilitySettings = () => {
       );
 
       // Update the setting in database
-      // If updating 'teams-admin', also ensure 'teams' exists with the same values
       const { error } = await supabase
         .from('application_settings')
-        .update({
-          setting_value: newSettingValue as any,
-          is_active: anyVisible,
-          updated_at: nowIso,
-        })
+        .update(applicationSettingUpdate({
+          setting_value: newSettingValue,
+        }))
         .eq('setting_category', 'tab_visibility')
         .eq('setting_name', settingName);
       
@@ -238,26 +225,19 @@ export const useTabVisibilitySettings = () => {
           .single();
         
         if (!existingTeams) {
-          // Create 'teams' setting with same values
           await supabase
             .from('application_settings')
-            .insert({
+            .insert(applicationSettingInsert({
               setting_category: 'tab_visibility',
               setting_name: 'teams',
-              setting_value: newSettingValue as any,
-              is_active: anyVisible,
-              created_at: nowIso,
-              updated_at: nowIso,
-            });
+              setting_value: newSettingValue,
+            }));
         } else {
-          // Update existing 'teams' setting
           await supabase
             .from('application_settings')
-            .update({
-              setting_value: newSettingValue as any,
-              is_active: anyVisible,
-              updated_at: nowIso,
-            })
+            .update(applicationSettingUpdate({
+              setting_value: newSettingValue,
+            }))
             .eq('setting_category', 'tab_visibility')
             .eq('setting_name', 'teams');
         }
@@ -291,7 +271,7 @@ export const useTabVisibilitySettings = () => {
         
         const { data: verifyData, error: verifyError } = await supabase
           .from('application_settings')
-          .select('id, setting_name, setting_value, is_active')
+          .select('id, setting_name, setting_value')
           .eq('setting_category', 'tab_visibility')
           .eq('setting_name', settingName)
           .single();
@@ -306,12 +286,8 @@ export const useTabVisibilitySettings = () => {
         } else if (verifyData) {
           // Update state with verified data from database
           const verifiedSettingValue = verifyData.setting_value as any;
-          const verifiedVisibility: RoleVisibility = verifiedSettingValue?.visibility || {
-            public: verifyData.is_active ?? true,
-            player_manager: true,
-            referee: true,
-            admin: true,
-          };
+          const verifiedVisibility: RoleVisibility = verifiedSettingValue?.visibility || DEFAULT_VISIBILITY;
+          const verifiedVisible = Object.values(verifiedVisibility).some(v => v);
 
           // Verify that the role visibility matches what we tried to set
           const expectedVisibility = isVisible;
@@ -324,7 +300,7 @@ export const useTabVisibilitySettings = () => {
                   ? {
                       ...setting,
                       visibility: verifiedVisibility,
-                      is_visible: verifyData.is_active ?? true,
+                      is_visible: verifiedVisible,
                       requires_login: verifiedSettingValue?.requires_login ?? false,
                     }
                   : setting
@@ -336,7 +312,6 @@ export const useTabVisibilitySettings = () => {
               expectedVisibility,
               actualVisibility,
               visibility: verifiedVisibility,
-              is_active: verifyData.is_active,
             });
             verified = true;
           } else {
@@ -395,19 +370,21 @@ export const useTabVisibilitySettings = () => {
       const currentSetting = settings.find(s => s.setting_name === settingName);
       if (!currentSetting) throw new Error('Setting not found');
 
-      const nowIso = new Date().toISOString();
-      const updatePayload: any = { updated_at: nowIso };
-      
+      const updatePayload = applicationSettingUpdate({});
+
       if (typeof updates.is_visible === 'boolean') {
-        updatePayload.is_active = updates.is_visible;
-      }
-      
-      if (typeof updates.requires_login === 'boolean') {
-        updatePayload.setting_value = { 
+        updatePayload.setting_value = {
+          visibility: {
+            ...currentSetting.visibility,
+            public: updates.is_visible,
+          },
+          requires_login: currentSetting.requires_login,
+        };
+      } else if (typeof updates.requires_login === 'boolean') {
+        updatePayload.setting_value = {
           visibility: currentSetting.visibility,
-          requires_login: updates.requires_login, 
-          updated_at: nowIso 
-        } as any;
+          requires_login: updates.requires_login,
+        };
       }
 
       const { error } = await supabase

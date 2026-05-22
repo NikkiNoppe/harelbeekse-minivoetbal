@@ -47,8 +47,7 @@ interface FormData {
   target_users: number[];
   start_date: string;
   end_date: string;
-  is_active: boolean;
-  [key: string]: any; // Allow extra fields for backwards compat
+  [key: string]: any;
 }
 
 interface NotificationFormModalProps {
@@ -82,7 +81,6 @@ const DEFAULT_FORM_DATA: FormData = {
   target_users: [],
   start_date: new Date().toISOString().split('T')[0],
   end_date: '',
-  is_active: true,
 };
 
 export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
@@ -437,20 +435,6 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                   />
                 </div>
               </div>
-            </div>
-
-            {/* Active Toggle */}
-            <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--color-300)] bg-[var(--color-50)]">
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
-                />
-                <Label className="cursor-pointer font-medium text-[var(--color-600)]">Actief</Label>
-              </div>
-              <span className="text-xs text-[var(--color-500)]">
-                {formData.is_active ? 'Bericht is zichtbaar' : 'Bericht is verborgen'}
-              </span>
             </div>
 
             {/* Live Preview */}

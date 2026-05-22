@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeColors, DEFAULT_THEME, DEFAULT_SEMANTIC, applyThemeToCSS } from "@/lib/colorUtils";
+import { applicationSettingInsert, applicationSettingUpdate } from "@/services/applicationSettingsUtils";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,7 +13,6 @@ async function fetchThemeColors(): Promise<ThemeColors> {
     .select("setting_value")
     .eq("setting_category", "theme_colors")
     .eq("setting_name", "global_theme")
-    .eq("is_active", true)
     .maybeSingle();
 
   if (error || !data) return DEFAULT_THEME;
@@ -71,21 +71,19 @@ export function useThemeColorsAdmin() {
       if (existing) {
         const { error } = await supabase
           .from("application_settings")
-          .update({
+          .update(applicationSettingUpdate({
             setting_value: JSON.parse(JSON.stringify(newTheme)),
-            updated_at: new Date().toISOString(),
-          })
+          }))
           .eq("id", existing.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("application_settings")
-          .insert([{
+          .insert([applicationSettingInsert({
             setting_category: "theme_colors",
             setting_name: "global_theme",
             setting_value: JSON.parse(JSON.stringify(newTheme)),
-            is_active: true,
-          }]);
+          })]);
         if (error) throw error;
       }
     },

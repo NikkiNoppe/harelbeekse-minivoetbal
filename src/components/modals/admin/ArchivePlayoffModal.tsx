@@ -7,7 +7,7 @@ import { archiveService, deriveSeasonLabel, ArchivedPlayoff } from '@/services/a
 import { useArchives, useArchivePlayoff } from '@/hooks/useArchives';
 import { seasonService } from '@/services/seasonService';
 import { useToast } from '@/hooks/use-toast';
-import { AlertCircle, Loader2, Target, Trophy } from 'lucide-react';
+import { AlertCircle, Loader2, Target } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -107,7 +107,7 @@ const ArchivePlayoffModal: React.FC<Props> = ({ open, onOpenChange }) => {
       open={open}
       onOpenChange={onOpenChange}
       title="Playoffs archiveren"
-      subtitle="Bewaar de playoff-indeling en eindstand permanent in het archief."
+      subtitle="Bewaar de playoff-eindstand permanent in het archief."
       size="lg"
       showCloseButton
       primaryAction={{
@@ -151,26 +151,9 @@ const ArchivePlayoffModal: React.FC<Props> = ({ open, onOpenChange }) => {
           ) : !hasData ? (
             <p className="text-sm text-muted-foreground">Geen playoffgegevens beschikbaar.</p>
           ) : (
-            <div className="space-y-4">
-              {playoff?.final && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3">
-                  <div className="flex items-center gap-2 text-amber-800 mb-1">
-                    <Trophy className="w-4 h-4" />
-                    <span className="text-xs font-semibold uppercase tracking-wider">Finale</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium truncate">{playoff.final.home_team}</span>
-                    <span className="font-bold mx-3 tabular-nums">
-                      {playoff.final.home_score ?? '-'} – {playoff.final.away_score ?? '-'}
-                    </span>
-                    <span className="font-medium truncate text-right">{playoff.final.away_team}</span>
-                  </div>
-                </div>
-              )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <RankPreview title="Play-Off 1" variant="top" rows={playoff?.top_ranking ?? []} />
-                <RankPreview title="Play-Off 2" variant="bottom" rows={playoff?.bottom_ranking ?? []} />
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <RankPreview title="Play-Off 1" variant="top" rows={playoff?.top_ranking ?? []} />
+              <RankPreview title="Play-Off 2" variant="bottom" rows={playoff?.bottom_ranking ?? []} />
             </div>
           )}
         </div>

@@ -32,19 +32,17 @@ export const usePlayerListLockFallback = () => {
       // Also fetch the lock settings for display
       const { data: settings, error: settingsError } = await supabase
         .from('application_settings')
-        .select('setting_value, is_active')
+        .select('setting_value')
         .eq('setting_category', 'player_list_lock')
         .eq('setting_name', 'global_lock')
         .single();
 
       if (settingsError) {
         console.error('❌ Error fetching lock settings:', settingsError);
-        // Don't throw here, just log and continue
-      } else {
-        console.log('🔒 Lock settings:', settings);
-        if (settings?.is_active && settings?.setting_value) {
-          const settingValue = settings.setting_value as any;
-          setLockDate(settingValue?.lock_from_date);
+      } else if (settings?.setting_value) {
+        const settingValue = settings.setting_value as { lock_from_date?: string; lock_enabled?: boolean };
+        if (settingValue.lock_enabled !== false) {
+          setLockDate(settingValue.lock_from_date ?? null);
         }
       }
     } catch (error) {

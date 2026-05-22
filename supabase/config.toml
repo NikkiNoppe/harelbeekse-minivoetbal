@@ -1,4 +1,5 @@
 project_id = "kuyviionmstyvkvglizh"
+
 [functions.send-transactional-email]
 verify_jwt = true
 
@@ -9,4 +10,37 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.handle-email-suppression]
+verify_jwt = false
+
+[functions.send-password-reset]
+verify_jwt = false
+
+[functions.send-welcome-email]
+verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = false
+
+[functions.generate-competition-schedule]
+verify_jwt = false
+
+[functions.update-season-data]
+verify_jwt = false
+
+[functions.sync-card-penalties]
+verify_jwt = false
+
+[functions.generate-monthly-polls]
+verify_jwt = false
+
+[functions.sync-match-costs]
+verify_jwt = false
+
+[functions.sync-all-match-costs]
+verify_jwt = false
+
+[functions.send-forfait-notification]
+verify_jwt = false
+
+[functions.notify-auto-suspension]
 verify_jwt = false

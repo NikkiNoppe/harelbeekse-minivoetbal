@@ -115,38 +115,26 @@ export type Database = {
       }
       application_settings: {
         Row: {
-          created_at: string | null
-          created_by: number | null
           id: number
-          is_active: boolean
           setting_category: string
           setting_name: string
           setting_value: Json
-          updated_at: string | null
         }
         Insert: {
-          created_at?: string | null
-          created_by?: number | null
           id?: number
-          is_active?: boolean
           setting_category: string
           setting_name: string
           setting_value?: Json
-          updated_at?: string | null
         }
         Update: {
-          created_at?: string | null
-          created_by?: number | null
           id?: number
-          is_active?: boolean
           setting_category?: string
           setting_name?: string
           setting_value?: Json
-          updated_at?: string | null
         }
         Relationships: []
       }
-      competition_standings: {
+      _old_competition_standings: {
         Row: {
           draws: number | null
           goal_difference: number | null
@@ -185,7 +173,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "competition_standings_team_id_fkey"
+            foreignKeyName: "_old_competition_standings_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: true
             referencedRelation: "teams"
@@ -417,39 +405,6 @@ export type Database = {
         }
         Relationships: []
       }
-      season_archives: {
-        Row: {
-          archived_at: string
-          archived_by: number | null
-          competition_standings: Json | null
-          cup_winner: Json | null
-          id: string
-          playoff: Json | null
-          season_label: string
-          updated_at: string
-        }
-        Insert: {
-          archived_at?: string
-          archived_by?: number | null
-          competition_standings?: Json | null
-          cup_winner?: Json | null
-          id?: string
-          playoff?: Json | null
-          season_label: string
-          updated_at?: string
-        }
-        Update: {
-          archived_at?: string
-          archived_by?: number | null
-          competition_standings?: Json | null
-          cup_winner?: Json | null
-          id?: string
-          playoff?: Json | null
-          season_label?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       team_costs: {
         Row: {
           amount: number | null
@@ -651,30 +606,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      admin_upsert_season_competition: {
-        Args: {
-          p_admin_user_id: number
-          p_competition_standings: Json
-          p_season_label: string
-        }
-        Returns: undefined
-      }
-      admin_upsert_season_cup: {
-        Args: {
-          p_admin_user_id: number
-          p_cup_winner: Json
-          p_season_label: string
-        }
-        Returns: undefined
-      }
-      admin_upsert_season_playoff: {
-        Args: {
-          p_admin_user_id: number
-          p_playoff: Json
-          p_season_label: string
-        }
-        Returns: undefined
-      }
       apply_suspension_after_match: {
         Args: { match_id_param: number }
         Returns: undefined
@@ -869,6 +800,15 @@ export type Database = {
         }
         Returns: Json
       }
+      upsert_season_archive: {
+        Args: {
+          p_field: string
+          p_season_label: string
+          p_user_id: number
+          p_value: Json
+        }
+        Returns: Json
+      }
       manage_team_cost_for_match: {
         Args: {
           p_amount?: number
@@ -903,11 +843,6 @@ export type Database = {
       }
       set_current_user_context: {
         Args: { p_role: string; p_team_ids?: string; p_user_id: number }
-        Returns: undefined
-      }
-      update_competition_standings: { Args: never; Returns: undefined }
-      update_competition_standings_optimized: {
-        Args: never
         Returns: undefined
       }
       update_match_with_context: {

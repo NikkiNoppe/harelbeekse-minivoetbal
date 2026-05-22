@@ -1,5 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
 import { withUserContext } from '@/lib/supabaseUtils';
+import {
+  applicationSettingInsert,
+  applicationSettingUpdate,
+} from '@/services/applicationSettingsUtils';
 
 export interface NotificationData {
   id?: number;
@@ -14,9 +18,6 @@ export interface NotificationData {
     start_date?: string;
     end_date?: string;
   };
-  is_active: boolean;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface Notification {
@@ -32,18 +33,14 @@ export interface Notification {
     start_date?: string;
     end_date?: string;
   };
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
-// Transform raw data to Notification interface
 const transformNotificationData = (data: any[]): Notification[] => {
   return data.map(item => {
-    const settingValue = typeof item.setting_value === 'string' 
-      ? JSON.parse(item.setting_value) 
+    const settingValue = typeof item.setting_value === 'string'
+      ? JSON.parse(item.setting_value)
       : item.setting_value;
-      
+
     return {
       id: item.id,
       setting_category: item.setting_category,
@@ -57,15 +54,11 @@ const transformNotificationData = (data: any[]): Notification[] => {
         start_date: settingValue?.start_date,
         end_date: settingValue?.end_date,
       },
-      is_active: item.is_active,
-      created_at: item.created_at,
-      updated_at: item.updated_at
     };
   });
 };
 
 export const notificationService = {
-  // Get all notifications (admin messages)
   async getAllNotifications(): Promise<Notification[]> {
     try {
       const { data, error } = await withUserContext(async () => {
@@ -73,7 +66,7 @@ export const notificationService = {
           .from('application_settings')
           .select('*')
           .eq('setting_category', 'admin_messages')
-          .order('created_at', { ascending: false });
+          .order('id', { ascending: false });
       });
 
       if (error) throw error;
@@ -84,14 +77,13 @@ export const notificationService = {
     }
   },
 
-  // Create new notification
-  async createNotification(notificationData: Omit<NotificationData, 'id' | 'created_at' | 'updated_at'>): Promise<void> {
+  async createNotification(notificationData: Omit<NotificationData, 'id'>): Promise<void> {
     try {
-      const data = {
-        ...notificationData,
+      const data = applicationSettingInsert({
+        setting_category: notificationData.setting_category,
         setting_name: `message_${Date.now()}`,
-        updated_at: new Date().toISOString()
-      };
+        setting_value: notificationData.setting_value,
+      });
 
       const { error } = await withUserContext(async () => {
         return await supabase
@@ -106,13 +98,12 @@ export const notificationService = {
     }
   },
 
-  // Update existing notification
   async updateNotification(id: number, notificationData: Partial<NotificationData>): Promise<void> {
     try {
-      const data = {
-        ...notificationData,
-        updated_at: new Date().toISOString()
-      };
+      const { setting_value } = notificationData;
+      const data = applicationSettingUpdate({
+        ...(setting_value !== undefined ? { setting_value } : {}),
+      });
 
       const { error } = await withUserContext(async () => {
         return await supabase
@@ -128,7 +119,6 @@ export const notificationService = {
     }
   },
 
-  // Delete notification
   async deleteNotification(id: number): Promise<void> {
     try {
       const { error } = await withUserContext(async () => {
@@ -145,47 +135,17 @@ export const notificationService = {
     }
   },
 
-  // Toggle notification active status
+  /** @deprecated Use deleteNotification — rows are visible while they exist. */
   async toggleNotificationStatus(id: number, isActive: boolean): Promise<void> {
-    try {
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .update({ 
-            is_active: isActive,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', id);
-      });
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error toggling notification status:', error);
-      throw new Error('Kon status niet wijzigen');
+    if (!isActive) {
+      await this.deleteNotification(id);
     }
   },
 
-  // Get active notifications for display
   async getActiveNotifications(): Promise<Notification[]> {
-    try {
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .select('*')
-          .eq('setting_category', 'admin_messages')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
-      });
-
-      if (error) throw error;
-      return transformNotificationData(data || []);
-    } catch (error) {
-      console.error('Error loading active notifications:', error);
-      throw new Error('Kon actieve berichten niet laden');
-    }
+    return this.getAllNotifications();
   },
 
-  // Get all users for targeting (admin only)
   async getAllUsers(): Promise<Array<{ user_id: number; username: string; role: string }>> {
     try {
       const { data, error } = await withUserContext(async () => {
@@ -203,7 +163,6 @@ export const notificationService = {
     }
   },
 
-  // Get all teams for targeting (admin only)
   async getAllTeams(): Promise<Array<{ team_id: number; team_name: string }>> {
     try {
       const { data, error } = await withUserContext(async () => {
@@ -219,5 +178,5 @@ export const notificationService = {
       console.error('Error loading teams:', error);
       return [];
     }
-  }
+  },
 };

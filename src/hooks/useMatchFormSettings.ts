@@ -21,7 +21,6 @@ async function fetchMatchFormSettings(): Promise<MatchFormSettings> {
     .select("setting_value")
     .eq("setting_category", "match_form_settings")
     .eq("setting_name", "lock_rules")
-    .eq("is_active", true)
     .single();
 
   if (error || !data) {

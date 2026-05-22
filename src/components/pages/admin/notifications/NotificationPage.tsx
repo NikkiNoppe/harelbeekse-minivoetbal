@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { notificationService, type Notification } from '@/services/notificationService';
 import { Plus, Edit, Trash2, Users, UserCheck, Loader2, MessageSquare } from 'lucide-react';
@@ -32,7 +31,6 @@ interface FormData {
   target_users: number[];
   start_date: string;
   end_date: string;
-  is_active: boolean;
 }
 
 const DEFAULT_FORM_DATA: FormData = {
@@ -43,7 +41,6 @@ const DEFAULT_FORM_DATA: FormData = {
   target_users: [],
   start_date: new Date().toISOString().split('T')[0],
   end_date: '',
-  is_active: true,
 };
 
 const NotificationPage: React.FC = () => {
@@ -106,7 +103,6 @@ const NotificationPage: React.FC = () => {
           start_date: formData.start_date || null,
           end_date: formData.end_date || null,
         },
-        is_active: formData.is_active
       };
 
       if (editingNotification) {
@@ -149,7 +145,6 @@ const NotificationPage: React.FC = () => {
       target_users: sv.target_users || [],
       start_date: sv.start_date || '',
       end_date: sv.end_date || '',
-      is_active: notification.is_active,
     });
     setIsDialogOpen(true);
   }, []);
@@ -170,24 +165,6 @@ const NotificationPage: React.FC = () => {
     } finally {
       setIsDeleting(false);
       setDeleteConfirmId(null);
-    }
-  }, [toast, loadData]);
-
-  const toggleActive = useCallback(async (notification: Notification) => {
-    try {
-      await notificationService.toggleNotificationStatus(notification.id, !notification.is_active);
-      toast({
-        title: 'Succes',
-        description: `Bericht ${!notification.is_active ? 'geactiveerd' : 'gedeactiveerd'}`
-      });
-      await loadData();
-    } catch (error) {
-      console.error('Error toggling notification status:', error);
-      toast({
-        title: 'Error',
-        description: 'Kon status niet wijzigen',
-        variant: 'destructive'
-      });
     }
   }, [toast, loadData]);
 
@@ -317,19 +294,8 @@ const NotificationPage: React.FC = () => {
                         </div>
 
                         <p className="text-xs text-[var(--color-500)]">{formatDateRange(notification)}</p>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={notification.is_active}
-                              onCheckedChange={() => toggleActive(notification)}
-                              className="scale-75"
-                            />
-                            <span className="text-xs text-[var(--color-500)]">
-                              {notification.is_active ? 'Actief' : 'Inactief'}
-                            </span>
-                          </div>
-                          <div className="flex gap-1">
+
+                        <div className="flex items-center justify-end gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -346,7 +312,6 @@ const NotificationPage: React.FC = () => {
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                          </div>
                         </div>
                       </div>
                     </Card>
@@ -363,7 +328,6 @@ const NotificationPage: React.FC = () => {
                       <TableHead>Type</TableHead>
                       <TableHead>Doelgroep</TableHead>
                       <TableHead>Periode</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead className="text-center">Acties</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -401,18 +365,6 @@ const NotificationPage: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <span className="text-xs text-[var(--color-500)]">{formatDateRange(notification)}</span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Switch
-                                checked={notification.is_active}
-                                onCheckedChange={() => toggleActive(notification)}
-                                className="scale-75"
-                              />
-                              <span className="text-xs text-[var(--color-500)]">
-                                {notification.is_active ? 'Actief' : 'Inactief'}
-                              </span>
-                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex justify-center gap-1">

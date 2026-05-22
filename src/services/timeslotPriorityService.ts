@@ -30,7 +30,6 @@ export const timeslotPriorityService = {
         .select('setting_value')
         .eq('setting_category', 'season_data')
         .eq('setting_name', 'main_config')
-        .eq('is_active', true)
         .single();
 
       if (!data?.setting_value) return [];
@@ -68,7 +67,6 @@ export const timeslotPriorityService = {
         .select('setting_value')
         .eq('setting_category', 'season_data')
         .eq('setting_name', 'main_config')
-        .eq('is_active', true)
         .single();
 
       if (!data?.setting_value) return [];

@@ -8,6 +8,10 @@ import { FileText, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  applicationSettingInsert,
+  applicationSettingUpdate,
+} from "@/services/applicationSettingsUtils";
 
 interface FormSettings {
   id: number | null;
@@ -40,7 +44,7 @@ const MatchFormSettings: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from("application_settings")
-        .select("id, setting_value, is_active")
+        .select("id, setting_value")
         .eq("setting_category", "match_form_settings")
         .eq("setting_name", "lock_rules")
         .single();
@@ -60,7 +64,7 @@ const MatchFormSettings: React.FC = () => {
         // Create default row
         const { data: newData, error: insertError } = await supabase
           .from("application_settings")
-          .insert({
+          .insert(applicationSettingInsert({
             setting_category: "match_form_settings",
             setting_name: "lock_rules",
             setting_value: {
@@ -69,8 +73,7 @@ const MatchFormSettings: React.FC = () => {
               late_penalty_amount: 5.0,
               late_penalty_note: DEFAULT.late_penalty_note,
             },
-            is_active: true,
-          })
+          }))
           .select()
           .single();
 
@@ -102,10 +105,7 @@ const MatchFormSettings: React.FC = () => {
 
       const { error } = await supabase
         .from("application_settings")
-        .update({
-          setting_value: settingValue,
-          updated_at: new Date().toISOString(),
-        })
+        .update(applicationSettingUpdate({ setting_value: settingValue }))
         .eq("id", settings.id);
 
       if (error) throw error;
