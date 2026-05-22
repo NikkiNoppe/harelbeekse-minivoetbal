@@ -1,5 +1,30 @@
 import { supabase } from '@/integrations/supabase/client';
 
+function getAdminUserId(): number {
+  const authDataString = localStorage.getItem('auth_data');
+  if (authDataString) {
+    try {
+      const authData = JSON.parse(authDataString);
+      if (authData?.user?.isSuperAdmin) return -1;
+      if (authData?.user?.id != null) return authData.user.id;
+    } catch {
+      // ignore
+    }
+  }
+
+  const legacyUserString = localStorage.getItem('user');
+  if (legacyUserString) {
+    try {
+      const user = JSON.parse(legacyUserString);
+      if (user?.id != null) return user.id;
+    } catch {
+      // ignore
+    }
+  }
+
+  throw new Error('Gebruiker niet gevonden');
+}
+
 export interface ArchivedStanding {
   position: number;
   team_name: string;
@@ -21,11 +46,33 @@ export interface ArchivedCupWinner {
   match_date: string | null;
 }
 
+export interface ArchivedPlayoffRanking {
+  position: number;
+  team_name: string;
+  total_points?: number;
+}
+
+export interface ArchivedPlayoffFinal {
+  home_team: string;
+  away_team: string;
+  home_score: number | null;
+  away_score: number | null;
+  match_date?: string | null;
+}
+
+export interface ArchivedPlayoff {
+  top_ranking: ArchivedPlayoffRanking[];
+  bottom_ranking: ArchivedPlayoffRanking[];
+  final?: ArchivedPlayoffFinal | null;
+  notes?: string;
+}
+
 export interface SeasonArchive {
   id: string;
   season_label: string;
   competition_standings: ArchivedStanding[] | null;
   cup_winner: ArchivedCupWinner | null;
+  playoff: ArchivedPlayoff | null;
   archived_at: string;
   updated_at: string;
 }
@@ -53,53 +100,29 @@ export const archiveService = {
   },
 
   async upsertCompetition(seasonLabel: string, standings: ArchivedStanding[]): Promise<void> {
-    // Read existing to preserve cup_winner if any
-    const { data: existing } = await supabase
-      .from('season_archives')
-      .select('cup_winner')
-      .eq('season_label', seasonLabel)
-      .maybeSingle();
-    const cupWinner = (existing as any)?.cup_winner ?? null;
-
-    const { error } = await supabase
-      .from('season_archives')
-      .upsert(
-        {
-          season_label: seasonLabel,
-          competition_standings: standings as any,
-          cup_winner: cupWinner,
-        },
-        { onConflict: 'season_label' }
-      );
+    const { error } = await supabase.rpc('admin_upsert_season_competition', {
+      p_admin_user_id: getAdminUserId(),
+      p_season_label: seasonLabel,
+      p_competition_standings: standings,
+    });
     if (error) throw error;
   },
 
   async upsertCup(seasonLabel: string, cupWinner: ArchivedCupWinner): Promise<void> {
-    const { data: existing } = await supabase
-      .from('season_archives')
-      .select('competition_standings')
-      .eq('season_label', seasonLabel)
-      .maybeSingle();
-    const standings = (existing as any)?.competition_standings ?? null;
-
-    const { error } = await supabase
-      .from('season_archives')
-      .upsert(
-        {
-          season_label: seasonLabel,
-          competition_standings: standings,
-          cup_winner: cupWinner as any,
-        },
-        { onConflict: 'season_label' }
-      );
+    const { error } = await supabase.rpc('admin_upsert_season_cup', {
+      p_admin_user_id: getAdminUserId(),
+      p_season_label: seasonLabel,
+      p_cup_winner: cupWinner,
+    });
     if (error) throw error;
   },
 
-  async deleteArchive(seasonLabel: string): Promise<void> {
-    const { error } = await supabase
-      .from('season_archives')
-      .delete()
-      .eq('season_label', seasonLabel);
+  async upsertPlayoff(seasonLabel: string, playoff: ArchivedPlayoff): Promise<void> {
+    const { error } = await supabase.rpc('admin_upsert_season_playoff', {
+      p_admin_user_id: getAdminUserId(),
+      p_season_label: seasonLabel,
+      p_playoff: playoff,
+    });
     if (error) throw error;
   },
 
@@ -175,5 +198,47 @@ export const archiveService = {
       away_score: typeof runnerScore === 'number' ? runnerScore : null,
       match_date: (data as any).match_date ?? null,
     };
+  },
+
+  /** Snapshot playoff rankings using the same logic as the public /playoff page. */
+  async snapshotCurrentPlayoff(): Promise<ArchivedPlayoff> {
+    const { fetchPublicPlayoffData } = await import('@/hooks/usePublicPlayoffData');
+    const data = await fetchPublicPlayoffData();
+
+    const top_ranking = data.po1Teams.map((team, idx) => ({
+      position: idx + 1,
+      team_name: team.team_name,
+      total_points: team.total_points,
+    }));
+
+    const bottom_ranking = data.po2Teams.map((team, idx) => ({
+      position: idx + 1,
+      team_name: team.team_name,
+      total_points: team.total_points,
+    }));
+
+    let final: ArchivedPlayoffFinal | null = null;
+    const leader = data.po1Teams[0];
+    const runnerUp = data.po1Teams[1];
+
+    if (leader && runnerUp) {
+      const headToHead = data.allMatches.find(
+        (m) =>
+          m.is_completed &&
+          m.playoff_type === 'top' &&
+          ((m.home_team_id === leader.team_id && m.away_team_id === runnerUp.team_id) ||
+            (m.home_team_id === runnerUp.team_id && m.away_team_id === leader.team_id)),
+      );
+
+      final = {
+        home_team: headToHead?.home_team_name ?? leader.team_name,
+        away_team: headToHead?.away_team_name ?? runnerUp.team_name,
+        home_score: headToHead?.home_score ?? null,
+        away_score: headToHead?.away_score ?? null,
+        match_date: headToHead?.match_date ?? null,
+      };
+    }
+
+    return { top_ranking, bottom_ranking, final };
   },
 };

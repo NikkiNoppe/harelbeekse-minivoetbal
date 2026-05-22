@@ -1,18 +1,18 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Target, Trophy } from 'lucide-react';
-import { PlayoffArchiveEntry } from '@/data/playoffArchive';
+import { Target } from 'lucide-react';
+import { ArchivedPlayoff } from '@/services/archiveService';
 import { cn } from '@/lib/utils';
 
 interface Props {
-  entry: PlayoffArchiveEntry | null;
+  entry: ArchivedPlayoff | null;
 }
 
 const RankList: React.FC<{
   title: string;
   variant: 'top' | 'bottom';
-  rows: PlayoffArchiveEntry['top_ranking'];
+  rows: ArchivedPlayoff['top_ranking'];
 }> = ({ title, variant, rows }) => {
   if (!rows || rows.length === 0) return null;
   const accent =
@@ -73,21 +73,6 @@ const PlayoffArchiveCard: React.FC<Props> = ({ entry }) => {
           </div>
         ) : (
           <>
-            {entry.final && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3">
-                <div className="flex items-center gap-2 text-amber-800 mb-1">
-                  <Trophy className="w-4 h-4" />
-                  <span className="text-xs font-semibold uppercase tracking-wider">Finale</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium truncate">{entry.final.home_team}</span>
-                  <span className="font-bold mx-3 tabular-nums">
-                    {entry.final.home_score ?? '-'} – {entry.final.away_score ?? '-'}
-                  </span>
-                  <span className="font-medium truncate text-right">{entry.final.away_team}</span>
-                </div>
-              </div>
-            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <RankList title="Playoff 1" variant="top" rows={entry.top_ranking} />
               <RankList title="Playoff 2" variant="bottom" rows={entry.bottom_ranking} />

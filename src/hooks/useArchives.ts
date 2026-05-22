@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { archiveService, ArchivedStanding, ArchivedCupWinner } from '@/services/archiveService';
+import { archiveService, ArchivedStanding, ArchivedCupWinner, ArchivedPlayoff } from '@/services/archiveService';
 
 export const ARCHIVES_KEY = ['season-archives'] as const;
 
@@ -28,10 +28,11 @@ export const useArchiveCup = () => {
   });
 };
 
-export const useDeleteArchive = () => {
+export const useArchivePlayoff = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (label: string) => archiveService.deleteArchive(label),
+    mutationFn: ({ label, playoff }: { label: string; playoff: ArchivedPlayoff }) =>
+      archiveService.upsertPlayoff(label, playoff),
     onSuccess: () => qc.invalidateQueries({ queryKey: ARCHIVES_KEY }),
   });
 };

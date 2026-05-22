@@ -4,6 +4,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 declare const Deno: { env: { get(key: string): string | undefined } };
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
+const FROM_ADDRESS = "Harelbeekse Minivoetbal <info@harelbekeminivoetbal.be>";
+const REPLY_TO_ADDRESS = "info@harelbekeminivoetbal.be";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -98,7 +100,8 @@ const handler = async (req: Request): Promise<Response> => {
               "X-Connection-Api-Key": RESEND_API_KEY,
             },
             body: JSON.stringify({
-              from: "Harelbeekse Minivoetbal <info@harelbekeminivoetbal.be>",
+              from: FROM_ADDRESS,
+              reply_to: REPLY_TO_ADDRESS,
               to: [to],
               subject,
               html,

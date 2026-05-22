@@ -5,7 +5,6 @@ import StandingsArchiveCard from './StandingsArchiveCard';
 import CupWinnerCard from './CupWinnerCard';
 import PlayoffArchiveCard from './PlayoffArchiveCard';
 import { Archive, Loader2 } from 'lucide-react';
-import { PLAYOFF_ARCHIVE, getPlayoffArchiveFor } from '@/data/playoffArchive';
 
 const ArchiefPage: React.FC = () => {
   const { data: archives, isLoading } = useArchives();
@@ -14,7 +13,6 @@ const ArchiefPage: React.FC = () => {
   const seasons = useMemo(() => {
     const set = new Set<string>();
     (archives || []).forEach((a) => set.add(a.season_label));
-    PLAYOFF_ARCHIVE.forEach((p) => set.add(p.season_label));
     return Array.from(set).sort((a, b) => b.localeCompare(a));
   }, [archives]);
 
@@ -26,7 +24,6 @@ const ArchiefPage: React.FC = () => {
     () => (archives || []).find((a) => a.season_label === selected) || null,
     [archives, selected]
   );
-  const activePlayoff = useMemo(() => getPlayoffArchiveFor(selected), [selected]);
 
   if (isLoading) {
     return (
@@ -67,7 +64,7 @@ const ArchiefPage: React.FC = () => {
             </div>
             <div className="lg:col-span-2 space-y-6">
               <StandingsArchiveCard standings={active?.competition_standings ?? []} />
-              <PlayoffArchiveCard entry={activePlayoff} />
+              <PlayoffArchiveCard entry={active?.playoff ?? null} />
             </div>
           </div>
         </>

@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AppAlertModal } from "@/components/modals";
 import { Loader2, Trophy, AlertCircle, Trash2, Calendar, CheckCircle, Clock, Undo2, ChevronDown, ChevronRight, Settings, MapPin, Palmtree, Archive } from "lucide-react";
-import PlayoffArchiveSnapshotModal from "@/components/modals/admin/PlayoffArchiveSnapshotModal";
+import ArchivePlayoffModal from "@/components/modals/admin/ArchivePlayoffModal";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { competitionService, CompetitionMatch } from "@/services/match/competitionService";
@@ -752,12 +752,9 @@ const AdminPlayoffPage: React.FC = () => {
         <WorkflowStepper status={playoffStatus} />
       </div>
 
-      <PlayoffArchiveSnapshotModal
+      <ArchivePlayoffModal
         open={showArchiveModal}
         onOpenChange={setShowArchiveModal}
-        standings={standings}
-        topTeamCount={topTeamCount}
-        bottomTeamCount={bottomTeamCount}
       />
 
       <section className="space-y-4 sm:space-y-6">

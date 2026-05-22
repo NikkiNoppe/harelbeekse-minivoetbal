@@ -223,191 +223,183 @@ const fetchTeams = async (): Promise<Map<number, string>> => {
   return map;
 };
 
+export const fetchPublicPlayoffData = async () => {
+  const [regularMatches, playoffMatchesRaw, teamMap] = await Promise.all([
+    fetchRegularMatches(),
+    fetchPlayoffMatches(),
+    fetchTeams(),
+  ]);
+
+  const allTeamIds = new Set(teamMap.keys());
+
+  const regularStats = computeStats(regularMatches, allTeamIds);
+  const regularSortable: (SortableTeam & { team_name: string })[] =
+    Array.from(allTeamIds).map(id => {
+      const s = regularStats.get(id)!;
+      return {
+        team_id: id,
+        team_name: teamMap.get(id) || 'Onbekend',
+        points: s.points,
+        wins: s.wins,
+        goal_diff: s.goalsScored - s.goalsAgainst,
+        goals_scored: s.goalsScored,
+      };
+    });
+  const regularSorted = sortWithTiebreakers(regularSortable, regularMatches);
+  const regularStandings = regularSorted.map((t, idx) => ({
+    team_id: t.team_id,
+    team_name: t.team_name,
+    points: t.points,
+    position: idx + 1,
+  }));
+
+  const po1RegularTeams = regularStandings.slice(0, 8);
+  const po2RegularTeams = regularStandings.slice(8, 15);
+
+  const playoffStats = computeStats(
+    playoffMatchesRaw as MatchRow[],
+    allTeamIds,
+  );
+
+  const combinedStats = new Map<number, TeamStats>();
+  allTeamIds.forEach(id => {
+    const r = regularStats.get(id)!;
+    const p = playoffStats.get(id)!;
+    combinedStats.set(id, {
+      played: r.played + p.played,
+      wins: r.wins + p.wins,
+      draws: r.draws + p.draws,
+      losses: r.losses + p.losses,
+      goalsScored: r.goalsScored + p.goalsScored,
+      goalsAgainst: r.goalsAgainst + p.goalsAgainst,
+      points: r.points + p.points,
+    });
+  });
+
+  const allMatchesForH2H: MatchRow[] = [
+    ...regularMatches,
+    ...(playoffMatchesRaw as MatchRow[]),
+  ];
+
+  const buildPlayoffTeams = (
+    regularTeams: typeof regularStandings,
+    type: 'top' | 'bottom',
+  ): PlayoffTeam[] => {
+    const teams: PlayoffTeam[] = regularTeams.map(team => {
+      const p = playoffStats.get(team.team_id)!;
+      const c = combinedStats.get(team.team_id)!;
+      return {
+        team_id: team.team_id,
+        team_name: team.team_name,
+        regular_points: team.points,
+        playoff_points: p.points,
+        total_points: team.points + p.points,
+        playoff_played: p.played,
+        playoff_wins: p.wins,
+        playoff_draws: p.draws,
+        playoff_losses: p.losses,
+        playoff_goal_diff: p.goalsScored - p.goalsAgainst,
+        playoff_goals_scored: p.goalsScored,
+        playoff_goals_against: p.goalsAgainst,
+        total_wins: c.wins,
+        total_goal_diff: c.goalsScored - c.goalsAgainst,
+        total_goals_scored: c.goalsScored,
+        original_position: team.position,
+        playoff_type: type,
+      };
+    });
+
+    const sortable: SortableTeam[] = teams.map(t => ({
+      team_id: t.team_id,
+      team_name: t.team_name,
+      points: t.total_points,
+      wins: t.total_wins,
+      goal_diff: t.total_goal_diff,
+      goals_scored: t.total_goals_scored,
+    }));
+    const sorted = sortWithTiebreakers(sortable, allMatchesForH2H);
+    const orderMap = new Map(sorted.map((t, i) => [t.team_id, i]));
+    return teams.sort(
+      (a, b) => (orderMap.get(a.team_id)! - orderMap.get(b.team_id)!),
+    );
+  };
+
+  const po1Teams = buildPlayoffTeams(po1RegularTeams, 'top');
+  const po2Teams = buildPlayoffTeams(po2RegularTeams, 'bottom');
+
+  const getTeamName = (teamId: number | null, position: number | null): string => {
+    if (teamId && teamMap.has(teamId)) {
+      return teamMap.get(teamId)!;
+    }
+    if (position) {
+      return `Team pos. ${position}`;
+    }
+    return 'Onbekend';
+  };
+
+  const isFinalized = playoffMatchesRaw.some(m => m.is_playoff_finalized === true);
+
+  const playoffMatches: PlayoffMatchData[] = playoffMatchesRaw.map(match => {
+    const matchDate = new Date(match.match_date);
+    const time = `${String(matchDate.getUTCHours()).padStart(2, '0')}:${String(matchDate.getUTCMinutes()).padStart(2, '0')}`;
+
+    return {
+      match_id: match.match_id,
+      speeldag: match.speeldag || '',
+      match_date: match.match_date,
+      time,
+      home_team_id: match.home_team_id,
+      away_team_id: match.away_team_id,
+      home_team_name: getTeamName(match.home_team_id, match.home_position),
+      away_team_name: getTeamName(match.away_team_id, match.away_position),
+      home_position: match.home_position,
+      away_position: match.away_position,
+      home_score: match.home_score,
+      away_score: match.away_score,
+      location: match.location || '',
+      playoff_type: match.playoff_type === 'top' ? 'top' : 'bottom',
+      is_completed: match.is_submitted && match.home_score !== null && match.away_score !== null,
+      is_finalized: match.is_playoff_finalized ?? false,
+    };
+  });
+
+  const now = new Date();
+  const upcomingMatches = playoffMatches.filter(m => !m.is_completed && new Date(m.match_date) >= now);
+  const pastMatches = playoffMatches.filter(m => m.is_completed);
+
+  const headToHeadMatches: HeadToHeadMatch[] = allMatchesForH2H
+    .filter(m =>
+      m.is_submitted &&
+      m.home_team_id !== null && m.away_team_id !== null &&
+      m.home_score !== null && m.away_score !== null
+    )
+    .map(m => ({
+      match_date: m.match_date ?? null,
+      home_team_id: m.home_team_id as number,
+      away_team_id: m.away_team_id as number,
+      home_team_name: teamMap.get(m.home_team_id as number) || 'Onbekend',
+      away_team_name: teamMap.get(m.away_team_id as number) || 'Onbekend',
+      home_score: m.home_score as number,
+      away_score: m.away_score as number,
+      is_playoff: !!m.is_playoff,
+    }));
+
+  return {
+    po1Teams,
+    po2Teams,
+    allMatches: playoffMatches,
+    upcomingMatches,
+    pastMatches,
+    headToHeadMatches,
+    hasData: regularStandings.length > 0,
+    isFinalized,
+  };
+};
+
 export const usePublicPlayoffData = () => {
   return useQuery({
     queryKey: ['publicPlayoffData'],
-    queryFn: async () => {
-      const [regularMatches, playoffMatchesRaw, teamMap] = await Promise.all([
-        fetchRegularMatches(),
-        fetchPlayoffMatches(),
-        fetchTeams(),
-      ]);
-
-      const allTeamIds = new Set(teamMap.keys());
-
-      // 1) Reguliere stand opnieuw berekenen uit wedstrijden, met tiebreakers
-      const regularStats = computeStats(regularMatches, allTeamIds);
-      const regularSortable: (SortableTeam & { team_name: string })[] =
-        Array.from(allTeamIds).map(id => {
-          const s = regularStats.get(id)!;
-          return {
-            team_id: id,
-            team_name: teamMap.get(id) || 'Onbekend',
-            points: s.points,
-            wins: s.wins,
-            goal_diff: s.goalsScored - s.goalsAgainst,
-            goals_scored: s.goalsScored,
-          };
-        });
-      const regularSorted = sortWithTiebreakers(regularSortable, regularMatches);
-      const regularStandings = regularSorted.map((t, idx) => ({
-        team_id: t.team_id,
-        team_name: t.team_name,
-        points: t.points,
-        position: idx + 1,
-      }));
-
-      // Split teams into PO1 (top 8) en PO2 (rest)
-      const po1RegularTeams = regularStandings.slice(0, 8);
-      const po2RegularTeams = regularStandings.slice(8, 15);
-
-      // 2) Playoff-stats (alleen playoff-wedstrijden) voor weergave-kolommen
-      const playoffStats = computeStats(
-        playoffMatchesRaw as MatchRow[],
-        allTeamIds,
-      );
-
-      // 3) Gecombineerde stats (regulier + playoff) voor sortering
-      const combinedStats = new Map<number, TeamStats>();
-      allTeamIds.forEach(id => {
-        const r = regularStats.get(id)!;
-        const p = playoffStats.get(id)!;
-        combinedStats.set(id, {
-          played: r.played + p.played,
-          wins: r.wins + p.wins,
-          draws: r.draws + p.draws,
-          losses: r.losses + p.losses,
-          goalsScored: r.goalsScored + p.goalsScored,
-          goalsAgainst: r.goalsAgainst + p.goalsAgainst,
-          points: r.points + p.points,
-        });
-      });
-
-      // Alle wedstrijden samen voor head-to-head berekening
-      const allMatchesForH2H: MatchRow[] = [
-        ...regularMatches,
-        ...(playoffMatchesRaw as MatchRow[]),
-      ];
-
-      const buildPlayoffTeams = (
-        regularTeams: typeof regularStandings,
-        type: 'top' | 'bottom',
-      ): PlayoffTeam[] => {
-        const teams: PlayoffTeam[] = regularTeams.map(team => {
-          const p = playoffStats.get(team.team_id)!;
-          const c = combinedStats.get(team.team_id)!;
-          return {
-            team_id: team.team_id,
-            team_name: team.team_name,
-            regular_points: team.points,
-            playoff_points: p.points,
-            total_points: team.points + p.points,
-            playoff_played: p.played,
-            playoff_wins: p.wins,
-            playoff_draws: p.draws,
-            playoff_losses: p.losses,
-            playoff_goal_diff: p.goalsScored - p.goalsAgainst,
-            playoff_goals_scored: p.goalsScored,
-            playoff_goals_against: p.goalsAgainst,
-            total_wins: c.wins,
-            total_goal_diff: c.goalsScored - c.goalsAgainst,
-            total_goals_scored: c.goalsScored,
-            original_position: team.position,
-            playoff_type: type,
-          };
-        });
-
-        // Sorteer met volledige tiebreaker-hiërarchie op gecombineerde stats
-        const sortable: SortableTeam[] = teams.map(t => ({
-          team_id: t.team_id,
-          team_name: t.team_name,
-          points: t.total_points,
-          wins: t.total_wins,
-          goal_diff: t.total_goal_diff,
-          goals_scored: t.total_goals_scored,
-        }));
-        const sorted = sortWithTiebreakers(sortable, allMatchesForH2H);
-        const orderMap = new Map(sorted.map((t, i) => [t.team_id, i]));
-        return teams.sort(
-          (a, b) => (orderMap.get(a.team_id)! - orderMap.get(b.team_id)!),
-        );
-      };
-
-      const po1Teams = buildPlayoffTeams(po1RegularTeams, 'top');
-      const po2Teams = buildPlayoffTeams(po2RegularTeams, 'bottom');
-
-      // Helper to get team name with fallback to position
-      const getTeamName = (teamId: number | null, position: number | null): string => {
-        if (teamId && teamMap.has(teamId)) {
-          return teamMap.get(teamId)!;
-        }
-        if (position) {
-          return `Team pos. ${position}`;
-        }
-        return 'Onbekend';
-      };
-
-      const isFinalized = playoffMatchesRaw.some(m => m.is_playoff_finalized === true);
-
-      const playoffMatches: PlayoffMatchData[] = playoffMatchesRaw.map(match => {
-        const matchDate = new Date(match.match_date);
-        // Gebruik UTC om vaste tijden te behouden (19:00 = altijd 19:00, geen winter/zomeruur verschuiving)
-        const time = `${String(matchDate.getUTCHours()).padStart(2, '0')}:${String(matchDate.getUTCMinutes()).padStart(2, '0')}`;
-
-        return {
-          match_id: match.match_id,
-          speeldag: match.speeldag || '',
-          match_date: match.match_date,
-          time,
-          home_team_id: match.home_team_id,
-          away_team_id: match.away_team_id,
-          home_team_name: getTeamName(match.home_team_id, match.home_position),
-          away_team_name: getTeamName(match.away_team_id, match.away_position),
-          home_position: match.home_position,
-          away_position: match.away_position,
-          home_score: match.home_score,
-          away_score: match.away_score,
-          location: match.location || '',
-          playoff_type: match.playoff_type === 'top' ? 'top' : 'bottom',
-          is_completed: match.is_submitted && match.home_score !== null && match.away_score !== null,
-          is_finalized: match.is_playoff_finalized ?? false,
-        };
-      });
-
-      const now = new Date();
-      const upcomingMatches = playoffMatches.filter(m => !m.is_completed && new Date(m.match_date) >= now);
-      const pastMatches = playoffMatches.filter(m => m.is_completed);
-
-      // Bouw lijst van alle submitted onderlinge wedstrijden (regulier + playoff)
-      // voor weergave in de tiebreaker-notice
-      const headToHeadMatches: HeadToHeadMatch[] = allMatchesForH2H
-        .filter(m =>
-          m.is_submitted &&
-          m.home_team_id !== null && m.away_team_id !== null &&
-          m.home_score !== null && m.away_score !== null
-        )
-        .map(m => ({
-          match_date: m.match_date ?? null,
-          home_team_id: m.home_team_id as number,
-          away_team_id: m.away_team_id as number,
-          home_team_name: teamMap.get(m.home_team_id as number) || 'Onbekend',
-          away_team_name: teamMap.get(m.away_team_id as number) || 'Onbekend',
-          home_score: m.home_score as number,
-          away_score: m.away_score as number,
-          is_playoff: !!m.is_playoff,
-        }));
-
-      return {
-        po1Teams,
-        po2Teams,
-        allMatches: playoffMatches,
-        upcomingMatches,
-        pastMatches,
-        headToHeadMatches,
-        hasData: regularStandings.length > 0,
-        isFinalized,
-      };
-    },
+    queryFn: fetchPublicPlayoffData,
     staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
   });

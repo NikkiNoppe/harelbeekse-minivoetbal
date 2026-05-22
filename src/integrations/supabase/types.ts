@@ -424,6 +424,7 @@ export type Database = {
           competition_standings: Json | null
           cup_winner: Json | null
           id: string
+          playoff: Json | null
           season_label: string
           updated_at: string
         }
@@ -433,6 +434,7 @@ export type Database = {
           competition_standings?: Json | null
           cup_winner?: Json | null
           id?: string
+          playoff?: Json | null
           season_label: string
           updated_at?: string
         }
@@ -442,6 +444,7 @@ export type Database = {
           competition_standings?: Json | null
           cup_winner?: Json | null
           id?: string
+          playoff?: Json | null
           season_label?: string
           updated_at?: string
         }
@@ -647,6 +650,30 @@ export type Database = {
           p_referee_id: number
         }
         Returns: boolean
+      }
+      admin_upsert_season_competition: {
+        Args: {
+          p_admin_user_id: number
+          p_competition_standings: Json
+          p_season_label: string
+        }
+        Returns: undefined
+      }
+      admin_upsert_season_cup: {
+        Args: {
+          p_admin_user_id: number
+          p_cup_winner: Json
+          p_season_label: string
+        }
+        Returns: undefined
+      }
+      admin_upsert_season_playoff: {
+        Args: {
+          p_admin_user_id: number
+          p_playoff: Json
+          p_season_label: string
+        }
+        Returns: undefined
       }
       apply_suspension_after_match: {
         Args: { match_id_param: number }
