@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { monthlyReportsService, matchCostService, type MonthlyRefereeCosts } from "@/services/financial";
-import { Download, Euro, ChevronDown, ChevronRight, Users, Loader2 } from "lucide-react";
+import { Download, Euro, ChevronDown, ChevronRight, Users, Loader2, RefreshCw } from "lucide-react";
+import { useFinancialSeasonReportModal } from "./useFinancialSeasonReportModal";
 
 interface FinancialMonthlyReportsModalProps {
   open: boolean;
@@ -15,88 +14,22 @@ interface FinancialMonthlyReportsModalProps {
 }
 
 export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModalProps> = ({ open, onOpenChange }) => {
-  const queryClient = useQueryClient();
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth();
-  // Determine current season: if we're in Aug-Dec, it's currentYear/currentYear+1, else (currentYear-1)/currentYear
-  const currentSeasonYear = currentMonth >= 6 ? currentYear : currentYear - 1;
-  
-  const [selectedSeasonYear, setSelectedSeasonYear] = useState(currentSeasonYear);
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [expandedReferees, setExpandedReferees] = useState<Set<string>>(new Set());
-  const [costSyncUi, setCostSyncUi] = useState<"idle" | "busy" | "ok" | "err">("idle");
 
-  useEffect(() => {
-    if (!open) {
-      setCostSyncUi("idle");
-      return;
-    }
-    setCostSyncUi("busy");
-    const ac = new AbortController();
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-    void (async () => {
-      try {
-        await matchCostService.syncAllMatchCosts();
-        if (!ac.signal.aborted) setCostSyncUi("ok");
-      } catch {
-        if (!ac.signal.aborted) setCostSyncUi("err");
-      } finally {
-        if (!ac.signal.aborted) {
-          await queryClient.invalidateQueries({ queryKey: ["season-report"] });
-        }
-      }
-      if (!ac.signal.aborted) {
-        timeoutId = setTimeout(() => {
-          if (!ac.signal.aborted) setCostSyncUi((s) => (s === "ok" || s === "err" ? "idle" : s));
-        }, 2200);
-      }
-    })();
-    return () => {
-      ac.abort();
-      if (timeoutId) window.clearTimeout(timeoutId);
-    };
-  }, [open, queryClient]);
-
-  // Fetch available seasons from actual transaction data
-  const { data: availableSeasons } = useQuery({
-    queryKey: ['available-seasons'],
-    queryFn: monthlyReportsService.getAvailableSeasons,
-    enabled: open
-  });
-
-  const { data: report, isLoading, error } = useQuery({
-    queryKey: ['season-report', selectedSeasonYear, selectedMonth],
-    queryFn: async () => {
-      console.log('Fetching season report for:', { selectedSeasonYear, selectedMonth });
-      try {
-        // Convert selectedMonth back to actual month and year for API
-        let actualMonth = undefined;
-        let actualYear = selectedSeasonYear;
-        
-        if (selectedMonth !== null) {
-          if (selectedMonth <= 12) {
-            // July-December of start year
-            actualMonth = selectedMonth;
-            actualYear = selectedSeasonYear;
-          } else {
-            // January-June of end year
-            actualMonth = selectedMonth - 12;
-            actualYear = selectedSeasonYear + 1;
-          }
-        }
-        
-        const result = await monthlyReportsService.getSeasonReport(selectedSeasonYear, actualMonth, actualYear);
-        console.log('Season report data:', result);
-        return result;
-      } catch (err) {
-        console.error('Error fetching season report:', err);
-        throw err;
-      }
-    },
-    enabled: open && !!availableSeasons && availableSeasons.length > 0,
-    retry: 2,
-    staleTime: 5 * 60 * 1000 // 5 minutes
-  });
+  const {
+    availableSeasons,
+    seasons,
+    selectedSeasonYear,
+    setSelectedSeasonYear,
+    selectedMonth,
+    setSelectedMonth,
+    report,
+    error,
+    syncStatus,
+    isInitialLoad,
+    isRefreshing,
+    forceResync,
+  } = useFinancialSeasonReportModal(open);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nl-NL', {
@@ -125,27 +58,6 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
     });
   };
 
-  // Use available seasons from database or fallback to current season
-  const seasons = availableSeasons && availableSeasons.length > 0 
-    ? availableSeasons.map(season => ({
-        year: season.startYear,
-        label: season.season
-      }))
-    : [{
-        year: currentSeasonYear,
-        label: `${currentSeasonYear}/${currentSeasonYear + 1}`
-      }];
-
-  // Update selected season if it's not available in the fetched seasons
-  useEffect(() => {
-    if (availableSeasons && availableSeasons.length > 0) {
-      const isCurrentSeasonAvailable = availableSeasons.some(s => s.startYear === selectedSeasonYear);
-      if (!isCurrentSeasonAvailable) {
-        setSelectedSeasonYear(availableSeasons[0].startYear);
-      }
-    }
-  }, [availableSeasons, selectedSeasonYear]);
-  
   // Generate season months based on season year (July to June)
   const getSeasonMonths = (seasonYear: number) => {
     const months = [];
@@ -185,14 +97,14 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
       open={open}
       onOpenChange={onOpenChange}
       title="Seizoen Kostenrapportage"
-      subtitle="Wedstrijdkosten sync bij openen; daarna cijfers en detailtabellen (compact)."
+      subtitle="Rapport laadt direct; wedstrijdkosten worden op de achtergrond gesynchroniseerd indien nodig."
       size="lg"
       className="max-w-6xl max-h-[80vh] overflow-y-auto"
     >
 
         <div className="space-y-6">
           {/* Show message if no seasons available */}
-          {(!availableSeasons || availableSeasons.length === 0) && !isLoading && (
+          {(!availableSeasons || availableSeasons.length === 0) && !isInitialLoad && (
             <div className="text-center py-8">
               <p className="text-purple-dark">Geen seizoenen met wedstrijdgegevens gevonden.</p>
               <p className="text-sm text-purple-dark opacity-70">Voeg eerst wedstrijden toe om rapporten te kunnen genereren.</p>
@@ -271,31 +183,60 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
               `}</style>
 
-              {(costSyncUi === "busy" || costSyncUi === "ok" || costSyncUi === "err") && (
+              {(syncStatus === "syncing" || syncStatus === "synced" || syncStatus === "error") && (
                 <div
                   role="status"
-                  className="flex items-center gap-2 rounded-md border border-border/70 bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
                 >
-                  {costSyncUi === "busy" && (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin opacity-80" aria-hidden />
-                      <span>Wedstrijdkosten worden gesynchroniseerd; het rapport ververst daarna.</span>
-                    </>
-                  )}
-                  {costSyncUi === "ok" && <span>Klaar — boekingen bijgewerkt.</span>}
-                  {costSyncUi === "err" && (
-                    <span className="text-destructive">
-                      Sync mislukt. Probeer op de financiële pagina opnieuw.
-                    </span>
+                  <div className="flex items-center gap-2">
+                    {syncStatus === "syncing" && (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin opacity-80" aria-hidden />
+                        <span>Wedstrijdkosten synchroniseren op de achtergrond…</span>
+                      </>
+                    )}
+                    {syncStatus === "synced" && <span>Boekingen bijgewerkt — rapport ververst.</span>}
+                    {syncStatus === "error" && (
+                      <span className="text-destructive">
+                        Sync mislukt. Cijfers kunnen verouderd zijn.
+                      </span>
+                    )}
+                  </div>
+                  {syncStatus === "error" && (
+                    <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2" onClick={() => void forceResync()}>
+                      <RefreshCw className="h-3 w-3" />
+                      Opnieuw
+                    </Button>
                   )}
                 </div>
               )}
             </>
           )}
 
-          {/* Summary Cards - only show if data available */}
-          {report && availableSeasons && availableSeasons.length > 0 && (
+          {/* Summary Cards - only show when sync + fetch are complete */}
+          {isInitialLoad && availableSeasons && availableSeasons.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Card key={index} className="border-purple-light">
+                  <CardHeader className="bg-muted p-3">
+                    <div className="mx-auto h-3 w-20 animate-pulse rounded bg-muted-foreground/20" />
+                  </CardHeader>
+                  <CardContent className="bg-white p-3">
+                    <div className="mx-auto h-7 w-24 animate-pulse rounded bg-muted-foreground/20" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {report && !isInitialLoad && availableSeasons && availableSeasons.length > 0 && (
+            <div className={`grid grid-cols-2 sm:grid-cols-3 gap-3 transition-opacity ${isRefreshing ? "opacity-70" : ""}`}>
+              {isRefreshing && (
+                <div className="col-span-full flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                  Vernieuwen…
+                </div>
+              )}
               <Card className="border-purple-light">
                 <CardHeader 
                   className="bg-muted p-3"
@@ -424,7 +365,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
           )}
 
           {/* Scheidsrechter Betalingen - Improved with expandable match details */}
-          {report && report.refereeCosts.length > 0 && availableSeasons && availableSeasons.length > 0 && (
+          {report && !isInitialLoad && report.refereeCosts.length > 0 && availableSeasons && availableSeasons.length > 0 && (
             <Card className="border-purple-light">
               <CardHeader className="bg-purple-100">
                 <CardTitle className="text-purple-light flex items-center gap-2">
@@ -574,7 +515,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
           )}
 
           {/* Boetes — compact: totaal per periode + detail per regel */}
-          {report?.fines && report.fines.length > 0 && (
+          {report && !isInitialLoad && report.fines && report.fines.length > 0 && (
             <Card className="border-purple-light">
               <CardHeader className="bg-purple-100 py-3">
                 <CardTitle className="text-purple-light text-sm font-semibold">
@@ -639,7 +580,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
           )}
 
           {/* Veldkosten — compact: totaal per periode + welke wedstrijden / welke ploeg */}
-          {report?.fieldCosts && report.fieldCosts.length > 0 && (
+          {report && !isInitialLoad && report.fieldCosts && report.fieldCosts.length > 0 && (
             <Card className="border-purple-light">
               <CardHeader className="bg-purple-100 py-3">
                 <CardTitle className="text-purple-light text-sm font-semibold">
@@ -709,18 +650,8 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
             </Card>
           )}
 
-          {/* Loading state */}
-          {isLoading && (
-            <div className="flex items-center justify-center h-40">
-              <div className="flex flex-col items-center gap-2">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-dark"></div>
-                <p className="text-purple-dark">Rapport laden...</p>
-              </div>
-            </div>
-          )}
-
           {/* Show message when no data but seasons are available */}
-          {report && !isLoading && !error && report.totalMatches === 0 && availableSeasons && availableSeasons.length > 0 && (
+          {report && !isInitialLoad && !error && report.totalMatches === 0 && availableSeasons && availableSeasons.length > 0 && (
             <Card className="border-purple-light">
               <CardContent className="text-center py-8 bg-white">
                 <p className="text-purple-dark mb-2">Geen wedstrijden gevonden voor deze periode.</p>

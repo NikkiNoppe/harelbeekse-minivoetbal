@@ -259,15 +259,8 @@ export const monthlyReportsService = {
       // IMPORTANT: Use a large range to avoid the default 1000-row Supabase limit
       const startDateStr = filterStartDate.toISOString().split('T')[0];
       const endDateStr = filterEndDate.toISOString().split('T')[0];
-      
-      let allTransactions: any[] = [];
-      let from = 0;
-      const batchSize = 1000;
-      
-      while (true) {
-        const { data: batch, error: batchError } = await supabase
-          .from('team_costs')
-          .select(`
+
+      const selectTeamCosts = `
             *,
             costs(name, category, amount),
             teams!team_costs_team_id_fkey(team_name),
@@ -277,29 +270,37 @@ export const monthlyReportsService = {
               teams_home:teams!home_team_id(team_name),
               teams_away:teams!away_team_id(team_name)
             )
-          `)
-          .gte('transaction_date', startDateStr)
-          .lte('transaction_date', endDateStr)
-          .range(from, from + batchSize - 1);
-        
-        if (batchError) throw batchError;
-        if (!batch || batch.length === 0) break;
-        
-        allTransactions = allTransactions.concat(batch);
-        if (batch.length < batchSize) break;
-        from += batchSize;
-      }
-      
-      const transactions = allTransactions;
-      const error = null;
+          `;
 
-      if (error) throw error;
+      const fetchTransactions = async () => {
+        let allTransactions: any[] = [];
+        let from = 0;
+        const batchSize = 1000;
 
-      // IMPORTANT: Fetch match data DIRECTLY for accurate referee information
-      // This ensures we always have up-to-date referee data from the matches table
-      const { data: allMatches, error: matchError } = await supabase
-        .from('matches')
-        .select(`
+        while (true) {
+          const { data: batch, error: batchError } = await supabase
+            .from('team_costs')
+            .select(selectTeamCosts)
+            .gte('transaction_date', startDateStr)
+            .lte('transaction_date', endDateStr)
+            .range(from, from + batchSize - 1);
+
+          if (batchError) throw batchError;
+          if (!batch || batch.length === 0) break;
+
+          allTransactions = allTransactions.concat(batch);
+          if (batch.length < batchSize) break;
+          from += batchSize;
+        }
+
+        return allTransactions;
+      };
+
+      const [transactions, matchesResult, costSettingsResult] = await Promise.all([
+        fetchTransactions(),
+        supabase
+          .from('matches')
+          .select(`
           match_id, 
           match_date, 
           referee, 
@@ -310,18 +311,20 @@ export const monthlyReportsService = {
           teams_home:teams!home_team_id(team_name),
           teams_away:teams!away_team_id(team_name)
         `)
-        .eq('is_submitted', true)
-        .gte('match_date', filterStartDate.toISOString())
-        .lte('match_date', filterEndDate.toISOString())
-        .order('match_date', { ascending: false });
+          .eq('is_submitted', true)
+          .gte('match_date', startDateStr)
+          .lte('match_date', endDateStr)
+          .order('match_date', { ascending: false }),
+        supabase
+          .from('costs')
+          .select('id, name, amount, category')
+          .eq('category', 'match_cost'),
+      ]);
 
+      const { data: allMatches, error: matchError } = matchesResult;
       if (matchError) throw matchError;
 
-      // Fetch cost settings for referee cost calculation
-      const { data: costSettings } = await supabase
-        .from('costs')
-        .select('id, name, amount, category')
-        .eq('category', 'match_cost')
+      const { data: costSettings } = costSettingsResult;
 
       const refereeCostSetting = costSettings?.find(cs => 
         cs.name?.toLowerCase().includes('scheidsrechter') || 

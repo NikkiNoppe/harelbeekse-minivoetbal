@@ -11,5 +11,13 @@ export {
   type RefereeMatchInfo,
   type FieldCostLineDetail,
   type FineLineDetail,
+  type SeasonData,
 } from './monthlyReportsService';
 export { matchCostService } from './matchCostService';
+export {
+  computeTeamFinances,
+  isFieldCostTransaction,
+  isRefereeCostTransaction,
+  isAdminCostTransaction,
+  type TeamFinancesSummary,
+} from './teamCostCategories';

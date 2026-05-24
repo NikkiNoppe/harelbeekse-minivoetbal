@@ -1,38 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { costSettingsService } from "@/services/financial";
+import { useMatchCostSync } from "@/hooks/useMatchCostSync";
+import {
+  computeTeamFinances,
+  type TeamFinancesSummary,
+} from "@/services/financial/teamCostCategories";
 
 interface Team {
   team_id: number;
   team_name: string;
-  balance: number;
-}
-
-interface SubmittedMatch {
-  match_id: number;
-  home_team_id: number;
-  away_team_id: number;
-  is_submitted: boolean;
-  created_at: string;
-  teams_home: {
-    team_name: string;
-  };
-  teams_away: {
-    team_name: string;
-  };
-  match_date: string;
-  unique_number: string;
 }
 
 interface TeamTransaction {
   team_id: number;
   amount: number;
-  transaction_type: string;
-  description?: string;
+  description?: string | null;
   transaction_date: string;
   cost_settings?: {
-    name?: string;
-    category?: string;
+    name?: string | null;
+    category?: string | null;
   };
   matches?: {
     unique_number?: string;
@@ -40,15 +27,7 @@ interface TeamTransaction {
   };
 }
 
-export interface TeamFinances {
-  startCapital: number;
-  fieldCosts: number;
-  refereeCosts: number;
-  adminCosts: number;
-  fines: number;
-  currentBalance: number;
-  adjustments: number;
-}
+export type TeamFinances = TeamFinancesSummary;
 
 export interface FinancialStatistics {
   totalTeams: number;
@@ -60,201 +39,114 @@ export interface FinancialStatistics {
   totalExpenses: number;
 }
 
-export const useFinancialData = () => {
-  // Fetch teams with their balances
+async function fetchAllTeamTransactions(): Promise<TeamTransaction[]> {
+  let allData: any[] = [];
+  let from = 0;
+  const batchSize = 1000;
+
+  while (true) {
+    const { data: batch, error } = await supabase
+      .from("team_costs")
+      .select(`
+        *,
+        costs(name, category, amount),
+        matches(unique_number, match_date)
+      `)
+      .order("transaction_date", { ascending: false })
+      .range(from, from + batchSize - 1);
+
+    if (error) throw error;
+    if (!batch || batch.length === 0) break;
+
+    allData = allData.concat(batch);
+    if (batch.length < batchSize) break;
+    from += batchSize;
+  }
+
+  return allData.map((transaction) => ({
+    team_id: transaction.team_id,
+    amount:
+      transaction.amount ??
+      (typeof transaction.costs?.amount === "number" ? transaction.costs.amount : 0),
+    description: transaction.costs?.name || null,
+    transaction_date: transaction.transaction_date,
+    cost_settings: transaction.costs
+      ? {
+          name: transaction.costs.name,
+          category: transaction.costs.category,
+        }
+      : undefined,
+    matches: transaction.matches
+      ? {
+          unique_number: transaction.matches.unique_number,
+          match_date: transaction.matches.match_date,
+        }
+      : undefined,
+  }));
+}
+
+export const useFinancialData = (options?: { enableSync?: boolean }) => {
+  const enableSync = options?.enableSync ?? true;
+  const { syncStatus, forceResync } = useMatchCostSync(enableSync);
+
   const teamsQuery = useQuery({
-    queryKey: ['teams-financial'],
+    queryKey: ["teams-financial"],
     queryFn: async (): Promise<Team[]> => {
       const { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name') // balance verwijderd
-        .order('team_name');
-      
+        .from("teams")
+        .select("team_id, team_name")
+        .order("team_name");
+
       if (error) throw error;
-      return ((data || []) as any[]).map(team => ({ 
-        ...team, 
-        preferred_play_moments: team.preferred_play_moments as any 
-      })) as Team[];
+      return (data || []) as Team[];
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes - financial data changes less frequently
-    gcTime: 15 * 60 * 1000, // 15 minutes cache
-    retry: 2,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch submitted matches for financial calculations
-  const submittedMatchesQuery = useQuery({
-    queryKey: ['submitted-matches'],
-    queryFn: async (): Promise<SubmittedMatch[]> => {
-      const { data, error } = await supabase
-        .from('matches')
-        .select(`
-          match_id,
-          home_team_id,
-          away_team_id,
-          is_submitted,
-          match_date,
-          unique_number,
-          teams_home:teams!home_team_id(team_name),
-          teams_away:teams!away_team_id(team_name)
-        `)
-        .eq('is_submitted', true)
-        .order('match_date', { ascending: false });
-      
-      if (error) throw error;
-      return (data as any) || [];
-    },
-    staleTime: 3 * 60 * 1000, // 3 minutes - match submissions change regularly
-    gcTime: 10 * 60 * 1000, // 10 minutes cache
-    retry: 2,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true
-  });
-
-  // Fetch cost settings for dynamic calculations
-  const costSettingsQuery = useQuery({
-    queryKey: ['cost-settings'],
-    queryFn: costSettingsService.getCostSettings,
-    staleTime: 10 * 60 * 1000, // 10 minutes - cost settings rarely change
-    gcTime: 30 * 60 * 1000, // 30 minutes cache
-    retry: 2,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true
-  });
-
-  // Fetch transactions for detailed calculations
   const transactionsQuery = useQuery({
-    queryKey: ['all-team-transactions'],
-    queryFn: async (): Promise<TeamTransaction[]> => {
-      // Paginate to avoid Supabase 1000-row default limit
-      let allData: any[] = [];
-      let from = 0;
-      const batchSize = 1000;
-      
-      while (true) {
-        const { data: batch, error } = await supabase
-          .from('team_costs')
-          .select(`
-            *,
-            costs(name, category, amount),
-            matches(unique_number, match_date)
-          `)
-          .order('transaction_date', { ascending: false })
-          .range(from, from + batchSize - 1);
-        
-        if (error) throw error;
-        if (!batch || batch.length === 0) break;
-        
-        allData = allData.concat(batch);
-        if (batch.length < batchSize) break;
-        from += batchSize;
-      }
-      
-      const data = allData;
-      
-      return (data || []).map(transaction => ({
-        id: transaction.id,
-        team_id: transaction.team_id,
-        transaction_type: transaction.costs?.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment' || 'adjustment',
-        amount: transaction.amount !== null && transaction.amount !== undefined 
-          ? transaction.amount 
-          : ((transaction.costs as any)?.amount || 0),
-        description: transaction.costs?.name || null,
-        cost_setting_id: transaction.cost_setting_id,
-        penalty_type_id: null,
-        match_id: transaction.match_id,
-        transaction_date: transaction.transaction_date,
-        created_at: new Date().toISOString(),
-        cost_settings: transaction.costs ? {
-          name: transaction.costs.name,
-          category: transaction.costs.category
-        } : undefined,
-        matches: transaction.matches ? {
-          unique_number: transaction.matches.unique_number,
-          match_date: transaction.matches.match_date
-        } : undefined
-      }));
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes - transactions change frequently
-    gcTime: 10 * 60 * 1000, // 10 minutes cache
-    retry: 2,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true
+    queryKey: ["all-team-transactions"],
+    queryFn: fetchAllTeamTransactions,
+    staleTime: 30_000,
+    placeholderData: keepPreviousData,
   });
 
-  // Calculate detailed financial breakdown per team
-  const calculateTeamFinances = (teamId: number): TeamFinances => {
-    if (!transactionsQuery.data) {
-      return {
-        startCapital: 0,
-        fieldCosts: 0,
-        refereeCosts: 0,
-        adminCosts: 0,
-        fines: 0,
-        currentBalance: 0,
-        adjustments: 0
-      };
+  const teamFinancesById = useMemo(() => {
+    const map = new Map<number, TeamFinancesSummary>();
+    const teams = teamsQuery.data;
+    const transactions = transactionsQuery.data;
+    if (!teams || !transactions) return map;
+
+    for (const team of teams) {
+      map.set(team.team_id, computeTeamFinances(team.team_id, transactions));
     }
-    
-    const teamTransactions = transactionsQuery.data.filter(t => t.team_id === teamId);
-    
-    // Startkapitaal: alle stortingen (deposits)
-    const startCapital = teamTransactions
-      .filter(t => t.transaction_type === 'deposit')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-    
-    // Veldkosten: match_cost met 'veld' of 'field' in de naam (zelfde als sync-match-costs)
-    const fieldCosts = teamTransactions
-      .filter(t => {
-        if (t.transaction_type !== 'match_cost') return false;
-        const n = (t.cost_settings?.name || '').toLowerCase();
-        const d = (t.description || '').toLowerCase();
-        return n.includes('veld') || n.includes('field') || d.includes('veld') || d.includes('field');
-      })
-      .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
-    
-    // Scheidsrechterkosten: alle match_cost transacties met 'scheidsrechter' in de naam
-    const refereeCosts = teamTransactions
-      .filter(t => t.transaction_type === 'match_cost' && 
-        (t.cost_settings?.name?.toLowerCase().includes('scheidsrechter') || 
-         t.description?.toLowerCase().includes('scheidsrechter')))
-      .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
-    
-    // Administratiekosten: alle match_cost transacties met 'administratie' in de naam
-    const adminCosts = teamTransactions
-      .filter(t => t.transaction_type === 'match_cost' && 
-        (t.cost_settings?.name?.toLowerCase().includes('administratie') || 
-         t.description?.toLowerCase().includes('administratie')))
-      .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
-    
-    // Boetes: alle penalty transacties
-    const fines = teamTransactions
-      .filter(t => t.transaction_type === 'penalty')
-      .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
-    
-    // Correcties: alle adjustment transacties
-    const adjustments = teamTransactions
-      .filter(t => t.transaction_type === 'adjustment')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-    
-    // Huidig saldo: startkapitaal - alle kosten + correcties
-    const currentBalance = startCapital - fieldCosts - refereeCosts - adminCosts - fines + adjustments;
+    return map;
+  }, [teamsQuery.data, transactionsQuery.data]);
 
-    return {
-      startCapital,
-      fieldCosts,
-      refereeCosts,
-      adminCosts,
-      fines,
-      currentBalance,
-      adjustments
+  const calculateTeamFinances = (teamId: number): TeamFinancesSummary =>
+    teamFinancesById.get(teamId) ?? {
+      startCapital: 0,
+      fieldCosts: 0,
+      refereeCosts: 0,
+      adminCosts: 0,
+      fines: 0,
+      adjustments: 0,
+      currentBalance: 0,
     };
-  };
 
-  // Calculate overall financial statistics
-  const calculateFinancialStatistics = (): FinancialStatistics => {
-    if (!teamsQuery.data || !transactionsQuery.data) {
+  const teamsWithFinances = useMemo(
+    () =>
+      (teamsQuery.data || []).map((team) => ({
+        ...team,
+        finances: teamFinancesById.get(team.team_id) ?? calculateTeamFinances(team.team_id),
+      })),
+    [teamsQuery.data, teamFinancesById],
+  );
+
+  const financialStatistics = useMemo((): FinancialStatistics => {
+    const teams = teamsQuery.data || [];
+    const transactions = transactionsQuery.data || [];
+
+    if (!teams.length) {
       return {
         totalTeams: 0,
         totalBalance: 0,
@@ -262,127 +154,62 @@ export const useFinancialData = () => {
         positiveTeams: 0,
         negativeTeams: 0,
         totalRevenue: 0,
-        totalExpenses: 0
+        totalExpenses: 0,
       };
     }
 
-    const teams = teamsQuery.data;
-    const totalBalance = teams.reduce((sum, team) => sum + team.balance, 0);
-    const positiveTeams = teams.filter(team => team.balance > 0).length;
-    const negativeTeams = teams.filter(team => team.balance < 0).length;
+    const balances = teams.map((team) => calculateTeamFinances(team.team_id).currentBalance);
+    const totalBalance = balances.reduce((sum, value) => sum + value, 0);
 
-    const totalRevenue = transactionsQuery.data
-      .filter(t => t.transaction_type === 'deposit' || 
-        (t.transaction_type === 'adjustment' && Number(t.amount) > 0))
+    const totalRevenue = transactions
+      .filter((t) => t.cost_settings?.category === "deposit")
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    const totalExpenses = transactionsQuery.data
-      .filter(t => t.transaction_type === 'match_cost' || 
-        t.transaction_type === 'penalty' ||
-        (t.transaction_type === 'adjustment' && Number(t.amount) < 0))
+    const totalExpenses = transactions
+      .filter((t) => ["match_cost", "penalty"].includes(t.cost_settings?.category || ""))
       .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
 
     return {
       totalTeams: teams.length,
       totalBalance,
       averageBalance: teams.length > 0 ? totalBalance / teams.length : 0,
-      positiveTeams,
-      negativeTeams,
+      positiveTeams: balances.filter((value) => value > 0).length,
+      negativeTeams: balances.filter((value) => value < 0).length,
       totalRevenue,
-      totalExpenses
+      totalExpenses,
     };
-  };
+  }, [teamsQuery.data, transactionsQuery.data, teamFinancesById]);
 
-  // Currency formatter
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('nl-NL', {
-      style: 'currency',
-      currency: 'EUR'
+  const formatCurrency = (amount: number): string =>
+    new Intl.NumberFormat("nl-NL", {
+      style: "currency",
+      currency: "EUR",
     }).format(amount);
-  };
 
-  // Get teams with calculated finances
-  const getTeamsWithFinances = () => {
-    if (!teamsQuery.data) return [];
-    
-    return teamsQuery.data.map(team => ({
-      ...team,
-      finances: calculateTeamFinances(team.team_id)
-    }));
-  };
-
-  // Sort teams by various financial criteria
-  const sortTeamsByFinances = (
-    teams: Team[], 
-    sortBy: 'name' | 'balance' | 'balance_desc' | 'expenses' | 'revenue' = 'name'
-  ) => {
-    if (!teams) return [];
-    
-    return [...teams].sort((a, b) => {
-      const aFinances = calculateTeamFinances(a.team_id);
-      const bFinances = calculateTeamFinances(b.team_id);
-      
-      switch (sortBy) {
-        case 'name':
-          return a.team_name.localeCompare(b.team_name);
-        case 'balance':
-          return aFinances.currentBalance - bFinances.currentBalance;
-        case 'balance_desc':
-          return bFinances.currentBalance - aFinances.currentBalance;
-        case 'expenses':
-          const aExpenses = aFinances.fieldCosts + aFinances.refereeCosts + aFinances.fines;
-          const bExpenses = bFinances.fieldCosts + bFinances.refereeCosts + bFinances.fines;
-          return bExpenses - aExpenses;
-        case 'revenue':
-          return bFinances.startCapital - aFinances.startCapital;
-        default:
-          return 0;
-      }
-    });
-  };
+  const isInitialLoad =
+    !teamsQuery.data?.length && (teamsQuery.isLoading || transactionsQuery.isLoading);
+  const isRefreshing =
+    !!teamsQuery.data?.length &&
+    (transactionsQuery.isFetching || syncStatus === "syncing");
 
   return {
-    // Raw data
     teams: teamsQuery.data || [],
-    submittedMatches: submittedMatchesQuery.data || [],
-    costSettings: costSettingsQuery.data,
     transactions: transactionsQuery.data || [],
-    
-    // Loading states
-    teamsLoading: teamsQuery.isLoading,
-    matchesLoading: submittedMatchesQuery.isLoading,
-    costSettingsLoading: costSettingsQuery.isLoading,
-    transactionsLoading: transactionsQuery.isLoading,
-    isLoading: teamsQuery.isLoading || submittedMatchesQuery.isLoading || 
-               costSettingsQuery.isLoading || transactionsQuery.isLoading,
-    
-    // Error states
-    teamsError: teamsQuery.error,
-    matchesError: submittedMatchesQuery.error,
-    costSettingsError: costSettingsQuery.error,
-    transactionsError: transactionsQuery.error,
-    hasError: !!teamsQuery.error || !!submittedMatchesQuery.error || 
-              !!costSettingsQuery.error || !!transactionsQuery.error,
-    
-    // Calculated data
-    financialStatistics: calculateFinancialStatistics(),
-    teamsWithFinances: getTeamsWithFinances(),
-    
-    // Utility functions
+    teamsWithFinances,
+    financialStatistics,
     calculateTeamFinances,
     formatCurrency,
-    sortTeamsByFinances,
-    
-    // Query controls
-    refetchTeams: teamsQuery.refetch,
-    refetchMatches: submittedMatchesQuery.refetch,
-    refetchCostSettings: costSettingsQuery.refetch,
+    syncStatus,
+    forceResync,
+    isInitialLoad,
+    isRefreshing,
+    teamsLoading: teamsQuery.isLoading,
+    transactionsLoading: transactionsQuery.isLoading,
+    isLoading: teamsQuery.isLoading || transactionsQuery.isLoading,
+    teamsError: teamsQuery.error,
+    transactionsError: transactionsQuery.error,
+    hasError: !!teamsQuery.error || !!transactionsQuery.error,
     refetchTransactions: transactionsQuery.refetch,
-    refetchAll: () => Promise.all([
-      teamsQuery.refetch(),
-      submittedMatchesQuery.refetch(),
-      costSettingsQuery.refetch(),
-      transactionsQuery.refetch()
-    ])
+    refetchAll: () => Promise.all([teamsQuery.refetch(), transactionsQuery.refetch()]),
   };
-}; 
+};
