@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { costSettingsService } from "@/services/financial";
+import { costSettingsService, invalidateFinancialTransactionQueries } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateShort, getCurrentDate } from "@/lib/dateUtils";
 
@@ -110,8 +110,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
           title: "Succesvol",
           description: result.message
         });
-        await queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
-        await queryClient.refetchQueries({ queryKey: ['team-transactions'], type: 'active' });
+        await invalidateFinancialTransactionQueries(queryClient, teamId);
         onOpenChange(false);
       } else {
         toast({

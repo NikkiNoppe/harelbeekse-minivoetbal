@@ -12,10 +12,14 @@ interface Team {
   team_name: string;
 }
 
-interface TeamTransaction {
+export interface FinancialTeamTransaction {
+  id: number;
   team_id: number;
+  transaction_type: string;
   amount: number;
   description?: string | null;
+  cost_setting_id?: number | null;
+  match_id?: number | null;
   transaction_date: string;
   cost_settings?: {
     name?: string | null;
@@ -24,22 +28,14 @@ interface TeamTransaction {
   matches?: {
     unique_number?: string;
     match_date?: string;
+    home_team_id?: number;
+    away_team_id?: number;
+    teams_home?: { team_name: string };
+    teams_away?: { team_name: string };
   };
 }
 
-export type TeamFinances = TeamFinancesSummary;
-
-export interface FinancialStatistics {
-  totalTeams: number;
-  totalBalance: number;
-  averageBalance: number;
-  positiveTeams: number;
-  negativeTeams: number;
-  totalRevenue: number;
-  totalExpenses: number;
-}
-
-async function fetchAllTeamTransactions(): Promise<TeamTransaction[]> {
+async function fetchAllTeamTransactions(): Promise<FinancialTeamTransaction[]> {
   let allData: any[] = [];
   let from = 0;
   const batchSize = 1000;
@@ -50,7 +46,14 @@ async function fetchAllTeamTransactions(): Promise<TeamTransaction[]> {
       .select(`
         *,
         costs(name, category, amount),
-        matches(unique_number, match_date)
+        matches(
+          unique_number,
+          match_date,
+          home_team_id,
+          away_team_id,
+          teams_home:teams!home_team_id(team_name),
+          teams_away:teams!away_team_id(team_name)
+        )
       `)
       .order("transaction_date", { ascending: false })
       .range(from, from + batchSize - 1);
@@ -64,25 +67,46 @@ async function fetchAllTeamTransactions(): Promise<TeamTransaction[]> {
   }
 
   return allData.map((transaction) => ({
+    id: transaction.id,
     team_id: transaction.team_id,
+    transaction_type: transaction.costs?.category || "adjustment",
     amount:
       transaction.amount ??
       (typeof transaction.costs?.amount === "number" ? transaction.costs.amount : 0),
     description: transaction.costs?.name || null,
+    cost_setting_id: transaction.cost_setting_id,
+    match_id: transaction.match_id,
     transaction_date: transaction.transaction_date,
     cost_settings: transaction.costs
       ? {
           name: transaction.costs.name,
           category: transaction.costs.category,
+          amount: transaction.costs.amount,
         }
       : undefined,
     matches: transaction.matches
       ? {
           unique_number: transaction.matches.unique_number,
           match_date: transaction.matches.match_date,
+          home_team_id: transaction.matches.home_team_id,
+          away_team_id: transaction.matches.away_team_id,
+          teams_home: transaction.matches.teams_home,
+          teams_away: transaction.matches.teams_away,
         }
       : undefined,
   }));
+}
+
+export type TeamFinances = TeamFinancesSummary;
+
+export interface FinancialStatistics {
+  totalTeams: number;
+  totalBalance: number;
+  averageBalance: number;
+  positiveTeams: number;
+  negativeTeams: number;
+  totalRevenue: number;
+  totalExpenses: number;
 }
 
 export const useFinancialData = (options?: { enableSync?: boolean }) => {

@@ -16,8 +16,13 @@ export {
 export { matchCostService } from './matchCostService';
 export {
   computeTeamFinances,
+  computeCurrentBalance,
+  computePeriodCostTotals,
+  resolveTeamCostAmount,
   isFieldCostTransaction,
   isRefereeCostTransaction,
   isAdminCostTransaction,
   type TeamFinancesSummary,
+  type PeriodCostTotals,
 } from './teamCostCategories';
+export { invalidateFinancialTransactionQueries } from './invalidateFinancialQueries';

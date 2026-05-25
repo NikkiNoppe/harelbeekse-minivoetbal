@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveTeamCostAmount } from "./teamCostCategories";
 
 /** Eén geboekte veldlijn (per ploeg); wedstrijdinfo uit join. */
 export interface FieldCostLineDetail {
@@ -129,15 +130,35 @@ function nlMonthYearFromKey(monthKey: string): string {
   return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
 }
 
+function expenseAmount(transaction: {
+  amount?: number | string | null;
+  team_id: number;
+  costs?: { name?: string | null; category?: string | null; amount?: number | string | null } | null;
+}): number {
+  return Math.abs(
+    resolveTeamCostAmount({
+      amount: transaction.amount,
+      team_id: transaction.team_id,
+      cost_settings: transaction.costs
+        ? {
+            name: transaction.costs.name,
+            category: transaction.costs.category,
+            amount: transaction.costs.amount,
+          }
+        : undefined,
+    }),
+  );
+}
+
 /** Zelfde logica als sync-match-costs edge function */
 function isFieldCostName(name: string | null | undefined): boolean {
-  const n = (name || '').toLowerCase();
-  return n.includes('veld') || n.includes('field');
+  const n = (name || "").toLowerCase();
+  return n.includes("veld") || n.includes("field");
 }
 
 function isAdminCostName(name: string | null | undefined): boolean {
-  const n = (name || '').toLowerCase();
-  return n.includes('administratie') || n.includes('admin');
+  const n = (name || "").toLowerCase();
+  return n.includes("administratie") || n.includes("admin");
 }
 
 type FieldAdminBucket = {
@@ -364,7 +385,7 @@ export const monthlyReportsService = {
               lines: [],
             };
           }
-          fieldCostsByMonth[key].totalCost += Number(transaction.amount || 0);
+          fieldCostsByMonth[key].totalCost += expenseAmount(transaction);
           fieldCostsByMonth[key].lineCount++;
           const mid = transaction.match_id;
           if (typeof mid === 'number' && mid > 0) {
@@ -383,7 +404,7 @@ export const monthlyReportsService = {
             homeTeam: meta.homeTeam,
             awayTeam: meta.awayTeam,
             billedTeam,
-            amount: Number(transaction.amount || 0),
+            amount: expenseAmount(transaction),
           });
         }
 
@@ -399,7 +420,7 @@ export const monthlyReportsService = {
               lines: [],
             };
           }
-          adminCostsByMonth[key].totalCost += Number(transaction.amount || 0);
+          adminCostsByMonth[key].totalCost += expenseAmount(transaction);
           adminCostsByMonth[key].lineCount++;
           const mid = transaction.match_id;
           if (typeof mid === 'number' && mid > 0) {
@@ -418,7 +439,7 @@ export const monthlyReportsService = {
               lines: [],
             };
           }
-          finesByMonth[key].totalFines += Number(transaction.amount || 0);
+          finesByMonth[key].totalFines += expenseAmount(transaction);
           finesByMonth[key].fineCount++;
           const m = transaction.matches as { unique_number?: string; match_date?: string; teams_home?: { team_name?: string }; teams_away?: { team_name?: string } } | null;
           const meta = rowLabelFromMatchJoin(m);
@@ -427,7 +448,7 @@ export const monthlyReportsService = {
             teamRow?.team_name ||
             (typeof transaction.team_id === "number" ? `Team ${transaction.team_id}` : "—");
           finesByMonth[key].lines!.push({
-            amount: Number(transaction.amount || 0),
+            amount: expenseAmount(transaction),
             teamId: typeof transaction.team_id === "number" ? transaction.team_id : null,
             teamName: billedTeam,
             matchId: typeof transaction.match_id === "number" ? transaction.match_id : null,

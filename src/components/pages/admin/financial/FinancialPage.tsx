@@ -20,15 +20,7 @@ const AdminFinancialPage: React.FC = () => {
   const [costListModalOpen, setCostListModalOpen] = useState(false);
   const [monthlyReportsModalOpen, setMonthlyReportsModalOpen] = useState(false);
 
-  const {
-    teams,
-    calculateTeamFinances,
-    formatCurrency,
-    syncStatus,
-    forceResync,
-    isInitialLoad,
-    isRefreshing,
-  } = useFinancialData();
+  const { teams, calculateTeamFinances, formatCurrency, syncStatus, forceResync, isInitialLoad, isRefreshing } = useFinancialData();
 
   useEffect(() => {
     void queryClient.prefetchQuery({

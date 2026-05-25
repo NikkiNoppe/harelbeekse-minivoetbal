@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { costSettingsService } from "@/services/financial";
+import { costSettingsService, invalidateFinancialTransactionQueries } from "@/services/financial";
+import { computeCurrentBalance } from "@/services/financial/teamCostCategories";
+import { useFinancialData } from "@/hooks/useFinancialData";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2, ChevronDown, Loader2, CalendarIcon } from "lucide-react";
 import { formatDateShort, getCurrentDate } from "@/lib/dateUtils";
@@ -37,6 +39,9 @@ interface FinancialTeamDetailModalProps {
 export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ open, onOpenChange, team }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { transactions, calculateTeamFinances, formatCurrency, transactionsLoading } = useFinancialData({
+    enableSync: false,
+  });
   
   // State for transaction actions
   const [showAddTransaction, setShowAddTransaction] = useState(false);
@@ -49,34 +54,20 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
 
-  // Fetch data
-  const { data: transactions, isLoading: loadingTransactions } = useQuery({
-    queryKey: ['team-transactions', team?.team_id],
-    queryFn: () => team ? costSettingsService.getTeamTransactions(team.team_id) : Promise.resolve([]),
-    enabled: !!team && open
-  });
+  const teamTransactions = useMemo(
+    () => (team ? transactions.filter((t) => t.team_id === team.team_id) : []),
+    [transactions, team],
+  );
+
+  const finances = team ? calculateTeamFinances(team.team_id) : null;
+  const currentBalance = finances?.currentBalance ?? 0;
+  const loadingTransactions = transactionsLoading && teamTransactions.length === 0;
 
   const { data: costSettings, isLoading: loadingCostSettings } = useQuery({
     queryKey: ['cost-settings'],
     queryFn: costSettingsService.getCostSettings,
     enabled: open
   });
-
-  // Calculate current balance
-  const calculateCurrentBalance = () => {
-    if (!transactions) return 0;
-    
-    return transactions.reduce((balance, transaction) => {
-      const amount = Math.abs(transaction.amount);
-      if (transaction.transaction_type === 'deposit') {
-        return balance + amount;
-      } else {
-        return balance - amount;
-      }
-    }, 0);
-  };
-
-  const currentBalance = calculateCurrentBalance();
 
   // Reset form when modal closes
   useEffect(() => {
@@ -162,9 +153,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
         setCustomAmount('');
         setTransactionDate(new Date());
         
-        // Subtiel: 1 invalidatie + refetch enkel actieve queries voor dit team
-        await queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
-        await queryClient.refetchQueries({ queryKey: ['team-transactions'], type: 'active' });
+        await invalidateFinancialTransactionQueries(queryClient, team.team_id);
       } else {
         console.error('Transaction failed:', result.message);
         toast({
@@ -222,9 +211,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
           title: "Succesvol verwijderd",
           description: "De transactie is succesvol verwijderd uit de database."
         });
-        // Invalidate queries to refresh the list
-        await queryClient.invalidateQueries({ queryKey: ['team-transactions', team.team_id] });
-        await queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
+        await invalidateFinancialTransactionQueries(queryClient, team.team_id);
       } else {
         toast({
           title: "Fout",
@@ -246,13 +233,6 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
   };
 
   // Utility functions
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('nl-NL', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
-
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'deposit':
@@ -298,7 +278,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
 
   // Group transactions by match_id
   const groupTransactionsByMatch = () => {
-    if (!transactions) return [];
+    if (!teamTransactions.length) return [];
     
     const grouped: Array<{
       match_id: number | null;
@@ -310,16 +290,16 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
         teams_home?: { team_name: string };
         teams_away?: { team_name: string };
       };
-      transactions: any[];
+      transactions: typeof teamTransactions;
       totalAmount: number;
       transaction_date: string;
     }> = [];
     
-    const matchGroups = new Map<number | string, any[]>();
-    const standaloneTransactions: any[] = [];
+    const matchGroups = new Map<number | string, typeof teamTransactions>();
+    const standaloneTransactions: typeof teamTransactions = [];
     
     // Separate transactions with match_id from those without
-    transactions.forEach(transaction => {
+    teamTransactions.forEach(transaction => {
       if (transaction.match_id) {
         const key = transaction.match_id;
         if (!matchGroups.has(key)) {
@@ -332,17 +312,14 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
     });
     
     // Create grouped entries for matches
-    matchGroups.forEach((transactions, matchId) => {
-      const firstTransaction = transactions[0];
-      const totalAmount = transactions.reduce((sum, t) => {
-        const amount = Math.abs(t.amount);
-        return t.transaction_type === 'deposit' ? sum + amount : sum - amount;
-      }, 0);
+    matchGroups.forEach((groupTx, matchId) => {
+      const firstTransaction = groupTx[0];
+      const totalAmount = computeCurrentBalance(groupTx);
       
       grouped.push({
         match_id: typeof matchId === 'number' ? matchId : null,
         match_info: firstTransaction.matches,
-        transactions: transactions.sort((a, b) => 
+        transactions: groupTx.sort((a, b) => 
           (a.cost_settings?.name || '').localeCompare(b.cost_settings?.name || '')
         ),
         totalAmount,
@@ -355,9 +332,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
       grouped.push({
         match_id: null,
         transactions: [transaction],
-        totalAmount: transaction.transaction_type === 'deposit' 
-          ? Math.abs(transaction.amount) 
-          : -Math.abs(transaction.amount),
+        totalAmount: computeCurrentBalance([transaction]),
         transaction_date: transaction.transaction_date
       });
     });
