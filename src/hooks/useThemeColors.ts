@@ -19,6 +19,9 @@ async function fetchThemeColors(): Promise<ThemeColors> {
 
   const val = data.setting_value as unknown as ThemeColors;
   if (!val?.primaryBase || !val?.scale) return DEFAULT_THEME;
+
+  // Migreer oud paars club-thema naar Sport Harelbeke-blauw
+  if (val.primaryBase.toLowerCase() === "#60368c") return DEFAULT_THEME;
   
   // Merge with defaults for any missing semantic colors
   return {

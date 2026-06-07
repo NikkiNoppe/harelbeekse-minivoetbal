@@ -1,5 +1,5 @@
 
-import React, { useMemo } from "react";
+import React, { useMemo, type ReactNode } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -32,6 +32,21 @@ interface AdminDashboardProps {
   activeTab: TabName;
   setActiveTab: (tab: TabName) => void;
 }
+
+/** Mount tab content only when active — avoids fetching every admin page at once. */
+const LazyTabContent = ({
+  value,
+  activeTab,
+  children,
+}: {
+  value: TabName;
+  activeTab: TabName;
+  children: ReactNode;
+}) => (
+  <TabsContent value={value} className="mt-0">
+    {activeTab === value ? children : null}
+  </TabsContent>
+);
 
 const TeamManagerSuspensionNotice: React.FC = () => {
   const { user } = useAuth();
@@ -110,105 +125,101 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
         {isTeamManager && <TeamManagerSuspensionNotice />}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabName)} className="w-full">
           <div className="animate-fade-in">
-            <TabsContent value="match-forms" className="mt-0">
+            <LazyTabContent value="match-forms" activeTab={activeTab}>
               {canSeeAnyForms ? (
                 <MatchesPage teamId={matchFormsTeamId} teamName={matchFormsTeamName} />
               ) : (
                 user?.role === 'referee' ? <AlgemeenPage /> : <NotAvailable />
               )}
-            </TabsContent>
+            </LazyTabContent>
             
-            <TabsContent value="match-forms-league" className="mt-0">
+            <LazyTabContent value="match-forms-league" activeTab={activeTab}>
               {canSeeLeagueForms ? (
                 <MatchesPage teamId={matchFormsTeamId} teamName={matchFormsTeamName} initialTab="league" />
               ) : (
                 user?.role === 'referee' ? <AlgemeenPage /> : <NotAvailable />
               )}
-            </TabsContent>
+            </LazyTabContent>
             
-            <TabsContent value="match-forms-cup" className="mt-0">
+            <LazyTabContent value="match-forms-cup" activeTab={activeTab}>
               {canSeeCupForms ? (
                 <MatchesPage teamId={matchFormsTeamId} teamName={matchFormsTeamName} initialTab="cup" />
               ) : (
                 user?.role === 'referee' ? <AlgemeenPage /> : <NotAvailable />
               )}
-            </TabsContent>
+            </LazyTabContent>
             
-            <TabsContent value="match-forms-playoffs" className="mt-0">
+            <LazyTabContent value="match-forms-playoffs" activeTab={activeTab}>
               {canSeePlayoffForms ? (
                 <AdminPlayoffMatchesPage />
               ) : (
                 user?.role === 'referee' ? <AlgemeenPage /> : <NotAvailable />
               )}
-            </TabsContent>
+            </LazyTabContent>
             
-            <TabsContent value="players" className="mt-0">
+            <LazyTabContent value="players" activeTab={activeTab}>
               <PlayerPage />
-            </TabsContent>
+            </LazyTabContent>
             
-            {/* Teams page - visible based on tab visibility settings */}
             {isTabVisible("teams") && (
-              <TabsContent value="teams" className="mt-0">
+              <LazyTabContent value="teams" activeTab={activeTab}>
                 <TeamsPage />
-              </TabsContent>
+              </LazyTabContent>
             )}
 
             {isTeamManager && (
-              <TabsContent value="schorsingen" className="mt-0">
+              <LazyTabContent value="schorsingen" activeTab={activeTab}>
                 <SchorsingenPage />
-              </TabsContent>
+              </LazyTabContent>
             )}
             
             {isAdmin && (
               <>
-                <TabsContent value="suspensions" className="mt-0">
+                <LazyTabContent value="suspensions" activeTab={activeTab}>
                   <SchorsingenPage />
-                </TabsContent>
+                </LazyTabContent>
                 
-                <TabsContent value="schorsingen" className="mt-0">
+                <LazyTabContent value="schorsingen" activeTab={activeTab}>
                   <SchorsingenPage />
-                </TabsContent>
+                </LazyTabContent>
                 
-                <TabsContent value="users" className="mt-0">
+                <LazyTabContent value="users" activeTab={activeTab}>
                   <UserPage />
-                </TabsContent>
+                </LazyTabContent>
                 
-                <TabsContent value="competition" className="mt-0">
+                <LazyTabContent value="competition" activeTab={activeTab}>
                   <CompetitionPage />
-                </TabsContent>
+                </LazyTabContent>
                 
-                <TabsContent value="cup" className="mt-0">
+                <LazyTabContent value="cup" activeTab={activeTab}>
                   <BekerPage />
-                </TabsContent>
+                </LazyTabContent>
                 
-                <TabsContent value="playoffs" className="mt-0">
+                <LazyTabContent value="playoffs" activeTab={activeTab}>
                   <PlayoffPage />
-                </TabsContent>
+                </LazyTabContent>
                 
-                <TabsContent value="financial" className="mt-0">
+                <LazyTabContent value="financial" activeTab={activeTab}>
                   <FinancialPage />
-                </TabsContent>
+                </LazyTabContent>
                 
-                <TabsContent value="settings" className="mt-0">
+                <LazyTabContent value="settings" activeTab={activeTab}>
                   <SettingsPanel />
-                </TabsContent>
+                </LazyTabContent>
                 
-                
-   <TabsContent value="polls" className="mt-0">
+                <LazyTabContent value="polls" activeTab={activeTab}>
                   <ScheidsrechtersPage />
-                </TabsContent>
+                </LazyTabContent>
               </>
             )}
 
-            {/* Blog Management */}
-            <TabsContent value="blog-management" className="mt-0">
+            <LazyTabContent value="blog-management" activeTab={activeTab}>
               <BlogPage />
-            </TabsContent>
+            </LazyTabContent>
 
-            {/* Berichten Beheer */}
-            <TabsContent value="notification" className="mt-0">
+            <LazyTabContent value="notification" activeTab={activeTab}>
               <NotificationPage />
-            </TabsContent>
+            </LazyTabContent>
 
             {/* Scheidsrechters tab - removed as it's now handled via main navigation */}
           </div>

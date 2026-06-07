@@ -41,7 +41,6 @@ export function AdminDashboardLayout({
           activeTab={activeTab}
           isAuthenticated={!!user}
           user={user}
-          hasSidebar
         />
 
         {/* Main content area */}

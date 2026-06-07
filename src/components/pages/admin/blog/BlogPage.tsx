@@ -1,45 +1,67 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { AppModal, AppModalFooter } from '@/components/modals';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { blogService, type BlogPost } from '@/services/blogService';
-import { Plus, Edit, Trash2 } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import React, { useCallback, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { AppModal, AppModalFooter } from "@/components/modals";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { blogService, type BlogPost } from "@/services/blogService";
+import {
+  ADMIN_BLOG_POSTS_QUERY_KEY,
+  useAdminBlogPosts,
+} from "@/hooks/useAdminBlogPosts";
+import { Plus, Edit, Trash2, AlertCircle, Loader2, BookOpen } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const DEFAULT_FORM_DATA = {
-  title: '',
-  content: '',
-  published: false
+  title: "",
+  content: "",
+  published: false,
 };
+
+const BlogTableSkeleton = () => (
+  <div className="w-full overflow-x-auto">
+    <div className="min-w-[650px] space-y-3">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="flex items-center gap-4 py-2">
+          <Skeleton className="h-5 flex-1" />
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-5 w-20" />
+          <Skeleton className="h-8 w-20" />
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 const BlogPage: React.FC = () => {
   const { toast } = useToast();
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const {
+    blogPosts = [],
+    isListLoading,
+    isRefreshing,
+    showError,
+    showEmpty,
+    error,
+    refetch,
+  } = useAdminBlogPosts();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const loadBlogPosts = useCallback(async () => {
-    try {
-      setLoading(true);
-      const posts = await blogService.getAllBlogPosts();
-      setBlogPosts(posts);
-    } catch (error) {
-      console.error('Error loading blog posts:', error);
-      toast({ title: 'Error', description: 'Kon blog posts niet laden', variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => { loadBlogPosts(); }, [loadBlogPosts]);
+  const refreshData = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ADMIN_BLOG_POSTS_QUERY_KEY });
+    await queryClient.invalidateQueries({ queryKey: ["blogPosts"] });
+    await refetch();
+  }, [queryClient, refetch]);
 
   const resetForm = useCallback(() => {
     setFormData(DEFAULT_FORM_DATA);
@@ -51,128 +73,181 @@ const BlogPage: React.FC = () => {
     setIsDialogOpen(true);
   }, [resetForm]);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const settingValue = {
-        title: formData.title,
-        content: formData.content,
-        published: formData.published,
-        ...(formData.published && !editingPost ? { published_at: new Date().toISOString() } : {})
-      };
+  const handleDialogOpenChange = useCallback(
+    (open: boolean) => {
+      setIsDialogOpen(open);
+      if (!open) resetForm();
+    },
+    [resetForm],
+  );
 
-      if (editingPost) {
-        await blogService.updateBlogPost(editingPost.id, { setting_value: settingValue } as any);
-        toast({ title: 'Success', description: 'Blog post bijgewerkt' });
-      } else {
-        await blogService.createBlogPost({
-          setting_category: 'blog_posts',
-          setting_name: `blog_post_${Date.now()}`,
-          setting_value: settingValue,
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsSaving(true);
+      try {
+        const settingValue: BlogPost["setting_value"] = {
+          title: formData.title.trim(),
+          content: formData.content.trim(),
+          published: formData.published,
+        };
+        if (formData.published) {
+          settingValue.published_at =
+            editingPost?.setting_value.published_at || new Date().toISOString();
+        }
+
+        if (editingPost) {
+          await blogService.updateBlogPost(editingPost.id, {
+            setting_value: settingValue,
+          });
+          toast({ title: "Success", description: "Blog post bijgewerkt" });
+        } else {
+          await blogService.createBlogPost({
+            setting_category: "blog_posts",
+            setting_name: `blog_post_${Date.now()}`,
+            setting_value: settingValue,
+          });
+          toast({ title: "Success", description: "Blog post aangemaakt" });
+        }
+        setIsDialogOpen(false);
+        resetForm();
+        await refreshData();
+      } catch (err) {
+        console.error("Error saving blog post:", err);
+        toast({
+          title: "Fout",
+          description:
+            err instanceof Error ? err.message : "Kon blog post niet opslaan",
+          variant: "destructive",
         });
-        toast({ title: 'Success', description: 'Blog post aangemaakt' });
+      } finally {
+        setIsSaving(false);
       }
-      setIsDialogOpen(false);
-      resetForm();
-      loadBlogPosts();
-    } catch (error) {
-      console.error('Error saving blog post:', error);
-      toast({ title: 'Error', description: 'Kon blog post niet opslaan', variant: 'destructive' });
-    }
-  }, [formData, editingPost, toast, resetForm, loadBlogPosts]);
+    },
+    [formData, editingPost, toast, resetForm, refreshData],
+  );
 
   const handleEdit = useCallback((post: BlogPost) => {
     setEditingPost(post);
     setFormData({
       title: post.setting_value.title,
       content: post.setting_value.content,
-      published: post.setting_value.published
+      published: post.setting_value.published,
     });
     setIsDialogOpen(true);
   }, []);
 
-  const handleDelete = useCallback(async (id: number) => {
-    if (!confirm('Weet je zeker dat je deze blog post wilt verwijderen?')) return;
-    try {
-      await blogService.deleteBlogPost(id);
-      toast({ title: 'Success', description: 'Blog post verwijderd' });
-      loadBlogPosts();
-    } catch (error) {
-      console.error('Error deleting blog post:', error);
-      toast({ title: 'Error', description: 'Kon blog post niet verwijderen', variant: 'destructive' });
-    }
-  }, [toast, loadBlogPosts]);
+  const handleDelete = useCallback(
+    async (id: number) => {
+      if (!confirm("Weet je zeker dat je deze blog post wilt verwijderen?")) return;
+      try {
+        await blogService.deleteBlogPost(id);
+        toast({ title: "Success", description: "Blog post verwijderd" });
+        await refreshData();
+      } catch (err) {
+        console.error("Error deleting blog post:", err);
+        toast({
+          title: "Fout",
+          description:
+            err instanceof Error ? err.message : "Kon blog post niet verwijderen",
+          variant: "destructive",
+        });
+      }
+    },
+    [toast, refreshData],
+  );
 
-  const togglePublished = useCallback(async (post: BlogPost) => {
-    try {
-      await blogService.togglePublishedStatus(post.id, !post.setting_value.published);
-      toast({
-        title: 'Success',
-        description: `Blog post ${!post.setting_value.published ? 'gepubliceerd' : 'gedepubliceerd'}`
-      });
-      loadBlogPosts();
-    } catch (error) {
-      console.error('Error toggling published status:', error);
-      toast({ title: 'Error', description: 'Kon publicatiestatus niet wijzigen', variant: 'destructive' });
-    }
-  }, [toast, loadBlogPosts]);
-
-  const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, title: e.target.value }));
-  }, []);
-
-  const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setFormData(prev => ({ ...prev, content: e.target.value }));
-  }, []);
-
-  const handlePublishedChange = useCallback((checked: boolean) => {
-    setFormData(prev => ({ ...prev, published: checked }));
-  }, []);
-
-  const LoadingComponent = useMemo(() => (
-    <div className="flex items-center justify-center h-64">
-      <div className="text-lg">Laden...</div>
-    </div>
-  ), []);
-
-  if (loading) return LoadingComponent;
+  const togglePublished = useCallback(
+    async (post: BlogPost, published: boolean) => {
+      if (published === post.setting_value.published) return;
+      try {
+        await blogService.togglePublishedStatus(post.id, published);
+        toast({
+          title: "Success",
+          description: published
+            ? "Blog post gepubliceerd"
+            : "Blog post gedepubliceerd",
+        });
+        await refreshData();
+      } catch (err) {
+        console.error("Error toggling published status:", err);
+        toast({
+          title: "Fout",
+          description:
+            err instanceof Error
+              ? err.message
+              : "Kon publicatiestatus niet wijzigen",
+          variant: "destructive",
+        });
+      }
+    },
+    [toast, refreshData],
+  );
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Blogs</h1>
-        <Button className="btn btn--primary" onClick={handleOpenNew}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nieuwe Blog
-        </Button>
+    <div className="space-y-6 w-full motion-safe:animate-slide-up">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
+            <BookOpen className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
+            Blogs
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Beheer nieuwsberichten op de publieke site
+          </p>
+        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {isRefreshing && !isListLoading && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+              Vernieuwen…
+            </span>
+          )}
+          <Button className="btn btn--primary w-full sm:w-auto min-h-[44px]" onClick={handleOpenNew}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nieuwe Blog
+          </Button>
+        </div>
       </div>
 
       <AppModal
         open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        title={editingPost ? 'Blog Post Bewerken' : 'Nieuwe Blog Post'}
-        subtitle={editingPost ? 'Bewerk de blog post details' : 'Maak een nieuwe blog post aan'}
+        onOpenChange={handleDialogOpenChange}
+        title={editingPost ? "Blog Post Bewerken" : "Nieuwe Blog Post"}
+        subtitle={
+          editingPost
+            ? "Bewerk de blog post details"
+            : "Maak een nieuwe blog post aan"
+        }
         size="lg"
         className="max-w-4xl"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-sm font-medium">Titel</Label>
+            <Label htmlFor="title" className="text-sm font-medium">
+              Titel
+            </Label>
             <Input
               id="title"
               value={formData.title}
-              onChange={handleTitleChange}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, title: e.target.value }))
+              }
               required
               className="w-full"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="content" className="text-sm font-medium">Inhoud</Label>
+            <Label htmlFor="content" className="text-sm font-medium">
+              Inhoud
+            </Label>
             <Textarea
               id="content"
               value={formData.content}
-              onChange={handleContentChange}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, content: e.target.value }))
+              }
               rows={10}
               required
               placeholder="Volledige inhoud van de blog post..."
@@ -181,34 +256,74 @@ const BlogPage: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-3 p-3 border border-border rounded-lg bg-muted">
-            <Switch checked={formData.published} onCheckedChange={handlePublishedChange} />
-            <Label className="text-sm font-medium text-card-foreground cursor-pointer">
+            <Switch
+              id="blog-published"
+              checked={formData.published}
+              onCheckedChange={(checked) =>
+                setFormData((prev) => ({ ...prev, published: checked }))
+              }
+            />
+            <Label
+              htmlFor="blog-published"
+              className="text-sm font-medium text-card-foreground cursor-pointer"
+            >
               Gepubliceerd
             </Label>
           </div>
 
           <AppModalFooter>
-            <button type="button" onClick={() => setIsDialogOpen(false)} className="btn btn--secondary w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setIsDialogOpen(false)}
+              className="btn btn--secondary w-full sm:w-auto min-h-[44px]"
+            >
               Annuleren
             </button>
-            <button type="submit" className="btn btn--primary w-full sm:w-auto">
-              {editingPost ? 'Bijwerken' : 'Aanmaken'}
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="btn btn--primary w-full sm:w-auto min-h-[44px]"
+            >
+              {isSaving
+                ? "Opslaan…"
+                : editingPost
+                  ? "Bijwerken"
+                  : "Aanmaken"}
             </button>
           </AppModalFooter>
         </form>
       </AppModal>
 
       <Card>
-        <CardHeader>
-          <CardTitle></CardTitle>
-        </CardHeader>
+        <CardHeader className="pb-2" />
         <CardContent>
-          {blogPosts.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
+          {isListLoading ? (
+            <BlogTableSkeleton />
+          ) : showError ? (
+            <div className="py-8 text-center" role="alert">
+              <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" aria-hidden />
+              <h3 className="text-lg font-semibold mb-2">Fout bij laden</h3>
+              <p className="text-muted-foreground mb-4 text-sm">
+                {error instanceof Error
+                  ? error.message
+                  : "Kon blog posts niet laden."}
+              </p>
+              <Button
+                type="button"
+                onClick={() => void refetch()}
+                className="min-h-[44px]"
+              >
+                Opnieuw proberen
+              </Button>
+            </div>
+          ) : showEmpty ? (
+            <p className="text-center text-muted-foreground py-8 text-sm">
               Nog geen blog posts aangemaakt.
             </p>
           ) : (
-            <div className="w-full overflow-x-auto">
+            <div
+              className={`w-full overflow-x-auto transition-opacity ${isRefreshing ? "opacity-80" : ""}`}
+            >
               <div className="min-w-[650px]">
                 <Table className="table w-full">
                   <TableHeader>
@@ -216,36 +331,68 @@ const BlogPage: React.FC = () => {
                       <TableHead className="min-w-[250px]">Titel</TableHead>
                       <TableHead className="min-w-[100px]">Status</TableHead>
                       <TableHead className="min-w-[100px]">Gemaakt</TableHead>
-                      <TableHead className="text-center min-w-[120px]">Acties</TableHead>
+                      <TableHead className="text-center min-w-[120px]">
+                        Acties
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {blogPosts.map((post) => (
                       <TableRow key={post.id}>
-                        <TableCell className="font-medium">{post.setting_value.title}</TableCell>
+                        <TableCell className="font-medium">
+                          {post.setting_value.title}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <Switch
                               checked={post.setting_value.published}
-                              onCheckedChange={() => togglePublished(post)}
-                              className="scale-75"
+                              onCheckedChange={(checked) =>
+                                void togglePublished(post, checked)
+                              }
+                              className="min-h-[44px] min-w-[44px] scale-90"
+                              aria-label={
+                                post.setting_value.published
+                                  ? `${post.setting_value.title} depubliceren`
+                                  : `${post.setting_value.title} publiceren`
+                              }
                             />
-                            <Badge variant={post.setting_value.published ? 'default' : 'secondary'} className="text-xs">
-                              {post.setting_value.published ? 'Gepubliceerd' : 'Concept'}
+                            <Badge
+                              variant={
+                                post.setting_value.published
+                                  ? "default"
+                                  : "secondary"
+                              }
+                              className="text-xs"
+                            >
+                              {post.setting_value.published
+                                ? "Gepubliceerd"
+                                : "Concept"}
                             </Badge>
                           </div>
                         </TableCell>
                         <TableCell>
                           {post.setting_value.published_at
-                            ? new Date(post.setting_value.published_at).toLocaleDateString('nl-NL')
-                            : '—'}
+                            ? new Date(
+                                post.setting_value.published_at,
+                              ).toLocaleDateString("nl-NL")
+                            : "—"}
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center gap-1">
-                            <Button className="btn btn--icon btn--edit" onClick={() => handleEdit(post)} size="sm">
+                            <Button
+                              className="btn btn--icon btn--edit min-h-[44px] min-w-[44px]"
+                              onClick={() => handleEdit(post)}
+                              size="sm"
+                              aria-label={`Bewerk ${post.setting_value.title}`}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button className="btn btn--icon btn--danger" onClick={() => handleDelete(post.id)} size="sm">
+                            <Button
+                              className="btn btn--icon btn--danger min-h-[44px] min-w-[44px]"
+                              onClick={() => void handleDelete(post.id)}
+                              size="sm"
+                              aria-label={`Verwijder ${post.setting_value.title}`}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>

@@ -1,10 +1,16 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { notificationService, type Notification } from '@/services/notificationService';
-import { Plus, Edit, Trash2, Users, UserCheck, Loader2, MessageSquare } from 'lucide-react';
+import {
+  ADMIN_NOTIFICATIONS_QUERY_KEY,
+  useAdminNotifications,
+} from '@/hooks/useAdminNotifications';
+import { Plus, Edit, Trash2, Users, UserCheck, Loader2, MessageSquare, AlertCircle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { NotificationFormModal } from '@/components/modals';
 import { AppAlertModal } from '@/components/modals/base/app-alert-modal';
@@ -43,44 +49,43 @@ const DEFAULT_FORM_DATA: FormData = {
   end_date: '',
 };
 
+const NotificationListSkeleton = () => (
+  <div className="space-y-3">
+    {[...Array(3)].map((_, i) => (
+      <div key={i} className="p-4 border border-border rounded-lg space-y-3">
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+    ))}
+  </div>
+);
+
 const NotificationPage: React.FC = () => {
   const { toast } = useToast();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const {
+    notifications = [],
+    users = [],
+    isListLoading,
+    isRefreshing,
+    showError,
+    showEmpty,
+    error,
+    refetch,
+  } = useAdminNotifications();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
   const [initialFormData, setInitialFormData] = useState<FormData>(DEFAULT_FORM_DATA);
   const [initialTargetMode, setInitialTargetMode] = useState<TargetMode>('roles');
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  
-  // Users for targeting
-  const [users, setUsers] = useState<Array<{ user_id: number; username: string; role: string }>>([]);
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [notificationsData, usersData] = await Promise.all([
-        notificationService.getAllNotifications(),
-        notificationService.getAllUsers(),
-      ]);
-      setNotifications(notificationsData);
-      setUsers(usersData);
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast({
-        title: 'Error',
-        description: 'Kon gegevens niet laden',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const refreshData = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ADMIN_NOTIFICATIONS_QUERY_KEY });
+    await refetch();
+  }, [queryClient, refetch]);
 
   const handleOpenNew = useCallback(() => {
     setEditingNotification(null);
@@ -113,7 +118,7 @@ const NotificationPage: React.FC = () => {
         toast({ title: 'Succes', description: 'Bericht aangemaakt' });
       }
 
-      await loadData();
+      await refreshData();
       setIsDialogOpen(false);
     } catch (error) {
       console.error('Error saving notification:', error);
@@ -124,7 +129,7 @@ const NotificationPage: React.FC = () => {
       });
       throw error;
     }
-  }, [editingNotification, toast, loadData]);
+  }, [editingNotification, toast, refreshData]);
 
   const handleEdit = useCallback((notification: Notification) => {
     setEditingNotification(notification);
@@ -154,7 +159,7 @@ const NotificationPage: React.FC = () => {
     try {
       await notificationService.deleteNotification(id);
       toast({ title: 'Succes', description: 'Bericht verwijderd' });
-      await loadData();
+      await refreshData();
     } catch (error) {
       console.error('Error deleting notification:', error);
       toast({
@@ -166,7 +171,7 @@ const NotificationPage: React.FC = () => {
       setIsDeleting(false);
       setDeleteConfirmId(null);
     }
-  }, [toast, loadData]);
+  }, [toast, refreshData]);
 
   const getTypeBadgeClass = useCallback((type: string) => {
     switch (type) {
@@ -208,28 +213,28 @@ const NotificationPage: React.FC = () => {
     return 'Altijd';
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto p-4 sm:p-6 space-y-6">
+    <div className="space-y-6 w-full motion-safe:animate-slide-up">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
             Berichten
           </h1>
           <p className="text-muted-foreground text-sm mt-1">Beheer berichten voor gebruikers en teams</p>
         </div>
-        <Button onClick={handleOpenNew} className="btn--primary w-full sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" />
-          Nieuw Bericht
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {isRefreshing && !isListLoading && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+              Vernieuwen…
+            </span>
+          )}
+          <Button onClick={handleOpenNew} className="btn--primary w-full sm:w-auto min-h-[44px]">
+            <Plus className="w-4 h-4 mr-2" />
+            Nieuw Bericht
+          </Button>
+        </div>
       </div>
 
       <NotificationFormModal
@@ -249,12 +254,25 @@ const NotificationPage: React.FC = () => {
           <CardTitle className="text-lg text-[var(--color-600)]">Alle Berichten</CardTitle>
         </CardHeader>
         <CardContent>
-          {notifications.length === 0 ? (
-            <p className="text-center text-[var(--color-500)] py-8">
+          {isListLoading ? (
+            <NotificationListSkeleton />
+          ) : showError ? (
+            <div className="py-8 text-center" role="alert">
+              <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" aria-hidden />
+              <h3 className="text-lg font-semibold mb-2">Fout bij laden</h3>
+              <p className="text-muted-foreground mb-4 text-sm">
+                {error instanceof Error ? error.message : 'Kon gegevens niet laden.'}
+              </p>
+              <Button type="button" onClick={() => void refetch()} className="min-h-[44px]">
+                Opnieuw proberen
+              </Button>
+            </div>
+          ) : showEmpty ? (
+            <p className="text-center text-[var(--color-500)] py-8 text-sm">
               Nog geen berichten aangemaakt.
             </p>
           ) : (
-            <>
+            <div className={isRefreshing ? 'opacity-80 transition-opacity' : ''}>
               {/* Mobile Cards */}
               <div className="space-y-3 md:hidden">
                 {notifications.map((notification) => {
@@ -392,7 +410,7 @@ const NotificationPage: React.FC = () => {
                   </TableBody>
                 </Table>
               </div>
-            </>
+            </div>
           )}
         </CardContent>
       </Card>

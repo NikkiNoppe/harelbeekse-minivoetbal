@@ -4,7 +4,9 @@
    
    Gecentraliseerd kleurensysteem met CSS custom properties.
    
-   THEMA WIJZIGEN (bijv. Purple → Blue):
+   THEMA: Sport Harelbeke-blauw (#0072b9) — bron: sportdienstharelbeke.be
+   
+   THEMA WIJZIGEN:
    
    VERPLICHT: Pas aan --color-primary-base, --color-primary-light, 
               --color-50 t/m --color-900, en --color-shadow-primary-* 
@@ -81,8 +83,8 @@
 /* Prefers-contrast support for better visibility */
 @media (prefers-contrast: more) {
   :root {
-    --color-400: #7a4fa3;
-    --color-600: #4d2a6b;
+    --color-400: #4dbbff;
+    --color-600: #005285;
     --border: 1px solid var(--color-400);
   }
   
@@ -112,32 +114,32 @@
   :root {
     /* ✅ THEMA KLEUREN - AANPASBAAR VOOR THEMA SWITCH */
     
-    /* Basis Kleuren (VERPLICHT aan te passen) */
-    --color-primary-base: #60368c;
-    --color-primary-light: #ab86dd;
+    /* Basis Kleuren — Sport Harelbeke (#0072b9) */
+    --color-primary-base: #0072b9;
+    --color-primary-light: #4dbbff;
     --color-white: #ffffff;
     
-    /* Palette Scale (VERPLICHT aan te passen) */
-    --color-50: #faf8ff;
-    --color-100: #f5f0ff;
-    --color-200: #e9e0ff;
-    --color-300: #d4c0ff;
-    --color-400: #ab86dd;
-    --color-500: #8c5dc0;
-    --color-600: #60368c;
-    --color-700: #4a2a6b;
-    --color-800: #351d4a;
-    --color-900: #201029;
+    /* Palette Scale */
+    --color-50: #f1f9fd;
+    --color-100: #e3f3fc;
+    --color-200: #c5e7fc;
+    --color-300: #8fd4ff;
+    --color-400: #4dbbff;
+    --color-500: #009dff;
+    --color-600: #0072b9;
+    --color-700: #005285;
+    --color-800: #003252;
+    --color-900: #02121c;
     
-    /* Shadow Kleuren - Primary (VERPLICHT: update RGB 96,54,140 bij nieuwe kleur) */
-    --color-shadow-primary-04: rgba(96, 54, 140, 0.04);
-    --color-shadow-primary-07: rgba(96, 54, 140, 0.07);
-    --color-shadow-primary-09: rgba(96, 54, 140, 0.09);
-    --color-shadow-primary-10: rgba(96, 54, 140, 0.10);
-    --color-shadow-primary-12: rgba(96, 54, 140, 0.12);
-    --color-shadow-primary-15: rgba(96, 54, 140, 0.15);
-    --color-shadow-primary-18: rgba(96, 54, 140, 0.18);
-    --color-shadow-primary-25: rgba(96, 54, 140, 0.25);
+    /* Shadow Kleuren - Primary (RGB 0,114,185) */
+    --color-shadow-primary-04: rgba(0, 114, 185, 0.04);
+    --color-shadow-primary-07: rgba(0, 114, 185, 0.07);
+    --color-shadow-primary-09: rgba(0, 114, 185, 0.09);
+    --color-shadow-primary-10: rgba(0, 114, 185, 0.10);
+    --color-shadow-primary-12: rgba(0, 114, 185, 0.12);
+    --color-shadow-primary-15: rgba(0, 114, 185, 0.15);
+    --color-shadow-primary-18: rgba(0, 114, 185, 0.18);
+    --color-shadow-primary-25: rgba(0, 114, 185, 0.25);
     
     /* ✅ SEMANTISCHE KLEUREN - AANPASBAAR VIA ADMIN SETTINGS */
     
@@ -154,17 +156,17 @@
     --color-success-dark: #22c55e;
     --color-success-bg: #dcfce7;
     
-    /* Warning Kleuren (oranje) */
-    --color-warning: #f59e0b;
+    /* Warning — Sport Harelbeke CTA-goud (#ffb300) */
+    --color-warning: #ffb300;
     --color-warning-light: var(--color-white);
-    --color-warning-dark: #f59e0b;
-    --color-warning-bg: #fef3c7;
+    --color-warning-dark: #ffb300;
+    --color-warning-bg: #fff4d6;
     
-    /* Info Kleuren (blauw) */
-    --color-info: #3b82f6;
+    /* Info — Harelbeke accentblauw (#007fff) */
+    --color-info: #007fff;
     --color-info-light: var(--color-white);
-    --color-info-dark: #3b82f6;
-    --color-info-bg: #eff6ff;
+    --color-info-dark: #007fff;
+    --color-info-bg: #e3f3fc;
     
     /* Shadow Kleuren - Destructive (rood) */
     --color-shadow-destructive-07: rgba(239, 68, 68, 0.07);

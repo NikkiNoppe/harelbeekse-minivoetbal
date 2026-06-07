@@ -40,23 +40,26 @@ export const DEFAULT_SEMANTIC: Required<Pick<ThemeColors, 'destructive' | 'succe
   info: { base: "#3b82f6", bg: "#eff6ff" },
 };
 
-// Default purple theme
+/** Sport Harelbeke / stad Harelbeke kleurenpalet (sportdienstharelbeke.be) */
 export const DEFAULT_THEME: ThemeColors = {
-  primaryBase: "#60368c",
-  primaryLight: "#ab86dd",
+  primaryBase: "#0072b9",
+  primaryLight: "#4dbbff",
   scale: {
-    50: "#faf8ff",
-    100: "#f5f0ff",
-    200: "#e9e0ff",
-    300: "#d4c0ff",
-    400: "#ab86dd",
-    500: "#8c5dc0",
-    600: "#60368c",
-    700: "#4a2a6b",
-    800: "#351d4a",
-    900: "#201029",
+    50: "#f1f9fd",
+    100: "#e3f3fc",
+    200: "#c5e7fc",
+    300: "#8fd4ff",
+    400: "#4dbbff",
+    500: "#009dff",
+    600: "#0072b9",
+    700: "#005285",
+    800: "#003252",
+    900: "#02121c",
   },
-  ...DEFAULT_SEMANTIC,
+  destructive: DEFAULT_SEMANTIC.destructive,
+  success: DEFAULT_SEMANTIC.success,
+  warning: { base: "#ffb300", bg: "#fff4d6" },
+  info: { base: "#007fff", bg: "#e3f3fc" },
 };
 
 /** Convert hex to HSL */
