@@ -65,7 +65,7 @@ useQuery({
 
 ## Supabase / RLS
 
-- Admin/team-data via `withUserContext` wikkelen waar RLS op rol rust
+- Admin/team-data via `withUserContext` — zie `supabase-client.mdc`
 - Na opslaan in formulieren: `invalidateFinancialTransactionQueries` of gerichte query keys — niet zware client-merge die serverdata overschrijft
 
 ## Verversen na mutatie

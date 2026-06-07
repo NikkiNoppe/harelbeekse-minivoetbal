@@ -1,0 +1,100 @@
+---
+description: Supabase schema, migraties, RLS, triggers en edge functions — volgens supabase.com/docs
+globs: supabase/**
+alwaysApply: false
+---
+
+# Supabase schema & migraties
+
+Gebaseerd op [Local development](https://supabase.com/docs/guides/cli/local-development) en [Database Migrations](https://supabase.com/docs/guides/deployment/database-migrations).
+
+## Workflow (officieel)
+
+| Stap | Commando / actie |
+|------|------------------|
+| 1. Migratie aanmaken | `supabase migration new <beschrijvende_naam>` |
+| 2. SQL schrijven | `supabase/migrations/<timestamp>_<naam>.sql` — idempotent waar mogelijk |
+| 3. Lokaal testen | `supabase migration up` of `supabase db reset` |
+| 4. Types bijwerken | `npm run update-types` (of `update-types:local`) |
+| 5. Committen | Migratiebestand + bijgewerkte types in git |
+| 6. Deploy naar remote | `supabase link` → `supabase db push` |
+
+**Dashboard-wijzigingen:** alleen op **lokaal** doen, daarna vastleggen met `supabase db diff -f <naam>`. **Nooit** remote schema handmatig aanpassen.
+
+**Uit sync?** `supabase migration list` → bij drift `supabase db pull` of `supabase migration repair` (alleen history corrigeren, geen SQL uitvoeren).
+
+## Types regenereren
+
+```bash
+npm run update-types        # remote project (vereist: npx supabase login)
+npm run update-types:local  # lokale stack (supabase start)
+```
+
+Output: `src/integrations/supabase/types.ts`
+
+## RLS (verplicht op `public`)
+
+Zie [Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security).
+
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.mijn_tabel TO anon, authenticated;
+
+ALTER TABLE public.mijn_tabel ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "admin read"
+ON public.mijn_tabel FOR SELECT
+TO anon, authenticated
+USING ((SELECT get_current_user_role()) = 'admin');
+```
+
+Dit project: **custom auth** via sessie-context (`set_current_user_context`), niet Supabase Auth `auth.uid()`:
+
+| Helper | Gebruik |
+|--------|---------|
+| `get_current_user_role()` | rollen (`admin`, `player_manager`, …) |
+| `get_current_user_team_ids()` | team-scoped toegang |
+| `is_current_user_admin()` | admin-checks |
+
+**Verplicht (Supabase docs):**
+- **UPDATE** vereist ook een **SELECT-policy** op dezelfde rijen.
+- Policies met **`TO anon` / `TO authenticated`** — niet weglaten (performance).
+- Functies in policies wrappen: `(SELECT get_current_user_role())` i.p.v. per rij opnieuw aanroepen.
+- Index op kolommen die in policies/filtering zitten.
+- **Geen `user_metadata` in policies** — alleen app/DB-context of `app_metadata`.
+- Views (PG15+): `CREATE VIEW … WITH (security_invoker = true)`.
+
+Referentie: `supabase/migrations/20250817181828_*.sql`.
+
+## Functies & triggers
+
+```sql
+CREATE OR REPLACE FUNCTION public.mijn_functie()
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$ ... $$;
+```
+
+- Nieuwe SECURITY DEFINER-functies bij voorkeur in **niet-exposed** schema (`private`); bestaande in `public` niet zomaar verplaatsen.
+- Triggers met businesslogica: test met bestaande wedstrijd/forfait/kosten-data.
+
+## Edge functions
+
+Zie [Edge Functions](https://supabase.com/docs/guides/functions).
+
+- Lokaal: `supabase functions serve <naam>`
+- Deploy: `supabase functions deploy <naam>`
+- Secrets via Supabase project secrets (niet in source code).
+- `verify_jwt` in `config.toml` bewust — bij publishable keys eigen autorisatie in de function indien nodig.
+- Zware bulk-sync niet blokkerend in UI (zie `data-snel-laden.mdc`).
+
+## Checklist vóór afronden
+
+- [ ] Migratiebestand + lokaal getest (`db reset` / `migration up`)
+- [ ] Geen handmatige remote schema-wijziging
+- [ ] RLS + GRANT + `TO`-clause op policies
+- [ ] SELECT-policy bij UPDATE
+- [ ] `search_path` op SECURITY DEFINER
+- [ ] `npm run update-types` + client/services bijgewerkt
+- [ ] Security Advisor gecontroleerd na grotere wijzigingen

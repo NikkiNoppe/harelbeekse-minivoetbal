@@ -1,0 +1,72 @@
+---
+description: Supabase client, services en RLS-context — volgens supabase.com/docs + project custom auth
+globs: src/services/**,src/hooks/**,src/lib/supabaseUtils.ts,src/integrations/supabase/**,src/domains/**
+alwaysApply: false
+---
+
+# Supabase client & RLS-context
+
+Gebaseerd op [API keys](https://supabase.com/docs/guides/api/api-keys), [RLS performance](https://supabase.com/docs/guides/database/postgres/row-level-security#rls-performance-recommendations) en [Generating types](https://supabase.com/docs/guides/api/rest/generating-types).
+
+Project: React + typed `createClient<Database>` via `@/integrations/supabase/client`. Auth in `localStorage.auth_data` (niet `auth_user`).
+
+## API keys
+
+- **Browser:** alleen publishable key (legacy `anon` JWT in dit project) — nooit `sb_secret_…` / `service_role`.
+- RLS is de echte bescherming; de key is publiek zichtbaar in de bundle.
+- Edge Functions met elevated access: alleen server-side, met project secrets.
+
+## Verplicht patroon: `withUserContext`
+
+Rol-gebaseerde data **altijd** via `withUserContext` (zet `set_current_user_context` vóór de query):
+
+```typescript
+const { data, error } = await withUserContext(async () =>
+  supabase
+    .from('application_settings')
+    .select('id, setting_category, setting_value')
+    .eq('setting_category', 'blog_posts')
+);
+```
+
+- **Publieke reads** zonder login: direct op `supabase` als RLS dat toestaat.
+- **Performance (Supabase):** voeg expliciete filters toe (`.eq`, `.in`) ook als RLS hetzelfde afdwingt — helpt Postgres een beter queryplan te kiezen.
+- Selecteer alleen benodigde kolommen; geen `select('*')` op zware tabellen tenzij nodig.
+
+Referenties: `src/services/blogService.ts`, `src/lib/supabaseUtils.ts`.
+
+## Mutaties
+
+```typescript
+const { data: updatedRows, error } = await withUserContext(async () =>
+  supabase.from('tabel').update(payload).eq('id', id).select('id')
+);
+if (error) throw error;
+if (!updatedRows?.length) throw new Error('Niet gevonden of geen rechten');
+```
+
+- RLS kan **0 rows** teruggeven zonder error — altijd `.select()` of row count checken.
+- Gebruik bestaande helpers (`applicationSettingInsert`, …) waar aanwezig.
+- Geen autorisatie uit `user_metadata` / JWT-claims die de gebruiker kan wijzigen.
+
+## RPC vs directe tabeltoegang
+
+| Situatie | Aanpak |
+|----------|--------|
+| Simpele CRUD met RLS | `withUserContext` + `.from().insert/update/delete` |
+| Complexe multi-table logica | Bestaande `SECURITY DEFINER` RPC |
+| Legacy/kapotte RPC-wrapper | Directe Supabase + RLS (zoals blog) |
+
+## Na databasewijzigingen
+
+1. Types: `npm run update-types` → `src/integrations/supabase/types.ts` (zie `supabase-schema.mdc`).
+2. TanStack Query: `invalidateQueries` + `refetch` (zie `data-snel-laden.mdc`).
+3. Duidelijke NL-foutmeldingen naar de gebruiker.
+
+## Anti-patterns
+
+- Beschermde tabellen zonder `withUserContext`
+- `data = []` als default die laden maskeert
+- Client-cache die servertotalen overschrijft
+- `update` zonder verificatie van gewijzigde rijen
+- Ongefilterde `select()` op grote tabellen

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, BookOpen, Loader2, Medal, Trophy } from "lucide-react";
+import { AlertCircle, BookOpen, ChevronDown, ChevronUp, Loader2, Medal, Trophy } from "lucide-react";
 import { BlogPost } from "@/services";
 import { formatDateShort } from "@/lib/dateUtils";
 import { useBlogPosts } from "@/hooks/useBlogPosts";
@@ -27,12 +27,9 @@ const CompetitionInfo = memo(() => {
         Over de competitie
       </h2>
       <Card>
-        <CardContent className="pt-6 text-sm space-y-4">
+        <CardContent className="pt-6 text-sm">
           <p>
             Opgericht in 1979 is de Harelbeekse Minivoetbal Competitie uitgegroeid tot de grootste minivoetbalcompetitie van Harelbeke. Elk seizoen nemen tal van teams uit Harelbeke en omgeving deel.
-          </p>
-          <p>
-            Ontdek hier alle uitslagen, klassementen, spelersinfo en wedstrijdschema&apos;s.
           </p>
         </CardContent>
       </Card>
@@ -110,17 +107,35 @@ const BlogPostItem = memo(({ post }: { post: BlogPost }) => {
       </CardHeader>
       {content && (
         <CardContent>
-          <p className="text-sm break-words whitespace-pre-line">{displayContent}</p>
+          <div className="relative">
+            <p className="text-sm break-words whitespace-pre-line">{displayContent}</p>
+            {needsTruncate && !expanded && (
+              <div
+                className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-card via-card/80 to-transparent"
+                aria-hidden
+              />
+            )}
+          </div>
           {needsTruncate && (
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="mt-2 min-h-[44px] px-0 text-primary hover:text-primary/80"
+              className="mt-1 min-h-[44px] gap-1.5 px-0 font-medium text-primary hover:bg-transparent hover:text-primary/80"
               onClick={() => setExpanded((prev) => !prev)}
               aria-expanded={expanded}
             >
-              {expanded ? "Minder tonen" : "Lees meer"}
+              {expanded ? (
+                <>
+                  Minder tonen
+                  <ChevronUp className="h-4 w-4 shrink-0" aria-hidden />
+                </>
+              ) : (
+                <>
+                  Lees meer
+                  <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
+                </>
+              )}
             </Button>
           )}
         </CardContent>

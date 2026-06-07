@@ -1,0 +1,28 @@
+---
+description: Supabase — start hier bij elke database-, migratie- of query-wijziging (afgestemd op supabase.com/docs)
+alwaysApply: true
+---
+
+# Supabase (Harelbeekse Minivoetbal)
+
+**Bij elke taak die Supabase raakt** (schema, migraties, RLS, services, hooks, edge functions):
+
+| Rule | Bestand | Scope |
+|------|---------|-------|
+| Schema & migraties | `supabase-schema.mdc` | `supabase/**` |
+| Client & queries | `supabase-client.mdc` | services, hooks, domains |
+
+Overzicht: `.cursor/README.md`
+
+Officiële referenties: [Database Migrations](https://supabase.com/docs/guides/deployment/database-migrations), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [API keys](https://supabase.com/docs/guides/api/api-keys), [TypeScript types](https://supabase.com/docs/guides/api/rest/generating-types).
+
+## Kernregels (altijd)
+
+- **Golden rule (Supabase):** nooit schema wijzigen op de **remote** database via Dashboard SQL editor / Table Editor — alleen via migratiebestanden. Anders faalt `supabase db push` met sync-fouten.
+- **Lokaal testen** → `supabase db reset` of `supabase migration up`; **deploy** → `supabase db push` (één persoon tegelijk).
+- **Na schema-change** → `npm run update-types` + services/hooks bijwerken + gedrag verifiëren.
+- **RLS op elke nieuwe `public` tabel** + `GRANT` voor `anon`/`authenticated` waar nodig.
+- **Custom auth** in dit project: `set_current_user_context` + `get_current_user_role()` (niet `auth.uid()`).
+- **Geen secret/service_role key in de browser** — alleen publishable/anon key in de React-app.
+
+Project-ref: `kuyviionmstyvkvglizh` (`supabase/config.toml`). Client: `@/integrations/supabase/client`.
