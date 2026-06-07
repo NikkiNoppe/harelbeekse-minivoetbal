@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMatchCostSync } from "@/hooks/useMatchCostSync";
-import { useFinancialData } from "@/hooks/useFinancialData";
-import { monthlyReportsService, type MonthlyReport, type SeasonData } from "@/services/financial";
-import { computePeriodCostTotals } from "@/services/financial/teamCostCategories";
+import { monthlyReportsService, type SeasonData } from "@/services/financial";
 
 function resolveReportDates(selectedSeasonYear: number, selectedMonth: number | null) {
   if (selectedMonth === null) {
@@ -29,24 +27,14 @@ function getCurrentSeasonYear() {
   return now.getMonth() >= 6 ? year : year - 1;
 }
 
-function mergeReportTotals(report: MonthlyReport, transactionsLoaded: boolean, cachedTotals: ReturnType<typeof computePeriodCostTotals>): MonthlyReport {
-  if (!transactionsLoaded) return report;
-
-  return {
-    ...report,
-    totalFieldCosts: cachedTotals.totalFieldCosts,
-    totalRefereeCosts: cachedTotals.totalRefereeCosts,
-    totalAdminCosts: cachedTotals.totalAdminCosts,
-    totalFines: cachedTotals.totalFines,
-  };
-}
-
 export function useFinancialSeasonReportModal(open: boolean) {
+  const queryClient = useQueryClient();
   const currentSeasonYear = getCurrentSeasonYear();
   const [selectedSeasonYear, setSelectedSeasonYear] = useState(currentSeasonYear);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const { syncStatus, forceResync } = useMatchCostSync(open);
-  const { transactions, transactionsLoading } = useFinancialData({ enableSync: false });
+  const { syncStatus, forceResync, runBackgroundSync } = useMatchCostSync(open, undefined, {
+    autoRun: false,
+  });
 
   const { data: availableSeasons, isLoading: isSeasonsLoading } = useQuery({
     queryKey: ["available-seasons"],
@@ -69,6 +57,7 @@ export function useFinancialSeasonReportModal(open: boolean) {
     data: report,
     isLoading: isReportLoading,
     isFetching: isReportFetching,
+    isFetched: isReportFetched,
     error,
   } = useQuery({
     queryKey: ["season-report", selectedSeasonYear, selectedMonth],
@@ -78,28 +67,33 @@ export function useFinancialSeasonReportModal(open: boolean) {
     },
     enabled: open && seasonsAvailable,
     retry: 2,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: "always",
     placeholderData: keepPreviousData,
   });
 
-  const cachedTotals = useMemo(
-    () => computePeriodCostTotals(transactions, selectedSeasonYear, selectedMonth),
-    [transactions, selectedSeasonYear, selectedMonth],
-  );
+  useEffect(() => {
+    if (!open || !seasonsAvailable) return;
+    void queryClient.invalidateQueries({ queryKey: ["season-report"] });
+  }, [open, seasonsAvailable, queryClient]);
 
-  const displayReport = useMemo(
-    () => (report ? mergeReportTotals(report, transactions.length > 0, cachedTotals) : null),
-    [report, transactions.length, cachedTotals],
-  );
+  useEffect(() => {
+    if (!open || !isReportFetched) return;
+    const timeoutId = window.setTimeout(() => {
+      void runBackgroundSync(false);
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [open, isReportFetched, runBackgroundSync]);
 
-  const isInitialLoad =
-    open &&
-    seasonsAvailable &&
-    !displayReport &&
-    (isReportLoading || isSeasonsLoading || (transactionsLoading && transactions.length === 0));
+  useEffect(() => {
+    if (syncStatus !== "synced") return;
+    void queryClient.invalidateQueries({ queryKey: ["season-report"] });
+  }, [syncStatus, queryClient]);
+
+  const isInitialLoad = open && seasonsAvailable && !report && (isReportLoading || isSeasonsLoading);
 
   const isRefreshing =
-    open && !!displayReport && (isReportFetching || transactionsLoading || syncStatus === "syncing");
+    open && !!report && (isReportFetching || syncStatus === "syncing");
 
   const seasons: { year: number; label: string }[] =
     availableSeasons && availableSeasons.length > 0
@@ -116,7 +110,7 @@ export function useFinancialSeasonReportModal(open: boolean) {
     setSelectedSeasonYear,
     selectedMonth,
     setSelectedMonth,
-    report: displayReport,
+    report,
     error,
     syncStatus,
     isInitialLoad,

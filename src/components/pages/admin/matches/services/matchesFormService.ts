@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MatchFormData } from "../types";
 import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { cupService } from "@/services/match";
+import { scheduleBackgroundSideEffects } from "@/services/match/backgroundSideEffects";
 import { sortCupMatches, sortLeagueMatches } from "@/lib/matchSortingUtils";
 import { withUserContext } from "@/lib/supabaseUtils";
 
@@ -284,6 +285,27 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
       referee_notes: processedRefereeNotes,
       result
     });
+
+    // Zelfde achtergrond-sync als competitiewedstrijden: kaartboetes, wedstrijdkosten, enz.
+    scheduleBackgroundSideEffects(
+      matchData.matchId,
+      {
+        homePlayers: matchData.homePlayers,
+        awayPlayers: matchData.awayPlayers,
+        isCompleted: matchData.isCompleted,
+        referee: matchData.referee,
+        _submissionTransition: isBeingCompleted,
+      },
+      {
+        match_date: updatePayload.match_date,
+        home_team_id: matchData.homeTeamId,
+        away_team_id: matchData.awayTeamId,
+        is_cup_match: isCupMatch,
+        unique_number: existingMatch?.unique_number,
+      },
+      !!isCupMatch,
+      false,
+    );
 
     // If this is a cup match with scores, check for winner advancement (both new completions and score changes)
     if (isCupMatch && matchData.isCompleted && 

@@ -1,0 +1,27 @@
+---
+description: Werk de footer-buildversie bij aan het starten van elke agent-sessie
+alwaysApply: true
+---
+
+# Footer buildversie
+
+Bij **elke agent-sessie** moet de buildversie in de footer actueel zijn.
+
+## Formaat
+
+`v1.YYMMDD` — major `v1` blijft vast; `YYMMDD` is de datum van vandaag (bijv. 7 juni 2026 → `v1.260607`).
+
+## Locatie
+
+`src/components/pages/footer/Footer.tsx` — het `<span className="opacity-60">` in de copyright-regel.
+
+## Gedrag
+
+1. **Automatisch:** de `sessionStart`-hook in `.cursor/hooks/update-footer-version.sh` werkt dit bij bij het starten van een agent.
+2. **Handmatig (backup):** als de hook niet draaide, werk de versie alsnog bij vóór je andere wijzigingen afrondt — vervang alleen het datumsuffix, niet `v1`.
+
+```tsx
+<span className="opacity-60">v1.260607</span>
+```
+
+Gebruik altijd de datum van **vandaag** in lokale tijd.

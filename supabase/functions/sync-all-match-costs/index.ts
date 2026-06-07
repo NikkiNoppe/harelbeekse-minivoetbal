@@ -116,7 +116,12 @@ Deno.serve(async (req) => {
       const teamIds = [match.home_team_id, match.away_team_id].filter((id: any) => typeof id === 'number' && id > 0);
       if (teamIds.length !== 2) { skippedCount++; continue; }
 
-      if (forfaitMatchIds.has(match.match_id)) {
+      const matchPlayed =
+        match.is_submitted === true &&
+        match.home_score != null &&
+        match.away_score != null;
+
+      if (forfaitMatchIds.has(match.match_id) && !matchPlayed) {
         const { error: delErr } = await supabaseServiceRole
           .from('team_costs')
           .delete()

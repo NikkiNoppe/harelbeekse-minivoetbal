@@ -6,11 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { costSettingsService, invalidateFinancialTransactionQueries } from "@/services/financial";
 import { computeCurrentBalance } from "@/services/financial/teamCostCategories";
 import { useFinancialData } from "@/hooks/useFinancialData";
+import { useTeamFinancialDetailModal } from "./useTeamFinancialDetailModal";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2, ChevronDown, Loader2, CalendarIcon } from "lucide-react";
+import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2, ChevronDown, Loader2, CalendarIcon, RefreshCw, AlertCircle } from "lucide-react";
 import { formatDateShort, getCurrentDate } from "@/lib/dateUtils";
 import { TransactionEditModal } from "./transaction-edit-modal";
 import {
@@ -39,10 +42,20 @@ interface FinancialTeamDetailModalProps {
 export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ open, onOpenChange, team }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { transactions, calculateTeamFinances, formatCurrency, transactionsLoading } = useFinancialData({
+  const { calculateTeamFinances, formatCurrency } = useFinancialData({
     enableSync: false,
   });
-  
+
+  const {
+    teamTransactions,
+    isListLoading: loadingTransactions,
+    isRefreshing: refreshingTransactions,
+    showEmpty,
+    hasError: transactionsLoadError,
+    transactionsError,
+    refetchTransactions,
+  } = useTeamFinancialDetailModal(team?.team_id, open);
+
   // State for transaction actions
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [selectedCost, setSelectedCost] = useState<any>(null);
@@ -54,14 +67,12 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
 
-  const teamTransactions = useMemo(
-    () => (team ? transactions.filter((t) => t.team_id === team.team_id) : []),
-    [transactions, team],
-  );
 
   const finances = team ? calculateTeamFinances(team.team_id) : null;
-  const currentBalance = finances?.currentBalance ?? 0;
-  const loadingTransactions = transactionsLoading && teamTransactions.length === 0;
+  const balanceFromTransactions =
+    teamTransactions.length > 0 ? computeCurrentBalance(teamTransactions) : null;
+  const currentBalance = finances?.currentBalance ?? balanceFromTransactions;
+  const isBalanceLoading = currentBalance === null && (loadingTransactions || !finances);
 
   const { data: costSettings, isLoading: loadingCostSettings } = useQuery({
     queryKey: ['cost-settings'],
@@ -375,12 +386,18 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                   <h3 className="text-base font-semibold text-purple-900 mb-1">Huidig Saldo</h3>
                   <p className="text-sm text-purple-700 truncate">{team.team_name}</p>
                 </div>
-                <div className={cn(
-                  "text-2xl sm:text-3xl font-bold whitespace-nowrap",
-                  currentBalance >= 0 ? 'text-green-600' : 'text-red-600'
-                )}>
-                  {formatCurrency(currentBalance)}
-                </div>
+                {isBalanceLoading ? (
+                  <Skeleton className="h-9 w-28" />
+                ) : (
+                  <div
+                    className={cn(
+                      "text-2xl sm:text-3xl font-bold whitespace-nowrap",
+                      (currentBalance ?? 0) >= 0 ? "text-green-600" : "text-red-600",
+                    )}
+                  >
+                    {formatCurrency(currentBalance ?? 0)}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -565,17 +582,49 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
             <CardContent className="p-4">
               <h3 className="text-base font-semibold mb-3">Transactie Geschiedenis</h3>
               
-              {loadingTransactions ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  <span className="ml-2 text-sm text-muted-foreground">Laden...</span>
+              {transactionsLoadError ? (
+                <Alert variant="destructive" className="my-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-sm">
+                      {(transactionsError as Error | undefined)?.message ||
+                        "Kon transacties niet laden."}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void refetchTransactions()}
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Opnieuw
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              ) : loadingTransactions ? (
+                <div className="space-y-2 py-2">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="p-3 border border-border rounded-md">
+                      <div className="flex justify-between gap-2 mb-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                      <Skeleton className="h-3 w-full" />
+                    </div>
+                  ))}
                 </div>
-              ) : groupedTransactions.length === 0 ? (
+              ) : showEmpty ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <p className="text-sm">Geen transacties gevonden</p>
                 </div>
               ) : (
-                <div className="space-y-1.5">
+                <div className={`space-y-1.5 transition-opacity ${refreshingTransactions ? "opacity-80" : ""}`}>
+                  {refreshingTransactions && (
+                    <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground pb-1">
+                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                      Vernieuwen…
+                    </div>
+                  )}
                   {groupedTransactions.map((group, groupIndex) => {
                     const isMatchGroup = group.match_id !== null;
                     

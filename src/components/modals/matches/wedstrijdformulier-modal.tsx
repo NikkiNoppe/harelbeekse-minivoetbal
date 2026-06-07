@@ -409,12 +409,33 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     return NaN;
   }, []);
 
+  /** Ingediende wedstrijd met uitslag: forfait verwittigd hoort hier niet (wedstrijd is wel gespeeld). */
+  const matchAppearsPlayed = useMemo(() => {
+    const h = parseFormOrMatchScore(homeScore, match.homeScore);
+    const a = parseFormOrMatchScore(awayScore, match.awayScore);
+    return match.isCompleted || (!Number.isNaN(h) && !Number.isNaN(a));
+  }, [homeScore, awayScore, match.homeScore, match.awayScore, match.isCompleted, parseFormOrMatchScore]);
+
   const persistPenaltyItems = useCallback(async (
     items: PenaltyItem[],
     options?: { successTitle?: string; successDescription?: string }
   ): Promise<boolean> => {
     const validItems = items.filter((p) => p.costSettingId && p.teamId);
     if (validItems.length === 0) return false;
+
+    const hasForfaitVerwittigdDraft = validItems.some((p) => {
+      const cs = availablePenalties.find((x) => Number(x.id) === Number(p.costSettingId));
+      return cs != null && costNameIsForfaitVerwittigd(cs.name);
+    });
+    if (hasForfaitVerwittigdDraft && matchAppearsPlayed) {
+      toast({
+        title: "Forfait verwittigd niet van toepassing",
+        description:
+          "Deze wedstrijd heeft een uitslag en is (of wordt) ingediend. Forfait verwittigd geldt alleen als de wedstrijd niet is gespeeld.",
+        variant: "destructive",
+      });
+      return false;
+    }
 
     setIsLoadingPenalties(true);
     try {
@@ -513,10 +534,20 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     } finally {
       setIsLoadingPenalties(false);
     }
-  }, [availablePenalties, match.matchId, match.homeTeamId, match.homeTeamName, match.awayTeamName, toast, refreshFinancialState, setSelectedReferee]);
+  }, [availablePenalties, match.matchId, match.homeTeamId, match.homeTeamName, match.awayTeamName, matchAppearsPlayed, toast, refreshFinancialState, setSelectedReferee]);
 
   /** Standaard forfait-regel: vult boetype + verliezend team in en slaat direct op wanneer het team bekend is. */
   const addForfaitPenaltyPreset = useCallback(async () => {
+    if (matchAppearsPlayed) {
+      toast({
+        title: "Forfait verwittigd niet van toepassing",
+        description:
+          "Deze wedstrijd heeft een uitslag. Verwijder een verkeerde forfait-boete via het prullenbak-icoon bij opgeslagen boetes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const forfaitCost = forfaitVerwittigdPenaltyCost;
     if (!forfaitCost) {
       toast({
@@ -587,6 +618,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     match.homeTeamName,
     match.awayTeamName,
     persistPenaltyItems,
+    matchAppearsPlayed,
     toast,
   ]);
 
@@ -2129,11 +2161,17 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                       </span>
                     </div>
                     <div className="space-y-2.5">
-                      {savedPenalties.map((p, i) => (
+                      {savedPenalties.map((p, i) => {
+                        const forfaitOnPlayedMatch =
+                          matchAppearsPlayed && costNameImpliesMatchCostSuppression(p.penaltyName);
+                        return (
                         <div 
                           key={i} 
-                          className="flex items-center justify-between gap-3 p-3.5 text-sm border rounded-lg bg-white shadow-sm hover:shadow-md hover:bg-muted/20 transition-all duration-150"
-                          style={{ borderColor: 'var(--color-400)' }}
+                          className={cn(
+                            "flex items-center justify-between gap-3 p-3.5 text-sm border rounded-lg bg-white shadow-sm hover:shadow-md hover:bg-muted/20 transition-all duration-150",
+                            forfaitOnPlayedMatch && "border-amber-400 bg-amber-50/40",
+                          )}
+                          style={forfaitOnPlayedMatch ? undefined : { borderColor: "var(--color-400)" }}
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             <div className="flex items-center justify-center w-11 h-11 rounded-lg border border-border bg-muted/80 shrink-0 shadow-sm">
@@ -2145,7 +2183,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                                   {p.teamName}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
                                   {p.penaltyName}
                                 </span>
@@ -2153,6 +2191,11 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                                   €{p.amount}
                                 </span>
                               </div>
+                              {forfaitOnPlayedMatch && (
+                                <p className="text-xs text-amber-900 mt-1">
+                                  Waarschijnlijk fout: wedstrijd heeft uitslag — forfait verwittigd hoort hier niet.
+                                </p>
+                              )}
                             </div>
                           </div>
                           {canEdit && (
@@ -2166,7 +2209,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                             </Button>
                           )}
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -2178,8 +2222,23 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                   <h4 className="text-sm font-bold text-foreground border-b border-border pb-1">Wedstrijdkosten</h4>
 
                   {hasForfaitPenalty && (
-                    <div className="rounded-lg border border-blue-200 bg-blue-50/80 px-3 py-2.5 text-sm text-blue-950">
-                      <p>Forfait actief — standaard wedstrijdkosten vervallen voor deze wedstrijd.</p>
+                    <div
+                      className={cn(
+                        "rounded-lg border px-3 py-2.5 text-sm",
+                        matchAppearsPlayed
+                          ? "border-amber-300 bg-amber-50/90 text-amber-950"
+                          : "border-blue-200 bg-blue-50/80 text-blue-950",
+                      )}
+                    >
+                      {matchAppearsPlayed ? (
+                        <p>
+                          Er staat een forfait-boete op een wedstrijd met uitslag. Dat hoort normaal niet —
+                          verwijder de boete bij Financieel als die per ongeluk is toegevoegd. Wedstrijdkosten
+                          blijven gelden zolang de wedstrijd gespeeld is.
+                        </p>
+                      ) : (
+                        <p>Forfait actief — standaard wedstrijdkosten vervallen voor deze wedstrijd.</p>
+                      )}
                     </div>
                   )}
 

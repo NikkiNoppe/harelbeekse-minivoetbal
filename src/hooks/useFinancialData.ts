@@ -1,100 +1,23 @@
-import { useMemo } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { withUserContext } from "@/lib/supabaseUtils";
 import { useMatchCostSync } from "@/hooks/useMatchCostSync";
 import {
   computeTeamFinances,
   type TeamFinancesSummary,
 } from "@/services/financial/teamCostCategories";
+import {
+  fetchAllTeamTransactionsOverview,
+  type FinancialTeamTransaction,
+} from "@/services/financial/financialTransactionsFetch";
+import { invalidateFinancialTransactionQueries } from "@/services/financial";
+
+export type { FinancialTeamTransaction };
 
 interface Team {
   team_id: number;
   team_name: string;
-}
-
-export interface FinancialTeamTransaction {
-  id: number;
-  team_id: number;
-  transaction_type: string;
-  amount: number;
-  description?: string | null;
-  cost_setting_id?: number | null;
-  match_id?: number | null;
-  transaction_date: string;
-  cost_settings?: {
-    name?: string | null;
-    category?: string | null;
-  };
-  matches?: {
-    unique_number?: string;
-    match_date?: string;
-    home_team_id?: number;
-    away_team_id?: number;
-    teams_home?: { team_name: string };
-    teams_away?: { team_name: string };
-  };
-}
-
-async function fetchAllTeamTransactions(): Promise<FinancialTeamTransaction[]> {
-  let allData: any[] = [];
-  let from = 0;
-  const batchSize = 1000;
-
-  while (true) {
-    const { data: batch, error } = await supabase
-      .from("team_costs")
-      .select(`
-        *,
-        costs(name, category, amount),
-        matches(
-          unique_number,
-          match_date,
-          home_team_id,
-          away_team_id,
-          teams_home:teams!home_team_id(team_name),
-          teams_away:teams!away_team_id(team_name)
-        )
-      `)
-      .order("transaction_date", { ascending: false })
-      .range(from, from + batchSize - 1);
-
-    if (error) throw error;
-    if (!batch || batch.length === 0) break;
-
-    allData = allData.concat(batch);
-    if (batch.length < batchSize) break;
-    from += batchSize;
-  }
-
-  return allData.map((transaction) => ({
-    id: transaction.id,
-    team_id: transaction.team_id,
-    transaction_type: transaction.costs?.category || "adjustment",
-    amount:
-      transaction.amount ??
-      (typeof transaction.costs?.amount === "number" ? transaction.costs.amount : 0),
-    description: transaction.costs?.name || null,
-    cost_setting_id: transaction.cost_setting_id,
-    match_id: transaction.match_id,
-    transaction_date: transaction.transaction_date,
-    cost_settings: transaction.costs
-      ? {
-          name: transaction.costs.name,
-          category: transaction.costs.category,
-          amount: transaction.costs.amount,
-        }
-      : undefined,
-    matches: transaction.matches
-      ? {
-          unique_number: transaction.matches.unique_number,
-          match_date: transaction.matches.match_date,
-          home_team_id: transaction.matches.home_team_id,
-          away_team_id: transaction.matches.away_team_id,
-          teams_home: transaction.matches.teams_home,
-          teams_away: transaction.matches.teams_away,
-        }
-      : undefined,
-  }));
 }
 
 export type TeamFinances = TeamFinancesSummary;
@@ -109,30 +32,126 @@ export interface FinancialStatistics {
   totalExpenses: number;
 }
 
+const MIN_LOADING_TIME = 250;
+const MAX_LOADING_TIME = 5000;
+
+function useMinLoadingGate(isWaiting: boolean) {
+  const [minReady, setMinReady] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
+  const startRef = useRef<number | undefined>(undefined);
+  const minTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const maxTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    if (isWaiting) {
+      if (startRef.current === undefined) {
+        startRef.current = Date.now();
+        setMinReady(false);
+        setTimedOut(false);
+        if (minTimeoutRef.current) clearTimeout(minTimeoutRef.current);
+        if (maxTimeoutRef.current) clearTimeout(maxTimeoutRef.current);
+        maxTimeoutRef.current = setTimeout(() => {
+          setTimedOut(true);
+          startRef.current = undefined;
+        }, MAX_LOADING_TIME);
+      }
+      return;
+    }
+
+    if (startRef.current !== undefined) {
+      const elapsed = Date.now() - startRef.current;
+      const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+      if (maxTimeoutRef.current) {
+        clearTimeout(maxTimeoutRef.current);
+        maxTimeoutRef.current = undefined;
+      }
+      if (remainingTime > 0) {
+        if (minTimeoutRef.current) clearTimeout(minTimeoutRef.current);
+        minTimeoutRef.current = setTimeout(() => {
+          setMinReady(true);
+          startRef.current = undefined;
+          minTimeoutRef.current = undefined;
+        }, remainingTime);
+      } else {
+        setMinReady(true);
+        startRef.current = undefined;
+      }
+    } else {
+      setMinReady(true);
+    }
+
+    return () => {
+      if (minTimeoutRef.current) clearTimeout(minTimeoutRef.current);
+      if (maxTimeoutRef.current) clearTimeout(maxTimeoutRef.current);
+    };
+  }, [isWaiting]);
+
+  return { minReady, timedOut };
+}
+
 export const useFinancialData = (options?: { enableSync?: boolean }) => {
   const enableSync = options?.enableSync ?? true;
-  const { syncStatus, forceResync } = useMatchCostSync(enableSync);
+  const queryClient = useQueryClient();
+  const { syncStatus, forceResync, invalidateFinancialQueries, runBackgroundSync } = useMatchCostSync(
+    enableSync,
+    undefined,
+    { autoRun: false },
+  );
 
   const teamsQuery = useQuery({
     queryKey: ["teams-financial"],
     queryFn: async (): Promise<Team[]> => {
-      const { data, error } = await supabase
-        .from("teams")
-        .select("team_id, team_name")
-        .order("team_name");
+      return withUserContext(async () => {
+        const { data, error } = await supabase
+          .from("teams")
+          .select("team_id, team_name")
+          .order("team_name");
 
-      if (error) throw error;
-      return (data || []) as Team[];
+        if (error) throw error;
+        return (data || []) as Team[];
+      });
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 10 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    placeholderData: keepPreviousData,
+    networkMode: "online",
   });
 
   const transactionsQuery = useQuery({
     queryKey: ["all-team-transactions"],
-    queryFn: fetchAllTeamTransactions,
-    staleTime: 30_000,
+    queryFn: fetchAllTeamTransactionsOverview,
+    staleTime: 0,
+    gcTime: 10 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
     placeholderData: keepPreviousData,
+    networkMode: "online",
   });
+
+  const hasTeams = teamsQuery.data !== undefined;
+  const hasTransactions = transactionsQuery.data !== undefined;
+
+  const waitingForTeams = !hasTeams && teamsQuery.isFetching;
+  const waitingForTransactions = hasTeams && !hasTransactions && transactionsQuery.isFetching;
+
+  const teamsLoadingGate = useMinLoadingGate(waitingForTeams);
+  const transactionsLoadingGate = useMinLoadingGate(waitingForTransactions);
+
+  useEffect(() => {
+    if (!enableSync || !transactionsQuery.isFetched) return;
+    const timeoutId = window.setTimeout(() => {
+      void runBackgroundSync(false);
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [enableSync, transactionsQuery.isFetched, runBackgroundSync]);
 
   const teamFinancesById = useMemo(() => {
     const map = new Map<number, TeamFinancesSummary>();
@@ -146,43 +165,41 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
     return map;
   }, [teamsQuery.data, transactionsQuery.data]);
 
-  const calculateTeamFinances = (teamId: number): TeamFinancesSummary =>
-    teamFinancesById.get(teamId) ?? {
-      startCapital: 0,
-      fieldCosts: 0,
-      refereeCosts: 0,
-      adminCosts: 0,
-      fines: 0,
-      adjustments: 0,
-      currentBalance: 0,
-    };
-
-  const teamsWithFinances = useMemo(
-    () =>
-      (teamsQuery.data || []).map((team) => ({
-        ...team,
-        finances: teamFinancesById.get(team.team_id) ?? calculateTeamFinances(team.team_id),
-      })),
-    [teamsQuery.data, teamFinancesById],
+  const calculateTeamFinances = useCallback(
+    (teamId: number): TeamFinancesSummary | null => {
+      if (!hasTransactions) return null;
+      return (
+        teamFinancesById.get(teamId) ?? {
+          startCapital: 0,
+          fieldCosts: 0,
+          refereeCosts: 0,
+          adminCosts: 0,
+          fines: 0,
+          adjustments: 0,
+          currentBalance: 0,
+        }
+      );
+    },
+    [hasTransactions, teamFinancesById],
   );
 
-  const financialStatistics = useMemo((): FinancialStatistics => {
-    const teams = teamsQuery.data || [];
-    const transactions = transactionsQuery.data || [];
+  const teamsWithFinances = useMemo(() => {
+    const teams = teamsQuery.data;
+    if (!teams) return undefined;
+    return teams.map((team) => ({
+      ...team,
+      finances: calculateTeamFinances(team.team_id),
+    }));
+  }, [teamsQuery.data, calculateTeamFinances]);
 
-    if (!teams.length) {
-      return {
-        totalTeams: 0,
-        totalBalance: 0,
-        averageBalance: 0,
-        positiveTeams: 0,
-        negativeTeams: 0,
-        totalRevenue: 0,
-        totalExpenses: 0,
-      };
-    }
+  const financialStatistics = useMemo((): FinancialStatistics | null => {
+    const teams = teamsQuery.data;
+    const transactions = transactionsQuery.data;
+    if (!teams || !transactions) return null;
 
-    const balances = teams.map((team) => calculateTeamFinances(team.team_id).currentBalance);
+    const balances = teams.map(
+      (team) => calculateTeamFinances(team.team_id)?.currentBalance ?? 0,
+    );
     const totalBalance = balances.reduce((sum, value) => sum + value, 0);
 
     const totalRevenue = transactions
@@ -202,7 +219,7 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
       totalRevenue,
       totalExpenses,
     };
-  }, [teamsQuery.data, transactionsQuery.data, teamFinancesById]);
+  }, [teamsQuery.data, transactionsQuery.data, calculateTeamFinances]);
 
   const formatCurrency = (amount: number): string =>
     new Intl.NumberFormat("nl-NL", {
@@ -210,29 +227,68 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
       currency: "EUR",
     }).format(amount);
 
-  const isInitialLoad =
-    !teamsQuery.data?.length && (teamsQuery.isLoading || transactionsQuery.isLoading);
+  const isListLoading =
+    !teamsLoadingGate.timedOut &&
+    !hasTeams &&
+    (waitingForTeams || !teamsLoadingGate.minReady);
+
+  const isAmountsLoading =
+    !transactionsLoadingGate.timedOut &&
+    hasTeams &&
+    !hasTransactions &&
+    (waitingForTransactions || !transactionsLoadingGate.minReady);
+
   const isRefreshing =
-    !!teamsQuery.data?.length &&
-    (transactionsQuery.isFetching || syncStatus === "syncing");
+    (hasTransactions && transactionsQuery.isFetching && !transactionsQuery.isLoading) ||
+    (syncStatus === "syncing" && !isListLoading && !isAmountsLoading);
+
+  const teamsError = teamsLoadingGate.timedOut
+    ? { message: "Het laden van teams duurt te lang (>5 seconden)." }
+    : teamsQuery.error;
+
+  const transactionsError = transactionsLoadingGate.timedOut
+    ? { message: "Het laden van financiële gegevens duurt te lang (>5 seconden)." }
+    : transactionsQuery.error;
+
+  const showTeamsEmpty =
+    hasTeams &&
+    teamsQuery.isFetched &&
+    !teamsQuery.isPlaceholderData &&
+    (teamsQuery.data?.length ?? 0) === 0;
+
+  const showTransactionsError =
+    !!transactionsError && !hasTransactions && hasTeams && !isAmountsLoading;
+
+  const hasBlockingError = !!teamsError && !hasTeams;
+
+  const refreshInstantly = useCallback(async () => {
+    await invalidateFinancialTransactionQueries(queryClient);
+    await Promise.all([teamsQuery.refetch(), transactionsQuery.refetch()]);
+  }, [queryClient, teamsQuery, transactionsQuery]);
 
   return {
-    teams: teamsQuery.data || [],
-    transactions: transactionsQuery.data || [],
+    teams: teamsQuery.data,
+    transactions: transactionsQuery.data,
     teamsWithFinances,
     financialStatistics,
     calculateTeamFinances,
     formatCurrency,
     syncStatus,
     forceResync,
-    isInitialLoad,
+    invalidateFinancialQueries,
+    refreshInstantly,
+    isListLoading,
+    isAmountsLoading,
     isRefreshing,
+    showTeamsEmpty,
+    showTransactionsError,
     teamsLoading: teamsQuery.isLoading,
     transactionsLoading: transactionsQuery.isLoading,
-    isLoading: teamsQuery.isLoading || transactionsQuery.isLoading,
-    teamsError: teamsQuery.error,
-    transactionsError: transactionsQuery.error,
-    hasError: !!teamsQuery.error || !!transactionsQuery.error,
+    isLoading: isListLoading,
+    teamsError,
+    transactionsError,
+    hasBlockingError,
+    hasError: hasBlockingError,
     refetchTransactions: transactionsQuery.refetch,
     refetchAll: () => Promise.all([teamsQuery.refetch(), transactionsQuery.refetch()]),
   };

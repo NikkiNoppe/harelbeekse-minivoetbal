@@ -1,0 +1,98 @@
+---
+description: Verplichte snellaadstrategie voor lijsten, pagina's en modals (zoals wedstrijdformulieren). Eerst deze rule toepassen bij nieuwe UI of data-features.
+alwaysApply: true
+---
+
+# Snelle data-laden (wedstrijdformulier-strategie)
+
+**Lees en pas deze rule toe vóór je nieuwe pagina's, modals, hooks of data-flows bouwt of wijzigt.**
+
+Referentie-implementaties in dit project:
+- `src/hooks/useMatchFormsData.ts` — lijsten/tabs
+- `src/hooks/useFinancialData.ts` — admin-overzicht
+- `src/components/modals/financial/useTeamFinancialDetailModal.ts` — modals met cache-placeholder
+- `src/hooks/useMatchCostSync.ts` — zware sync pas na eerste data
+
+## Kernprincipes
+
+1. **Snelle eerste paint** — Toon layout + skeleton direct; blokkeer nooit een hele pagina/modal met één spinner tot alles klaar is.
+2. **Altijd actueel** — `staleTime: 0`, `refetchOnMount: "always"`, `refetchOnReconnect: true`; na mutaties `invalidateQueries` + `refetch`.
+3. **Vloeiende updates** — `placeholderData: keepPreviousData` of cache uit parent-query; geen flits naar leeg/€0.
+4. **Zwaar werk op achtergrond** — Edge sync / bulk jobs (`syncAllMatchCosts`, enz.) pas **nadat** de eerste lichte fetch op scherm staat (`autoRun: false` + deferred `runBackgroundSync`).
+
+## TanStack Query (verplicht patroon)
+
+```typescript
+useQuery({
+  queryKey: ["resource", id],
+  queryFn: fetchResource,
+  staleTime: 0,
+  gcTime: 10 * 60 * 1000,
+  retry: 2,
+  refetchOnMount: "always",
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: true,
+  placeholderData: keepPreviousData, // of cache uit list-query — zie modals
+  networkMode: "online",
+});
+```
+
+**Nooit:** `data: items = []` als default — dat maskeert laden en toont ten onrechte "Geen resultaten".
+
+**Wel:** onderscheid maken tussen laden, leeg en fout:
+
+| Status | UI |
+|--------|-----|
+| Geen data + fetch bezig | Skeleton in content (min. 250 ms) |
+| `isFetched` + geen placeholder + lengte 0 | "Geen … gevonden" |
+| Fout / timeout (>5 s) | Foutmelding + Opnieuw-knop |
+
+## Laad-UX (zoals wedstrijdformulieren)
+
+- `MIN_LOADING_TIME = 250` — voorkom flitsende skeletons
+- `MAX_LOADING_TIME = 5000` — daarna foutstate, geen eindeloos wachten
+- Subtiele "Vernieuwen…" tijdens `isFetching` **met** bestaande data op scherm
+- Aparte banner voor achtergrond-sync (niet de hele lijst verbergen)
+
+## Lijsten vs. modals vs. detail
+
+| Laag | Strategie |
+|------|-----------|
+| **Lijst/pagina** | Lichtgewicht query (minimale `select`, geen zware joins); parallel met teams/meta |
+| **Modal** | `enabled: open && !!id`; `placeholderData` uit cache van list-query (`all-team-transactions`, `teamMatches`, …) |
+| **Detail** | Volledige velden/joins alleen bij open of `prefetch` op klik |
+| **Prefetch** | Bij `onClick` / intent: `queryClient.prefetchQuery` vóór modal opent |
+
+## Supabase / RLS
+
+- Admin/team-data via `withUserContext` wikkelen waar RLS op rol rust
+- Na opslaan in formulieren: `invalidateFinancialTransactionQueries` of gerichte query keys — niet zware client-merge die serverdata overschrijft
+
+## Verversen na mutatie
+
+```typescript
+const refreshInstantly = async () => {
+  await queryClient.invalidateQueries({ queryKey: ["resource"] });
+  await query.refetch();
+};
+```
+
+Wedstrijdformulier doet dit na save; financiële modals invalidaten `all-team-transactions` + `team-transactions`.
+
+## Checklist bij nieuwe feature
+
+- [ ] Geen full-page blocking loader als enige laadtoestand
+- [ ] `staleTime: 0` voor data die live moet zijn
+- [ ] Placeholder/cache bij modals en tab-wissels
+- [ ] Zware sync niet vóór eerste lichte fetch
+- [ ] Prefetch op gebruikersactie waar mogelijk
+- [ ] Leeg-state alleen na succesvolle fetch (`isFetched`, geen placeholder)
+- [ ] Fout + retry; timeout na 5 s
+- [ ] Slanke list-query; detail-query apart
+
+## Anti-patterns (vermijden)
+
+- Hele pagina/modal wachten op `syncAll*` of bulk edge functions
+- Client-cache met lege/oude data die RPC/server-totalen overschrijft
+- `mergeReportTotals`-achtige merges die servercijfers met €0 vervangen
+- Eén meg-query met alle joins voor een overzicht met 20+ rijen

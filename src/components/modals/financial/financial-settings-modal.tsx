@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { enhancedCostSettingsService } from "@/services/financial";
+import { enhancedCostSettingsService, invalidateFinancialTransactionQueries } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
 import { Settings, Plus, Edit, Trash2, Euro, X } from "lucide-react";
 
@@ -82,6 +82,7 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
       queryClient.invalidateQueries({ queryKey: ['cost-settings-management'] });
       queryClient.invalidateQueries({ queryKey: ['cost-settings'] });
       queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
+      void invalidateFinancialTransactionQueries(queryClient);
       resetForm();
     } else {
       toast({ title: "Fout", description: result.message, variant: "destructive" });
@@ -111,7 +112,7 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
       queryClient.invalidateQueries({ queryKey: ['cost-settings-management'] });
       queryClient.invalidateQueries({ queryKey: ['cost-settings'] });
       queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
-      queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
+      void invalidateFinancialTransactionQueries(queryClient);
       setEditingId(null);
       setEditName('');
       setEditAmount('');
@@ -132,6 +133,7 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
       });
       queryClient.invalidateQueries({ queryKey: ['cost-settings-management'] });
       queryClient.invalidateQueries({ queryKey: ['cost-settings'] });
+      void invalidateFinancialTransactionQueries(queryClient);
       setDeletingItem(null);
     } else {
       toast({

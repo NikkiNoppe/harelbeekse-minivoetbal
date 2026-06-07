@@ -28,8 +28,11 @@ async function runSharedMatchCostSync(
 
   syncInFlight = (async () => {
     try {
-      const result = await matchCostService.syncAllMatchCosts();
-      if (!result.success) return "error";
+      const [costResult, cardResult] = await Promise.all([
+        matchCostService.syncAllMatchCosts(),
+        matchCostService.syncAllCardPenalties(),
+      ]);
+      if (!costResult.success || !cardResult.success) return "error";
 
       sessionStorage.setItem(MATCH_COST_SYNC_KEY, String(Date.now()));
       await invalidate();
@@ -44,10 +47,17 @@ async function runSharedMatchCostSync(
   return syncInFlight;
 }
 
+export interface UseMatchCostSyncOptions {
+  /** When false, sync only runs via runBackgroundSync / forceResync (e.g. after data is on screen). */
+  autoRun?: boolean;
+}
+
 export function useMatchCostSync(
   enabled: boolean,
   invalidateKeys: readonly (readonly string[])[] = DEFAULT_INVALIDATE_KEYS,
+  options?: UseMatchCostSyncOptions,
 ) {
+  const autoRun = options?.autoRun ?? true;
   const queryClient = useQueryClient();
   const [syncStatus, setSyncStatus] = useState<MatchCostSyncStatus>("idle");
 
@@ -62,13 +72,16 @@ export function useMatchCostSync(
       setSyncStatus("syncing");
       const result = await runSharedMatchCostSync(force, invalidateFinancialQueries);
       setSyncStatus(result);
+      return result;
     },
     [invalidateFinancialQueries],
   );
 
+  const runBackgroundSync = useCallback((force = false) => runSync(force), [runSync]);
+
   useEffect(() => {
-    if (!enabled) {
-      setSyncStatus("idle");
+    if (!enabled || !autoRun) {
+      if (!enabled) setSyncStatus("idle");
       return;
     }
 
@@ -80,7 +93,7 @@ export function useMatchCostSync(
     return () => {
       cancelled = true;
     };
-  }, [enabled, runSync]);
+  }, [enabled, autoRun, runSync]);
 
   useEffect(() => {
     if (syncStatus !== "synced") return;
@@ -93,6 +106,7 @@ export function useMatchCostSync(
   return {
     syncStatus,
     forceResync,
+    runBackgroundSync,
     invalidateFinancialQueries,
   };
 }

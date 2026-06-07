@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { withUserContext } from "@/lib/supabaseUtils";
 import { resolveTeamCostAmount } from "./teamCostCategories";
 
 /** Eén geboekte veldlijn (per ploeg); wedstrijdinfo uit join. */
@@ -218,15 +219,17 @@ export const monthlyReportsService = {
     try {
       // Get seasons from both transactions AND matches for comprehensive coverage
       const [transactionResult, matchResult] = await Promise.all([
-        supabase
-          .from('team_costs')
-          .select('transaction_date')
-          .order('transaction_date', { ascending: false }),
+        withUserContext(() =>
+          supabase
+            .from('team_costs')
+            .select('transaction_date')
+            .order('transaction_date', { ascending: false }),
+        ),
         supabase
           .from('matches')
           .select('match_date')
           .eq('is_submitted', true)
-          .order('match_date', { ascending: false })
+          .order('match_date', { ascending: false }),
       ]);
 
       const seasonYears = new Set<number>();
@@ -262,6 +265,10 @@ export const monthlyReportsService = {
   },
 
   async getSeasonReport(seasonYear: number, month?: number, year?: number): Promise<MonthlyReport> {
+    return withUserContext(() => this._getSeasonReport(seasonYear, month, year));
+  },
+
+  async _getSeasonReport(seasonYear: number, month?: number, year?: number): Promise<MonthlyReport> {
     try {
       const seasonData = getSeasonFromYear(seasonYear);
       const { startDate, endDate } = getSeasonDates(seasonData);

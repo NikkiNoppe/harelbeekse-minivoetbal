@@ -193,7 +193,61 @@ interface ServiceResponse {
   message: string;
 }
 
+function mapPlayersForCardSync(players: unknown): { playerId: number | null; cardType?: string | null }[] {
+  if (!Array.isArray(players)) return [];
+  return players.map((p) => {
+    const row = p as { playerId?: number | null; cardType?: string | null };
+    return { playerId: row?.playerId ?? null, cardType: row?.cardType ?? null };
+  });
+}
+
 export const matchCostService = {
+  /** Sync kaartboetes (geel/rood) voor alle ingediende wedstrijden met kaarten in het formulier. */
+  async syncAllCardPenalties(): Promise<ServiceResponse & { syncedMatches?: number }> {
+    try {
+      const { data: matches, error } = await supabase
+        .from("matches")
+        .select("match_id, match_date, home_team_id, away_team_id, home_players, away_players")
+        .eq("is_submitted", true);
+
+      if (error) throw error;
+
+      let syncedMatches = 0;
+      for (const m of matches || []) {
+        const homePlayers = mapPlayersForCardSync(m.home_players);
+        const awayPlayers = mapPlayersForCardSync(m.away_players);
+        const hasCard = [...homePlayers, ...awayPlayers].some(
+          (p) => p.cardType && p.cardType !== "none",
+        );
+        if (!hasCard || m.home_team_id == null || m.away_team_id == null) continue;
+
+        const { data, error: fnError } = await supabase.functions.invoke("sync-card-penalties", {
+          body: {
+            matchId: m.match_id,
+            matchDateISO: m.match_date,
+            homeTeamId: m.home_team_id,
+            awayTeamId: m.away_team_id,
+            homePlayers,
+            awayPlayers,
+          },
+        });
+
+        if (!fnError && data?.success) syncedMatches += 1;
+      }
+
+      return {
+        success: true,
+        message: `Kaartboetes gesynchroniseerd voor ${syncedMatches} wedstrijd(en)`,
+        syncedMatches,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Fout bij synchroniseren kaartboetes: ${error instanceof Error ? error.message : "Onbekende fout"}`,
+      };
+    }
+  },
+
   // Sync all submitted matches to ensure they have costs (including cup and playoff)
   async syncAllMatchCosts(): Promise<ServiceResponse & { syncedCount?: number; updatedCount?: number; skippedCount?: number }> {
     console.log('🔵 [matchCostService] ========== START syncAllMatchCosts ==========');

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { costSettingsService } from "@/services/financial";
+import { costSettingsService, invalidateFinancialTransactionQueries } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
 import { Settings, Plus, Edit, Trash2, Euro, X } from "lucide-react";
 
@@ -37,10 +37,9 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
   });
 
   const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: ['cost-settings'] });
-    queryClient.invalidateQueries({ queryKey: ['all-team-transactions'] });
-    queryClient.invalidateQueries({ queryKey: ['team-transactions'] });
-    queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
+    void invalidateFinancialTransactionQueries(queryClient);
+    queryClient.invalidateQueries({ queryKey: ["cost-settings"] });
+    queryClient.invalidateQueries({ queryKey: ["financial-overview"] });
   };
 
   const handleSave = async () => {
