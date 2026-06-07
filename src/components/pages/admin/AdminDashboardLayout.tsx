@@ -38,14 +38,14 @@ export function AdminDashboardLayout({
         <Header 
           onLogoClick={onLogoClick} 
           onLoginClick={onLoginClick}
-          onTabChange={setActiveTab}
           activeTab={activeTab}
           isAuthenticated={!!user}
           user={user}
+          hasSidebar
         />
 
         {/* Main content area */}
-        <main className="flex-1 bg-purple-100">
+        <main id="main-content" className="flex-1 bg-purple-100">
           <AdminDashboard 
             activeTab={activeTab as any} 
             setActiveTab={setActiveTab as any} 

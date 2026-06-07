@@ -6,11 +6,11 @@ interface LogoProps {
 
 const Logo: React.FC<LogoProps> = ({ onClick }) => {
   return (
-    <div 
-      className="flex items-center gap-3 cursor-pointer" 
-      onClick={onClick} 
-      role="button" 
-      aria-label="Go to home page"
+    <button
+      type="button"
+      className="flex items-center gap-3 cursor-pointer rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-purple-600"
+      onClick={onClick}
+      aria-label="Ga naar de startpagina"
     >
       <div className="h-14 w-[189px] flex items-center justify-center">
         <img
@@ -28,7 +28,7 @@ const Logo: React.FC<LogoProps> = ({ onClick }) => {
           }}
         />
       </div>
-    </div>
+    </button>
   );
 };
 

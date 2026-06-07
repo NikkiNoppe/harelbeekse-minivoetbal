@@ -1,30 +1,33 @@
 import React from "react";
-import { Calendar, Trophy, Award, Target, Users, Shield, User, DollarSign, Settings, LogOut } from "lucide-react";
+import { LogOut, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
-import { ADMIN_ROUTES, getPathFromTab } from "@/config/routes";
+import { getPathFromTab } from "@/config/routes";
+import {
+  type NavItem,
+  NAV_ROUTE_MAP,
+  normalizeRole,
+  SIDEBAR_WEDSTRIJDFORMULIEREN_ITEMS,
+  SIDEBAR_BEHEER_ITEMS,
+  FINANCIEEL_ITEMS,
+  SIDEBAR_SYSTEEM_ITEMS,
+  filterWedstrijdformulierenItems,
+  filterBeheerItems,
+  filterAdminOnlyItems,
+  filterSpeelformatenItems,
+} from "@/config/navigation";
 
 interface AdminSidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
 }
 
-export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
+export function AdminSidebar({ activeTab }: AdminSidebarProps) {
   const { user, logout } = useAuth();
-  
-  // Normalize role - map team_manager variants to player_manager
-  const normalizeRole = (role: string): string => {
-    const r = String(role || '').toLowerCase();
-    if (['team', 'manager', 'team_manager', 'player-manager'].includes(r)) {
-      return 'player_manager';
-    }
-    return r;
-  };
-  
-  const normalizedRole = normalizeRole(user?.role || '');
+  const normalizedRole = normalizeRole(user?.role || "");
   const isAdmin = normalizedRole === "admin";
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -32,87 +35,48 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
-  /**
-   * Route mapping for admin tab navigation
-   * Maps admin tab keys to their corresponding URL paths
-   */
-  const routeMap: Record<string, string> = {
-    'match-forms': ADMIN_ROUTES['match-forms'],
-    'match-forms-league': ADMIN_ROUTES['match-forms-league'],
-    'match-forms-cup': ADMIN_ROUTES['match-forms-cup'],
-    'match-forms-playoffs': ADMIN_ROUTES['match-forms-playoffs'],
-    players: ADMIN_ROUTES.players,
-    ploegen: ADMIN_ROUTES.teams, // Map "ploegen" to teams route
-    teams: ADMIN_ROUTES.teams,
-    users: ADMIN_ROUTES.users,
-    competition: ADMIN_ROUTES.competition,
-    playoffs: ADMIN_ROUTES.playoffs,
-    cup: ADMIN_ROUTES.cup,
-    financial: ADMIN_ROUTES.financial,
-    settings: ADMIN_ROUTES.settings,
-    suspensions: ADMIN_ROUTES.suspensions,
-    schorsingen: ADMIN_ROUTES.schorsingen,
-    scheidsrechters: ADMIN_ROUTES.scheidsrechters,
-    'blog-management': ADMIN_ROUTES['blog-management'],
-    'notification': ADMIN_ROUTES['notification'],
+  const filterOpts = {
+    isTabVisible,
+    isAdmin,
+    normalizedRole,
+    userRole: user?.role,
+    variant: "sidebar" as const,
   };
 
-
-  // Wedstrijdformulieren groep
-  const wedstrijdformulierenItems = [
-    { key: "match-forms-league", label: "Competitie", icon: Trophy, adminOnly: false },
-    { key: "match-forms-cup", label: "Beker", icon: Award, adminOnly: false },
-    { key: "match-forms-playoffs", label: "Play-Off", icon: Target, adminOnly: false },
-  ];
-
-  // Beheer groep
-  const beheerItems = [
-    { key: "players", label: "Spelers", icon: Users, adminOnly: false },
-    { key: "ploegen", label: "Teams", icon: Users, adminOnly: false },
-    { key: "scheidsrechters", label: "Scheidsrechters", icon: Calendar, adminOnly: false },
-    { key: "schorsingen", label: "Schorsingen", icon: Shield, adminOnly: true },
-    { key: "teams", label: "Teams (Admin)", icon: Shield, adminOnly: true },
-    { key: "users", label: "Gebruikers", icon: User, adminOnly: true },
-  ];
-
-  // Financieel groep
-  const financieelItems = [
-    { key: "financial", label: "Financieel", icon: DollarSign, adminOnly: true },
-  ];
-  // Speelformaten groep (uitklapbaar) - alleen voor admin
-  const speelformatenItems = [
-    { key: "competition", label: "Competitie", icon: Trophy },
-    { key: "cup", label: "Beker", icon: Award },
-    { key: "playoffs", label: "Playoff", icon: Target },
-  ];
-  
-  // Systeem groep
-  const systeemItems = [
-    { key: "settings", label: "Instellingen", icon: Settings, adminOnly: true },
-  ];
+  const visibleWedstrijdformulierenItems = filterWedstrijdformulierenItems(
+    SIDEBAR_WEDSTRIJDFORMULIEREN_ITEMS,
+    filterOpts
+  );
+  const visibleBeheerItems = filterBeheerItems(SIDEBAR_BEHEER_ITEMS, filterOpts);
+  const visibleFinancieelItems = filterAdminOnlyItems(FINANCIEEL_ITEMS, filterOpts);
+  const visibleSysteemItems = filterAdminOnlyItems(SIDEBAR_SYSTEEM_ITEMS, filterOpts);
+  const visibleSpeelformatenItems = filterSpeelformatenItems(isAdmin);
 
   const isActive = (key: string) => activeTab === key;
 
-  const renderMenuItem = (item: any) => (
-    <div key={item.key} className="mb-1">
-      <button
-        onClick={() => {
-          // Navigate to URL for admin tabs
-          const path = routeMap[item.key] || getPathFromTab(item.key);
-          navigate(path);
-        }}
-        className={`btn-nav w-full flex items-center ${collapsed ? 'justify-center p-2' : 'justify-start gap-2 px-4 py-3'} ${isActive(item.key) ? ' active' : ''} bg-transparent text-white`}
-      >
-        <item.icon className="h-4 w-4 flex-shrink-0" />
-        {!collapsed && <span className="text-sm">{item.label}</span>}
-      </button>
-    </div>
-  );
+  const renderMenuItem = (item: NavItem) => {
+    const Icon = item.icon;
+    return (
+      <div key={item.key} className="mb-1">
+        <button
+          type="button"
+          onClick={() => {
+            const path = NAV_ROUTE_MAP[item.key] || getPathFromTab(item.key);
+            navigate(path);
+          }}
+          aria-current={isActive(item.key) ? "page" : undefined}
+          className={`btn-nav w-full flex items-center ${collapsed ? "justify-center p-2" : "justify-start gap-2 px-4 py-3"} ${isActive(item.key) ? " active" : ""} bg-transparent text-white`}
+        >
+          <Icon className="h-4 w-4 flex-shrink-0" />
+          {!collapsed && <span className="text-sm">{item.label}</span>}
+        </button>
+      </div>
+    );
+  };
 
-  const renderGroup = (title: string, items: any[]) => {
-    // Don't render empty groups
+  const renderGroup = (title: string, items: NavItem[]) => {
     if (items.length === 0) return null;
-    
+
     return (
       <div className="mb-3">
         {!collapsed && (
@@ -120,124 +84,59 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
             {title}
           </h3>
         )}
-        <div className="space-y-0.5">
-          {items.map(renderMenuItem)}
-        </div>
+        <div className="space-y-0.5">{items.map(renderMenuItem)}</div>
       </div>
     );
   };
 
-  // Filter items based on tab visibility and admin permissions
-  // Speelformaten zijn pure beheertabs: voor admins altijd zichtbaar, onafhankelijk van publieke tab-zichtbaarheid
-  const visibleSpeelformatenItems = speelformatenItems.filter(() => isAdmin);
-
-  // Wedstrijdformulieren: filter op basis van tab visibility en admin permissions
-  // Tab visibility takes priority - toggles can override adminOnly
-  const visibleWedstrijdformulierenItems = wedstrijdformulierenItems.filter(item => {
-    // First check tab visibility from settings
-    if (!isTabVisible(item.key)) return false;
-    
-    // Then check adminOnly only if tab visibility allows it
-    if (item.adminOnly && !isAdmin) return false;
-    
-    return true;
-  });
-
-  const visibleBeheerItems = beheerItems.filter(item => {
-    // First check tab visibility from settings - this takes priority
-    // This allows toggles to override adminOnly restrictions
-    if (!isTabVisible(item.key)) return false;
-    
-    // Then check admin-only permission only if tab visibility allows it
-    if (item.adminOnly && !isAdmin) return false;
-    
-    // Hide players tab for referees
-    if (item.key === 'players' && user?.role === 'referee') return false;
-    
-    // Show scheidsrechters for both admin and referee
-    if (item.key === 'scheidsrechters' && !(isAdmin || user?.role === 'referee')) return false;
-    
-    return true;
-  });
-
-  const visibleFinancieelItems = financieelItems.filter(item => {
-    // First check tab visibility from settings - this takes priority
-    if (!isTabVisible(item.key)) return false;
-    
-    // Then check adminOnly only if tab visibility allows it
-    if (item.adminOnly && !isAdmin) return false;
-    
-    return true;
-  });
-
-  const visibleSysteemItems = systeemItems.filter(item => {
-    // First check tab visibility from settings - this takes priority
-    if (!isTabVisible(item.key)) return false;
-    
-    // Then check adminOnly only if tab visibility allows it
-    if (item.adminOnly && !isAdmin) return false;
-    
-    return true;
-  });
-
   return (
-    <div 
-      className={`${collapsed ? "w-14" : "w-64"} flex flex-col h-full ${isMobile ? 'px-4 py-6' : 'p-3'}`}
-      style={{ background: 'var(--purple-100)' }}
+    <div
+      className={`${collapsed ? "w-14" : "w-64"} flex flex-col h-full ${isMobile ? "px-4 py-6" : "p-3"}`}
+      style={{ background: "var(--purple-100)" }}
     >
-      {/* Header bovenaan: toon rol van ingelogde gebruiker */}
       <div className="mb-6">
         {collapsed ? (
           <div className="flex items-center justify-center">
-            <Shield className="h-4 w-4" style={{ color: 'var(--main-color-dark)' }} />
+            <Shield className="h-4 w-4" style={{ color: "var(--main-color-dark)" }} />
           </div>
         ) : (
-          <div className={`${isMobile ? 'px-2' : 'px-1'}`}>
-            <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--main-color-dark)' }}>
+          <div className={`${isMobile ? "px-2" : "px-1"}`}>
+            <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--main-color-dark)" }}>
               {isAdmin
-                ? 'Admin'
-                : normalizedRole === 'referee'
-                ? 'SCHEIDSRECHTER'
-                : normalizedRole === 'player_manager'
-                ? 'Team Manager'
-                : normalizedRole
-                ? normalizedRole.toUpperCase()
-                : 'GEBRUIKER'}
+                ? "Admin"
+                : normalizedRole === "referee"
+                  ? "SCHEIDSRECHTER"
+                  : normalizedRole === "player_manager"
+                    ? "Team Manager"
+                    : normalizedRole
+                      ? normalizedRole.toUpperCase()
+                      : "GEBRUIKER"}
             </div>
-            <div className="text-base font-semibold" style={{ color: 'var(--main-color-dark)' }}>
+            <div className="text-base font-semibold" style={{ color: "var(--main-color-dark)" }}>
               {isAdmin
-                ? 'Administrator'
-                : normalizedRole === 'referee'
-                ? 'Scheidsrechter'
-                : normalizedRole === 'player_manager'
-                ? 'Team Manager'
-                : 'Gebruiker'}
+                ? "Administrator"
+                : normalizedRole === "referee"
+                  ? "Scheidsrechter"
+                  : normalizedRole === "player_manager"
+                    ? "Team Manager"
+                    : "Gebruiker"}
             </div>
           </div>
         )}
       </div>
 
       <div className="flex-1">
-        {/* Wedstrijdformulieren groep - filtered by tab visibility */}
         {renderGroup("Wedstrijdformulieren", visibleWedstrijdformulierenItems)}
-
-        {/* Beheer groep */}
         {renderGroup("Beheer", visibleBeheerItems)}
-
-        {/* Financieel groep */}
         {renderGroup("Financieel", visibleFinancieelItems)}
-
-        {/* Systeem groep */}
         {renderGroup("Systeem", visibleSysteemItems)}
-
-        {/* Speelformaten groep - helemaal onderaan */}
         {renderGroup("Speelformaten", visibleSpeelformatenItems)}
 
-        {/* Uitloggen knop direct onder Systeem/Instellingen */}
         <div className="mt-2 pb-4">
           <button
+            type="button"
             onClick={logout}
-            className={`btn-nav active w-full flex items-center ${collapsed ? 'justify-center p-2' : 'justify-start gap-2 px-4 py-3'}`}
+            className={`btn-nav active w-full flex items-center ${collapsed ? "justify-center p-2" : "justify-start gap-2 px-4 py-3"}`}
           >
             <LogOut className="h-4 w-4 flex-shrink-0" />
             {!collapsed && <span className="text-sm">Uitloggen</span>}

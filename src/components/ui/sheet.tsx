@@ -67,13 +67,13 @@ const SheetContent = React.forwardRef<
     >
       {children}
       <SheetPrimitive.Close 
-        className="absolute right-3 top-3 sm:right-4 sm:top-4 rounded-full bg-black/5 hover:bg-black/10 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 z-10"
+        className="absolute right-3 top-3 sm:right-4 sm:top-4 rounded-full bg-black/5 hover:bg-black/10 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none flex items-center justify-center min-h-[44px] min-w-[44px] z-10"
         style={{
           transition: 'background 150ms'
         }}
       >
-        <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
+        <X className="h-5 w-5" />
+        <span className="sr-only">Sluiten</span>
       </SheetPrimitive.Close>
     </SheetPrimitive.Content>
   </SheetPortal>

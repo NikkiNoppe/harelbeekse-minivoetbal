@@ -92,12 +92,6 @@ const Layout: React.FC = () => {
     navigate(path);
   };
 
-  /**
-   * handleTabChange is same as setActiveTab (for backward compatibility)
-   * Used by Header component for tab navigation
-   */
-  const handleTabChange = setActiveTab;
-
   const handleLoginClick = () => {
     openLoginModal();
   };
@@ -172,12 +166,11 @@ const Layout: React.FC = () => {
         <Header 
           onLogoClick={handleLogoClick} 
           onLoginClick={handleLoginClick}
-          onTabChange={handleTabChange}
           activeTab={activeTab}
           isAuthenticated={!!user}
           user={user}
         />
-        <main className="flex-1 w-full bg-purple-100 pt-6">
+        <main id="main-content" className="flex-1 w-full bg-purple-100 pt-6">
           {isProfilePage ? (
             <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
               <div className="max-w-7xl mx-auto">

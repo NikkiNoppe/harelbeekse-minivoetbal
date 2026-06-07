@@ -29,19 +29,19 @@ function ThemeColorsInitializer({ children }: { children: React.ReactNode }) {
 }
 
 const App = () => (
-  <ErrorBoundary>
-    <ThemeProvider defaultTheme="light">
-      <ThemeColorsInitializer>
-        <AuthProvider>
-          <ModalProvider>
-            <PlayerListLockProvider>
-              <TabVisibilityProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
+  <ThemeProvider defaultTheme="light">
+    <ThemeColorsInitializer>
+      <AuthProvider>
+        <ModalProvider>
+          <PlayerListLockProvider>
+            <TabVisibilityProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
                 <BrowserRouter>
-                  <ScrollRestore />
-                  <Routes>
+                  <ErrorBoundary>
+                    <ScrollRestore />
+                    <Routes>
                     {/* Redirect root to algemeen */}
                     <Route path="/" element={<Navigate to={PUBLIC_ROUTES.algemeen} replace />} />
                     
@@ -231,7 +231,8 @@ const App = () => (
                         <NotFound />
                       </Suspense>
                     } />
-                  </Routes>
+                    </Routes>
+                  </ErrorBoundary>
                 </BrowserRouter>
               </TooltipProvider>
             </TabVisibilityProvider>
@@ -239,8 +240,7 @@ const App = () => (
         </ModalProvider>
       </AuthProvider>
     </ThemeColorsInitializer>
-    </ThemeProvider>
-  </ErrorBoundary>
+  </ThemeProvider>
 );
 
 export default App;

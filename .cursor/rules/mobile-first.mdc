@@ -1,0 +1,49 @@
+---
+description: Mobile-first verplicht — mobiel is de hoofdmanier van werken voor deze app
+alwaysApply: true
+---
+
+# Mobile-first (hoofdplatform)
+
+**Mobiel is de primaire manier waarop gebruikers deze app bedienen.** Elke UI-, layout- of interactiewijziging eerst beoordelen en ontwerpen voor mobiel; desktop is een uitbreiding, geen uitgangspunt.
+
+## Verplicht bij elke UI-wijziging
+
+1. **Mobiel eerst** — Start met smalle viewport (~375px). Pas daarna `sm:`, `md:`, `lg:` toe voor grotere schermen.
+2. **Mobiel expliciet checken** — Vóór afronden: layout, leesbaarheid, scroll, modals/sheets en knoppen op mobiel nalopen (niet alleen desktop).
+3. **Touch-first** — Interacties via tap/click; nooit alleen `hover:` voor essentiële acties.
+4. **Touch targets** — Minimaal `min-h-[44px]` / `min-w-[44px]` op klikbare elementen; voldoende ruimte tussen knoppen (`gap-2` of meer).
+5. **Navigatie op mobiel** — Publieke/admin-nav via Sheet/hamburger (`Header`); geen desktop-only menu's zonder mobiel alternatief.
+
+## Layout & componenten
+
+| Onderdeel | Mobiel | Desktop |
+|-----------|--------|---------|
+| **Header** | Gecentreerd logo + hamburger | `lg+` horizontale links; hamburger blijft voor volledig menu |
+| **Tabellen** | Cards/stack of horizontale scroll; geen brede vaste tabellen | Volledige tabel OK |
+| **Modals** | Volledige breedte/hoogte waar nodig; scroll binnen modal | `max-w-*` centreren |
+| **Forms** | Eén kolom; grote inputs; labels boven velden | Meerdere kolommen alleen vanaf `md:`/`lg:` |
+
+## Techniek in dit project
+
+- `useIsMobile()` uit `@/hooks/use-mobile` waar gedrag per breakpoint verschilt
+- `PullToRefreshWrapper` op publieke/admin-layout — niet breken op mobiel
+- `safe-area-bottom` / `safe-area-*` waar vaste footers of bottom-bars zitten
+- `prefers-reduced-motion` respecteren bij animaties (`framer-motion` / `motion-safe:`)
+
+## Anti-patterns (vermijden)
+
+- Desktop layout als default, mobiel als afterthought
+- Kleine icon-only knoppen zonder 44px touch area
+- Hover-only tooltips of acties zonder tap-alternatief
+- Horizontale nav die op mobiel afknijpt zonder Sheet/menu
+- `fixed`/`sticky` elementen die content of bottom-actions bedekken op kleine schermen
+- Tekst kleiner dan `text-xs` voor primaire content op mobiel
+
+## Checklist vóór oplevering
+
+- [ ] Werkt op ~375px breedte zonder horizontaal scrollen (behalve bewuste table-scroll)
+- [ ] Alle primaire acties bereikbaar met duim (onderkant/schermrand)
+- [ ] Modals en sheets sluitbaar en scrollbaar op mobiel
+- [ ] Geen content verborgen achter header/footer op mobiel
+- [ ] Actieve states zichtbaar zonder hover (tap/focus)

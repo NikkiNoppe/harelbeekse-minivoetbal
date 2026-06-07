@@ -1,49 +1,73 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import { PUBLIC_ROUTES } from "@/config/routes";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }
 
-function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
+function ErrorFallback({
+  error,
+  resetErrorBoundary,
+}: {
+  error: Error;
+  resetErrorBoundary: () => void;
+}) {
+  const navigate = useNavigate();
+
+  const handleGoHome = () => {
+    resetErrorBoundary();
+    navigate(PUBLIC_ROUTES.algemeen, { replace: true });
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-      <Card className="max-w-md w-full">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-            <AlertTriangle className="h-6 w-6 text-red-600" />
+    <div className="min-h-screen flex items-center justify-center bg-purple-100 p-4">
+      <Card
+        className="max-w-md w-full shadow-lg hover:shadow-lg transition-none"
+        role="alert"
+        aria-live="assertive"
+      >
+        <CardHeader className="text-center pb-2">
+          <div className="mx-auto w-12 h-12 bg-purple-200 rounded-full flex items-center justify-center mb-4">
+            <AlertTriangle className="h-6 w-6 text-purple-800" aria-hidden />
           </div>
-          <CardTitle className="text-xl text-card-foreground">
-            Er is iets misgegaan
-          </CardTitle>
+          <h1 className="text-xl font-semibold text-purple-900">Er is iets misgegaan</h1>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-muted-foreground text-center">
-            Er is een onverwachte fout opgetreden. Probeer de pagina te vernieuwen of ga terug naar de homepage.
+          <p className="text-purple-700 text-center text-sm sm:text-base">
+            Er is een onverwachte fout opgetreden. Probeer de pagina te vernieuwen of ga terug naar de
+            homepage.
           </p>
-          {process.env.NODE_ENV === 'development' && error && (
-            <details className="bg-muted p-3 rounded text-sm">
-              <summary className="cursor-pointer font-medium mb-2">
+          {process.env.NODE_ENV === "development" && error && (
+            <details className="bg-purple-50 border border-purple-200 p-3 rounded-lg text-sm">
+              <summary className="cursor-pointer font-medium mb-2 min-h-[44px] flex items-center py-2 text-purple-900">
                 Technische details (alleen in ontwikkeling)
               </summary>
-              <pre className="text-xs overflow-auto">
+              <pre className="text-xs overflow-auto text-purple-800 whitespace-pre-wrap break-words">
                 {error.message}
-                {'\n'}
+                {"\n"}
                 {error.stack}
               </pre>
             </details>
           )}
-          <div className="flex gap-2">
-            <button onClick={resetErrorBoundary} className="btn btn--secondary flex-1">
-              <RefreshCw className="h-4 w-4 mr-2" />
+          <div className="flex flex-col-reverse sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:flex-1 border-purple-300 text-purple-800 hover:bg-purple-50"
+              onClick={resetErrorBoundary}
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden />
               Opnieuw proberen
-            </button>
-            <button onClick={() => (window.location.href = '/')} className="btn btn--primary flex-1">
-              <Home className="h-4 w-4 mr-2" />
+            </Button>
+            <Button type="button" className="w-full sm:flex-1" onClick={handleGoHome}>
+              <Home className="h-4 w-4" aria-hidden />
               Homepage
-            </button>
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -51,7 +75,10 @@ function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetError
   );
 }
 
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, { hasError: boolean; error?: Error }> {
+class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  { hasError: boolean; error?: Error }
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
@@ -62,10 +89,18 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, { hasError: bool
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log to monitoring service in production
-    if (process.env.NODE_ENV === 'production') {
-      // TODO: Send to monitoring service like Sentry
-      // console.error('Error details:', { error, errorInfo });
+    const payload = {
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+    };
+
+    if (process.env.NODE_ENV === "production") {
+      if (typeof window !== "undefined" && "reportError" in window) {
+        window.reportError(error);
+      }
+    } else {
+      console.error("[ErrorBoundary]", payload);
     }
   }
 
@@ -76,10 +111,12 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, { hasError: bool
   render() {
     if (this.state.hasError && this.state.error) {
       if (this.props.fallback) return this.props.fallback;
-      return <ErrorFallback error={this.state.error} resetErrorBoundary={this.resetErrorBoundary} />;
+      return (
+        <ErrorFallback error={this.state.error} resetErrorBoundary={this.resetErrorBoundary} />
+      );
     }
     return this.props.children;
   }
 }
 
-export default ErrorBoundary; 
+export default ErrorBoundary;

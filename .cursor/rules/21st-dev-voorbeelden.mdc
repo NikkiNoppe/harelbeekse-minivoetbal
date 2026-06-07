@@ -8,9 +8,10 @@ alwaysApply: false
 
 Bij UI-werk in `src/components/`:
 
-1. Raadpleeg [21st.dev](https://21st.dev) voor vergelijkbare componenten vóór je from scratch bouwt.
-2. Geen Magic MCP of API-key — open componentpagina's of registry-URLs ophalen en lokaal adapteren.
-3. Hergebruik `src/components/ui/` (shadcn) en voeg `framer-motion` toe waar animaties het ontwerp verbeteren.
-4. Volg ook `.cursor/skills/ui-ux-pro-max/` voor kleur, typografie en UX.
+1. **Mobiel eerst** — volg `.cursor/rules/mobile-first.mdc`; ontwerp en test op mobiel vóór desktop.
+2. Raadpleeg [21st.dev](https://21st.dev) voor vergelijkbare componenten vóór je from scratch bouwt.
+3. Geen Magic MCP of API-key — open componentpagina's of registry-URLs ophalen en lokaal adapteren.
+4. Hergebruik `src/components/ui/` (shadcn) en voeg `framer-motion` toe waar animaties het ontwerp verbeteren.
+5. Volg ook `.cursor/skills/ui-ux-pro-max/` voor kleur, typografie en UX.
 
 Zie `.cursor/skills/21st-dev-reference/SKILL.md` voor de volledige workflow.
