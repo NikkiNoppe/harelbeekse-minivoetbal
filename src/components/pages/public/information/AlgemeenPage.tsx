@@ -76,7 +76,7 @@ const BlogPostItem = memo(({ post }: { post: BlogPost }) => {
             <p className="text-sm break-words whitespace-pre-line">{displayContent}</p>
             {needsTruncate && !expanded && (
               <div
-                className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-card via-card/80 to-transparent"
+                className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white via-white/60 to-transparent"
                 aria-hidden
               />
             )}
