@@ -6,10 +6,11 @@ alwaysApply: false
 
 # Gevoelige data & RLS (custom auth)
 
-**Lees vóór wijzigingen aan `matches`, `players`, `users`, publieke pagina's of security-migraties.**
+**Lees samen met `session-rpc-beveiliging.mdc` vóór wijzigingen aan `matches`, `players`, `users`, publieke pagina's of security-migraties.**
 
 Referenties:
-- `supabase/migrations/20260607100000_secure_matches_rls.sql` — matches_public + context SELECT
+- `session-rpc-beveiliging.mdc` — beslisboom, verboden quick fixes, deploy-volgorde
+- `supabase/migrations/20260607100000_secure_matches_rls.sql` — RESTRICTIVE matches + line-up bescherming
 - `supabase/migrations/20260608100000_matches_restrictive_context_rls.sql` — RESTRICTIVE baseline
 - `scripts/test-matches-security.sh` — verificatie na deploy
 

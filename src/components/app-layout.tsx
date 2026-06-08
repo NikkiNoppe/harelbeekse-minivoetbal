@@ -13,7 +13,6 @@ import { useModal } from "@/context/ModalContext";
 
 import { getTabFromPath, getPathFromTab, PUBLIC_ROUTES, ADMIN_ROUTES } from "@/config/routes";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
-import { useRouteMeta } from "@/hooks/useRouteMeta";
 import { useIsMobile } from "@/hooks/use-mobile";
 import PullToRefreshWrapper from "@/components/common/PullToRefreshWrapper";
 import { useQueryClient } from "@tanstack/react-query";
@@ -28,9 +27,6 @@ const Layout: React.FC = () => {
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   
-  // Update document title and meta tags based on current route
-  useRouteMeta();
-
   // Pull-to-refresh handler - invalidates all queries
   const handleRefresh = useCallback(async () => {
     await queryClient.invalidateQueries();

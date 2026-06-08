@@ -1,0 +1,91 @@
+---
+description: Verplicht session-RPC-model — geen *_public views, geen spoofable user_id, geen withUserContext-quick-fixes
+globs: supabase/migrations/**,src/services/**,src/hooks/**,src/components/pages/public/**,src/components/pages/admin/**,scripts/test-matches-security.sh
+alwaysApply: false
+---
+
+# Session-RPC beveiliging (geen quick fixes)
+
+**Lees vóór elke nieuwe read/write op `matches`, `teams`, `users`, `players`, scheids-data of publieke pagina's.**
+
+Dit project gebruikt **custom auth**: alle REST-requests zijn `anon`. `withUserContext` + `set_config` werkt **niet** betrouwbaar over PostgREST connection pooling. Nieuwe code volgt daarom altijd het session-RPC-model.
+
+Referenties:
+- `private.resolve_app_session` — `supabase/migrations/20260610000000_private_resolve_app_session.sql`
+- Publiek: `get_public_matches` / `get_public_teams` — `20260611000000_public_schedule_rpcs.sql`
+- Scheids: `src/services/scheidsrechter/scheidsSessionFetch.ts`
+- Teams ingelogd: `src/services/core/teamsSessionFetch.ts`
+- Publiek client: `src/services/public/publicScheduleFetch.ts`
+- Verificatie: `npm run test:security`
+
+## Beslisboom (verplicht)
+
+| Wie | Wat | Hoe |
+|-----|-----|-----|
+| **Anon** (geen login) | Speelschema, standen, teamnamen | `get_public_matches()` / `get_public_teams()` — expliciete kolom-allowlist |
+| **Ingelogd** (admin/referee/manager) | Rol-gevoelige reads/writes | `p_session_token` + `private.resolve_app_session` in **één transactie** |
+| **Intern in DEFINER-RPC** | Teamnamen joinen | `JOIN public.teams` — nooit `*_public` views |
+
+```typescript
+// Publiek
+import { fetchPublicMatches, fetchPublicTeams } from '@/services/public/publicScheduleFetch';
+
+// Ingelogd
+import { getRpcSessionArgs } from '@/lib/authSession';
+supabase.rpc('get_teams_for_session', { ...getRpcSessionArgs(), p_team_id: id });
+```
+
+## Verboden quick fixes (nooit introduceren)
+
+- `CREATE VIEW …_public` + `GRANT SELECT TO anon` — omzeilt RLS (`security_invoker = false` is geen oplossing)
+- `referees_public`, `teams_public`, `matches_public`, `players_public` of varianten
+- RPC met client-provided `p_user_id`, `p_admin_user_id`, `p_role` zonder sessie-validatie
+- Nieuwe `withUserContext` voor reads die session-RPC kunnen zijn
+- Publieke `from('matches')` / `from('users')` in `src/components/pages/public/**`
+- `USING (true)` SELECT policies op gevoelige tabellen
+- Anon-exposure van JSONB line-ups, contact-PII, of `assigned_referee_id`
+
+**Als iets “even snel” anon-leesbaar moet:** nieuwe `SECURITY DEFINER` RPC met vaste `RETURNS TABLE` — geen view.
+
+## Nieuwe database-RPC (template)
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_<resource>_for_session(p_session_token uuid, ...)
+RETURNS TABLE(...)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'private'
+AS $$
+DECLARE v_role text;
+BEGIN
+  SELECT s.role INTO v_role
+  FROM private.resolve_app_session(p_session_token) s LIMIT 1;
+  IF v_role IS NULL OR v_role NOT IN ('admin', ...) THEN RETURN; END IF;
+  RETURN QUERY SELECT ...;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.get_<resource>_for_session(...) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_<resource>_for_session(...) TO anon, authenticated;
+```
+
+Publieke anon-RPC (zonder sessie): `SET search_path TO 'public'`, alleen niet-gevoelige kolommen, expliciete `::text` casts.
+
+## Nieuwe client-feature (checklist)
+
+- [ ] Geen `from('*_public')` of nieuwe bypass-view
+- [ ] Publiek → `publicScheduleFetch`; ingelogd → `*SessionFetch` + `getRpcSessionArgs()`
+- [ ] `enabled: !!getSessionToken()` voor session-queries; publiek zonder token
+- [ ] `staleTime: 0`, `refetchOnMount: 'always'` (zie `data-snel-laden.mdc`)
+- [ ] Types in `src/integrations/supabase/types.ts` bijgewerkt
+- [ ] `scripts/test-matches-security.sh` uitgebreid indien nieuwe anon/sessie-grens
+- [ ] `npm run test:security` groen na deploy
+
+## Deploy-volgorde (geen regressies)
+
+1. Nieuwe RPC's aanmaken
+2. Interne RPC's ontkoppelen van views (join `teams` direct)
+3. Client migreren
+4. Views droppen (`REVOKE` + `DROP`)
+5. `supabase db query --linked -f supabase/migrations/<file>.sql` per migratie
+
+**Nooit** views droppen vóór client + RPC's live zijn.

@@ -9,6 +9,8 @@ alwaysApply: true
 
 | Rule | Bestand | Scope |
 |------|---------|-------|
+| **Session-RPC (verplicht)** | `session-rpc-beveiliging.mdc` | migraties, services, hooks, publiek/admin |
+| Gevoelige data & RLS | `supabase-rls-sensitive-data.mdc` | matches, players, users |
 | Schema & migraties | `supabase-schema.mdc` | `supabase/**` |
 | Client & queries | `supabase-client.mdc` | services, hooks, domains |
 
@@ -22,7 +24,9 @@ Officiële referenties: [Database Migrations](https://supabase.com/docs/guides/d
 - **Lokaal testen** → `supabase db reset` of `supabase migration up`; **deploy** → `supabase db push` (één persoon tegelijk).
 - **Na schema-change** → `npm run update-types` + services/hooks bijwerken + gedrag verifiëren.
 - **RLS op elke nieuwe `public` tabel** + `GRANT` voor `anon`/`authenticated` waar nodig.
-- **Custom auth** in dit project: `set_current_user_context` + `get_current_user_role()` (niet `auth.uid()`).
+- **Custom auth** in dit project: sessie-token RPC's (`p_session_token` + `private.resolve_app_session`), niet `auth.uid()`.
+- **Geen `*_public` views** en geen `withUserContext` voor nieuwe reads — zie `session-rpc-beveiliging.mdc`.
+- **Na security-wijziging:** `npm run test:security` moet groen zijn.
 - **Geen secret/service_role key in de browser** — alleen publishable/anon key in de React-app.
 
 Project-ref: `kuyviionmstyvkvglizh` (`supabase/config.toml`). Client: `@/integrations/supabase/client`.

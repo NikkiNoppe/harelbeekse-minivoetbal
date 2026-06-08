@@ -259,44 +259,51 @@ export interface RouteMeta {
 export const ROUTE_META: Record<string, RouteMeta> = {
   // Publieke routes
   [PUBLIC_ROUTES.algemeen]: {
-    title: 'Algemeen',
-    description: 'Algemene informatie over de Harelbeekse Minivoetbal competitie',
+    title: 'Minivoetbal Harelbeke',
+    description:
+      'Nieuws en info over de Harelbeekse Minivoetbal Competitie. De grootste minivoetbalcompetitie van Harelbeke sinds 1979, met teams uit Harelbeke en Bavikhove.',
     requiresAuth: false,
     requiresAdmin: false,
   },
   [PUBLIC_ROUTES.competitie]: {
     title: 'Competitie',
-    description: 'Competitie overzicht, standen en uitslagen',
+    description:
+      'Actueel klassement, speelschema en uitslagen van de Harelbeekse Minivoetbal Competitie. Volg alle competitiewedstrijden per speeldag.',
     requiresAuth: false,
     requiresAdmin: false,
   },
   [PUBLIC_ROUTES.beker]: {
     title: 'Beker',
-    description: 'Beker competitie overzicht en uitslagen',
+    description:
+      'Bekertoernooi van de Harelbeekse Minivoetbal Competitie: speelschema, uitslagen en bracket van achtste finales tot de finale.',
     requiresAuth: false,
     requiresAdmin: false,
   },
   [PUBLIC_ROUTES.playoff]: {
     title: 'Playoff',
-    description: 'Playoff competitie overzicht en uitslagen',
+    description:
+      'Play-off rangschikking en uitslagen van de Harelbeekse Minivoetbal Competitie. Bekijk wie degradeert en promoveert aan het einde van het seizoen.',
     requiresAuth: false,
     requiresAdmin: false,
   },
   [PUBLIC_ROUTES.reglement]: {
     title: 'Reglement',
-    description: 'Reglement en spelregels van de Harelbeekse Minivoetbal',
+    description:
+      'Volledig reglement en spelregels van de Harelbeekse Minivoetbal Competitie: inschrijving, wedstrijdregels, schorsingen en financiële bepalingen.',
     requiresAuth: false,
     requiresAdmin: false,
   },
   [PUBLIC_ROUTES.kaarten]: {
     title: 'Kaarten',
-    description: 'Overzicht van kaarten en schorsingen',
+    description:
+      'Overzicht van gele en rode kaarten en lopende schorsingen in de Harelbeekse Minivoetbal Competitie. Alleen zichtbaar voor ingelogde gebruikers.',
     requiresAuth: true,
     requiresAdmin: false,
   },
   [PUBLIC_ROUTES.archief]: {
     title: 'Archief',
-    description: 'Eindklassementen en bekerwinnaars per seizoen',
+    description:
+      'Historisch archief met eindklassementen, play-off resultaten en bekerwinnaars van vorige seizoenen van de Harelbeekse Minivoetbal Competitie.',
     requiresAuth: false,
     requiresAdmin: false,
   },

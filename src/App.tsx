@@ -15,6 +15,7 @@ import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ScrollRestore } from "@/components/common/ScrollRestore";
 import { useThemeColorsInit } from "@/hooks/useThemeColors";
+import { useRouteMeta } from "@/hooks/useRouteMeta";
 
 // Lazy load main components
 const Index = lazy(() => import("./pages/Index"));
@@ -26,6 +27,12 @@ const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 function ThemeColorsInitializer({ children }: { children: React.ReactNode }) {
   useThemeColorsInit();
   return <>{children}</>;
+}
+
+/** Updates document title, meta tags and canonical URL on every route. */
+function RouteMeta() {
+  useRouteMeta();
+  return null;
 }
 
 const App = () => (
@@ -40,6 +47,7 @@ const App = () => (
                 <Sonner />
                 <BrowserRouter>
                   <ErrorBoundary>
+                    <RouteMeta />
                     <ScrollRestore />
                     <Routes>
                     {/* Redirect root to algemeen */}

@@ -130,7 +130,9 @@ const TournamentRoundSkeleton = memo(({
     <section role="region" aria-labelledby={headingId}>
       <Card>
         <CardHeader>
-          <CardTitle id={headingId}>{title}</CardTitle>
+          <h2 id={headingId} className="text-2xl font-semibold leading-none tracking-tight text-primary">
+            {title}
+          </h2>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
@@ -218,18 +220,20 @@ const TournamentRound = memo(({
   const isMobile = useIsMobile();
   
   return (
-    <AccordionItem 
-      value={roundKey}
-      className="border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white mb-3"
-    >
-      <AccordionTrigger 
-        className="text-base font-semibold px-5 py-4 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4 hover:no-underline"
-        style={{ color: 'var(--color-700)' }}
-        id={roundKey}
+    <section aria-labelledby={headingId}>
+      <h2 id={headingId} className="sr-only">{title}</h2>
+      <AccordionItem 
+        value={roundKey}
+        className="border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white mb-3"
       >
+        <AccordionTrigger 
+          className="text-base font-semibold px-5 py-4 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4 hover:no-underline"
+          style={{ color: 'var(--color-700)' }}
+          aria-labelledby={headingId}
+        >
         <div className="flex items-center justify-between w-full pr-4">
           <div className="flex items-center gap-2">
-            {isFinal ? <Trophy className="h-5 w-5 text-primary" /> : <Award className="h-5 w-5" />}
+            {isFinal ? <Trophy className="h-5 w-5 text-primary" aria-hidden /> : <Award className="h-5 w-5" aria-hidden />}
             <span className="text-left flex-1">
               {title}
             </span>
@@ -271,7 +275,8 @@ const TournamentRound = memo(({
           </p>
         )}
       </AccordionContent>
-    </AccordionItem>
+      </AccordionItem>
+    </section>
   );
 });
 

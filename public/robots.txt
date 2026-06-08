@@ -6,6 +6,8 @@ Disallow: /admin/
 Disallow: /settings/
 Disallow: /financial/
 Disallow: /profile
+Disallow: /reset-password
+Disallow: /unsubscribe
 
 # Sitemap locatie
 Sitemap: https://harelbekeminivoetbal.be/sitemap.xml

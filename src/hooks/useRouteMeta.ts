@@ -1,75 +1,103 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { getRouteMeta } from "@/config/routes";
+import { NOINDEX_PATHS, SITE_URL } from "@/config/site";
+
+const DEFAULT_ROBOTS = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
+const NOINDEX_ROBOTS = "noindex, nofollow";
+
+const UTILITY_PAGE_TITLES: Record<string, string> = {
+  "/reset-password": "Wachtwoord resetten",
+  "/unsubscribe": "Afmelden voor e-mails",
+};
+
+function upsertMeta(selector: string, create: () => HTMLElement, update: (el: HTMLElement) => void) {
+  let el = document.querySelector(selector) as HTMLElement | null;
+  if (!el) {
+    el = create();
+    document.head.appendChild(el);
+  }
+  update(el);
+}
+
+function upsertMetaName(name: string, content: string) {
+  upsertMeta(
+    `meta[name="${name}"]`,
+    () => {
+      const meta = document.createElement("meta");
+      meta.setAttribute("name", name);
+      return meta;
+    },
+    (el) => {
+      (el as HTMLMetaElement).content = content;
+    },
+  );
+}
+
+function upsertMetaProperty(property: string, content: string) {
+  upsertMeta(
+    `meta[property="${property}"]`,
+    () => {
+      const meta = document.createElement("meta");
+      meta.setAttribute("property", property);
+      return meta;
+    },
+    (el) => {
+      (el as HTMLMetaElement).content = content;
+    },
+  );
+}
+
+function upsertCanonical(href: string) {
+  upsertMeta(
+    'link[rel="canonical"]',
+    () => {
+      const link = document.createElement("link");
+      link.setAttribute("rel", "canonical");
+      return link;
+    },
+    (el) => {
+      (el as HTMLLinkElement).href = href;
+    },
+  );
+}
 
 /**
- * Hook to update document title and meta tags based on current route
+ * Hook to update document title, meta tags and canonical URL based on current route.
  */
 export const useRouteMeta = () => {
   const location = useLocation();
   const meta = getRouteMeta(location.pathname);
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const isNoIndex = NOINDEX_PATHS.includes(location.pathname as (typeof NOINDEX_PATHS)[number]);
+  const canonicalUrl = `${SITE_URL}${location.pathname}`;
 
   useEffect(() => {
-    if (meta) {
-      // Update document title
-      document.title = `${meta.title} - Harelbeekse Minivoetbal`;
-      
-      // Update or create meta description
-      let metaDescription = document.querySelector('meta[name="description"]') as HTMLMetaElement;
-      if (metaDescription) {
-        metaDescription.content = meta.description;
-      } else {
-        metaDescription = document.createElement('meta');
-        metaDescription.name = 'description';
-        metaDescription.content = meta.description;
-        document.head.appendChild(metaDescription);
-      }
-      
-      // Update Open Graph meta tags (optional - for social sharing)
-      const updateMetaProperty = (property: string, content: string) => {
-        let metaTag = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement;
-        if (metaTag) {
-          metaTag.content = content;
-        } else {
-          metaTag = document.createElement('meta');
-          metaTag.setAttribute('property', property);
-          metaTag.content = content;
-          document.head.appendChild(metaTag);
-        }
-      };
-      
-      // Update Open Graph title
-      updateMetaProperty('og:title', `${meta.title} - Harelbeekse Minivoetbal`);
-      
-      // Update Open Graph description
-      updateMetaProperty('og:description', meta.description);
-      
-      // Update Open Graph URL
-      updateMetaProperty('og:url', `${baseUrl}${location.pathname}`);
-      
-      // Update Twitter meta tags (optional)
-      const updateTwitterMeta = (name: string, content: string) => {
-        let metaTag = document.querySelector(`meta[name="twitter:${name}"]`) as HTMLMetaElement;
-        if (metaTag) {
-          metaTag.content = content;
-        } else {
-          metaTag = document.createElement('meta');
-          metaTag.name = `twitter:${name}`;
-          metaTag.content = content;
-          document.head.appendChild(metaTag);
-        }
-      };
-      
-      // Update Twitter title
-      updateTwitterMeta('title', `${meta.title} - Harelbeekse Minivoetbal`);
-      
-      // Update Twitter description
-      updateTwitterMeta('description', meta.description);
-    } else {
-      // Fallback to default title
-      document.title = 'Harelbeekse Minivoetbal';
+    if (isNoIndex) {
+      const utilityTitle = UTILITY_PAGE_TITLES[location.pathname];
+      document.title = utilityTitle
+        ? `${utilityTitle} - Harelbeekse Minivoetbal`
+        : "Harelbeekse Minivoetbal";
+      upsertMetaName("robots", NOINDEX_ROBOTS);
+      upsertCanonical(canonicalUrl);
+      return;
     }
-  }, [meta, location.pathname, baseUrl]);
-};
 
+    upsertMetaName("robots", DEFAULT_ROBOTS);
+
+    if (meta) {
+      const pageTitle = `${meta.title} - Harelbeekse Minivoetbal`;
+      document.title = pageTitle;
+
+      upsertMetaName("description", meta.description);
+      upsertMetaProperty("og:title", pageTitle);
+      upsertMetaProperty("og:description", meta.description);
+      upsertMetaProperty("og:url", canonicalUrl);
+      upsertMetaName("twitter:title", pageTitle);
+      upsertMetaName("twitter:description", meta.description);
+    } else {
+      document.title = "Harelbeekse Minivoetbal";
+    }
+
+    upsertCanonical(canonicalUrl);
+  }, [meta, location.pathname, canonicalUrl, isNoIndex]);
+};

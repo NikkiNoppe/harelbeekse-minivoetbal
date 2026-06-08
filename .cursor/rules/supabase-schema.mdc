@@ -61,12 +61,13 @@ Dit project: **custom auth** via sessie-context (`set_current_user_context`), ni
 - Functies in policies wrappen: `(SELECT get_current_user_role())` i.p.v. per rij opnieuw aanroepen.
 - Index op kolommen die in policies/filtering zitten.
 - **Geen `user_metadata` in policies** — alleen app/DB-context of `app_metadata`.
-- Views (PG15+): `CREATE VIEW … WITH (security_invoker = true)` — uitgezonderd bewuste public read-only views zoals `matches_public`.
+- **Geen `*_public` bypass-views** — publieke reads via `get_public_*` RPC's; ingelogd via `*_for_session` RPC's (zie `session-rpc-beveiliging.mdc`).
+- Views (PG15+): bij uitzondering `security_invoker = true`; nooit `GRANT SELECT TO anon` op gevoelige onderliggende tabellen als workaround.
 - **RESTRICTIVE baseline** op tabellen met gevoelige data (`matches`): context verplicht vóór permissive policies tellen.
 
-**Gevoelige data (`matches` line-ups, `players`, `users`):** zie rule `supabase-rls-sensitive-data.mdc`.
+**Gevoelige data & session-RPC:** `session-rpc-beveiliging.mdc` + `supabase-rls-sensitive-data.mdc`.
 
-Referentie: `supabase/migrations/20250817181828_*.sql`, `20260607100000_secure_matches_rls.sql`, `20260608100000_matches_restrictive_context_rls.sql`.
+Referentie: `20260610000000_private_resolve_app_session.sql`, `20260611000000_public_schedule_rpcs.sql`, `20260607100000_secure_matches_rls.sql`.
 
 ## Functies & triggers
 

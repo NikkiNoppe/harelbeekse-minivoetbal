@@ -16,9 +16,18 @@ Project: React + typed `createClient<Database>` via `@/integrations/supabase/cli
 - RLS is de echte bescherming; de key is publiek zichtbaar in de bundle.
 - Edge Functions met elevated access: alleen server-side, met project secrets.
 
-## Verplicht patroon: `withUserContext`
+## Verplicht patroon: session-RPC (nieuw) vs `withUserContext` (legacy)
 
-Rol-gebaseerde data **altijd** via `withUserContext` (zet `set_current_user_context` vóór de query):
+**Nieuwe reads/writes op gevoelige data:** session-RPC met `getRpcSessionArgs()` — zie `session-rpc-beveiliging.mdc`.
+
+| Data | Client |
+|------|--------|
+| Publiek speelschema | `fetchPublicMatches()` / `fetchPublicTeams()` |
+| Teams ingelogd | `fetchTeamsForSession()` |
+| Scheids | `scheidsSessionFetch.ts` |
+| Wedstrijdformulieren | `get_matches_for_forms` + session token |
+
+**Legacy** (alleen waar nog niet gemigreerd, bv. blog, poll CRUD): `withUserContext`:
 
 ```typescript
 const { data, error } = await withUserContext(async () =>
@@ -29,7 +38,7 @@ const { data, error } = await withUserContext(async () =>
 );
 ```
 
-- **Publieke reads** zonder login: direct op `supabase` als RLS dat toestaat.
+- **Publieke reads** zonder login: `get_public_matches` / `get_public_teams` — geen `*_public` views.
 - **Performance (Supabase):** voeg expliciete filters toe (`.eq`, `.in`) ook als RLS hetzelfde afdwingt — helpt Postgres een beter queryplan te kiezen.
 - Selecteer alleen benodigde kolommen; geen `select('*')` op zware tabellen tenzij nodig.
 
@@ -53,9 +62,11 @@ if (!updatedRows?.length) throw new Error('Niet gevonden of geen rechten');
 
 | Situatie | Aanpak |
 |----------|--------|
-| Simpele CRUD met RLS | `withUserContext` + `.from().insert/update/delete` |
-| Complexe multi-table logica | Bestaande `SECURITY DEFINER` RPC |
-| Legacy/kapotte RPC-wrapper | Directe Supabase + RLS (zoals blog) |
+| Publiek speelschema / teamnamen | `get_public_*` RPC via `publicScheduleFetch.ts` |
+| Ingelogde reads (teams, scheids, costs, forms) | `*_for_session` RPC + `getRpcSessionArgs()` |
+| Nieuwe gevoelige reads | Nieuwe session-RPC — geen view, geen spoofable `p_user_id` |
+| Legacy CRUD (blog, polls) | `withUserContext` + `.from()` tot gemigreerd |
+| Mutaties met RLS | `withUserContext` of session write-RPC |
 
 ## Na databasewijzigingen
 
@@ -65,7 +76,9 @@ if (!updatedRows?.length) throw new Error('Niet gevonden of geen rechten');
 
 ## Anti-patterns
 
-- Beschermde tabellen zonder `withUserContext`
+- Nieuwe `*_public` views of `from('teams_public')` / `from('matches_public')`
+- Nieuwe `withUserContext` reads waar session-RPC bestaat
+- Beschermde tabellen zonder session-RPC of `withUserContext`
 - `data = []` als default die laden maskeert
 - Client-cache die servertotalen overschrijft
 - `update` zonder verificatie van gewijzigde rijen

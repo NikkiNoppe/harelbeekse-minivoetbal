@@ -1,0 +1,22 @@
+# Harelbeekse Minivoetbal Competitie
+
+> Officiële website van de grootste minivoetbalcompetitie van Harelbeke (België), opgericht in 1979 onder KRC Harelbeke.
+
+## Over
+
+De Harelbeekse Minivoetbal Competitie organiseert wekelijkse zaalvoetbalwedstrijden voor teams uit Harelbeke, Bavikhove en omgeving. Het seizoen omvat een reguliere competitie, een bekertoernooi en play-offs. Wedstrijden worden gespeeld in Sporthal De Dageraad (Stasegemsesteenweg 21, 8530 Harelbeke).
+
+## Belangrijkste pagina's
+
+- /algemeen — Nieuws en algemene informatie over de competitie
+- /competitie — Klassement, speelschema en uitslagen
+- /beker — Bekertoernooi met bracket en uitslagen
+- /playoff — Play-off rangschikking en uitslagen
+- /reglement — Officieel reglement en spelregels
+- /archief — Eindklassementen en bekerwinnaars van vorige seizoenen
+
+## Contact
+
+- Website: https://harelbekeminivoetbal.be
+- E-mail: info@harelbekeminivoetbal.be
+- Organisatie: KRC Harelbeke Minivoetbal
