@@ -1,3 +1,6 @@
 # Python cache (ui-ux-pro-max scripts)
 **/__pycache__/
 *.pyc
+
+# Local hook stamp (footer version already updated today)
+.footer-version-stamp

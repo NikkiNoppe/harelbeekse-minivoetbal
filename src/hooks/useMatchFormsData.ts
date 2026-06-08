@@ -4,6 +4,13 @@ import { useToast } from "@/hooks/use-toast";
 import { fetchUpcomingMatches } from "@/components/pages/admin/matches/services/matchesFormService";
 import type { MatchFormData } from "@/components/pages/admin/matches/types";
 
+export type MatchFormsTabType = 'league' | 'cup' | 'playoff';
+
+export interface UseMatchFormsDataOptions {
+  enabled?: boolean;
+  loadTabs?: MatchFormsTabType[];
+}
+
 export interface MatchFormsFilters {
   searchTerm: string;
   dateFilter: string;
@@ -17,8 +24,14 @@ export interface MatchFormsFilters {
 export const useMatchFormsData = (
   teamId: number,
   hasElevatedPermissions: boolean,
-  refereeFilter?: { userId: number; username: string }
+  refereeFilter?: { userId: number; username: string },
+  options: UseMatchFormsDataOptions = {}
 ) => {
+  const { enabled: queriesEnabled = true, loadTabs = ['league', 'cup', 'playoff'] } = options;
+  const loadLeague = loadTabs.includes('league');
+  const loadCup = loadTabs.includes('cup');
+  const loadPlayoff = loadTabs.includes('playoff');
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -40,6 +53,18 @@ export const useMatchFormsData = (
   const minTimeoutRef = useRef<{ league?: NodeJS.Timeout; cup?: NodeJS.Timeout; playoff?: NodeJS.Timeout }>({});
   const maxTimeoutRef = useRef<{ league?: NodeJS.Timeout; cup?: NodeJS.Timeout; playoff?: NodeJS.Timeout }>({});
 
+  const sharedQueryOptions = {
+    staleTime: 0,
+    gcTime: 10 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attemptIndex: number) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
+    refetchOnMount: 'always' as const,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchInterval: false,
+    networkMode: 'online' as const,
+  };
+
   // League matches query
   const leagueQuery = useQuery({
     queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'league', refereeFilter?.userId],
@@ -51,15 +76,8 @@ export const useMatchFormsData = (
         refereeFilter
       );
     },
-    staleTime: 0, // Always refetch immediately
-    gcTime: 10 * 60 * 1000, // 10 minutes cache
-    retry: 2, // Reduced retries
-    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
-    refetchInterval: false,
-    placeholderData: undefined, // No placeholder data
-    networkMode: 'online' // Always fetch fresh data
+    enabled: queriesEnabled && loadLeague,
+    ...sharedQueryOptions,
   });
 
   // Cup matches query
@@ -73,15 +91,8 @@ export const useMatchFormsData = (
         refereeFilter
       );
     },
-    staleTime: 0, // Always refetch immediately
-    gcTime: 10 * 60 * 1000, // 10 minutes cache
-    retry: 2, // Reduced retries
-    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
-    refetchInterval: false,
-    placeholderData: undefined, // No placeholder data
-    networkMode: 'online' // Always fetch fresh data
+    enabled: queriesEnabled && loadCup,
+    ...sharedQueryOptions,
   });
 
   // Playoff matches query
@@ -95,15 +106,8 @@ export const useMatchFormsData = (
         refereeFilter
       );
     },
-    staleTime: 0, // Always refetch immediately
-    gcTime: 10 * 60 * 1000, // 10 minutes cache
-    retry: 2, // Reduced retries
-    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
-    refetchInterval: false,
-    placeholderData: undefined, // No placeholder data
-    networkMode: 'online' // Always fetch fresh data
+    enabled: queriesEnabled && loadPlayoff,
+    ...sharedQueryOptions,
   });
 
 
@@ -421,6 +425,10 @@ export const useMatchFormsData = (
     cupError: getError?.cup || cupQuery.error,
     playoffError: getError?.playoff || playoffQuery.error,
     hasError: !!getError || !!leagueQuery.error || !!cupQuery.error || !!playoffQuery.error,
+    hasErrorForTab: (tabType: MatchFormsTabType) => {
+      const query = tabType === 'cup' ? cupQuery : tabType === 'playoff' ? playoffQuery : leagueQuery;
+      return !!getError?.[tabType] || !!query.error;
+    },
     
     // Statistics
     statistics,

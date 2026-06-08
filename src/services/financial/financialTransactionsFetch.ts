@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
+import { getRpcSessionArgs } from "@/lib/authSession";
 
 export interface FinancialTeamTransaction {
   id: number;
@@ -25,97 +25,85 @@ export interface FinancialTeamTransaction {
   };
 }
 
-const OVERVIEW_SELECT = `
-  id,
-  team_id,
-  amount,
-  transaction_date,
-  cost_setting_id,
-  match_id,
-  costs(name, category, amount)
-`;
+interface TeamCostTransactionRow {
+  id: number;
+  team_id: number;
+  cost_setting_id: number | null;
+  match_id: number | null;
+  amount: number | null;
+  transaction_date: string;
+  cost_name: string | null;
+  cost_category: string | null;
+  cost_default_amount: number | null;
+  match_unique_number?: string | null;
+  match_date?: string | null;
+  home_team_id?: number | null;
+  away_team_id?: number | null;
+  home_team_name?: string | null;
+  away_team_name?: string | null;
+}
 
-const DETAIL_SELECT = `
-  *,
-  costs(name, category, amount),
-  matches(
-    unique_number,
-    match_date,
-    home_team_id,
-    away_team_id,
-    teams_home:teams!home_team_id(team_name),
-    teams_away:teams!away_team_id(team_name)
-  )
-`;
-
-function mapOverviewRow(transaction: Record<string, unknown>): FinancialTeamTransaction {
-  const costs = transaction.costs as
-    | { name?: string; category?: string; amount?: number }
-    | null
-    | undefined;
-
+function mapOverviewRow(row: TeamCostTransactionRow): FinancialTeamTransaction {
   return {
-    id: transaction.id as number,
-    team_id: transaction.team_id as number,
-    transaction_type: costs?.category || "adjustment",
+    id: row.id,
+    team_id: row.team_id,
+    transaction_type: row.cost_category || "adjustment",
     amount:
-      transaction.amount !== null && transaction.amount !== undefined
-        ? Number(transaction.amount)
-        : typeof costs?.amount === "number"
-          ? costs.amount
+      row.amount !== null && row.amount !== undefined
+        ? Number(row.amount)
+        : typeof row.cost_default_amount === "number"
+          ? row.cost_default_amount
           : 0,
-    description: costs?.name || null,
-    cost_setting_id: transaction.cost_setting_id as number | null | undefined,
-    match_id: transaction.match_id as number | null | undefined,
-    transaction_date: transaction.transaction_date as string,
-    cost_settings: costs
-      ? { name: costs.name, category: costs.category, amount: costs.amount }
+    description: row.cost_name || null,
+    cost_setting_id: row.cost_setting_id,
+    match_id: row.match_id,
+    transaction_date: row.transaction_date,
+    cost_settings: row.cost_name
+      ? {
+          name: row.cost_name,
+          category: row.cost_category,
+          amount: row.cost_default_amount,
+        }
       : undefined,
   };
 }
 
-function mapDetailRow(transaction: Record<string, unknown>): FinancialTeamTransaction {
-  const base = mapOverviewRow(transaction);
-  const matches = transaction.matches as FinancialTeamTransaction["matches"] | null | undefined;
-  return { ...base, matches: matches ?? undefined };
+function mapDetailRow(row: TeamCostTransactionRow): FinancialTeamTransaction {
+  const base = mapOverviewRow(row);
+  if (!row.match_id) return base;
+
+  return {
+    ...base,
+    matches: {
+      unique_number: row.match_unique_number ?? undefined,
+      match_date: row.match_date ?? undefined,
+      home_team_id: row.home_team_id ?? undefined,
+      away_team_id: row.away_team_id ?? undefined,
+      teams_home: row.home_team_name ? { team_name: row.home_team_name } : undefined,
+      teams_away: row.away_team_name ? { team_name: row.away_team_name } : undefined,
+    },
+  };
+}
+
+async function fetchTeamCostTransactions(
+  teamId?: number,
+): Promise<TeamCostTransactionRow[]> {
+  const { data, error } = await supabase.rpc("get_team_costs_transactions", {
+    ...getRpcSessionArgs(),
+    p_team_id: teamId ?? null,
+  });
+  if (error) throw error;
+  return (data as TeamCostTransactionRow[]) ?? [];
 }
 
 export async function fetchAllTeamTransactionsOverview(): Promise<FinancialTeamTransaction[]> {
-  return withUserContext(async () => {
-    let allData: Record<string, unknown>[] = [];
-    let from = 0;
-    const batchSize = 1000;
-
-    while (true) {
-      const { data: batch, error } = await supabase
-        .from("team_costs")
-        .select(OVERVIEW_SELECT)
-        .order("transaction_date", { ascending: false })
-        .range(from, from + batchSize - 1);
-
-      if (error) throw error;
-      if (!batch?.length) break;
-
-      allData = allData.concat(batch as Record<string, unknown>[]);
-      if (batch.length < batchSize) break;
-      from += batchSize;
-    }
-
-    return allData.map(mapOverviewRow);
-  });
+  const rows = await fetchTeamCostTransactions();
+  return rows.map(mapOverviewRow);
 }
 
 export async function fetchTeamTransactionsByTeamId(
   teamId: number,
 ): Promise<FinancialTeamTransaction[]> {
-  return withUserContext(async () => {
-    const { data, error } = await supabase
-      .from("team_costs")
-      .select(DETAIL_SELECT)
-      .eq("team_id", teamId)
-      .order("transaction_date", { ascending: false });
-
-    if (error) throw error;
-    return (data || []).map((row) => mapDetailRow(row as Record<string, unknown>));
-  });
+  const rows = await fetchTeamCostTransactions(teamId);
+  return rows.map(mapDetailRow);
 }

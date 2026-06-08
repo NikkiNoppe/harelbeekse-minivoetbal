@@ -20,7 +20,7 @@ Overzicht van projectconfiguratie voor Cursor-agents.
 
 | Script | Trigger | Doel |
 |--------|---------|------|
-| `update-footer-version.sh` | `sessionStart` | Footer-versie bijwerken naar vandaag |
+| `update-footer-version.sh` | `sessionStart`, `beforeSubmitPrompt` (fallback) | Footer-versie bijwerken naar vandaag (1×/dag) |
 
 Configuratie: `hooks.json`.
 

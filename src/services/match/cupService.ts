@@ -10,6 +10,7 @@ import {
   invokeSyncMatchCostsForMatch,
   shouldSyncMatchCostsAfterMatchUpdate,
 } from "@/services/financial/matchCostService";
+import { fetchPublicMatches, isCupMatch } from "@/services/public/publicScheduleFetch";
 
 export interface CupMatch {
   match_id: number;
@@ -851,31 +852,23 @@ export const bekerService = {
   },
 
   async getCupMatches(): Promise<any> {
-    const { data, error } = await supabase
-      .from('matches_public')
-      .select(`
-        match_id,
-        unique_number,
-        home_team_id,
-        away_team_id,
-        home_score,
-        away_score,
-        match_date,
-        location,
-        speeldag,
-        is_submitted,
-        is_locked,
-        referee,
-        home_team_name,
-        away_team_name
-      `)
-      .eq('is_cup_match', true)
-      .order('unique_number', { ascending: true });
+    const [allMatches, teamMap] = await Promise.all([
+      fetchPublicMatches(),
+      teamService.getPublicTeamMap(),
+    ]);
 
-    if (error) {
-      console.error('Error fetching cup matches:', error);
-      throw error;
-    }
+    const data = allMatches
+      .filter(isCupMatch)
+      .sort((a, b) => (a.unique_number ?? '').localeCompare(b.unique_number ?? ''));
+
+    const resolveTeamName = (
+      teamId: number | null | undefined,
+      fromMatch: string | null | undefined,
+    ): string => {
+      if (fromMatch && fromMatch !== 'Te spelen') return fromMatch;
+      if (teamId && teamMap.has(teamId)) return teamMap.get(teamId)!;
+      return 'Te spelen';
+    };
 
     // Transform data and group by round
     const matches = (data || []).map((match: any) => ({
@@ -883,8 +876,8 @@ export const bekerService = {
       unique_number: match.unique_number,
       home_team_id: match.home_team_id,
       away_team_id: match.away_team_id,
-      home_team_name: match.home_team_name || 'Te spelen',
-      away_team_name: match.away_team_name || 'Te spelen',
+      home_team_name: resolveTeamName(match.home_team_id, match.home_team_name),
+      away_team_name: resolveTeamName(match.away_team_id, match.away_team_name),
       home_score: match.home_score,
       away_score: match.away_score,
       match_date: match.match_date,

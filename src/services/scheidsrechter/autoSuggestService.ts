@@ -1,14 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-
-/**
- * Auto-suggest service: bepaalt de beste scheidsrechter voor een sessie
- * op basis van:
- *  1. Beschikbaarheid voor die sessie (verplicht)
- *  2. Niet al toegewezen aan een andere sessie op dezelfde datum
- *  3. Minste toewijzingen deze maand (workload-spreiding)
- *  4. Minste toewijzingen dit seizoen (eerlijke verdeling lange termijn)
- *  5. Alfabetisch (deterministisch)
- */
+import { fetchScheidsWorkloadStats } from "@/services/scheidsrechter/scheidsSessionFetch";
 
 export interface SuggestionCandidate {
   user_id: number;
@@ -21,7 +11,7 @@ export interface SuggestionCandidate {
 export interface SessionInput {
   sessionKey: string;
   matchIds: number[];
-  dateOnly: string; // YYYY-MM-DD
+  dateOnly: string;
 }
 
 export interface AvailabilityRecord {
@@ -41,70 +31,24 @@ export interface RefereeInfo {
   username: string;
 }
 
-/**
- * Bereken workload-tellingen per scheidsrechter voor een maand en het seizoen.
- * Seizoen = augustus van dit jaar tot juli van volgend jaar (of vorig seizoen
- * als we voor augustus zitten).
- */
 export async function fetchWorkloadStats(
   pollMonth: string,
 ): Promise<{
   monthCounts: Map<number, number>;
   seasonCounts: Map<number, number>;
 }> {
-  const [year, monthNum] = pollMonth.split('-').map(Number);
-
-  // Seizoen: aug Y → jul Y+1; als maand < 8 dan aug Y-1 → jul Y
-  const seasonStartYear = monthNum >= 8 ? year : year - 1;
-  const seasonStart = `${seasonStartYear}-08-01`;
-  const seasonEnd = `${seasonStartYear + 1}-08-01`;
-
-  const { data: assignments } = await supabase
-    .from('referee_matches' as any)
-    .select('referee_id, match_id, assigned_at')
-    .not('assigned_at', 'is', null);
-
-  const allAssignments = ((assignments as any[]) || []);
-
-  if (allAssignments.length === 0) {
-    return { monthCounts: new Map(), seasonCounts: new Map() };
-  }
-
-  const matchIds = Array.from(new Set(allAssignments.map((a) => a.match_id)));
-  const { data: matches } = await supabase
-    .from('matches')
-    .select('match_id, match_date')
-    .in('match_id', matchIds);
-
-  const matchDateMap = new Map<number, string>(
-    (matches || []).map((m) => [m.match_id, m.match_date]),
-  );
-
+  const workload = await fetchScheidsWorkloadStats(pollMonth);
   const monthCounts = new Map<number, number>();
   const seasonCounts = new Map<number, number>();
 
-  for (const a of allAssignments) {
-    const dateStr = matchDateMap.get(a.match_id);
-    if (!dateStr) continue;
-    const dateOnly = dateStr.split('T')[0];
-
-    // In huidige maand?
-    if (dateOnly.startsWith(pollMonth)) {
-      monthCounts.set(a.referee_id, (monthCounts.get(a.referee_id) || 0) + 1);
-    }
-    // In huidig seizoen?
-    if (dateOnly >= seasonStart && dateOnly < seasonEnd) {
-      seasonCounts.set(a.referee_id, (seasonCounts.get(a.referee_id) || 0) + 1);
-    }
-  }
+  workload.forEach((counts, refereeId) => {
+    monthCounts.set(refereeId, counts.monthCount);
+    seasonCounts.set(refereeId, counts.seasonCount);
+  });
 
   return { monthCounts, seasonCounts };
 }
 
-/**
- * Suggereer de top kandidaten voor een sessie.
- * Returnt gerangschikt op (monthCount asc, seasonCount asc, username asc).
- */
 export function suggestRefereesForSession(args: {
   session: SessionInput;
   referees: RefereeInfo[];
@@ -138,18 +82,11 @@ export function suggestRefereesForSession(args: {
     return byGroup ? byGroup.is_available : false;
   };
 
-  // Welke refs zijn al bezet op dezelfde dag (andere sessie)?
   const busyOnSameDay = new Set<number>();
-  // We kunnen geen match_date kruisreferentie zonder matches; we gebruiken
-  // alleen assignments + alle session.matchIds — andere sessies komen via
-  // een aparte check uit de caller. Hier is busyOnSameDay best-effort leeg
-  // tenzij de caller het meegeeft. Houden we eenvoudig: clash-check zit op
-  // sessie-niveau via `assignedRefereeId !== null` van die sessie zelf.
 
   const candidates: SuggestionCandidate[] = referees
     .filter((ref) => {
       if (!isRefereeAvailable(ref.user_id)) return false;
-      // Niet al toegewezen aan deze sessie
       const alreadyOnThisSession = assignments.some(
         (a) =>
           session.matchIds.includes(a.match_id) &&

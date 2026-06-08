@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import {
   computeStats,
   fetchRegularMatches,
@@ -9,6 +8,7 @@ import {
   type SortableTeam,
   type TeamStats,
 } from "@/services/standings/standingsService";
+import { fetchPublicMatches, isPlayoffMatch } from "@/services/public/publicScheduleFetch";
 
 export interface PlayoffTeam {
   team_id: number;
@@ -65,30 +65,12 @@ export interface HeadToHeadMatch {
 }
 
 const fetchPlayoffMatches = async (): Promise<any[]> => {
-  const { data, error } = await supabase
-    .from('matches_public')
-    .select(`
-      match_id,
-      speeldag,
-      match_date,
-      home_team_id,
-      away_team_id,
-      home_position,
-      away_position,
-      home_score,
-      away_score,
-      location,
-      playoff_type,
-      is_submitted,
-      is_playoff_finalized,
-      home_team_name,
-      away_team_name
-    `)
-    .eq('is_playoff_match', true)
-    .order('match_date', { ascending: true });
-
-  if (error) throw error;
-  return data || [];
+  return (await fetchPublicMatches())
+    .filter(isPlayoffMatch)
+    .sort(
+      (a, b) =>
+        new Date(a.match_date).getTime() - new Date(b.match_date).getTime(),
+    );
 };
 
 export const fetchPublicPlayoffData = async () => {

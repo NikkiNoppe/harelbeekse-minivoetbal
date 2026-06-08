@@ -17,8 +17,8 @@ Bij **elke agent-sessie** moet de buildversie in de footer actueel zijn.
 
 ## Gedrag
 
-1. **Automatisch:** de `sessionStart`-hook in `.cursor/hooks/update-footer-version.sh` werkt dit bij bij het starten van een agent.
-2. **Handmatig (backup):** als de hook niet draaide, werk de versie alsnog bij vóór je andere wijzigingen afrondt — vervang alleen het datumsuffix, niet `v1`.
+1. **Automatisch (hooks):** `.cursor/hooks/update-footer-version.sh` draait via `sessionStart` en als fallback via `beforeSubmitPrompt` (max. 1× per dag dankzij stamp-bestand). Vereist Cursor **≥ 2.4** met project-hooks actief. Bij problemen: **Output → Hooks** in Cursor controleren.
+2. **Handmatig (agent-backup):** als geen hook draaide, werk de versie alsnog bij vóór je andere wijzigingen afrondt — vervang alleen het datumsuffix, niet `v1`.
 
 ```tsx
 <span className="opacity-60">v1.260607</span>

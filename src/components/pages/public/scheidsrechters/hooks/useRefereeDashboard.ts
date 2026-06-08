@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getStoredAuthData } from '@/lib/authSession';
 import {
   assignmentService,
   refereeAvailabilityService,
@@ -12,33 +13,23 @@ import type { ScheduleCluster } from '@/services/scheidsrechter/monthScheduleSer
 import { toast } from 'sonner';
 
 export interface RefereeDashboardData {
-  /** Geclusterde wedstrijden uit het echte speelschema (huidige + komende maand). */
   clusters: ScheduleCluster[];
-  /** Mijn beschikbaarheid, per cluster_key. */
   myAvailability: Map<string, boolean>;
-
-  // Assignments
   assignments: RefereeAssignment[];
-
-  // Loading states
   isLoadingSchedule: boolean;
   isLoadingAssignments: boolean;
   isSubmitting: boolean;
-
-  // User info
   userId: number;
   username: string;
-
-  // Actions
   submitAvailability: (clusterKey: string, pollMonth: string, isAvailable: boolean) => Promise<void>;
   submitBulkAvailability: (pollMonth: string, availabilities: AvailabilityInput[]) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
 export function useRefereeDashboard(): RefereeDashboardData {
-  const userId = parseInt(localStorage.getItem('userId') || '0');
-  const userData = localStorage.getItem('user');
-  const username = userData ? JSON.parse(userData).username || 'Scheidsrechter' : 'Scheidsrechter';
+  const auth = getStoredAuthData();
+  const userId = auth?.user?.id ?? 0;
+  const username = auth?.user?.username || 'Scheidsrechter';
 
   const [clusters, setClusters] = useState<ScheduleCluster[]>([]);
   const [myAvailability, setMyAvailability] = useState<Map<string, boolean>>(new Map());
@@ -49,7 +40,6 @@ export function useRefereeDashboard(): RefereeDashboardData {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Schedule + beschikbaarheid laden uit het echte speelschema
   const fetchScheduleData = useCallback(async () => {
     if (!userId) return;
     setIsLoadingSchedule(true);
@@ -57,7 +47,6 @@ export function useRefereeDashboard(): RefereeDashboardData {
       const upcoming = await monthScheduleService.getUpcomingClusters(2);
       setClusters(upcoming);
 
-      // Haal beschikbaarheid op voor alle relevante maanden
       const months = Array.from(new Set(upcoming.map((c) => c.poll_month)));
       const availabilityResults = await Promise.all(
         months.map((m) => refereeAvailabilityService.getRefereeAvailability(userId, m)),
@@ -110,7 +99,6 @@ export function useRefereeDashboard(): RefereeDashboardData {
     async (clusterKey: string, pollMonth: string, isAvailable: boolean) => {
       if (!userId) return;
 
-      // Optimistic update
       setMyAvailability((prev) => new Map(prev).set(clusterKey, isAvailable));
 
       try {

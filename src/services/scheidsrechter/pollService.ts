@@ -421,57 +421,29 @@ export const pollService = {
    */
   async getPollSummary(pollId: number): Promise<PollSummary | null> {
     try {
-      return await withUserContext(async () => {
-        // Haal poll op
-        const poll = await this.getPollById(pollId);
-        if (!poll) return null;
+      const { fetchScheidsPollOverview } = await import('@/services/scheidsrechter/scheidsSessionFetch');
+      const overview = await fetchScheidsPollOverview(pollId);
+      if (!overview) return null;
 
-        // Tel match dates
-        const { count: matchDatesCount } = await supabase
-          .from('poll_match_dates' as any)
-          .select('*', { count: 'exact', head: true })
-          .eq('poll_id', pollId);
+      const poll: MonthlyPoll = {
+        id: overview.poll_id,
+        poll_month: overview.poll_month,
+        deadline: overview.deadline,
+        status: overview.status as PollStatus,
+        created_by: overview.created_by,
+        created_at: overview.created_at,
+        updated_at: overview.updated_at,
+        notes: overview.notes,
+      };
 
-        // Tel referees die gereageerd hebben
-        const { data: respondedReferees } = await supabase
-          .from('referee_matches' as any)
-          .select('referee_id')
-          .eq('poll_month', poll.poll_month)
-          .not('is_available', 'is', null);
-        const uniqueResponded = new Set(((respondedReferees as any[]) || []).map(r => r.referee_id));
-
-        // Tel totaal aantal referees
-        const { count: totalReferees } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .eq('role', 'referee');
-
-        // Tel toegewezen wedstrijden voor deze maand
-        const { count: assignedMatches } = await supabase
-          .from('referee_matches' as any)
-          .select('*', { count: 'exact', head: true })
-          .eq('poll_month', poll.poll_month)
-          .not('assigned_at', 'is', null);
-
-        // Tel totaal wedstrijden deze maand
-        const [year, month] = poll.poll_month.split('-').map(Number);
-        const nextMonth = month === 12 ? `${year + 1}-01` : `${year}-${String(month + 1).padStart(2, '0')}`;
-        
-        const { count: totalMatches } = await supabase
-          .from('matches')
-          .select('*', { count: 'exact', head: true })
-          .gte('match_date', `${poll.poll_month}-01`)
-          .lt('match_date', `${nextMonth}-01`);
-
-        return {
-          poll,
-          match_dates_count: matchDatesCount || 0,
-          referees_responded: uniqueResponded.size,
-          referees_total: totalReferees || 0,
-          matches_assigned: assignedMatches || 0,
-          matches_total: totalMatches || 0
-        };
-      });
+      return {
+        poll,
+        match_dates_count: overview.match_dates_count,
+        referees_responded: overview.referees_responded,
+        referees_total: overview.referees_total,
+        matches_assigned: overview.matches_assigned,
+        matches_total: overview.matches_total,
+      };
     } catch (error) {
       console.error('Error in getPollSummary:', error);
       return null;

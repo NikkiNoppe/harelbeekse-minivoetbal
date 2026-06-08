@@ -574,40 +574,7 @@ export type Database = {
       }
     }
     Views: {
-      matches_public: {
-        Row: {
-          assigned_referee_id: number | null
-          away_position: number | null
-          away_score: number | null
-          away_team_id: number | null
-          away_team_name: string | null
-          home_position: number | null
-          home_score: number | null
-          home_team_id: number | null
-          home_team_name: string | null
-          is_cup_match: boolean | null
-          is_locked: boolean | null
-          is_playoff_finalized: boolean | null
-          is_playoff_match: boolean | null
-          is_submitted: boolean | null
-          location: string | null
-          match_date: string
-          match_id: number
-          playoff_type: string | null
-          referee: string | null
-          speeldag: string | null
-          unique_number: string | null
-        }
-        Relationships: []
-      }
-      teams_public: {
-        Row: {
-          club_colors: string | null
-          team_id: number
-          team_name: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       add_team_cost: {
@@ -640,7 +607,7 @@ export type Database = {
         Returns: Json
       }
       admin_get_referee_availability: {
-        Args: { p_admin_user_id: number; p_poll_month: string }
+        Args: { p_poll_month: string; p_session_token: string }
         Returns: {
           is_available: boolean
           match_id: number
@@ -650,13 +617,13 @@ export type Database = {
       }
       admin_set_referee_availability: {
         Args: {
-          p_admin_user_id: number
           p_is_available: boolean
           p_match_id: number
           p_notes?: string
           p_poll_group_id: string
           p_poll_month: string
           p_referee_id: number
+          p_session_token: string
         }
         Returns: boolean
       }
@@ -669,7 +636,7 @@ export type Database = {
           p_match_id: number
           p_notes?: string
           p_referee_id: number
-          p_user_id: number
+          p_session_token: string
         }
         Returns: Json
       }
@@ -678,7 +645,7 @@ export type Database = {
           p_match_id: number
           p_notes?: string
           p_referee_id: number
-          p_user_id: number
+          p_session_token: string
         }
         Returns: Json
       }
@@ -757,13 +724,87 @@ export type Database = {
         }[]
       }
       get_available_referees_for_match: {
-        Args: { p_match_id: number }
+        Args: { p_match_id: number; p_session_token: string }
         Returns: {
           has_conflict: boolean
           is_available: boolean
           user_id: number
           username: string
         }[]
+      }
+      get_referees_for_session: {
+        Args: { p_session_token: string; p_user_id?: number }
+        Returns: { user_id: number; username: string }[]
+      }
+      get_referee_assignments_for_session: {
+        Args: { p_month?: string; p_session_token: string }
+        Returns: {
+          assigned_at: string
+          assigned_by: number
+          away_team_name: string
+          home_team_name: string
+          id: number
+          location: string
+          match_date: string
+          match_id: number
+          referee_id: number
+        }[]
+      }
+      get_referee_availability_for_session: {
+        Args: { p_poll_month: string; p_session_token: string }
+        Returns: {
+          is_available: boolean
+          match_id: number
+          poll_group_id: string
+          user_id: number
+        }[]
+      }
+      get_scheids_assignment_stats_for_session: {
+        Args: { p_month?: string; p_session_token: string }
+        Returns: {
+          referee_id: number
+          referee_name: string
+          total_assignments: number
+        }[]
+      }
+      get_scheids_availability_stats_for_session: {
+        Args: { p_poll_month: string; p_session_token: string }
+        Returns: Json
+      }
+      get_scheids_poll_overview_for_session: {
+        Args: { p_poll_id: number; p_session_token: string }
+        Returns: Json
+      }
+      get_scheids_schedule_for_session: {
+        Args: { p_month: string; p_session_token: string }
+        Returns: {
+          assigned_referee_id: number
+          away_team_id: number
+          away_team_name: string
+          home_team_id: number
+          home_team_name: string
+          location: string
+          match_date: string
+          match_id: number
+        }[]
+      }
+      get_scheids_workload_stats_for_session: {
+        Args: { p_poll_month: string; p_session_token: string }
+        Returns: {
+          month_count: number
+          referee_id: number
+          season_count: number
+        }[]
+      }
+      upsert_referee_availability_for_session: {
+        Args: {
+          p_is_available: boolean
+          p_match_id: number
+          p_poll_group_id: string
+          p_poll_month: string
+          p_session_token: string
+        }
+        Returns: boolean
       }
       get_current_user_role: { Args: never; Returns: string }
       get_current_user_team_ids: { Args: never; Returns: number[] }
@@ -776,6 +817,40 @@ export type Database = {
           total_players: number
         }[]
       }
+      get_matches_for_forms: {
+        Args: {
+          p_competition_type?: string
+          p_has_elevated_permissions?: boolean
+          p_referee_user_id?: number
+          p_referee_username?: string
+          p_session_token: string
+          p_team_id?: number
+        }
+        Returns: {
+          assigned_referee_id: number
+          away_players: Json
+          away_score: number
+          away_team_id: number
+          away_team_name: string
+          home_players: Json
+          home_score: number
+          home_team_id: number
+          home_team_name: string
+          is_cup_match: boolean
+          is_locked: boolean
+          is_playoff_match: boolean
+          is_submitted: boolean
+          location: string
+          match_date: string
+          match_id: number
+          poll_group_id: string
+          poll_month: string
+          referee: string
+          referee_notes: string
+          speeldag: string
+          unique_number: string
+        }[]
+      }
       get_match_card_events: {
         Args: { p_session_token: string }
         Returns: {
@@ -786,6 +861,51 @@ export type Database = {
           player_name: string
           team_name: string
           unique_number: string
+        }[]
+      }
+      get_public_matches: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          away_position: number | null
+          away_score: number | null
+          away_team_id: number | null
+          away_team_name: string | null
+          home_position: number | null
+          home_score: number | null
+          home_team_id: number | null
+          home_team_name: string | null
+          is_cup_match: boolean | null
+          is_locked: boolean | null
+          is_playoff_finalized: boolean | null
+          is_playoff_match: boolean | null
+          is_submitted: boolean | null
+          location: string | null
+          match_date: string
+          match_id: number
+          playoff_type: string | null
+          referee: string | null
+          speeldag: string | null
+          unique_number: string | null
+        }[]
+      }
+      get_public_teams: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          club_colors: string | null
+          team_id: number
+          team_name: string
+        }[]
+      }
+      get_teams_for_session: {
+        Args: { p_session_token: string; p_team_id?: number }
+        Returns: {
+          club_colors: string | null
+          contact_email: string | null
+          contact_person: string | null
+          contact_phone: string | null
+          preferred_play_moments: Json | null
+          team_id: number
+          team_name: string
         }[]
       }
       get_player_cards_for_admin: {
@@ -921,11 +1041,11 @@ export type Database = {
         Returns: boolean
       }
       remove_referee_assignment: {
-        Args: { p_assignment_id: number; p_user_id: number }
+        Args: { p_assignment_id: number; p_session_token: string }
         Returns: Json
       }
       remove_referee_from_session: {
-        Args: { p_match_id: number; p_user_id: number }
+        Args: { p_match_id: number; p_session_token: string }
         Returns: Json
       }
       reset_password_with_token: {

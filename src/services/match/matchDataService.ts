@@ -3,6 +3,7 @@ import { isoToLocalDateTime, sortDatesDesc } from "@/lib/dateUtils";
 import { sortMatchesByDateAndTime } from "@/lib/matchSortingUtils";
 import { getRpcSessionArgs } from "@/lib/authSession";
 import { withUserContext } from "@/lib/supabaseUtils";
+import { fetchPublicMatches, isRegularMatch } from "@/services/public/publicScheduleFetch";
 
 export interface MatchData {
   matchId: number;
@@ -32,28 +33,10 @@ export interface CardData {
 }
 
 export const fetchCompetitionMatches = async () => {
-  const { data: matchesData, error: matchesError } = await supabase
-    .from("matches_public")
-    .select(`
-      match_id,
-      unique_number,
-      match_date,
-      location,
-      speeldag,
-      home_team_id,
-      away_team_id,
-      home_score,
-      away_score,
-      referee,
-      is_submitted,
-      home_team_name,
-      away_team_name
-    `)
-    .or('is_cup_match.is.null,is_cup_match.eq.false')
-    .or('is_playoff_match.is.null,is_playoff_match.eq.false')
-    .order("match_date", { ascending: true });
-
-  if (matchesError) {
+  let matchesData;
+  try {
+    matchesData = (await fetchPublicMatches()).filter(isRegularMatch);
+  } catch (matchesError) {
     console.error("[fetchCompetitionMatches] Error:", matchesError);
     return { upcoming: [], past: [] };
   }

@@ -31,12 +31,17 @@ import { getRpcSessionArgs } from '@/lib/authSession';
 import { supabase } from '@/integrations/supabase/client';
 import { assignmentService } from '@/services/scheidsrechter/assignmentService';
 import {
+  fetchRefereeAssignmentsForSession,
+  fetchRefereeAvailabilityForSession,
+  fetchRefereesForSession,
+  fetchScheidsScheduleForMonth,
+} from '@/services/scheidsrechter/scheidsSessionFetch';
+import {
   suggestRefereesForSession,
   fetchWorkloadStats,
   type SuggestionCandidate,
 } from '@/services/scheidsrechter/autoSuggestService';
 import { useAuth } from '@/hooks/useAuth';
-import { withUserContext } from '@/lib/supabaseUtils';
 import { formatDateWithDay, formatTimeForDisplay } from '@/lib/dateUtils';
 import { getLocationOrder } from '@/lib/matchSortingUtils';
 
@@ -166,98 +171,42 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [year, monthNum] = selectedMonth.split('-').map(Number);
-      const nextMonth = monthNum === 12
-        ? `${year + 1}-01`
-        : `${year}-${String(monthNum + 1).padStart(2, '0')}`;
-      const storedAuth = localStorage.getItem('auth_data');
-      const storedUserId = storedAuth ? JSON.parse(storedAuth)?.user?.id : null;
-      const currentUserId = user?.id ?? storedUserId;
-
-      if (!currentUserId) {
+      if (!user?.id) {
         throw new Error('Niet ingelogd');
       }
 
-      const [matchesRes, usersRes, assignRes] = await withUserContext(() =>
-        Promise.all([
-          supabase
-            .from('matches')
-            .select('match_id, match_date, location, home_team_id, away_team_id, assigned_referee_id')
-            .gte('match_date', `${selectedMonth}-01`)
-            .lt('match_date', `${nextMonth}-01`)
-            .order('match_date', { ascending: true }),
-          supabase.rpc('get_all_users_for_admin', getRpcSessionArgs()),
-          supabase
-            .from('referee_matches' as any)
-            .select('id, match_id, referee_id, assigned_by, assigned_at')
-            .not('assigned_at', 'is', null) as any
-        ])
-      );
+      const [scheduleRows, refereesList, assignmentRows, availRows, usersRes] = await Promise.all([
+        fetchScheidsScheduleForMonth(selectedMonth),
+        fetchRefereesForSession(),
+        fetchRefereeAssignmentsForSession(selectedMonth),
+        fetchRefereeAvailabilityForSession(selectedMonth),
+        supabase.rpc('get_all_users_for_admin', getRpcSessionArgs()),
+      ]);
 
-      if (matchesRes.error) throw matchesRes.error;
       if (usersRes.error) throw usersRes.error;
-      if (assignRes.error) throw assignRes.error;
 
-      const assignRows = ((assignRes.data as any[]) || []).map((a: any) => ({
-        id: a.id, match_id: a.match_id, referee_id: a.referee_id,
-        assigned_by: a.assigned_by, assigned_at: a.assigned_at,
+      const availData: AvailabilityData[] = availRows.map((r) => ({
+        user_id: r.user_id,
+        match_id: r.match_id,
+        poll_group_id: r.poll_group_id,
+        is_available: r.is_available,
       }));
-      (assignRes as any).data = assignRows;
 
-      let availData: AvailabilityData[] = [];
-      const availabilityRes = await supabase.rpc('admin_get_referee_availability' as any, {
-        p_admin_user_id: currentUserId,
-        p_poll_month: selectedMonth,
-      });
-
-      if (!availabilityRes.error) {
-        availData = (availabilityRes.data || []) as AvailabilityData[];
-      } else {
-        console.warn('Admin availability RPC unavailable, falling back to direct read:', availabilityRes.error);
-        const fallbackAvailabilityRes = await supabase
-          .from('referee_matches' as any)
-          .select('referee_id, match_id, poll_group_id, is_available')
-          .eq('poll_month', selectedMonth)
-          .not('is_available', 'is', null);
-
-        if (fallbackAvailabilityRes.error) {
-          console.warn('Could not fetch referee availability fallback:', fallbackAvailabilityRes.error);
-        } else {
-          availData = ((fallbackAvailabilityRes.data as any[]) || []).map((r: any) => ({
-            user_id: r.referee_id,
-            match_id: r.match_id,
-            poll_group_id: r.poll_group_id,
-            is_available: r.is_available,
-          })) as AvailabilityData[];
-        }
-      }
-
-      const matchesData = matchesRes.data || [];
-      const allUsersData = (usersRes.data || []) as AdminUserInfo[];
-      const refereesData = allUsersData
-        .filter((u) => u.role === 'referee')
+      const refereesData = refereesList
         .map((u) => ({ user_id: u.user_id, username: u.username }))
         .sort((a, b) => a.username.localeCompare(b.username));
 
-      const matchIds = new Set(matchesData.map(m => m.match_id));
-      const allAssignments = (assignRes.data || []) as AssignmentData[];
-      const monthAssignments = allAssignments.filter(a => matchIds.has(a.match_id));
-
-      const teamIds = new Set<number>();
-      matchesData.forEach(m => {
-        if (m.home_team_id) teamIds.add(m.home_team_id);
-        if (m.away_team_id) teamIds.add(m.away_team_id);
-      });
-
-      const { data: teams } = await supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .in('team_id', Array.from(teamIds));
-
-      const teamMap = new Map(teams?.map(t => [t.team_id, t.team_name]) || []);
+      const allUsersData = (usersRes.data || []) as AdminUserInfo[];
+      const monthAssignments: AssignmentData[] = assignmentRows.map((a) => ({
+        id: a.id,
+        match_id: a.match_id,
+        referee_id: a.referee_id,
+        assigned_by: a.assigned_by,
+        assigned_at: a.assigned_at,
+      }));
 
       const sessionMap = new Map<string, Session>();
-      matchesData.forEach(m => {
+      scheduleRows.forEach((m) => {
         const dateOnly = m.match_date.split('T')[0];
         const loc = m.location || 'Onbekend';
         const key = `${dateOnly}__${loc}`;
@@ -268,13 +217,18 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             date: m.match_date,
             dateOnly,
             location: loc,
-            matches: []
+            matches: [],
           });
         }
         sessionMap.get(key)!.matches.push({
-          ...m,
-          home_team_name: teamMap.get(m.home_team_id!) || '?',
-          away_team_name: teamMap.get(m.away_team_id!) || '?'
+          match_id: m.match_id,
+          match_date: m.match_date,
+          location: m.location,
+          home_team_id: m.home_team_id,
+          away_team_id: m.away_team_id,
+          assigned_referee_id: m.assigned_referee_id,
+          home_team_name: m.home_team_name || '?',
+          away_team_name: m.away_team_name || '?',
         });
       });
 
@@ -504,8 +458,8 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
     try {
       const results = await Promise.all(
         session.matches.map((match) =>
-          supabase.rpc('admin_set_referee_availability' as any, {
-            p_admin_user_id: adminUserId,
+          supabase.rpc('admin_set_referee_availability', {
+            ...getRpcSessionArgs(),
             p_referee_id: refereeId,
             p_match_id: match.match_id,
             p_poll_group_id: `${selectedMonth}_${match.match_id}`,

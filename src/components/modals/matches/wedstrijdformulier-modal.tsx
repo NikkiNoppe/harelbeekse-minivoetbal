@@ -33,6 +33,7 @@ import {
   costNameImpliesMatchCostSuppression,
   findForfaitVerwittigdPenaltyCost,
   costNameIsForfaitVerwittigd,
+  fetchTeamCostsForMatch,
   invokeSyncMatchCostsForMatch,
   matchHasForfaitPenalty,
 } from "@/services/financial/matchCostService";
@@ -101,7 +102,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     error: refereesError,
     refetch: refetchReferees,
     failureCount: refereesFailureCount
-  } = useRefereesQuery({ enabled: open });
+  } = useRefereesQuery({ enabled: open && (isAdmin || isReferee) });
   const [homeTeamOpen, setHomeTeamOpen] = useState(false);
   const [awayTeamOpen, setAwayTeamOpen] = useState(false);
   const [isSubmittingPlayers, setIsSubmittingPlayers] = useState(false);
@@ -171,25 +172,18 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         ).map((cs) => Number(cs.id))
       );
 
-      const { data, error } = await withUserContext(async () =>
-        supabase
-          .from('team_costs')
-          .select(`*, costs(name, category, amount)`)
-          .eq('match_id', match.matchId)
-          .order('team_id', { ascending: true })
-      );
-      if (error) throw error;
+      const rows = await fetchTeamCostsForMatch(match.matchId);
 
-      const matchPenalties = (data || [])
-        .filter((tc: { cost_setting_id?: number; costs?: { category?: string } }) =>
-          tc.costs?.category === 'penalty' ||
+      const matchPenalties = rows
+        .filter((tc) =>
+          tc.cost_category === 'penalty' ||
           (tc.cost_setting_id != null && penaltyCostIds.has(Number(tc.cost_setting_id)))
         )
-        .map((tc: { id: number; team_id: number; amount: number | null; costs?: { name?: string; amount?: number } }) => ({
+        .map((tc) => ({
           id: tc.id,
           teamName: tc.team_id === match.homeTeamId ? match.homeTeamName : match.awayTeamName,
-          penaltyName: tc.costs?.name || 'Boete',
-          amount: tc.amount !== null && tc.amount !== undefined ? Number(tc.amount) : Number(tc.costs?.amount || 0),
+          penaltyName: tc.cost_name || 'Boete',
+          amount: tc.amount !== null && tc.amount !== undefined ? Number(tc.amount) : Number(tc.cost_default_amount || 0),
         }));
 
       setSavedPenalties(matchPenalties);
@@ -229,23 +223,16 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     if (!isAdmin && !isReferee) return;
     setIsLoadingMatchCosts(true);
     try {
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('team_costs')
-          .select(`*, costs(name, category, amount)`)
-          .eq('match_id', match.matchId)
-          .order('team_id', { ascending: true });
-      });
-      if (error) throw error;
-      const costs = (data || [])
-        .filter((tc: any) => tc.costs?.category !== "penalty")
-        .map((tc: any) => ({
+      const rows = await fetchTeamCostsForMatch(match.matchId);
+      const costs = rows
+        .filter((tc) => tc.cost_category !== "penalty")
+        .map((tc) => ({
         id: tc.id,
         teamId: tc.team_id,
         teamName: tc.team_id === match.homeTeamId ? match.homeTeamName : match.awayTeamName,
-        costName: tc.costs?.name || 'Onbekend',
-        category: tc.costs?.category || 'other',
-        amount: tc.amount !== null ? tc.amount : (tc.costs?.amount || 0),
+        costName: tc.cost_name || 'Onbekend',
+        category: tc.cost_category || 'other',
+        amount: tc.amount !== null ? Number(tc.amount) : Number(tc.cost_default_amount || 0),
         costSettingId: tc.cost_setting_id
       }));
       setMatchCosts(costs);

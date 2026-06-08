@@ -17,9 +17,11 @@ Referenties:
 
 | Laag | Wat | Wie |
 |------|-----|-----|
-| **Publiek speelschema** | `matches_public` view | anon, geen context |
+| **Publiek speelschema** | `get_public_matches()` / `get_public_teams()` RPC | anon, geen context; geen `*_public` views |
 | **Line-ups / JSONB** | `matches` tabel (`home_players`, `away_players`) | admin / team manager / scheidsrechter mét `set_current_user_context` |
 | **Kaarten-overzicht** | RPC `get_match_card_events()` na `restore_user_session` | ingelogde gebruikers |
+| **Scheidsrechters** | Session-RPC's (`get_referees_for_session`, `get_scheids_*_for_session`, …) | admin + referee; geen `referees_public` |
+| **Teams (ingelogd)** | `get_teams_for_session(p_session_token)` | admin + team manager; geen `teams_public` |
 | **Spelers-PII** | `players` + context policies / RPC's | geen `USING (true)` voor anon |
 
 Dit project gebruikt **anon key + sessie-context**, niet Supabase Auth `auth.uid()` als primaire RLS.
@@ -29,6 +31,9 @@ Dit project gebruikt **anon key + sessie-context**, niet Supabase Auth `auth.uid
 - `CREATE POLICY … ON matches … USING (true)` of `matches_anon_policy`
 - Publieke `from('matches')` in `src/components/pages/public/**` of hooks voor publieke tabs
 - `REVOKE home_players/away_players FROM anon` — breekt ingelogde team managers (zelfde anon role)
+- `*_public` bypass-views (`matches_public`, `teams_public`, `referees_public`, …)
+- Anon-leesbare bypass-views voor ingelogde of PII-data
+- Scheidsrechter-RPC's met client-provided `p_user_id` / `p_admin_user_id` (spoofbaar)
 - `user_metadata` in policies voor autorisatie
 - SECURITY DEFINER RPC's die client-provided role vertrouwen zonder DB-validatie
 
@@ -42,17 +47,24 @@ Dit project gebruikt **anon key + sessie-context**, niet Supabase Auth `auth.uid
    USING (COALESCE(NULLIF(current_setting('app.current_user_role', true), ''), '') <> '')
    ```
 2. **Permissive** policies per rol (OR) — admin, team manager, scheidsrechter.
-3. Publieke reads → **`matches_public`**, geen JSONB-kolommen in views.
+3. Publieke reads → **`get_public_matches()` / `get_public_teams()`**, expliciete kolom-allowlist; geen JSONB.
 4. Nieuwe SECURITY DEFINER functies: `SET search_path TO 'public'`, rol uit `users`-tabel.
 
 ### App
 
 ```typescript
 // Publiek
-supabase.from('matches_public').select('…')
+supabase.rpc('get_public_matches')
+supabase.rpc('get_public_teams')
 
-// Line-ups / formulieren / admin
+// Teams ingelogd
+supabase.rpc('get_teams_for_session', getRpcSessionArgs())
+
+// Line-ups / formulieren / admin (legacy; migreer naar session-RPC waar mogelijk)
 await withUserContext(() => supabase.from('matches').select('…'))
+
+// Scheidsrechters (verplicht)
+supabase.rpc('get_referees_for_session', getRpcSessionArgs())
 ```
 
 - `/kaarten` en vergelijkbare tabs: `ProtectedRoute` + RPC, geen JSONB-scrape.
@@ -62,7 +74,7 @@ await withUserContext(() => supabase.from('matches').select('…'))
 
 - [ ] Geen `USING (true)` SELECT op gevoelige tabellen
 - [ ] RESTRICTIVE context-policy op `matches` intact
-- [ ] Publieke services gebruiken `matches_public`
+- [ ] Publieke services gebruiken `get_public_matches` / `get_public_teams` (geen `*_public` views)
 - [ ] Gevoelige reads wrappen met `withUserContext`
 - [ ] `npm run test:security` → alles groen na migratie-deploy
 - [ ] Geen `home_players`/`away_players` in publieke `select()` strings
@@ -73,4 +85,4 @@ await withUserContext(() => supabase.from('matches').select('…'))
 npm run test:security
 ```
 
-Verwacht: matches_public met data; anon `matches` leeg; geen `playerName` in anon responses; RPC bestaat; players leeg voor anon.
+Verwacht: `get_public_matches` met data; `matches_public`/`teams_public` views weg (404); anon `matches` leeg; players leeg voor anon.

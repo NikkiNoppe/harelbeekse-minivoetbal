@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { teamService } from '@/services/core/teamService';
 import { withUserContext } from '@/lib/supabaseUtils';
+import { fetchTeamForSession } from '@/services/core/teamsSessionFetch';
+import { getSessionToken } from '@/lib/authSession';
 
 export interface Team {
   team_id: number;
@@ -45,34 +47,14 @@ export const usePublicTeams = () => {
   });
 };
 
-// Fetch single team
+// Fetch single team (session-RPC; admin or own team for managers)
 export const useTeam = (teamId: number) => {
   return useQuery({
     queryKey: teamQueryKeys.detail(teamId),
-    queryFn: async () => {
-      // Use teams table for basic team information
-      const { data: teamData, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .eq('team_id', teamId)
-        .single();
-
-      if (error) throw error;
-
-      // Map teams data to Team interface
-      const data = teamData ? {
-        team_id: teamData.team_id,
-        team_name: teamData.team_name,
-        contact_person: undefined,
-        contact_phone: undefined,
-        contact_email: undefined,
-        club_colors: undefined,
-        preferred_play_moments: undefined
-      } : null;
-
-      return data as Team;
-    },
-    enabled: !!teamId,
+    queryFn: () => fetchTeamForSession(teamId),
+    enabled: !!teamId && !!getSessionToken(),
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 };
 

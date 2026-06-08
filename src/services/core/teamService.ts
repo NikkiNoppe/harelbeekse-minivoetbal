@@ -1,6 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { withUserContext } from "@/lib/supabaseUtils";
+import { fetchPublicTeams } from "@/services/public/publicScheduleFetch";
+import { fetchTeamForSession, fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
 
 export interface Team {
   team_id: number;
@@ -21,60 +23,27 @@ export const teamService = {
   // Public-safe method - only returns basic team info (id and name only)
   async getPublicTeams(): Promise<Pick<Team, 'team_id' | 'team_name'>[]> {
     try {
-      const { data, error } = await supabase
-        .from('teams_public')
-        .select('team_id, team_name')
-        .order('team_name');
-      
-      if (error) {
-        console.error('Error fetching public teams:', error);
-        throw error;
-      }
-      
-      return (data || []) as Pick<Team, 'team_id' | 'team_name'>[];
+      const teams = await fetchPublicTeams();
+      return teams.map((t) => ({
+        team_id: t.team_id,
+        team_name: t.team_name,
+      }));
     } catch (error) {
       console.error('Error fetching public teams:', error);
       throw error;
     }
   },
 
+  /** team_id → team_name map voor publieke pagina's (competitie, playoff, beker). */
+  async getPublicTeamMap(): Promise<Map<number, string>> {
+    const teams = await teamService.getPublicTeams();
+    return new Map(teams.map((t) => [t.team_id, t.team_name]));
+  },
+
   // Full method for authenticated users - includes all team data including contact info
   async getAllTeams(): Promise<Team[]> {
     try {
-      const { data, error } = await withUserContext(async () =>
-        supabase
-          .from('teams')
-          .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
-          .order('team_name')
-      );
-      
-      if (error) {
-        // If new columns don't exist, fall back to basic columns
-        console.warn('New team columns not found, falling back to basic columns:', error.message);
-        const { data: fallbackData, error: fallbackError } = await withUserContext(async () =>
-          supabase
-            .from('teams')
-            .select('team_id, team_name')
-            .order('team_name')
-        );
-        
-        if (fallbackError) {
-          console.error('Error fetching teams:', fallbackError);
-          throw fallbackError;
-        }
-        
-        // Map fallback data to Team interface with undefined new fields
-        return (fallbackData || []).map((team: any) => ({
-          ...team,
-          contact_person: undefined,
-          contact_phone: undefined,
-          contact_email: undefined,
-          club_colors: undefined,
-          preferred_play_moments: undefined
-        }));
-      }
-      
-      return (data || []) as unknown as Team[];
+      return await fetchTeamsForSession();
     } catch (error) {
       console.error('Error fetching teams:', error);
       throw error;
@@ -83,39 +52,7 @@ export const teamService = {
 
   async getTeamById(teamId: number): Promise<Team | null> {
     try {
-      // First try with all new columns
-      const { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
-        .eq('team_id', teamId)
-        .single();
-      
-      if (error) {
-        // If new columns don't exist, fall back to basic columns
-        console.warn('New team columns not found, falling back to basic columns:', error.message);
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('teams')
-          .select('team_id, team_name')
-          .eq('team_id', teamId)
-          .single();
-        
-        if (fallbackError) {
-          console.error('Error fetching team:', fallbackError);
-          return null;
-        }
-        
-        // Map fallback data to Team interface with undefined new fields
-        return fallbackData ? {
-          ...fallbackData,
-          contact_person: undefined,
-          contact_phone: undefined,
-          contact_email: undefined,
-          club_colors: undefined,
-          preferred_play_moments: undefined
-        } as unknown as Team : null;
-      }
-      
-      return data as unknown as Team | null;
+      return await fetchTeamForSession(teamId);
     } catch (error) {
       console.error('Error fetching team:', error);
       return null;

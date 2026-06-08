@@ -1,14 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
+import { getRpcSessionArgs } from "@/lib/authSession";
+import {
+  fetchRefereeAvailabilityForSession,
+  fetchRefereesForSession,
+  fetchScheidsAvailabilityStats,
+} from "@/services/scheidsrechter/scheidsSessionFetch";
 import type {
   AvailabilityInput,
   RefereeWithAvailability
 } from "./types";
-
-/**
- * Service voor scheidsrechter beschikbaarheid op `referee_matches`.
- */
-const TABLE = 'referee_matches' as any;
 
 export const refereeAvailabilityService = {
   async submitAvailability(
@@ -17,31 +17,24 @@ export const refereeAvailabilityService = {
     availabilities: AvailabilityInput[]
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      return await withUserContext(async () => {
-        for (const avail of availabilities) {
-          const matchId = avail.match_id || null;
-          const pollGroupId = avail.poll_group_id || `${pollMonth}_${matchId || 'general'}`;
-          const row: any = {
-            referee_id: refereeId,
-            match_id: matchId,
-            poll_group_id: pollGroupId,
-            poll_month: pollMonth,
-            is_available: avail.is_available,
-          };
+      for (const avail of availabilities) {
+        const matchId = avail.match_id || null;
+        const pollGroupId = avail.poll_group_id || `${pollMonth}_${matchId || 'general'}`;
 
-          const { error } = await supabase
-            .from(TABLE)
-            .upsert(row, {
-              onConflict: matchId ? 'referee_id,match_id' : 'referee_id,poll_group_id,poll_month',
-            } as any);
+        const { error } = await supabase.rpc('upsert_referee_availability_for_session', {
+          ...getRpcSessionArgs(),
+          p_match_id: matchId,
+          p_poll_group_id: pollGroupId,
+          p_poll_month: pollMonth,
+          p_is_available: avail.is_available,
+        });
 
-          if (error) {
-            console.error('Error submitting availability:', error);
-            return { success: false, error: 'Kon beschikbaarheid niet opslaan' };
-          }
+        if (error) {
+          console.error('Error submitting availability:', error);
+          return { success: false, error: 'Kon beschikbaarheid niet opslaan' };
         }
-        return { success: true };
-      });
+      }
+      return { success: true };
     } catch (error) {
       console.error('Error in submitAvailability:', error);
       return { success: false, error: 'Onverwachte fout' };
@@ -50,27 +43,15 @@ export const refereeAvailabilityService = {
 
   async getAvailabilityForPoll(pollMonth: string): Promise<RefereeWithAvailability[]> {
     try {
-      const { data: referees, error: refError } = await supabase
-        .from('users')
-        .select('user_id, username, email')
-        .eq('role', 'referee');
+      const [referees, availability] = await Promise.all([
+        fetchRefereesForSession(),
+        fetchRefereeAvailabilityForSession(pollMonth),
+      ]);
 
-      if (refError || !referees) return [];
-
-      const { data: availability, error: availError } = await supabase
-        .from(TABLE)
-        .select('referee_id, match_id, poll_group_id, is_available')
-        .eq('poll_month', pollMonth)
-        .not('is_available', 'is', null);
-
-      if (availError) {
-        console.error('Error fetching availability:', availError);
-      }
-
-      return referees.map(referee => {
-        const refAvailability = ((availability as any[]) || [])
-          .filter(a => a.referee_id === referee.user_id)
-          .map(a => ({
+      return referees.map((referee) => {
+        const refAvailability = availability
+          .filter((a) => a.user_id === referee.user_id)
+          .map((a) => ({
             match_id: a.match_id || undefined,
             poll_group_id: a.poll_group_id,
             is_available: a.is_available,
@@ -79,7 +60,6 @@ export const refereeAvailabilityService = {
         return {
           user_id: referee.user_id,
           username: referee.username,
-          email: referee.email || undefined,
           availability: refAvailability,
         };
       });
@@ -90,23 +70,12 @@ export const refereeAvailabilityService = {
   },
 
   async getRefereeAvailability(
-    refereeId: number,
+    _refereeId: number,
     pollMonth: string
   ): Promise<AvailabilityInput[]> {
     try {
-      const { data, error } = await supabase
-        .from(TABLE)
-        .select('match_id, poll_group_id, is_available')
-        .eq('referee_id', refereeId)
-        .eq('poll_month', pollMonth)
-        .not('is_available', 'is', null);
-
-      if (error) {
-        console.error('Error fetching referee availability:', error);
-        return [];
-      }
-
-      return ((data as any[]) || []).map(a => ({
+      const availability = await fetchRefereeAvailabilityForSession(pollMonth);
+      return availability.map((a) => ({
         match_id: a.match_id || undefined,
         poll_group_id: a.poll_group_id,
         is_available: a.is_available,
@@ -126,25 +95,19 @@ export const refereeAvailabilityService = {
     _notes?: string
   ): Promise<boolean> {
     try {
-      return await withUserContext(async () => {
-        const { error } = await supabase
-          .from(TABLE)
-          .upsert({
-            referee_id: refereeId,
-            match_id: matchId,
-            poll_group_id: pollGroupId,
-            poll_month: pollMonth,
-            is_available: isAvailable,
-          } as any, {
-            onConflict: matchId ? 'referee_id,match_id' : 'referee_id,poll_group_id,poll_month',
-          } as any);
-
-        if (error) {
-          console.error('Error updating availability:', error);
-          return false;
-        }
-        return true;
+      const { error } = await supabase.rpc('upsert_referee_availability_for_session', {
+        ...getRpcSessionArgs(),
+        p_match_id: matchId,
+        p_poll_group_id: pollGroupId,
+        p_poll_month: pollMonth,
+        p_is_available: isAvailable,
       });
+
+      if (error) {
+        console.error('Error updating availability:', error);
+        return false;
+      }
+      return true;
     } catch (error) {
       console.error('Error in updateAvailability:', error);
       return false;
@@ -152,27 +115,19 @@ export const refereeAvailabilityService = {
   },
 
   async getAvailabilityForMatches(
-    refereeId: number,
+    _refereeId: number,
     matchIds: number[]
   ): Promise<Map<number, boolean>> {
     try {
       if (matchIds.length === 0) return new Map();
 
-      const { data, error } = await supabase
-        .from(TABLE)
-        .select('match_id, is_available')
-        .eq('referee_id', refereeId)
-        .in('match_id', matchIds)
-        .not('is_available', 'is', null);
-
-      if (error) {
-        console.error('Error fetching match availability:', error);
-        return new Map();
-      }
+      const now = new Date();
+      const pollMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const availability = await fetchRefereeAvailabilityForSession(pollMonth);
 
       const availabilityMap = new Map<number, boolean>();
-      ((data as any[]) || []).forEach(item => {
-        if (item.match_id) {
+      availability.forEach((item) => {
+        if (item.match_id && matchIds.includes(item.match_id)) {
           availabilityMap.set(item.match_id, item.is_available);
         }
       });
@@ -184,30 +139,19 @@ export const refereeAvailabilityService = {
     }
   },
 
-  async clearAvailability(refereeId: number, pollMonth: string): Promise<boolean> {
+  async clearAvailability(_refereeId: number, pollMonth: string): Promise<boolean> {
     try {
-      return await withUserContext(async () => {
-        const { error: updateErr } = await supabase
-          .from(TABLE)
-          .update({ is_available: null } as any)
-          .eq('referee_id', refereeId)
-          .eq('poll_month', pollMonth);
-
-        if (updateErr) {
-          console.error('Error clearing availability:', updateErr);
-          return false;
-        }
-
-        await supabase
-          .from(TABLE)
-          .delete()
-          .eq('referee_id', refereeId)
-          .eq('poll_month', pollMonth)
-          .is('is_available', null)
-          .is('assigned_at', null);
-
-        return true;
-      });
+      const availability = await fetchRefereeAvailabilityForSession(pollMonth);
+      for (const row of availability) {
+        await supabase.rpc('upsert_referee_availability_for_session', {
+          ...getRpcSessionArgs(),
+          p_match_id: row.match_id,
+          p_poll_group_id: row.poll_group_id,
+          p_poll_month: pollMonth,
+          p_is_available: null as unknown as boolean,
+        });
+      }
+      return true;
     } catch (error) {
       console.error('Error in clearAvailability:', error);
       return false;
@@ -220,33 +164,7 @@ export const refereeAvailabilityService = {
     available_by_date: Record<string, number>;
   }> {
     try {
-      const { count: totalReferees } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'referee');
-
-      const { data: availability } = await supabase
-        .from(TABLE)
-        .select('referee_id, poll_group_id, is_available')
-        .eq('poll_month', pollMonth)
-        .not('is_available', 'is', null);
-
-      const uniqueRespondents = new Set(
-        ((availability as any[]) || []).map(a => a.referee_id)
-      );
-
-      const availableByDate: Record<string, number> = {};
-      ((availability as any[]) || []).forEach(a => {
-        if (a.is_available && a.poll_group_id) {
-          availableByDate[a.poll_group_id] = (availableByDate[a.poll_group_id] || 0) + 1;
-        }
-      });
-
-      return {
-        total_referees: totalReferees || 0,
-        responded_count: uniqueRespondents.size,
-        available_by_date: availableByDate,
-      };
+      return await fetchScheidsAvailabilityStats(pollMonth);
     } catch (error) {
       console.error('Error in getAvailabilityStats:', error);
       return {

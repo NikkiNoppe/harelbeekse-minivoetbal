@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { getSessionToken } from "@/lib/authSession";
 import { useMatchFormsData, MatchFormsFilters } from "@/hooks/useMatchFormsData";
 import { MatchFormData } from "./types";
 import { Target, AlertCircle, Inbox } from "lucide-react";
@@ -44,7 +45,7 @@ const AdminPlayoffMatchesPage: React.FC = () => {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     } catch (_) {}
   }, []);
-  const { user } = useAuth();
+  const { user, authContextReady } = useAuth();
   const isAdmin = user?.role === "admin";
   const isReferee = user?.role === "referee";
   const teamId = user?.teamId || 0;
@@ -73,10 +74,21 @@ const AdminPlayoffMatchesPage: React.FC = () => {
   }, [isReferee, user?.id, user?.username]);
 
   // Fetch playoff matches data with referee filter
+  const hasElevatedPermissions = isAdmin || isReferee;
+  const queriesEnabled =
+    authContextReady &&
+    !!getSessionToken() &&
+    !!user &&
+    (hasElevatedPermissions || teamId > 0);
+
   const matchFormsData = useMatchFormsData(
     teamId, 
-    isAdmin || isReferee,
-    isReferee ? refereeFilter : undefined
+    hasElevatedPermissions,
+    isReferee ? refereeFilter : undefined,
+    {
+      enabled: queriesEnabled,
+      loadTabs: ['playoff'],
+    }
   );
 
   // Get filtered playoff matches
@@ -116,7 +128,7 @@ const AdminPlayoffMatchesPage: React.FC = () => {
   }, [playoffData.allMatches]);
 
   // Loading state
-  if (matchFormsData.isLoading) {
+  if (!queriesEnabled || playoffData.isLoading) {
     return <TabContentSkeleton />;
   }
 
@@ -129,8 +141,6 @@ const AdminPlayoffMatchesPage: React.FC = () => {
   if (!isAdmin && !isReferee && !teamId) {
     return <EmptyState message="Geen team toegewezen" />;
   }
-
-  const hasElevatedPermissions = isAdmin || isReferee;
 
   return (
     <div className="space-y-6 animate-slide-up">

@@ -1,6 +1,28 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getEdgeFunctionHeaders } from "@/lib/authSession";
+import { getEdgeFunctionHeaders, getRpcSessionArgs } from "@/lib/authSession";
 import { withUserContext } from "@/lib/supabaseUtils";
+
+export interface TeamCostForMatchRow {
+  id: number;
+  team_id: number;
+  cost_setting_id: number;
+  match_id: number;
+  amount: number;
+  transaction_date: string;
+  cost_name: string;
+  cost_category: string;
+  cost_default_amount: number;
+}
+
+/** Wedstrijdkosten/boetes voor één wedstrijd — sessie-RPC (werkt met connection pooling). */
+export async function fetchTeamCostsForMatch(matchId: number): Promise<TeamCostForMatchRow[]> {
+  const { data, error } = await supabase.rpc("get_team_costs_for_match", {
+    ...getRpcSessionArgs(),
+    p_match_id: matchId,
+  });
+  if (error) throw error;
+  return (data as TeamCostForMatchRow[]) ?? [];
+}
 
 /**
  * Zelfde regels als DB public.cost_name_implies_match_cost_suppression.

@@ -1,4 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
+import { teamService } from '@/services/core/teamService';
+import { fetchPublicMatches, isRegularMatch } from '@/services/public/publicScheduleFetch';
 
 export interface MatchRow {
   home_team_id: number | null;
@@ -155,23 +156,22 @@ export const sortWithTiebreakers = <T extends SortableTeam>(
 };
 
 export async function fetchRegularMatches(): Promise<MatchRow[]> {
-  const { data, error } = await supabase
-    .from('matches_public')
-    .select('home_team_id, away_team_id, home_score, away_score, is_submitted, match_date')
-    .or('is_cup_match.is.null,is_cup_match.eq.false')
-    .or('is_playoff_match.is.null,is_playoff_match.eq.false');
-  if (error) throw error;
-  return ((data || []) as MatchRow[]).map((m) => ({ ...m, is_playoff: false }));
+  const data = (await fetchPublicMatches())
+    .filter(isRegularMatch)
+    .map((m) => ({
+      home_team_id: m.home_team_id,
+      away_team_id: m.away_team_id,
+      home_score: m.home_score,
+      away_score: m.away_score,
+      is_submitted: m.is_submitted,
+      match_date: m.match_date,
+    }));
+  return (data as MatchRow[]).map((m) => ({ ...m, is_playoff: false }));
 }
 
+/** Publieke teamnamen — gebruikt door competitie, playoff en archief. */
 export async function fetchTeams(): Promise<Map<number, string>> {
-  const { data, error } = await supabase
-    .from('teams')
-    .select('team_id, team_name');
-  if (error) throw error;
-  const map = new Map<number, string>();
-  (data || []).forEach((t) => map.set(t.team_id, t.team_name));
-  return map;
+  return teamService.getPublicTeamMap();
 }
 
 function hasSubmittedRegularMatches(matches: MatchRow[]): boolean {

@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FileText, Trophy, Calendar, AlertCircle, Target } from "lucide-react";
-import { useMatchFormsData, type MatchFormsFilters } from "@/hooks/useMatchFormsData";
+import { useMatchFormsData, type MatchFormsFilters, type MatchFormsTabType } from "@/hooks/useMatchFormsData";
+import { getSessionToken } from "@/lib/authSession";
 import { MatchFormData } from "./types";
 import MatchesFormFilter from "./MatchesFormFilter";
 import { useTeam } from "@/hooks/useTeams";
@@ -42,11 +43,18 @@ const TabContentSkeleton = memo(() => (
 
 TabContentSkeleton.displayName = 'TabContentSkeleton';
 
-const ErrorState = memo(({ onRetry }: { onRetry: () => void }) => (
+const ErrorState = memo(({ message, onRetry }: { message?: string; onRetry: () => void }) => (
   <Alert variant="destructive">
     <AlertCircle className="h-4 w-4" />
-    <AlertDescription className="flex items-center justify-between">
-      <span>Er is een fout opgetreden bij het laden van de wedstrijdformulieren.</span>
+    <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <span>{message ?? "Er is een fout opgetreden bij het laden van de wedstrijdformulieren."}</span>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="text-sm font-medium underline underline-offset-2 shrink-0"
+      >
+        Opnieuw proberen
+      </button>
     </AlertDescription>
   </Alert>
 ));
@@ -217,12 +225,11 @@ const TabContent = memo(({
 TabContent.displayName = 'TabContent';
 
 const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTab }) => {
-  const { user } = useAuth();
+  const { user, authContextReady } = useAuth();
+  const competitionTab: MatchFormsTabType = initialTab ?? "league";
   const { profileData } = useUserProfile();
   const [selectedMatchForm, setSelectedMatchForm] = useState<MatchFormData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState(initialTab ?? "league");
-  
   // Ensure page starts at top when match forms view loads
   useEffect(() => {
     try {
@@ -296,30 +303,26 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
     return undefined;
   }, [isReferee, user?.id, user?.username]);
 
+  const queriesEnabled =
+    authContextReady &&
+    !!getSessionToken() &&
+    !!user &&
+    (hasElevatedPermissions || effectiveTeamId > 0);
+
   const {
-    leagueMatches,
-    cupMatches,
-    playoffMatches,
-    isLoading,
-    hasError,
     getTabData,
     refreshInstantly,
     refetchAll
-  } = useMatchFormsData(effectiveTeamId, hasElevatedPermissions, isReferee ? refereeFilter : undefined);
-
-  const leagueTabData = useMemo(() => 
-    getTabData('league', filters), 
-    [getTabData, filters]
-  );
-  
-  const cupTabData = useMemo(() => 
-    getTabData('cup', filters), 
-    [getTabData, filters]
+  } = useMatchFormsData(
+    effectiveTeamId,
+    hasElevatedPermissions,
+    isReferee ? refereeFilter : undefined,
+    { enabled: queriesEnabled, loadTabs: [competitionTab] }
   );
 
-  const playoffTabData = useMemo(() => 
-    getTabData('playoff', filters), 
-    [getTabData, filters]
+  const tabData = useMemo(
+    () => getTabData(competitionTab, filters),
+    [getTabData, competitionTab, filters]
   );
 
   const handleSelectMatch = useCallback((match: MatchFormData) => {
@@ -343,19 +346,52 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
     refetchAll();
   }, [refetchAll]);
 
-  const currentType = (activeTab === "cup" ? "cup" : activeTab === "playoff" ? "playoff" : "league") as "league" | "cup" | "playoff";
-  const currentData = currentType === "cup" ? cupTabData : currentType === "playoff" ? playoffTabData : leagueTabData;
+  const currentType = competitionTab;
+  const currentData = tabData;
 
-  if (hasError) {
+  const pageTitle =
+    currentType === "cup"
+      ? "Bekerformulieren"
+      : currentType === "playoff"
+        ? "Playoffformulieren"
+        : "Competitieformulieren";
+
+  if (!queriesEnabled) {
     return (
       <div className="space-y-8 animate-slide-up">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
             <FileText className="h-5 w-5" />
-            Competitieformulieren
+            {pageTitle}
           </h2>
         </div>
-        <ErrorState onRetry={handleRetry} />
+        <TabContentSkeleton />
+      </div>
+    );
+  }
+
+  if (currentData.isError) {
+    const errorMessage =
+      typeof currentData.error === 'object' && currentData.error !== null && 'message' in currentData.error
+        ? String((currentData.error as { message?: string }).message)
+        : undefined;
+
+    return (
+      <div className="space-y-8 animate-slide-up">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
+            <FileText className="h-5 w-5" />
+            {pageTitle}
+          </h2>
+        </div>
+        <ErrorState
+          message={
+            errorMessage?.includes('Geen actieve sessie')
+              ? 'Je sessie is verlopen. Log opnieuw in om wedstrijdformulieren te laden.'
+              : errorMessage ?? 'Er is een fout opgetreden bij het laden van de wedstrijdformulieren.'
+          }
+          onRetry={handleRetry}
+        />
       </div>
     );
   }
@@ -365,12 +401,12 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
           <FileText className="h-5 w-5" />
-          Competitieformulieren
+          {pageTitle}
         </h2>
       </div>
 
       <section>
-        {isLoading ? (
+        {currentData.isLoading ? (
           <TabContentSkeleton />
         ) : (
           <TabContent

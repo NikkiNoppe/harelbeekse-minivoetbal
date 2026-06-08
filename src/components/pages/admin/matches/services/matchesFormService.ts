@@ -4,6 +4,7 @@ import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { cupService } from "@/services/match";
 import { scheduleBackgroundSideEffects } from "@/services/match/backgroundSideEffects";
 import { sortCupMatches, sortLeagueMatches } from "@/lib/matchSortingUtils";
+import { getRpcSessionArgs } from "@/lib/authSession";
 import { withUserContext } from "@/lib/supabaseUtils";
 
 export const fetchUpcomingMatches = async (
@@ -13,102 +14,40 @@ export const fetchUpcomingMatches = async (
   refereeFilter?: { userId: number; username: string }
 ): Promise<MatchFormData[]> => {
   try {
-    return await withUserContext(async () => {
-      // Verify context BEFORE query
-      if (process.env.NODE_ENV === 'development') {
-        const { data: roleBefore } = await supabase.rpc('get_current_user_role');
-        const { data: teamIdsBefore } = await supabase.rpc('get_current_user_team_ids');
-        console.log(`🔍 Context BEFORE query for matches (${competitionType || 'all'}):`, {
-          role: roleBefore,
-          teamIds: teamIdsBefore,
-          teamId,
-          hasElevatedPermissions,
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      // Create base query
-      let query = supabase
-        .from("matches")
-        .select(`
-          match_id,
-          unique_number,
-          match_date,
-          location,
-          speeldag,
-          home_team_id,
-          away_team_id,
-          home_score,
-          away_score,
-          referee,
-          referee_notes,
-          is_submitted,
-          is_locked,
-          home_players,
-          away_players,
-          is_cup_match,
-          is_playoff_match,
-          assigned_referee_id,
-          poll_group_id,
-          poll_month,
-          teams_home:teams!home_team_id ( team_name ),
-          teams_away:teams!away_team_id ( team_name )
-        `)
-        .order("match_date", { ascending: true });
+    const sessionArgs = getRpcSessionArgs();
+    const { data: allMatches, error } = await supabase.rpc('get_matches_for_forms', {
+      ...sessionArgs,
+      p_team_id: hasElevatedPermissions ? 0 : teamId,
+      p_has_elevated_permissions: hasElevatedPermissions,
+      p_competition_type: competitionType ?? null,
+      p_referee_user_id: refereeFilter?.userId ?? null,
+      p_referee_username: refereeFilter?.username ?? null,
+    });
 
-      // Apply filters based on user type
-      if (refereeFilter) {
-        // Referee: filter on assigned matches (by ID or username)
-        query = query.or(`assigned_referee_id.eq.${refereeFilter.userId},referee.eq.${refereeFilter.username},referee.is.null`);
-      } else if (!hasElevatedPermissions && teamId > 0) {
-        // Team manager: filter on team
-        query = query.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
-      }
-      // Admin (hasElevatedPermissions without refereeFilter): no filter, all matches
-
-      // Execute query and filter competition type in JavaScript to avoid TypeScript issues
-      const queryStartTime = Date.now();
-      const { data: allMatches, error } = await query;
-      const queryDuration = Date.now() - queryStartTime;
-      
-      // Verify context AFTER query
-      if (process.env.NODE_ENV === 'development') {
-        const { data: roleAfter } = await supabase.rpc('get_current_user_role');
-        console.log(`🔍 Context AFTER query for matches (${competitionType || 'all'}):`, {
-          role: roleAfter,
-          queryDuration: `${queryDuration}ms`,
-          matchesCount: allMatches?.length || 0
-        });
-      }
-
-      if (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error(`❌ Error fetching matches (${competitionType || 'all'}):`, error);
-          console.error('Error details:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          });
-        }
-        throw error;
-      }
+    if (error) {
+      console.error(`❌ Error fetching matches (${competitionType || 'all'}):`, error);
+      const message =
+        error.code === '22P02'
+          ? 'Ongeldige sessie. Log opnieuw in.'
+          : error.message?.includes('Geen actieve sessie')
+            ? 'Geen actieve sessie. Log opnieuw in.'
+            : error.message || 'Kon wedstrijdformulieren niet laden.';
+      throw new Error(message);
+    }
 
     if (!allMatches) return [];
 
-    // Filter by competition type in JavaScript
-    let filteredMatches = allMatches as any[];
-    if (competitionType === 'cup') {
-      filteredMatches = allMatches.filter((row: any) => row.is_cup_match === true);
-    } else if (competitionType === 'playoff') {
-      filteredMatches = allMatches.filter((row: any) => row.is_playoff_match === true);
-    } else if (competitionType === 'league') {
-      filteredMatches = allMatches.filter((row: any) =>
-        row.is_cup_match !== true && row.is_playoff_match !== true
+    if (
+      hasElevatedPermissions &&
+      allMatches.length === 0 &&
+      process.env.NODE_ENV === 'development'
+    ) {
+      console.warn(
+        `[matchesFormService] Admin/referee fetch returned 0 ${competitionType ?? 'all'} matches — check session token / DB migration 20260609230000`,
       );
     }
 
-    const matches: MatchFormData[] = filteredMatches.map((row: any) => {
+    const matches: MatchFormData[] = (allMatches as any[]).map((row: any) => {
       const { date, time } = isoToLocalDateTime(row.match_date);
       
       // Use speeldag for matchday display, with special handling for cup and playoff matches
@@ -148,9 +87,9 @@ export const fetchUpcomingMatches = async (
         date,
         time,
         homeTeamId: row.home_team_id ?? 0,
-        homeTeamName: row.teams_home?.team_name ?? "Nog te bepalen",
+        homeTeamName: row.home_team_name ?? "Nog te bepalen",
         awayTeamId: row.away_team_id ?? 0,
-        awayTeamName: row.teams_away?.team_name ?? "Nog te bepalen",
+        awayTeamName: row.away_team_name ?? "Nog te bepalen",
         location: row.location || "Te bepalen",
         matchday: matchdayDisplay,
         isCompleted: !!row.is_submitted,
@@ -175,8 +114,7 @@ export const fetchUpcomingMatches = async (
       return sortLeagueMatches(matches);
     }
 
-      return matches;
-    });
+    return matches;
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
       console.error(`❌ Error in fetchUpcomingMatches (${competitionType || 'all'}):`, error);
@@ -188,11 +126,13 @@ export const fetchUpcomingMatches = async (
 export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanceMessage?: string}> => {
   try {
     // First check if this is a cup match that's being completed
-    const { data: existingMatch, error: fetchError } = await supabase
-      .from('matches')
-      .select('is_cup_match, is_submitted, unique_number')
-      .eq('match_id', matchData.matchId)
-      .single();
+    const { data: existingMatch, error: fetchError } = await withUserContext(async () =>
+      supabase
+        .from('matches')
+        .select('is_cup_match, is_submitted, unique_number')
+        .eq('match_id', matchData.matchId)
+        .single()
+    );
 
     if (fetchError) {
       console.error('Error fetching existing match:', fetchError);

@@ -5,6 +5,11 @@
       {
         "command": ".cursor/hooks/update-footer-version.sh"
       }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": ".cursor/hooks/update-footer-version.sh"
+      }
     ]
   }
 }

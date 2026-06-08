@@ -389,26 +389,18 @@ export const scheidsrechterService = {
   // Get referee availability for a month
   async getRefereeAvailability(month: string): Promise<RefereeAvailability[]> {
     try {
-      const { data: referees, error: refError } = await supabase
-        .from('referees_public' as any)
-        .select('user_id, username') as { data: Array<{ user_id: number; username: string }> | null; error: any };
+      const { fetchRefereesForSession, fetchRefereeAvailabilityForSession } = await import(
+        '@/services/scheidsrechter/scheidsSessionFetch'
+      );
+      const [referees, availability] = await Promise.all([
+        fetchRefereesForSession(),
+        fetchRefereeAvailabilityForSession(month),
+      ]);
 
-      if (refError || !referees) return [];
-
-      const { data: availability, error: availError } = await supabase
-        .from('referee_matches' as any)
-        .select('referee_id, poll_group_id, is_available')
-        .eq('poll_month', month)
-        .not('is_available', 'is', null);
-
-      if (availError) return [];
-
-      // Combine referee data with availability
-      return referees.map(referee => {
+      return referees.map((referee) => {
         const refAvailability: Record<string, boolean> = {};
-        
-        ((availability as any[]) || []).forEach((avail: any) => {
-          if (avail.referee_id === referee.user_id && avail.poll_group_id) {
+        availability.forEach((avail) => {
+          if (avail.user_id === referee.user_id && avail.poll_group_id) {
             refAvailability[avail.poll_group_id] = avail.is_available;
           }
         });
@@ -417,7 +409,7 @@ export const scheidsrechterService = {
           user_id: referee.user_id,
           username: referee.username,
           email: undefined,
-          availability: refAvailability
+          availability: refAvailability,
         };
       });
     } catch (error) {
@@ -455,60 +447,20 @@ export const scheidsrechterService = {
   // Get all matches for a specific month (no grouping)
   async getMonthMatches(month: string): Promise<PollMatch[]> {
     try {
-      // Calculate next month for date range query
-      const [year, monthNum] = month.split('-').map(Number);
-      const nextMonth = monthNum === 12 
-        ? `${year + 1}-01` 
-        : `${year}-${String(monthNum + 1).padStart(2, '0')}`;
-      
-      // Use date range instead of LIKE for timestamp fields
-      const { data, error } = await supabase
-        .from('matches')
-        .select(`
-          match_id,
-          match_date,
-          location,
-          referee,
-          assigned_referee_id,
-          poll_group_id,
-          unique_number,
-          home_team_id,
-          away_team_id
-        `)
-        .gte('match_date', `${month}-01`)
-        .lt('match_date', `${nextMonth}-01`)
-        .order('match_date', { ascending: true });
-
-      if (error) throw error;
-      if (!data || data.length === 0) return [];
-
-      // Haal alle unieke team IDs op
-      const teamIds = [...new Set([
-        ...data.map(m => m.home_team_id),
-        ...data.map(m => m.away_team_id)
-      ].filter(Boolean))];
-
-      // Fetch team names in bulk (aparte simpele query)
-      const { data: teams } = await supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .in('team_id', teamIds);
-
-      // Maak lookup map
-      const teamMap = new Map();
-      teams?.forEach(t => teamMap.set(t.team_id, t.team_name));
-
-      // Map matches met team names
-      return data.map(match => ({
+      const { fetchScheidsScheduleForMonth } = await import(
+        '@/services/scheidsrechter/scheidsSessionFetch'
+      );
+      const rows = await fetchScheidsScheduleForMonth(month);
+      return rows.map((match) => ({
         match_id: match.match_id,
-        unique_number: match.unique_number || '',
+        unique_number: '',
         match_date: match.match_date,
-        home_team_name: teamMap.get(match.home_team_id) || 'Onbekend',
-        away_team_name: teamMap.get(match.away_team_id) || 'Onbekend',
+        home_team_name: match.home_team_name || 'Onbekend',
+        away_team_name: match.away_team_name || 'Onbekend',
         location: match.location || '',
-        referee: match.referee,
+        referee: null,
         assigned_referee_id: match.assigned_referee_id,
-        poll_group_id: match.poll_group_id
+        poll_group_id: null,
       }));
     } catch (error) {
       console.error('Error fetching month matches:', error);
@@ -561,31 +513,13 @@ export const scheidsrechterService = {
   // Assign referee to a specific match
   async assignRefereeToMatch(matchId: number, refereeId: number | null): Promise<boolean> {
     try {
-      let refereeUsername = null;
-      
-      // Get referee username if refereeId provided
-      if (refereeId) {
-        const { data: refereeData } = await supabase
-          .from('users')
-          .select('username')
-          .eq('user_id', refereeId)
-          .eq('role', 'referee')
-          .single();
-        
-        refereeUsername = refereeData?.username || null;
-      }
-      
-      // Update match with referee info
-      const { error } = await supabase
-        .from('matches')
-        .update({ 
-          assigned_referee_id: refereeId,
-          referee: refereeUsername
-        })
-        .eq('match_id', matchId);
-
-      if (error) throw error;
-      return true;
+      const { assignmentService } = await import('@/services/scheidsrechter/assignmentService');
+      if (!refereeId) return false;
+      const result = await assignmentService.assignReferee({
+        match_id: matchId,
+        referee_id: refereeId,
+      });
+      return result.success;
     } catch (error) {
       console.error('Error assigning referee to match:', error);
       return false;
