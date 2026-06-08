@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      _old_competition_standings: {
+        Row: {
+          draws: number | null
+          goal_difference: number | null
+          goals_against: number | null
+          goals_scored: number | null
+          losses: number | null
+          matches_played: number | null
+          points: number | null
+          standing_id: number
+          team_id: number | null
+          wins: number | null
+        }
+        Insert: {
+          draws?: number | null
+          goal_difference?: number | null
+          goals_against?: number | null
+          goals_scored?: number | null
+          losses?: number | null
+          matches_played?: number | null
+          points?: number | null
+          standing_id?: number
+          team_id?: number | null
+          wins?: number | null
+        }
+        Update: {
+          draws?: number | null
+          goal_difference?: number | null
+          goals_against?: number | null
+          goals_scored?: number | null
+          losses?: number | null
+          matches_played?: number | null
+          points?: number | null
+          standing_id?: number
+          team_id?: number | null
+          wins?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "_old_competition_standings_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+        ]
+      }
       _old_referee_assignments: {
         Row: {
           assigned_at: string | null
@@ -133,53 +180,6 @@ export type Database = {
           setting_value?: Json
         }
         Relationships: []
-      }
-      _old_competition_standings: {
-        Row: {
-          draws: number | null
-          goal_difference: number | null
-          goals_against: number | null
-          goals_scored: number | null
-          losses: number | null
-          matches_played: number | null
-          points: number | null
-          standing_id: number
-          team_id: number | null
-          wins: number | null
-        }
-        Insert: {
-          draws?: number | null
-          goal_difference?: number | null
-          goals_against?: number | null
-          goals_scored?: number | null
-          losses?: number | null
-          matches_played?: number | null
-          points?: number | null
-          standing_id?: number
-          team_id?: number | null
-          wins?: number | null
-        }
-        Update: {
-          draws?: number | null
-          goal_difference?: number | null
-          goals_against?: number | null
-          goals_scored?: number | null
-          losses?: number | null
-          matches_played?: number | null
-          points?: number | null
-          standing_id?: number
-          team_id?: number | null
-          wins?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "_old_competition_standings_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: true
-            referencedRelation: "teams"
-            referencedColumns: ["team_id"]
-          },
-        ]
       }
       costs: {
         Row: {
@@ -800,15 +800,6 @@ export type Database = {
         }
         Returns: Json
       }
-      upsert_season_archive: {
-        Args: {
-          p_field: string
-          p_season_label: string
-          p_user_id: number
-          p_value: Json
-        }
-        Returns: Json
-      }
       manage_team_cost_for_match: {
         Args: {
           p_amount?: number
@@ -822,6 +813,10 @@ export type Database = {
         Returns: Json
       }
       match_has_forfait_penalty: {
+        Args: { p_match_id: number }
+        Returns: boolean
+      }
+      match_played_with_scores: {
         Args: { p_match_id: number }
         Returns: boolean
       }
@@ -868,6 +863,15 @@ export type Database = {
       update_user_password: {
         Args: { new_password: string; user_id_param: number }
         Returns: boolean
+      }
+      upsert_season_archive: {
+        Args: {
+          p_field: string
+          p_season_label: string
+          p_user_id: number
+          p_value: Json
+        }
+        Returns: Json
       }
       validate_player_data:
         | {
