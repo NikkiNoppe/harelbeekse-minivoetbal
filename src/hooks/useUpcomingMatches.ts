@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { withUserContext } from '@/lib/supabaseUtils';
 
 export interface UpcomingMatch {
   match_id: number;
@@ -31,32 +32,33 @@ export const useUpcomingMatches = (teamId: number | null, limit: number = 5) => 
 
       const now = new Date().toISOString();
       
-      const { data, error } = await supabase
-        .from('matches')
-        .select(`
-          match_id,
-          match_date,
-          home_team_id,
-          away_team_id,
-          speeldag,
-          location,
-          unique_number,
-          is_submitted,
-          is_locked,
-          home_players,
-          away_players,
-          home_score,
-          away_score,
-          referee,
-          referee_notes,
-          home_team:teams!matches_home_team_id_fkey(team_name),
-          away_team:teams!matches_away_team_id_fkey(team_name)
-        `)
-        .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-        .or(`match_date.gte.${now},and(home_score.is.null,away_score.is.null)`)
-        
-        .order('match_date', { ascending: true })
-        .limit(limit);
+      const { data, error } = await withUserContext(async () =>
+        supabase
+          .from('matches')
+          .select(`
+            match_id,
+            match_date,
+            home_team_id,
+            away_team_id,
+            speeldag,
+            location,
+            unique_number,
+            is_submitted,
+            is_locked,
+            home_players,
+            away_players,
+            home_score,
+            away_score,
+            referee,
+            referee_notes,
+            home_team:teams!matches_home_team_id_fkey(team_name),
+            away_team:teams!matches_away_team_id_fkey(team_name)
+          `)
+          .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
+          .or(`match_date.gte.${now},and(home_score.is.null,away_score.is.null)`)
+          .order('match_date', { ascending: true })
+          .limit(limit)
+      );
 
       if (error) throw error;
 

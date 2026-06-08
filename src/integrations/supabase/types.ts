@@ -553,7 +553,32 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      matches_public: {
+        Row: {
+          assigned_referee_id: number | null
+          away_position: number | null
+          away_score: number | null
+          away_team_id: number | null
+          away_team_name: string | null
+          home_position: number | null
+          home_score: number | null
+          home_team_id: number | null
+          home_team_name: string | null
+          is_cup_match: boolean | null
+          is_locked: boolean | null
+          is_playoff_finalized: boolean | null
+          is_playoff_match: boolean | null
+          is_submitted: boolean | null
+          location: string | null
+          match_date: string
+          match_id: number
+          playoff_type: string | null
+          referee: string | null
+          speeldag: string | null
+          unique_number: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_team_cost: {
@@ -720,6 +745,18 @@ export type Database = {
           cards_count: number
           home_players_count: number
           total_players: number
+        }[]
+      }
+      get_match_card_events: {
+        Args: { p_user_id: number }
+        Returns: {
+          card_type: string
+          match_date: string
+          match_id: number
+          player_id: number
+          player_name: string
+          team_name: string
+          unique_number: string
         }[]
       }
       get_player_cards_for_admin: {

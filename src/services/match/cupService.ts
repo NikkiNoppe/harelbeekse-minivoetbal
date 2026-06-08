@@ -852,7 +852,7 @@ export const bekerService = {
 
   async getCupMatches(): Promise<any> {
     const { data, error } = await supabase
-      .from('matches')
+      .from('matches_public')
       .select(`
         match_id,
         unique_number,
@@ -866,9 +866,8 @@ export const bekerService = {
         is_submitted,
         is_locked,
         referee,
-        referee_notes,
-        teams_home:teams!home_team_id(team_name),
-        teams_away:teams!away_team_id(team_name)
+        home_team_name,
+        away_team_name
       `)
       .eq('is_cup_match', true)
       .order('unique_number', { ascending: true });
@@ -884,8 +883,8 @@ export const bekerService = {
       unique_number: match.unique_number,
       home_team_id: match.home_team_id,
       away_team_id: match.away_team_id,
-      home_team_name: match.teams_home?.team_name || 'Te spelen',
-      away_team_name: match.teams_away?.team_name || 'Te spelen',
+      home_team_name: match.home_team_name || 'Te spelen',
+      away_team_name: match.away_team_name || 'Te spelen',
       home_score: match.home_score,
       away_score: match.away_score,
       match_date: match.match_date,
@@ -894,7 +893,6 @@ export const bekerService = {
       is_submitted: match.is_submitted,
       is_locked: match.is_locked,
       referee: match.referee,
-      referee_notes: match.referee_notes
     }));
 
     return bekerService.groupMatchesByRound(matches);

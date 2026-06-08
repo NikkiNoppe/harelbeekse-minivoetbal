@@ -156,10 +156,10 @@ export const sortWithTiebreakers = <T extends SortableTeam>(
 
 export async function fetchRegularMatches(): Promise<MatchRow[]> {
   const { data, error } = await supabase
-    .from('matches')
+    .from('matches_public')
     .select('home_team_id, away_team_id, home_score, away_score, is_submitted, match_date')
-    .eq('is_cup_match', false)
-    .eq('is_playoff_match', false);
+    .or('is_cup_match.is.null,is_cup_match.eq.false')
+    .or('is_playoff_match.is.null,is_playoff_match.eq.false');
   if (error) throw error;
   return ((data || []) as MatchRow[]).map((m) => ({ ...m, is_playoff: false }));
 }

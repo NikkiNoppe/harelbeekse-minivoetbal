@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isoToLocalDateTime, sortDatesDesc } from "@/lib/dateUtils";
 import { sortMatchesByDateAndTime } from "@/lib/matchSortingUtils";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 export interface MatchData {
   matchId: number;
@@ -30,9 +31,8 @@ export interface CardData {
 }
 
 export const fetchCompetitionMatches = async () => {
-  // First check if there are any matches
   const { data: matchesData, error: matchesError } = await supabase
-    .from("matches")
+    .from("matches_public")
     .select(`
       match_id,
       unique_number,
@@ -45,12 +45,8 @@ export const fetchCompetitionMatches = async () => {
       away_score,
       referee,
       is_submitted,
-      is_cup_match,
-      is_playoff_match,
-      home_players,
-      away_players,
-      teams_home:teams!home_team_id ( team_name ),
-      teams_away:teams!away_team_id ( team_name )
+      home_team_name,
+      away_team_name
     `)
     .or('is_cup_match.is.null,is_cup_match.eq.false')
     .or('is_playoff_match.is.null,is_playoff_match.eq.false')
@@ -75,9 +71,9 @@ export const fetchCompetitionMatches = async () => {
         date,
         time,
         homeTeamId: row.home_team_id,
-        homeTeamName: row.teams_home?.team_name || "Onbekend",
+        homeTeamName: row.home_team_name || "Onbekend",
         awayTeamId: row.away_team_id,
-        awayTeamName: row.teams_away?.team_name || "Onbekend",
+        awayTeamName: row.away_team_name || "Onbekend",
         location: row.location || "Te bepalen",
         matchday: row.speeldag || "Te bepalen",
         isCompleted: !!row.is_submitted,
@@ -108,79 +104,59 @@ export const fetchCompetitionMatches = async () => {
 };
 
 export const fetchAllCards = async (): Promise<CardData[]> => {
-  const { data, error } = await supabase
-    .from("matches")
-    .select(`
-      match_id,
-      unique_number,
-      match_date,
-      home_players,
-      away_players,
-      teams_home:teams!home_team_id ( team_name ),
-      teams_away:teams!away_team_id ( team_name )
-    `)
-    .or('home_players.not.is.null,away_players.not.is.null');
+  const authDataString = localStorage.getItem('auth_data');
+  let userId: number | null = null;
+
+  if (authDataString) {
+    try {
+      const authData = JSON.parse(authDataString);
+      userId = authData?.user?.id ?? null;
+    } catch {
+      userId = null;
+    }
+  }
+
+  if (!userId) {
+    const legacyUserString = localStorage.getItem('user');
+    if (legacyUserString) {
+      try {
+        userId = JSON.parse(legacyUserString)?.id ?? null;
+      } catch {
+        userId = null;
+      }
+    }
+  }
+
+  if (!userId) {
+    return [];
+  }
+
+  const { data, error } = await withUserContext(async () =>
+    supabase.rpc('get_match_card_events', { p_user_id: userId })
+  );
 
   if (error || !data) {
     console.error("[fetchAllCards] Error:", error);
     return [];
   }
 
-  const normalizeCardType = (raw: any): 'yellow' | 'red' | 'double_yellow' | 'none' => {
-    const value = (typeof raw === 'string' ? raw : '').toLowerCase();
-    if (value === 'yellow' || value === 'geel') return 'yellow';
-    if (value === 'red' || value === 'rood') return 'red';
-    if (value === 'double_yellow' || value === '2x geel' || value === 'double-yellow') return 'double_yellow';
-    return 'none';
-  };
-
-  const extractPlayerId = (p: any): number | undefined => p?.playerId ?? p?.player_id ?? p?.id;
-  const extractPlayerName = (p: any): string | undefined => p?.playerName ?? p?.name ?? (p?.firstName && p?.lastName ? `${p.firstName} ${p.lastName}` : undefined);
-
-  const cards: CardData[] = [];
-
-  for (const row of data as any[]) {
-    const matchDate = row.match_date ? new Date(row.match_date).toISOString().slice(0, 10) : "";
-
-    const pushCard = (teamName: string, player: any, cardType: 'yellow' | 'red') => {
-      const playerId = extractPlayerId(player);
-      const playerName = extractPlayerName(player);
-      if (!playerId || !playerName) return;
-      cards.push({
-        playerId,
-        playerName,
-        teamName: teamName || 'Onbekend',
-        cardType,
-        matchId: row.match_id,
-        matchDate,
-        uniqueNumber: row.unique_number || ""
-      });
-    };
-
-    const handlePlayers = (players: any[], teamName: string) => {
-      for (const player of players) {
-        const rawCard = player?.cardType ?? player?.card ?? player?.card_type ?? player?.kaart;
-        const normalized = normalizeCardType(rawCard);
-        if (normalized === 'yellow') pushCard(teamName, player, 'yellow');
-        else if (normalized === 'red') pushCard(teamName, player, 'red');
-        else if (normalized === 'double_yellow') {
-          // "2x geel" counts as two yellow cards for card totals.
-          pushCard(teamName, player, 'yellow');
-          pushCard(teamName, player, 'yellow');
-        }
-      }
-    };
-
-    // Extract cards from home players
-    if (row.home_players && Array.isArray(row.home_players)) {
-      handlePlayers(row.home_players, row.teams_home?.team_name || 'Onbekend');
-    }
-
-    // Extract cards from away players
-    if (row.away_players && Array.isArray(row.away_players)) {
-      handlePlayers(row.away_players, row.teams_away?.team_name || 'Onbekend');
-    }
-  }
+  const cards: CardData[] = (data as Array<{
+    player_id: number;
+    player_name: string;
+    team_name: string;
+    card_type: string;
+    match_id: number;
+    match_date: string;
+    unique_number: string;
+  }>).map((row) => ({
+    playerId: row.player_id,
+    playerName: row.player_name,
+    teamName: row.team_name || 'Onbekend',
+    cardType: row.card_type === 'red' ? 'red' : 'yellow',
+    matchId: row.match_id,
+    matchDate: row.match_date ? new Date(row.match_date).toISOString().slice(0, 10) : '',
+    uniqueNumber: row.unique_number || '',
+  }));
 
   return cards.sort((a, b) => sortDatesDesc(a.matchDate, b.matchDate));
 };

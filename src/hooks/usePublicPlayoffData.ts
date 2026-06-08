@@ -66,7 +66,7 @@ export interface HeadToHeadMatch {
 
 const fetchPlayoffMatches = async (): Promise<any[]> => {
   const { data, error } = await supabase
-    .from('matches')
+    .from('matches_public')
     .select(`
       match_id,
       speeldag,
@@ -80,7 +80,9 @@ const fetchPlayoffMatches = async (): Promise<any[]> => {
       location,
       playoff_type,
       is_submitted,
-      is_playoff_finalized
+      is_playoff_finalized,
+      home_team_name,
+      away_team_name
     `)
     .eq('is_playoff_match', true)
     .order('match_date', { ascending: true });

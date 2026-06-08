@@ -176,7 +176,10 @@ export const ALL_ROUTES = {
 // Route guards configuratie
 export const ROUTE_GUARDS = {
   // Routes die auth vereisen
-  requiresAuth: Object.values(ADMIN_ROUTES),
+  requiresAuth: [
+    ...Object.values(ADMIN_ROUTES),
+    PUBLIC_ROUTES.kaarten,
+  ],
   // Routes die admin rol vereisen
   // Note: teams is removed from here - access is now controlled by tab visibility settings
   requiresAdmin: [
@@ -288,7 +291,7 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   [PUBLIC_ROUTES.kaarten]: {
     title: 'Kaarten',
     description: 'Overzicht van kaarten en schorsingen',
-    requiresAuth: false,
+    requiresAuth: true,
     requiresAdmin: false,
   },
   [PUBLIC_ROUTES.archief]: {

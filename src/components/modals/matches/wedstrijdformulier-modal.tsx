@@ -1718,7 +1718,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                                           whiteSpace: 'nowrap'
                                         }}
                                       >
-                                        {fullName}{suspended ? ' (geschorst)' : ''}
+                                        {fullName}
                                       </SelectItem>
                                     );
                                   })}

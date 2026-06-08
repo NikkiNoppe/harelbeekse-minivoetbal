@@ -1,23 +1,14 @@
 import React, { memo, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, BookOpen, ChevronDown, ChevronUp, Loader2, Medal, Trophy } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { BlogPost } from "@/services";
 import { formatDateShort } from "@/lib/dateUtils";
 import { useBlogPosts } from "@/hooks/useBlogPosts";
 import { PageHeader } from "@/components/layout";
-import { PUBLIC_ROUTES } from "@/config/routes";
 
 const CONTENT_PREVIEW_LENGTH = 240;
-
-const QUICK_LINKS = [
-  { to: PUBLIC_ROUTES.competitie, label: "Competitie", icon: Trophy },
-  { to: PUBLIC_ROUTES.beker, label: "Beker", icon: Medal },
-  { to: PUBLIC_ROUTES.reglement, label: "Reglement", icon: BookOpen },
-] as const;
 
 const CompetitionInfo = memo(() => {
   const headingId = React.useId();
@@ -33,32 +24,6 @@ const CompetitionInfo = memo(() => {
           </p>
         </CardContent>
       </Card>
-    </section>
-  );
-});
-
-const QuickLinks = memo(() => {
-  const headingId = React.useId();
-  return (
-    <section aria-labelledby={headingId}>
-      <h2 id={headingId} className="text-xl font-semibold text-primary mb-4">
-        Snel naar
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {QUICK_LINKS.map(({ to, label, icon: Icon }) => (
-          <Link
-            key={to}
-            to={to}
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "min-h-[44px] w-full justify-start gap-2 border-primary/20 hover:bg-primary/5",
-            )}
-          >
-            <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-            {label}
-          </Link>
-        ))}
-      </div>
     </section>
   );
 });
@@ -252,14 +217,12 @@ const AlgemeenPage: React.FC = () => {
       />
 
       <CompetitionInfo />
-      <QuickLinks />
       <NewsSection />
     </div>
   );
 };
 
 CompetitionInfo.displayName = "CompetitionInfo";
-QuickLinks.displayName = "QuickLinks";
 NewsItemSkeleton.displayName = "NewsItemSkeleton";
 BlogPostItem.displayName = "BlogPostItem";
 NewsSection.displayName = "NewsSection";

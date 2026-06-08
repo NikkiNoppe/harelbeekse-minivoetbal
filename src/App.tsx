@@ -72,9 +72,11 @@ const App = () => (
                       </Suspense>
                     } />
                     <Route path={PUBLIC_ROUTES.kaarten} element={
-                      <Suspense fallback={<LoadingSpinner />}>
-                        <Index />
-                      </Suspense>
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Index />
+                        </Suspense>
+                      </ProtectedRoute>
                     } />
                     <Route path={PUBLIC_ROUTES.archief} element={
                       <Suspense fallback={<LoadingSpinner />}>
