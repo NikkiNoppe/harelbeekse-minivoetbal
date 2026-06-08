@@ -13,6 +13,7 @@ import {
   type ColorScale,
   type SemanticColor,
 } from "@/lib/colorUtils";
+import { applyThemeToDocument } from "@/lib/themeDocument";
 
 const SCALE_LABELS: Record<keyof ColorScale, string> = {
   50: "50", 100: "100", 200: "200", 300: "300", 400: "400",
@@ -66,6 +67,7 @@ const ThemeColorsSettings: React.FC = () => {
     setLocalTheme(updated);
     setHasChanges(true);
     applyThemeToCSS(updated);
+    void applyThemeToDocument(updated);
   };
 
   const handleBaseColorChange = (hex: string) => {

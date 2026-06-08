@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeColors, DEFAULT_THEME, DEFAULT_SEMANTIC, applyThemeToCSS } from "@/lib/colorUtils";
+import { applyThemeToDocument } from "@/lib/themeDocument";
 import { applicationSettingInsert, applicationSettingUpdate } from "@/services/applicationSettingsUtils";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -46,7 +47,9 @@ export function useThemeColorsInit() {
   });
 
   useEffect(() => {
-    applyThemeToCSS(theme ?? DEFAULT_THEME);
+    const activeTheme = theme ?? DEFAULT_THEME;
+    applyThemeToCSS(activeTheme);
+    void applyThemeToDocument(activeTheme);
   }, [theme]);
 }
 
@@ -92,6 +95,7 @@ export function useThemeColorsAdmin() {
     },
     onSuccess: (_, newTheme) => {
       applyThemeToCSS(newTheme);
+      void applyThemeToDocument(newTheme);
       queryClient.setQueryData(QUERY_KEY, newTheme);
       toast({ title: "Kleuren opgeslagen", description: "Het kleurenpalet is bijgewerkt." });
     },

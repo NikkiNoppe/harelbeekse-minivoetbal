@@ -4,8 +4,8 @@
   "description": "Officiële website van de KRC Harelbeke Minivoetbalcompetitie",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f3e8ff",
-  "theme_color": "#8b5cf6",
+  "background_color": "#f1f9fd",
+  "theme_color": "#0072b9",
   "icons": [
     {
       "src": "/images/icons/android-chrome-192x192.png",
