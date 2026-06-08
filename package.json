@@ -13,6 +13,7 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:security": "bash scripts/test-matches-security.sh",
     "update-types": "supabase gen types typescript --project-id kuyviionmstyvkvglizh --schema public > src/integrations/supabase/types.ts",
     "update-types:local": "supabase gen types typescript --local --schema public > src/integrations/supabase/types.ts"
   },

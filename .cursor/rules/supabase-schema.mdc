@@ -61,9 +61,12 @@ Dit project: **custom auth** via sessie-context (`set_current_user_context`), ni
 - Functies in policies wrappen: `(SELECT get_current_user_role())` i.p.v. per rij opnieuw aanroepen.
 - Index op kolommen die in policies/filtering zitten.
 - **Geen `user_metadata` in policies** — alleen app/DB-context of `app_metadata`.
-- Views (PG15+): `CREATE VIEW … WITH (security_invoker = true)`.
+- Views (PG15+): `CREATE VIEW … WITH (security_invoker = true)` — uitgezonderd bewuste public read-only views zoals `matches_public`.
+- **RESTRICTIVE baseline** op tabellen met gevoelige data (`matches`): context verplicht vóór permissive policies tellen.
 
-Referentie: `supabase/migrations/20250817181828_*.sql`.
+**Gevoelige data (`matches` line-ups, `players`, `users`):** zie rule `supabase-rls-sensitive-data.mdc`.
+
+Referentie: `supabase/migrations/20250817181828_*.sql`, `20260607100000_secure_matches_rls.sql`, `20260608100000_matches_restrictive_context_rls.sql`.
 
 ## Functies & triggers
 

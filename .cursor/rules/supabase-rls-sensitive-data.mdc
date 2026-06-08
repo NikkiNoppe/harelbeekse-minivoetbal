@@ -1,0 +1,76 @@
+---
+description: RLS en API-beveiliging voor gevoelige data (matches line-ups, players, users) — custom auth project
+globs: supabase/migrations/**,src/services/**,src/hooks/**,src/components/pages/public/**
+alwaysApply: false
+---
+
+# Gevoelige data & RLS (custom auth)
+
+**Lees vóór wijzigingen aan `matches`, `players`, `users`, publieke pagina's of security-migraties.**
+
+Referenties:
+- `supabase/migrations/20260607100000_secure_matches_rls.sql` — matches_public + context SELECT
+- `supabase/migrations/20260608100000_matches_restrictive_context_rls.sql` — RESTRICTIVE baseline
+- `scripts/test-matches-security.sh` — verificatie na deploy
+
+## Architectuur (verplicht patroon)
+
+| Laag | Wat | Wie |
+|------|-----|-----|
+| **Publiek speelschema** | `matches_public` view | anon, geen context |
+| **Line-ups / JSONB** | `matches` tabel (`home_players`, `away_players`) | admin / team manager / scheidsrechter mét `set_current_user_context` |
+| **Kaarten-overzicht** | RPC `get_match_card_events(p_user_id)` | ingelogde gebruikers |
+| **Spelers-PII** | `players` + context policies / RPC's | geen `USING (true)` voor anon |
+
+Dit project gebruikt **anon key + sessie-context**, niet Supabase Auth `auth.uid()` als primaire RLS.
+
+## Verboden (nooit introduceren)
+
+- `CREATE POLICY … ON matches … USING (true)` of `matches_anon_policy`
+- Publieke `from('matches')` in `src/components/pages/public/**` of hooks voor publieke tabs
+- `REVOKE home_players/away_players FROM anon` — breekt ingelogde team managers (zelfde anon role)
+- `user_metadata` in policies voor autorisatie
+- SECURITY DEFINER RPC's die client-provided role vertrouwen zonder DB-validatie
+
+## Verplicht bij nieuwe matches/players access
+
+### Database
+
+1. **RESTRICTIVE baseline** op `matches` (al aanwezig — niet droppen):
+   ```sql
+   AS RESTRICTIVE FOR ALL TO public
+   USING (COALESCE(NULLIF(current_setting('app.current_user_role', true), ''), '') <> '')
+   ```
+2. **Permissive** policies per rol (OR) — admin, team manager, scheidsrechter.
+3. Publieke reads → **`matches_public`**, geen JSONB-kolommen in views.
+4. Nieuwe SECURITY DEFINER functies: `SET search_path TO 'public'`, rol uit `users`-tabel.
+
+### App
+
+```typescript
+// Publiek
+supabase.from('matches_public').select('…')
+
+// Line-ups / formulieren / admin
+await withUserContext(() => supabase.from('matches').select('…'))
+```
+
+- `/kaarten` en vergelijkbare tabs: `ProtectedRoute` + RPC, geen JSONB-scrape.
+- Na mutatie: `invalidateQueries` (zie `data-snel-laden.mdc`).
+
+## Checklist vóór merge
+
+- [ ] Geen `USING (true)` SELECT op gevoelige tabellen
+- [ ] RESTRICTIVE context-policy op `matches` intact
+- [ ] Publieke services gebruiken `matches_public`
+- [ ] Gevoelige reads wrappen met `withUserContext`
+- [ ] `npm run test:security` → alles groen na migratie-deploy
+- [ ] Geen `home_players`/`away_players` in publieke `select()` strings
+
+## Test na elke security-migratie
+
+```bash
+npm run test:security
+```
+
+Verwacht: matches_public met data; anon `matches` leeg; geen `playerName` in anon responses; RPC bestaat; players leeg voor anon.

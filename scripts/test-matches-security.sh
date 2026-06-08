@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Verifieer matches-RLS na migratie 20260607100000_secure_matches_rls.sql
+# Verifieer matches-RLS na migraties:
+# - 20260607100000_secure_matches_rls.sql
+# - 20260608100000_matches_restrictive_context_rls.sql
 set -euo pipefail
 
 SUPABASE_URL="${SUPABASE_URL:-https://kuyviionmstyvkvglizh.supabase.co}"
@@ -27,17 +29,24 @@ echo ""
 
 # 1. matches_public moet bestaan en data teruggeven
 code=$(curl -s -o /tmp/mp.json -w "%{http_code}" \
-  "$SUPABASE_URL/rest/v1/matches_public?select=match_id&limit=1" "${hdr[@]}")
+  "$SUPABASE_URL/rest/v1/matches_public?select=match_id,home_team_name&limit=3" "${hdr[@]}")
 has_rows=$(python3 -c "import json; d=json.load(open('/tmp/mp.json')); print('true' if isinstance(d,list) and len(d)>0 else 'false')" 2>/dev/null || echo false)
 check "matches_public bereikbaar (HTTP $code) met data" "$([[ "$code" == "200" && "$has_rows" == "true" ]] && echo true || echo false)"
 
-# 2. Anon mag geen lineup JSONB meer lezen via matches
+# 2. matches_public mag geen gevoelige kolommen exposeren
+code=$(curl -s -o /tmp/mp_sensitive.json -w "%{http_code}" \
+  "$SUPABASE_URL/rest/v1/matches_public?select=home_players&limit=1" "${hdr[@]}")
+body=$(cat /tmp/mp_sensitive.json)
+no_sensitive_col=$([[ "$code" != "200" ]] || echo "$body" | grep -qi 'PGRST\|column\|does not exist' && echo true || echo false)
+check "matches_public heeft geen home_players kolom (HTTP $code)" "$no_sensitive_col"
+
+# 3. Anon mag geen lineup JSONB lezen via matches
 code=$(curl -s -o /tmp/m.json -w "%{http_code}" \
-  "$SUPABASE_URL/rest/v1/matches?select=match_id,home_players&limit=1" "${hdr[@]}")
+  "$SUPABASE_URL/rest/v1/matches?select=match_id,home_players,away_players&limit=5" "${hdr[@]}")
 body=$(cat /tmp/m.json)
 empty_or_no_players=true
 if [[ "$code" == "200" ]]; then
-  if echo "$body" | grep -q 'playerName\|playerId'; then
+  if echo "$body" | grep -qE 'playerName|playerId|jerseyNumber'; then
     empty_or_no_players=false
   fi
   if [[ "$body" == "[]" ]]; then
@@ -46,20 +55,28 @@ if [[ "$code" == "200" ]]; then
 else
   empty_or_no_players=true
 fi
-check "matches.home_players niet leesbaar voor anon (HTTP $code)" "$empty_or_no_players"
+check "matches JSONB niet leesbaar voor anon (HTTP $code)" "$empty_or_no_players"
 
-# 3. RPC voor kaarten moet bestaan
+# 4. Anon mag geen match-rijen tellen via matches (RESTRICTIVE + geen permissive)
+code=$(curl -s -o /tmp/m_count.json -w "%{http_code}" \
+  "$SUPABASE_URL/rest/v1/matches?select=match_id&limit=5" "${hdr[@]}")
+body=$(cat /tmp/m_count.json)
+matches_empty=$([[ "$body" == "[]" ]] && echo true || echo false)
+check "matches tabel leeg voor anon zonder context (HTTP $code)" "$([[ "$code" == "200" && "$matches_empty" == "true" ]] && echo true || echo false)"
+
+# 5. RPC voor kaarten moet bestaan; user_id 0 geeft lege set
 code=$(curl -s -o /tmp/rpc.json -w "%{http_code}" \
   "$SUPABASE_URL/rest/v1/rpc/get_match_card_events" \
   -H "Content-Type: application/json" "${hdr[@]}" \
   -d '{"p_user_id": 0}')
-check "get_match_card_events RPC bestaat (HTTP $code, verwacht 200)" "$([[ "$code" == "200" ]] && echo true || echo false)"
+rpc_ok=$([[ "$code" == "200" && "$(cat /tmp/rpc.json)" == "[]" ]] && echo true || echo false)
+check "get_match_card_events RPC (HTTP $code, leeg voor user 0)" "$rpc_ok"
 
-# 4. Anon players leeg of geblokkeerd
+# 6. Anon players leeg
 code=$(curl -s -o /tmp/p.json -w "%{http_code}" \
-  "$SUPABASE_URL/rest/v1/players?select=player_id&limit=1" "${hdr[@]}")
+  "$SUPABASE_URL/rest/v1/players?select=player_id,first_name&limit=3" "${hdr[@]}")
 players_empty=$([[ "$(cat /tmp/p.json)" == "[]" ]] && echo true || echo false)
-check "players niet publiek leesbaar (HTTP $code, leeg=$players_empty)" "$([[ "$code" == "200" && "$players_empty" == "true" ]] && echo true || echo false)"
+check "players niet publiek leesbaar (HTTP $code)" "$([[ "$code" == "200" && "$players_empty" == "true" ]] && echo true || echo false)"
 
 echo ""
 echo "Resultaat: $pass geslaagd, $fail gefaald"
