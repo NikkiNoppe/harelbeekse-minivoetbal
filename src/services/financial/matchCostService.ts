@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getEdgeFunctionHeaders } from "@/lib/authSession";
+import { withUserContext } from "@/lib/supabaseUtils";
 
 /**
  * Zelfde regels als DB public.cost_name_implies_match_cost_suppression.
@@ -177,6 +179,7 @@ export async function invokeSyncMatchCostsForMatch(params: {
         isSubmitted: params.isSubmitted,
         referee: params.referee ?? null,
       },
+      headers: getEdgeFunctionHeaders(),
     });
     if (error) return { success: false, message: error.message };
     if (data && typeof data === "object" && "success" in data && (data as { success?: boolean }).success === false) {
@@ -205,10 +208,12 @@ export const matchCostService = {
   /** Sync kaartboetes (geel/rood) voor alle ingediende wedstrijden met kaarten in het formulier. */
   async syncAllCardPenalties(): Promise<ServiceResponse & { syncedMatches?: number }> {
     try {
-      const { data: matches, error } = await supabase
-        .from("matches")
-        .select("match_id, match_date, home_team_id, away_team_id, home_players, away_players")
-        .eq("is_submitted", true);
+      const { data: matches, error } = await withUserContext(async () =>
+        supabase
+          .from("matches")
+          .select("match_id, match_date, home_team_id, away_team_id, home_players, away_players")
+          .eq("is_submitted", true)
+      );
 
       if (error) throw error;
 
@@ -230,6 +235,7 @@ export const matchCostService = {
             homePlayers,
             awayPlayers,
           },
+          headers: getEdgeFunctionHeaders(),
         });
 
         if (!fnError && data?.success) syncedMatches += 1;
@@ -255,7 +261,8 @@ export const matchCostService = {
     try {
       // Use Edge Function with service role to bypass RLS
       const { data, error } = await supabase.functions.invoke('sync-all-match-costs', {
-        body: {}
+        body: {},
+        headers: getEdgeFunctionHeaders(),
       });
 
       if (error) {

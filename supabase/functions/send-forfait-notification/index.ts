@@ -1,5 +1,8 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// @ts-ignore
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { requireSession } from "../_shared/auth.ts";
 
 declare const Deno: { env: { get(key: string): string | undefined } };
 
@@ -9,7 +12,7 @@ const REPLY_TO_ADDRESS = "info@harelbekeminivoetbal.be";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-session-token",
 };
 
 interface ForfaitNotificationRequest {
@@ -38,6 +41,18 @@ const formatDate = (d?: string | null) => {
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  );
+  const auth = await requireSession(req, supabase);
+  if (!auth.ok) {
+    return new Response(JSON.stringify({ error: auth.message }), {
+      status: auth.status,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 
   try {

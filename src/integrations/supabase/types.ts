@@ -527,6 +527,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          session_id: string
+          user_id: number
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          session_id?: string
+          user_id: number
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          session_id?: string
+          user_id?: number
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           email: string | null
@@ -576,6 +597,14 @@ export type Database = {
           referee: string | null
           speeldag: string | null
           unique_number: string | null
+        }
+        Relationships: []
+      }
+      teams_public: {
+        Row: {
+          club_colors: string | null
+          team_id: number
+          team_name: string
         }
         Relationships: []
       }
@@ -718,7 +747,7 @@ export type Database = {
         Returns: Json
       }
       get_all_users_for_admin: {
-        Args: { p_user_id: number }
+        Args: { p_session_token: string }
         Returns: {
           email: string
           role: string
@@ -748,7 +777,7 @@ export type Database = {
         }[]
       }
       get_match_card_events: {
-        Args: { p_user_id: number }
+        Args: { p_session_token: string }
         Returns: {
           card_type: string
           match_date: string
@@ -760,7 +789,7 @@ export type Database = {
         }[]
       }
       get_player_cards_for_admin: {
-        Args: { p_user_id: number }
+        Args: { p_session_token: string }
         Returns: {
           first_name: string
           last_name: string
@@ -793,8 +822,42 @@ export type Database = {
         }[]
       }
       get_user_team_ids_secure: {
-        Args: { p_user_id: number }
+        Args: { p_session_token: string }
         Returns: number[]
+      }
+      login_super_admin: {
+        Args: { p_password: string }
+        Returns: { session_token: string }[]
+      }
+      login_user: {
+        Args: {
+          input_password: string
+          input_username_or_email: string
+        }
+        Returns: {
+          email: string
+          role: string
+          session_token: string
+          team_ids: number[]
+          user_id: number
+          username: string
+        }[]
+      }
+      logout_user: {
+        Args: { p_session_token: string }
+        Returns: undefined
+      }
+      restore_user_session: {
+        Args: { p_session_token: string }
+        Returns: boolean
+      }
+      validate_session: {
+        Args: { p_session_token: string }
+        Returns: {
+          is_valid: boolean
+          role: string
+          user_id: number
+        }[]
       }
       has_real_players: { Args: { player_data: Json }; Returns: boolean }
       insert_player_with_context: {

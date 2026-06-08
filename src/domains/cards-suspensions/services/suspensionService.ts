@@ -3,6 +3,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { suspensionRulesService } from "./suspensionRulesService";
+import { getRpcSessionArgs } from "@/lib/authSession";
 import { withUserContext } from "@/lib/supabaseUtils";
 import {
   applicationSettingInsert,
@@ -99,9 +100,9 @@ export const suspensionService = {
       }
       
       // Use SECURITY DEFINER RPC for reliable admin/manager access
-      const { data, error } = await supabase.rpc('get_player_cards_for_admin', {
-        p_user_id: userId
-      });
+      const { data, error } = await withUserContext(async () =>
+        supabase.rpc('get_player_cards_for_admin', getRpcSessionArgs())
+      );
 
       if (error) {
         console.error('Error fetching player cards via RPC:', error);

@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
+import { getRpcSessionArgs } from '@/lib/authSession';
 import { supabase } from '@/integrations/supabase/client';
 import { assignmentService } from '@/services/scheidsrechter/assignmentService';
 import {
@@ -185,8 +186,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             .gte('match_date', `${selectedMonth}-01`)
             .lt('match_date', `${nextMonth}-01`)
             .order('match_date', { ascending: true }),
-          supabase
-            .rpc('get_all_users_for_admin', { p_user_id: currentUserId }),
+          supabase.rpc('get_all_users_for_admin', getRpcSessionArgs()),
           supabase
             .from('referee_matches' as any)
             .select('id, match_id, referee_id, assigned_by, assigned_at')

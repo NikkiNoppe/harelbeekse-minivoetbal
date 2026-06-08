@@ -137,9 +137,12 @@ export const useEnhancedMatchFormSubmission = () => {
 
         // Trigger auto-suspension notification email (fire-and-forget)
         try {
-          supabase.functions.invoke('notify-auto-suspension', {
-            body: { matchId: matchData.matchId }
-          }).then((res) => {
+          import('@/lib/authSession').then(({ getEdgeFunctionHeaders }) =>
+            supabase.functions.invoke('notify-auto-suspension', {
+              body: { matchId: matchData.matchId },
+              headers: getEdgeFunctionHeaders(),
+            })
+          ).then((res) => {
             console.log('📧 [notify-auto-suspension] result:', res);
           }).catch((err) => {
             console.error('📧 [notify-auto-suspension] error:', err);

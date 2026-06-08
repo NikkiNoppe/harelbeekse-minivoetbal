@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 // @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { requireSession } from "../_shared/auth.ts";
 
 // Declare Deno namespace for TypeScript
 declare const Deno: {
@@ -16,7 +17,7 @@ const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-session-token",
 };
 
 interface WelcomeEmailRequest {
@@ -29,6 +30,18 @@ interface WelcomeEmailRequest {
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const auth = await requireSession(req, supabase, { adminOnly: true });
+  if (!auth.ok) {
+    return new Response(JSON.stringify({ error: auth.message }), {
+      status: auth.status,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 
   try {
@@ -48,17 +61,32 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    const { data: userRow, error: userLookupError } = await supabase
+      .from("users")
+      .select("user_id, email")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (userLookupError || !userRow) {
+      return new Response(JSON.stringify({ error: "User not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    if (userRow.email?.toLowerCase() !== email.toLowerCase()) {
+      return new Response(JSON.stringify({ error: "Email does not match user" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const origin = req.headers.get("origin") || loginUrl || Deno.env.get("APP_BASE_URL") || "http://localhost:8080";
-    
+
     // Generate a secure password reset token
     const resetToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days for new users
-    
-    // Create Supabase client with service role to insert token
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
+
     // Insert password reset token
     const { error: tokenError } = await supabase
       .from('password_reset_tokens')

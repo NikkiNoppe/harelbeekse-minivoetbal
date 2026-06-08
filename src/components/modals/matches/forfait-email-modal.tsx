@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { AlertTriangle, Loader2, ChevronDown, Copy, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { withUserContext } from "@/lib/supabaseUtils";
+import { getEdgeFunctionHeaders } from "@/lib/authSession";
 import { useToast } from "@/hooks/use-toast";
 
 const DEFAULT_RECIPIENTS = [
@@ -200,6 +201,7 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
           matchTime: matchTime ?? null,
           location: location ?? null,
         },
+        headers: getEdgeFunctionHeaders(),
       });
       if (error) throw error;
       results = ((data as any)?.results as typeof results) ?? recipients.map((r) => ({ recipient: r, ok: true }));

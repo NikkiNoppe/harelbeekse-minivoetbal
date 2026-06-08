@@ -1,6 +1,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getRpcSessionArgs } from "@/lib/authSession";
+import { withUserContext } from "@/lib/supabaseUtils";
 import { DbUser, Team } from "../userTypes";
 import { useUserOperations } from "./useUserOperations";
 
@@ -44,18 +46,20 @@ export const useUserManagement = () => {
     }
     
     // Use SECURITY DEFINER RPC to fetch users with proper authorization
-    const { data: usersData, error: usersError } = await supabase
-      .rpc('get_all_users_for_admin', { p_user_id: userId });
+    const { data: usersData, error: usersError } = await withUserContext(async () =>
+      supabase.rpc('get_all_users_for_admin', getRpcSessionArgs())
+    );
 
     if (usersError) {
       throw new Error(`Fout bij het ophalen van gebruikers: ${usersError.message}`);
     }
 
-    // Fetch teams (publicly accessible)
-    const { data: teamsData, error: teamsError } = await supabase
-      .from('teams')
-      .select('team_id, team_name')
-      .order('team_name');
+    const { data: teamsData, error: teamsError } = await withUserContext(async () =>
+      supabase
+        .from('teams')
+        .select('team_id, team_name')
+        .order('team_name')
+    );
 
     if (teamsError) {
       throw new Error(`Fout bij het ophalen van teams: ${teamsError.message}`);

@@ -22,7 +22,7 @@ export const teamService = {
   async getPublicTeams(): Promise<Pick<Team, 'team_id' | 'team_name'>[]> {
     try {
       const { data, error } = await supabase
-        .from('teams')
+        .from('teams_public')
         .select('team_id, team_name')
         .order('team_name');
       
@@ -41,19 +41,22 @@ export const teamService = {
   // Full method for authenticated users - includes all team data including contact info
   async getAllTeams(): Promise<Team[]> {
     try {
-      // First try with all new columns
-      const { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
-        .order('team_name');
+      const { data, error } = await withUserContext(async () =>
+        supabase
+          .from('teams')
+          .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
+          .order('team_name')
+      );
       
       if (error) {
         // If new columns don't exist, fall back to basic columns
         console.warn('New team columns not found, falling back to basic columns:', error.message);
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('teams')
-          .select('team_id, team_name')
-          .order('team_name');
+        const { data: fallbackData, error: fallbackError } = await withUserContext(async () =>
+          supabase
+            .from('teams')
+            .select('team_id, team_name')
+            .order('team_name')
+        );
         
         if (fallbackError) {
           console.error('Error fetching teams:', fallbackError);

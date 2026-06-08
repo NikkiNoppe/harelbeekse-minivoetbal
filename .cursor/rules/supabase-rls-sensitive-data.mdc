@@ -19,7 +19,7 @@ Referenties:
 |------|-----|-----|
 | **Publiek speelschema** | `matches_public` view | anon, geen context |
 | **Line-ups / JSONB** | `matches` tabel (`home_players`, `away_players`) | admin / team manager / scheidsrechter mét `set_current_user_context` |
-| **Kaarten-overzicht** | RPC `get_match_card_events(p_user_id)` | ingelogde gebruikers |
+| **Kaarten-overzicht** | RPC `get_match_card_events()` na `restore_user_session` | ingelogde gebruikers |
 | **Spelers-PII** | `players` + context policies / RPC's | geen `USING (true)` voor anon |
 
 Dit project gebruikt **anon key + sessie-context**, niet Supabase Auth `auth.uid()` als primaire RLS.

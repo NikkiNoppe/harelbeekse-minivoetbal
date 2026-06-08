@@ -147,8 +147,10 @@ export const scheidsrechterService = {
   // Generate poll groups for a month via Edge Function
   async generateMonthlyPolls(month: string): Promise<{ success: boolean; groups_created?: number; message?: string }> {
     try {
+      const { getEdgeFunctionHeaders } = await import('@/lib/authSession');
       const { data, error } = await (supabase as any).functions.invoke('generate-monthly-polls', {
-        body: { month }
+        body: { month },
+        headers: getEdgeFunctionHeaders(),
       });
       if (error) {
         console.error('Error invoking generate-monthly-polls:', error);

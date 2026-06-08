@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireSession } from "../_shared/auth.ts";
 // @ts-ignore
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
@@ -9,7 +10,7 @@ declare const Deno: { env: { get(key: string): string | undefined } };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-session-token",
 };
 
 const ADMIN_EMAIL = "noppe.nikki@icloud.com";
@@ -44,6 +45,18 @@ const yellowCount = (cardType: string) => {
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  );
+  const auth = await requireSession(req, supabaseAdmin);
+  if (!auth.ok) {
+    return new Response(JSON.stringify({ error: auth.message }), {
+      status: auth.status,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
   try {
     const { matchId } = await req.json();
     if (!matchId || typeof matchId !== "number") {
@@ -52,8 +65,6 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY niet geconfigureerd" }), {
@@ -61,7 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const supabase = supabaseAdmin;
     const resend = new Resend(RESEND_API_KEY);
 
     // Load suspension rules

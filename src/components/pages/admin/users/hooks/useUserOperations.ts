@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { getEdgeFunctionHeaders } from "@/lib/authSession";
 import { Team } from "../userTypes";
 import { useToast } from "@/hooks/use-toast";
 
@@ -70,8 +71,9 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
               email: newUser.email,
               username: newUser.username,
               loginUrl: origin,
-              userId: data.user_id // Pass user ID to generate reset token
-            }
+              userId: data.user_id
+            },
+            headers: getEdgeFunctionHeaders(),
           });
         } catch (e) {
           console.warn('Kon welkomstmail niet verzenden:', e);
@@ -242,7 +244,8 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
       // Try Edge Function first
       try {
         const { data: delResp, error: delErr } = await supabase.functions.invoke('delete-user', {
-          body: { userId }
+          body: { userId },
+          headers: getEdgeFunctionHeaders(),
         });
         if (delErr || (delResp && delResp.error)) {
           throw new Error(delErr?.message || delResp?.error || 'Deletion failed');

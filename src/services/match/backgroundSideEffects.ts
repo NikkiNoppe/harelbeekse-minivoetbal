@@ -9,6 +9,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { getEdgeFunctionHeaders } from "@/lib/authSession";
 import { bekerService } from "@/services/match/cupService";
 import { applicationSettingInsert } from "@/services/applicationSettingsUtils";
 import {
@@ -229,7 +230,8 @@ const syncCardPenalties = async (
       awayTeamId: matchInfo?.away_team_id,
       homePlayers: mapPlayers(updateData.homePlayers),
       awayPlayers: mapPlayers(updateData.awayPlayers)
-    }
+    },
+    headers: getEdgeFunctionHeaders(),
   });
 
   if (error) throw error;
@@ -266,7 +268,8 @@ const syncMatchCosts = async (
       awayTeamId: matchInfo?.away_team_id,
       isSubmitted: updateData.isCompleted,
       referee: updateData.referee || null
-    }
+    },
+    headers: getEdgeFunctionHeaders(),
   });
 
   if (error) throw error;
