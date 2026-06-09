@@ -1,5 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchPublicApplicationSettings,
+  findPublicSetting,
+} from "@/services/public/publicApplicationSettingsFetch";
 
 export interface MatchFormSettings {
   lock_minutes_before: number;
@@ -16,25 +19,26 @@ const DEFAULT_SETTINGS: MatchFormSettings = {
 };
 
 async function fetchMatchFormSettings(): Promise<MatchFormSettings> {
-  const { data, error } = await supabase
-    .from("application_settings")
-    .select("setting_value")
-    .eq("setting_category", "match_form_settings")
-    .eq("setting_name", "lock_rules")
-    .single();
+  try {
+    const rows = await fetchPublicApplicationSettings(["match_form_settings"]);
+    const row = findPublicSetting(rows, "match_form_settings", "lock_rules");
 
-  if (error || !data) {
-    console.warn("Could not fetch match form settings, using defaults");
-    return DEFAULT_SETTINGS;
-  }
+    if (!row?.setting_value) {
+      console.warn("Could not fetch match form settings, using defaults");
+      return DEFAULT_SETTINGS;
+    }
 
-  const val = data.setting_value as Record<string, unknown>;
+    const val = row.setting_value as Record<string, unknown>;
   return {
     lock_minutes_before: (val.lock_minutes_before as number) ?? DEFAULT_SETTINGS.lock_minutes_before,
     allow_late_submission: (val.allow_late_submission as boolean) ?? DEFAULT_SETTINGS.allow_late_submission,
     late_penalty_amount: (val.late_penalty_amount as number) ?? DEFAULT_SETTINGS.late_penalty_amount,
     late_penalty_note: (val.late_penalty_note as string) ?? DEFAULT_SETTINGS.late_penalty_note,
   };
+  } catch {
+    console.warn("Could not fetch match form settings, using defaults");
+    return DEFAULT_SETTINGS;
+  }
 }
 
 export function useMatchFormSettings() {

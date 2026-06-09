@@ -1,6 +1,6 @@
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
-import { requireSession } from '../_shared/auth.ts';
+import { requireMatchMutationAccess } from '../_shared/auth.ts';
 
 // Declare Deno namespace for TypeScript
 declare const Deno: {
@@ -42,16 +42,21 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const auth = await requireSession(req, supabaseServiceRole);
-  if (!auth.ok) {
-    return new Response(JSON.stringify({ error: auth.message }), {
-      status: auth.status,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
   try {
     const { matchId, matchDateISO, homeTeamId, awayTeamId, homePlayers = [], awayPlayers = [] }: SyncCardPenaltiesRequest = await req.json();
+
+    const auth = await requireMatchMutationAccess(
+      req,
+      supabaseServiceRole,
+      homeTeamId,
+      awayTeamId,
+    );
+    if (!auth.ok) {
+      return new Response(JSON.stringify({ error: auth.message }), {
+        status: auth.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     console.log('Syncing card penalties for match:', { matchId, homeTeamId, awayTeamId });
 

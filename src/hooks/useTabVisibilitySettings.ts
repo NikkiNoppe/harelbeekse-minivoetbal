@@ -6,6 +6,7 @@ import {
   applicationSettingInsert,
   applicationSettingUpdate,
 } from "@/services/applicationSettingsUtils";
+import { fetchPublicApplicationSettings } from "@/services/public/publicApplicationSettingsFetch";
 
 export type RoleKey = 'public' | 'player_manager' | 'referee' | 'admin';
 
@@ -58,22 +59,14 @@ export const useTabVisibilitySettings = () => {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('id, setting_name, setting_value')
-        .eq('setting_category', 'tab_visibility')
-        .order('setting_name');
+      const rows = await fetchPublicApplicationSettings(['tab_visibility']);
+      const data = [...rows].sort((a, b) => a.setting_name.localeCompare(b.setting_name));
 
-      if (error) {
-        console.error('[TabVisibilitySettings] Error fetching settings:', error);
-        throw error;
-      }
-      
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[TabVisibilitySettings] Fetched ${data?.length || 0} settings from database`);
+        console.log(`[TabVisibilitySettings] Fetched ${data.length} settings from database`);
       }
       
-      const mappedSettings = (data || []).map(item => {
+      const mappedSettings = data.map(item => {
         const settingValue = item.setting_value as any;
         
         // Parse new visibility structure or fallback to legacy

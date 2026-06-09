@@ -4,6 +4,7 @@ import {
   applicationSettingInsert,
   applicationSettingUpdate,
 } from '@/services/applicationSettingsUtils';
+import { fetchPublicApplicationSettings } from '@/services/public/publicApplicationSettingsFetch';
 
 export interface BlogPostData {
   id?: number;
@@ -79,16 +80,9 @@ export const blogService = {
 
   async getPublishedBlogPosts(): Promise<BlogPost[]> {
     try {
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('*')
-        .eq('setting_category', 'blog_posts')
-        .order('id', { ascending: false });
-
-      if (error) throw error;
-
-      const allPosts = transformBlogPostData(data || []);
-      return allPosts.filter(post => post.setting_value.published);
+      const rows = await fetchPublicApplicationSettings(['blog_posts']);
+      const sorted = [...rows].sort((a, b) => b.id - a.id);
+      return transformBlogPostData(sorted);
     } catch (error) {
       console.error('Error loading published blog posts:', error);
       throw new Error('Kon gepubliceerde blog posts niet laden');

@@ -1,5 +1,8 @@
-import { supabase } from "@/integrations/supabase/client";
 import { localDateTimeToISO } from "@/lib/dateUtils";
+import {
+  fetchPublicApplicationSettings,
+  findPublicSetting,
+} from "@/services/public/publicApplicationSettingsFetch";
 
 export interface PriorityOrderItem {
   priority: number;
@@ -151,26 +154,15 @@ export const priorityOrderService = {
         return JSON.parse(cached);
       }
 
-      // Get from database
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('setting_category', 'priority_order')
-        .eq('setting_name', 'fast_access')
-        .single();
+      const rows = await fetchPublicApplicationSettings(['priority_order']);
+      const row = findPublicSetting(rows, 'priority_order', 'fast_access');
 
-      if (error) {
-        console.warn('⚠️ Could not fetch fast priority order from database:', error);
-        // Fallback to season_data
-        return await this.getPriorityOrderFromSeasonData();
-      }
-
-      if (!data?.setting_value) {
+      if (!row?.setting_value) {
         console.warn('⚠️ No fast priority order data found, falling back to season_data');
         return await this.getPriorityOrderFromSeasonData();
       }
 
-      const priorityOrder = (data.setting_value as any) as PriorityOrderItem[];
+      const priorityOrder = row.setting_value as PriorityOrderItem[];
       localStorage.setItem('fastPriorityOrder', JSON.stringify(priorityOrder));
       return priorityOrder;
     } catch (error) {
@@ -184,25 +176,18 @@ export const priorityOrderService = {
    */
   async getPriorityOrderFromSeasonData(): Promise<PriorityOrderItem[]> {
     try {
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('setting_category', 'season_data')
-        .eq('setting_name', 'main_config')
-        .single();
+      const rows = await fetchPublicApplicationSettings(['season_data']);
+      const row = findPublicSetting(rows, 'season_data', 'main_config');
 
-      if (error) {
-        console.warn('⚠️ Could not fetch priority order from season data:', error);
-        return FALLBACK_PRIORITY_ORDER;
-      }
-
-      if (!data?.setting_value) {
+      if (!row?.setting_value) {
         console.warn('⚠️ No season data found, using fallback priority order');
         return FALLBACK_PRIORITY_ORDER;
       }
 
-      const settingValue = data.setting_value as any;
-      const priorityOrder = settingValue.priority_order || FALLBACK_PRIORITY_ORDER;
+      const settingValue = row.setting_value as Record<string, unknown>;
+      const priorityOrder =
+        (settingValue.priority_order as PriorityOrderItem[] | undefined) ||
+        FALLBACK_PRIORITY_ORDER;
       
       // Cache the result
       localStorage.setItem('fastPriorityOrder', JSON.stringify(priorityOrder));
@@ -218,27 +203,20 @@ export const priorityOrderService = {
    */
   async getPrioritizedTimeslots(): Promise<VenueTimeslotWithPriority[]> {
     try {
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('setting_category', 'season_data')
-        .eq('setting_name', 'main_config')
-        .single();
+      const rows = await fetchPublicApplicationSettings(['season_data']);
+      const row = findPublicSetting(rows, 'season_data', 'main_config');
 
-      if (error) {
-        console.warn('⚠️ Could not fetch prioritized timeslots from database:', error);
-        return FALLBACK_TIMESLOTS;
-      }
-
-      if (!data?.setting_value) {
+      if (!row?.setting_value) {
         console.warn('⚠️ No season data found, using fallback timeslots');
         return FALLBACK_TIMESLOTS;
       }
 
-      const settingValue = data.setting_value as any;
-      const venues = settingValue.venues || [];
-      const venue_timeslots = settingValue.venue_timeslots || [];
-      
+      const settingValue = row.setting_value as Record<string, unknown>;
+      const venues = Array.isArray(settingValue.venues) ? settingValue.venues : [];
+      const venue_timeslots = Array.isArray(settingValue.venue_timeslots)
+        ? settingValue.venue_timeslots
+        : [];
+
       if (venue_timeslots.length === 0) {
         console.warn('⚠️ No venue timeslots found in season data, using fallback');
         return FALLBACK_TIMESLOTS;

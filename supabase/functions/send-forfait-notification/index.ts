@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-import { requireSession } from "../_shared/auth.ts";
+import { requireAdminOrTeamManagerForTeams } from "../_shared/auth.ts";
 
 declare const Deno: { env: { get(key: string): string | undefined } };
 
@@ -17,6 +17,8 @@ const corsHeaders = {
 
 interface ForfaitNotificationRequest {
   recipients: string[];
+  homeTeamId?: number | null;
+  awayTeamId?: number | null;
   homeTeamName: string;
   awayTeamName: string;
   forfaitTeamName: string;
@@ -24,6 +26,12 @@ interface ForfaitNotificationRequest {
   matchTime?: string | null;
   location?: string | null;
 }
+
+const ALLOWED_EXTRA_RECIPIENTS = [
+  "noppe.nikki@icloud.com",
+  "sandrine.vergote@harelbeke.be",
+  "info@harelbekeminivoetbal.be",
+];
 
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -47,14 +55,6 @@ const handler = async (req: Request): Promise<Response> => {
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   );
-  const auth = await requireSession(req, supabase);
-  if (!auth.ok) {
-    return new Response(JSON.stringify({ error: auth.message }), {
-      status: auth.status,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
-  }
-
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -62,7 +62,30 @@ const handler = async (req: Request): Promise<Response> => {
     if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY is not configured");
 
     const body: ForfaitNotificationRequest = await req.json();
-    const { recipients, homeTeamName, awayTeamName, forfaitTeamName, matchDate, matchTime, location } = body;
+    const {
+      recipients,
+      homeTeamId,
+      awayTeamId,
+      homeTeamName,
+      awayTeamName,
+      forfaitTeamName,
+      matchDate,
+      matchTime,
+      location,
+    } = body;
+
+    const auth = await requireAdminOrTeamManagerForTeams(
+      req,
+      supabase,
+      homeTeamId,
+      awayTeamId,
+    );
+    if (!auth.ok) {
+      return new Response(JSON.stringify({ error: auth.message }), {
+        status: auth.status,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
     if (!Array.isArray(recipients) || recipients.length === 0) {
       return new Response(JSON.stringify({ error: "Geen ontvangers opgegeven" }), {
@@ -77,6 +100,37 @@ const handler = async (req: Request): Promise<Response> => {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
+    }
+
+    const teamIds = [homeTeamId, awayTeamId].filter(
+      (id): id is number => typeof id === "number" && id > 0,
+    );
+    const allowedEmails = new Set(
+      ALLOWED_EXTRA_RECIPIENTS.map((e) => e.toLowerCase()),
+    );
+    if (teamIds.length > 0) {
+      const { data: teamRecipients, error: recipErr } = await supabase.rpc("get_team_recipients", {
+        p_team_ids: teamIds,
+      });
+      if (recipErr) {
+        console.error("get_team_recipients failed:", recipErr.message);
+        return new Response(JSON.stringify({ error: "Kon ontvangers niet valideren" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      for (const row of teamRecipients ?? []) {
+        const email = (row as { email?: string }).email?.trim().toLowerCase();
+        if (email) allowedEmails.add(email);
+      }
+    }
+
+    const rejected = validRecipients.filter((e) => !allowedEmails.has(e.toLowerCase()));
+    if (rejected.length > 0) {
+      return new Response(
+        JSON.stringify({ error: "Ontvangers niet toegestaan", rejected }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
     }
 
     const dateStr = formatDate(matchDate);

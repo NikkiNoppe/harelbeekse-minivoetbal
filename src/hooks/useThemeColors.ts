@@ -3,22 +3,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { ThemeColors, DEFAULT_THEME, DEFAULT_SEMANTIC, applyThemeToCSS } from "@/lib/colorUtils";
 import { applyThemeToDocument } from "@/lib/themeDocument";
 import { applicationSettingInsert, applicationSettingUpdate } from "@/services/applicationSettingsUtils";
+import {
+  fetchPublicApplicationSettings,
+  findPublicSetting,
+} from "@/services/public/publicApplicationSettingsFetch";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 const QUERY_KEY = ["theme-colors"];
 
 async function fetchThemeColors(): Promise<ThemeColors> {
-  const { data, error } = await supabase
-    .from("application_settings")
-    .select("setting_value")
-    .eq("setting_category", "theme_colors")
-    .eq("setting_name", "global_theme")
-    .maybeSingle();
+  const rows = await fetchPublicApplicationSettings(["theme_colors"]);
+  const row = findPublicSetting(rows, "theme_colors", "global_theme");
 
-  if (error || !data) return DEFAULT_THEME;
+  if (!row?.setting_value) return DEFAULT_THEME;
 
-  const val = data.setting_value as unknown as ThemeColors;
+  const val = row.setting_value as unknown as ThemeColors;
   if (!val?.primaryBase || !val?.scale) return DEFAULT_THEME;
 
   // Migreer oud paars club-thema naar Sport Harelbeke-blauw

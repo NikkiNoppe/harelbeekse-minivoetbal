@@ -3,6 +3,10 @@ import {
   applicationSettingInsert,
   applicationSettingUpdate,
 } from '@/services/applicationSettingsUtils';
+import {
+  fetchPublicApplicationSettings,
+  findPublicSetting,
+} from '@/services/public/publicApplicationSettingsFetch';
 
 export interface SeasonData {
   season_start_date: string;
@@ -19,22 +23,16 @@ export const seasonService = {
   async getSeasonData(): Promise<SeasonData> {
     try {
       console.log('🔄 Loading season data...');
-      // Try to fetch from database only
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('setting_category', 'season_data')
-        .eq('setting_name', 'main_config')
-        .single();
+      const rows = await fetchPublicApplicationSettings(['season_data']);
+      const row = findPublicSetting(rows, 'season_data', 'main_config');
 
-      if (error || !data?.setting_value) {
+      if (!row?.setting_value) {
         throw new Error('Kon seizoensdata niet laden uit de database.');
       }
 
-      console.log('✅ Season data loaded from database:', data.setting_value);
-      // Store in localStorage for caching
-      localStorage.setItem('seasonData', JSON.stringify(data.setting_value));
-      return data.setting_value as unknown as SeasonData;
+      console.log('✅ Season data loaded from database:', row.setting_value);
+      localStorage.setItem('seasonData', JSON.stringify(row.setting_value));
+      return row.setting_value as unknown as SeasonData;
     } catch (error) {
       console.error('❌ Error in getSeasonData:', error);
       throw error;

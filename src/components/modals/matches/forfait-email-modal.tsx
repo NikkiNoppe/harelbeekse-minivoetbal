@@ -194,6 +194,8 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
       const { data, error } = await supabase.functions.invoke("send-forfait-notification", {
         body: {
           recipients,
+          homeTeamId: homeTeamId ?? null,
+          awayTeamId: awayTeamId ?? null,
           homeTeamName,
           awayTeamName,
           forfaitTeamName,

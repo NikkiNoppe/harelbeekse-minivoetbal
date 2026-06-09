@@ -896,6 +896,15 @@ export type Database = {
           team_name: string
         }[]
       }
+      get_public_application_settings: {
+        Args: { p_categories?: string[] | null }
+        Returns: {
+          id: number
+          setting_category: string
+          setting_name: string
+          setting_value: Json
+        }[]
+      }
       get_teams_for_session: {
         Args: { p_session_token: string; p_team_id?: number }
         Returns: {

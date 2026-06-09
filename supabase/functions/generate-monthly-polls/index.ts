@@ -25,7 +25,7 @@ serve(async (req) => {
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const auth = await requireSession(req, supabase);
+  const auth = await requireSession(req, supabase, { adminOnly: true });
   if (!auth.ok) {
     return new Response(JSON.stringify({ error: auth.message }), {
       status: auth.status,

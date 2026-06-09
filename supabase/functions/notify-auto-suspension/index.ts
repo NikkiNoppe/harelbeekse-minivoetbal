@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { requireSession } from "../_shared/auth.ts";
+import { requireMatchMutationAccess } from "../_shared/auth.ts";
 // @ts-ignore
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
@@ -49,19 +49,36 @@ const handler = async (req: Request): Promise<Response> => {
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   );
-  const auth = await requireSession(req, supabaseAdmin);
-  if (!auth.ok) {
-    return new Response(JSON.stringify({ error: auth.message }), {
-      status: auth.status,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
-  }
-
   try {
     const { matchId } = await req.json();
     if (!matchId || typeof matchId !== "number") {
       return new Response(JSON.stringify({ error: "matchId vereist" }), {
         status: 400, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const { data: matchRow, error: matchErr } = await supabaseAdmin
+      .from("matches")
+      .select("home_team_id, away_team_id")
+      .eq("match_id", matchId)
+      .maybeSingle();
+
+    if (matchErr || !matchRow) {
+      return new Response(JSON.stringify({ error: "Wedstrijd niet gevonden" }), {
+        status: 404, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const auth = await requireMatchMutationAccess(
+      req,
+      supabaseAdmin,
+      matchRow.home_team_id,
+      matchRow.away_team_id,
+    );
+    if (!auth.ok) {
+      return new Response(JSON.stringify({ error: auth.message }), {
+        status: auth.status,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 

@@ -124,11 +124,16 @@ fi
 rpc_ok=$([[ "$code" == "200" && "$(cat /tmp/rpc.json)" == "[]" ]] && echo true || echo false)
 check "get_match_card_events leeg zonder sessie (HTTP $code)" "$rpc_ok"
 
-# 6. Anon players leeg
+# 6. Anon players niet leesbaar (RLS leeg of REVOKE SELECT)
 code=$(curl -s -o /tmp/p.json -w "%{http_code}" \
   "$SUPABASE_URL/rest/v1/players?select=player_id,first_name&limit=3" "${hdr[@]}")
-players_empty=$([[ "$(cat /tmp/p.json)" == "[]" ]] && echo true || echo false)
-check "players niet publiek leesbaar (HTTP $code)" "$([[ "$code" == "200" && "$players_empty" == "true" ]] && echo true || echo false)"
+players_blocked=false
+if [[ "$code" == "401" || "$code" == "403" ]]; then
+  players_blocked=true
+elif [[ "$code" == "200" && "$(cat /tmp/p.json)" == "[]" ]]; then
+  players_blocked=true
+fi
+check "players niet publiek leesbaar (HTTP $code)" "$players_blocked"
 
 if [[ "$session_auth_live" == "true" ]]; then
   # 7. set_config niet meer callable door anon (session escalation geblokkeerd)
@@ -236,6 +241,119 @@ else:
     "$SUPABASE_URL/rest/v1/teams_public?select=team_id&limit=1" "${hdr[@]}")
   tp_view_gone=$([[ "$code" == "404" || "$code" == "401" || "$code" == "403" ]] && echo true || echo false)
   check "teams_public view niet publiek leesbaar (HTTP $code)" "$tp_view_gone"
+
+  # 20. get_player_cards_for_admin leeg zonder token
+  code=$(curl -s -o /tmp/pc_admin.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/get_player_cards_for_admin" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"p_session_token": null}')
+  pc_empty=$([[ "$code" == "200" && "$(cat /tmp/pc_admin.json)" == "[]" ]] && echo true || echo false)
+  check "get_player_cards_for_admin leeg zonder sessie (HTTP $code)" "$pc_empty"
+
+  # 21. delete-user geweigerd zonder x-session-token
+  code=$(curl -s -o /tmp/del_user.json -w "%{http_code}" \
+    "$SUPABASE_URL/functions/v1/delete-user" \
+    -H "Content-Type: application/json" -H "apikey: $ANON_KEY" \
+    -d '{"userId":1}')
+  del_denied=$([[ "$code" == "401" || "$code" == "403" ]] && echo true || echo false)
+  check "delete-user geweigerd zonder x-session-token (HTTP $code)" "$del_denied"
+
+  # 22. send-transactional-email geweigerd zonder x-session-token
+  code=$(curl -s -o /tmp/st_email.json -w "%{http_code}" \
+    "$SUPABASE_URL/functions/v1/send-transactional-email" \
+    -H "Content-Type: application/json" -H "apikey: $ANON_KEY" \
+    -d '{"templateName":"forfait-notification","recipientEmail":"test@example.com"}')
+  st_denied=$([[ "$code" == "401" || "$code" == "403" ]] && echo true || echo false)
+  check "send-transactional-email geweigerd zonder x-session-token (HTTP $code)" "$st_denied"
+
+  # 23. send-forfait-notification geweigerd zonder x-session-token
+  code=$(curl -s -o /tmp/forfait_ef.json -w "%{http_code}" \
+    "$SUPABASE_URL/functions/v1/send-forfait-notification" \
+    -H "Content-Type: application/json" -H "apikey: $ANON_KEY" \
+    -d '{"recipients":["test@example.com"],"homeTeamName":"A","awayTeamName":"B","forfaitTeamName":"A"}')
+  forfait_denied=$([[ "$code" == "401" || "$code" == "403" ]] && echo true || echo false)
+  check "send-forfait-notification geweigerd zonder x-session-token (HTTP $code)" "$forfait_denied"
+
+  # 24. anon mag teams.contact_email niet lezen (kolom-revoke)
+  code=$(curl -s -o /tmp/teams_contact.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/teams?select=team_id,contact_email&limit=1" "${hdr[@]}")
+  teams_contact_blocked=false
+  if [[ "$code" != "200" ]]; then
+    teams_contact_blocked=true
+  else
+    body=$(cat /tmp/teams_contact.json)
+    if echo "$body" | grep -qi 'PGRST\|column\|does not exist\|permission'; then
+      teams_contact_blocked=true
+    elif [[ "$body" == "[]" ]]; then
+      teams_contact_blocked=true
+    else
+      teams_contact_blocked=$(python3 -c "
+import json
+d=json.load(open('/tmp/teams_contact.json'))
+print('false' if isinstance(d,list) and len(d)>0 and 'contact_email' in d[0] else 'true')
+" 2>/dev/null || echo false)
+    fi
+  fi
+  check "teams.contact_email niet leesbaar voor anon (HTTP $code)" "$teams_contact_blocked"
+
+  # 25. password_reset_tokens niet leesbaar voor anon
+  code=$(curl -s -o /tmp/prt_read.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/password_reset_tokens?select=token&limit=1" "${hdr[@]}")
+  prt_blocked=$([[ "$code" != "200" || "$(cat /tmp/prt_read.json)" == "[]" ]] && echo true || echo false)
+  if [[ "$code" == "200" ]]; then
+    body=$(cat /tmp/prt_read.json)
+    if echo "$body" | grep -qi 'PGRST\|permission\|JWT'; then
+      prt_blocked=true
+    fi
+  fi
+  check "password_reset_tokens niet leesbaar voor anon (HTTP $code)" "$prt_blocked"
+
+  # 26. generate-competition-schedule geweigerd zonder x-session-token
+  code=$(curl -s -o /tmp/gcs_ef.json -w "%{http_code}" \
+    "$SUPABASE_URL/functions/v1/generate-competition-schedule" \
+    -H "Content-Type: application/json" -H "apikey: $ANON_KEY" \
+    -d '{"config":{"name":"test","format_type":"round","start_date":"2026-01-01","end_date":"2026-06-01","matches_per_week":2},"teams":[],"team_preferences":[],"vacation_periods":[],"ai_provider":"abacus"}')
+  gcs_denied=$([[ "$code" == "401" || "$code" == "403" ]] && echo true || echo false)
+  check "generate-competition-schedule geweigerd zonder x-session-token (HTTP $code)" "$gcs_denied"
+
+  # 27. get_public_application_settings retourneert theme_colors
+  code=$(curl -s -o /tmp/pub_settings.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/get_public_application_settings" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"p_categories":["theme_colors"]}')
+  pub_settings_ok=false
+  if [[ "$code" == "200" ]]; then
+    pub_settings_ok=$(python3 -c "
+import json
+d=json.load(open('/tmp/pub_settings.json'))
+print('true' if isinstance(d,list) and len(d)>0 and d[0].get('setting_category')=='theme_colors' else 'false')
+" 2>/dev/null || echo false)
+  fi
+  check "get_public_application_settings theme_colors (HTTP $code)" "$pub_settings_ok"
+
+  # 28. _old_competition_standings niet leesbaar voor anon
+  code=$(curl -s -o /tmp/old_standings.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/_old_competition_standings?select=team_id&limit=1" "${hdr[@]}")
+  old_standings_blocked=$([[ "$code" != "200" || "$(cat /tmp/old_standings.json)" == "[]" ]] && echo true || echo false)
+  if [[ "$code" == "200" ]]; then
+    body=$(cat /tmp/old_standings.json)
+    if echo "$body" | grep -qi 'PGRST\|permission\|JWT'; then
+      old_standings_blocked=true
+    fi
+  fi
+  check "_old_competition_standings niet leesbaar voor anon (HTTP $code)" "$old_standings_blocked"
+
+  # 29. application_settings direct REST niet leesbaar voor anon
+  code=$(curl -s -o /tmp/app_settings_direct.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/application_settings?select=id&limit=1" "${hdr[@]}")
+  app_settings_blocked=$([[ "$code" != "200" || "$(cat /tmp/app_settings_direct.json)" == "[]" ]] && echo true || echo false)
+  if [[ "$code" == "200" ]]; then
+    body=$(cat /tmp/app_settings_direct.json)
+    if echo "$body" | grep -qi 'PGRST\|permission\|JWT'; then
+      app_settings_blocked=true
+    fi
+  fi
+  check "application_settings niet direct leesbaar voor anon (HTTP $code)" "$app_settings_blocked"
 else
   echo "⏭️  Overgeslagen: set_config-blokkade, public RPC, admin-RPC, edge-auth (vereist migratie + deploy)"
 fi

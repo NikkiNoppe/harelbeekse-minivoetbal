@@ -2,6 +2,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  fetchPublicApplicationSettings,
+  findPublicSetting,
+} from "@/services/public/publicApplicationSettingsFetch";
 
 /**
  * Fallback hook for player list lock status.
@@ -29,17 +33,10 @@ export const usePlayerListLockFallback = () => {
       console.log('🔒 Lock function result:', data);
       setIsLocked(data);
 
-      // Also fetch the lock settings for display
-      const { data: settings, error: settingsError } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('setting_category', 'player_list_lock')
-        .eq('setting_name', 'global_lock')
-        .single();
+      const lockRows = await fetchPublicApplicationSettings(['player_list_lock']);
+      const settings = findPublicSetting(lockRows, 'player_list_lock', 'global_lock');
 
-      if (settingsError) {
-        console.error('❌ Error fetching lock settings:', settingsError);
-      } else if (settings?.setting_value) {
+      if (settings?.setting_value) {
         const settingValue = settings.setting_value as { lock_from_date?: string; lock_enabled?: boolean };
         if (settingValue.lock_enabled !== false) {
           setLockDate(settingValue.lock_from_date ?? null);
