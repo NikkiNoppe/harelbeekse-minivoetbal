@@ -61,8 +61,8 @@ export const useRefereeMatches = (refereeUsername: string | null, month?: number
         away_score: match.away_score,
         referee: match.referee || undefined,
         referee_notes: match.referee_notes || undefined,
-        home_players: match.home_players,
-        away_players: match.away_players,
+        home_players: match.home_players as any[],
+        away_players: match.away_players as any[],
       } satisfies RefereeMatch));
     },
     enabled: !!refereeUsername,

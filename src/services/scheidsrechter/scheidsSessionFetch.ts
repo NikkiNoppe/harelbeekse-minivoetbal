@@ -130,7 +130,7 @@ export async function fetchScheidsAvailabilityStats(
     p_poll_month: pollMonth,
   });
   if (error) throw error;
-  const stats = data as ScheidsAvailabilityStats | null;
+  const stats = data as unknown as ScheidsAvailabilityStats | null;
   return stats ?? {
     total_referees: 0,
     responded_count: 0,
@@ -146,7 +146,7 @@ export async function fetchScheidsPollOverview(
     p_poll_id: pollId,
   });
   if (error) throw error;
-  return (data as ScheidsPollOverview | null) ?? null;
+  return (data as unknown as ScheidsPollOverview | null) ?? null;
 }
 
 export async function fetchMonthlyPollsForSession() {

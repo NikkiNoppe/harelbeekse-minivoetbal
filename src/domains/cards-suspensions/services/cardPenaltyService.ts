@@ -103,7 +103,7 @@ export const cardPenaltyService = {
               ...getRpcSessionArgs(),
               p_cost_id: costId,
               p_operation: 'delete',
-            });
+            } as any);
             if (delErr) throw delErr;
             if (data && (data as { success?: boolean }).success === false) {
               throw new Error((data as { error?: string }).error || 'Delete failed');

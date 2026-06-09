@@ -15,7 +15,7 @@ async function callManageRefereeMatches(
   const { data, error } = await supabase.rpc("manage_referee_matches_for_session", {
     ...getRpcSessionArgs(),
     p_operation: operation,
-    p_payload: payload,
+    p_payload: payload as any,
   });
   if (error) throw error;
   return data;

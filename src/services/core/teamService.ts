@@ -135,7 +135,7 @@ export const teamService = {
       const { data, error } = await supabase.rpc('update_team_for_session', {
         ...getRpcSessionArgs(),
         p_team_id: teamId,
-        p_team_data: updateData,
+        p_team_data: updateData as any,
       });
 
       if (error) throw error;

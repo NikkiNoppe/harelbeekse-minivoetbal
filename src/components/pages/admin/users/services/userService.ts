@@ -24,7 +24,7 @@ export const fetchUsersWithTeams = async () => {
 
   if (usersError) throw usersError;
 
-  const transformedUsers: User[] = (usersData || []).map((user: {
+  const transformedUsers: User[] = ((usersData as any[]) || []).map((user: {
     user_id: number;
     username: string;
     email?: string | null;
@@ -57,14 +57,14 @@ export const fetchTeamUsers = async (): Promise<TeamUser[]> => {
     ...getRpcSessionArgs(),
     p_operation: 'list',
     p_user_id: 0,
-  });
+  } as any);
 
   if (error) {
     console.error('Error fetching team users:', error);
     return [];
   }
 
-  return ((data as TeamUser[]) || []);
+  return ((data as unknown as TeamUser[]) || []);
 };
 
 export const saveUser = async (formData: any, editingUser: User | null): Promise<boolean> => {
@@ -115,7 +115,7 @@ export const saveUser = async (formData: any, editingUser: User | null): Promise
           ...getRpcSessionArgs(),
           p_operation: 'remove',
           p_user_id: editingUser.id,
-        });
+        } as any);
       }
     } else {
       const { data: newUser, error: createError } = await supabase

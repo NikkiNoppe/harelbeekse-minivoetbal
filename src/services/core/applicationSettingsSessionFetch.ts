@@ -18,10 +18,10 @@ export async function listApplicationSettingsForSession(
       ...getRpcSessionArgs(),
       p_operation: "list",
       p_category: category ?? null,
-    },
+    } as any,
   );
   if (error) throw error;
-  return Array.isArray(data) ? (data as ApplicationSettingRow[]) : [];
+  return Array.isArray(data) ? (data as unknown as ApplicationSettingRow[]) : [];
 }
 
 export async function insertApplicationSettingForSession(row: {
@@ -36,8 +36,8 @@ export async function insertApplicationSettingForSession(row: {
       p_operation: "insert",
       p_category: row.setting_category,
       p_setting_name: row.setting_name,
-      p_setting_value: row.setting_value,
-    },
+      p_setting_value: row.setting_value as any,
+    } as any,
   );
   if (error) throw error;
   const result = data as { success?: boolean; id?: number; error?: string };
@@ -59,8 +59,8 @@ export async function updateApplicationSettingForSession(
       p_id: id,
       p_category: patch.setting_category ?? null,
       p_setting_name: patch.setting_name ?? null,
-      p_setting_value: patch.setting_value ?? null,
-    },
+      p_setting_value: (patch.setting_value ?? null) as any,
+    } as any,
   );
   if (error) throw error;
   const result = data as { success?: boolean; error?: string };
@@ -78,7 +78,7 @@ export async function deleteApplicationSettingForSession(
       p_operation: "delete",
       p_id: id,
       p_category: category ?? null,
-    },
+    } as any,
   );
   if (error) throw error;
   const result = data as { success?: boolean; error?: string };

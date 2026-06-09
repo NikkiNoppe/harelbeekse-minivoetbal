@@ -11,7 +11,7 @@ async function callManagePoll(
   const { data, error } = await supabase.rpc("manage_poll_for_session", {
     ...getRpcSessionArgs(),
     p_operation: operation,
-    p_payload: payload,
+    p_payload: payload as any,
   });
   if (error) throw error;
   return (data ?? {}) as PollRpcResult;

@@ -190,7 +190,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         id: userData.user_id,
         username: userData.username,
         password: '',
-        role: userData.role,
+        role: userData.role as User['role'],
         email: userData.email || '',
         isSuperAdmin: false,
         ...(teamId !== undefined ? { teamId } : {}),

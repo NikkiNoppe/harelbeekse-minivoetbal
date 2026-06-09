@@ -21,7 +21,7 @@ export async function fetchUserProfileForSession(): Promise<UserProfileSessionDa
   const { data, error } = await supabase.rpc("get_user_profile_for_session", getRpcSessionArgs());
   if (error) throw error;
   if (!data) return null;
-  return data as UserProfileSessionData;
+  return data as unknown as UserProfileSessionData;
 }
 
 export async function fetchTeamBalanceForSession(teamId: number): Promise<number | null> {

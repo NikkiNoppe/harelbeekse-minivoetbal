@@ -86,7 +86,7 @@ function statHeaderClass(
     S.headerCell,
     col.width,
     "standings-scroll-stats",
-    col.dividerBefore && S.colDivider,
+    ("dividerBefore" in col && col.dividerBefore) && S.colDivider,
   );
 }
 
@@ -241,7 +241,7 @@ function StandingsSkeleton({ embeddedInCard }: { embeddedInCard?: boolean }) {
                 key={col.id}
                 className={cn(
                   "py-2.5 standings-scroll-stats",
-                  col.dividerBefore && S.colDivider,
+                  ("dividerBefore" in col && col.dividerBefore) && S.colDivider,
                 )}
               >
                 <Skeleton className="h-4 w-5 mx-auto bg-muted" />

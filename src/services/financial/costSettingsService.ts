@@ -70,7 +70,7 @@ export const costSettingsService = {
         p_name: setting.name,
         p_amount: setting.amount,
         p_category: setting.category,
-      });
+      } as any);
 
       if (error) throw error;
       if (!(data as { success?: boolean })?.success) {
@@ -118,7 +118,7 @@ export const costSettingsService = {
         ...getRpcSessionArgs(),
         p_operation: 'delete',
         p_id: id,
-      });
+      } as any);
 
       if (error) throw error;
       if (!(data as { success?: boolean })?.success) {
@@ -197,7 +197,7 @@ export const costSettingsService = {
               p_name: 'Storting',
               p_amount: 0,
               p_category: 'deposit',
-            },
+            } as any,
           );
 
           if (costError) {
@@ -282,7 +282,7 @@ export const costSettingsService = {
             `Transactie ${new Date(transaction.transaction_date).toLocaleDateString('nl-NL')}`,
           p_amount: transaction.amount,
           p_category: category,
-        },
+        } as any,
       );
 
       if (costError) {
@@ -342,7 +342,7 @@ export const costSettingsService = {
         ...getRpcSessionArgs(),
         p_cost_id: transactionId,
         p_operation: 'delete'
-      });
+      } as any);
 
       if (error) {
         console.error('❌ [PENALTY-CRUD] DELETE RPC error:', { costId: transactionId, error });

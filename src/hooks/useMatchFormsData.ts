@@ -61,7 +61,7 @@ export const useMatchFormsData = (
     refetchOnMount: 'always' as const,
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    refetchInterval: false,
+    refetchInterval: false as const,
     networkMode: 'online' as const,
   };
 
