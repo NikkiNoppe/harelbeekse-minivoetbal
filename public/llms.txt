@@ -8,12 +8,12 @@ De Harelbeekse Minivoetbal Competitie organiseert wekelijkse zaalvoetbalwedstrij
 
 ## Belangrijkste pagina's
 
-- /algemeen — Nieuws en algemene informatie over de competitie
-- /competitie — Klassement, speelschema en uitslagen
-- /beker — Bekertoernooi met bracket en uitslagen
-- /playoff — Play-off rangschikking en uitslagen
-- /reglement — Officieel reglement en spelregels
-- /archief — Eindklassementen en bekerwinnaars van vorige seizoenen
+- [Algemeen — nieuws en info](https://harelbekeminivoetbal.be/algemeen): Nieuws en algemene informatie over de competitie
+- [Competitie — standen en uitslagen](https://harelbekeminivoetbal.be/competitie): Klassement, speelschema en uitslagen
+- [Beker — toernooibracket](https://harelbekeminivoetbal.be/beker): Bekertoernooi met bracket en uitslagen
+- [Playoff — rangschikking](https://harelbekeminivoetbal.be/playoff): Play-off rangschikking en uitslagen
+- [Reglement — spelregels](https://harelbekeminivoetbal.be/reglement): Officieel reglement en spelregels
+- [Archief — vorige seizoenen](https://harelbekeminivoetbal.be/archief): Eindklassementen en bekerwinnaars van vorige seizoenen
 
 ## Contact
 

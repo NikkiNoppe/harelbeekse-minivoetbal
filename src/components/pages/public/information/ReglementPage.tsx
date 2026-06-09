@@ -162,7 +162,7 @@ const ReglementPage: React.FC = () => {
         />
       ) : (
         <div className="flex justify-between items-center">
-          <h2 id={mainHeadingId} className="text-2xl font-semibold" style={{ color: 'var(--primary)' }}>Reglement</h2>
+          <h1 id={mainHeadingId} className="text-2xl font-bold" style={{ color: 'var(--primary)' }}>Reglement</h1>
         </div>
       )}
       

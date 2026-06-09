@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { getRouteMeta } from "@/config/routes";
+import { getRouteMeta, PUBLIC_ROUTES } from "@/config/routes";
 import { NOINDEX_PATHS, SITE_URL } from "@/config/site";
 
 const DEFAULT_ROBOTS = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
@@ -48,6 +48,13 @@ function upsertMetaProperty(property: string, content: string) {
   );
 }
 
+function buildDocumentTitle(pathname: string, metaTitle: string): string {
+  if (pathname === PUBLIC_ROUTES.algemeen || pathname === "/") {
+    return "Minivoetbal Harelbeke | Competitie, standen & uitslagen";
+  }
+  return `${metaTitle} | Harelbeekse Minivoetbal`;
+}
+
 function upsertCanonical(href: string) {
   upsertMeta(
     'link[rel="canonical"]',
@@ -85,7 +92,7 @@ export const useRouteMeta = () => {
     upsertMetaName("robots", DEFAULT_ROBOTS);
 
     if (meta) {
-      const pageTitle = `${meta.title} - Harelbeekse Minivoetbal`;
+      const pageTitle = buildDocumentTitle(location.pathname, meta.title);
       document.title = pageTitle;
 
       upsertMetaName("description", meta.description);
@@ -94,6 +101,7 @@ export const useRouteMeta = () => {
       upsertMetaProperty("og:url", canonicalUrl);
       upsertMetaName("twitter:title", pageTitle);
       upsertMetaName("twitter:description", meta.description);
+      upsertMetaName("twitter:url", canonicalUrl);
     } else {
       document.title = "Harelbeekse Minivoetbal";
     }

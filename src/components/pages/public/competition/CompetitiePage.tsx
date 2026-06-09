@@ -276,7 +276,7 @@ const CompetitiePage: React.FC = () => {
 
   return (
     <div className="space-y-6 motion-safe:animate-slide-up">
-      <PageHeader title="Competitiestand" subtitle={seasonSubtitle} />
+      <PageHeader title="Competitie" subtitle={seasonSubtitle} />
 
       {showPlayoffBanner && (
         <Alert className="border-primary/30 bg-primary/5">
