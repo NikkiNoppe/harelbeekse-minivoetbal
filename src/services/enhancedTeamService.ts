@@ -131,7 +131,7 @@ export const enhancedTeamService = {
       const { data, error } = await supabase.rpc('get_all_users_for_admin', getRpcSessionArgs());
       if (error) throw error;
 
-      const users = (data || []) as Array<{
+      const users = (data || []) as unknown as Array<{
         user_id: number;
         username: string;
         email?: string | null;
@@ -183,7 +183,7 @@ export const enhancedTeamService = {
         ...getRpcSessionArgs(),
         p_operation: 'remove',
         p_user_id: userId,
-      });
+      } as any);
 
       if (error) {
         logTeamOperation('removeUserFromTeam - ERROR', { error, teamId, userId });

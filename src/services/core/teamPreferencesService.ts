@@ -255,11 +255,12 @@ export async function getSeasonalFairness(teams: any[]): Promise<{
   // Calculate cumulative scores for each team
   const teamStats = new Map<number, { totalScore: number; matchCount: number }>();
   
-  for (const match of matches) {
+  for (const matchRow of matches) {
+    const match = matchRow as any;
     if (!match.home_team_id || !match.away_team_id) continue;
     
     // Parse match timing and location to determine preference scores  
-    const matchDate = new Date(match.match_date);
+    const matchDate = new Date(match.match_date as string);
     const timeslot = {
       day_of_week: matchDate.getDay() || 7, // Convert Sunday (0) to 7
       start_time: '20:00', // Default time since match_time column doesn't exist
@@ -267,11 +268,11 @@ export async function getSeasonalFairness(teams: any[]): Promise<{
     };
     
     // Score both teams for this match
-    const homePrefs = teamPreferences.get(match.home_team_id);
-    const awayPrefs = teamPreferences.get(match.away_team_id);
+    const homePrefs = teamPreferences.get(match.home_team_id as number);
+    const awayPrefs = teamPreferences.get(match.away_team_id as number);
     
-    const homeResult = scoreTeamForDetails(homePrefs, timeslot, match.location || '', venues);
-    const awayResult = scoreTeamForDetails(awayPrefs, timeslot, match.location || '', venues);
+    const homeResult = scoreTeamForDetails(homePrefs, timeslot, (match.location as string) || '', venues);
+    const awayResult = scoreTeamForDetails(awayPrefs, timeslot, (match.location as string) || '', venues);
     
     // Update team statistics
     const updateTeamStats = (teamId: number, score: number) => {
@@ -282,8 +283,8 @@ export async function getSeasonalFairness(teams: any[]): Promise<{
       });
     };
     
-    updateTeamStats(match.home_team_id, homeResult.score);
-    updateTeamStats(match.away_team_id, awayResult.score);
+    updateTeamStats(match.home_team_id as number, homeResult.score);
+    updateTeamStats(match.away_team_id as number, awayResult.score);
   }
   
   // Calculate fairness metrics

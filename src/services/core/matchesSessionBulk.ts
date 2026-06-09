@@ -9,7 +9,7 @@ export async function bulkInsertMatchesForSession(
   const { data, error } = await supabase.rpc("bulk_manage_matches_for_session", {
     ...getRpcSessionArgs(),
     p_operation: "insert",
-    p_payload: rows,
+    p_payload: rows as any,
   });
   if (error) throw error;
   return data as BulkResult;
@@ -63,7 +63,7 @@ export async function fetchMatchesForSession(
 ): Promise<Record<string, unknown>[]> {
   const { data, error } = await supabase.rpc("get_matches_for_session", {
     ...getRpcSessionArgs(),
-    p_filters: filters,
+    p_filters: filters as any,
   });
   if (error) throw error;
   return (data ?? []) as Record<string, unknown>[];
