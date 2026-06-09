@@ -212,7 +212,7 @@ const AlgemeenPage: React.FC = () => {
   return (
     <div className="space-y-6 motion-safe:animate-slide-up">
       <PageHeader
-        title="Minivoetbal Harelbeke — competitie & live uitslagen"
+        title="Minivoetbal Harelbeke"
         subtitle="De officiële minivoetbalcompetitie van Harelbeke en Bavikhove sinds 1979"
       />
 
