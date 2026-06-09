@@ -342,7 +342,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
       
       grouped.push({
         match_id: typeof matchId === 'number' ? matchId : null,
-        match_info: firstTransaction.matches,
+        match_info: firstTransaction.matches as any,
         transactions: groupTx.sort((a, b) => 
           (a.cost_settings?.name || '').localeCompare(b.cost_settings?.name || '')
         ),

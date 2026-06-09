@@ -120,7 +120,7 @@ const AdminPlayoffMatchesPage: React.FC = () => {
   // Team options for filter - MUST be before early returns to satisfy hooks rules
   const teamOptions = useMemo(() => {
     const set = new Set<string>();
-    (playoffData.allMatches || []).forEach((m: MatchFormData) => {
+    ((playoffData.allMatches as MatchFormData[]) || []).forEach((m: MatchFormData) => {
       if (m.homeTeamName) set.add(m.homeTeamName);
       if (m.awayTeamName) set.add(m.awayTeamName);
     });

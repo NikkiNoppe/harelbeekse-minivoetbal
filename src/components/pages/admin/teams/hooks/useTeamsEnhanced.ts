@@ -78,7 +78,7 @@ export function useTeamsEnhanced() {
       const data = await teamService.getAllTeams();
       setTeams(data.map((team) => ({
         ...team,
-        preferred_play_moments: team.preferred_play_moments as Team["preferred_play_moments"],
+        preferred_play_moments: team.preferred_play_moments as unknown as Team["preferred_play_moments"],
       })));
     } catch (error: any) {
       console.error('Error fetching teams:', error);

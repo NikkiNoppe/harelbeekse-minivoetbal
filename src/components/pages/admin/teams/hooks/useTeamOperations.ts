@@ -84,7 +84,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
         contact_phone: formData.contact_phone.trim() || undefined,
         contact_email: formData.contact_email.trim() || undefined,
         club_colors: formData.club_colors?.trim() || undefined,
-        preferred_play_moments: formData.preferred_play_moments,
+        preferred_play_moments: formData.preferred_play_moments as any,
       });
 
       if (!data) throw new Error('Kon team niet aanmaken');
@@ -95,7 +95,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
       });
 
       onSuccess();
-      return { ...data, balance: 0 } as Team;
+      return { ...data, balance: 0 } as unknown as Team;
     } catch (error: any) {
       console.error('Error creating team:', error);
       
@@ -158,7 +158,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
         contact_phone: formData.contact_phone?.trim() || undefined,
         contact_email: formData.contact_email?.trim() || undefined,
         club_colors: formData.club_colors?.trim() || undefined,
-        preferred_play_moments: formData.preferred_play_moments,
+        preferred_play_moments: formData.preferred_play_moments as any,
       });
 
       if (!updateData) throw new Error('Kon team niet bijwerken');
@@ -169,7 +169,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
       });
 
       onSuccess();
-      return { ...updateData, balance: 0 } as Team;
+      return { ...updateData, balance: 0 } as unknown as Team;
     } catch (error: any) {
       console.error('Error updating team:', error);
       
