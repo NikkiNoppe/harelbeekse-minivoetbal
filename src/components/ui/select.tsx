@@ -18,16 +18,22 @@ const SelectGroup = SelectPrimitive.Group
 
 const SelectValue = SelectPrimitive.Value
 
+const selectTriggerBase = {
+  default:
+    "flex h-10 min-w-[100px] max-w-full items-center justify-between rounded-md border border-[var(--purple-light)] bg-white px-3 py-2 text-sm text-[var(--main-color-dark)] ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 [&>span]:truncate transition-all",
+  schedule:
+    "flex w-full min-w-0 items-center justify-between gap-2 [&>span]:line-clamp-1 [&>span]:truncate focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+} as const;
+
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & {
+    variant?: keyof typeof selectTriggerBase;
+  }
+>(({ className, children, variant = "default", ...props }, ref) => (
   <SelectPrimitive.Trigger
     ref={ref}
-    className={cn(
-      "flex h-10 min-w-[100px] max-w-full items-center justify-between rounded-md border border-[var(--purple-light)] bg-white px-3 py-2 text-sm text-[var(--main-color-dark)] ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 [&>span]:truncate transition-all",
-      className
-    )}
+    className={cn(selectTriggerBase[variant], className)}
     {...props}
   >
     {children}

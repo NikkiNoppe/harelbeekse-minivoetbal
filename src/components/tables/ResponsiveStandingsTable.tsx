@@ -36,7 +36,7 @@ const STAT_COLUMNS = [
  * Blauwe body-tekst: Team, W/G (incl. 0), +/-, Ptn — zie index.css.
  */
 const S = {
-  border: "border-primary/30 border-purple-light",
+  border: "border standings-table-shell",
   row: "standings-row-divider",
   colDivider: "standings-col-divider",
   scrollWrap:
@@ -210,7 +210,7 @@ function StandingsRow({
       <td
         className={cn(
           S.statCell,
-          "w-11 pr-2 sm:pr-3 font-bold text-lg sm:text-sm standings-ptn-cell standings-sticky-ptn standings-sticky-bg",
+          "w-11 pr-2 sm:pr-3 font-bold text-base sm:text-sm standings-ptn-cell standings-sticky-ptn standings-sticky-bg",
           isEven ? rowBg : "bg-primary/5",
           S.colDivider,
           stickyBg,

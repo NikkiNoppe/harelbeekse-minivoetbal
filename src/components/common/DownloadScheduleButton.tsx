@@ -7,12 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { downloadICalFile, downloadCSVFile, type ICalEvent } from "@/lib/icalUtils";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -103,33 +97,20 @@ const DownloadScheduleButton = memo(({
   }, [hasMatches, validMatches, filename, competitionType]);
 
   return (
-    <TooltipProvider>
-      <DropdownMenu>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!hasMatches}
-                className={cn(
-                  "min-h-[44px] min-w-[44px] shrink-0 gap-1.5 px-2 sm:px-3",
-                  "text-muted-foreground hover:text-foreground",
-                  className,
-                )}
-                aria-label="Download speelschema"
-              >
-                <CalendarPlus className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="text-xs font-medium sm:hidden">Download</span>
-              </Button>
-            </DropdownMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="hidden sm:block">
-            <p>Speelschema downloaden</p>
-          </TooltipContent>
-        </Tooltip>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          disabled={!hasMatches}
+          className={cn("min-w-[44px] gap-1.5", className)}
+          aria-label="Download speelschema"
+        >
+          <CalendarPlus className="h-4 w-4 shrink-0 opacity-80" aria-hidden="true" />
+          <span>Download</span>
+        </Button>
+      </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-48 bg-popover">
+      <DropdownMenuContent align="end" className="w-48 bg-popover">
           <DropdownMenuItem
             onClick={handleDownloadAgenda}
             disabled={!hasMatches}
@@ -147,9 +128,8 @@ const DownloadScheduleButton = memo(({
             <FileSpreadsheet className="mr-2 h-4 w-4" aria-hidden="true" />
             <span>Download Excel</span>
           </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </TooltipProvider>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 });
 

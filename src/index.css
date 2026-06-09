@@ -1614,8 +1614,8 @@ tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-
   color: var(--color-white) !important;
 }
 
-/* Competitiestand: lichtblauwe lijnen (playoff-alert: border-purple-light / border-primary/30) */
-.responsive-standings-table.rounded-md.border {
+/* Competitiestand: lichtblauwe rand rond de tabel (zelfde kleur als kolomscheiders) */
+.standings-table-shell {
   border-color: var(--color-primary-light);
 }
 .responsive-standings-table tr.standings-row-divider {
@@ -1680,7 +1680,9 @@ tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-
     z-index: 12;
     min-width: 0;
     width: auto;
-    max-width: calc(100vw - 2.25rem - 3rem - 2rem);
+    max-width: calc(100vw - 2.25rem - 2.75rem - 1rem);
+    container-type: inline-size;
+    container-name: standings-team;
   }
 
   .responsive-standings-table .standings-sticky-ptn {
@@ -1711,10 +1713,21 @@ tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-
   .responsive-standings-table .standings-team-name {
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
     overflow: hidden;
     white-space: normal;
-    word-break: break-word;
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: none;
+    line-height: 1.2;
+    font-size: 0.875rem;
+  }
+
+  /* Pas subtiel verkleinen wanneer kolom echt te smal is — geen afgekapte woorden */
+  @container standings-team (max-width: 11rem) {
+    .responsive-standings-table .standings-team-name {
+      font-size: min(0.875rem, max(0.625rem, 11cqi));
+    }
   }
 
   .standings-scroll-hint::before {

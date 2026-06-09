@@ -12,6 +12,16 @@ import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import DownloadScheduleButton from "@/components/common/DownloadScheduleButton";
+import {
+  SCHEDULE_ACCORDION_ITEM,
+  SCHEDULE_CONTROL,
+  SCHEDULE_MATCH_META,
+  SCHEDULE_MATCH_ROW,
+  SCHEDULE_MATCH_SCORE,
+  SCHEDULE_MATCH_TEAM,
+  SCHEDULE_TRIGGER,
+  SCHEDULE_TRIGGER_ACTIVE,
+} from "@/components/common/scheduleControlStyles";
 import { seasonService } from "@/services/seasonService";
 import { deriveSeasonLabel } from "@/services/archiveService";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
@@ -43,7 +53,7 @@ DataErrorState.displayName = "DataErrorState";
 const ScheduleAccordionSkeleton = memo(() => (
   <div className="space-y-3" role="status" aria-live="polite" aria-busy="true">
     {[...Array(3)].map((_, i) => (
-      <Skeleton key={i} className="h-14 w-full rounded-lg" />
+      <Skeleton key={i} className="h-11 w-full rounded-lg" />
     ))}
   </div>
 ));
@@ -54,33 +64,33 @@ const MatchListItem = memo(({ match }: { match: MatchData }) => {
     match.homeScore !== undefined && match.awayScore !== undefined;
 
   return (
-    <div className="py-2.5 px-3 border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+    <div className={SCHEDULE_MATCH_ROW}>
       <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mb-1">
-        <div className="text-sm font-medium leading-tight text-left truncate text-foreground">
+        <div className={cn("text-sm font-medium leading-tight text-left truncate", SCHEDULE_MATCH_TEAM)}>
           {match.homeTeamName}
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {isCompleted ? (
             <>
-              <span className="text-base font-bold min-w-[20px] text-center tabular-nums">
+              <span className={cn("text-sm font-bold min-w-[20px] text-center tabular-nums", SCHEDULE_MATCH_SCORE)}>
                 {match.homeScore}
               </span>
-              <span className="text-xs text-muted-foreground">-</span>
-              <span className="text-base font-bold min-w-[20px] text-center tabular-nums">
+              <span className={cn("text-sm", SCHEDULE_MATCH_META)}>-</span>
+              <span className={cn("text-sm font-bold min-w-[20px] text-center tabular-nums", SCHEDULE_MATCH_SCORE)}>
                 {match.awayScore}
               </span>
             </>
           ) : (
-            <span className="text-xs font-medium text-muted-foreground">vs</span>
+            <span className={cn("text-sm font-medium", SCHEDULE_MATCH_META)}>vs</span>
           )}
         </div>
-        <div className="text-sm font-medium leading-tight text-right truncate text-foreground">
+        <div className={cn("text-sm font-medium leading-tight text-right truncate", SCHEDULE_MATCH_TEAM)}>
           {match.awayTeamName}
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-        <span className="text-left">{match.date}</span>
-        <span className="text-center font-medium">{match.time || ""}</span>
+      <div className={cn("grid grid-cols-3 gap-2 text-xs font-medium", SCHEDULE_MATCH_META)}>
+        <span className="text-left truncate">{match.date}</span>
+        <span className="text-center tabular-nums">{match.time || ""}</span>
         <span className="text-right truncate">{match.location || ""}</span>
       </div>
     </div>
@@ -95,25 +105,17 @@ const MatchGroup = memo(({
   speeldag: string;
   matches: MatchData[];
 }) => (
-  <AccordionItem
-    value={speeldag}
-    className="border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 bg-card mb-4"
-  >
+  <AccordionItem value={speeldag} className={SCHEDULE_ACCORDION_ITEM}>
     <AccordionTrigger
-      className={cn(
-        "text-base font-semibold px-4 sm:px-5 py-4 min-h-[44px]",
-        "hover:bg-muted/40 data-[state=open]:bg-muted/60",
-        "transition-colors duration-200 text-foreground gap-4",
-      )}
+      variant="plain"
+      className={cn(SCHEDULE_TRIGGER, SCHEDULE_TRIGGER_ACTIVE, "px-4 gap-3")}
     >
       <span className="text-left flex-1">{speeldag}</span>
     </AccordionTrigger>
-    <AccordionContent className="px-0 py-0 border-t border-border bg-card">
-      <div className="rounded-lg overflow-hidden bg-card">
-        {matches.map((match) => (
-          <MatchListItem key={match.matchId} match={match} />
-        ))}
-      </div>
+    <AccordionContent className="!p-0 border-t border-purple-light bg-card">
+      {matches.map((match) => (
+        <MatchListItem key={match.matchId} match={match} />
+      ))}
     </AccordionContent>
   </AccordionItem>
 ));
@@ -334,6 +336,7 @@ const CompetitiePage: React.FC = () => {
                     value={selectedTeam}
                     onValueChange={setSelectedTeam}
                     placeholder="Alle teams"
+                    variant="schedule"
                     options={[
                       { value: "all", label: "Alle teams" },
                       ...teamNames.map((t) => ({ value: t, label: t })),
@@ -341,6 +344,7 @@ const CompetitiePage: React.FC = () => {
                   />
                 </div>
                 <DownloadScheduleButton
+                  className={cn(SCHEDULE_CONTROL, "shrink-0 px-3 shadow-none")}
                   matches={scheduleMatchesForExport}
                   filename={
                     selectedTeam !== "all"

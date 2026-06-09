@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SCHEDULE_FILTER_TRIGGER } from "@/components/common/scheduleControlStyles";
 import { cn } from "@/lib/utils";
 
 interface FilterSelectProps {
@@ -10,6 +11,10 @@ interface FilterSelectProps {
   options: Array<{ value: string; label: string }>;
   width?: "full" | "half";
   className?: string;
+  /** schedule = uniforme speelschema-styling zonder conflicterende base-styles */
+  variant?: "default" | "schedule";
+  /** Optionele extra klassen op de SelectTrigger (alleen bij variant default) */
+  triggerClassName?: string;
 }
 
 /**
@@ -36,11 +41,24 @@ interface FilterSelectProps {
  * </div>
  */
 export const FilterSelect = React.forwardRef<HTMLButtonElement, FilterSelectProps>(
-  ({ label, value, onValueChange, placeholder, options, width = "full", className }, ref) => {
+  ({ label, value, onValueChange, placeholder, options, width = "full", className, variant = "default", triggerClassName }, ref) => {
+    const isSchedule = variant === "schedule";
+
     return (
       <div className={cn("w-full", className)}>
         <Select value={value} onValueChange={onValueChange}>
-          <SelectTrigger ref={ref} className="min-h-[44px] h-auto py-2 text-sm w-full">
+          <SelectTrigger
+            ref={ref}
+            variant={isSchedule ? "schedule" : "default"}
+            className={
+              isSchedule
+                ? SCHEDULE_FILTER_TRIGGER
+                : cn(
+                    "h-11 min-h-[44px] max-h-11 py-0 text-sm w-full rounded-lg",
+                    triggerClassName,
+                  )
+            }
+          >
             <SelectValue placeholder={placeholder || `Selecteer ${label.toLowerCase()}`} />
           </SelectTrigger>
           <SelectContent>

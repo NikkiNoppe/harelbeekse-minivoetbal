@@ -12,23 +12,29 @@ const AccordionItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AccordionPrimitive.Item
     ref={ref}
-    className={cn("border-b", className)}
+    className={cn(className)}
     {...props}
   />
 ))
 AccordionItem.displayName = "AccordionItem"
 
+const accordionTriggerBase = {
+  default:
+    "flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180",
+  plain:
+    "flex flex-1 items-center justify-between py-0 font-medium transition-all hover:no-underline [&[data-state=open]>svg]:rotate-180",
+} as const;
+
 const AccordionTrigger = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> & {
+    variant?: keyof typeof accordionTriggerBase;
+  }
+>(({ className, children, variant = "default", ...props }, ref) => (
   <AccordionPrimitive.Header className="flex">
     <AccordionPrimitive.Trigger
       ref={ref}
-      className={cn(
-        "flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180",
-        className
-      )}
+      className={cn(accordionTriggerBase[variant], className)}
       {...props}
     >
       {children}
