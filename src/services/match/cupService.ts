@@ -78,7 +78,7 @@ export const bekerService = {
       const { data: rpcData, error: updateError } = await supabase.rpc('update_match_for_session', {
         ...getRpcSessionArgs(),
         p_match_id: match.match_id as number,
-        p_update_data: updateData,
+        p_update_data: updateData as any,
       });
 
       if (updateError) throw updateError;
@@ -115,7 +115,7 @@ export const bekerService = {
           await supabase.rpc('update_match_for_session', {
             ...getRpcSessionArgs(),
             p_match_id: qf.match_id as number,
-            p_update_data: payload,
+            p_update_data: payload as any,
           });
         }
       }
@@ -1395,7 +1395,7 @@ export const bekerService = {
       // Index next-round matches by unique_number for quick lookup
       const byUnique = new Map<string, any>();
       cupMatches.forEach(m => {
-        if (m.unique_number) byUnique.set(m.unique_number, m);
+        if (m.unique_number) byUnique.set(m.unique_number as string, m);
       });
 
       let advancedCount = 0;
@@ -1407,15 +1407,15 @@ export const bekerService = {
         if (m.home_score === m.away_score) continue;
         if (m.home_team_id == null || m.away_team_id == null) continue;
 
-        const nextUnique = bekerService.getNextMatchUniqueNumber(m.unique_number);
+        const nextUnique = bekerService.getNextMatchUniqueNumber(m.unique_number as string);
         if (!nextUnique) continue; // FINAL has no next round
 
         const nextMatch = byUnique.get(nextUnique);
         if (!nextMatch) continue;
 
         const winnerTeamId = m.home_score > m.away_score ? m.home_team_id : m.away_team_id;
-        const matchNumber = bekerService.extractMatchNumber(m.unique_number);
-        const shouldBeHome = bekerService.shouldBeHomeTeam(m.unique_number, matchNumber);
+        const matchNumber = bekerService.extractMatchNumber(m.unique_number as string);
+        const shouldBeHome = bekerService.shouldBeHomeTeam(m.unique_number as string, matchNumber);
 
         const slotAlreadyFilled = shouldBeHome
           ? nextMatch.home_team_id === winnerTeamId
@@ -1423,10 +1423,10 @@ export const bekerService = {
 
         if (slotAlreadyFilled) continue;
 
-        const nextRound = bekerService.getNextRound(m.unique_number);
+        const nextRound = bekerService.getNextRound(m.unique_number as string);
         if (!nextRound) continue;
 
-        const result = await bekerService.advanceWinner(m.match_id, winnerTeamId, nextRound);
+        const result = await bekerService.advanceWinner(m.match_id as number, winnerTeamId as number, nextRound);
         if (result.success) {
           advancedCount += 1;
         }
