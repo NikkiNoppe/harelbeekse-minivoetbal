@@ -660,15 +660,6 @@ export type Database = {
           username: string
         }[]
       }
-      get_app_user_from_auth: {
-        Args: never
-        Returns: {
-          role: string
-          team_ids: number[]
-          user_id: number
-          username: string
-        }[]
-      }
       get_available_referees_for_match: {
         Args: { p_match_id: number; p_session_token: string }
         Returns: {
