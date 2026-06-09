@@ -32,7 +32,7 @@ export const updateMatchData = async (
     const { data: rpcData, error } = await supabase.rpc("update_match_for_session", {
       ...getRpcSessionArgs(),
       p_match_id: match_id,
-      p_update_data: updatePayload,
+      p_update_data: updatePayload as any,
     });
 
     if (error) {
