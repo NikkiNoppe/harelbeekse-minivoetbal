@@ -6,6 +6,7 @@ Overzicht van projectconfiguratie voor Cursor-agents.
 
 | Bestand | Scope | Beschrijving |
 |---------|-------|--------------|
+| `custom-auth-architectuur.mdc` | **altijd** | **Definitief auth-besluit** — custom session tokens, geen Supabase Auth-migratie |
 | `supabase.mdc` | altijd | Ingang: verwijst naar alle Supabase-rules |
 | `session-rpc-beveiliging.mdc` | migraties, services, hooks | **Geen `*_public` views** — session-RPC-model, deploy-checklist |
 | `supabase-rls-sensitive-data.mdc` | migraties, services, publiek | RLS, gevoelige kolommen, security-tests |
@@ -95,10 +96,13 @@ RLS is defense-in-depth; de app gebruikt primair session-RPC's. `npm run test:se
 
 **Performance Advisor rescan:** na `20260616005000` opnieuw scannen; nieuwe indexen staan eerst op idx_scan=0 tot er queries draaien.
 
-## Auth roadmap
+## Auth (definitief)
 
-| Fase | Status | Migraties / docs |
-|------|--------|------------------|
-| **0** Legacy cleanup | Session-RPC i.p.v. `withUserContext`; admin backup RPC; auth cleanup cron | `20260617000000` |
-| **1** Beslismoment | Custom auth default; zie criteria in doc | [`DOCUMENTATIE/AUTH_ROADMAP.md`](../DOCUMENTATIE/AUTH_ROADMAP.md) |
-| **2b** Supabase Auth pilot | `VITE_USE_SUPABASE_AUTH=true`; `users.auth_uid`; JWT edge fallback | `20260617001000`, `src/lib/supabaseAuthBridge.ts` |
+**Custom session auth blijft.** Geen Supabase Auth-migratie gepland.
+
+| Document / rule | Inhoud |
+|-----------------|--------|
+| [`custom-auth-architectuur.mdc`](rules/custom-auth-architectuur.mdc) | Always-apply rule voor agents |
+| [`DOCUMENTATIE/AUTH_ROADMAP.md`](../DOCUMENTATIE/AUTH_ROADMAP.md) | Menselijk leesbaar besluit + tabellen |
+
+Pilot `VITE_USE_SUPABASE_AUTH` — **niet in productie; niet uitbreiden.**

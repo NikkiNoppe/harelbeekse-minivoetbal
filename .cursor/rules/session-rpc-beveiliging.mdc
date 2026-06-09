@@ -8,6 +8,8 @@ alwaysApply: false
 
 **Lees vóór elke nieuwe read/write op `matches`, `teams`, `users`, `players`, scheids-data of publieke pagina's.**
 
+Architectuurbesluit (custom auth blijft, geen Supabase Auth-migratie): **`custom-auth-architectuur.mdc`**.
+
 Dit project gebruikt **custom auth**: alle REST-requests zijn `anon`. `withUserContext` + `set_config` werkt **niet** betrouwbaar over PostgREST connection pooling. Nieuwe code volgt daarom altijd het session-RPC-model.
 
 Referenties:
@@ -65,7 +67,11 @@ BEGIN
 END;
 $$;
 REVOKE ALL ON FUNCTION public.get_<resource>_for_session(...) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.get_<resource>_for_session(...) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_<resource>_for_session(...) TO anon;
+
+-- Daarna lint 0028: invoker wrapper (zie 20260615020000)
+-- SELECT private.create_public_invoker_wrapper('public.get_<resource>_for_session(...)'::regprocedure);
+-- REVOKE EXECUTE ON FUNCTION public.get_<resource>_for_session(...) FROM authenticated;
 ```
 
 Publieke anon-RPC (zonder sessie): `SET search_path TO 'public'`, alleen niet-gevoelige kolommen, expliciete `::text` casts.

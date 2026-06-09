@@ -1,0 +1,122 @@
+---
+description: Definitief auth-model — custom session tokens (geen Supabase Auth-migratie). Lees vóór login, sessies, edge-auth of auth-gerelateerde migraties.
+alwaysApply: true
+---
+
+# Custom auth — definitief architectuurbesluit
+
+**Lees deze rule vóór elke wijziging aan login, sessies, autorisatie, edge-function auth of auth-tabellen.**
+
+## Besluit (niet heropenen zonder expliciet productbesluit)
+
+Dit project gebruikt **permanent custom session auth**. **Geen migratie naar Supabase Auth** als eindmodel.
+
+| Keuze | Status |
+|-------|--------|
+| Custom `user_sessions` + `p_session_token` | **Productie — blijft** |
+| ~59 session-RPC's + `private.resolve_app_session` | **Productie — blijft** |
+| Supabase Auth JWT + `auth.uid()` RLS-first | **Niet gepland** |
+| Pilot `VITE_USE_SUPABASE_AUTH` / `supabaseAuthBridge.ts` | **Niet in productie; niet uitbreiden** |
+
+**Waarom:** recent gehard model (invoker wrappers, 44/44 security tests), strikte anon/publiek-scheiding, geen MFA/SSO-requirement. Een half Supabase Auth-bridge model veroorzaakt **dubbele auth** en dwingt later alsnog tot een volledige refactor.
+
+**Herzien alleen als** expliciet besloten: verplichte MFA, SSO, of volledige self-service user management via Supabase Dashboard → dan **één** migratieproject tot JWT+RLS klaar is (niet incrementeel bridge-model).
+
+Referentie: [`DOCUMENTATIE/AUTH_ROADMAP.md`](../../DOCUMENTATIE/AUTH_ROADMAP.md)
+
+---
+
+## Architectuur (as-is)
+
+```
+Browser (anon key)
+  └─ localStorage.auth_data { user, sessionToken, expires }
+  └─ getRpcSessionArgs() → p_session_token op elke ingelogde RPC
+  └─ getEdgeFunctionHeaders() → x-session-token op edge functions
+
+Postgres
+  └─ user_sessions (token → user_id, 24u TTL)
+  └─ private.resolve_app_session(p_session_token) → role, team_ids
+  └─ public.* session-RPC's (INVOKER wrapper → private.* DEFINER body)
+  └─ RLS via get_current_user_role() — defense-in-depth, niet primair pad
+
+Edge functions
+  └─ service_role voor DB
+  └─ x-session-token → validate_session (primair)
+```
+
+**Niet Supabase Auth:** geen `supabase.auth.getSession()` in productie-flow; geen `authenticated` role als hoofd-API-pad; geen `auth.uid()` als primaire autorisatie.
+
+---
+
+## Verplichte auth-tabellen (niet droppen)
+
+| Tabel | Rol |
+|-------|-----|
+| `user_sessions` | Sessietokens na login/logout/restore; input voor alle session-RPC's |
+| `password_reset_tokens` | Reset + welkomstmail (`send-password-reset`, `reset_password_with_token`) |
+| `auth_rate_limits` | Login- en e-mail rate limits (intern, service_role) |
+
+Cleanup: `private.cleanup_expired_auth_rows()` (pg_cron `cleanup-expired-auth-rows`, 03:00 UTC).
+
+---
+
+## Client (verplicht patroon)
+
+| Actie | Hoe |
+|-------|-----|
+| Login | `AuthProvider` → RPC `login_user` / `login_super_admin` |
+| Sessie herstellen | `restore_user_session` bij app start |
+| Logout | `logout_user` + `localStorage` wissen |
+| Ingelogde data | `getRpcSessionArgs()` op session-RPC's; `*SessionFetch.ts` |
+| Publieke data | `get_public_*` via `publicScheduleFetch.ts` — **geen token** |
+| Edge functions | `getEdgeFunctionHeaders()` — **geen** service_role in browser |
+
+**Verboden:** nieuwe `withUserContext` (deprecated in `supabaseUtils.ts`); direct `.from('matches'|'users'|'players'|'teams')` voor gevoelige reads — zie `session-rpc-beveiliging.mdc`.
+
+---
+
+## Database / migraties (verplicht patroon)
+
+| Onderdeel | Patroon |
+|-----------|---------|
+| Nieuwe ingelogde read/write | Session-RPC met `p_session_token` + `private.resolve_app_session` |
+| Client-facing DEFINER RPC | `private.create_public_invoker_wrapper` — public **INVOKER**, body in `private` (lint 0028) |
+| Publieke anon reads | Expliciete `get_public_*` RPC met kolom-allowlist |
+| Interne helpers | `private.*` — geen `GRANT EXECUTE` aan anon |
+
+Kern-RPC's (niet verwijderen): `login_user`, `login_super_admin`, `restore_user_session`, `logout_user`, `validate_session`, `private.resolve_app_session`.
+
+Na security-wijziging: `npm run update-types` + `npm run test:security` (44/44).
+
+---
+
+## Supabase Auth pilot — niet uitbreiden
+
+Bestaande code (`users.auth_uid`, `establish_app_session_from_supabase_auth`, `supabaseAuthBridge.ts`) is **experimenteel**:
+
+- **`VITE_USE_SUPABASE_AUTH` blijft `false` in productie**
+- Geen nieuwe JWT/`auth.uid()` RLS-policies toevoegen
+- Geen hybrid login-paden in nieuwe features
+- Geen documentatie die pilot als eindroute presenteert
+
+---
+
+## Checklist nieuwe feature met auth
+
+- [ ] Publiek vs ingelogd expliciet gekozen (beslisboom in `session-rpc-beveiliging.mdc`)
+- [ ] Ingelogd → session-RPC + `getRpcSessionArgs()`, geen spoofable `p_user_id`
+- [ ] Edge function → `_shared/auth.ts` + `x-session-token`
+- [ ] Geen Supabase Auth / JWT-pad toegevoegd
+- [ ] `npm run test:security` groen na deploy
+
+---
+
+## Anti-patterns (nooit introduceren)
+
+- Supabase Auth “erboven plakken” zonder volledige migratieplan
+- `user_sessions` / `password_reset_tokens` / `auth_rate_limits` droppen
+- Alle session-RPC's in één keer vervangen door direct PostgREST + RLS
+- `auth.jwt()` / `user_metadata` voor autorisatie in RLS
+- `*_public` views voor anon reads
+- Pilot-code verder uitbouwen i.p.v. session-RPC's
