@@ -94,7 +94,7 @@ export const enhancedCostSettingsService = {
         p_name: setting.name,
         p_amount: setting.amount,
         p_category: setting.category,
-      });
+      } as any);
 
       logOperation('addCostSetting - QUERY RESULT', { data, error });
       if (error) throw error;
@@ -148,7 +148,7 @@ export const enhancedCostSettingsService = {
         ...getRpcSessionArgs(),
         p_operation: 'delete',
         p_id: id,
-      });
+      } as any);
 
       if (error) throw error;
       if (!(data as { success?: boolean })?.success) {
