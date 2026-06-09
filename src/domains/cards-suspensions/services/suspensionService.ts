@@ -4,11 +4,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { suspensionRulesService } from "./suspensionRulesService";
 import { getRpcSessionArgs } from "@/lib/authSession";
-import { withUserContext } from "@/lib/supabaseUtils";
 import {
-  applicationSettingInsert,
-  applicationSettingUpdate,
-} from "@/services/applicationSettingsUtils";
+  deleteApplicationSettingForSession,
+  insertApplicationSettingForSession,
+  listApplicationSettingsForSession,
+  updateApplicationSettingForSession,
+} from "@/services/core/applicationSettingsSessionFetch";
+import { fetchAllMatchesForSession } from "@/services/core/matchesSessionFetch";
 
 const AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY = 'automatic_suspension_overrides' as const;
 
@@ -150,27 +152,10 @@ export const suspensionService = {
 
     try {
       const playerIdSet = new Set(playerIds);
-      const { data, error } = await supabase
-        .from('matches')
-        .select(`
-          match_id,
-          unique_number,
-          match_date,
-          is_submitted,
-          is_cup_match,
-          is_playoff_match,
-          home_players,
-          away_players,
-          teams_home:teams!home_team_id ( team_name ),
-          teams_away:teams!away_team_id ( team_name )
-        `)
-        .or('home_players.not.is.null,away_players.not.is.null')
-        .order('match_date', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching player card events:', error);
-        return [];
-      }
+      const allMatches = await fetchAllMatchesForSession();
+      const data = allMatches.filter(
+        (match) => match.home_players != null || match.away_players != null,
+      );
 
       const normalizeCardType = (raw: unknown): 'yellow' | 'red' | 'double_yellow' | 'none' => {
         const value = (typeof raw === 'string' ? raw : '').toLowerCase();
@@ -207,7 +192,7 @@ export const suspensionService = {
         return typeof id === 'number' ? id : Number(id) || undefined;
       };
 
-      const getCompetitionType = (match: any): PlayerCardEvent['competitionType'] => {
+      const getCompetitionType = (match: typeof allMatches[number]): PlayerCardEvent['competitionType'] => {
         if (match.is_playoff_match) return 'playoff';
         if (match.is_cup_match) return 'beker';
         return 'competitie';
@@ -216,12 +201,12 @@ export const suspensionService = {
       const events: Array<PlayerCardEvent & { playerId: number }> = [];
 
       const pushEvent = (
-        match: any,
+        match: typeof allMatches[number],
         playerId: number,
         teamName: string,
         opponent: string,
         cardType: 'yellow' | 'red',
-        cardIndex: number
+        cardIndex: number,
       ) => {
         const matchDate = match.match_date ? new Date(match.match_date).toISOString().slice(0, 10) : '';
         events.push({
@@ -233,13 +218,13 @@ export const suspensionService = {
           teamName,
           cardType,
           competitionType: getCompetitionType(match),
-          uniqueNumber: match.unique_number || undefined
+          uniqueNumber: match.unique_number || undefined,
         });
       };
 
-      for (const match of data || []) {
-        const homeTeamName = (match.teams_home as any)?.team_name || 'Onbekend';
-        const awayTeamName = (match.teams_away as any)?.team_name || 'Onbekend';
+      for (const match of data) {
+        const homeTeamName = match.home_team_name || 'Onbekend';
+        const awayTeamName = match.away_team_name || 'Onbekend';
 
         const handlePlayers = (players: any[], teamName: string, opponent: string) => {
           players.forEach((player, index) => {
@@ -262,7 +247,7 @@ export const suspensionService = {
         handlePlayers(normalizePlayers(match.away_players), awayTeamName, homeTeamName);
       }
 
-      return events;
+      return events.sort((a, b) => b.matchDate.localeCompare(a.matchDate));
     } catch (error) {
       console.error('Error in getPlayerCardEvents:', error);
       return [];
@@ -427,27 +412,18 @@ export const suspensionService = {
 
   async applySuspension(playerId: number, reason: string, matches: number, notes?: string): Promise<void> {
     try {
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .insert(applicationSettingInsert({
-            setting_category: 'manual_suspensions',
-            setting_name: playerId.toString(),
-            setting_value: {
-              reason,
-              matches,
-              start_date: new Date().toISOString(),
-              end_date: new Date(Date.now() + (matches * 7 * 24 * 60 * 60 * 1000)).toISOString(),
-              notes,
-              type: 'manual',
-            },
-          }));
+      await insertApplicationSettingForSession({
+        setting_category: 'manual_suspensions',
+        setting_name: playerId.toString(),
+        setting_value: {
+          reason,
+          matches,
+          start_date: new Date().toISOString(),
+          end_date: new Date(Date.now() + (matches * 7 * 24 * 60 * 60 * 1000)).toISOString(),
+          notes,
+          type: 'manual',
+        },
       });
-
-      if (error) {
-        console.error('Error applying suspension:', error);
-        throw error;
-      }
     } catch (error) {
       console.error('Error in applySuspension:', error);
       throw error;
@@ -456,36 +432,25 @@ export const suspensionService = {
 
   async getManualSuspensions(): Promise<ManualSuspension[]> {
     try {
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select(`
-          id,
-          setting_name,
-          setting_value
-        `)
-        .eq('setting_category', 'manual_suspensions')
-        .order('id', { ascending: false });
+      const data = await listApplicationSettingsForSession('manual_suspensions');
 
-      if (error) {
-        console.error('Error fetching manual suspensions:', error);
-        return [];
-      }
-
-      return data.map(suspension => {
-        const settingValue = suspension.setting_value as any;
-        return {
-          id: suspension.id,
-          playerId: parseInt(suspension.setting_name),
-          reason: settingValue?.reason || '',
-          matches: settingValue?.matches || 0,
-          startDate: settingValue?.start_date || '',
-          endDate: settingValue?.end_date || '',
-          notes: settingValue?.notes || '',
-          type: settingValue?.type || 'manual',
-          isActive: true,
-          createdAt: settingValue?.start_date || '',
-        };
-      });
+      return [...data]
+        .sort((a, b) => b.id - a.id)
+        .map((suspension) => {
+          const settingValue = suspension.setting_value as any;
+          return {
+            id: suspension.id,
+            playerId: parseInt(suspension.setting_name),
+            reason: settingValue?.reason || '',
+            matches: settingValue?.matches || 0,
+            startDate: settingValue?.start_date || '',
+            endDate: settingValue?.end_date || '',
+            notes: settingValue?.notes || '',
+            type: settingValue?.type || 'manual',
+            isActive: true,
+            createdAt: settingValue?.start_date || '',
+          };
+        });
     } catch (error) {
       console.error('Error in getManualSuspensions:', error);
       return [];
@@ -494,15 +459,11 @@ export const suspensionService = {
 
   async updateSuspension(suspensionId: number, updates: any): Promise<void> {
     try {
-      const { data: current, error: fetchError } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('id', suspensionId)
-        .single();
+      const rows = await listApplicationSettingsForSession('manual_suspensions');
+      const current = rows.find((row) => row.id === suspensionId);
 
-      if (fetchError) {
-        console.error('Error fetching suspension before update:', fetchError);
-        throw fetchError;
+      if (!current) {
+        throw new Error('Suspension not found');
       }
 
       if (updates.isActive === false) {
@@ -513,23 +474,14 @@ export const suspensionService = {
       const { isActive, ...settingValueUpdates } = updates;
       void isActive;
       const nextSettingValue = {
-        ...((current?.setting_value as Record<string, unknown>) || {}),
-        ...settingValueUpdates
+        ...((current.setting_value as Record<string, unknown>) || {}),
+        ...settingValueUpdates,
       };
 
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .update(applicationSettingUpdate({
-            setting_value: nextSettingValue,
-          }))
-          .eq('id', suspensionId);
+      await updateApplicationSettingForSession(suspensionId, {
+        setting_value: nextSettingValue,
+        setting_category: 'manual_suspensions',
       });
-
-      if (error) {
-        console.error('Error updating suspension:', error);
-        throw error;
-      }
     } catch (error) {
       console.error('Error in updateSuspension:', error);
       throw error;
@@ -538,17 +490,7 @@ export const suspensionService = {
 
   async deleteSuspension(suspensionId: number): Promise<void> {
     try {
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .delete()
-          .eq('id', suspensionId);
-      });
-
-      if (error) {
-        console.error('Error deleting suspension:', error);
-        throw error;
-      }
+      await deleteApplicationSettingForSession(suspensionId, 'manual_suspensions');
     } catch (error) {
       console.error('Error in deleteSuspension:', error);
       throw error;
@@ -557,18 +499,10 @@ export const suspensionService = {
 
   async getAutomaticSuspensionOverridesMap(): Promise<Map<string, AutomaticSuspensionOverrideRow>> {
     try {
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('id, setting_name, setting_value')
-        .eq('setting_category', AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY);
-
-      if (error) {
-        console.error('Error fetching automatic suspension overrides:', error);
-        return new Map();
-      }
+      const data = await listApplicationSettingsForSession(AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY);
 
       const map = new Map<string, AutomaticSuspensionOverrideRow>();
-      for (const row of data || []) {
+      for (const row of data) {
         const key = String(row.setting_name);
         const v = row.setting_value as {
           notes?: string;
@@ -605,17 +539,8 @@ export const suspensionService = {
     }
   ): Promise<void> {
     const setting_name = `${playerId}:${kind}`;
-    const { data: existing, error: fetchError } = await supabase
-      .from('application_settings')
-      .select('id')
-      .eq('setting_category', AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY)
-      .eq('setting_name', setting_name)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error('Error resolving automatic suspension override row:', fetchError);
-      throw fetchError;
-    }
+    const rows = await listApplicationSettingsForSession(AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY);
+    const existing = rows.find((row) => row.setting_name === setting_name);
 
     const setting_value = {
       notes: payload.notes.trim(),
@@ -624,30 +549,13 @@ export const suspensionService = {
     };
 
     if (existing?.id) {
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .update(applicationSettingUpdate({ setting_value }))
-          .eq('id', existing.id);
-      });
-      if (error) {
-        console.error('Error updating automatic suspension override:', error);
-        throw error;
-      }
+      await updateApplicationSettingForSession(existing.id, { setting_value });
     } else {
-      const { error } = await withUserContext(async () => {
-        return await supabase.from('application_settings').insert(
-          applicationSettingInsert({
-            setting_category: AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY,
-            setting_name,
-            setting_value,
-          }),
-        );
+      await insertApplicationSettingForSession({
+        setting_category: AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY,
+        setting_name,
+        setting_value,
       });
-      if (error) {
-        console.error('Error inserting automatic suspension override:', error);
-        throw error;
-      }
     }
   },
 
@@ -656,46 +564,37 @@ export const suspensionService = {
     kind: AutomaticSuspensionKind
   ): Promise<void> {
     const setting_name = `${playerId}:${kind}`;
-    const { error } = await withUserContext(async () => {
-      return await supabase
-        .from('application_settings')
-        .delete()
-        .eq('setting_category', AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY)
-        .eq('setting_name', setting_name);
-    });
-
-    if (error) {
-      console.error('Error deleting automatic suspension override:', error);
-      throw error;
+    const rows = await listApplicationSettingsForSession(AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY);
+    const existing = rows.find((row) => row.setting_name === setting_name);
+    if (existing?.id) {
+      await deleteApplicationSettingForSession(existing.id, AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY);
     }
   },
 
   async getUpcomingMatches(playerId: number): Promise<any[]> {
     try {
-      const { data, error } = await supabase
-        .from('matches')
-        .select(`
-          match_id,
-          match_date,
-          home_team_id,
-          away_team_id,
-          location,
-          is_cup_match,
-          teams!matches_home_team_id_fkey(team_name),
-          teams!matches_away_team_id_fkey(team_name)
-        `)
-        .or(`home_team_id.eq.${playerId},away_team_id.eq.${playerId}`)
-        .gte('match_date', new Date().toISOString())
-        .eq('is_submitted', false)
-        .order('match_date', { ascending: true })
-        .limit(10);
+      const now = new Date().toISOString();
+      const allMatches = await fetchAllMatchesForSession();
+      const data = allMatches
+        .filter(
+          (match) =>
+            (match.home_team_id === playerId || match.away_team_id === playerId) &&
+            match.match_date >= now &&
+            !match.is_submitted,
+        )
+        .sort((a, b) => a.match_date.localeCompare(b.match_date))
+        .slice(0, 10);
 
-      if (error) {
-        console.error('Error fetching upcoming matches:', error);
-        return [];
-      }
-
-      return data || [];
+      return data.map((match) => ({
+        match_id: match.match_id,
+        match_date: match.match_date,
+        home_team_id: match.home_team_id,
+        away_team_id: match.away_team_id,
+        location: match.location,
+        is_cup_match: match.is_cup_match,
+        teams: { team_name: match.home_team_name },
+        teams_away: { team_name: match.away_team_name },
+      }));
     } catch (error) {
       console.error('Error in getUpcomingMatches:', error);
       return [];
@@ -710,42 +609,11 @@ export const suspensionService = {
       // Get dynamic suspension rules
       const rules = await suspensionRulesService.getSuspensionRules();
 
-      // Fetch submitted matches to get card dates (cards only come from played matches)
-      const { data: matchesData, error: matchesError } = await supabase
-        .from('matches')
-        .select(`
-          match_id,
-          match_date,
-          home_team_id,
-          away_team_id,
-          home_players,
-          away_players,
-          teams_home:teams!home_team_id ( team_name ),
-          teams_away:teams!away_team_id ( team_name )
-        `)
-        .eq('is_submitted', true)
-        .order('match_date', { ascending: false });
-
-      if (matchesError) {
-        console.error('Error fetching matches for card dates:', matchesError);
-      }
-
-      // Fetch ALL matches (including unplayed) for "next match after card" calculation
-      const { data: allMatchesData, error: allMatchesError } = await supabase
-        .from('matches')
-        .select(`
-          match_id,
-          match_date,
-          home_team_id,
-          away_team_id,
-          teams_home:teams!home_team_id ( team_name ),
-          teams_away:teams!away_team_id ( team_name )
-        `)
-        .order('match_date', { ascending: true });
-
-      if (allMatchesError) {
-        console.error('Error fetching all matches:', allMatchesError);
-      }
+      const allMatchesFetched = await fetchAllMatchesForSession();
+      const matchesData = allMatchesFetched.filter((m) => m.is_submitted);
+      const allMatchesData = [...allMatchesFetched].sort((a, b) =>
+        a.match_date.localeCompare(b.match_date),
+      );
 
       const lastCardDateByPlayer = new Map<string, string>();
       for (const match of matchesData || []) {
@@ -826,9 +694,9 @@ export const suspensionService = {
 
         return nextMatches.map((match) => {
           const isHome = match.home_team_id === teamId;
-          const opponent = isHome 
-            ? (match.teams_away as any)?.team_name || 'Onbekend'
-            : (match.teams_home as any)?.team_name || 'Onbekend';
+          const opponent = isHome
+            ? match.away_team_name || 'Onbekend'
+            : match.home_team_name || 'Onbekend';
           
           // Use UTC date components to avoid timezone shifts
           const matchDate = new Date(match.match_date);

@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getRpcSessionArgs } from "@/lib/authSession";
 import { fetchCostsForSession } from "@/services/financial/costsSessionFetch";
+import { fetchTeamTransactionsByTeamId } from "@/services/financial/financialTransactionsFetch";
 
 export interface CostSetting {
   id: number;
@@ -63,11 +64,18 @@ export const costSettingsService = {
 
   async addCostSetting(setting: Omit<CostSetting, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
-        .from('costs')
-        .insert([setting]);
+      const { data, error } = await supabase.rpc('manage_cost_settings_for_session', {
+        ...getRpcSessionArgs(),
+        p_operation: 'insert',
+        p_name: setting.name,
+        p_amount: setting.amount,
+        p_category: setting.category,
+      });
 
       if (error) throw error;
+      if (!(data as { success?: boolean })?.success) {
+        return { success: false, message: (data as { error?: string })?.error || 'Fout bij toevoegen' };
+      }
       return { success: true, message: 'Kostentarief succesvol toegevoegd' };
     } catch (error) {
       console.error('Error adding cost setting:', error);
@@ -77,33 +85,22 @@ export const costSettingsService = {
 
   async updateCostSetting(id: number, setting: Partial<CostSetting>): Promise<{ success: boolean; message: string; updatedTransactions?: number }> {
     try {
-      const { error } = await supabase
-        .from('costs')
-        .update(setting)
-        .eq('id', id);
+      const { data, error } = await supabase.rpc('manage_cost_settings_for_session', {
+        ...getRpcSessionArgs(),
+        p_operation: 'update',
+        p_id: id,
+        p_name: setting.name ?? null,
+        p_amount: setting.amount ?? null,
+        p_category: setting.category ?? null,
+        p_cascade_amount: setting.amount !== undefined,
+      });
 
       if (error) throw error;
-
-      // Als het bedrag gewijzigd is, update ook alle bestaande team_costs records
-      let updatedTransactions = 0;
-      if (setting.amount !== undefined) {
-        const { data, error: updateError } = await supabase
-          .from('team_costs')
-          .update({ amount: setting.amount })
-          .eq('cost_setting_id', id)
-          .select('id');
-
-        if (updateError) {
-          console.error('Error updating team_costs amounts:', updateError);
-          return { 
-            success: true, 
-            message: `Tarief bijgewerkt, maar bestaande transacties konden niet worden aangepast: ${updateError.message}`,
-            updatedTransactions: 0
-          };
-        }
-        updatedTransactions = data?.length || 0;
+      if (!(data as { success?: boolean })?.success) {
+        return { success: false, message: (data as { error?: string })?.error || 'Fout bij bijwerken' };
       }
 
+      const updatedTransactions = (data as { updated_transactions?: number })?.updated_transactions ?? 0;
       const msg = updatedTransactions > 0
         ? `Kostentarief bijgewerkt en ${updatedTransactions} bestaande transacties aangepast`
         : 'Kostentarief succesvol bijgewerkt';
@@ -117,12 +114,16 @@ export const costSettingsService = {
 
   async deleteCostSetting(id: number): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
-        .from('costs')
-        .delete()
-        .eq('id', id);
+      const { data, error } = await supabase.rpc('manage_cost_settings_for_session', {
+        ...getRpcSessionArgs(),
+        p_operation: 'delete',
+        p_id: id,
+      });
 
       if (error) throw error;
+      if (!(data as { success?: boolean })?.success) {
+        return { success: false, message: (data as { error?: string })?.error || 'Fout bij verwijderen' };
+      }
       return { success: true, message: 'Kostentarief succesvol verwijderd' };
     } catch (error) {
       console.error('Error deleting cost setting:', error);
@@ -132,48 +133,34 @@ export const costSettingsService = {
 
   async getTeamTransactions(teamId: number): Promise<TeamTransaction[]> {
     try {
-      const { data, error } = await supabase
-        .from('team_costs')
-        .select(`
-          *,
-          costs(name, category, amount),
-          matches(
-            unique_number, 
-            match_date,
-            home_team_id,
-            away_team_id,
-            teams_home:teams!home_team_id(team_name),
-            teams_away:teams!away_team_id(team_name)
-          )
-        `)
-        .eq('team_id', teamId)
-        .order('transaction_date', { ascending: false });
-
-      if (error) throw error;
-      
-      return (data || []).map(transaction => ({
+      const rows = await fetchTeamTransactionsByTeamId(teamId);
+      return rows.map((transaction) => ({
         id: transaction.id,
         team_id: transaction.team_id,
-        transaction_type: transaction.costs?.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment' || 'adjustment',
-        amount: transaction.amount !== null ? transaction.amount : ((transaction.costs as any)?.amount || 0),
-        description: transaction.costs?.name || null,
-        cost_setting_id: transaction.cost_setting_id,
+        transaction_type: (transaction.transaction_type || 'adjustment') as TeamTransaction['transaction_type'],
+        amount: transaction.amount,
+        description: transaction.description ?? null,
+        cost_setting_id: transaction.cost_setting_id ?? null,
         penalty_type_id: null,
-        match_id: transaction.match_id,
+        match_id: transaction.match_id ?? null,
         transaction_date: transaction.transaction_date,
         created_at: new Date().toISOString(),
-        cost_settings: transaction.costs ? {
-          name: transaction.costs.name,
-          category: transaction.costs.category
-        } : undefined,
-        matches: transaction.matches ? {
-          unique_number: transaction.matches.unique_number,
-          match_date: transaction.matches.match_date,
-          home_team_id: transaction.matches.home_team_id,
-          away_team_id: transaction.matches.away_team_id,
-          teams_home: transaction.matches.teams_home,
-          teams_away: transaction.matches.teams_away
-        } : undefined
+        cost_settings: transaction.cost_settings
+          ? {
+              name: transaction.cost_settings.name ?? '',
+              category: transaction.cost_settings.category ?? '',
+            }
+          : undefined,
+        matches: transaction.matches
+          ? {
+              unique_number: transaction.matches.unique_number ?? '',
+              match_date: transaction.matches.match_date ?? '',
+              home_team_id: transaction.matches.home_team_id,
+              away_team_id: transaction.matches.away_team_id,
+              teams_home: transaction.matches.teams_home,
+              teams_away: transaction.matches.teams_away,
+            }
+          : undefined,
       }));
     } catch (error) {
       console.error('Error fetching team transactions:', error);
@@ -195,33 +182,35 @@ export const costSettingsService = {
         // Get or create the fixed "Storting" cost entry
         let depositCostId: number;
         
-        const { data: existingDeposit } = await supabase
-          .from('costs')
-          .select('id')
-          .eq('name', 'Storting')
-          .eq('category', 'deposit')
-          .single();
+        const depositCosts = await fetchCostsForSession('deposit');
+        const existingDeposit = depositCosts.find((c) => c.name === 'Storting');
 
         if (existingDeposit) {
           depositCostId = existingDeposit.id;
         } else {
-          // Use RPC for admin to create deposit cost
           console.log('🔵 [FINANCIAL-CRUD] Creating Storting cost entry via RPC');
-          const { data: newDeposit, error: costError } = await supabase
-            .from('costs')
-            .insert([{
-              name: 'Storting',
-              amount: 0,
-              category: 'deposit',
-            }])
-            .select('id')
-            .single();
+          const { data: createResult, error: costError } = await supabase.rpc(
+            'manage_cost_settings_for_session',
+            {
+              ...getRpcSessionArgs(),
+              p_operation: 'insert',
+              p_name: 'Storting',
+              p_amount: 0,
+              p_category: 'deposit',
+            },
+          );
 
           if (costError) {
             console.error('❌ [FINANCIAL-CRUD] Failed to create Storting cost:', costError);
             throw costError;
           }
-          depositCostId = newDeposit.id;
+          const refreshed = await fetchCostsForSession('deposit');
+          const created = refreshed.find((c) => c.name === 'Storting');
+          if (!created) {
+            throw new Error('Storting cost niet aangemaakt');
+          }
+          depositCostId = created.id;
+          void createResult;
         }
 
         // Use add_team_cost_as_admin RPC
@@ -277,20 +266,42 @@ export const costSettingsService = {
 
       // For transaction types without cost_setting_id, create new cost entry first
       console.log('🔵 [FINANCIAL-CRUD] Creating new cost entry for:', transaction.description);
-      const { data: costData, error: costError } = await supabase
-        .from('costs')
-        .insert([{
-          name: transaction.description || `Transactie ${new Date(transaction.transaction_date).toLocaleDateString('nl-NL')}`,
-          amount: transaction.amount,
-          category: transaction.transaction_type === 'penalty' ? 'penalty' : 
-                   transaction.transaction_type === 'match_cost' ? 'match_cost' : 'other',
-        }])
-        .select('id')
-        .single();
+      const category =
+        transaction.transaction_type === 'penalty'
+          ? 'penalty'
+          : transaction.transaction_type === 'match_cost'
+            ? 'match_cost'
+            : 'other';
+      const { data: createCostResult, error: costError } = await supabase.rpc(
+        'manage_cost_settings_for_session',
+        {
+          ...getRpcSessionArgs(),
+          p_operation: 'insert',
+          p_name:
+            transaction.description ||
+            `Transactie ${new Date(transaction.transaction_date).toLocaleDateString('nl-NL')}`,
+          p_amount: transaction.amount,
+          p_category: category,
+        },
+      );
 
       if (costError) {
         console.error('❌ [FINANCIAL-CRUD] Failed to create cost entry:', costError);
         throw costError;
+      }
+      if (!(createCostResult as { success?: boolean })?.success) {
+        throw new Error('Kostentarief niet aangemaakt');
+      }
+
+      const allCosts = await fetchCostsForSession(category);
+      const costData = allCosts.find(
+        (c) =>
+          c.name ===
+          (transaction.description ||
+            `Transactie ${new Date(transaction.transaction_date).toLocaleDateString('nl-NL')}`),
+      );
+      if (!costData) {
+        throw new Error('Nieuw kostentarief niet gevonden');
       }
 
       const { data, error } = await supabase.rpc('add_team_cost_for_session', {

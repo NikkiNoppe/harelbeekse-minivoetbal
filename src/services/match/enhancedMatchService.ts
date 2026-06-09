@@ -3,8 +3,9 @@ import { getRpcSessionArgs } from "@/lib/authSession";
 import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { updateMatchForm } from "@/components/pages/admin/matches/services/matchesFormService";
 import { MatchFormData } from "@/components/pages/admin/matches/types";
+import { teamService } from "@/services/core/teamService";
 import { scheduleBackgroundSideEffects } from "@/services/match/backgroundSideEffects";
-import { withUserContext } from "@/lib/supabaseUtils";
+import { fetchMatchesForSession } from "@/services/core/matchesSessionBulk";
 import { MATCH_FORM_DEFAULTS, type MatchFormSettings } from "@/hooks/useMatchFormSettings";
 
 interface MatchUpdateData {
@@ -46,18 +47,22 @@ export const enhancedMatchService = {
 
     try {
       console.log('🟢 [enhancedMatchService] Fetching match info...');
-      // Check if this might be a cup match that could use automatic advancement
-      // For cup matches, we want to use the updateMatchForm that has auto-advance logic
-      const { data: matchInfo, error: fetchError } = await supabase
-        .from('matches')
-        .select('is_cup_match, unique_number, home_team_id, away_team_id, match_date, speeldag, location, teams_home:teams!home_team_id(team_name), teams_away:teams!away_team_id(team_name)')
-        .eq('match_id', matchId)
-        .single();
-
-      if (fetchError) {
-        console.error('❌ [enhancedMatchService] Error fetching match info:', fetchError);
-        // Continue with regular update if we can't fetch match info
+      const matchRows = await fetchMatchesForSession({ match_id: matchId });
+      const matchRow = matchRows[0];
+      let matchInfo: any = null;
+      if (matchRow) {
+        const teams = await teamService.getAllTeams();
+        const teamMap = new Map(teams.map((t) => [t.team_id, t.team_name]));
+        matchInfo = {
+          ...matchRow,
+          teams_home: { team_name: matchRow.home_team_id ? teamMap.get(matchRow.home_team_id as number) : undefined },
+          teams_away: { team_name: matchRow.away_team_id ? teamMap.get(matchRow.away_team_id as number) : undefined },
+        };
       } else {
+        console.error('❌ [enhancedMatchService] Match not found via session RPC');
+      }
+
+      if (matchInfo) {
         console.log('✅ [enhancedMatchService] Match info fetched, is_cup_match:', matchInfo?.is_cup_match);
       }
 
@@ -137,13 +142,10 @@ export const enhancedMatchService = {
       // Fetch current DB state to only send fields that actually changed.
       // This prevents DB triggers (process_match_financial_costs) from
       // re-creating costs when scores/is_submitted haven't changed.
-      const { data: currentMatch, error: currentMatchError } = await supabase
-        .from('matches')
-        .select('home_score, away_score, is_submitted, is_locked, referee, referee_notes, speeldag, location, match_date, home_players, away_players')
-        .eq('match_id', matchId)
-        .single();
+      const currentRows = await fetchMatchesForSession({ match_id: matchId });
+      const currentMatch = currentRows[0] ?? null;
 
-      if (currentMatchError) {
+      if (!currentMatch) {
         console.warn('⚠️ [enhancedMatchService] Could not fetch current match state, sending full payload');
       }
 
@@ -296,14 +298,10 @@ export const enhancedMatchService = {
     }
 
     try {
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('matches')
-          .update({ 
-            is_locked: true
-          })
-          .eq('match_id', matchId)
-          .select('match_id');
+      const { data, error } = await supabase.rpc('update_match_for_session', {
+        ...getRpcSessionArgs(),
+        p_match_id: matchId,
+        p_update_data: { is_locked: true },
       });
 
       if (error) {
@@ -313,17 +311,18 @@ export const enhancedMatchService = {
         };
       }
 
-      if (!data || data.length === 0) {
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result?.success) {
         return {
           success: false,
-          message: "Geen toegang om deze wedstrijd te vergrendelen."
+          message: result?.message || "Geen toegang om deze wedstrijd te vergrendelen."
         };
       }
 
       return {
         success: true,
         message: "Wedstrijd succesvol vergrendeld",
-        data
+        data: result
       };
 
     } catch (error) {
@@ -344,14 +343,10 @@ export const enhancedMatchService = {
     }
 
     try {
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('matches')
-          .update({ 
-            is_locked: false
-          })
-          .eq('match_id', matchId)
-          .select('match_id');
+      const { data, error } = await supabase.rpc('update_match_for_session', {
+        ...getRpcSessionArgs(),
+        p_match_id: matchId,
+        p_update_data: { is_locked: false },
       });
 
       if (error) {
@@ -361,17 +356,18 @@ export const enhancedMatchService = {
         };
       }
 
-      if (!data || data.length === 0) {
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result?.success) {
         return {
           success: false,
-          message: "Geen toegang om deze wedstrijd te ontgrendelen."
+          message: result?.message || "Geen toegang om deze wedstrijd te ontgrendelen."
         };
       }
 
       return {
         success: true,
         message: "Wedstrijd succesvol ontgrendeld",
-        data
+        data: result
       };
 
     } catch (error) {
@@ -392,22 +388,22 @@ export const enhancedMatchService = {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('matches')
-        .select(`
-          *,
-          teams_home:teams!home_team_id(team_name),
-          teams_away:teams!away_team_id(team_name)
-        `)
-        .eq('match_id', matchId)
-        .single();
-
-      if (error) {
+      const matchRows = await fetchMatchesForSession({ match_id: matchId });
+      const matchRow = matchRows[0];
+      if (!matchRow) {
         return {
           success: false,
-          message: `Fout bij ophalen wedstrijd: ${error.message}`
+          message: "Wedstrijd niet gevonden"
         };
       }
+
+      const teams = await teamService.getAllTeams();
+      const teamMap = new Map(teams.map((t) => [t.team_id, t.team_name]));
+      const data = {
+        ...matchRow,
+        teams_home: { team_name: matchRow.home_team_id ? teamMap.get(matchRow.home_team_id as number) : undefined },
+        teams_away: { team_name: matchRow.away_team_id ? teamMap.get(matchRow.away_team_id as number) : undefined },
+      };
 
       return {
         success: true,

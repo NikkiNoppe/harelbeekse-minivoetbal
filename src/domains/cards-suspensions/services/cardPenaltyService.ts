@@ -3,6 +3,9 @@
 // This service handles card-related penalties (financial transactions for cards)
 
 import { supabase } from "@/integrations/supabase/client";
+import { getRpcSessionArgs } from "@/lib/authSession";
+import { fetchCostsForSession } from "@/services/financial/costsSessionFetch";
+import { fetchTeamCostsForMatch } from "@/services/financial/matchCostService";
 
 type CardType = "yellow" | "double_yellow" | "red" | "none";
 
@@ -23,14 +26,7 @@ export const cardPenaltyService = {
   }): Promise<{ success: boolean; message: string }> {
     const { matchId, matchDateISO, homeTeamId, awayTeamId, homePlayers = [], awayPlayers = [] } = params;
     try {
-      // Load penalty cost settings
-      const { data: penalties, error: penErr } = await supabase
-        .from('costs')
-        .select('id, name, amount')
-        .eq('category', 'penalty')
-
-      if (penErr) throw penErr;
-      const penaltySettings = penalties || [];
+      const penaltySettings = await fetchCostsForSession('penalty');
 
       // Helper: map card type -> cost setting
       const findCostForType = (type: CardType) => {
@@ -65,6 +61,8 @@ export const cardPenaltyService = {
       processPlayers(homeTeamId, homePlayers);
       processPlayers(awayTeamId, awayPlayers);
 
+      const matchCosts = await fetchTeamCostsForMatch(matchId);
+
       // Sync for each (team, type)
       for (const key of Object.keys(countByTeamAndType)) {
         const [teamIdStr, type] = key.split(':');
@@ -72,44 +70,44 @@ export const cardPenaltyService = {
         const desiredCount = countByTeamAndType[key];
         const costSetting = findCostForType(type as CardType);
         if (!costSetting) {
-          // Skip if we can't map this card type to a cost setting
           continue;
         }
 
-        // Fetch existing rows for this match/team/cost WITHOUT description filter
-        const { data: existingRows, error: existErr } = await supabase
-          .from('team_costs')
-          .select('id')
-          .eq('team_id', teamId)
-          .eq('match_id', matchId)
-          .eq('cost_setting_id', costSetting.id);
-
-        if (existErr) throw existErr;
-        const existingCount = (existingRows || []).length;
+        const existingRows = matchCosts.filter(
+          (row) => row.team_id === teamId && row.cost_setting_id === costSetting.id,
+        );
+        const existingCount = existingRows.length;
 
         if (existingCount < desiredCount) {
-          // Insert the difference
           const toInsert = desiredCount - existingCount;
           const transactionDate = matchDateISO ? (matchDateISO.slice(0, 10)) : new Date().toISOString().slice(0, 10);
-          const rows = Array.from({ length: toInsert }).map(() => ({
-            team_id: teamId,
-            cost_setting_id: costSetting.id,
-            amount: costSetting.amount ?? 0,
-            transaction_date: transactionDate,
-            match_id: matchId
-          }));
-          const { error: insertErr } = await supabase.from('team_costs').insert(rows);
-          if (insertErr) throw insertErr;
+          for (let i = 0; i < toInsert; i++) {
+            const { data, error: insertErr } = await supabase.rpc('add_team_cost_for_session', {
+              ...getRpcSessionArgs(),
+              p_team_id: teamId,
+              p_cost_setting_id: costSetting.id,
+              p_amount: costSetting.amount ?? 0,
+              p_transaction_date: transactionDate,
+              p_match_id: matchId,
+            });
+            if (insertErr) throw insertErr;
+            if (data && (data as { success?: boolean }).success === false) {
+              throw new Error((data as { error?: string }).error || 'Insert failed');
+            }
+          }
         } else if (existingCount > desiredCount) {
-          // Delete the surplus AUTO rows
           const toDelete = existingCount - desiredCount;
-          const idsToDelete = (existingRows || []).slice(0, toDelete).map(r => r.id);
-          if (idsToDelete.length > 0) {
-            const { error: delErr } = await supabase
-              .from('team_costs')
-              .delete()
-              .in('id', idsToDelete);
+          const idsToDelete = existingRows.slice(0, toDelete).map((r) => r.id);
+          for (const costId of idsToDelete) {
+            const { data, error: delErr } = await supabase.rpc('manage_team_cost_for_session', {
+              ...getRpcSessionArgs(),
+              p_cost_id: costId,
+              p_operation: 'delete',
+            });
             if (delErr) throw delErr;
+            if (data && (data as { success?: boolean }).success === false) {
+              throw new Error((data as { error?: string }).error || 'Delete failed');
+            }
           }
         }
       }

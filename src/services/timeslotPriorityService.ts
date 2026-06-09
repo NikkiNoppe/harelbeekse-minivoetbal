@@ -1,5 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
 import { localDateTimeToISO } from "@/lib/dateUtils";
+import { listApplicationSettingsForSession } from "@/services/core/applicationSettingsSessionFetch";
 
 export interface PrioritizedTimeslot {
   timeslot_id: number;
@@ -19,24 +19,24 @@ export interface PriorityOrderItem {
   description: string;
 }
 
+async function getSeasonMainConfig(): Promise<Record<string, unknown> | null> {
+  const rows = await listApplicationSettingsForSession('season_data');
+  const row = rows.find((r) => r.setting_name === 'main_config');
+  if (!row?.setting_value) return null;
+  return row.setting_value as Record<string, unknown>;
+}
+
 export const timeslotPriorityService = {
   /**
    * Get prioritized timeslots from season_data with priority information
    */
   async getPrioritizedTimeslots(): Promise<PrioritizedTimeslot[]> {
     try {
-      const { data } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('setting_category', 'season_data')
-        .eq('setting_name', 'main_config')
-        .single();
+      const settingValue = await getSeasonMainConfig();
+      if (!settingValue) return [];
 
-      if (!data?.setting_value) return [];
-
-      const settingValue = data.setting_value as any;
-      const venues = settingValue.venues || [];
-      const venue_timeslots = settingValue.venue_timeslots || [];
+      const venues = (settingValue.venues as any[]) || [];
+      const venue_timeslots = (settingValue.venue_timeslots as any[]) || [];
       
       // Create timeslots with venue info and sort by priority
       const timeslots = venue_timeslots
@@ -62,17 +62,10 @@ export const timeslotPriorityService = {
    */
   async getPriorityOrder(): Promise<PriorityOrderItem[]> {
     try {
-      const { data } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('setting_category', 'season_data')
-        .eq('setting_name', 'main_config')
-        .single();
+      const settingValue = await getSeasonMainConfig();
+      if (!settingValue) return [];
 
-      if (!data?.setting_value) return [];
-
-      const settingValue = data.setting_value as any;
-      return settingValue.priority_order || [];
+      return (settingValue.priority_order as PriorityOrderItem[]) || [];
     } catch (error) {
       console.error('Error fetching priority order:', error);
       return [];
@@ -150,4 +143,4 @@ export const timeslotPriorityService = {
       return [];
     }
   }
-}; 
+};

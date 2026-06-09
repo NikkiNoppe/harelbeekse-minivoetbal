@@ -9,9 +9,16 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { getEdgeFunctionHeaders } from "@/lib/authSession";
+import { getEdgeFunctionHeaders, getRpcSessionArgs } from "@/lib/authSession";
 import { bekerService } from "@/services/match/cupService";
-import { applicationSettingInsert } from "@/services/applicationSettingsUtils";
+import {
+  deleteApplicationSettingForSession,
+  insertApplicationSettingForSession,
+  listApplicationSettingsForSession,
+} from "@/services/core/applicationSettingsSessionFetch";
+import { fetchMatchForSession } from "@/services/core/matchesSessionFetch";
+import { fetchCostsForSession } from "@/services/financial/costsSessionFetch";
+import { fetchTeamCostsForMatch } from "@/services/financial/matchCostService";
 import {
   matchHasForfaitPenalty,
   matchSkipAutoMatchCosts,
@@ -104,13 +111,11 @@ const recordFailure = async (
       canRetry: true
     };
 
-    await supabase
-      .from('application_settings')
-      .insert(applicationSettingInsert({
-        setting_category: 'failed_side_effects',
-        setting_name: `${name}_${ctx.matchId}_${Date.now()}`,
-        setting_value: failureData,
-      }));
+    await insertApplicationSettingForSession({
+      setting_category: 'failed_side_effects',
+      setting_name: `${name}_${ctx.matchId}_${Date.now()}`,
+      setting_value: failureData,
+    });
 
     logSideEffect(ctx, name, 'info', 'Failure recorded for admin review');
   } catch (recordErr) {
@@ -290,15 +295,10 @@ const syncLatePenalty = async (
   matchInfo: MatchInfo,
   latePenaltyTeamIds?: number[]
 ): Promise<void> => {
-  // Find the "Boete te laat ingevuld" cost setting
-  const { data: costSetting, error: costError } = await supabase
-    .from('costs')
-    .select('id, amount')
-    .eq('name', 'Boete te laat ingevuld')
-    .eq('category', 'penalty')
-    .single();
+  const penaltySettings = await fetchCostsForSession('penalty');
+  const costSetting = penaltySettings.find((c) => c.name === 'Boete te laat ingevuld');
 
-  if (costError || !costSetting) {
+  if (!costSetting) {
     throw new Error('Cost setting "Boete te laat ingevuld" not found');
   }
 
@@ -307,32 +307,31 @@ const syncLatePenalty = async (
     ? latePenaltyTeamIds
     : [matchInfo.home_team_id, matchInfo.away_team_id].filter(Boolean) as number[];
 
-  for (const teamId of teamIds) {
-    // Check if penalty already exists for this match + team + cost setting (idempotent)
-    const { data: existing } = await supabase
-      .from('team_costs')
-      .select('id')
-      .eq('match_id', matchId)
-      .eq('team_id', teamId)
-      .eq('cost_setting_id', costSetting.id)
-      .limit(1);
+  const matchCosts = await fetchTeamCostsForMatch(matchId);
 
-    if (existing && existing.length > 0) {
+  for (const teamId of teamIds) {
+    const existing = matchCosts.some(
+      (row) => row.team_id === teamId && row.cost_setting_id === costSetting.id,
+    );
+
+    if (existing) {
       logSideEffect(ctx, 'late_penalty', 'info', `Penalty already exists for team ${teamId}, skipping`);
       continue;
     }
 
-    const { error: insertError } = await supabase
-      .from('team_costs')
-      .insert({
-        team_id: teamId,
-        cost_setting_id: costSetting.id,
-        match_id: matchId,
-        amount: costSetting.amount,
-        transaction_date: new Date().toISOString()
-      });
+    const { data: insertResult, error: insertError } = await supabase.rpc('add_team_cost_for_session', {
+      ...getRpcSessionArgs(),
+      p_team_id: teamId,
+      p_cost_setting_id: costSetting.id,
+      p_amount: costSetting.amount,
+      p_transaction_date: new Date().toISOString().slice(0, 10),
+      p_match_id: matchId,
+    });
 
     if (insertError) throw insertError;
+    if (insertResult && (insertResult as { success?: boolean }).success === false) {
+      throw new Error((insertResult as { error?: string }).error || 'Penalty insert failed');
+    }
 
     logSideEffect(ctx, 'late_penalty', 'info', `Penalty inserted for team ${teamId}`, {
       amount: costSetting.amount
@@ -355,23 +354,15 @@ const syncFormCompletionPenalties = async (
   matchInfo: MatchInfo,
   updateData: UpdateData
 ): Promise<void> => {
-  // Lookup both cost settings by name
-  const { data: costSettings, error: costError } = await supabase
-    .from('costs')
-    .select('id, name, amount')
-    .in('name', ['Wedstrijdformulier niet ingevuld', 'Wedstrijdformulier niet correct ingevuld'])
-    .eq('category', 'penalty');
-
-  if (costError || !costSettings || costSettings.length === 0) {
-    throw new Error('Could not find form completion penalty cost settings');
-  }
-
-  const notFilledCost = costSettings.find(c => c.name === 'Wedstrijdformulier niet ingevuld');
-  const incorrectCost = costSettings.find(c => c.name === 'Wedstrijdformulier niet correct ingevuld');
+  const penaltySettings = await fetchCostsForSession('penalty');
+  const notFilledCost = penaltySettings.find((c) => c.name === 'Wedstrijdformulier niet ingevuld');
+  const incorrectCost = penaltySettings.find((c) => c.name === 'Wedstrijdformulier niet correct ingevuld');
 
   if (!notFilledCost || !incorrectCost) {
     throw new Error('Missing one or both form completion penalty cost settings');
   }
+
+  const matchCosts = await fetchTeamCostsForMatch(matchId);
 
   const teamChecks: { teamId: number | undefined; players: any[] }[] = [
     { teamId: matchInfo.home_team_id, players: updateData.homePlayers || [] },
@@ -401,31 +392,28 @@ const syncFormCompletionPenalties = async (
 
     if (!penaltyCost) continue;
 
-    // Idempotent: check if penalty already exists
-    const { data: existing } = await supabase
-      .from('team_costs')
-      .select('id')
-      .eq('match_id', matchId)
-      .eq('team_id', teamId)
-      .eq('cost_setting_id', penaltyCost.id)
-      .limit(1);
+    const existing = matchCosts.some(
+      (row) => row.team_id === teamId && row.cost_setting_id === penaltyCost.id,
+    );
 
-    if (existing && existing.length > 0) {
+    if (existing) {
       logSideEffect(ctx, 'form_completion', 'info', `Penalty "${penaltyCost.name}" already exists for team ${teamId}, skipping`);
       continue;
     }
 
-    const { error: insertError } = await supabase
-      .from('team_costs')
-      .insert({
-        team_id: teamId,
-        cost_setting_id: penaltyCost.id,
-        match_id: matchId,
-        amount: penaltyCost.amount,
-        transaction_date: new Date().toISOString()
-      });
+    const { data: insertResult, error: insertError } = await supabase.rpc('add_team_cost_for_session', {
+      ...getRpcSessionArgs(),
+      p_team_id: teamId,
+      p_cost_setting_id: penaltyCost.id,
+      p_amount: penaltyCost.amount,
+      p_transaction_date: new Date().toISOString().slice(0, 10),
+      p_match_id: matchId,
+    });
 
     if (insertError) throw insertError;
+    if (insertResult && (insertResult as { success?: boolean }).success === false) {
+      throw new Error((insertResult as { error?: string }).error || 'Penalty insert failed');
+    }
 
     logSideEffect(ctx, 'form_completion', 'info', `Penalty "${penaltyCost.name}" inserted for team ${teamId}`, {
       amount: penaltyCost.amount
@@ -550,39 +538,35 @@ export const scheduleBackgroundSideEffects = (
  * Utility to check for failed side effects (for admin UI)
  */
 export const getFailedSideEffects = async (matchId?: number): Promise<any[]> => {
-  let query = supabase
-    .from('application_settings')
-    .select('*')
-    .eq('setting_category', 'failed_side_effects')
-    .order('id', { ascending: false })
-    .limit(50);
-
-  if (matchId) {
-    query = query.contains('setting_value', { matchId });
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
+  try {
+    const rows = await listApplicationSettingsForSession('failed_side_effects');
+    const filtered = matchId
+      ? rows.filter((row) => (row.setting_value as { matchId?: number })?.matchId === matchId)
+      : rows;
+    return filtered
+      .sort((a, b) => b.id - a.id)
+      .slice(0, 50);
+  } catch (error) {
     console.error('Failed to fetch failed side effects:', error);
     return [];
   }
-
-  return data || [];
 };
 
 /**
  * Utility to manually retry a failed side effect
  */
 export const retryFailedSideEffect = async (failureId: number): Promise<boolean> => {
-  const { data: failure, error } = await supabase
-    .from('application_settings')
-    .select('*')
-    .eq('id', failureId)
-    .single();
-
-  if (error || !failure) {
+  let failure;
+  try {
+    const rows = await listApplicationSettingsForSession('failed_side_effects');
+    failure = rows.find((row) => row.id === failureId);
+  } catch (error) {
     console.error('Failed to fetch failure record:', error);
+    return false;
+  }
+
+  if (!failure) {
+    console.error('Failed to fetch failure record');
     return false;
   }
 
@@ -595,12 +579,7 @@ export const retryFailedSideEffect = async (failureId: number): Promise<boolean>
     return false;
   }
 
-  // Fetch current match data
-  const { data: matchInfo } = await supabase
-    .from('matches')
-    .select('*')
-    .eq('match_id', matchId)
-    .single();
+  const matchInfo = await fetchMatchForSession(matchId);
 
   if (!matchInfo) {
     console.error('Match not found');
@@ -638,11 +617,7 @@ export const retryFailedSideEffect = async (failureId: number): Promise<boolean>
         return false;
     }
 
-    // Mark as resolved
-    await supabase
-      .from('application_settings')
-      .delete()
-      .eq('id', failureId);
+    await deleteApplicationSettingForSession(failureId, 'failed_side_effects');
 
     return true;
   } catch (err) {

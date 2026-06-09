@@ -1,8 +1,8 @@
-import { supabase } from '@/integrations/supabase/client';
 import {
-  applicationSettingInsert,
-  applicationSettingUpdate,
-} from '@/services/applicationSettingsUtils';
+  insertApplicationSettingForSession,
+  listApplicationSettingsForSession,
+  updateApplicationSettingForSession,
+} from '@/services/core/applicationSettingsSessionFetch';
 import {
   fetchPublicApplicationSettings,
   findPublicSetting,
@@ -93,32 +93,20 @@ export const seasonService = {
       // Store in localStorage for immediate persistence
       localStorage.setItem('seasonData', JSON.stringify(data));
 
-      const { data: existing, error: fetchError } = await supabase
-        .from('application_settings')
-        .select('id')
-        .eq('setting_category', 'season_data')
-        .eq('setting_name', 'main_config')
-        .maybeSingle();
-
-      if (fetchError) throw fetchError;
+      const rows = await listApplicationSettingsForSession('season_data');
+      const existing = rows.find((row) => row.setting_name === 'main_config');
 
       if (existing?.id) {
-        const { error: updateError } = await supabase
-          .from('application_settings')
-          .update(applicationSettingUpdate({
-            setting_value: data as any,
-          }))
-          .eq('id', existing.id);
-        if (updateError) throw updateError;
+        await updateApplicationSettingForSession(existing.id, {
+          setting_value: data,
+          setting_category: 'season_data',
+        });
       } else {
-        const { error: insertError } = await supabase
-          .from('application_settings')
-          .insert(applicationSettingInsert({
-            setting_category: 'season_data',
-            setting_name: 'main_config',
-            setting_value: data,
-          }));
-        if (insertError) throw insertError;
+        await insertApplicationSettingForSession({
+          setting_category: 'season_data',
+          setting_name: 'main_config',
+          setting_value: data,
+        });
       }
       console.log('✅ Season data saved to database successfully');
       return {

@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { listApplicationSettingsForSession } from "@/services/core/applicationSettingsSessionFetch";
 
 interface PlayerListLockContextType {
   isLocked: boolean;
@@ -35,20 +36,18 @@ export const PlayerListLockProvider: React.FC<{ children: React.ReactNode }> = (
       setIsLocked(data);
 
       // Also fetch the lock settings for display
-      const { data: settings, error: settingsError } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('setting_category', 'player_list_lock')
-        .eq('setting_name', 'global_lock')
-        .single();
+      try {
+        const rows = await listApplicationSettingsForSession('player_list_lock');
+        const settings = rows.find((row) => row.setting_name === 'global_lock');
 
-      if (settingsError) {
-        console.error('❌ Error fetching lock settings:', settingsError);
-      } else if (settings?.setting_value) {
-        const settingValue = settings.setting_value as { lock_from_date?: string; lock_enabled?: boolean };
-        if (settingValue.lock_enabled !== false) {
-          setLockDate(settingValue.lock_from_date ?? null);
+        if (settings?.setting_value) {
+          const settingValue = settings.setting_value as { lock_from_date?: string; lock_enabled?: boolean };
+          if (settingValue.lock_enabled !== false) {
+            setLockDate(settingValue.lock_from_date ?? null);
+          }
         }
+      } catch (settingsError) {
+        console.error('❌ Error fetching lock settings:', settingsError);
       }
     } catch (error) {
       console.error('❌ Error checking lock status:', error);

@@ -208,26 +208,14 @@ export async function getSeasonalFairness(teams: any[]): Promise<{
   fairnessMetrics: SeasonalFairnessMetrics; 
   teamFairness: TeamSeasonalFairness[] 
 }> {
-  const { supabase } = await import("@/integrations/supabase/client");
-  
-  // Get all competition matches to calculate seasonal scores
-  const { data: matches } = await supabase
-    .from('matches')
-    .select(`
-      match_id,
-      home_team_id,
-      away_team_id,
-      match_date,
-      location,
-      home_score,
-      away_score,
-      is_submitted,
-      is_cup_match,
-      is_playoff_match
-    `)
-    .eq('is_cup_match', false)
-    .eq('is_playoff_match', false)
-    .order('match_date');
+  const { fetchMatchesForSession } = await import("@/services/core/matchesSessionBulk");
+
+  const matchRows = await fetchMatchesForSession({ is_cup_match: false });
+  const matches = matchRows
+    .filter((m) => !m.is_playoff_match)
+    .sort((a, b) =>
+      String(a.match_date ?? '').localeCompare(String(b.match_date ?? '')),
+    );
 
   if (!matches || matches.length === 0) {
     // No matches yet, return baseline fairness

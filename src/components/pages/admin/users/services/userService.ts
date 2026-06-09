@@ -53,24 +53,18 @@ export const fetchTeams = async (): Promise<Team[]> => {
 };
 
 export const fetchTeamUsers = async (): Promise<TeamUser[]> => {
-  const { data, error } = await supabase
-    .from('team_users')
-    .select(`
-      user_id,
-      team_id,
-      teams!team_users_team_id_fkey(team_name)
-    `);
-  
+  const { data, error } = await supabase.rpc('manage_team_user_for_session', {
+    ...getRpcSessionArgs(),
+    p_operation: 'list',
+    p_user_id: 0,
+  });
+
   if (error) {
     console.error('Error fetching team users:', error);
     return [];
   }
-  
-  return (data || []).map(item => ({
-    user_id: item.user_id,
-    team_id: item.team_id,
-    team_name: (item.teams as any)?.team_name || 'Unknown Team'
-  }));
+
+  return ((data as TeamUser[]) || []);
 };
 
 export const saveUser = async (formData: any, editingUser: User | null): Promise<boolean> => {
@@ -92,28 +86,36 @@ export const saveUser = async (formData: any, editingUser: User | null): Promise
         if (pwdError) throw pwdError;
       }
       
-      const { error: userError } = await supabase
-        .from('users')
-        .update(updateData)
-        .eq('user_id', editingUser.id);
+      const { data: updateResult, error: userError } = await supabase.rpc(
+        'update_user_for_session',
+        {
+          ...getRpcSessionArgs(),
+          p_user_id: editingUser.id,
+          p_username: updateData.username,
+          p_email: updateData.email,
+          p_role: updateData.role,
+        },
+      );
 
       if (userError) throw userError;
+      if (!(updateResult as { success?: boolean })?.success) {
+        throw new Error('Gebruiker niet bijgewerkt');
+      }
 
-      // Update team assignment if role is player_manager
       if (formData.role === "player_manager" && formData.teamId) {
-        // Remove existing team assignment
-        await supabase
-          .from('team_users')
-          .delete()
-          .eq('user_id', editingUser.id);
-        
-        // Add new team assignment
-        await supabase
-          .from('team_users')
-          .insert({
-            user_id: editingUser.id,
-            team_id: formData.teamId
-          });
+        const { error: teamLinkError } = await supabase.rpc('manage_team_user_for_session', {
+          ...getRpcSessionArgs(),
+          p_operation: 'assign',
+          p_user_id: editingUser.id,
+          p_team_id: formData.teamId,
+        });
+        if (teamLinkError) throw teamLinkError;
+      } else if (formData.role !== "player_manager") {
+        await supabase.rpc('manage_team_user_for_session', {
+          ...getRpcSessionArgs(),
+          p_operation: 'remove',
+          p_user_id: editingUser.id,
+        });
       }
     } else {
       const { data: newUser, error: createError } = await supabase
@@ -129,12 +131,12 @@ export const saveUser = async (formData: any, editingUser: User | null): Promise
 
       // Add team assignment if role is player_manager
       if (formData.role === "player_manager" && formData.teamId && newUser) {
-        await supabase
-          .from('team_users')
-          .insert({
-            user_id: newUser.user_id,
-            team_id: formData.teamId
-          });
+        await supabase.rpc('manage_team_user_for_session', {
+          ...getRpcSessionArgs(),
+          p_operation: 'assign',
+          p_user_id: newUser.user_id,
+          p_team_id: formData.teamId,
+        });
       }
     }
     
@@ -146,17 +148,12 @@ export const saveUser = async (formData: any, editingUser: User | null): Promise
 };
 
 export const deleteUser = async (userId: number): Promise<void> => {
-  // Remove team assignment first
-  await supabase
-    .from('team_users')
-    .delete()
-    .eq('user_id', userId);
-  
-  // Delete user
-  const { error } = await supabase
-    .from('users')
-    .delete()
-    .eq('user_id', userId);
-  
+  const { data, error } = await supabase.rpc('delete_user_for_session', {
+    ...getRpcSessionArgs(),
+    p_user_id: userId,
+  });
   if (error) throw error;
+  if (!(data as { success?: boolean })?.success) {
+    throw new Error('Gebruiker niet verwijderd');
+  }
 };

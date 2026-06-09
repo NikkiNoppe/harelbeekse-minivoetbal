@@ -1,5 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
 import { costSettingsService, TeamTransaction as CostServiceTransaction } from "./costSettingsService";
+import { fetchTeamTransactionsByTeamId } from "./financialTransactionsFetch";
 
 // Keep existing interfaces for backward compatibility
 export interface TeamTransaction {
@@ -41,38 +41,26 @@ export interface FinancialSettings {
 export const financialService = {
   async getTeamTransactions(teamId: number): Promise<TeamTransaction[]> {
     try {
-      const { data, error } = await supabase
-        .from('team_costs')
-        .select(`
-          *,
-          costs(name, category, amount),
-          matches(unique_number, match_date)
-        `)
-        .eq('team_id', teamId)
-        .order('transaction_date', { ascending: false });
-
-      if (error) throw error;
+      const data = await fetchTeamTransactionsByTeamId(teamId);
       
-      return (data || []).map(transaction => ({
+      return data.map(transaction => ({
         id: transaction.id,
         team_id: transaction.team_id,
-        transaction_type: transaction.costs?.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment' || 'adjustment',
-        amount: transaction.amount !== null && transaction.amount !== undefined 
-          ? transaction.amount 
-          : ((transaction.costs as any)?.amount || 0),
-        description: transaction.costs?.name || null,
+        transaction_type: (transaction.cost_settings?.category as TeamTransaction['transaction_type']) || 'adjustment',
+        amount: transaction.amount,
+        description: transaction.cost_settings?.name || null,
         penalty_type_id: null,
-        cost_setting_id: transaction.cost_setting_id,
-        match_id: transaction.match_id,
+        cost_setting_id: transaction.cost_setting_id ?? null,
+        match_id: transaction.match_id ?? null,
         transaction_date: transaction.transaction_date,
         created_at: new Date().toISOString(),
-        cost_settings: transaction.costs ? {
-          name: transaction.costs.name,
-          category: transaction.costs.category
+        cost_settings: transaction.cost_settings ? {
+          name: transaction.cost_settings.name || '',
+          category: transaction.cost_settings.category || '',
         } : undefined,
         matches: transaction.matches ? {
-          unique_number: transaction.matches.unique_number,
-          match_date: transaction.matches.match_date
+          unique_number: transaction.matches.unique_number || '',
+          match_date: transaction.matches.match_date || '',
         } : undefined
       }));
     } catch (error) {

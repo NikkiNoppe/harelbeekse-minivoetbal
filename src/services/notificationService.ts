@@ -1,9 +1,12 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getRpcSessionArgs } from '@/lib/authSession';
 import { withUserContext } from '@/lib/supabaseUtils';
 import {
-  applicationSettingInsert,
-  applicationSettingUpdate,
-} from '@/services/applicationSettingsUtils';
+  deleteApplicationSettingForSession,
+  insertApplicationSettingForSession,
+  listApplicationSettingsForSession,
+  updateApplicationSettingForSession,
+} from '@/services/core/applicationSettingsSessionFetch';
 
 export interface NotificationData {
   id?: number;
@@ -61,16 +64,9 @@ const transformNotificationData = (data: any[]): Notification[] => {
 export const notificationService = {
   async getAllNotifications(): Promise<Notification[]> {
     try {
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .select('*')
-          .eq('setting_category', 'admin_messages')
-          .order('id', { ascending: false });
-      });
-
-      if (error) throw error;
-      return transformNotificationData(data || []);
+      const data = await listApplicationSettingsForSession('admin_messages');
+      const sorted = [...data].sort((a, b) => b.id - a.id);
+      return transformNotificationData(sorted);
     } catch (error) {
       console.error('Error loading notifications:', error);
       throw new Error('Kon berichten niet laden');
@@ -79,19 +75,11 @@ export const notificationService = {
 
   async createNotification(notificationData: Omit<NotificationData, 'id'>): Promise<void> {
     try {
-      const data = applicationSettingInsert({
+      await insertApplicationSettingForSession({
         setting_category: notificationData.setting_category,
         setting_name: `message_${Date.now()}`,
         setting_value: notificationData.setting_value,
       });
-
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .insert([data]);
-      });
-
-      if (error) throw error;
     } catch (error) {
       console.error('Error creating notification:', error);
       throw new Error('Kon bericht niet aanmaken');
@@ -101,18 +89,12 @@ export const notificationService = {
   async updateNotification(id: number, notificationData: Partial<NotificationData>): Promise<void> {
     try {
       const { setting_value } = notificationData;
-      const data = applicationSettingUpdate({
-        ...(setting_value !== undefined ? { setting_value } : {}),
-      });
+      if (setting_value === undefined) return;
 
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .update(data)
-          .eq('id', id);
+      await updateApplicationSettingForSession(id, {
+        setting_value,
+        setting_category: 'admin_messages',
       });
-
-      if (error) throw error;
     } catch (error) {
       console.error('Error updating notification:', error);
       throw new Error('Kon bericht niet bijwerken');
@@ -121,14 +103,7 @@ export const notificationService = {
 
   async deleteNotification(id: number): Promise<void> {
     try {
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .delete()
-          .eq('id', id);
-      });
-
-      if (error) throw error;
+      await deleteApplicationSettingForSession(id, 'admin_messages');
     } catch (error) {
       console.error('Error deleting notification:', error);
       throw new Error('Kon bericht niet verwijderen');
@@ -148,15 +123,18 @@ export const notificationService = {
 
   async getAllUsers(): Promise<Array<{ user_id: number; username: string; role: string }>> {
     try {
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('users')
-          .select('user_id, username, role')
-          .order('username');
-      });
+      const { data, error } = await supabase.rpc(
+        'get_all_users_for_admin',
+        getRpcSessionArgs(),
+      );
 
       if (error) throw error;
-      return data || [];
+
+      return (data || []).map((user: { user_id: number; username: string; role: string }) => ({
+        user_id: user.user_id,
+        username: user.username,
+        role: user.role,
+      }));
     } catch (error) {
       console.error('Error loading users:', error);
       return [];

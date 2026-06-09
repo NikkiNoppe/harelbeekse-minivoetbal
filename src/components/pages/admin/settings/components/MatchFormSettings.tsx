@@ -5,13 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { FileText, Info } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  applicationSettingInsert,
-  applicationSettingUpdate,
-} from "@/services/applicationSettingsUtils";
+  insertApplicationSettingForSession,
+  listApplicationSettingsForSession,
+  updateApplicationSettingForSession,
+} from "@/services/core/applicationSettingsSessionFetch";
 
 interface FormSettings {
   id: number | null;
@@ -42,14 +42,8 @@ const MatchFormSettings: React.FC = () => {
 
   const fetchSettings = async () => {
     try {
-      const { data, error } = await supabase
-        .from("application_settings")
-        .select("id, setting_value")
-        .eq("setting_category", "match_form_settings")
-        .eq("setting_name", "lock_rules")
-        .single();
-
-      if (error && error.code !== "PGRST116") throw error;
+      const rows = await listApplicationSettingsForSession("match_form_settings");
+      const data = rows.find((row) => row.setting_name === "lock_rules");
 
       if (data) {
         const val = data.setting_value as Record<string, unknown>;
@@ -61,24 +55,17 @@ const MatchFormSettings: React.FC = () => {
           late_penalty_note: (val.late_penalty_note as string) ?? DEFAULT.late_penalty_note,
         });
       } else {
-        // Create default row
-        const { data: newData, error: insertError } = await supabase
-          .from("application_settings")
-          .insert(applicationSettingInsert({
-            setting_category: "match_form_settings",
-            setting_name: "lock_rules",
-            setting_value: {
-              lock_minutes_before: 5,
-              allow_late_submission: false,
-              late_penalty_amount: 5.0,
-              late_penalty_note: DEFAULT.late_penalty_note,
-            },
-          }))
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-        setSettings({ ...DEFAULT, id: newData.id });
+        const newId = await insertApplicationSettingForSession({
+          setting_category: "match_form_settings",
+          setting_name: "lock_rules",
+          setting_value: {
+            lock_minutes_before: 5,
+            allow_late_submission: false,
+            late_penalty_amount: 5.0,
+            late_penalty_note: DEFAULT.late_penalty_note,
+          },
+        });
+        setSettings({ ...DEFAULT, id: newId });
       }
     } catch (error) {
       console.error("Error fetching match form settings:", error);
@@ -103,12 +90,10 @@ const MatchFormSettings: React.FC = () => {
         late_penalty_note: settings.late_penalty_note,
       };
 
-      const { error } = await supabase
-        .from("application_settings")
-        .update(applicationSettingUpdate({ setting_value: settingValue }))
-        .eq("id", settings.id);
-
-      if (error) throw error;
+      await updateApplicationSettingForSession(settings.id, {
+        setting_value: settingValue,
+        setting_category: "match_form_settings",
+      });
 
       // Invalidate cached settings
       queryClient.invalidateQueries({ queryKey: ["match-form-settings"] });

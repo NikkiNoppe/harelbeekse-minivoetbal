@@ -389,6 +389,74 @@ print('true' if isinstance(d,list) and len(d)>0 and d[0].get('setting_category')
     -d '{}')
   gcur_revoked=$([[ "$code" == "404" || "$code" == "401" || "$code" == "403" ]] && echo true || echo false)
   check "get_current_user_role niet uitvoerbaar door anon (HTTP $code)" "$gcur_revoked"
+
+  # 34. Tier A: manage_blog_post niet callable door anon
+  code=$(curl -s -o /tmp/mbp.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/manage_blog_post" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"p_user_id": 1, "p_operation": "list"}')
+  mbp_revoked=$([[ "$code" == "404" || "$code" == "401" || "$code" == "403" ]] && echo true || echo false)
+  check "manage_blog_post niet uitvoerbaar door anon (HTTP $code)" "$mbp_revoked"
+
+  # 35. Tier A: add_team_cost legacy niet callable door anon
+  code=$(curl -s -o /tmp/atc.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/add_team_cost" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"p_user_id": 1, "p_team_id": 1, "p_cost_setting_id": 1, "p_amount": 10}')
+  atc_revoked=$([[ "$code" == "404" || "$code" == "401" || "$code" == "403" ]] && echo true || echo false)
+  check "add_team_cost legacy niet uitvoerbaar door anon (HTTP $code)" "$atc_revoked"
+
+  # 36. Tier A: process_match_costs niet callable door anon
+  code=$(curl -s -o /tmp/pmc.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/process_match_costs" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"p_match_id": 1}')
+  pmc_revoked=$([[ "$code" == "404" || "$code" == "401" || "$code" == "403" ]] && echo true || echo false)
+  check "process_match_costs niet uitvoerbaar door anon (HTTP $code)" "$pmc_revoked"
+
+  # 37. get_team_recipients (zonder sessie) niet callable door anon
+  code=$(curl -s -o /tmp/gtr.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/get_team_recipients" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"p_team_ids": [1]}')
+  gtr_revoked=$([[ "$code" == "404" || "$code" == "401" || "$code" == "403" ]] && echo true || echo false)
+  check "get_team_recipients legacy niet uitvoerbaar door anon (HTTP $code)" "$gtr_revoked"
+
+  # 38. users tabel niet direct leesbaar voor anon (fase D)
+  code=$(curl -s -o /tmp/users_direct.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/users?select=user_id&limit=1" "${hdr[@]}")
+  users_blocked=$([[ "$code" != "200" || "$(cat /tmp/users_direct.json)" == "[]" ]] && echo true || echo false)
+  if [[ "$code" == "200" ]]; then
+    body=$(cat /tmp/users_direct.json)
+    if echo "$body" | grep -qi 'PGRST\|permission\|JWT'; then
+      users_blocked=true
+    fi
+  fi
+  check "users niet direct leesbaar voor anon (HTTP $code)" "$users_blocked"
+
+  # 39. team_users tabel niet direct leesbaar voor anon (fase D)
+  code=$(curl -s -o /tmp/tu_direct.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/team_users?select=user_id&limit=1" "${hdr[@]}")
+  tu_blocked=$([[ "$code" != "200" || "$(cat /tmp/tu_direct.json)" == "[]" ]] && echo true || echo false)
+  if [[ "$code" == "200" ]]; then
+    body=$(cat /tmp/tu_direct.json)
+    if echo "$body" | grep -qi 'PGRST\|permission\|JWT'; then
+      tu_blocked=true
+    fi
+  fi
+  check "team_users niet direct leesbaar voor anon (HTTP $code)" "$tu_blocked"
+
+  # 40. referee_matches tabel niet direct leesbaar voor anon (fase D)
+  code=$(curl -s -o /tmp/rm_direct.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/referee_matches?select=match_id&limit=1" "${hdr[@]}")
+  rm_blocked=$([[ "$code" != "200" || "$(cat /tmp/rm_direct.json)" == "[]" ]] && echo true || echo false)
+  if [[ "$code" == "200" ]]; then
+    body=$(cat /tmp/rm_direct.json)
+    if echo "$body" | grep -qi 'PGRST\|permission\|JWT'; then
+      rm_blocked=true
+    fi
+  fi
+  check "referee_matches niet direct leesbaar voor anon (HTTP $code)" "$rm_blocked"
 else
   echo "⏭️  Overgeslagen: set_config-blokkade, public RPC, admin-RPC, edge-auth (vereist migratie + deploy)"
 fi

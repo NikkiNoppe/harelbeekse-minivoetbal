@@ -3,9 +3,10 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
-  applicationSettingInsert,
-  applicationSettingUpdate,
-} from "@/services/applicationSettingsUtils";
+  insertApplicationSettingForSession,
+  listApplicationSettingsForSession,
+  updateApplicationSettingForSession,
+} from "@/services/core/applicationSettingsSessionFetch";
 import { fetchPublicApplicationSettings } from "@/services/public/publicApplicationSettingsFetch";
 
 export type RoleKey = 'public' | 'player_manager' | 'referee' | 'admin';
@@ -144,26 +145,22 @@ export const useTabVisibilitySettings = () => {
         admin: true,
       };
       
-      // Create the setting in database
-      const { data: newSetting, error: createError } = await supabase
-        .from('application_settings')
-        .insert(applicationSettingInsert({
-          setting_category: 'tab_visibility',
-          setting_name: settingName,
-          setting_value: {
-            visibility: defaultVisibility,
-            requires_login: true,
-          },
-        }))
-        .select('id, setting_name, setting_value')
-        .single();
-      
-      if (createError || !newSetting) {
+      const newId = await insertApplicationSettingForSession({
+        setting_category: 'tab_visibility',
+        setting_name: settingName,
+        setting_value: {
+          visibility: defaultVisibility,
+          requires_login: true,
+        },
+      });
+
+      const createdRows = await listApplicationSettingsForSession('tab_visibility');
+      const newSetting = createdRows.find((row) => row.id === newId);
+      if (!newSetting) {
         updatingRef.current.delete(updateKey);
-        throw new Error(`Failed to create setting: ${createError?.message || 'Unknown error'}`);
+        throw new Error('Failed to create setting');
       }
-      
-      // Map the new setting to our format
+
       const settingValue = newSetting.setting_value as any;
       originalSetting = {
         id: newSetting.id,
@@ -198,54 +195,27 @@ export const useTabVisibilitySettings = () => {
         )
       );
 
-      // Update the setting in database
-      const { error } = await supabase
-        .from('application_settings')
-        .update(applicationSettingUpdate({
-          setting_value: newSettingValue,
-        }))
-        .eq('setting_category', 'tab_visibility')
-        .eq('setting_name', settingName);
-      
-      // If we updated 'teams-admin', also create/update 'teams' for consistency
-      if (!error && settingName === 'teams-admin') {
-        // Check if 'teams' exists
-        const { data: existingTeams } = await supabase
-          .from('application_settings')
-          .select('id')
-          .eq('setting_category', 'tab_visibility')
-          .eq('setting_name', 'teams')
-          .single();
-        
-        if (!existingTeams) {
-          await supabase
-            .from('application_settings')
-            .insert(applicationSettingInsert({
-              setting_category: 'tab_visibility',
-              setting_name: 'teams',
-              setting_value: newSettingValue,
-            }));
-        } else {
-          await supabase
-            .from('application_settings')
-            .update(applicationSettingUpdate({
-              setting_value: newSettingValue,
-            }))
-            .eq('setting_category', 'tab_visibility')
-            .eq('setting_name', 'teams');
-        }
-      }
+      await updateApplicationSettingForSession(originalSetting.id, {
+        setting_value: newSettingValue,
+        setting_category: 'tab_visibility',
+      });
 
-      if (error) {
-        // Rollback on error
-        setSettings(prev =>
-          prev.map(setting =>
-            setting.setting_name === settingName
-              ? originalSetting
-              : setting
-          )
-        );
-        throw error;
+      if (settingName === 'teams-admin') {
+        const tabRows = await listApplicationSettingsForSession('tab_visibility');
+        const existingTeams = tabRows.find((row) => row.setting_name === 'teams');
+
+        if (!existingTeams) {
+          await insertApplicationSettingForSession({
+            setting_category: 'tab_visibility',
+            setting_name: 'teams',
+            setting_value: newSettingValue,
+          });
+        } else {
+          await updateApplicationSettingForSession(existingTeams.id, {
+            setting_value: newSettingValue,
+            setting_category: 'tab_visibility',
+          });
+        }
       }
 
       // Verify the update was successful by reading back from database
@@ -262,21 +232,21 @@ export const useTabVisibilitySettings = () => {
           await new Promise(resolve => setTimeout(resolve, delay));
         }
         
-        const { data: verifyData, error: verifyError } = await supabase
-          .from('application_settings')
-          .select('id, setting_name, setting_value')
-          .eq('setting_category', 'tab_visibility')
-          .eq('setting_name', settingName)
-          .single();
-
-        if (verifyError) {
+        let verifyData: { id: number; setting_name: string; setting_value: unknown } | undefined;
+        try {
+          const tabRows = await listApplicationSettingsForSession('tab_visibility');
+          verifyData = tabRows.find((row) => row.setting_name === settingName);
+          if (!verifyData) throw new Error('Setting not found');
+        } catch (verifyError) {
           console.warn(`[TabVisibilitySettings] Verification attempt ${verifyAttempts} failed for ${settingName}:`, verifyError);
           if (verifyAttempts >= maxVerifyAttempts) {
-            // Final attempt failed - keep optimistic update but log warning
             console.warn(`[TabVisibilitySettings] Could not verify update for ${settingName} after ${maxVerifyAttempts} attempts. Keeping optimistic update.`);
-            verified = true; // Exit loop but don't update state
+            verified = true;
           }
-        } else if (verifyData) {
+          continue;
+        }
+
+        if (verifyData) {
           // Update state with verified data from database
           const verifiedSettingValue = verifyData.setting_value as any;
           const verifiedVisibility: RoleVisibility = verifiedSettingValue?.visibility || DEFAULT_VISIBILITY;
@@ -363,10 +333,9 @@ export const useTabVisibilitySettings = () => {
       const currentSetting = settings.find(s => s.setting_name === settingName);
       if (!currentSetting) throw new Error('Setting not found');
 
-      const updatePayload = applicationSettingUpdate({});
-
+      let settingValue: Record<string, unknown>;
       if (typeof updates.is_visible === 'boolean') {
-        updatePayload.setting_value = {
+        settingValue = {
           visibility: {
             ...currentSetting.visibility,
             public: updates.is_visible,
@@ -374,19 +343,18 @@ export const useTabVisibilitySettings = () => {
           requires_login: currentSetting.requires_login,
         };
       } else if (typeof updates.requires_login === 'boolean') {
-        updatePayload.setting_value = {
+        settingValue = {
           visibility: currentSetting.visibility,
           requires_login: updates.requires_login,
         };
+      } else {
+        throw new Error('Geen geldige update');
       }
 
-      const { error } = await supabase
-        .from('application_settings')
-        .update(updatePayload)
-        .eq('setting_category', 'tab_visibility')
-        .eq('setting_name', settingName);
-
-      if (error) throw error;
+      await updateApplicationSettingForSession(currentSetting.id, {
+        setting_value: settingValue,
+        setting_category: 'tab_visibility',
+      });
 
       setSettings(prev =>
         prev.map(setting =>

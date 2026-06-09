@@ -33,6 +33,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TeamModal } from "@/components/modals";
 import { useToast } from "@/hooks/use-toast";
 import { teamService } from "@/services/core";
+import { fetchTeamBalanceForSession } from "@/services/core/userProfileSessionFetch";
+import { fetchTeamTransactionsByTeamId } from "@/services/financial/financialTransactionsFetch";
+import { listApplicationSettingsForSession } from "@/services/core/applicationSettingsSessionFetch";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { withUserContext } from "@/lib/supabaseUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -1029,17 +1032,9 @@ const FinancialOverviewCard: React.FC<{ teamId: number }> = memo(({ teamId }) =>
   const { data: balanceData, isLoading: balanceLoading } = useQuery({
     queryKey: ['teamBalanceProfile', teamId],
     queryFn: async () => {
-      return await withUserContext(async () => {
-        const { data, error } = await supabase.rpc('calculate_team_balance_updated', {
-          team_id_param: teamId
-        });
-        if (error) throw error;
-        return data as number;
-      }, {
-        userId: user?.id as number,
-        role: user?.role,
-        teamIds: String(teamId),
-      });
+      const balance = await fetchTeamBalanceForSession(teamId);
+      if (balance === null) throw new Error('Saldo niet beschikbaar');
+      return balance;
     },
     enabled: !!user && !!teamId,
     staleTime: 5 * 60 * 1000,
@@ -1049,51 +1044,46 @@ const FinancialOverviewCard: React.FC<{ teamId: number }> = memo(({ teamId }) =>
   const { data: breakdown, isLoading: breakdownLoading } = useQuery({
     queryKey: ['teamFinancialBreakdown', teamId],
     queryFn: async () => {
-      return await withUserContext(async () => {
-        const { data, error } = await supabase
-          .from('team_costs')
-          .select('amount, cost_setting_id, costs(name, category)')
-          .eq('team_id', teamId);
-        if (error) throw error;
-        
-        const transactions = data || [];
-        let matchCount = 0;
-        let fieldCosts = 0;
-        let adminCosts = 0;
-        let refereeCosts = 0;
-        let fines = 0;
-        let deposits = 0;
+      const rows = await fetchTeamTransactionsByTeamId(teamId);
+      const transactions = rows.map((t) => ({
+        amount: t.amount,
+        costs: {
+          name: t.cost_settings?.name,
+          category: t.cost_settings?.category,
+          amount: t.cost_settings?.amount,
+        },
+      }));
+      let matchCount = 0;
+      let fieldCosts = 0;
+      let adminCosts = 0;
+      let refereeCosts = 0;
+      let fines = 0;
+      let deposits = 0;
 
-        transactions.forEach((t: any) => {
-          const amount = Number(t.amount != null ? t.amount : ((t.costs as any)?.amount ?? 0));
-          const category = t.costs?.category || '';
-          const name = (t.costs?.name || '').toLowerCase();
+      transactions.forEach((t) => {
+        const amount = Number(t.amount != null ? t.amount : (t.costs?.amount ?? 0));
+        const category = t.costs?.category || '';
+        const name = (t.costs?.name || '').toLowerCase();
 
-          if (category === 'deposit') {
-            deposits += amount;
-          } else if (category === 'penalty') {
-            fines += Math.abs(amount);
-          } else if (category === 'match_cost') {
-            if (name.includes('veld')) {
-              fieldCosts += Math.abs(amount);
-              matchCount++;
-            } else if (name.includes('administratie')) {
-              adminCosts += Math.abs(amount);
-            } else if (name.includes('scheidsrechter')) {
-              refereeCosts += Math.abs(amount);
-            } else {
-              fieldCosts += Math.abs(amount);
-            }
+        if (category === 'deposit') {
+          deposits += amount;
+        } else if (category === 'penalty') {
+          fines += Math.abs(amount);
+        } else if (category === 'match_cost') {
+          if (name.includes('veld')) {
+            fieldCosts += Math.abs(amount);
+            matchCount++;
+          } else if (name.includes('administratie')) {
+            adminCosts += Math.abs(amount);
+          } else if (name.includes('scheidsrechter')) {
+            refereeCosts += Math.abs(amount);
+          } else {
+            fieldCosts += Math.abs(amount);
           }
-        });
-
-        // Match count = field cost entries (one per match played as home)
-        return { matchCount, fieldCosts, adminCosts, refereeCosts, fines, deposits };
-      }, {
-        userId: user?.id as number,
-        role: user?.role,
-        teamIds: String(teamId),
+        }
       });
+
+      return { matchCount, fieldCosts, adminCosts, refereeCosts, fines, deposits };
     },
     enabled: !!user && !!teamId,
     staleTime: 5 * 60 * 1000,
@@ -1166,21 +1156,8 @@ const AdminMessageCardContent: React.FC = memo(() => {
   const { data: messages, isLoading } = useQuery({
     queryKey: ['adminMessages', user?.role, user?.id],
     queryFn: async () => {
-      const result = await withUserContext(async () => {
-        const { data, error } = await supabase
-          .from('application_settings')
-          .select('setting_value')
-          .eq('setting_category', 'admin_messages')
-          .order('id', { ascending: false })
-          .limit(20);
-        if (error) return [];
-        return data || [];
-      }, {
-        userId: user?.id as number,
-        role: user?.role,
-        teamIds: user?.teamId ? String(user.teamId) : '',
-      });
-      return result;
+      const rows = await listApplicationSettingsForSession('admin_messages');
+      return rows.slice(0, 20).map((row) => ({ setting_value: row.setting_value }));
     },
     enabled: !!user,
     staleTime: 2 * 60 * 1000,

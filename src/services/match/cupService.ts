@@ -5,7 +5,13 @@ import { teamService } from "@/services/core/teamService";
 import { normalizeTeamsPreferences, scoreTeamForDetails, TeamPreferencesNormalized } from "@/services/core/teamPreferencesService";
 import { localDateTimeToISO } from "@/lib/dateUtils";
 import { normalizeVenueName } from "@/lib/utils";
-import { withUserContext } from "@/lib/supabaseUtils";
+import { getRpcSessionArgs } from "@/lib/authSession";
+import {
+  bulkDeleteCupMatches,
+  bulkDeleteMatchesByUniqueNumbers,
+  bulkInsertMatchesForSession,
+  fetchMatchesForSession,
+} from "@/services/core/matchesSessionBulk";
 import {
   invokeSyncMatchCostsForMatch,
   shouldSyncMatchCostsAfterMatchUpdate,
@@ -58,32 +64,26 @@ export const bekerService = {
   // Allow manual assignment (byes) when odd number of teams: admin can prefill next-round slots
   async assignTeamToMatch(uniqueNumber: string, asHome: boolean, teamId: number): Promise<{ success: boolean; message: string }> {
     try {
-      const { data: match, error: findError } = await supabase
-        .from('matches')
-        .select('match_id, home_team_id, away_team_id')
-        .eq('unique_number', uniqueNumber)
-        .eq('is_cup_match', true)
-        .single();
+      const rows = await fetchMatchesForSession({ unique_number: uniqueNumber, is_cup_match: true });
+      const match = rows[0];
 
-      if (findError || !match) {
+      if (!match) {
         return { success: false, message: 'Wedstrijd niet gevonden.' };
       }
 
-      const updateData: any = {};
-      if (asHome) {
-        updateData.home_team_id = teamId;
-      } else {
-        updateData.away_team_id = teamId;
-      }
+      const updateData: Record<string, unknown> = asHome
+        ? { home_team_id: teamId }
+        : { away_team_id: teamId };
 
-      const { error: updateError } = await withUserContext(async () => {
-        return await supabase
-          .from('matches')
-          .update(updateData)
-          .eq('match_id', match.match_id);
+      const { data: rpcData, error: updateError } = await supabase.rpc('update_match_for_session', {
+        ...getRpcSessionArgs(),
+        p_match_id: match.match_id as number,
+        p_update_data: updateData,
       });
 
       if (updateError) throw updateError;
+      const rpcResult = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+      if (!rpcResult?.success) throw new Error(rpcResult?.message || 'Update mislukt');
 
       return { success: true, message: 'Team succesvol toegewezen aan wedstrijd.' };
     } catch (error) {
@@ -94,34 +94,28 @@ export const bekerService = {
   // Ensure QFs are fully populated once all 1/8 fixtures have teams; remove stray pre-assigned bye teams
   async reconcileQuarterFinals(): Promise<{ success: boolean; message: string }> {
     try {
-      const { data: eight, error: e1 } = await supabase
-        .from('matches')
-        .select('home_team_id, away_team_id')
-        .eq('is_cup_match', true)
-        .like('unique_number', '1/8-%');
-      if (e1) throw e1;
+      const cupMatches = await fetchMatchesForSession({ is_cup_match: true });
+      const eight = cupMatches.filter((m) => String(m.unique_number).startsWith('1/8-'));
       const participants = new Set<number>();
       let complete = true;
-      (eight || []).forEach(m => {
+      eight.forEach(m => {
         if (m.home_team_id == null || m.away_team_id == null) complete = false;
-        if (m.home_team_id != null) participants.add(m.home_team_id);
-        if (m.away_team_id != null) participants.add(m.away_team_id);
+        if (m.home_team_id != null) participants.add(m.home_team_id as number);
+        if (m.away_team_id != null) participants.add(m.away_team_id as number);
       });
       if (!complete) return { success: true, message: 'Nog niet alle 1/8 finales gevuld' };
 
-      const { data: qfs } = await supabase
-        .from('matches')
-        .select('match_id, home_team_id, away_team_id, unique_number')
-        .eq('is_cup_match', true)
-        .like('unique_number', 'QF-%');
+      const qfs = cupMatches.filter((m) => String(m.unique_number).startsWith('QF-'));
 
-      for (const qf of (qfs || [])) {
-        const payload: any = {};
-        if (qf.home_team_id != null && !participants.has(qf.home_team_id)) payload.home_team_id = null;
-        if (qf.away_team_id != null && !participants.has(qf.away_team_id)) payload.away_team_id = null;
+      for (const qf of qfs) {
+        const payload: Record<string, unknown> = {};
+        if (qf.home_team_id != null && !participants.has(qf.home_team_id as number)) payload.home_team_id = null;
+        if (qf.away_team_id != null && !participants.has(qf.away_team_id as number)) payload.away_team_id = null;
         if (Object.keys(payload).length > 0) {
-          await withUserContext(async () => {
-            return await supabase.from('matches').update(payload).eq('match_id', qf.match_id).eq('is_cup_match', true);
+          await supabase.rpc('update_match_for_session', {
+            ...getRpcSessionArgs(),
+            p_match_id: qf.match_id as number,
+            p_update_data: payload,
           });
         }
       }
@@ -148,12 +142,9 @@ export const bekerService = {
   },
 
   async checkExistingCupTournament(): Promise<{ exists: boolean; message?: string }> {
-    const { data: existingMatches } = await supabase
-      .from('matches')
-      .select('match_id')
-      .eq('is_cup_match', true);
+    const existingMatches = await fetchMatchesForSession({ is_cup_match: true });
 
-    if (existingMatches && existingMatches.length > 0) {
+    if (existingMatches.length > 0) {
       return { exists: true, message: "Er bestaat al een bekertoernooi. Verwijder het eerst." };
     }
 
@@ -702,16 +693,9 @@ export const bekerService = {
       // Remove any existing cup matches with the same unique_numbers to avoid duplicate key errors
       const uniqueNumbers = plan.map(p => p.unique_number);
       if (uniqueNumbers.length > 0) {
-        const { error: delError } = await withUserContext(async () => {
-          return await supabase
-            .from('matches')
-            .delete()
-            .in('unique_number', uniqueNumbers)
-            .eq('is_cup_match', true);
-        });
-        if (delError) {
-          // Not fatal; continue, insert will fail if truly conflicting
-          console.warn('Warning: could not clear existing matches before import', delError);
+        const delResult = await bulkDeleteMatchesByUniqueNumbers(uniqueNumbers, true);
+        if (!delResult.success) {
+          console.warn('Warning: could not clear existing matches before import', delResult.error);
         }
       }
 
@@ -725,10 +709,8 @@ export const bekerService = {
         p.venue
       ));
 
-      const { error } = await withUserContext(async () => {
-        return await supabase.from('matches').insert(cupMatches);
-      });
-      if (error) throw error;
+      const insertResult = await bulkInsertMatchesForSession(cupMatches);
+      if (!insertResult.success) throw new Error(insertResult.error || 'Import mislukt');
       return { success: true, message: 'Beker schema geïmporteerd' };
     } catch (error) {
       console.error('Error importing cup plan:', error);
@@ -825,14 +807,8 @@ export const bekerService = {
       const final = await bekerService.createFinal(playingWeeks);
       cupMatches.push(...final);
 
-      // Insert all matches
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('matches')
-          .insert(cupMatches);
-      });
-
-      if (error) throw error;
+      const insertResult = await bulkInsertMatchesForSession(cupMatches);
+      if (!insertResult.success) throw new Error(insertResult.error || 'Insert mislukt');
 
       console.log('✅ Cup tournament created successfully with optimal timeslot distribution');
       const isFullBracket = teams.length === 16;
@@ -908,39 +884,17 @@ export const bekerService = {
   async deleteCupTournament(): Promise<{ success: boolean; message: string }> {
     try {
       console.log('🗑️ Starting cup tournament deletion process...');
-      
-      // First, get all cup match IDs
-      const { data: cupMatches, error: fetchError } = await supabase
-        .from('matches')
-        .select('match_id')
-        .eq('is_cup_match', true);
 
-      if (fetchError) {
-        console.error('Error fetching cup matches:', fetchError);
-        throw fetchError;
-      }
-
-      if (!cupMatches || cupMatches.length === 0) {
+      const cupMatches = await fetchMatchesForSession({ is_cup_match: true });
+      if (cupMatches.length === 0) {
         return { success: false, message: "Geen bekertoernooi gevonden om te verwijderen." };
       }
 
-      const cupMatchIds = cupMatches.map(match => match.match_id);
-      console.log('🎯 Found cup matches to delete:', cupMatchIds);
-
-      // Skip team_costs deletion - RLS policies prevent DELETE without WHERE clause
-      // Team costs will be handled automatically by the database trigger when needed
+      console.log('🎯 Found cup matches to delete:', cupMatches.map((m) => m.match_id));
       console.log('⚠️ Skipping team_costs deletion (RLS restriction - costs are managed by triggers)');
 
-      // Now delete the cup matches
-      const { error: matchError } = await supabase
-        .from('matches')
-        .delete()
-        .eq('is_cup_match', true);
-
-      if (matchError) {
-        console.error('Error deleting cup matches:', matchError);
-        throw matchError;
-      }
+      const delResult = await bulkDeleteCupMatches();
+      if (!delResult.success) throw new Error(delResult.error || 'Verwijderen mislukt');
 
       console.log('✅ Cup tournament deleted successfully');
       return { success: true, message: "Bekertoernooi succesvol verwijderd!" };
@@ -983,13 +937,15 @@ export const bekerService = {
 
       updateObject.updated_at = new Date().toISOString();
 
-      const { error } = await supabase
-        .from('matches')
-        .update(updateObject)
-        .eq('match_id', matchId)
-        .eq('is_cup_match', true);
+      const { data: rpcData, error } = await supabase.rpc('update_match_for_session', {
+        ...getRpcSessionArgs(),
+        p_match_id: matchId,
+        p_update_data: updateObject,
+      });
 
       if (error) throw error;
+      const rpcResult = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+      if (!rpcResult?.success) throw new Error(rpcResult?.message || 'Update mislukt');
 
       // After updating, re-evaluate winner advancement logic using persisted values
       try {
@@ -1054,52 +1010,33 @@ export const bekerService = {
   },
 
   async getCupMatchById(matchId: number): Promise<CupMatch | null> {
-    const { data, error } = await supabase
-      .from('matches')
-      .select(`
-        match_id,
-        unique_number,
-        home_team_id,
-        away_team_id,
-        home_score,
-        away_score,
-        match_date,
-        location,
-        speeldag,
-        is_submitted,
-        is_locked,
-        referee,
-        referee_notes,
-        teams_home:teams!home_team_id(team_name),
-        teams_away:teams!away_team_id(team_name)
-      `)
-      .eq('match_id', matchId)
-      .eq('is_cup_match', true)
-      .single();
-
-    if (error) {
-      console.error('Error fetching cup match:', error);
+    const rows = await fetchMatchesForSession({ match_id: matchId, is_cup_match: true });
+    const data = rows[0];
+    if (!data) {
+      console.error('Error fetching cup match: not found');
       return null;
     }
 
+    const teamMap = await teamService.getPublicTeamMap();
+
     return {
-      match_id: data.match_id,
-      unique_number: data.unique_number,
-      home_team_id: data.home_team_id,
-      away_team_id: data.away_team_id,
-      home_team_name: data.teams_home?.team_name || 'Te spelen',
-      away_team_name: data.teams_away?.team_name || 'Te spelen',
-      home_score: data.home_score,
-      away_score: data.away_score,
-      match_date: data.match_date,
-      location: data.location,
-      tournament_round: data.speeldag,
+      match_id: data.match_id as number,
+      unique_number: data.unique_number as string | undefined,
+      home_team_id: data.home_team_id as number | null,
+      away_team_id: data.away_team_id as number | null,
+      home_team_name: data.home_team_id ? teamMap.get(data.home_team_id as number) || 'Te spelen' : 'Te spelen',
+      away_team_name: data.away_team_id ? teamMap.get(data.away_team_id as number) || 'Te spelen' : 'Te spelen',
+      home_score: data.home_score as number | null,
+      away_score: data.away_score as number | null,
+      match_date: data.match_date as string,
+      location: data.location as string,
+      tournament_round: data.speeldag as string,
       tournament_position: null,
       next_match_id: null,
-      is_submitted: data.is_submitted,
-      is_locked: data.is_locked,
-      referee: data.referee,
-      referee_notes: data.referee_notes
+      is_submitted: data.is_submitted as boolean,
+      is_locked: data.is_locked as boolean,
+      referee: data.referee as string | undefined,
+      referee_notes: data.referee_notes as string | undefined
     };
   },
 
@@ -1135,14 +1072,13 @@ export const bekerService = {
       }
 
       // Find the next match
-      const { data: nextMatch, error: findError } = await supabase
-        .from('matches')
-        .select('match_id, home_team_id, away_team_id')
-        .eq('unique_number', nextMatchUniqueNumber)
-        .eq('is_cup_match', true)
-        .single();
+      const nextRows = await fetchMatchesForSession({
+        unique_number: nextMatchUniqueNumber,
+        is_cup_match: true,
+      });
+      const nextMatch = nextRows[0];
 
-      if (findError || !nextMatch) {
+      if (!nextMatch) {
         return { success: false, message: "Volgende wedstrijd niet gevonden." };
       }
 
@@ -1165,12 +1101,15 @@ export const bekerService = {
       }
 
       // Update the next match with the decided slot
-      const { error: updateError } = await supabase
-        .from('matches')
-        .update(updateData)
-        .eq('match_id', nextMatch.match_id);
+      const { data: rpcData, error: updateError } = await supabase.rpc('update_match_for_session', {
+        ...getRpcSessionArgs(),
+        p_match_id: nextMatch.match_id as number,
+        p_update_data: updateData,
+      });
 
       if (updateError) throw updateError;
+      const rpcResult = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+      if (!rpcResult?.success) throw new Error(rpcResult?.message || 'Update mislukt');
 
       console.log(`✅ Winner advanced successfully to ${nextRound}`);
       return { success: true, message: `Winnaar succesvol doorgestroomd naar ${nextRound}!` };
@@ -1235,32 +1174,29 @@ export const bekerService = {
       }
 
       // Find the next match
-      const { data: nextMatch, error: findError } = await supabase
-        .from('matches')
-        .select('match_id, home_team_id, away_team_id')
-        .eq('unique_number', nextMatchUniqueNumber)
-        .eq('is_cup_match', true)
-        .single();
+      const nextRows = await fetchMatchesForSession({
+        unique_number: nextMatchUniqueNumber,
+        is_cup_match: true,
+      });
+      const nextMatch = nextRows[0];
 
-      if (findError || !nextMatch) {
+      if (!nextMatch) {
         return { success: false, message: "Volgende wedstrijd niet gevonden." };
       }
 
       // Determine reserved slot for this upstream match (no fallback). Also remove the previous loser if present.
       const shouldBeHome = bekerService.shouldBeHomeTeam(currentMatchUniqueNumber, bekerService.extractMatchNumber(currentMatchUniqueNumber));
 
-      // Fetch current match teams to determine loser
-      const currentMatch = await supabase
-        .from('matches')
-        .select('home_team_id, away_team_id')
-        .eq('unique_number', currentMatchUniqueNumber)
-        .eq('is_cup_match', true)
-        .single();
+      const currentRows = await fetchMatchesForSession({
+        unique_number: currentMatchUniqueNumber,
+        is_cup_match: true,
+      });
+      const currentMatchData = currentRows[0];
 
       let loserTeamId: number | null = null;
-      if (!currentMatch.error && currentMatch.data) {
-        const h = currentMatch.data.home_team_id as number | null;
-        const a = currentMatch.data.away_team_id as number | null;
+      if (currentMatchData) {
+        const h = currentMatchData.home_team_id as number | null;
+        const a = currentMatchData.away_team_id as number | null;
         if (h === newWinnerTeamId) loserTeamId = a;
         else if (a === newWinnerTeamId) loserTeamId = h;
       }
@@ -1275,12 +1211,15 @@ export const bekerService = {
       }
 
       // Update the next match with the decided slot
-      const { error: updateError } = await supabase
-        .from('matches')
-        .update(updateData)
-        .eq('match_id', nextMatch.match_id);
+      const { data: rpcData, error: updateError } = await supabase.rpc('update_match_for_session', {
+        ...getRpcSessionArgs(),
+        p_match_id: nextMatch.match_id as number,
+        p_update_data: updateData,
+      });
 
       if (updateError) throw updateError;
+      const rpcResult = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+      if (!rpcResult?.success) throw new Error(rpcResult?.message || 'Update mislukt');
 
       console.log(`✅ Advancement updated successfully`);
       return { success: true, message: "Doorstroming succesvol bijgewerkt!" };
@@ -1309,21 +1248,22 @@ export const bekerService = {
       }
 
       // Check if next match already has teams assigned
-      const { data: nextMatch } = await supabase
-        .from('matches')
-        .select('home_team_id, away_team_id')
-        .eq('unique_number', nextMatchUniqueNumber)
-        .eq('is_cup_match', true)
-        .single();
+      const nextRows = await fetchMatchesForSession({
+        unique_number: nextMatchUniqueNumber,
+        is_cup_match: true,
+      });
+      const nextMatch = nextRows[0];
 
       if (nextMatch && (nextMatch.home_team_id || nextMatch.away_team_id)) {
-        // Clear the next match teams since the current match result changed
-        const { error: clearError } = await supabase
-          .from('matches')
-          .update({ home_team_id: null, away_team_id: null })
-          .eq('unique_number', nextMatchUniqueNumber);
+        const { data: rpcData, error: clearError } = await supabase.rpc('update_match_for_session', {
+          ...getRpcSessionArgs(),
+          p_match_id: nextMatch.match_id as number,
+          p_update_data: { home_team_id: null, away_team_id: null },
+        });
 
         if (clearError) throw clearError;
+        const rpcResult = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+        if (!rpcResult?.success) throw new Error(rpcResult?.message || 'Clear mislukt');
 
         console.log(`✅ Cleared next match teams due to result change`);
         return { success: true, message: "Volgende ronde teams gewist vanwege resultaatwijziging." };
@@ -1348,13 +1288,24 @@ export const bekerService = {
         return { success: false, message: "Geen volgende wedstrijd gevonden." };
       }
 
-      const { error: clearError } = await supabase
-        .from('matches')
-        .update({ home_team_id: null, away_team_id: null })
-        .eq('unique_number', nextMatchUniqueNumber)
-        .eq('is_cup_match', true);
+      const nextRows = await fetchMatchesForSession({
+        unique_number: nextMatchUniqueNumber,
+        is_cup_match: true,
+      });
+      const nextMatch = nextRows[0];
+      if (!nextMatch) {
+        return { success: false, message: "Geen volgende wedstrijd gevonden." };
+      }
+
+      const { data: rpcData, error: clearError } = await supabase.rpc('update_match_for_session', {
+        ...getRpcSessionArgs(),
+        p_match_id: nextMatch.match_id as number,
+        p_update_data: { home_team_id: null, away_team_id: null },
+      });
 
       if (clearError) throw clearError;
+      const rpcResult = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+      if (!rpcResult?.success) throw new Error(rpcResult?.message || 'Clear mislukt');
 
       console.log(`✅ Advancement cleared successfully`);
       return { success: true, message: "Doorstroming succesvol gewist!" };
@@ -1371,11 +1322,15 @@ export const bekerService = {
     try {
       let next = bekerService.getNextMatchUniqueNumber(currentMatchUniqueNumber);
       while (next) {
-        await supabase
-          .from('matches')
-          .update({ home_team_id: null, away_team_id: null })
-          .eq('unique_number', next)
-          .eq('is_cup_match', true);
+        const nextRows = await fetchMatchesForSession({ unique_number: next, is_cup_match: true });
+        const nextMatch = nextRows[0];
+        if (nextMatch) {
+          await supabase.rpc('update_match_for_session', {
+            ...getRpcSessionArgs(),
+            p_match_id: nextMatch.match_id as number,
+            p_update_data: { home_team_id: null, away_team_id: null },
+          });
+        }
         next = bekerService.getNextMatchUniqueNumber(next);
       }
     } catch (_) {
@@ -1431,13 +1386,9 @@ export const bekerService = {
    */
   async reconcileAdvancements(): Promise<{ success: boolean; advancedCount: number; message: string }> {
     try {
-      const { data: cupMatches, error } = await supabase
-        .from('matches')
-        .select('match_id, unique_number, home_team_id, away_team_id, home_score, away_score, is_submitted')
-        .eq('is_cup_match', true);
+      const cupMatches = await fetchMatchesForSession({ is_cup_match: true });
 
-      if (error) throw error;
-      if (!cupMatches || cupMatches.length === 0) {
+      if (cupMatches.length === 0) {
         return { success: true, advancedCount: 0, message: 'Geen bekerwedstrijden gevonden.' };
       }
 

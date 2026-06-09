@@ -36,6 +36,7 @@ import {
   fetchTeamCostsForMatch,
   invokeSyncMatchCostsForMatch,
   matchHasForfaitPenalty,
+  matchSkipAutoMatchCosts,
 } from "@/services/financial/matchCostService";
 
 interface WedstrijdformulierModalProps {
@@ -252,11 +253,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const refreshSkipAutoMatchCosts = useCallback(async () => {
     if (!isAdmin) return;
     try {
-      const { data, error } = await withUserContext(async () =>
-        supabase.from("matches").select("skip_auto_match_costs").eq("match_id", match.matchId).maybeSingle()
-      );
-      if (error) return;
-      setSkipAutoMatchCosts(!!data?.skip_auto_match_costs);
+      setSkipAutoMatchCosts(await matchSkipAutoMatchCosts(match.matchId));
     } catch {
       /* ignore */
     }
@@ -677,11 +674,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
       if (wasForfaitPenalty && match.isCompleted && isAdmin) {
         const stillForfait = await matchHasForfaitPenalty(match.matchId);
-        const stillSkip = (await supabase
-          .from("matches")
-          .select("skip_auto_match_costs")
-          .eq("match_id", match.matchId)
-          .maybeSingle()).data?.skip_auto_match_costs;
+        const stillSkip = await matchSkipAutoMatchCosts(match.matchId);
         if (!stillForfait && !stillSkip) {
           const syncRes = await invokeSyncMatchCostsForMatch({
             matchId: match.matchId,

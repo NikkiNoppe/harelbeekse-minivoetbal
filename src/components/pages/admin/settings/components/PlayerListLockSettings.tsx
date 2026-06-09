@@ -5,13 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Lock, Calendar } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateShort } from "@/lib/dateUtils";
 import {
-  applicationSettingInsert,
-  applicationSettingUpdate,
-} from "@/services/applicationSettingsUtils";
+  insertApplicationSettingForSession,
+  listApplicationSettingsForSession,
+  updateApplicationSettingForSession,
+} from "@/services/core/applicationSettingsSessionFetch";
 
 interface LockSettings {
   id: number;
@@ -33,16 +33,8 @@ const PlayerListLockSettings: React.FC = () => {
 
   const fetchSettings = async () => {
     try {
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('id, setting_value')
-        .eq('setting_category', 'player_list_lock')
-        .eq('setting_name', 'global_lock')
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
+      const rows = await listApplicationSettingsForSession('player_list_lock');
+      const data = rows.find((row) => row.setting_name === 'global_lock');
 
       if (data) {
         const settingValue = data.setting_value as { lock_from_date?: string | null; lock_enabled?: boolean };
@@ -62,20 +54,14 @@ const PlayerListLockSettings: React.FC = () => {
           lock_enabled: false,
         };
 
-        const { data: newData, error: insertError } = await supabase
-          .from('application_settings')
-          .insert(applicationSettingInsert({
-            setting_category: 'player_list_lock',
-            setting_name: 'global_lock',
-            setting_value: defaultSettingValue,
-          }))
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
+        const newId = await insertApplicationSettingForSession({
+          setting_category: 'player_list_lock',
+          setting_name: 'global_lock',
+          setting_value: defaultSettingValue,
+        });
 
         const mappedSettings: LockSettings = {
-          id: newData.id,
+          id: newId,
           lock_from_date: null,
           lock_enabled: false,
         };
@@ -106,12 +92,10 @@ const PlayerListLockSettings: React.FC = () => {
         lock_enabled: lockEnabled,
       };
 
-      const { error } = await supabase
-        .from('application_settings')
-        .update(applicationSettingUpdate({ setting_value: settingValue }))
-        .eq('id', settings.id);
-
-      if (error) throw error;
+      await updateApplicationSettingForSession(settings.id, {
+        setting_value: settingValue,
+        setting_category: 'player_list_lock',
+      });
 
       setSettings({
         ...settings,

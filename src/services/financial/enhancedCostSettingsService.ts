@@ -1,6 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
+import { getRpcSessionArgs } from "@/lib/authSession";
 import { fetchCostsForSession } from "@/services/financial/costsSessionFetch";
+import {
+  fetchAllTeamTransactionsOverview,
+  fetchTeamTransactionsByTeamId,
+} from "@/services/financial/financialTransactionsFetch";
 
 export interface CostSetting {
   id: number;
@@ -84,27 +88,23 @@ export const enhancedCostSettingsService = {
   async addCostSetting(setting: Omit<CostSetting, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; message: string }> {
     logOperation('addCostSetting - START', { setting });
     try {
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('costs')
-          .insert([setting])
-          .select();
+      const { data, error } = await supabase.rpc('manage_cost_settings_for_session', {
+        ...getRpcSessionArgs(),
+        p_operation: 'insert',
+        p_name: setting.name,
+        p_amount: setting.amount,
+        p_category: setting.category,
       });
 
       logOperation('addCostSetting - QUERY RESULT', { data, error });
-
-      if (error) {
-        logOperation('addCostSetting - ERROR', { error });
-        throw error;
+      if (error) throw error;
+      if (!(data as { success?: boolean })?.success) {
+        return { success: false, message: (data as { error?: string })?.error || 'Fout bij toevoegen' };
       }
-      
-      logOperation('addCostSetting - SUCCESS', { insertedData: data });
       return { success: true, message: 'Kostentarief succesvol toegevoegd' };
     } catch (error) {
       logOperation('addCostSetting - CATCH ERROR', { error });
-      const errorMessage = error instanceof Error ? error.message : 
-                          typeof error === 'string' ? error : 
-                          JSON.stringify(error);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
       return { success: false, message: `Fout bij toevoegen kostentarief: ${errorMessage}` };
     }
   },
@@ -112,92 +112,31 @@ export const enhancedCostSettingsService = {
   async updateCostSetting(id: number, setting: Partial<CostSetting>): Promise<{ success: boolean; message: string; affectedTransactions?: number }> {
     logOperation('updateCostSetting - START', { id, setting });
     try {
-      const isAmountChange = setting.amount !== undefined;
-
-      // Wrap entire mutation flow in withUserContext for RLS
-      return await withUserContext(async () => {
-        if (isAmountChange) {
-          const { data: currentSetting } = await supabase
-            .from('costs')
-            .select('amount')
-            .eq('id', id)
-            .single();
-          
-          if (currentSetting && currentSetting.amount !== setting.amount) {
-            const { count: affectedCount } = await supabase
-              .from('team_costs')
-              .select('*', { count: 'exact', head: true })
-              .eq('cost_setting_id', id);
-            
-            logOperation('updateCostSetting - AMOUNT CHANGE DETECTED', { 
-              oldAmount: currentSetting.amount, 
-              newAmount: setting.amount, 
-              affectedTransactions: affectedCount 
-            });
-          }
-        }
-
-        const updateData = { ...setting };
-
-        const { data, error } = await supabase
-          .from('costs')
-          .update(updateData)
-          .eq('id', id)
-          .select();
-
-        logOperation('updateCostSetting - QUERY RESULT', { data, error, updateData });
-
-        if (error) {
-          logOperation('updateCostSetting - ERROR', { error });
-          throw error;
-        }
-        
-        // Check if any rows were actually updated
-        if (!data || data.length === 0) {
-          logOperation('updateCostSetting - NO ROWS UPDATED (possible RLS block)');
-          return { success: false, message: 'Update mislukt: geen rijen bijgewerkt. Controleer of je als admin bent ingelogd.' };
-        }
-        
-        if (isAmountChange && setting.amount !== undefined) {
-          try {
-            const { error: updateError } = await supabase
-              .from('team_costs')
-              .update({ amount: setting.amount })
-              .eq('cost_setting_id', id);
-            
-            if (updateError) {
-              logOperation('updateCostSetting - TRANSACTION UPDATE ERROR', { updateError });
-            }
-          } catch (manualUpdateError) {
-            logOperation('updateCostSetting - MANUAL UPDATE ERROR', { manualUpdateError });
-          }
-        }
-        
-        const { count: finalAffectedCount } = await supabase
-          .from('team_costs')
-          .select('*', { count: 'exact', head: true })
-          .eq('cost_setting_id', id);
-      
-      logOperation('updateCostSetting - SUCCESS', { 
-        updatedData: data, 
-        affectedTransactions: finalAffectedCount 
+      const { data, error } = await supabase.rpc('manage_cost_settings_for_session', {
+        ...getRpcSessionArgs(),
+        p_operation: 'update',
+        p_id: id,
+        p_name: setting.name ?? null,
+        p_amount: setting.amount ?? null,
+        p_category: setting.category ?? null,
+        p_cascade_amount: setting.amount !== undefined,
       });
-      
-      const message = isAmountChange && finalAffectedCount && finalAffectedCount > 0
-        ? `Kostentarief bijgewerkt. ${finalAffectedCount} gerelateerde transactie(s) zijn automatisch aangepast.`
-        : 'Kostentarief succesvol bijgewerkt';
-      
-        return { 
-          success: true, 
-          message,
-          affectedTransactions: finalAffectedCount || 0
-        };
-      });
+
+      if (error) throw error;
+      if (!(data as { success?: boolean })?.success) {
+        return { success: false, message: (data as { error?: string })?.error || 'Fout bij bijwerken' };
+      }
+
+      const affectedTransactions = (data as { updated_transactions?: number })?.updated_transactions ?? 0;
+      const message =
+        affectedTransactions > 0
+          ? `Kostentarief bijgewerkt. ${affectedTransactions} gerelateerde transactie(s) zijn automatisch aangepast.`
+          : 'Kostentarief succesvol bijgewerkt';
+
+      return { success: true, message, affectedTransactions };
     } catch (error) {
       logOperation('updateCostSetting - CATCH ERROR', { error });
-      const errorMessage = error instanceof Error ? error.message : 
-                          typeof error === 'string' ? error : 
-                          JSON.stringify(error);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
       return { success: false, message: `Fout bij bijwerken kostentarief: ${errorMessage}` };
     }
   },
@@ -205,28 +144,20 @@ export const enhancedCostSettingsService = {
   async deleteCostSetting(id: number): Promise<{ success: boolean; message: string }> {
     logOperation('deleteCostSetting - START', { id });
     try {
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('costs')
-          .delete()
-          .eq('id', id)
-          .select();
+      const { data, error } = await supabase.rpc('manage_cost_settings_for_session', {
+        ...getRpcSessionArgs(),
+        p_operation: 'delete',
+        p_id: id,
       });
 
-      logOperation('deleteCostSetting - QUERY RESULT', { data, error });
-
-      if (error) {
-        logOperation('deleteCostSetting - ERROR', { error });
-        throw error;
+      if (error) throw error;
+      if (!(data as { success?: boolean })?.success) {
+        return { success: false, message: (data as { error?: string })?.error || 'Fout bij verwijderen' };
       }
-      
-      logOperation('deleteCostSetting - SUCCESS', { deletedData: data });
       return { success: true, message: 'Kostentarief succesvol verwijderd' };
     } catch (error) {
       logOperation('deleteCostSetting - CATCH ERROR', { error });
-      const errorMessage = error instanceof Error ? error.message : 
-                          typeof error === 'string' ? error : 
-                          JSON.stringify(error);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
       return { success: false, message: `Fout bij verwijderen kostentarief: ${errorMessage}` };
     }
   },
@@ -234,43 +165,29 @@ export const enhancedCostSettingsService = {
   async getTeamTransactions(teamId: number): Promise<TeamTransaction[]> {
     logOperation('getTeamTransactions - START', { teamId });
     try {
-      const { data, error } = await supabase
-        .from('team_costs')
-        .select(`
-          *,
-          costs(name, category, amount),
-          matches(unique_number, match_date)
-        `)
-        .eq('team_id', teamId)
-        .order('transaction_date', { ascending: false });
-
-      logOperation('getTeamTransactions - QUERY RESULT', { data, error, teamId });
-
-      if (error) {
-        logOperation('getTeamTransactions - ERROR', { error });
-        throw error;
-      }
-      
-      const mappedData = (data || []).map(transaction => ({
+      const rows = await fetchTeamTransactionsByTeamId(teamId);
+      const mappedData = rows.map((transaction) => ({
         id: transaction.id,
         team_id: transaction.team_id,
-        transaction_type: transaction.costs?.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment' || 'adjustment',
-        amount: transaction.amount !== null && transaction.amount !== undefined 
-          ? transaction.amount 
-          : ((transaction.costs as any)?.amount || 0), // Use individual amount or fallback to cost setting amount
-        description: transaction.costs?.name || null,
-        cost_setting_id: transaction.cost_setting_id,
-        match_id: transaction.match_id,
+        transaction_type: (transaction.transaction_type || 'adjustment') as TeamTransaction['transaction_type'],
+        amount: transaction.amount,
+        description: transaction.description ?? null,
+        cost_setting_id: transaction.cost_setting_id ?? null,
+        match_id: transaction.match_id ?? null,
         transaction_date: transaction.transaction_date,
         created_at: new Date().toISOString(),
-        cost_settings: transaction.costs ? {
-          name: transaction.costs.name,
-          category: transaction.costs.category
-        } : undefined,
-        matches: transaction.matches ? {
-          unique_number: transaction.matches.unique_number,
-          match_date: transaction.matches.match_date
-        } : undefined
+        cost_settings: transaction.cost_settings
+          ? {
+              name: transaction.cost_settings.name ?? '',
+              category: transaction.cost_settings.category ?? '',
+            }
+          : undefined,
+        matches: transaction.matches
+          ? {
+              unique_number: transaction.matches.unique_number ?? '',
+              match_date: transaction.matches.match_date ?? '',
+            }
+          : undefined,
       }));
 
       logOperation('getTeamTransactions - SUCCESS', { count: mappedData.length, teamId });
@@ -284,70 +201,59 @@ export const enhancedCostSettingsService = {
   async addTransaction(transaction: Omit<TeamTransaction, 'id' | 'created_at'>): Promise<{ success: boolean; message: string }> {
     logOperation('addTransaction - START', { transaction });
     try {
-      const { data, error } = await supabase
-        .from('team_costs')
-        .insert([transaction])
-        .select();
-
-      logOperation('addTransaction - QUERY RESULT', { data, error });
-
-      if (error) {
-        logOperation('addTransaction - ERROR', { error });
-        throw error;
+      if (!transaction.cost_setting_id) {
+        return { success: false, message: 'cost_setting_id is verplicht' };
       }
-      
-      logOperation('addTransaction - SUCCESS', { insertedData: data });
+
+      const { data, error } = await supabase.rpc('add_team_cost_for_session', {
+        ...getRpcSessionArgs(),
+        p_team_id: transaction.team_id,
+        p_cost_setting_id: transaction.cost_setting_id,
+        p_amount: transaction.amount,
+        p_transaction_date: transaction.transaction_date,
+        p_match_id: transaction.match_id ?? null,
+      });
+
+      if (error) throw error;
+      if ((data as { success?: boolean })?.success === false) {
+        return { success: false, message: (data as { error?: string })?.error || 'Fout bij toevoegen' };
+      }
       return { success: true, message: 'Transactie succesvol toegevoegd' };
     } catch (error) {
       logOperation('addTransaction - CATCH ERROR', { error });
-      const errorMessage = error instanceof Error ? error.message : 
-                          typeof error === 'string' ? error : 
-                          JSON.stringify(error);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
       return { success: false, message: `Fout bij toevoegen transactie: ${errorMessage}` };
     }
   },
 
-  // Get affected transactions for a specific cost setting
   async getAffectedTransactions(costSettingId: number): Promise<TeamTransaction[]> {
     logOperation('getAffectedTransactions - START', { costSettingId });
     try {
-      const { data, error } = await supabase
-        .from('team_costs')
-        .select(`
-          *,
-          costs(name, category, amount),
-          matches(unique_number, match_date)
-        `)
-        .eq('cost_setting_id', costSettingId)
-        .order('transaction_date', { ascending: false });
-
-      logOperation('getAffectedTransactions - QUERY RESULT', { data, error, costSettingId });
-
-      if (error) {
-        logOperation('getAffectedTransactions - ERROR', { error });
-        throw error;
-      }
-      
-      const mappedData = (data || []).map(transaction => ({
+      const rows = (await fetchAllTeamTransactionsOverview()).filter(
+        (t) => t.cost_setting_id === costSettingId,
+      );
+      const mappedData = rows.map((transaction) => ({
         id: transaction.id,
         team_id: transaction.team_id,
-        transaction_type: transaction.costs?.category as 'deposit' | 'penalty' | 'match_cost' | 'adjustment' || 'adjustment',
-        amount: transaction.amount !== null && transaction.amount !== undefined 
-          ? transaction.amount 
-          : ((transaction.costs as any)?.amount || 0),
-        description: transaction.costs?.name || null,
-        cost_setting_id: transaction.cost_setting_id,
-        match_id: transaction.match_id,
+        transaction_type: (transaction.transaction_type || 'adjustment') as TeamTransaction['transaction_type'],
+        amount: transaction.amount,
+        description: transaction.description ?? null,
+        cost_setting_id: transaction.cost_setting_id ?? null,
+        match_id: transaction.match_id ?? null,
         transaction_date: transaction.transaction_date,
         created_at: new Date().toISOString(),
-        cost_settings: transaction.costs ? {
-          name: transaction.costs.name,
-          category: transaction.costs.category
-        } : undefined,
-        matches: transaction.matches ? {
-          unique_number: transaction.matches.unique_number,
-          match_date: transaction.matches.match_date
-        } : undefined
+        cost_settings: transaction.cost_settings
+          ? {
+              name: transaction.cost_settings.name ?? '',
+              category: transaction.cost_settings.category ?? '',
+            }
+          : undefined,
+        matches: transaction.matches
+          ? {
+              unique_number: transaction.matches.unique_number ?? '',
+              match_date: transaction.matches.match_date ?? '',
+            }
+          : undefined,
       }));
 
       logOperation('getAffectedTransactions - SUCCESS', { count: mappedData.length, costSettingId });

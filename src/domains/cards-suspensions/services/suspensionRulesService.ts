@@ -1,8 +1,10 @@
 // Cards & Suspensions Domain - Suspension Rules Service
 // Moved from src/services/suspensionRulesService.ts
 
-import { supabase } from "@/integrations/supabase/client";
-import { applicationSettingUpdate } from "@/services/applicationSettingsUtils";
+import {
+  listApplicationSettingsForSession,
+  updateApplicationSettingForSession,
+} from "@/services/core/applicationSettingsSessionFetch";
 
 export interface YellowCardRule {
   card_count: number;
@@ -68,19 +70,15 @@ class SuspensionRulesService {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('setting_category', 'suspension_rules')
-        .eq('setting_name', 'default_rules')
-        .single();
+      const rows = await listApplicationSettingsForSession('suspension_rules');
+      const row = rows.find((r) => r.setting_name === 'default_rules');
 
-      if (error || !data) {
-        console.warn('Failed to fetch suspension rules, using defaults:', error);
+      if (!row?.setting_value) {
+        console.warn('Failed to fetch suspension rules, using defaults');
         return DEFAULT_SUSPENSION_RULES;
       }
 
-      const rules = data.setting_value as unknown as SuspensionRules;
+      const rules = row.setting_value as unknown as SuspensionRules;
       
       this.cachedRules = {
         yellow_card_rules: normalizeYellowCardRules(rules.yellow_card_rules || DEFAULT_SUSPENSION_RULES.yellow_card_rules),
@@ -100,16 +98,18 @@ class SuspensionRulesService {
 
   async updateSuspensionRules(rules: SuspensionRules): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('application_settings')
-        .update(applicationSettingUpdate({ setting_value: rules as any }))
-        .eq('setting_category', 'suspension_rules')
-        .eq('setting_name', 'default_rules');
+      const rows = await listApplicationSettingsForSession('suspension_rules');
+      const existing = rows.find((r) => r.setting_name === 'default_rules');
 
-      if (error) {
-        console.error('Failed to update suspension rules:', error);
+      if (!existing?.id) {
+        console.error('Failed to update suspension rules: row not found');
         return false;
       }
+
+      await updateApplicationSettingForSession(existing.id, {
+        setting_value: rules,
+        setting_category: 'suspension_rules',
+      });
 
       this.cachedRules = null;
       this.cacheTimestamp = 0;

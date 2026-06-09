@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
+import { fetchUserProfileForSession } from "@/services/core/userProfileSessionFetch";
 import { getSessionToken } from "@/lib/authSession";
 
 export interface UserProfileData {
@@ -45,49 +44,27 @@ export const useUserProfile = () => {
       }
 
       try {
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('user_id, username, email, role')
-          .eq('user_id', authUser.id)
-          .single();
-
-        let userInfo = {
-          user_id: authUser.id,
-          username: authUser.username || authUser.email || 'Onbekende gebruiker',
-          email: authUser.email || '',
-          role: authUser.role || '',
-        };
-
-        if (!userError && userData) {
-          userInfo = {
-            user_id: userData.user_id,
-            username: userData.username || authUser.username || 'Onbekende gebruiker',
-            email: userData.email || authUser.email || '',
-            role: userData.role || authUser.role || '',
-          };
-        } else if (userError) {
-          console.warn('Could not fetch user from database, using auth data:', userError);
+        const profile = await fetchUserProfileForSession();
+        if (!profile) {
+          throw new Error('Geen profiel voor sessie');
         }
 
-        const effectiveTeamId = authUser.teamId ?? undefined;
-        const sessionTeams = await fetchTeamsForSession(effectiveTeamId);
-
-        const teams = sessionTeams.map((t) => ({
-          team_id: t.team_id,
-          team_name: t.team_name,
-          club_colors: t.club_colors,
-          contact_person: t.contact_person,
-          contact_email: t.contact_email,
-          contact_phone: t.contact_phone,
-        }));
-
         return {
-          user: userInfo,
-          teams,
-          teamUsers: teams.map((t) => ({
+          user: {
+            user_id: profile.user_id,
+            username: profile.username || authUser.username || 'Onbekende gebruiker',
+            email: profile.email || authUser.email || '',
+            role: profile.role || authUser.role || '',
+          },
+          teams: profile.teams.map((t) => ({
             team_id: t.team_id,
             team_name: t.team_name,
+            club_colors: t.club_colors,
+            contact_person: t.contact_person,
+            contact_email: t.contact_email,
+            contact_phone: t.contact_phone,
           })),
+          teamUsers: profile.team_users,
         };
       } catch (error) {
         console.error('Error fetching user profile, using auth data as fallback:', error);

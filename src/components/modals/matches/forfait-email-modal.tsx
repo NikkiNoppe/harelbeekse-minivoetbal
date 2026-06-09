@@ -8,6 +8,7 @@ import { AlertTriangle, Loader2, ChevronDown, Copy, MessageCircle } from "lucide
 import { supabase } from "@/integrations/supabase/client";
 import { withUserContext } from "@/lib/supabaseUtils";
 import { getEdgeFunctionHeaders } from "@/lib/authSession";
+import { fetchTeamRecipientsForSession } from "@/services/core/userProfileSessionFetch";
 import { useToast } from "@/hooks/use-toast";
 
 const DEFAULT_RECIPIENTS = [
@@ -89,10 +90,7 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
       const seen = new Set<string>();
       try {
         if (teamIds.length > 0) {
-          const { data, error } = await withUserContext(async () =>
-            await (supabase as any).rpc("get_team_recipients", { p_team_ids: teamIds })
-          );
-          if (error) throw error;
+          const data = await fetchTeamRecipientsForSession(teamIds);
 
           for (const row of (data ?? []) as Array<{
             team_id: number;

@@ -99,23 +99,26 @@ const RefereeNotesCard: React.FC = () => {
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ["adminRefereeNotes"],
     queryFn: async () => {
-      const result = await withUserContext(
-        async () => {
-          const { data, error } = await supabase
-            .from("matches")
-            .select(
-              `match_id, match_date, referee_notes, referee, speeldag,
-               home_team:teams!matches_home_team_id_fkey(team_name),
-               away_team:teams!matches_away_team_id_fkey(team_name)`
+      const { fetchAllMatchesForSession } = await import("@/services/core/matchesSessionFetch");
+      const allMatches = await fetchAllMatchesForSession();
+      const result = (allMatches || [])
+            .filter(
+              (m) =>
+                m.is_submitted &&
+                m.referee_notes &&
+                String(m.referee_notes).trim() !== "",
             )
-            .eq("is_submitted", true)
-            .not("referee_notes", "is", null)
-            .neq("referee_notes", "")
-            .order("match_date", { ascending: false });
-
-          if (error) throw error;
-          // Filter out legacy penalty notes and clean remaining notes
-          return (data || [])
+            .sort((a, b) => b.match_date.localeCompare(a.match_date))
+            .map((m) => ({
+              match_id: m.match_id,
+              match_date: m.match_date,
+              referee_notes: m.referee_notes,
+              referee: m.referee,
+              speeldag: m.speeldag,
+              home_team: { team_name: m.home_team_name },
+              away_team: { team_name: m.away_team_name },
+            }));
+      return result
             .map((m: any) => {
               // Remove "⚠️ BOETE: ..." lines from referee_notes
               const cleanedNotes = (m.referee_notes || "")
@@ -134,13 +137,6 @@ const RefereeNotesCard: React.FC = () => {
               };
             })
             .filter((n: RefereeNote) => n.referee_notes.length > 0) as RefereeNote[];
-        },
-        {
-          userId: authUser?.id,
-          role: authUser?.role,
-        }
-      );
-      return result;
     },
     enabled: !!authUser?.id && authUser?.role === "admin",
     staleTime: 5 * 60 * 1000,

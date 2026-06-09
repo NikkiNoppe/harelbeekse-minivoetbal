@@ -1,6 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
-import { fetchMonthlyPollsForSession } from "@/services/scheidsrechter/scheidsSessionFetch";
+import { getRpcSessionArgs } from "@/lib/authSession";
+import {
+  fetchMonthlyPollsForSession,
+  fetchScheidsScheduleForMonth,
+} from "@/services/scheidsrechter/scheidsSessionFetch";
+import {
+  addPollMatchDateForSession,
+  createPollForSession,
+  deletePollForSession,
+  removePollMatchDateForSession,
+  updatePollForSession,
+} from "@/services/scheidsrechter/pollSessionManage";
 import type { 
   MonthlyPoll, 
   CreatePollInput, 
@@ -24,54 +34,21 @@ export const pollService = {
         return { success: false, error: 'Niet ingelogd' };
       }
 
-      return await withUserContext(async () => {
-        // Check of poll voor deze maand al bestaat
-        const { data: existing } = await supabase
-          .from('monthly_polls' as any)
-          .select('id')
-          .eq('poll_month', input.poll_month)
-          .single();
+      const existingPolls = await fetchMonthlyPollsForSession();
+      if ((existingPolls as MonthlyPoll[]).some((p) => p.poll_month === input.poll_month)) {
+        return { success: false, error: `Poll voor ${input.poll_month} bestaat al` };
+      }
 
-        if (existing) {
-          return { success: false, error: `Poll voor ${input.poll_month} bestaat al` };
-        }
+      const created = await createPollForSession(input, userId);
+      if (!created.success || !created.pollId) {
+        return { success: false, error: created.error || 'Kon poll niet aanmaken' };
+      }
 
-        // Maak de poll aan
-        const { data: poll, error: pollError } = await supabase
-          .from('monthly_polls' as any)
-          .insert({
-            poll_month: input.poll_month,
-            deadline: input.deadline || null,
-            status: 'draft' as PollStatus,
-            created_by: userId,
-            notes: input.notes || null
-          })
-          .select()
-          .single();
+      const poll = (await fetchMonthlyPollsForSession()).find(
+        (p) => (p as MonthlyPoll).id === created.pollId,
+      ) as MonthlyPoll | undefined;
 
-        if (pollError) {
-          console.error('Error creating poll:', pollError);
-          return { success: false, error: 'Kon poll niet aanmaken' };
-        }
-
-        // Voeg match dates toe als die zijn meegegeven
-        if (input.match_dates && input.match_dates.length > 0 && poll) {
-          const pollData = poll as any;
-          const matchDatesWithPollId = input.match_dates.map(md => ({
-            poll_id: pollData.id,
-            match_date: md.match_date,
-            location: md.location || null,
-            time_slot: md.time_slot || null,
-            match_count: md.match_count || 2
-          }));
-
-          await supabase
-            .from('poll_match_dates' as any)
-            .insert(matchDatesWithPollId);
-        }
-
-        return { success: true, poll: poll as unknown as MonthlyPoll };
-      });
+      return { success: true, poll };
     } catch (error) {
       console.error('Error in createPoll:', error);
       return { success: false, error: 'Onverwachte fout bij aanmaken poll' };
@@ -83,16 +60,11 @@ export const pollService = {
    */
   async getActivePoll(): Promise<MonthlyPoll | null> {
     try {
-      const { data, error } = await supabase
-        .from('monthly_polls' as any)
-        .select('*')
-        .eq('status', 'open')
-        .order('poll_month', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error || !data) return null;
-      return data as unknown as MonthlyPoll;
+      const polls = (await fetchMonthlyPollsForSession()) as MonthlyPoll[];
+      const openPolls = polls
+        .filter((p) => p.status === 'open')
+        .sort((a, b) => b.poll_month.localeCompare(a.poll_month));
+      return openPolls[0] ?? null;
     } catch (error) {
       console.error('Error fetching active poll:', error);
       return null;
@@ -147,18 +119,7 @@ export const pollService = {
    */
   async updatePollStatus(pollId: number, status: PollStatus): Promise<boolean> {
     try {
-      return await withUserContext(async () => {
-        const { error } = await supabase
-          .from('monthly_polls' as any)
-          .update({ status })
-          .eq('id', pollId);
-
-        if (error) {
-          console.error('Error updating poll status:', error);
-          return false;
-        }
-        return true;
-      });
+      return updatePollForSession(pollId, { status });
     } catch (error) {
       console.error('Error in updatePollStatus:', error);
       return false;
@@ -184,22 +145,18 @@ export const pollService = {
    */
   async autoCloseExpiredPolls(): Promise<number> {
     try {
-      return await withUserContext(async () => {
-        const now = new Date().toISOString();
-        
-        const { data: expiredPolls, error } = await supabase
-          .from('monthly_polls' as any)
-          .update({ status: 'closed' as PollStatus })
-          .eq('status', 'open')
-          .lt('deadline', now)
-          .select('id');
-
-        if (error) {
-          console.error('Error auto-closing polls:', error);
-          return 0;
+      const now = new Date().toISOString();
+      const polls = (await fetchMonthlyPollsForSession()) as MonthlyPoll[];
+      const expired = polls.filter(
+        (p) => p.status === 'open' && p.deadline && p.deadline < now,
+      );
+      let closed = 0;
+      for (const poll of expired) {
+        if (await updatePollForSession(poll.id, { status: 'closed' })) {
+          closed += 1;
         }
-        return (expiredPolls as any[])?.length || 0;
-      });
+      }
+      return closed;
     } catch (error) {
       console.error('Error in autoCloseExpiredPolls:', error);
       return 0;
@@ -211,12 +168,10 @@ export const pollService = {
    */
   async getPollMatchDates(pollId: number): Promise<PollMatchDate[]> {
     try {
-      const { data, error } = await supabase
-        .from('poll_match_dates' as any)
-        .select('*')
-        .eq('poll_id', pollId)
-        .order('match_date', { ascending: true });
-
+      const { data, error } = await supabase.rpc('get_poll_dates_for_session', {
+        ...getRpcSessionArgs(),
+        p_poll_id: pollId,
+      });
       if (error) {
         console.error('Error fetching poll match dates:', error);
         return [];
@@ -240,44 +195,18 @@ export const pollService = {
     away_team_name: string;
   }>>> {
     try {
-      const [year, monthNum] = pollMonth.split('-').map(Number);
-      const nextMonth = monthNum === 12
-        ? `${year + 1}-01`
-        : `${year}-${String(monthNum + 1).padStart(2, '0')}`;
-
-      const { data: matches, error } = await supabase
-        .from('matches')
-        .select('match_id, match_date, location, home_team_id, away_team_id, poll_group_id')
-        .gte('match_date', `${pollMonth}-01`)
-        .lt('match_date', `${nextMonth}-01`)
-        .not('poll_group_id', 'is', null);
-
-      if (error || !matches) return new Map();
-
-      const teamIds = new Set<number>();
-      matches.forEach(m => {
-        if (m.home_team_id) teamIds.add(m.home_team_id);
-        if (m.away_team_id) teamIds.add(m.away_team_id);
-      });
-
-      const { data: teams } = await supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .in('team_id', Array.from(teamIds));
-
-      const teamMap = new Map(teams?.map(t => [t.team_id, t.team_name]) || []);
-
+      const schedule = await fetchScheidsScheduleForMonth(pollMonth);
       const grouped = new Map<string, Array<any>>();
-      matches.forEach(m => {
-        const gid = m.poll_group_id as string;
+      schedule.forEach((m) => {
+        const gid = m.poll_group_id;
         if (!gid) return;
         if (!grouped.has(gid)) grouped.set(gid, []);
         grouped.get(gid)!.push({
           match_id: m.match_id,
           match_date: m.match_date,
           location: m.location,
-          home_team_name: teamMap.get(m.home_team_id!) || 'Onbekend',
-          away_team_name: teamMap.get(m.away_team_id!) || 'Onbekend',
+          home_team_name: m.home_team_name || 'Onbekend',
+          away_team_name: m.away_team_name || 'Onbekend',
         });
       });
 
@@ -291,25 +220,11 @@ export const pollService = {
   },
   async addMatchDates(pollId: number, matchDates: PollMatchDateInput[]): Promise<boolean> {
     try {
-      return await withUserContext(async () => {
-        const dataToInsert = matchDates.map(md => ({
-          poll_id: pollId,
-          match_date: md.match_date,
-          location: md.location || null,
-          time_slot: md.time_slot || null,
-          match_count: md.match_count || 2
-        }));
-
-        const { error } = await supabase
-          .from('poll_match_dates' as any)
-          .insert(dataToInsert);
-
-        if (error) {
-          console.error('Error adding match dates:', error);
-          return false;
-        }
-        return true;
-      });
+      for (const md of matchDates) {
+        const ok = await addPollMatchDateForSession(pollId, md);
+        if (!ok) return false;
+      }
+      return true;
     } catch (error) {
       console.error('Error in addMatchDates:', error);
       return false;
@@ -321,18 +236,7 @@ export const pollService = {
    */
   async removeMatchDate(matchDateId: number): Promise<boolean> {
     try {
-      return await withUserContext(async () => {
-        const { error } = await supabase
-          .from('poll_match_dates' as any)
-          .delete()
-          .eq('id', matchDateId);
-
-        if (error) {
-          console.error('Error removing match date:', error);
-          return false;
-        }
-        return true;
-      });
+      return removePollMatchDateForSession(matchDateId);
     } catch (error) {
       console.error('Error in removeMatchDate:', error);
       return false;
@@ -345,54 +249,7 @@ export const pollService = {
    */
   async deletePoll(pollId: number): Promise<{ success: boolean; error?: string }> {
     try {
-      return await withUserContext(async () => {
-        // Check status
-        const { data: pollRow } = await supabase
-          .from('monthly_polls' as any)
-          .select('id, status, poll_month')
-          .eq('id', pollId)
-          .single();
-
-        const pollData = pollRow as any;
-        if (!pollData) {
-          return { success: false, error: 'Poll niet gevonden' };
-        }
-        if (!['draft', 'closed'].includes(pollData.status)) {
-          return { success: false, error: 'Alleen concept- of gesloten polls kunnen verwijderd worden' };
-        }
-
-        // Verwijder match dates
-        await supabase
-          .from('poll_match_dates' as any)
-          .delete()
-          .eq('poll_id', pollId);
-
-        // Wis availability voor deze maand (rijen blijven als toewijzing aanhangt)
-        await supabase
-          .from('referee_matches' as any)
-          .update({ is_available: null } as any)
-          .eq('poll_month', pollData.poll_month);
-
-        // Verwijder rijen die nu helemaal leeg zijn
-        await supabase
-          .from('referee_matches' as any)
-          .delete()
-          .eq('poll_month', pollData.poll_month)
-          .is('is_available', null)
-          .is('assigned_at', null);
-
-        // Verwijder de poll zelf
-        const { error: delError } = await supabase
-          .from('monthly_polls' as any)
-          .delete()
-          .eq('id', pollId);
-
-        if (delError) {
-          console.error('Error deleting poll:', delError);
-          return { success: false, error: 'Kon poll niet verwijderen' };
-        }
-        return { success: true };
-      });
+      return deletePollForSession(pollId);
     } catch (error) {
       console.error('Error in deletePoll:', error);
       return { success: false, error: 'Onverwachte fout bij verwijderen' };

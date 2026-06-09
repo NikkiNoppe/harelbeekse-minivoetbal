@@ -25,11 +25,16 @@ export const RLSTestComponent: React.FC = () => {
       console.log('🏀 Session teams RPC:', teamsSessionData?.length || 0, teamsSessionError);
 
       // Test 4: Try to read team_users (should work for admins now)
-      const { data: teamUsersData, error: teamUsersError } = await supabase
-        .from('team_users')
-        .select('user_id, team_id')
-        .limit(5);
-      console.log('📊 Team users read test:', teamUsersData?.length || 0, 'records', teamUsersError);
+      const { data: teamUsersData, error: teamUsersError } = await supabase.rpc(
+        'manage_team_user_for_session',
+        {
+          ...getRpcSessionArgs(),
+          p_operation: 'list',
+          p_user_id: 0,
+        },
+      );
+      const teamUsersList = Array.isArray(teamUsersData) ? teamUsersData : [];
+      console.log('📊 Team users session RPC:', teamUsersList.length, 'records', teamUsersError);
 
       // Test 5: Try to read players (should work for everyone)
       const { data: playersData, error: playersError } = await supabase
@@ -40,7 +45,7 @@ export const RLSTestComponent: React.FC = () => {
 
       setTestResults({
         sessionTeams: { data: teamsSessionData?.length || 0, error: teamsSessionError },
-        teamUsersRead: { data: teamUsersData?.length || 0, error: teamUsersError },
+        teamUsersRead: { data: teamUsersList.length, error: teamUsersError },
         playersRead: { data: playersData?.length || 0, error: playersError }
       });
 

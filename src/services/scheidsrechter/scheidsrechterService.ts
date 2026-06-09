@@ -1,5 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
-import { applicationSettingInsert } from "@/services/applicationSettingsUtils";
+import { getRpcSessionArgs } from "@/lib/authSession";
+import {
+  insertApplicationSettingForSession,
+  listApplicationSettingsForSession,
+  updateApplicationSettingForSession,
+} from "@/services/core/applicationSettingsSessionFetch";
+import {
+  fetchRefereeAvailabilityForSession,
+  upsertRefereeAvailabilityForSession,
+} from "@/services/scheidsrechter/refereeMatchesSession";
+import { fetchScheidsScheduleForMonth } from "@/services/scheidsrechter/scheidsSessionFetch";
 
 export interface PollGroup {
   poll_group_id: string;
@@ -42,15 +52,8 @@ export const scheidsrechterService = {
   // Check if month needs auto-grouping
   async needsAutoGrouping(month: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase
-        .from('matches')
-        .select('match_id')
-        .eq('poll_month', month)
-        .is('poll_group_id', null)
-        .limit(1);
-
-      if (error) throw error;
-      return (data && data.length > 0) || false;
+      const schedule = await fetchScheidsScheduleForMonth(month);
+      return schedule.some((m) => !m.poll_group_id);
     } catch (error) {
       console.error('Error checking auto-grouping need:', error);
       return false;
@@ -75,12 +78,13 @@ export const scheidsrechterService = {
   // Update legacy referee text field
   async updateLegacyReferee(matchId: number, refereeText: string): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('matches')
-        .update({ referee: refereeText })
-        .eq('match_id', matchId);
-
+      const { data, error } = await supabase.rpc('update_match_for_session', {
+        ...getRpcSessionArgs(),
+        p_match_id: matchId,
+        p_update_data: { referee: refereeText },
+      });
       if (error) throw error;
+      if ((data as { success?: boolean })?.success === false) return false;
       return true;
     } catch (error) {
       console.error('Error updating legacy referee:', error);
@@ -91,34 +95,19 @@ export const scheidsrechterService = {
   // Get legacy matches (without poll_group_id)
   async getLegacyMatches(month: string): Promise<PollMatch[]> {
     try {
-      const { data, error } = await supabase
-        .from('matches')
-        .select(`
-          match_id,
-          unique_number,
-          match_date,
-          location,
-          home_team_id,
-          away_team_id,
-          referee,
-          assigned_referee_id
-        `)
-        .eq('poll_month', month)
-        .is('poll_group_id', null)
-        .order('match_date', { ascending: true });
-
-      if (error) throw error;
-
-      return (data || []).map((match: any) => ({
-        match_id: match.match_id,
-        unique_number: match.unique_number || '',
-        match_date: match.match_date,
-        home_team_name: `Team ${match.home_team_id}`,
-        away_team_name: `Team ${match.away_team_id}`,
-        location: match.location || '',
-        assigned_referee_id: match.assigned_referee_id,
-        referee: match.referee
-      }));
+      const schedule = await fetchScheidsScheduleForMonth(month);
+      return schedule
+        .filter((m) => !m.poll_group_id)
+        .map((match) => ({
+          match_id: match.match_id,
+          unique_number: '',
+          match_date: match.match_date,
+          home_team_name: match.home_team_name || 'Onbekend',
+          away_team_name: match.away_team_name || 'Onbekend',
+          location: match.location || '',
+          assigned_referee_id: match.assigned_referee_id,
+          referee: match.referee,
+        }));
     } catch (error) {
       console.error('Error fetching legacy matches:', error);
       return [];
@@ -128,15 +117,10 @@ export const scheidsrechterService = {
   // Get poll system status
   async isPollSystemEnabled(): Promise<boolean> {
     try {
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('setting_category', 'referee_polls')
-        .eq('setting_name', 'system_enabled')
-        .single();
-
-      if (error || !data) return false;
-      const settingValue = data.setting_value as { enabled?: boolean };
+      const rows = await listApplicationSettingsForSession('referee_polls');
+      const row = rows.find((r) => r.setting_name === 'system_enabled');
+      if (!row) return false;
+      const settingValue = row.setting_value as { enabled?: boolean };
       return settingValue?.enabled === true;
     } catch (error) {
       console.error('Error checking poll system status:', error);
@@ -167,18 +151,11 @@ export const scheidsrechterService = {
   async getActiveRange(month: string): Promise<ActiveRange | null> {
     try {
       const settingName = `active_range_${month}`;
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('setting_category', 'referee_polls')
-        .eq('setting_name', settingName)
-        .single();
+      const rows = await listApplicationSettingsForSession('referee_polls');
+      const row = rows.find((r) => r.setting_name === settingName);
+      if (!row) return null;
 
-      if (error || !data) {
-        return null;
-      }
-
-      const val = data.setting_value as { start_date?: string; end_date?: string; enabled?: boolean };
+      const val = row.setting_value as { start_date?: string; end_date?: string; enabled?: boolean };
       return {
         month,
         start_date: val?.start_date ?? null,
@@ -194,21 +171,26 @@ export const scheidsrechterService = {
   async setActiveRange(month: string, range: ActiveRange): Promise<boolean> {
     try {
       const settingName = `active_range_${month}`;
-      const { error } = await supabase
-        .from('application_settings')
-        .upsert(
-          {
-            setting_category: 'referee_polls',
-            setting_name: settingName,
-            setting_value: {
-              start_date: range.start_date,
-              end_date: range.end_date,
-              enabled: !!range.enabled,
-            },
-          },
-          { onConflict: 'setting_category,setting_name' }
-        );
-      return !error;
+      const rows = await listApplicationSettingsForSession('referee_polls');
+      const existing = rows.find((r) => r.setting_name === settingName);
+      const settingValue = {
+        start_date: range.start_date,
+        end_date: range.end_date,
+        enabled: !!range.enabled,
+      };
+      if (existing) {
+        await updateApplicationSettingForSession(existing.id, {
+          setting_value: settingValue,
+          setting_category: 'referee_polls',
+        });
+      } else {
+        await insertApplicationSettingForSession({
+          setting_category: 'referee_polls',
+          setting_name: settingName,
+          setting_value: settingValue,
+        });
+      }
+      return true;
     } catch (error) {
       console.error('Error saving active range:', error);
       return false;
@@ -218,20 +200,21 @@ export const scheidsrechterService = {
   // Toggle poll system
   async togglePollSystem(enabled: boolean): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('application_settings')
-        .upsert(
-          {
-            setting_category: 'referee_polls',
-            setting_name: 'system_enabled',
-            setting_value: { enabled },
-          },
-          {
-            onConflict: 'setting_category,setting_name'
-          }
-        );
-
-      return !error;
+      const rows = await listApplicationSettingsForSession('referee_polls');
+      const existing = rows.find((r) => r.setting_name === 'system_enabled');
+      if (existing) {
+        await updateApplicationSettingForSession(existing.id, {
+          setting_value: { enabled },
+          setting_category: 'referee_polls',
+        });
+      } else {
+        await insertApplicationSettingForSession({
+          setting_category: 'referee_polls',
+          setting_name: 'system_enabled',
+          setting_value: { enabled },
+        });
+      }
+      return true;
     } catch (error) {
       console.error('Error toggling poll system:', error);
       return false;
@@ -241,45 +224,21 @@ export const scheidsrechterService = {
   // Get monthly poll data
   async getMonthlyPollData(month: string): Promise<PollGroup[]> {
     try {
-      // Determine date range for the month using string boundaries to match DB filtering
-      const [year, mon] = month.split('-').map(Number);
-      const nextYear = mon === 12 ? year + 1 : year;
-      const nextMonth = mon === 12 ? 1 : mon + 1;
-      const startStr = `${year.toString().padStart(4, '0')}-${mon.toString().padStart(2, '0')}-01`;
-      const nextStr = `${nextYear.toString().padStart(4, '0')}-${nextMonth.toString().padStart(2, '0')}-01`;
+      const scheduleRows = await fetchScheidsScheduleForMonth(month);
+      const matches = scheduleRows.map((m) => ({
+        match_id: m.match_id,
+        unique_number: '',
+        match_date: m.match_date,
+        location: m.location,
+        assigned_referee_id: m.assigned_referee_id,
+        referee: m.referee,
+        home_team_id: m.home_team_id,
+        away_team_id: m.away_team_id,
+        teams_home: { team_name: m.home_team_name },
+        teams_away: { team_name: m.away_team_name },
+      }));
 
-      const { data: matches, error } = await supabase
-        .from('matches')
-        .select(`
-          match_id,
-          unique_number,
-          match_date,
-          location,
-          assigned_referee_id,
-          referee,
-          home_team_id,
-          away_team_id
-        `)
-        .gte('match_date', startStr)
-        .lt('match_date', nextStr)
-        .order('match_date');
-
-      if (error || !matches) return [];
-
-      // Build teamId -> team_name map (limited to used ids)
-      const usedTeamIds = Array.from(new Set((matches as any[]).flatMap(m => [m.home_team_id, m.away_team_id]).filter(Boolean)));
-      const teamIdToName = new Map<number, string>();
-      if (usedTeamIds.length > 0) {
-        try {
-          const { data: teamsData } = await supabase
-            .from('teams')
-            .select('team_id, team_name')
-            .in('team_id', usedTeamIds as number[]);
-          (teamsData || []).forEach((t: any) => teamIdToName.set(t.team_id, t.team_name));
-        } catch (_) {
-          // ignore, fallback to 'Onbekend'
-        }
-      }
+      if (!matches.length) return [];
 
       // Build clusters per day and location, grouping consecutive times
       type FlatMatch = {
@@ -426,18 +385,12 @@ export const scheidsrechterService = {
     isAvailable: boolean
   ): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('referee_matches' as any)
-        .upsert({
-          referee_id: userId,
-          poll_group_id: pollGroupId,
-          poll_month: month,
-          is_available: isAvailable,
-        } as any, {
-          onConflict: 'referee_id,poll_group_id,poll_month',
-        } as any);
-
-      return !error;
+      return upsertRefereeAvailabilityForSession({
+        refereeId: userId,
+        pollGroupId,
+        pollMonth: month,
+        isAvailable,
+      });
     } catch (error) {
       console.error('Error updating referee availability:', error);
       return false;
@@ -470,44 +423,30 @@ export const scheidsrechterService = {
 
   // Get match-level availability for a referee
   async getRefereeMatchAvailability(userId: number, matchIds: number[]): Promise<Map<number, boolean>> {
-    const { data, error } = await supabase
-      .from('referee_matches' as any)
-      .select('match_id, is_available')
-      .eq('referee_id', userId)
-      .in('match_id', matchIds)
-      .not('match_id', 'is', null)
-      .not('is_available', 'is', null);
-    
-    if (error) {
-      console.error('Error fetching referee match availability:', error);
-      return new Map();
-    }
-    
+    const rows = await fetchRefereeAvailabilityForSession({
+      refereeId: userId,
+      matchIds,
+    });
+
     const availabilityMap = new Map<number, boolean>();
-    ((data as any[]) || []).forEach((item: any) => {
-      if (item.match_id) {
+    rows.forEach((item) => {
+      if (item.match_id != null && item.is_available != null) {
         availabilityMap.set(item.match_id, item.is_available);
       }
     });
-    
+
     return availabilityMap;
   },
 
   // Update match-level availability
   async updateMatchAvailability(userId: number, matchId: number, isAvailable: boolean, month: string): Promise<void> {
-    const { error } = await supabase
-      .from('referee_matches' as any)
-      .upsert({
-        referee_id: userId,
-        match_id: matchId,
-        is_available: isAvailable,
-        poll_month: month,
-        poll_group_id: null,
-      } as any, {
-        onConflict: 'referee_id,match_id',
-      } as any);
-    
-    if (error) throw error;
+    const ok = await upsertRefereeAvailabilityForSession({
+      refereeId: userId,
+      matchId,
+      pollMonth: month,
+      isAvailable,
+    });
+    if (!ok) throw new Error('Beschikbaarheid niet opgeslagen');
   },
 
   // Assign referee to a specific match
@@ -530,16 +469,10 @@ export const scheidsrechterService = {
   // Get latest announcements
   async getAnnouncements(limit: number = 5): Promise<{ message: string; type?: string }[]> {
     try {
-      const { data, error } = await supabase
-        .from('application_settings')
-        .select('setting_value')
-        .eq('setting_category', 'admin_notifications')
-        .order('id', { ascending: false })
-        .limit(limit);
-      if (error || !data) return [];
-      return data.map((row: any) => ({
-        message: row.setting_value?.message || '',
-        type: row.setting_value?.type,
+      const rows = await listApplicationSettingsForSession('admin_notifications');
+      return rows.slice(0, limit).map((row) => ({
+        message: (row.setting_value as { message?: string })?.message || '',
+        type: (row.setting_value as { type?: string })?.type,
       }));
     } catch (error) {
       console.error('Error fetching announcements:', error);
@@ -554,19 +487,16 @@ export const scheidsrechterService = {
     targetRoles: string[] = ['referee', 'admin']
   ): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('application_settings')
-        .insert(applicationSettingInsert({
-          setting_category: 'admin_notifications',
-          setting_name: `notification_${Date.now()}`,
-          setting_value: {
-            message,
-            target_roles: targetRoles,
-            type: category,
-          },
-        }));
-
-      return !error;
+      await insertApplicationSettingForSession({
+        setting_category: 'admin_notifications',
+        setting_name: `notification_${Date.now()}`,
+        setting_value: {
+          message,
+          target_roles: targetRoles,
+          type: category,
+        },
+      });
+      return true;
     } catch (error) {
       console.error('Error sending notification:', error);
       return false;

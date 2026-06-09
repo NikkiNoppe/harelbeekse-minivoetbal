@@ -1,9 +1,9 @@
-import { supabase } from '@/integrations/supabase/client';
-import { withUserContext } from '@/lib/supabaseUtils';
 import {
-  applicationSettingInsert,
-  applicationSettingUpdate,
-} from '@/services/applicationSettingsUtils';
+  deleteApplicationSettingForSession,
+  insertApplicationSettingForSession,
+  listApplicationSettingsForSession,
+  updateApplicationSettingForSession,
+} from '@/services/core/applicationSettingsSessionFetch';
 import { fetchPublicApplicationSettings } from '@/services/public/publicApplicationSettingsFetch';
 
 export interface BlogPostData {
@@ -62,15 +62,7 @@ const transformBlogPostData = (data: any[]): BlogPost[] => {
 export const blogService = {
   async getAllBlogPosts(): Promise<BlogPost[]> {
     try {
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .select('*')
-          .eq('setting_category', 'blog_posts')
-          .order('id', { ascending: false });
-      });
-
-      if (error) throw error;
+      const data = await listApplicationSettingsForSession('blog_posts');
       return transformBlogPostData(data || []);
     } catch (error) {
       console.error('Error loading blog posts:', error);
@@ -96,17 +88,11 @@ export const blogService = {
         settingValue.published_at = new Date().toISOString();
       }
 
-      const row = applicationSettingInsert({
+      await insertApplicationSettingForSession({
         setting_category: 'blog_posts',
         setting_name: blogPostData.setting_name || `blog_post_${Date.now()}`,
         setting_value: settingValue,
       });
-
-      const { error } = await withUserContext(async () => {
-        return await supabase.from('application_settings').insert([row]);
-      });
-
-      if (error) throw error;
     } catch (error) {
       console.error('Error creating blog post:', error);
       throw new Error(getErrorMessage(error, 'Kon blog post niet aanmaken'));
@@ -127,23 +113,10 @@ export const blogService = {
         delete settingValue.published_at;
       }
 
-      const data = applicationSettingUpdate({
+      await updateApplicationSettingForSession(id, {
         setting_value: settingValue,
+        setting_category: 'blog_posts',
       });
-
-      const { data: updatedRows, error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .update(data)
-          .eq('id', id)
-          .eq('setting_category', 'blog_posts')
-          .select('id');
-      });
-
-      if (error) throw error;
-      if (!updatedRows?.length) {
-        throw new Error('Blog post niet gevonden of geen rechten om bij te werken');
-      }
     } catch (error) {
       console.error('Error updating blog post:', error);
       throw new Error(getErrorMessage(error, 'Kon blog post niet bijwerken'));
@@ -152,15 +125,7 @@ export const blogService = {
 
   async deleteBlogPost(id: number): Promise<void> {
     try {
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .delete()
-          .eq('id', id)
-          .eq('setting_category', 'blog_posts');
-      });
-
-      if (error) throw error;
+      await deleteApplicationSettingForSession(id, 'blog_posts');
     } catch (error) {
       console.error('Error deleting blog post:', error);
       throw new Error(getErrorMessage(error, 'Kon blog post niet verwijderen'));
@@ -169,16 +134,11 @@ export const blogService = {
 
   async togglePublishedStatus(id: number, published: boolean): Promise<void> {
     try {
-      const { data: currentRow, error: fetchError } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .select('setting_value')
-          .eq('id', id)
-          .eq('setting_category', 'blog_posts')
-          .single();
-      });
-
-      if (fetchError) throw fetchError;
+      const rows = await listApplicationSettingsForSession('blog_posts');
+      const currentRow = rows.find((row) => row.id === id);
+      if (!currentRow) {
+        throw new Error('Blog post niet gevonden');
+      }
 
       const currentValue =
         typeof currentRow.setting_value === 'string'
@@ -196,19 +156,10 @@ export const blogService = {
         delete updatedValue.published_at;
       }
 
-      const { data: updatedRows, error } = await withUserContext(async () => {
-        return await supabase
-          .from('application_settings')
-          .update(applicationSettingUpdate({ setting_value: updatedValue }))
-          .eq('id', id)
-          .eq('setting_category', 'blog_posts')
-          .select('id');
+      await updateApplicationSettingForSession(id, {
+        setting_value: updatedValue,
+        setting_category: 'blog_posts',
       });
-
-      if (error) throw error;
-      if (!updatedRows?.length) {
-        throw new Error('Blog post niet gevonden of geen rechten om status te wijzigen');
-      }
     } catch (error) {
       console.error('Error toggling published status:', error);
       throw new Error(getErrorMessage(error, 'Kon publicatiestatus niet wijzigen'));

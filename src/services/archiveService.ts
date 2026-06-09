@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getRpcSessionArgs } from '@/lib/authSession';
 import { fetchPublicApplicationSettings } from '@/services/public/publicApplicationSettingsFetch';
+import { fetchPublicMatches } from '@/services/public/publicScheduleFetch';
 
 const ARCHIVE_CATEGORY = 'season_archives';
 
@@ -139,26 +140,15 @@ export const archiveService = {
 
   /** Auto-detect the cup final and shape it for archiving. */
   async snapshotCurrentCupFinal(): Promise<ArchivedCupWinner | null> {
-    const { data, error } = await supabase
-      .from('matches')
-      .select(`
-        match_id,
-        unique_number,
-        home_score,
-        away_score,
-        match_date,
-        teams_home:teams!home_team_id(team_name),
-        teams_away:teams!away_team_id(team_name)
-      `)
-      .eq('is_cup_match', true)
-      .eq('unique_number', 'FINAL')
-      .maybeSingle();
-    if (error) throw error;
+    const matches = await fetchPublicMatches();
+    const data = matches.find(
+      (m) => m.is_cup_match && m.unique_number === 'FINAL',
+    );
     if (!data) return null;
-    const home = (data as any).teams_home?.team_name || 'Thuisploeg';
-    const away = (data as any).teams_away?.team_name || 'Bezoekers';
-    const hs = (data as any).home_score;
-    const as = (data as any).away_score;
+    const home = data.home_team_name || 'Thuisploeg';
+    const away = data.away_team_name || 'Bezoekers';
+    const hs = data.home_score;
+    const as = data.away_score;
     let winner = home;
     let runner_up = away;
     let winnerScore = hs;
@@ -174,7 +164,7 @@ export const archiveService = {
       runner_up,
       home_score: typeof winnerScore === 'number' ? winnerScore : null,
       away_score: typeof runnerScore === 'number' ? runnerScore : null,
-      match_date: (data as any).match_date ?? null,
+      match_date: data.match_date ?? null,
     };
   },
 

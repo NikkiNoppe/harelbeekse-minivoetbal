@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { withUserContext } from '@/lib/supabaseUtils';
+import { fetchAllMatchesForSession } from '@/services/core/matchesSessionFetch';
 
 export interface UpcomingMatch {
   match_id: number;
@@ -31,62 +30,48 @@ export const useUpcomingMatches = (teamId: number | null, limit: number = 5) => 
       if (!teamId) return [];
 
       const now = new Date().toISOString();
-      
-      const { data, error } = await withUserContext(async () =>
-        supabase
-          .from('matches')
-          .select(`
-            match_id,
-            match_date,
-            home_team_id,
-            away_team_id,
-            speeldag,
-            location,
-            unique_number,
-            is_submitted,
-            is_locked,
-            home_players,
-            away_players,
-            home_score,
-            away_score,
-            referee,
-            referee_notes,
-            home_team:teams!matches_home_team_id_fkey(team_name),
-            away_team:teams!matches_away_team_id_fkey(team_name)
-          `)
-          .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-          .or(`match_date.gte.${now},and(home_score.is.null,away_score.is.null)`)
-          .order('match_date', { ascending: true })
-          .limit(limit)
-      );
+      const matches = await fetchAllMatchesForSession();
 
-      if (error) throw error;
+      const data = matches
+        .filter(
+          (match) =>
+            (match.home_team_id === teamId || match.away_team_id === teamId) &&
+            (match.match_date >= now ||
+              (match.home_score == null && match.away_score == null)),
+        )
+        .sort((a, b) => a.match_date.localeCompare(b.match_date))
+        .slice(0, limit);
 
-      return data.map((match: any) => {
+      return data.map((match) => {
         const isHome = match.home_team_id === teamId;
         return {
           match_id: match.match_id,
           match_date: match.match_date,
-          home_team_id: match.home_team_id,
-          away_team_id: match.away_team_id,
-          opponent_name: isHome ? match.away_team?.team_name : match.home_team?.team_name,
-          home_team_name: match.home_team?.team_name,
-          away_team_name: match.away_team?.team_name,
+          home_team_id: match.home_team_id!,
+          away_team_id: match.away_team_id!,
+          opponent_name: isHome
+            ? (match.away_team_name || 'Onbekend')
+            : (match.home_team_name || 'Onbekend'),
+          home_team_name: match.home_team_name || undefined,
+          away_team_name: match.away_team_name || undefined,
           is_home: isHome,
-          speeldag: match.speeldag,
-          location: match.location,
-          unique_number: match.unique_number,
-          is_locked: match.is_locked,
-          is_submitted: match.is_submitted,
-          home_players: match.home_players || [],
-          away_players: match.away_players || [],
+          speeldag: match.speeldag || undefined,
+          location: match.location || undefined,
+          unique_number: match.unique_number || undefined,
+          is_locked: match.is_locked ?? undefined,
+          is_submitted: match.is_submitted ?? undefined,
+          home_players: (match.home_players as any[]) || [],
+          away_players: (match.away_players as any[]) || [],
           home_score: match.home_score,
           away_score: match.away_score,
-          referee: match.referee,
-          referee_notes: match.referee_notes
-        };
+          referee: match.referee || undefined,
+          referee_notes: match.referee_notes || undefined,
+        } satisfies UpcomingMatch;
       });
     },
-    enabled: !!teamId
+    enabled: !!teamId,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnReconnect: true,
   });
 };

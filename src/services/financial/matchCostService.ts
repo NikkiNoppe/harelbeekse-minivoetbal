@@ -1,6 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getEdgeFunctionHeaders, getRpcSessionArgs } from "@/lib/authSession";
-import { fetchAllMatchesForSession } from "@/services/core/matchesSessionFetch";
+import { fetchAllMatchesForSession, fetchMatchForSession } from "@/services/core/matchesSessionFetch";
+import { fetchCostsForSession } from "@/services/financial/costsSessionFetch";
+import { fetchTeamTransactionsByTeamId } from "@/services/financial/financialTransactionsFetch";
+import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
 
 export interface TeamCostForMatchRow {
   id: number;
@@ -69,31 +72,19 @@ export async function matchHasForfaitPenalty(matchId: number): Promise<boolean> 
   });
   if (!rpcError && typeof rpcData === "boolean") return rpcData;
 
-  const { data: rows, error } = await supabase
-    .from("team_costs")
-    .select("costs!inner(name, category)")
-    .eq("match_id", matchId)
-    .eq("costs.category", "penalty");
-
-  if (error || !rows?.length) return false;
-
-  return rows.some((row: { costs?: { name?: string } }) => {
-    const c = row.costs;
-    if (!c) return false;
-    return costNameImpliesMatchCostSuppression(c.name);
+  const rows = await fetchTeamCostsForMatch(matchId);
+  return rows.some((row) => {
+    if (row.cost_category !== "penalty") return false;
+    return costNameImpliesMatchCostSuppression(row.cost_name);
   });
 }
 
 /** True wanneer admin handmatig standaard wedstrijdkosten heeft verwijderd — geen auto sync tot reset. */
 export async function matchSkipAutoMatchCosts(matchId: number): Promise<boolean> {
   if (!matchId) return false;
-  const { data, error } = await supabase
-    .from("matches")
-    .select("skip_auto_match_costs")
-    .eq("match_id", matchId)
-    .maybeSingle();
-  if (error || !data) return false;
-  return data.skip_auto_match_costs === true;
+  const match = await fetchMatchForSession(matchId);
+  if (!match) return false;
+  return (match as { skip_auto_match_costs?: boolean }).skip_auto_match_costs === true;
 }
 
 export async function clearSkipAutoMatchCostsForAdmin(matchId: number): Promise<{ success: boolean; message?: string }> {
@@ -129,13 +120,9 @@ export async function clearSkipAutoMatchCostsForAdmin(matchId: number): Promise<
 async function needsMatchCostBackfillCore(matchId: number): Promise<boolean> {
   const fieldCostId = await getActiveFieldMatchCostSettingId();
   if (!fieldCostId) return false;
-  const { count, error } = await supabase
-    .from("team_costs")
-    .select("id", { count: "exact", head: true })
-    .eq("match_id", matchId)
-    .eq("cost_setting_id", fieldCostId);
-  if (error) return false;
-  return (count ?? 0) < 2;
+  const rows = await fetchTeamCostsForMatch(matchId);
+  const count = rows.filter((r) => r.cost_setting_id === fieldCostId).length;
+  return count < 2;
 }
 
 /**
@@ -153,11 +140,8 @@ export async function shouldSyncMatchCostsAfterMatchUpdate(
 }
 
 async function getActiveFieldMatchCostSettingId(): Promise<number | null> {
-  const { data: costRows, error } = await supabase
-    .from("costs")
-    .select("id, name")
-    .eq("category", "match_cost")
-  if (error || !costRows?.length) return null;
+  const costRows = await fetchCostsForSession("match_cost");
+  if (!costRows.length) return null;
   const fieldRow = costRows.find((cs) => {
     const n = (cs.name || "").toLowerCase();
     return n.includes("veld") || n.includes("field");
@@ -333,15 +317,10 @@ export const matchCostService = {
 
       // Fetch match info
       console.log('🔵 [matchCostService] Fetching match info from database...');
-      const { data: match, error: matchErr } = await supabase
-        .from('matches')
-        .select('match_id, home_team_id, away_team_id, match_date, home_score, away_score, is_submitted')
-        .eq('match_id', matchId)
-        .single();
-
-      if (matchErr || !match) {
-        console.error('❌ [matchCostService] Failed to fetch match:', matchErr);
-        return { success: false, message: `Kon wedstrijd niet ophalen: ${matchErr?.message || 'onbekende fout'}` };
+      const match = await fetchMatchForSession(matchId);
+      if (!match) {
+        console.error('❌ [matchCostService] Failed to fetch match');
+        return { success: false, message: 'Kon wedstrijd niet ophalen' };
       }
       console.log('✅ [matchCostService] Match fetched:', {
         match_id: match.match_id,
@@ -368,16 +347,8 @@ export const matchCostService = {
 
       // If any team_costs already exist for this match, skip to keep idempotent
       console.log('🔵 [matchCostService] Checking for existing costs...');
-      const { data: existingCosts, error: existingErr } = await supabase
-        .from('team_costs')
-        .select('id')
-        .eq('match_id', matchId)
-        .limit(1);
-
-      if (existingErr) {
-        // Non-fatal: proceed but log
-        console.warn('⚠️ [matchCostService] Could not check existing team_costs:', existingErr);
-      } else if (existingCosts && existingCosts.length > 0) {
+      const existingCosts = await fetchTeamCostsForMatch(matchId);
+      if (existingCosts.length > 0) {
         console.log('🔵 [matchCostService] Costs already exist for this match, skipping');
         return { success: true, message: 'Kosten reeds toegepast voor deze wedstrijd' };
       }
@@ -385,17 +356,8 @@ export const matchCostService = {
 
       // Fetch active match_cost settings (e.g., field cost, referee cost)
       console.log('🔵 [matchCostService] Fetching active cost settings...');
-      const { data: costSettings, error: costErr } = await supabase
-        .from('costs')
-        .select('id, amount, name, category')
-        .eq('category', 'match_cost')
-
-      if (costErr) {
-        console.error('❌ [matchCostService] Failed to fetch cost settings:', costErr);
-        return { success: false, message: `Kon kostentarieven niet ophalen: ${costErr.message}` };
-      }
-
-      if (!costSettings || costSettings.length === 0) {
+      const costSettings = await fetchCostsForSession('match_cost');
+      if (costSettings.length === 0) {
         console.log('🔵 [matchCostService] No active match costs found');
         return { success: true, message: 'Geen actieve wedstrijdkosten gevonden' };
       }
@@ -425,21 +387,26 @@ export const matchCostService = {
         return { success: true, message: 'Geen kosten om toe te passen' };
       }
 
-      console.log('🔵 [matchCostService] INSERTING COSTS INTO team_costs table...');
-      console.log('🔵 [matchCostService] Rows to insert:', JSON.stringify(rows, null, 2));
-      const { error: insertErr } = await supabase
-        .from('team_costs')
-        .insert(rows);
-
-      if (insertErr) {
-        console.error('❌ [matchCostService] INSERT FAILED:', insertErr);
-        console.error('❌ [matchCostService] Error details:', {
-          code: insertErr.code,
-          message: insertErr.message,
-          details: insertErr.details,
-          hint: insertErr.hint
+      console.log('🔵 [matchCostService] INSERTING COSTS via add_team_cost_for_session...');
+      for (const row of rows) {
+        const { data: insertResult, error: insertErr } = await supabase.rpc('add_team_cost_for_session', {
+          ...getRpcSessionArgs(),
+          p_team_id: row.team_id,
+          p_cost_setting_id: row.cost_setting_id,
+          p_amount: row.amount,
+          p_transaction_date: row.transaction_date,
+          p_match_id: row.match_id,
         });
-        return { success: false, message: `Fout bij toepassen kosten: ${insertErr.message}` };
+        if (insertErr) {
+          console.error('❌ [matchCostService] INSERT FAILED:', insertErr);
+          return { success: false, message: `Fout bij toepassen kosten: ${insertErr.message}` };
+        }
+        if ((insertResult as { success?: boolean })?.success === false) {
+          return {
+            success: false,
+            message: (insertResult as { error?: string })?.error || 'Fout bij toepassen kosten',
+          };
+        }
       }
 
       console.log('✅ [matchCostService] Costs inserted successfully');
@@ -472,86 +439,56 @@ export const matchCostService = {
     
     try {
       // Find team by name
-      const { data: team, error: teamErr } = await supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .ilike('team_name', `%${teamName}%`)
-        .single();
-
-      if (teamErr || !team) {
-        console.error('❌ [matchCostService] Team not found:', teamErr);
+      const teams = await fetchTeamsForSession();
+      const team = teams.find((t) =>
+        t.team_name.toLowerCase().includes(teamName.toLowerCase()),
+      );
+      if (!team) {
+        console.error('❌ [matchCostService] Team not found');
         return { success: false, message: `Team "${teamName}" niet gevonden` };
       }
 
       console.log('✅ [matchCostService] Team found:', team);
 
       // Find all matches for this team with scores
-      let matchesQuery = supabase
-        .from('matches')
-        .select('match_id, match_date, home_team_id, away_team_id, home_score, away_score, is_submitted, is_cup_match, is_playoff_match, unique_number')
-        .or(`home_team_id.eq.${team.team_id},away_team_id.eq.${team.team_id}`)
-        .not('home_score', 'is', null)
-        .not('away_score', 'is', null);
+      let matchesWithScores = (await fetchAllMatchesForSession()).filter(
+        (m) =>
+          (m.home_team_id === team.team_id || m.away_team_id === team.team_id) &&
+          m.home_score != null &&
+          m.away_score != null,
+      );
 
-      // Filter by target dates if provided
       if (targetDates && targetDates.length > 0) {
-        // Parse dates in DD-MM-YYYY format or YYYY-MM-DD format
-        const parsedDates = targetDates.map(dateStr => {
-          // Try DD-MM-YYYY format first
+        const parsedDates = targetDates.map((dateStr) => {
           const parts = dateStr.split('-');
-          if (parts.length === 3) {
-            if (parts[0].length === 2) {
-              // DD-MM-YYYY format
-              return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-            } else {
-              // YYYY-MM-DD format
-              return new Date(dateStr);
-            }
+          if (parts.length === 3 && parts[0].length === 2) {
+            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
           }
           return new Date(dateStr);
         });
 
-        // Build date range filters
-        const dateConditions: string[] = [];
-        for (const date of parsedDates) {
-          const startOfDay = new Date(date);
-          startOfDay.setHours(0, 0, 0, 0);
-          const endOfDay = new Date(date);
-          endOfDay.setHours(23, 59, 59, 999);
-          dateConditions.push(`match_date.gte.${startOfDay.toISOString()},match_date.lte.${endOfDay.toISOString()}`);
-        }
-        
-        if (dateConditions.length > 0) {
-          matchesQuery = matchesQuery.or(dateConditions.join(','));
-        }
+        matchesWithScores = matchesWithScores.filter((match) => {
+          const matchDate = new Date(match.match_date);
+          return parsedDates.some((date) => {
+            const startOfDay = new Date(date);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(date);
+            endOfDay.setHours(23, 59, 59, 999);
+            return matchDate >= startOfDay && matchDate <= endOfDay;
+          });
+        });
       }
 
-      const { data: matchesWithScores, error: matchesErr } = await matchesQuery.order('match_date', { ascending: true });
-
-      if (matchesErr) {
-        console.error('❌ [matchCostService] Failed to fetch matches:', matchesErr);
-        return { success: false, message: `Kon wedstrijden niet ophalen: ${matchesErr.message}` };
-      }
+      matchesWithScores.sort((a, b) => a.match_date.localeCompare(b.match_date));
 
       console.log(`✅ [matchCostService] Found ${matchesWithScores?.length || 0} matches with scores for ${team.team_name}`);
 
       // Find all costs for this team
-      const { data: teamCosts, error: costsErr } = await supabase
-        .from('team_costs')
-        .select('match_id, cost_setting_id, amount, transaction_date, costs(category)')
-        .eq('team_id', team.team_id)
-        .not('match_id', 'is', null);
-
-      if (costsErr) {
-        console.error('❌ [matchCostService] Failed to fetch costs:', costsErr);
-        return { success: false, message: `Kon kosten niet ophalen: ${costsErr.message}` };
-      }
-
-      // Get unique match IDs that have costs
+      const teamCosts = await fetchTeamTransactionsByTeamId(team.team_id);
       const matchIdsWithCosts = new Set(
-        (teamCosts || [])
-          .filter(tc => tc.costs?.category === 'match_cost')
-          .map(tc => tc.match_id)
+        teamCosts
+          .filter((tc) => tc.match_id && tc.cost_settings?.category === 'match_cost')
+          .map((tc) => tc.match_id as number),
       );
 
       console.log(`✅ [matchCostService] Found ${matchIdsWithCosts.size} unique matches with costs`);

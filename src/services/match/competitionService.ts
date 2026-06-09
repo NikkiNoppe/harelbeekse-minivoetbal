@@ -8,7 +8,14 @@ import { playoffService } from "@/services/match/playoffService";
 import { bekerService as cupService } from "./cupService";
 import { localDateTimeToISO } from "@/lib/dateUtils";
 import { normalizeVenueName } from "@/lib/utils";
-import { withUserContext } from "@/lib/supabaseUtils";
+import { getRpcSessionArgs } from "@/lib/authSession";
+import {
+  bulkDeleteCompetitionMatches,
+  bulkDeleteMatchesByIds,
+  bulkDeleteMatchesByUniqueNumbers,
+  bulkInsertMatchesForSession,
+  fetchMatchesForSession,
+} from "@/services/core/matchesSessionBulk";
 
 export interface CompetitionMatch {
   match_id: number;
@@ -70,13 +77,10 @@ export const competitionService = {
   },
 
   async checkExistingCompetition(): Promise<{ exists: boolean; message?: string }> {
-    const { data: existingMatches } = await supabase
-      .from('matches')
-      .select('match_id')
-      .eq('is_cup_match', false)
-      .not('is_playoff_match', 'is', true);
+    const existingMatches = (await fetchMatchesForSession({ is_cup_match: false }))
+      .filter((m) => !m.is_playoff_match);
 
-    if (existingMatches && existingMatches.length > 0) {
+    if (existingMatches.length > 0) {
       return { exists: true, message: "Er bestaat al een reguliere competitie. Verwijder het eerst." };
     }
 
@@ -84,14 +88,11 @@ export const competitionService = {
   },
 
   async checkExistingCupMatches(): Promise<{ exists: boolean; message?: string; cupDates?: string[] }> {
-    const { data: existingCupMatches } = await supabase
-      .from('matches')
-      .select('match_id, match_date')
-      .eq('is_cup_match', true);
+    const existingCupMatches = await fetchMatchesForSession({ is_cup_match: true });
 
-    if (existingCupMatches && existingCupMatches.length > 0) {
+    if (existingCupMatches.length > 0) {
       // Extraheer unieke datums van bekerwedstrijden
-      const cupDates = [...new Set(existingCupMatches.map(match => match.match_date.split('T')[0]))];
+      const cupDates = [...new Set(existingCupMatches.map(match => String(match.match_date).split('T')[0]))];
       return { exists: true, message: "Er bestaat al een bekertoernooi.", cupDates };
     }
 
@@ -132,12 +133,9 @@ export const competitionService = {
       const { cupDates } = await this.checkExistingCupMatches();
 
       // Haal ALLE bestaande matches op (competitie, playoffs, beker) om conflicten te vermijden
-      const { data: existingMatchesAll } = await supabase
-        .from('matches')
-        .select('match_date')
-        .order('match_date');
+      const existingMatchesAll = await fetchMatchesForSession({});
       const existingMondays = new Set<string>();
-      (existingMatchesAll || []).forEach((m: any) => {
+      existingMatchesAll.forEach((m: any) => {
         if (!m?.match_date) return;
         const d = new Date(m.match_date);
         const monday = new Date(d);
@@ -1304,14 +1302,10 @@ export const competitionService = {
       const filteredPlan = plan.filter(p => p.away_team_id !== null);
       const uniqueNumbers = filteredPlan.map(p => p.unique_number);
       if (uniqueNumbers.length > 0) {
-        const { error: delError } = await withUserContext(async () => {
-          return await supabase
-            .from('matches')
-            .delete()
-            .in('unique_number', uniqueNumbers)
-            .eq('is_cup_match', false);
-        });
-        if (delError) console.warn('Warning: could not clear competition matches before import', delError);
+        const delResult = await bulkDeleteMatchesByUniqueNumbers(uniqueNumbers, false);
+        if (!delResult.success) {
+          console.warn('Warning: could not clear competition matches before import', delResult.error);
+        }
       }
 
       const rows = filteredPlan.map(p => this.createMatchObject(
@@ -1323,10 +1317,8 @@ export const competitionService = {
         p.venue
       ));
 
-      const { error } = await withUserContext(async () => {
-        return await supabase.from('matches').insert(rows);
-      });
-      if (error) throw error;
+      const insertResult = await bulkInsertMatchesForSession(rows);
+      if (!insertResult.success) throw new Error(insertResult.error || 'Import mislukt');
       return { success: true, message: 'Competitieplan geïmporteerd' };
     } catch (e) {
       console.error('Error importing competition plan:', e);
@@ -1469,15 +1461,10 @@ export const competitionService = {
       const allMatches = [...regularSeasonMatches, ...playoffMatches];
       
       try {
-        const { error } = await withUserContext(async () => {
-          return await supabase
-            .from('matches')
-            .insert(allMatches);
-        });
-
-        if (error) {
-          console.error('❌ Fout bij opslaan wedstrijden:', error);
-          return { success: false, message: `Fout bij opslaan: ${error.message}` };
+        const insertResult = await bulkInsertMatchesForSession(allMatches);
+        if (!insertResult.success) {
+          console.error('❌ Fout bij opslaan wedstrijden:', insertResult.error);
+          return { success: false, message: `Fout bij opslaan: ${insertResult.error || 'onbekend'}` };
         }
       } catch (error) {
         console.error('❌ Fout bij opslaan wedstrijden:', error);
@@ -1503,34 +1490,10 @@ export const competitionService = {
   // Haal alle competitie wedstrijden op
   async getCompetitionMatches(): Promise<CompetitionMatch[]> {
     try {
-      // Gebruik basis kolommen voor compatibiliteit
-      const { data, error } = await supabase
-        .from('matches')
-        .select(`
-          match_id,
-          unique_number,
-          home_team_id,
-          away_team_id,
-          match_date,
-          location,
-          speeldag,
-          is_submitted,
-          is_locked,
-          referee,
-          referee_notes,
-          home_score,
-          away_score
-        `)
-        .eq('is_cup_match', false)
-        .order('match_date');
-
-      if (error) {
-        console.error('Error fetching competition matches:', error);
-        throw error;
-      }
+      const data = await fetchMatchesForSession({ is_cup_match: false });
 
       // Map data en detecteer playoff wedstrijden uit speeldag veld
-      return (data || []).map((match: any) => {
+      return data.map((match: any) => {
         const isPlayoff = match.speeldag?.includes('[PLAYOFF:');
         let playoffRound: string | undefined;
         let playoffPosition: string | undefined;
@@ -1558,39 +1521,9 @@ export const competitionService = {
   // Verwijder competitie
   async deleteCompetition(): Promise<{ success: boolean; message: string }> {
     try {
-      // Eerst alle match IDs ophalen voor competitie wedstrijden
-      const { data: matchIds, error: fetchError } = await supabase
-        .from('matches')
-        .select('match_id')
-        .eq('is_cup_match', false);
-
-      if (fetchError) {
-        console.error('Error fetching match IDs:', fetchError);
-        return { success: false, message: `Fout bij ophalen wedstrijd IDs: ${fetchError.message}` };
-      }
-
-      if (matchIds && matchIds.length > 0) {
-        // Alle gerelateerde team_costs records verwijderen
-        const { error: teamCostsError } = await supabase
-          .from('team_costs')
-          .delete()
-          .in('match_id', matchIds.map(m => m.match_id));
-
-        if (teamCostsError) {
-          console.error('Error deleting team costs:', teamCostsError);
-          return { success: false, message: `Fout bij verwijderen team kosten: ${teamCostsError.message}` };
-        }
-      }
-
-      // Dan de wedstrijden verwijderen
-      const { error } = await supabase
-        .from('matches')
-        .delete()
-        .eq('is_cup_match', false);
-
-      if (error) {
-        console.error('Error deleting competition:', error);
-        return { success: false, message: `Fout bij verwijderen: ${error.message}` };
+      const delResult = await bulkDeleteCompetitionMatches();
+      if (!delResult.success) {
+        return { success: false, message: `Fout bij verwijderen: ${delResult.error || 'onbekend'}` };
       }
 
       return { success: true, message: "Competitie succesvol verwijderd" };
@@ -1609,15 +1542,19 @@ export const competitionService = {
       // Filter playoff velden uit voor database compatibiliteit
       const { is_playoff_match, playoff_round, playoff_position, ...databaseUpdateData } = updateData as any;
       
-      const { error } = await supabase
-        .from('matches')
-        .update(databaseUpdateData)
-        .eq('match_id', matchId)
-        .eq('is_cup_match', false);
+      const { data: rpcData, error } = await supabase.rpc('update_match_for_session', {
+        ...getRpcSessionArgs(),
+        p_match_id: matchId,
+        p_update_data: databaseUpdateData,
+      });
 
       if (error) {
         console.error('Error updating competition match:', error);
         return { success: false, message: `Fout bij updaten: ${error.message}` };
+      }
+      const result = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+      if (!result?.success) {
+        return { success: false, message: result?.message || 'Fout bij updaten' };
       }
 
       return { success: true, message: "Wedstrijd succesvol bijgewerkt" };
@@ -1633,39 +1570,17 @@ export const competitionService = {
   // Verwijder playoff wedstrijden
   async deletePlayoffMatches(): Promise<{ success: boolean; message: string }> {
     try {
-      // Eerst alle playoff match IDs ophalen
-      const { data: playoffMatchIds, error: fetchError } = await supabase
-        .from('matches')
-        .select('match_id')
-        .like('speeldag', '%[PLAYOFF:%');
+      const playoffMatchIds = (await fetchMatchesForSession({ is_cup_match: false }))
+        .filter((m) => typeof m.speeldag === 'string' && m.speeldag.includes('[PLAYOFF:'))
+        .map((m) => m.match_id as number);
 
-      if (fetchError) {
-        console.error('Error fetching playoff match IDs:', fetchError);
-        return { success: false, message: `Fout bij ophalen playoff wedstrijd IDs: ${fetchError.message}` };
+      if (playoffMatchIds.length === 0) {
+        return { success: true, message: "Playoff wedstrijden succesvol verwijderd" };
       }
 
-      if (playoffMatchIds && playoffMatchIds.length > 0) {
-        // Alle gerelateerde team_costs records verwijderen
-        const { error: teamCostsError } = await supabase
-          .from('team_costs')
-          .delete()
-          .in('match_id', playoffMatchIds.map(m => m.match_id));
-
-        if (teamCostsError) {
-          console.error('Error deleting playoff team costs:', teamCostsError);
-          return { success: false, message: `Fout bij verwijderen playoff team kosten: ${teamCostsError.message}` };
-        }
-      }
-
-      // Dan de playoff wedstrijden verwijderen
-      const { error } = await supabase
-        .from('matches')
-        .delete()
-        .like('speeldag', '%[PLAYOFF:%');
-
-      if (error) {
-        console.error('Error deleting playoff matches:', error);
-        return { success: false, message: `Fout bij verwijderen: ${error.message}` };
+      const delResult = await bulkDeleteMatchesByIds(playoffMatchIds);
+      if (!delResult.success) {
+        return { success: false, message: `Fout bij verwijderen: ${delResult.error || 'onbekend'}` };
       }
 
       return { success: true, message: "Playoff wedstrijden succesvol verwijderd" };
@@ -1804,12 +1719,10 @@ export const competitionService = {
         counter++;
       }
 
-      const { error } = await withUserContext(async () => {
-        return await supabase.from('matches').insert(matchInserts);
-      });
-      if (error) {
-        console.error('Fout bij opslaan playoff wedstrijden:', error);
-        return { success: false, message: `Fout bij opslaan: ${error.message}` };
+      const insertResult = await bulkInsertMatchesForSession(matchInserts);
+      if (!insertResult.success) {
+        console.error('Fout bij opslaan playoff wedstrijden:', insertResult.error);
+        return { success: false, message: `Fout bij opslaan: ${insertResult.error || 'onbekend'}` };
       }
 
       return { success: true, message: `${matchInserts.length} playoff wedstrijden succesvol aangemaakt.` };

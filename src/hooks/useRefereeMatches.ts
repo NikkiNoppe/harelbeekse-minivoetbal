@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { withUserContext } from '@/lib/supabaseUtils';
+import { fetchAllMatchesForSession } from '@/services/core/matchesSessionFetch';
 
 export interface RefereeMatch {
   match_id: number;
@@ -28,67 +27,47 @@ export const useRefereeMatches = (refereeUsername: string | null, month?: number
     queryFn: async () => {
       if (!refereeUsername) return [];
 
-      // Use withUserContext to ensure RLS policies work correctly
-      return await withUserContext(async () => {
-        const now = new Date();
-        const currentMonth = month ?? now.getMonth() + 1; // 1-12
-        const currentYear = year ?? now.getFullYear();
-        
-        // Calculate start and end of the month
-        const startDate = new Date(currentYear, currentMonth - 1, 1);
-        startDate.setHours(0, 0, 0, 0);
-        const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59, 999);
-        
-        const { data, error } = await supabase
-          .from('matches')
-          .select(`
-            match_id,
-            match_date,
-            home_team_id,
-            away_team_id,
-            speeldag,
-            location,
-            unique_number,
-            is_submitted,
-            is_locked,
-            home_score,
-            away_score,
-            referee,
-            referee_notes,
-            home_players,
-            away_players,
-            home_team:teams!matches_home_team_id_fkey(team_name),
-            away_team:teams!matches_away_team_id_fkey(team_name)
-          `)
-          .eq('referee', refereeUsername)
-          .gte('match_date', startDate.toISOString())
-          .lte('match_date', endDate.toISOString())
-          .order('match_date', { ascending: true });
+      const now = new Date();
+      const currentMonth = month ?? now.getMonth() + 1;
+      const currentYear = year ?? now.getFullYear();
 
-        if (error) throw error;
+      const startDate = new Date(currentYear, currentMonth - 1, 1);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59, 999);
 
-        // Return all matches - filtering happens in the UI
-        return data.map((match: any) => ({
-          match_id: match.match_id,
-          match_date: match.match_date,
-          home_team_id: match.home_team_id,
-          away_team_id: match.away_team_id,
-          home_team_name: match.home_team?.team_name,
-          away_team_name: match.away_team?.team_name,
-          speeldag: match.speeldag,
-          location: match.location,
-          unique_number: match.unique_number,
-          is_locked: match.is_locked,
-          is_submitted: match.is_submitted,
-          home_score: match.home_score,
-          away_score: match.away_score,
-          referee: match.referee,
-          referee_notes: match.referee_notes,
-          home_players: match.home_players,
-          away_players: match.away_players
-        }));
-      });
+      const matches = await fetchAllMatchesForSession();
+      const data = matches
+        .filter(
+          (match) =>
+            match.referee === refereeUsername &&
+            match.match_date >= startDate.toISOString() &&
+            match.match_date <= endDate.toISOString(),
+        )
+        .sort((a, b) => a.match_date.localeCompare(b.match_date));
+
+      return data.map((match) => ({
+        match_id: match.match_id,
+        match_date: match.match_date,
+        home_team_id: match.home_team_id!,
+        away_team_id: match.away_team_id!,
+        home_team_name: match.home_team_name || undefined,
+        away_team_name: match.away_team_name || undefined,
+        speeldag: match.speeldag || undefined,
+        location: match.location || undefined,
+        unique_number: match.unique_number || undefined,
+        is_locked: match.is_locked ?? undefined,
+        is_submitted: match.is_submitted ?? undefined,
+        home_score: match.home_score,
+        away_score: match.away_score,
+        referee: match.referee || undefined,
+        referee_notes: match.referee_notes || undefined,
+        home_players: match.home_players,
+        away_players: match.away_players,
+      } satisfies RefereeMatch));
     },
-    enabled: !!refereeUsername
+    enabled: !!refereeUsername,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnReconnect: true,
   });
 };

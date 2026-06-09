@@ -2,7 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeColors, DEFAULT_THEME, DEFAULT_SEMANTIC, applyThemeToCSS } from "@/lib/colorUtils";
 import { applyThemeToDocument } from "@/lib/themeDocument";
-import { applicationSettingInsert, applicationSettingUpdate } from "@/services/applicationSettingsUtils";
+import {
+  insertApplicationSettingForSession,
+  listApplicationSettingsForSession,
+  updateApplicationSettingForSession,
+} from "@/services/core/applicationSettingsSessionFetch";
 import {
   fetchPublicApplicationSettings,
   findPublicSetting,
@@ -67,30 +71,20 @@ export function useThemeColorsAdmin() {
 
   const saveMutation = useMutation({
     mutationFn: async (newTheme: ThemeColors) => {
-      const { data: existing } = await supabase
-        .from("application_settings")
-        .select("id")
-        .eq("setting_category", "theme_colors")
-        .eq("setting_name", "global_theme")
-        .maybeSingle();
+      const rows = await listApplicationSettingsForSession("theme_colors");
+      const existing = rows.find((row) => row.setting_name === "global_theme");
 
       if (existing) {
-        const { error } = await supabase
-          .from("application_settings")
-          .update(applicationSettingUpdate({
-            setting_value: JSON.parse(JSON.stringify(newTheme)),
-          }))
-          .eq("id", existing.id);
-        if (error) throw error;
+        await updateApplicationSettingForSession(existing.id, {
+          setting_value: JSON.parse(JSON.stringify(newTheme)),
+          setting_category: "theme_colors",
+        });
       } else {
-        const { error } = await supabase
-          .from("application_settings")
-          .insert([applicationSettingInsert({
-            setting_category: "theme_colors",
-            setting_name: "global_theme",
-            setting_value: JSON.parse(JSON.stringify(newTheme)),
-          })]);
-        if (error) throw error;
+        await insertApplicationSettingForSession({
+          setting_category: "theme_colors",
+          setting_name: "global_theme",
+          setting_value: JSON.parse(JSON.stringify(newTheme)),
+        });
       }
     },
     onSuccess: (_, newTheme) => {

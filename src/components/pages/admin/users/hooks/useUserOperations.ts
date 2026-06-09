@@ -84,17 +84,21 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
         const teamIds = newUser.teamIds || (newUser.teamId ? [newUser.teamId] : []);
         
         if (teamIds.length > 0) {
-          const teamUserEntries = teamIds.map(teamId => ({
-            user_id: data.user_id,
-            team_id: teamId
-          }));
-          
-          const { error: teamUserError } = await supabase
-            .from('team_users')
-            .insert(teamUserEntries);
-          
+          const { data: teamLinkResult, error: teamUserError } = await supabase.rpc(
+            'manage_team_user_for_session',
+            {
+              ...getRpcSessionArgs(),
+              p_operation: 'assign_many',
+              p_user_id: data.user_id,
+              p_team_ids: teamIds,
+            },
+          );
+
           if (teamUserError) {
             throw teamUserError;
+          }
+          if (!(teamLinkResult as { success?: boolean })?.success) {
+            throw new Error('Teamkoppeling mislukt');
           }
           
           const teamNames = teams
@@ -164,38 +168,34 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
         }
       }
       
-      const { error: userError } = await supabase
-        .from('users')
-        .update(updateData)
-        .eq('user_id', userId);
+      const { data: updateResult, error: userError } = await supabase.rpc(
+        'update_user_for_session',
+        {
+          ...getRpcSessionArgs(),
+          p_user_id: userId,
+          p_username: updateData.username,
+          p_email: updateData.email,
+          p_role: updateData.role,
+        },
+      );
 
       if (userError) {
         throw userError;
       }
-
-      // Handle team assignments
-      const { error: deleteError } = await supabase
-        .from('team_users')
-        .delete()
-        .eq('user_id', userId);
-
-      if (deleteError) {
-        console.error('Error removing team assignments:', deleteError);
+      if (!(updateResult as { success?: boolean })?.success) {
+        throw new Error('Gebruiker niet bijgewerkt');
       }
 
-      // Add team assignments for player_manager role
       if (formData.role === "player_manager") {
         const teamIds = formData.teamIds || (formData.teamId ? [formData.teamId] : []);
-        
-        if (teamIds.length > 0) {
-          const teamUserEntries = teamIds.map(teamId => ({
-            user_id: userId,
-            team_id: teamId
-          }));
 
-          const { error: teamUserError } = await supabase
-            .from('team_users')
-            .insert(teamUserEntries);
+        if (teamIds.length > 0) {
+          const { error: teamUserError } = await supabase.rpc('manage_team_user_for_session', {
+            ...getRpcSessionArgs(),
+            p_operation: 'assign_many',
+            p_user_id: userId,
+            p_team_ids: teamIds,
+          });
 
           if (teamUserError) {
             throw teamUserError;
@@ -211,13 +211,22 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
             description: `${formData.username || 'Gebruiker'} is bijgewerkt als teamverantwoordelijke voor ${teamNames}`,
           });
         } else {
+          await supabase.rpc('manage_team_user_for_session', {
+            ...getRpcSessionArgs(),
+            p_operation: 'remove',
+            p_user_id: userId,
+          });
           toast({
             title: "Gebruiker bijgewerkt",
             description: `${formData.username || 'Gebruiker'} is bijgewerkt zonder teamkoppeling`,
           });
         }
       } else {
-        // For non-player_manager roles, ensure no team assignments
+        await supabase.rpc('manage_team_user_for_session', {
+          ...getRpcSessionArgs(),
+          p_operation: 'remove',
+          p_user_id: userId,
+        });
         toast({
           title: "Gebruiker bijgewerkt",
           description: `${formData.username || 'Gebruiker'} is bijgewerkt als ${formData.role}`,
@@ -251,7 +260,13 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
           throw new Error(delErr?.message || delResp?.error || 'Deletion failed');
         }
       } catch (edgeErr) {
-        throw edgeErr;
+        const { data: delResult, error: rpcDelErr } = await supabase.rpc('delete_user_for_session', {
+          ...getRpcSessionArgs(),
+          p_user_id: userId,
+        });
+        if (rpcDelErr || !(delResult as { success?: boolean })?.success) {
+          throw edgeErr;
+        }
       }
       
       toast({

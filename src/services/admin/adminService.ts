@@ -262,17 +262,10 @@ export function useTeamTransactions(teamId: number) {
     queryKey: adminQueryKeys.teamTransactions(teamId),
     queryFn: async () => {
       // 'team_costs' bestaat niet in de Supabase types, dus expliciet as any
-      const { data, error } = await supabase
-        .from('team_costs' as any)
-        .select(`
-          *,
-          costs(name, description, category),
-          matches(unique_number, match_date)
-        `)
-        .eq('team_id', teamId)
-        .order('transaction_date', { ascending: false });
-      if (error) throw error;
-      return data;
+      const { fetchTeamTransactionsByTeamId } = await import(
+        '@/services/financial/financialTransactionsFetch'
+      );
+      return fetchTeamTransactionsByTeamId(teamId);
     },
     enabled: !!teamId,
   });
