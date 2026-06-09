@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getEdgeFunctionHeaders, getRpcSessionArgs } from "@/lib/authSession";
-import { withUserContext } from "@/lib/supabaseUtils";
+import { fetchAllMatchesForSession } from "@/services/core/matchesSessionFetch";
 
 export interface TeamCostForMatchRow {
   id: number;
@@ -230,37 +230,40 @@ export const matchCostService = {
   /** Sync kaartboetes (geel/rood) voor alle ingediende wedstrijden met kaarten in het formulier. */
   async syncAllCardPenalties(): Promise<ServiceResponse & { syncedMatches?: number }> {
     try {
-      const { data: matches, error } = await withUserContext(async () =>
-        supabase
-          .from("matches")
-          .select("match_id, match_date, home_team_id, away_team_id, home_players, away_players")
-          .eq("is_submitted", true)
-      );
-
-      if (error) throw error;
-
-      let syncedMatches = 0;
-      for (const m of matches || []) {
+      const allMatches = await fetchAllMatchesForSession();
+      const matchesWithCards = allMatches.filter((m) => {
+        if (!m.is_submitted || m.home_team_id == null || m.away_team_id == null) return false;
         const homePlayers = mapPlayersForCardSync(m.home_players);
         const awayPlayers = mapPlayersForCardSync(m.away_players);
-        const hasCard = [...homePlayers, ...awayPlayers].some(
+        return [...homePlayers, ...awayPlayers].some(
           (p) => p.cardType && p.cardType !== "none",
         );
-        if (!hasCard || m.home_team_id == null || m.away_team_id == null) continue;
+      });
 
-        const { data, error: fnError } = await supabase.functions.invoke("sync-card-penalties", {
-          body: {
-            matchId: m.match_id,
-            matchDateISO: m.match_date,
-            homeTeamId: m.home_team_id,
-            awayTeamId: m.away_team_id,
-            homePlayers,
-            awayPlayers,
-          },
-          headers: getEdgeFunctionHeaders(),
-        });
+      const CARD_SYNC_CONCURRENCY = 2;
+      let syncedMatches = 0;
 
-        if (!fnError && data?.success) syncedMatches += 1;
+      for (let i = 0; i < matchesWithCards.length; i += CARD_SYNC_CONCURRENCY) {
+        const batch = matchesWithCards.slice(i, i + CARD_SYNC_CONCURRENCY);
+        const results = await Promise.all(
+          batch.map(async (m) => {
+            const homePlayers = mapPlayersForCardSync(m.home_players);
+            const awayPlayers = mapPlayersForCardSync(m.away_players);
+            const { data, error: fnError } = await supabase.functions.invoke("sync-card-penalties", {
+              body: {
+                matchId: m.match_id,
+                matchDateISO: m.match_date,
+                homeTeamId: m.home_team_id,
+                awayTeamId: m.away_team_id,
+                homePlayers,
+                awayPlayers,
+              },
+              headers: getEdgeFunctionHeaders(),
+            });
+            return !fnError && data?.success;
+          }),
+        );
+        syncedMatches += results.filter(Boolean).length;
       }
 
       return {

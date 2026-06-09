@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { teamService } from "@/services/core/teamService";
+import { fetchTeamForSession } from "@/services/core/teamsSessionFetch";
+import { fetchPlayersForSession } from "@/services/core/playersSessionFetch";
+import { fetchAllMatchesForSession } from "@/services/core/matchesSessionFetch";
 
 interface Team {
   team_id: number;
@@ -74,29 +77,25 @@ export const useTeamOperations = (onSuccess: () => void) => {
 
     try {
       setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('teams')
-        .insert({
-          team_name: formData.name.trim(),
-          contact_person: formData.contact_person.trim() || null,
-          contact_phone: formData.contact_phone.trim() || null,
-          contact_email: formData.contact_email.trim() || null,
-          club_colors: formData.club_colors?.trim() || null,
-          preferred_play_moments: formData.preferred_play_moments
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
+
+      const data = await teamService.createTeam({
+        team_name: formData.name.trim(),
+        contact_person: formData.contact_person.trim() || undefined,
+        contact_phone: formData.contact_phone.trim() || undefined,
+        contact_email: formData.contact_email.trim() || undefined,
+        club_colors: formData.club_colors?.trim() || undefined,
+        preferred_play_moments: formData.preferred_play_moments,
+      });
+
+      if (!data) throw new Error('Kon team niet aanmaken');
+
       toast({
         title: "Team toegevoegd",
         description: `${formData.name} is succesvol toegevoegd`,
       });
-      
+
       onSuccess();
-      return { ...data } as Team;
+      return { ...data, balance: 0 } as Team;
     } catch (error: any) {
       console.error('Error creating team:', error);
       
@@ -132,15 +131,9 @@ export const useTeamOperations = (onSuccess: () => void) => {
 
     try {
       setLoading(true);
-      
-      // First, let's check if the team exists
-      const { data: existingTeam, error: fetchError } = await supabase
-        .from('teams')
-        .select('*')
-        .eq('team_id', teamId)
-        .single();
-      
-      if (fetchError) {
+
+      const existingTeam = await fetchTeamForSession(teamId);
+      if (!existingTeam) {
         toast({
           title: "Team niet gevonden",
           description: "Het team dat je wilt bijwerken bestaat niet meer",
@@ -148,17 +141,9 @@ export const useTeamOperations = (onSuccess: () => void) => {
         });
         return null;
       }
-      
-      // Check if the new name already exists (excluding current team)
-      const { data: duplicateCheck, error: duplicateError } = await supabase
-        .from('teams')
-        .select('team_id')
-        .eq('team_name', formData.name.trim())
-        .neq('team_id', teamId);
-      
-      if (duplicateError) {
-        console.error('Error checking for duplicates:', duplicateError);
-      } else if (duplicateCheck && duplicateCheck.length > 0) {
+
+      const allTeams = await teamService.getAllTeams();
+      if (allTeams.some((t) => t.team_id !== teamId && t.team_name === formData.name.trim())) {
         toast({
           title: "Team bestaat al",
           description: "Er bestaat al een team met deze naam",
@@ -166,102 +151,25 @@ export const useTeamOperations = (onSuccess: () => void) => {
         });
         return null;
       }
-      
-      // Try multiple update approaches to bypass RLS issues
-      let updateSuccess = false;
-      let updateData = null;
-      let updateError = null;
-      
-      // Approach 1: Standard update with new fields
-      const { data: data1, error: error1 } = await supabase
-        .from('teams')
-        .update({
-          team_name: formData.name.trim(),
-          contact_person: formData.contact_person?.trim() || null,
-          contact_phone: formData.contact_phone?.trim() || null,
-          contact_email: formData.contact_email?.trim() || null,
-          club_colors: formData.club_colors?.trim() || null,
-          preferred_play_moments: formData.preferred_play_moments
-        })
-        .eq('team_id', teamId)
-        .select()
-        .single();
-      
-      if (!error1 && data1) {
-        updateSuccess = true;
-        updateData = data1;
-      } else {
-        updateError = error1;
-      }
-      
-      // Approach 2: Update with explicit column selection including new fields
-      if (!updateSuccess) {
-        const { data: data2, error: error2 } = await supabase
-          .from('teams')
-          .update({
-            team_name: formData.name.trim(),
-            contact_person: formData.contact_person.trim() || null,
-            contact_phone: formData.contact_phone.trim() || null,
-            contact_email: formData.contact_email.trim() || null,
-            club_colors: formData.club_colors?.trim() || null,
-            preferred_play_moments: formData.preferred_play_moments
-          })
-          .eq('team_id', teamId)
-          .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
-          .single();
-        
-        if (!error2 && data2) {
-          updateSuccess = true;
-          updateData = data2;
-        } else {
-          updateError = error2;
-        }
-      }
-      
-      // Approach 3: Update without select (just update) including new fields
-      if (!updateSuccess) {
-        const { error: error3 } = await supabase
-          .from('teams')
-          .update({
-            team_name: formData.name.trim(),
-            contact_person: formData.contact_person.trim() || null,
-            contact_phone: formData.contact_phone.trim() || null,
-            contact_email: formData.contact_email.trim() || null,
-            club_colors: formData.club_colors?.trim() || null,
-            preferred_play_moments: formData.preferred_play_moments
-          })
-          .eq('team_id', teamId);
-        
-        if (!error3) {
-          // Verify the update worked
-          const { data: verifyData, error: verifyError } = await supabase
-            .from('teams')
-            .select('*')
-            .eq('team_id', teamId)
-            .single();
-          
-          if (!verifyError && verifyData && verifyData.team_name === formData.name.trim()) {
-            updateSuccess = true;
-            updateData = verifyData;
-          } else {
-            updateError = verifyError;
-          }
-        } else {
-          updateError = error3;
-        }
-      }
-      
-      if (!updateSuccess) {
-        throw updateError || new Error('Update failed with all approaches');
-      }
-      
+
+      const updateData = await teamService.updateTeam(teamId, {
+        team_name: formData.name.trim(),
+        contact_person: formData.contact_person?.trim() || undefined,
+        contact_phone: formData.contact_phone?.trim() || undefined,
+        contact_email: formData.contact_email?.trim() || undefined,
+        club_colors: formData.club_colors?.trim() || undefined,
+        preferred_play_moments: formData.preferred_play_moments,
+      });
+
+      if (!updateData) throw new Error('Kon team niet bijwerken');
+
       toast({
         title: "Team bijgewerkt",
         description: `${formData.name} is succesvol bijgewerkt`,
       });
-      
+
       onSuccess();
-      return updateData;
+      return { ...updateData, balance: 0 } as Team;
     } catch (error: any) {
       console.error('Error updating team:', error);
       
@@ -294,22 +202,22 @@ export const useTeamOperations = (onSuccess: () => void) => {
     try {
       setLoading(true);
       
-      // Check for related data before deleting
-      const [playersResult, matchesResult, teamUsersResult] = await Promise.all([
-        supabase.from('players').select('player_id').eq('team_id', teamId),
-        supabase.from('matches').select('match_id').or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`),
-        supabase.from('team_users').select('user_id').eq('team_id', teamId)
+      const [players, allMatches] = await Promise.all([
+        fetchPlayersForSession(teamId),
+        fetchAllMatchesForSession().catch(() => []),
       ]);
 
-      const hasPlayers = playersResult.data && playersResult.data.length > 0;
-      const hasMatches = matchesResult.data && matchesResult.data.length > 0;
-      const hasTeamUsers = teamUsersResult.data && teamUsersResult.data.length > 0;
+      const hasPlayers = players.length > 0;
+      const hasMatches = allMatches.some(
+        (m) => m.home_team_id === teamId || m.away_team_id === teamId,
+      );
+      const hasTeamUsers = false;
 
       if (hasPlayers || hasMatches || hasTeamUsers) {
         const issues = [];
-        if (hasPlayers) issues.push(`${playersResult.data!.length} speler(s)`);
-        if (hasMatches) issues.push(`${matchesResult.data!.length} wedstrijd(en)`);
-        if (hasTeamUsers) issues.push(`${teamUsersResult.data!.length} teamverantwoordelijke(n)`);
+        if (hasPlayers) issues.push(`${players.length} speler(s)`);
+        if (hasMatches) issues.push('wedstrijd(en)');
+        if (hasTeamUsers) issues.push('teamverantwoordelijke(n)');
         
         toast({
           title: "Kan team niet verwijderen",
@@ -319,12 +227,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
         return false;
       }
 
-      const { error } = await supabase
-        .from('teams')
-        .delete()
-        .eq('team_id', teamId);
-      
-      if (error) throw error;
+      await teamService.deleteTeam(teamId);
       
       toast({
         title: "Team verwijderd",

@@ -1,6 +1,7 @@
 export interface TeamCostTransaction {
   team_id: number;
   amount: number | string | null | undefined;
+  transaction_type?: string | null;
   cost_settings?: {
     name?: string | null;
     category?: string | null;
@@ -23,8 +24,10 @@ function costLabel(transaction: TeamCostTransaction): string {
   return (transaction.cost_settings?.name || transaction.description || "").toLowerCase();
 }
 
-function costCategory(transaction: TeamCostTransaction): string {
-  return (transaction.cost_settings?.category || "").toLowerCase();
+export function costCategory(transaction: TeamCostTransaction): string {
+  return (transaction.cost_settings?.category || transaction.transaction_type || "")
+    .toLowerCase()
+    .trim();
 }
 
 function amountValue(transaction: TeamCostTransaction, absolute = false): number {
@@ -114,6 +117,15 @@ export function isAdminCostTransaction(transaction: TeamCostTransaction): boolea
   return label.includes("administratie") || label.includes("admin");
 }
 
+function isUncategorizedMatchCost(transaction: TeamCostTransaction): boolean {
+  return (
+    costCategory(transaction) === "match_cost" &&
+    !isFieldCostTransaction(transaction) &&
+    !isRefereeCostTransaction(transaction) &&
+    !isAdminCostTransaction(transaction)
+  );
+}
+
 export function computeCurrentBalance(transactions: TeamCostTransaction[]): number {
   return transactions.reduce((balance, transaction) => {
     const category = costCategory(transaction);
@@ -135,11 +147,16 @@ export function computeTeamFinances(
 
   const startCapital = teamTransactions
     .filter((t) => costCategory(t) === "deposit")
-    .reduce((sum, t) => sum + amountValue(t), 0);
-
-  const fieldCosts = teamTransactions
-    .filter(isFieldCostTransaction)
     .reduce((sum, t) => sum + amountValue(t, true), 0);
+
+  const uncategorizedMatchCosts = teamTransactions
+    .filter(isUncategorizedMatchCost)
+    .reduce((sum, t) => sum + amountValue(t, true), 0);
+
+  const fieldCosts =
+    teamTransactions
+      .filter(isFieldCostTransaction)
+      .reduce((sum, t) => sum + amountValue(t, true), 0) + uncategorizedMatchCosts;
 
   const refereeCosts = teamTransactions
     .filter(isRefereeCostTransaction)

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getRpcSessionArgs } from "@/lib/authSession";
+import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
 import { Player, Team } from "../types";
 import { User } from "@/types/auth";
 
@@ -38,16 +39,8 @@ export const usePlayersData = (authUser: User | null) => {
 
   const fetchTeams = async () => {
     try {
-      const { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .order('team_name');
-
-      if (error) {
-        console.error('Error fetching teams:', error);
-        return [];
-      }
-      return data || [];
+      const teams = await fetchTeamsForSession();
+      return teams.map((t) => ({ team_id: t.team_id, team_name: t.team_name }));
     } catch (error) {
       console.error('Error in fetchTeams:', error);
       return [];

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { teamService } from "@/services/core/teamService";
 import { useTeamOperations } from "./useTeamOperations";
 
 interface Team {
@@ -75,30 +75,10 @@ export function useTeamsEnhanced() {
     try {
       setLoading(true);
       
-      // Fetch all teams - RLS policies will control access
-      // For team_managers, the new policy allows reading all teams when tab visibility is enabled
-      const { data, error } = await supabase
-        .from('teams')
-        .select('*')
-        .order('team_name');
-      
-      if (error) {
-        // Log detailed error for debugging
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[TeamsPage] Error fetching teams:', {
-            error,
-            code: error.code,
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-          });
-        }
-        throw error;
-      }
-      
-      setTeams((data || []).map(team => ({ 
-        ...team, 
-        preferred_play_moments: team.preferred_play_moments as any
+      const data = await teamService.getAllTeams();
+      setTeams(data.map((team) => ({
+        ...team,
+        preferred_play_moments: team.preferred_play_moments as Team["preferred_play_moments"],
       })));
     } catch (error: any) {
       console.error('Error fetching teams:', error);

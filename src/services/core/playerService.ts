@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { fetchPlayersForSession } from "@/services/core/playersSessionFetch";
 
 export interface Player {
   player_id: number;
@@ -11,46 +11,37 @@ export interface Player {
 
 export const playerService = {
   async getPlayersByTeam(teamId: number): Promise<Player[]> {
-    const { data, error } = await supabase
-      .from('players')
-      .select('player_id, first_name, last_name, birth_date, team_id')
-      .eq('team_id', teamId)
-      .order('first_name');
-    
-    if (error) {
-      console.error('Error fetching players for team:', error);
-      throw error;
-    }
-    
-    return data || [];
+    const players = await fetchPlayersForSession(teamId);
+    return players.map((p) => ({
+      player_id: p.player_id,
+      first_name: p.first_name,
+      last_name: p.last_name,
+      birth_date: p.birth_date,
+      team_id: p.team_id,
+    }));
   },
 
   async getAllPlayers(): Promise<Player[]> {
-    const { data, error } = await supabase
-      .from('players')
-      .select('player_id, first_name, last_name, birth_date, team_id')
-      .order('first_name');
-    
-    if (error) {
-      console.error('Error fetching all players:', error);
-      throw error;
-    }
-    
-    return data || [];
+    const players = await fetchPlayersForSession(null);
+    return players.map((p) => ({
+      player_id: p.player_id,
+      first_name: p.first_name,
+      last_name: p.last_name,
+      birth_date: p.birth_date,
+      team_id: p.team_id,
+    }));
   },
 
   async getPlayerById(playerId: number): Promise<Player | null> {
-    const { data, error } = await supabase
-      .from('players')
-      .select('player_id, first_name, last_name, birth_date, team_id')
-      .eq('player_id', playerId)
-      .maybeSingle();
-    
-    if (error) {
-      console.error('Error fetching player:', error);
-      return null;
-    }
-    
-    return data || null;
-  }
+    const players = await fetchPlayersForSession(null);
+    const player = players.find((p) => p.player_id === playerId);
+    if (!player) return null;
+    return {
+      player_id: player.player_id,
+      first_name: player.first_name,
+      last_name: player.last_name,
+      birth_date: player.birth_date,
+      team_id: player.team_id,
+    };
+  },
 };

@@ -11,6 +11,8 @@ export interface ScheidsScheduleRow {
   home_team_name: string | null;
   away_team_name: string | null;
   assigned_referee_id: number | null;
+  poll_group_id?: string | null;
+  referee?: string | null;
 }
 
 export interface RefereeAssignmentRow {
@@ -145,6 +147,23 @@ export async function fetchScheidsPollOverview(
   });
   if (error) throw error;
   return (data as ScheidsPollOverview | null) ?? null;
+}
+
+export async function fetchMonthlyPollsForSession() {
+  const { data, error } = await supabase.rpc("get_monthly_polls_for_session", {
+    ...getRpcSessionArgs(),
+  });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchPollMatchDateKeysForSession(pollMonth: string) {
+  const { data, error } = await supabase.rpc("get_poll_match_dates_for_session", {
+    ...getRpcSessionArgs(),
+    p_poll_month: pollMonth,
+  });
+  if (error) throw error;
+  return (data ?? []) as Array<{ match_date: string; location: string | null }>;
 }
 
 export async function fetchScheidsWorkloadStats(pollMonth: string): Promise<

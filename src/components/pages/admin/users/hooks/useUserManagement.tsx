@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getRpcSessionArgs } from "@/lib/authSession";
-import { withUserContext } from "@/lib/supabaseUtils";
+import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
 import { DbUser, Team } from "../userTypes";
 import { useUserOperations } from "./useUserOperations";
 
@@ -46,24 +46,16 @@ export const useUserManagement = () => {
     }
     
     // Use SECURITY DEFINER RPC to fetch users with proper authorization
-    const { data: usersData, error: usersError } = await withUserContext(async () =>
-      supabase.rpc('get_all_users_for_admin', getRpcSessionArgs())
+    const { data: usersData, error: usersError } = await supabase.rpc(
+      'get_all_users_for_admin',
+      getRpcSessionArgs(),
     );
 
     if (usersError) {
       throw new Error(`Fout bij het ophalen van gebruikers: ${usersError.message}`);
     }
 
-    const { data: teamsData, error: teamsError } = await withUserContext(async () =>
-      supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .order('team_name')
-    );
-
-    if (teamsError) {
-      throw new Error(`Fout bij het ophalen van teams: ${teamsError.message}`);
-    }
+    const teamsData = await fetchTeamsForSession();
 
     // Transform users data (team_users is already JSONB from RPC)
     const transformedUsers: DbUser[] = (usersData || []).map((user: any) => {
@@ -82,7 +74,7 @@ export const useUserManagement = () => {
 
     return {
       users: transformedUsers,
-      teams: (teamsData as Team[]) || []
+      teams: teamsData.map((t) => ({ team_id: t.team_id, team_name: t.team_name }))
     };
   };
 

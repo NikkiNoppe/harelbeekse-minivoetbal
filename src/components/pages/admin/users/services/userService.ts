@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getRpcSessionArgs } from "@/lib/authSession";
+import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
 import { User } from "@/types/auth";
 
 
@@ -16,39 +17,30 @@ interface TeamUser {
 }
 
 export const fetchUsersWithTeams = async () => {
-  const { data: usersData, error: usersError } = await supabase
-    .from('users')
-    .select(`
-      user_id,
-      username,
-      email,
-      role,
-      team_users!left (
-        team_id,
-        teams!team_users_team_id_fkey (
-          team_id,
-          team_name
-        )
-      )
-    `)
-    .order('username');
+  const { data: usersData, error: usersError } = await supabase.rpc(
+    'get_all_users_for_admin',
+    getRpcSessionArgs(),
+  );
 
   if (usersError) throw usersError;
 
-  const transformedUsers: User[] = (usersData || []).map(user => {
+  const transformedUsers: User[] = (usersData || []).map((user: {
+    user_id: number;
+    username: string;
+    email?: string | null;
+    role: string;
+    team_users?: Array<{ team_id: number; team_name: string }>;
+  }) => {
     const teamUsers = user.team_users || [];
-    const userTeams = teamUsers.map(tu => ({
-      team_id: tu.teams?.team_id || 0,
-      team_name: tu.teams?.team_name || ''
-    })).filter(t => t.team_id > 0);
-    
+    const userTeams = teamUsers.filter((t) => t.team_id > 0);
+
     return {
       id: user.user_id,
       username: user.username,
       email: user.email || '',
       password: '',
-      role: user.role as any,
-      teamId: userTeams.length > 0 ? userTeams[0].team_id : undefined
+      role: user.role as User['role'],
+      teamId: userTeams.length > 0 ? userTeams[0].team_id : undefined,
     };
   });
 
@@ -56,13 +48,8 @@ export const fetchUsersWithTeams = async () => {
 };
 
 export const fetchTeams = async (): Promise<Team[]> => {
-  const { data, error } = await supabase
-    .from('teams')
-    .select('team_id, team_name')
-    .order('team_name');
-  
-  if (error) throw error;
-  return data || [];
+  const teams = await fetchTeamsForSession();
+  return teams.map((t) => ({ team_id: t.team_id, team_name: t.team_name }));
 };
 
 export const fetchTeamUsers = async (): Promise<TeamUser[]> => {

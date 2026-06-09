@@ -19,10 +19,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { usePlayerListLock } from "../players/hooks/usePlayerListLock";
 import { Lock, Loader2 } from "lucide-react";
-import { playerService, Player } from "@/services/core";
+import { Player } from "@/services/core";
 import { supabase } from "@/integrations/supabase/client";
+import { getRpcSessionArgs } from "@/lib/authSession";
 import { formatDateShort } from "@/lib/dateUtils";
-import { withUserContext } from "@/lib/supabaseUtils";
+import { fetchPlayersForSession } from "@/services/core/playersSessionFetch";
 
 interface PlayersListProps {
   teamId: number;
@@ -50,7 +51,14 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
     
     try {
       setLoading(true);
-      const playersData = await playerService.getPlayersByTeam(teamId);
+      const rows = await fetchPlayersForSession(teamId);
+      const playersData: Player[] = rows.map((p) => ({
+        player_id: p.player_id,
+        first_name: p.first_name,
+        last_name: p.last_name,
+        birth_date: p.birth_date,
+        team_id: p.team_id,
+      }));
       setPlayers(playersData);
       console.log(`✅ Loaded ${playersData.length} players for team ${teamId}`);
     } catch (error) {
@@ -114,18 +122,19 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
     }
 
     try {
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('players')
-          .insert({
-            first_name: newPlayerFirstName,
-            last_name: newPlayerLastName,
-            birth_date: newPlayerBirthDate,
-            team_id: teamId
-          });
+      const { data, error } = await supabase.rpc('insert_player_for_session', {
+        ...getRpcSessionArgs(),
+        p_first_name: newPlayerFirstName,
+        p_last_name: newPlayerLastName,
+        p_birth_date: newPlayerBirthDate,
+        p_team_id: teamId,
       });
 
       if (error) throw error;
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result?.success) {
+        throw new Error(result?.message || 'Kon speler niet toevoegen');
+      }
 
       setNewPlayerFirstName("");
       setNewPlayerLastName("");
@@ -154,14 +163,16 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
     }
 
     try {
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('players')
-          .delete()
-          .eq('player_id', playerId);
+      const { data, error } = await supabase.rpc('delete_player_for_session', {
+        ...getRpcSessionArgs(),
+        p_player_id: playerId,
       });
 
       if (error) throw error;
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result?.success) {
+        throw new Error(result?.message || 'Kon speler niet verwijderen');
+      }
 
       toast({
         title: "Speler verwijderd",

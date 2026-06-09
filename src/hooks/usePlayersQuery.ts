@@ -3,6 +3,7 @@ import { useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getRpcSessionArgs } from "@/lib/authSession";
+import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
 
 export interface Player {
   player_id: number;
@@ -172,16 +173,8 @@ export const useTeamsQuery = () => {
   return useQuery({
     queryKey: ['teams'],
     queryFn: async (): Promise<Team[]> => {
-      const { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .order('team_name');
-      
-      if (error) {
-        console.error('Error fetching teams:', error);
-        throw error;
-      }
-      return (data || []) as Team[];
+      const teams = await fetchTeamsForSession();
+      return teams.map((t) => ({ team_id: t.team_id, team_name: t.team_name }));
     },
     enabled: authContextReady, // Only fetch when auth is ready
     staleTime: 5 * 60 * 1000, // 5 minutes - teams change rarely

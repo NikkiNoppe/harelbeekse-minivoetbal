@@ -1,7 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { teamService } from '@/services/core/teamService';
-import { withUserContext } from '@/lib/supabaseUtils';
 import { fetchTeamForSession } from '@/services/core/teamsSessionFetch';
 import { getSessionToken } from '@/lib/authSession';
 
@@ -91,14 +89,7 @@ export const useUpdateTeam = () => {
 
   return useMutation({
     mutationFn: async ({ teamId, data }: { teamId: number; data: Partial<Team> }) => {
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('teams')
-          .update(data)
-          .eq('team_id', teamId);
-      });
-
-      if (error) throw error;
+      await teamService.updateTeam(teamId, data);
       return { teamId, data };
     },
     onSuccess: (_, { teamId }) => {
@@ -115,14 +106,7 @@ export const useDeleteTeam = () => {
 
   return useMutation({
     mutationFn: async (teamId: number) => {
-      const { error } = await withUserContext(async () => {
-        return await supabase
-          .from('teams')
-          .delete()
-          .eq('team_id', teamId);
-      });
-
-      if (error) throw error;
+      await teamService.deleteTeam(teamId);
       return teamId;
     },
     onSuccess: () => {

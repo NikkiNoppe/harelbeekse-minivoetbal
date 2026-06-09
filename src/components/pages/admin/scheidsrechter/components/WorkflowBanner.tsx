@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { pollService } from '@/services/scheidsrechter/pollService';
 import { refereeAvailabilityService } from '@/services/scheidsrechter/refereeAvailabilityService';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchScheidsScheduleForMonth } from '@/services/scheidsrechter/scheidsSessionFetch';
 import type { MonthlyPoll } from '@/services/scheidsrechter/types';
 
 interface WorkflowBannerProps {
@@ -79,22 +79,11 @@ export const WorkflowBanner: React.FC<WorkflowBannerProps> = ({
         totalReferees = stats.total_referees;
 
         // Tel matches in die maand + toegewezen
-        const [year, monthNum] = activePoll.poll_month.split('-').map(Number);
-        const nextMonth =
-          monthNum === 12
-            ? `${year + 1}-01`
-            : `${year}-${String(monthNum + 1).padStart(2, '0')}`;
-
-        const { data: matchesData } = await supabase
-          .from('matches')
-          .select('match_id, assigned_referee_id, referee')
-          .gte('match_date', `${activePoll.poll_month}-01`)
-          .lt('match_date', `${nextMonth}-01`);
-
-        matchesTotal = matchesData?.length || 0;
-        matchesAssigned =
-          matchesData?.filter((m) => m.assigned_referee_id || m.referee)
-            .length || 0;
+        const matchesData = await fetchScheidsScheduleForMonth(activePoll.poll_month);
+        matchesTotal = matchesData.length;
+        matchesAssigned = matchesData.filter(
+          (m) => m.assigned_referee_id || m.referee,
+        ).length;
       }
 
       setData({

@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { withUserContext } from "@/lib/supabaseUtils";
+import { fetchCostsForSession } from "@/services/financial/costsSessionFetch";
 
 export interface CostSetting {
   id: number;
@@ -36,89 +37,47 @@ const logOperation = (operation: string, data?: any, error?: any) => {
 
 export const enhancedCostSettingsService = {
   async getCostSettings(): Promise<CostSetting[]> {
-    logOperation('getCostSettings - START');
+    logOperation("getCostSettings - START");
     try {
-      const { data, error } = await supabase
-        .from('costs')
-        .select('*')
-        .order('category', { ascending: true })
-        .order('name', { ascending: true });
-
-      logOperation('getCostSettings - QUERY RESULT', { data, error });
-
-      if (error) {
-        logOperation('getCostSettings - ERROR', { error });
-        throw error;
-      }
-      
-      const mappedData = (data || []).map(item => ({
+      const mappedData = (await fetchCostsForSession()).map((item) => ({
         ...item,
-        category: item.category as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost'
+        category: item.category as CostSetting["category"],
       }));
-
-      logOperation('getCostSettings - SUCCESS', { count: mappedData.length });
+      logOperation("getCostSettings - SUCCESS", { count: mappedData.length });
       return mappedData;
     } catch (error) {
-      logOperation('getCostSettings - CATCH ERROR', { error });
-      return [];
+      logOperation("getCostSettings - CATCH ERROR", { error });
+      throw error;
     }
   },
 
   async getMatchCosts(): Promise<CostSetting[]> {
-    logOperation('getMatchCosts - START');
+    logOperation("getMatchCosts - START");
     try {
-      const { data, error } = await supabase
-        .from('costs')
-        .select('*')
-        .eq('category', 'match_cost')
-        .order('name');
-
-      logOperation('getMatchCosts - QUERY RESULT', { data, error });
-
-      if (error) {
-        logOperation('getMatchCosts - ERROR', { error });
-        throw error;
-      }
-      
-      const mappedData = (data || []).map(item => ({
+      const mappedData = (await fetchCostsForSession("match_cost")).map((item) => ({
         ...item,
-        category: item.category as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost'
+        category: item.category as CostSetting["category"],
       }));
-
-      logOperation('getMatchCosts - SUCCESS', { count: mappedData.length });
+      logOperation("getMatchCosts - SUCCESS", { count: mappedData.length });
       return mappedData;
     } catch (error) {
-      logOperation('getMatchCosts - CATCH ERROR', { error });
-      return [];
+      logOperation("getMatchCosts - CATCH ERROR", { error });
+      throw error;
     }
   },
 
   async getPenalties(): Promise<CostSetting[]> {
-    logOperation('getPenalties - START');
+    logOperation("getPenalties - START");
     try {
-      const { data, error } = await supabase
-        .from('costs')
-        .select('*')
-        .eq('category', 'penalty')
-        .order('name');
-
-      logOperation('getPenalties - QUERY RESULT', { data, error });
-
-      if (error) {
-        logOperation('getPenalties - ERROR', { error });
-        throw error;
-      }
-      
-      const mappedData = (data || []).map(item => ({
+      const mappedData = (await fetchCostsForSession("penalty")).map((item) => ({
         ...item,
-        category: item.category as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost'
+        category: item.category as CostSetting["category"],
       }));
-
-      logOperation('getPenalties - SUCCESS', { count: mappedData.length });
+      logOperation("getPenalties - SUCCESS", { count: mappedData.length });
       return mappedData;
     } catch (error) {
-      logOperation('getPenalties - CATCH ERROR', { error });
-      return [];
+      logOperation("getPenalties - CATCH ERROR", { error });
+      throw error;
     }
   },
 

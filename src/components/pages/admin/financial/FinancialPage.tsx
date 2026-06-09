@@ -118,7 +118,7 @@ const AdminFinancialPage: React.FC = () => {
     calculateTeamFinances,
     formatCurrency,
     syncStatus,
-    forceResync,
+    runDailySync,
     isListLoading,
     isAmountsLoading,
     isRefreshing,
@@ -195,8 +195,22 @@ const AdminFinancialPage: React.FC = () => {
               </div>
               <div className="flex gap-2 flex-shrink-0 w-full flex-wrap max-w-full">
                 <button
+                  type="button"
+                  onClick={() => void runDailySync()}
+                  disabled={syncStatus === "syncing"}
+                  className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px] max-w-full w-full min-h-[44px] disabled:opacity-60"
+                  style={{ maxWidth: "100%", width: "100%" }}
+                >
+                  {syncStatus === "syncing" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" aria-hidden />
+                  )}
+                  {syncStatus === "syncing" ? "Sync bezig…" : "Sync wedstrijdkosten"}
+                </button>
+                <button
                   onClick={() => setCostListModalOpen(true)}
-                  className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px] max-w-full w-full"
+                  className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px] max-w-full w-full min-h-[44px]"
                   style={{ maxWidth: "100%", width: "100%" }}
                 >
                   <List className="h-4 w-4" />
@@ -204,7 +218,7 @@ const AdminFinancialPage: React.FC = () => {
                 </button>
                 <button
                   onClick={handleMonthlyReportsOpen}
-                  className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px] max-w-full w-full"
+                  className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px] max-w-full w-full min-h-[44px]"
                   style={{ maxWidth: "100%", width: "100%" }}
                 >
                   <Calendar className="h-4 w-4" />
@@ -256,21 +270,19 @@ const AdminFinancialPage: React.FC = () => {
               </Alert>
             )}
 
-            {(syncStatus === "syncing" || syncStatus === "synced" || syncStatus === "error") && (
+            {(syncStatus === "synced" || syncStatus === "error") && (
               <div
                 role="status"
                 className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
               >
                 <div className="flex items-center gap-2">
-                  {syncStatus === "syncing" && (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin opacity-80" aria-hidden />
-                      <span>Wedstrijdkosten synchroniseren op de achtergrond…</span>
-                    </>
+                  {syncStatus === "synced" && (
+                    <span>Wedstrijdkosten gesynchroniseerd — saldi ververst.</span>
                   )}
-                  {syncStatus === "synced" && <span>Boekingen bijgewerkt — overzicht ververst.</span>}
                   {syncStatus === "error" && (
-                    <span className="text-destructive">Sync mislukt. Cijfers kunnen verouderd zijn.</span>
+                    <span className="text-destructive">
+                      Sync mislukt. Probeer opnieuw via &quot;Sync wedstrijdkosten&quot;.
+                    </span>
                   )}
                 </div>
                 {syncStatus === "error" && (
@@ -278,8 +290,8 @@ const AdminFinancialPage: React.FC = () => {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-7 gap-1 px-2"
-                    onClick={() => void forceResync()}
+                    className="h-7 gap-1 px-2 min-h-[44px] sm:min-h-7"
+                    onClick={() => void runDailySync()}
                   >
                     <RefreshCw className="h-3 w-3" />
                     Opnieuw

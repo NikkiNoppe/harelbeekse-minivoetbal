@@ -1,6 +1,18 @@
-import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
-import { resolveTeamCostAmount } from "./teamCostCategories";
+import { fetchAllMatchesForSession } from "@/services/core/matchesSessionFetch";
+import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
+import { costSettingsService } from "./costSettingsService";
+import {
+  fetchAllTeamTransactionsOverview,
+  type FinancialTeamTransaction,
+} from "./financialTransactionsFetch";
+import {
+  computePeriodCostTotals,
+  costCategory,
+  isAdminCostTransaction,
+  isFieldCostTransaction,
+  resolveTeamCostAmount,
+  type TeamCostTransaction,
+} from "./teamCostCategories";
 
 /** Eén geboekte veldlijn (per ploeg); wedstrijdinfo uit join. */
 export interface FieldCostLineDetail {
@@ -86,6 +98,7 @@ export interface MonthlyReport {
   totalAdminCosts: number;
   totalFines: number;
   totalMatches: number;
+  totalForfaits: number;
 }
 
 // Helper functions for season handling
@@ -151,15 +164,28 @@ function expenseAmount(transaction: {
   );
 }
 
-/** Zelfde logica als sync-match-costs edge function */
-function isFieldCostName(name: string | null | undefined): boolean {
-  const n = (name || "").toLowerCase();
-  return n.includes("veld") || n.includes("field");
+function toTeamCostTransaction(transaction: FinancialTeamTransaction): TeamCostTransaction {
+  return {
+    team_id: transaction.team_id,
+    amount: transaction.amount,
+    transaction_type: transaction.transaction_type,
+    cost_settings: transaction.cost_settings,
+    description: transaction.description,
+  };
 }
 
-function isAdminCostName(name: string | null | undefined): boolean {
-  const n = (name || "").toLowerCase();
-  return n.includes("administratie") || n.includes("admin");
+/** Modal maandfilter (7–12, 13–18) voor computePeriodCostTotals — zelfde als financieel overzicht. */
+function reportMonthFilterKey(
+  seasonYear: number,
+  actualMonth?: number,
+  actualYear?: number,
+): number | null {
+  if (!actualMonth || !actualYear) return null;
+  return actualYear === seasonYear ? actualMonth : actualMonth + 12;
+}
+
+function isForfaitPenaltyName(name: string | null | undefined): boolean {
+  return (name || "").toLowerCase().includes("forfait");
 }
 
 type FieldAdminBucket = {
@@ -194,6 +220,75 @@ function finalizeFieldAdminBucket(b: FieldAdminBucket): MonthlyFieldCosts {
   };
 }
 
+function seasonStartYearFromDate(value: string | null | undefined): number | null {
+  const monthKey = calendarMonthKeyFromDbDate(value);
+  if (!monthKey) return null;
+  const [yStr, mStr] = monthKey.split("-");
+  const year = parseInt(yStr, 10);
+  const month = parseInt(mStr, 10);
+  if (Number.isNaN(year) || Number.isNaN(month)) return null;
+  return month >= 7 ? year : year - 1;
+}
+
+function isDateInRange(value: string | null | undefined, startDateStr: string, endDateStr: string): boolean {
+  if (!value) return false;
+  const d = value.slice(0, 10);
+  return d >= startDateStr && d <= endDateStr;
+}
+
+type ReportTransactionRow = {
+  transaction_date: string;
+  team_id: number;
+  match_id: number | null;
+  amount: number;
+  costs: { name?: string | null; category?: string | null; amount?: number | string | null };
+  teams: { team_name: string };
+  matches: {
+    unique_number?: string;
+    match_date?: string;
+    teams_home?: { team_name?: string };
+    teams_away?: { team_name?: string };
+  } | null;
+};
+
+function mapTransactionForReport(
+  transaction: FinancialTeamTransaction,
+  teamNameById: Map<number, string>,
+  matchMetaById: Map<
+    number,
+    {
+      unique_number: string | null;
+      match_date: string;
+      home_team_name: string | null;
+      away_team_name: string | null;
+    }
+  >,
+): ReportTransactionRow {
+  const matchMeta = transaction.match_id ? matchMetaById.get(transaction.match_id) : undefined;
+  return {
+    transaction_date: transaction.transaction_date,
+    team_id: transaction.team_id,
+    match_id: transaction.match_id ?? null,
+    amount: transaction.amount,
+    costs: {
+      name: transaction.cost_settings?.name ?? transaction.description,
+      category: transaction.cost_settings?.category ?? transaction.transaction_type,
+      amount: transaction.cost_settings?.amount,
+    },
+    teams: {
+      team_name: teamNameById.get(transaction.team_id) || `Team ${transaction.team_id}`,
+    },
+    matches: matchMeta
+      ? {
+          unique_number: matchMeta.unique_number ?? undefined,
+          match_date: matchMeta.match_date,
+          teams_home: matchMeta.home_team_name ? { team_name: matchMeta.home_team_name } : undefined,
+          teams_away: matchMeta.away_team_name ? { team_name: matchMeta.away_team_name } : undefined,
+        }
+      : null,
+  };
+}
+
 function rowLabelFromMatchJoin(m: any): {
   uniqueNumber: string;
   matchDate: string | null;
@@ -217,55 +312,40 @@ export const monthlyReportsService = {
   // Get available seasons based on actual match data (not just transactions)
   async getAvailableSeasons(): Promise<SeasonData[]> {
     try {
-      // Get seasons from both transactions AND matches for comprehensive coverage
-      const [transactionResult, matchResult] = await Promise.all([
-        withUserContext(() =>
-          supabase
-            .from('team_costs')
-            .select('transaction_date')
-            .order('transaction_date', { ascending: false }),
-        ),
-        supabase
-          .from('matches')
-          .select('match_date')
-          .eq('is_submitted', true)
-          .order('match_date', { ascending: false }),
-      ]);
+      const transactions = await fetchAllTeamTransactionsOverview();
+      let matches: Awaited<ReturnType<typeof fetchAllMatchesForSession>> = [];
+      try {
+        matches = await fetchAllMatchesForSession();
+      } catch (matchError) {
+        console.warn("Matches voor seizoenlijst niet beschikbaar, gebruik transacties:", matchError);
+      }
 
       const seasonYears = new Set<number>();
-      
-      // Process transaction dates
-      transactionResult.data?.forEach(transaction => {
-        const date = new Date(transaction.transaction_date);
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        const seasonStartYear = month >= 6 ? year : year - 1;
-        seasonYears.add(seasonStartYear);
-      });
 
-      // Process match dates
-      matchResult.data?.forEach(match => {
-        const date = new Date(match.match_date);
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        const seasonStartYear = month >= 6 ? year : year - 1;
-        seasonYears.add(seasonStartYear);
-      });
+      for (const transaction of transactions) {
+        const seasonStartYear = seasonStartYearFromDate(transaction.transaction_date);
+        if (seasonStartYear !== null) seasonYears.add(seasonStartYear);
+      }
+
+      for (const match of matches) {
+        if (!match.is_submitted) continue;
+        const seasonStartYear = seasonStartYearFromDate(match.match_date);
+        if (seasonStartYear !== null) seasonYears.add(seasonStartYear);
+      }
 
       if (seasonYears.size === 0) return [];
 
-      // Convert to array and sort descending (newest first)
       return Array.from(seasonYears)
         .sort((a, b) => b - a)
-        .map(year => getSeasonFromYear(year));
+        .map((year) => getSeasonFromYear(year));
     } catch (error) {
-      console.error('Error fetching available seasons:', error);
+      console.error("Error fetching available seasons:", error);
       return [];
     }
   },
 
   async getSeasonReport(seasonYear: number, month?: number, year?: number): Promise<MonthlyReport> {
-    return withUserContext(() => this._getSeasonReport(seasonYear, month, year));
+    return this._getSeasonReport(seasonYear, month, year);
   },
 
   async _getSeasonReport(seasonYear: number, month?: number, year?: number): Promise<MonthlyReport> {
@@ -288,71 +368,54 @@ export const monthlyReportsService = {
       const startDateStr = filterStartDate.toISOString().split('T')[0];
       const endDateStr = filterEndDate.toISOString().split('T')[0];
 
-      const selectTeamCosts = `
-            *,
-            costs(name, category, amount),
-            teams!team_costs_team_id_fkey(team_name),
-            matches(
-              unique_number,
-              match_date,
-              teams_home:teams!home_team_id(team_name),
-              teams_away:teams!away_team_id(team_name)
-            )
-          `;
-
-      const fetchTransactions = async () => {
-        let allTransactions: any[] = [];
-        let from = 0;
-        const batchSize = 1000;
-
-        while (true) {
-          const { data: batch, error: batchError } = await supabase
-            .from('team_costs')
-            .select(selectTeamCosts)
-            .gte('transaction_date', startDateStr)
-            .lte('transaction_date', endDateStr)
-            .range(from, from + batchSize - 1);
-
-          if (batchError) throw batchError;
-          if (!batch || batch.length === 0) break;
-
-          allTransactions = allTransactions.concat(batch);
-          if (batch.length < batchSize) break;
-          from += batchSize;
-        }
-
-        return allTransactions;
-      };
-
-      const [transactions, matchesResult, costSettingsResult] = await Promise.all([
-        fetchTransactions(),
-        supabase
-          .from('matches')
-          .select(`
-          match_id, 
-          match_date, 
-          referee, 
-          unique_number,
-          is_submitted,
-          home_team_id,
-          away_team_id,
-          teams_home:teams!home_team_id(team_name),
-          teams_away:teams!away_team_id(team_name)
-        `)
-          .eq('is_submitted', true)
-          .gte('match_date', startDateStr)
-          .lte('match_date', endDateStr)
-          .order('match_date', { ascending: false }),
-        supabase
-          .from('costs')
-          .select('id, name, amount, category')
-          .eq('category', 'match_cost'),
+      const [allTransactionsRaw, teams, costSettings] = await Promise.all([
+        fetchAllTeamTransactionsOverview(),
+        fetchTeamsForSession(),
+        costSettingsService.getMatchCosts(),
       ]);
 
-      const { data: allMatches, error: matchError } = matchesResult;
-      if (matchError) throw matchError;
+      let allMatchesRaw: Awaited<ReturnType<typeof fetchAllMatchesForSession>> = [];
+      try {
+        allMatchesRaw = await fetchAllMatchesForSession();
+      } catch (matchError) {
+        console.warn("Matches voor seizoensrapport niet beschikbaar:", matchError);
+      }
 
-      const { data: costSettings } = costSettingsResult;
+      const teamNameById = new Map(teams.map((t) => [t.team_id, t.team_name]));
+      const matchMetaById = new Map(
+        allMatchesRaw.map((m) => [
+          m.match_id,
+          {
+            unique_number: m.unique_number,
+            match_date: m.match_date,
+            home_team_name: m.home_team_name,
+            away_team_name: m.away_team_name,
+          },
+        ]),
+      );
+
+      const periodMonthKey = reportMonthFilterKey(seasonYear, month, year);
+
+      const periodTotals = computePeriodCostTotals(
+        allTransactionsRaw.map((t) => ({
+          ...toTeamCostTransaction(t),
+          transaction_date: t.transaction_date,
+        })),
+        seasonYear,
+        periodMonthKey,
+      );
+
+      const transactions = allTransactionsRaw
+        .filter((t) => isDateInRange(t.transaction_date, startDateStr, endDateStr))
+        .map((t) => mapTransactionForReport(t, teamNameById, matchMetaById));
+
+      const allMatches = allMatchesRaw
+        .filter(
+          (m) =>
+            m.is_submitted &&
+            isDateInRange(m.match_date, startDateStr, endDateStr),
+        )
+        .sort((a, b) => b.match_date.localeCompare(a.match_date));
 
       const refereeCostSetting = costSettings?.find(cs => 
         cs.name?.toLowerCase().includes('scheidsrechter') || 
@@ -365,6 +428,7 @@ export const monthlyReportsService = {
       const adminCostsByMonth: Record<string, FieldAdminBucket> = {};
       const finesByMonth: Record<string, MonthlyFines> = {};
       const matchStatsByMonth: Record<string, MonthlyMatchStats> = {};
+      let totalForfaits = 0;
 
       // Process transactions for field costs and fines
       transactions?.forEach(transaction => {
@@ -377,11 +441,22 @@ export const monthlyReportsService = {
         const seasonLabel =
           month && year ? seasonFromCalendarMonthKey(txMonthKey) : seasonData.season;
 
-        const category = transaction.costs?.category;
+        const teamCostRow: TeamCostTransaction = {
+          team_id: transaction.team_id,
+          amount: transaction.amount,
+          transaction_type: transaction.costs?.category ?? null,
+          cost_settings: transaction.costs
+            ? {
+                name: transaction.costs.name,
+                category: transaction.costs.category,
+                amount: transaction.costs.amount,
+              }
+            : undefined,
+        };
         const costNameRaw = transaction.costs?.name;
 
-        // Field costs (zelfde detectie als sync-match-costs: veld / field)
-        if (category === 'match_cost' && isFieldCostName(costNameRaw)) {
+        // Field costs — zelfde categorie-logica als teamoverzicht
+        if (isFieldCostTransaction(teamCostRow)) {
           if (!fieldCostsByMonth[key]) {
             fieldCostsByMonth[key] = {
               month: monthName,
@@ -416,7 +491,7 @@ export const monthlyReportsService = {
         }
 
         // Admin costs
-        if (category === 'match_cost' && isAdminCostName(costNameRaw)) {
+        if (isAdminCostTransaction(teamCostRow)) {
           if (!adminCostsByMonth[key]) {
             adminCostsByMonth[key] = {
               month: monthName,
@@ -436,7 +511,7 @@ export const monthlyReportsService = {
         }
 
         // Penalties/Fines
-        if (category === 'penalty') {
+        if (costCategory(teamCostRow) === "penalty") {
           if (!finesByMonth[key]) {
             finesByMonth[key] = {
               month: monthName,
@@ -448,6 +523,9 @@ export const monthlyReportsService = {
           }
           finesByMonth[key].totalFines += expenseAmount(transaction);
           finesByMonth[key].fineCount++;
+          if (isForfaitPenaltyName(costNameRaw)) {
+            totalForfaits++;
+          }
           const m = transaction.matches as { unique_number?: string; match_date?: string; teams_home?: { team_name?: string }; teams_away?: { team_name?: string } } | null;
           const meta = rowLabelFromMatchJoin(m);
           const teamRow = transaction.teams as { team_name?: string } | null | undefined;
@@ -471,7 +549,7 @@ export const monthlyReportsService = {
       // Build referee costs DIRECTLY from matches table (competitie + beker + play-offs)
       const refereeCostsByReferee: Record<string, MonthlyRefereeCosts> = {};
 
-      allMatches?.forEach(match => {
+      allMatches.forEach((match) => {
         const mMonthKey = calendarMonthKeyFromDbDate(match.match_date);
         if (!mMonthKey) return;
 
@@ -480,19 +558,17 @@ export const monthlyReportsService = {
         const monthName =
           month && year ? nlMonthYearFromKey(mMonthKey) : `Seizoen ${seasonData.season}`;
 
-        // Track match stats
-        const statsKey = month && year ? mMonthKey : 'season-total';
+        const statsKey = month && year ? mMonthKey : "season-total";
         if (!matchStatsByMonth[statsKey]) {
           matchStatsByMonth[statsKey] = {
             month: monthName,
             season: seasonLabel,
-            totalMatches: 0
+            totalMatches: 0,
           };
         }
         matchStatsByMonth[statsKey].totalMatches++;
 
-        // Track referee data directly from matches
-        const referee = match.referee || 'Niet toegewezen';
+        const referee = match.referee?.trim() || "Niet toegewezen";
         const refereeKey = month && year ? `${mMonthKey}-${referee}` : `season-${referee}`;
 
         if (!refereeCostsByReferee[refereeKey]) {
@@ -502,19 +578,18 @@ export const monthlyReportsService = {
             referee,
             totalCost: 0,
             matchCount: 0,
-            matches: []
+            matches: [],
           };
         }
 
-        // Each team pays 7€, so per match it's 14€ total (7€ from home team + 7€ from away team)
         refereeCostsByReferee[refereeKey].matchCount++;
         refereeCostsByReferee[refereeKey].totalCost += refereeCostPerMatch * 2;
         refereeCostsByReferee[refereeKey].matches?.push({
           match_id: match.match_id,
           unique_number: match.unique_number || `#${match.match_id}`,
           match_date: match.match_date,
-          home_team: (match.teams_home as any)?.team_name || 'Onbekend',
-          away_team: (match.teams_away as any)?.team_name || 'Onbekend'
+          home_team: match.home_team_name || "Onbekend",
+          away_team: match.away_team_name || "Onbekend",
         });
       });
 
@@ -542,11 +617,12 @@ export const monthlyReportsService = {
         adminCosts,
         fines,
         matchStats,
-        totalFieldCosts: fieldCosts.reduce((sum, item) => sum + item.totalCost, 0),
-        totalRefereeCosts: refereeCosts.reduce((sum, item) => sum + item.totalCost, 0),
-        totalAdminCosts: adminCosts.reduce((sum, item) => sum + item.totalCost, 0),
-        totalFines: fines.reduce((sum, item) => sum + item.totalFines, 0),
-        totalMatches: matchStats.reduce((sum, item) => sum + item.totalMatches, 0)
+        totalFieldCosts: periodTotals.totalFieldCosts,
+        totalRefereeCosts: periodTotals.totalRefereeCosts,
+        totalAdminCosts: periodTotals.totalAdminCosts,
+        totalFines: periodTotals.totalFines,
+        totalMatches: matchStats.reduce((sum, item) => sum + item.totalMatches, 0),
+        totalForfaits,
       };
     } catch (error) {
       console.error('Error fetching season report:', error);
@@ -558,85 +634,76 @@ export const monthlyReportsService = {
     try {
       const seasonData = getSeasonFromYear(seasonYear);
       const { startDate, endDate } = getSeasonDates(seasonData);
-      
-      // Fetch cost setting for referee payments
-      const { data: costSettings } = await supabase
-        .from('costs')
-        .select('id, name, amount, category')
-        .eq('category', 'match_cost')
+      const startDateStr = startDate.toISOString().split("T")[0];
+      const endDateStr = endDate.toISOString().split("T")[0];
 
-      const refereeCostSetting = costSettings?.find(cs => 
-        cs.name?.toLowerCase().includes('scheidsrechter') || 
-        cs.name?.toLowerCase().includes('scheids')
+      const [allMatchesRaw, costSettings] = await Promise.all([
+        fetchAllMatchesForSession(),
+        costSettingsService.getMatchCosts(),
+      ]);
+
+      const refereeCostSetting = costSettings.find(
+        (cs) =>
+          cs.name?.toLowerCase().includes("scheidsrechter") ||
+          cs.name?.toLowerCase().includes("scheids"),
       );
       const refereeCostPerMatch = refereeCostSetting?.amount || 0;
 
-      // Get referee data DIRECTLY from matches table - this is the source of truth
-      const { data: allMatches, error: matchError } = await supabase
-        .from('matches')
-        .select(`
-          match_id, 
-          match_date, 
-          referee,
-          unique_number,
-          teams_home:teams!home_team_id(team_name),
-          teams_away:teams!away_team_id(team_name)
-        `)
-        .eq('is_submitted', true)
-        .gte('match_date', startDate.toISOString())
-        .lte('match_date', endDate.toISOString())
-        .order('match_date', { ascending: false });
+      const allMatches = allMatchesRaw.filter(
+        (m) =>
+          m.is_submitted && isDateInRange(m.match_date, startDateStr, endDateStr),
+      );
 
-      if (matchError) throw matchError;
+      const refereePayments: Record<
+        string,
+        {
+          month: string;
+          season: string;
+          referee: string;
+          totalCost: number;
+          matchCount: number;
+          matches: RefereeMatchInfo[];
+        }
+      > = {};
 
-      const refereePayments: Record<string, {
-        month: string;
-        season: string;
-        referee: string;
-        totalCost: number;
-        matchCount: number;
-        matches: RefereeMatchInfo[];
-      }> = {};
+      allMatches.forEach((match) => {
+        const referee = match.referee?.trim() || "Niet toegewezen";
 
-      allMatches?.forEach(match => {
-        const referee = match.referee || 'Niet toegewezen';
-        
         if (!refereePayments[referee]) {
           refereePayments[referee] = {
-            month: 'Seizoen Totaal',
+            month: "Seizoen Totaal",
             season: seasonData.season,
             referee,
             totalCost: 0,
             matchCount: 0,
-            matches: []
+            matches: [],
           };
         }
-        
-        // Each team pays 7€, so per match it's 14€ total (7€ from home team + 7€ from away team)
+
         refereePayments[referee].matchCount++;
         refereePayments[referee].totalCost += refereeCostPerMatch * 2;
         refereePayments[referee].matches.push({
           match_id: match.match_id,
           unique_number: match.unique_number || `#${match.match_id}`,
           match_date: match.match_date,
-          home_team: (match.teams_home as any)?.team_name || 'Onbekend',
-          away_team: (match.teams_away as any)?.team_name || 'Onbekend'
+          home_team: match.home_team_name || "Onbekend",
+          away_team: match.away_team_name || "Onbekend",
         });
       });
 
       return Object.values(refereePayments)
         .sort((a, b) => b.matchCount - a.matchCount)
-        .map(ref => ({
+        .map((ref) => ({
           month: ref.month,
           season: ref.season,
           referee: ref.referee,
           totalCost: ref.totalCost,
           matchCount: ref.matchCount,
-          matches: ref.matches
+          matches: ref.matches,
         }));
     } catch (error) {
-      console.error('Error fetching season referee payments:', error);
+      console.error("Error fetching season referee payments:", error);
       throw error;
     }
-  }
+  },
 };

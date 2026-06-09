@@ -5,7 +5,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
+import { getRpcSessionArgs } from "@/lib/authSession";
+import { fetchMatchForSession } from "@/services/core/matchesSessionFetch";
+import { fetchPlayersForSession } from "@/services/core/playersSessionFetch";
 import { useAuth } from "@/hooks/useAuth";
 import { Player, FormData, formSchema } from "./types";
 
@@ -24,46 +26,28 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
 
   // Fetch team players function with withUserContext wrapper
   const fetchTeamPlayers = async () => {
-    return await withUserContext(async () => {
-      const { data, error } = await supabase
-        .from('players')
-        .select('player_id, first_name, last_name')
-        .eq('team_id', teamId)
-        .order('first_name');
-      
-      if (error) {
-        console.error("Error fetching team players:", error);
-        toast({
-          title: "Fout bij ophalen spelers",
-          description: "Er is een probleem opgetreden bij het ophalen van de teamspelers.",
-          variant: "destructive"
-        });
-        throw error;
-      }
-      
-      return (data || []).map((dbPlayer) => ({
+    try {
+      const data = await fetchPlayersForSession(teamId);
+      return data.map((dbPlayer) => ({
         playerId: dbPlayer.player_id,
         playerName: `${dbPlayer.first_name} ${dbPlayer.last_name}`,
         selected: false,
         jerseyNumber: "",
-        isCaptain: false
+        isCaptain: false,
       }));
-    });
+    } catch (error) {
+      console.error("Error fetching team players:", error);
+      toast({
+        title: "Fout bij ophalen spelers",
+        description: "Er is een probleem opgetreden bij het ophalen van de teamspelers.",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   const fetchMatchData = async () => {
-    const { data, error } = await supabase
-      .from('matches')
-      .select('match_id, is_submitted, home_players, away_players, home_team_id, away_team_id')
-      .eq('match_id', matchId)
-      .single();
-    
-    if (error && error.code !== 'PGRST116') {
-      console.error("Error fetching match data:", error);
-      throw error;
-    }
-    
-    return data;
+    return fetchMatchForSession(matchId);
   };
 
   // Use React Query without explicit typing to avoid deep instantiation
@@ -197,15 +181,20 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
         ? { home_players: playerData, is_submitted: true }
         : { away_players: playerData, is_submitted: true };
       
-      const { error } = await supabase
-        .from('matches')
-        .update({
+      const { data: rpcData, error } = await supabase.rpc('update_match_for_session', {
+        ...getRpcSessionArgs(),
+        p_match_id: matchId,
+        p_update_data: {
           ...updateData,
-          updated_at: new Date().toISOString()
-        })
-        .eq('match_id', matchId);
-      
+          updated_at: new Date().toISOString(),
+        },
+      });
+
       if (error) throw error;
+      const result = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+      if (!result?.success) {
+        throw new Error(result?.message || 'Kon formulier niet opslaan');
+      }
       
       toast({
         title: "Formulier opgeslagen",

@@ -15,6 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 import { suspensionService } from '@/domains/cards-suspensions';
 import { useSuspensionsData } from '@/domains/cards-suspensions';
 import { supabase } from '@/integrations/supabase/client';
+import { getRpcSessionArgs } from '@/lib/authSession';
+import { fetchTeamsForSession } from '@/services/core/teamsSessionFetch';
+import { fetchPlayersForSession } from '@/services/core/playersSessionFetch';
 import { fetchAllCards, type CardData } from '@/domains/matches';
 import ResponsiveCardsTable from '@/components/tables/ResponsiveCardsTable';
 import { useUpcomingMatches } from '@/domains/matches';
@@ -110,35 +113,24 @@ const AdminSuspensionsPage: React.FC = () => {
   const teamsQuery = useQuery({
     queryKey: ['allTeams'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .order('team_name');
-      if (error) throw error;
-      return data as { team_id: number; team_name: string }[];
+      const teams = await fetchTeamsForSession();
+      return teams.map((t) => ({ team_id: t.team_id, team_name: t.team_name }));
     }
   });
 
   const playersQuery = useQuery({
     queryKey: ['allPlayers'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('players')
-        .select(`
-          player_id,
-          first_name,
-          last_name,
-          team_id,
-          teams:team_id (team_name)
-        `)
-        .order('first_name');
-      
-      if (error) throw error;
-      return data.map(p => ({
+      const [players, teams] = await Promise.all([
+        fetchPlayersForSession(null),
+        fetchTeamsForSession(),
+      ]);
+      const teamMap = new Map(teams.map((t) => [t.team_id, t.team_name]));
+      return players.map((p) => ({
         playerId: p.player_id,
         playerName: `${p.first_name} ${p.last_name}`,
-        teamName: p.teams?.team_name || 'Onbekend Team',
-        teamId: p.team_id as number
+        teamName: teamMap.get(p.team_id) || 'Onbekend Team',
+        teamId: p.team_id,
       }));
     }
   });
@@ -202,12 +194,14 @@ const AdminSuspensionsPage: React.FC = () => {
   // Mutation for updating player's suspended_matches_remaining (automatic suspensions)
   const updatePlayerSuspensionMutation = useMutation({
     mutationFn: async ({ playerId, remaining }: { playerId: number; remaining: number }) => {
-      const { error } = await supabase
-        .from('players')
-        .update({ suspended_matches_remaining: Math.max(0, remaining) })
-        .eq('player_id', playerId);
-      
+      const { data, error } = await supabase.rpc('update_player_suspension_for_session', {
+        ...getRpcSessionArgs(),
+        p_player_id: playerId,
+        p_suspended_matches_remaining: Math.max(0, remaining),
+      });
       if (error) throw error;
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result?.success) throw new Error(result?.message || 'Kon schorsing niet bijwerken');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['playerCards'] });
@@ -231,11 +225,14 @@ const AdminSuspensionsPage: React.FC = () => {
   const liftSuspensionMutation = useMutation({
     mutationFn: async ({ playerId, type, manualId }: { playerId: number; type: 'automatic' | 'manual'; manualId?: number }) => {
       if (type === 'automatic') {
-        const { error } = await supabase
-          .from('players')
-          .update({ suspended_matches_remaining: 0 })
-          .eq('player_id', playerId);
+        const { data, error } = await supabase.rpc('update_player_suspension_for_session', {
+          ...getRpcSessionArgs(),
+          p_player_id: playerId,
+          p_suspended_matches_remaining: 0,
+        });
         if (error) throw error;
+        const result = Array.isArray(data) ? data[0] : data;
+        if (!result?.success) throw new Error(result?.message || 'Kon schorsing niet opheffen');
       } else if (manualId) {
         await suspensionService.deleteSuspension(manualId);
       }

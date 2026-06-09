@@ -42,9 +42,19 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
   const [editName, setEditName] = useState('');
   const [editAmount, setEditAmount] = useState('');
 
-  const { data: costSettings, isLoading } = useQuery({
-    queryKey: ['cost-settings-management'],
-    queryFn: enhancedCostSettingsService.getCostSettings
+  const {
+    data: costSettings,
+    isLoading,
+    isFetched,
+    error: costSettingsError,
+    refetch: refetchCostSettings,
+  } = useQuery({
+    queryKey: ["cost-settings-management"],
+    queryFn: enhancedCostSettingsService.getCostSettings,
+    enabled: open,
+    staleTime: 0,
+    refetchOnMount: "always",
+    retry: 2,
   });
 
   const resetForm = useCallback(() => {
@@ -351,9 +361,16 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
-              {isLoading ? (
+              {isLoading && !costSettings ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Tarieven laden...
+                </div>
+              ) : costSettingsError && isFetched ? (
+                <div className="text-center py-8 space-y-3">
+                  <p className="text-sm text-destructive">Tarieven konden niet geladen worden.</p>
+                  <Button type="button" variant="outline" size="sm" onClick={() => void refetchCostSettings()}>
+                    Opnieuw proberen
+                  </Button>
                 </div>
               ) : costSettings && costSettings.length > 0 ? (
                 <div className="space-y-1.5">

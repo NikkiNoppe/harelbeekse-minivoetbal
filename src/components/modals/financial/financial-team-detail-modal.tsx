@@ -54,6 +54,8 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
     hasError: transactionsLoadError,
     transactionsError,
     refetchTransactions,
+    isFetched: transactionsFetched,
+    isPlaceholderData: transactionsPlaceholder,
   } = useTeamFinancialDetailModal(team?.team_id, open);
 
   // State for transaction actions
@@ -69,10 +71,21 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
 
 
   const finances = team ? calculateTeamFinances(team.team_id) : null;
-  const balanceFromTransactions =
-    teamTransactions.length > 0 ? computeCurrentBalance(teamTransactions) : null;
-  const currentBalance = finances?.currentBalance ?? balanceFromTransactions;
-  const isBalanceLoading = currentBalance === null && (loadingTransactions || !finances);
+
+  const balanceFromTeamQuery = useMemo(() => {
+    if (
+      !transactionsFetched ||
+      transactionsPlaceholder ||
+      teamTransactions.length === 0
+    ) {
+      return null;
+    }
+    return computeCurrentBalance(teamTransactions);
+  }, [transactionsFetched, transactionsPlaceholder, teamTransactions]);
+
+  const currentBalance = balanceFromTeamQuery ?? finances?.currentBalance ?? null;
+  const isBalanceLoading =
+    currentBalance === null && (loadingTransactions || (!finances && !transactionsFetched));
 
   const { data: costSettings, isLoading: loadingCostSettings } = useQuery({
     queryKey: ['cost-settings'],

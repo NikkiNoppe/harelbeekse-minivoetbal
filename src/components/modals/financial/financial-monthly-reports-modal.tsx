@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Download, Euro, ChevronDown, ChevronRight, Users, Loader2, RefreshCw } from "lucide-react";
+import { Download, Euro, ChevronDown, ChevronRight, Users, Loader2, RefreshCw, Ban } from "lucide-react";
 import { useFinancialSeasonReportModal } from "./useFinancialSeasonReportModal";
 
 interface FinancialMonthlyReportsModalProps {
@@ -28,7 +28,10 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
     syncStatus,
     isInitialLoad,
     isRefreshing,
+    isSeasonsLoading,
+    isSeasonsFetched,
     forceResync,
+    refetchReport,
   } = useFinancialSeasonReportModal(open);
 
   const formatCurrency = (amount: number) => {
@@ -97,17 +100,25 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
       open={open}
       onOpenChange={onOpenChange}
       title="Seizoen Kostenrapportage"
-      subtitle="Rapport laadt direct; wedstrijdkosten worden op de achtergrond gesynchroniseerd indien nodig."
+      subtitle="Cijfers uit de database; wedstrijdkosten worden bij openen op de achtergrond bijgewerkt indien nodig."
       size="lg"
       className="max-w-6xl max-h-[80vh] overflow-y-auto"
     >
 
         <div className="space-y-6">
-          {/* Show message if no seasons available */}
-          {(!availableSeasons || availableSeasons.length === 0) && !isInitialLoad && (
+          {isSeasonsLoading && (
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+              <span>Seizoenen laden…</span>
+            </div>
+          )}
+
+          {isSeasonsFetched && !isSeasonsLoading && (!availableSeasons || availableSeasons.length === 0) && (
             <div className="text-center py-8">
               <p className="text-purple-dark">Geen seizoenen met wedstrijdgegevens gevonden.</p>
-              <p className="text-sm text-purple-dark opacity-70">Voeg eerst wedstrijden toe om rapporten te kunnen genereren.</p>
+              <p className="text-sm text-purple-dark opacity-70">
+                Voeg eerst wedstrijden toe of synchroniseer wedstrijdkosten op het financiële overzicht.
+              </p>
             </div>
           )}
 
@@ -183,40 +194,65 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
               `}</style>
 
-              {(syncStatus === "syncing" || syncStatus === "synced" || syncStatus === "error") && (
-                <div
-                  role="status"
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
-                >
-                  <div className="flex items-center gap-2">
-                    {syncStatus === "syncing" && (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin opacity-80" aria-hidden />
-                        <span>Wedstrijdkosten synchroniseren op de achtergrond…</span>
-                      </>
-                    )}
-                    {syncStatus === "synced" && <span>Boekingen bijgewerkt — rapport ververst.</span>}
-                    {syncStatus === "error" && (
-                      <span className="text-destructive">
-                        Sync mislukt. Cijfers kunnen verouderd zijn.
+              <div
+                role="status"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
+              >
+                <div className="flex items-center gap-2 min-h-[44px] sm:min-h-0">
+                  {(isRefreshing || syncStatus === "syncing") && (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin opacity-80" aria-hidden />
+                      <span>
+                        {syncStatus === "syncing"
+                          ? "Wedstrijdkosten synchroniseren op de achtergrond…"
+                          : "Rapport vernieuwen…"}
                       </span>
-                    )}
-                  </div>
+                    </>
+                  )}
+                  {syncStatus === "synced" && !isRefreshing && (
+                    <span>Boekingen bijgewerkt — rapport ververst.</span>
+                  )}
+                  {syncStatus === "error" && !isRefreshing && (
+                    <span className="text-destructive">
+                      Sync mislukt. Cijfers kunnen verouderd zijn.
+                    </span>
+                  )}
+                  {syncStatus === "idle" && !isRefreshing && (
+                    <span>Gebaseerd op actuele boekingen in de database.</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1 px-2 min-h-[44px] sm:min-h-7"
+                    onClick={() => void refetchReport()}
+                    disabled={isRefreshing}
+                  >
+                    <RefreshCw className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
+                    Vernieuwen
+                  </Button>
                   {syncStatus === "error" && (
-                    <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2" onClick={() => void forceResync()}>
-                      <RefreshCw className="h-3 w-3" />
-                      Opnieuw
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 px-2 min-h-[44px] sm:min-h-7"
+                      onClick={() => void forceResync()}
+                    >
+                      Sync
                     </Button>
                   )}
                 </div>
-              )}
+              </div>
             </>
           )}
 
           {/* Summary Cards - only show when sync + fetch are complete */}
           {isInitialLoad && availableSeasons && availableSeasons.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {Array.from({ length: 5 }).map((_, index) => (
+              {Array.from({ length: 6 }).map((_, index) => (
                 <Card key={index} className="border-purple-light">
                   <CardHeader className="bg-muted p-3">
                     <div className="mx-auto h-3 w-20 animate-pulse rounded bg-muted-foreground/20" />
@@ -358,6 +394,31 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                 <CardContent className="bg-white p-3">
                   <div className="text-lg font-bold text-purple-dark text-center">
                     {formatCurrency(report.totalFines)}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-purple-light">
+                <CardHeader
+                  className="bg-muted p-3"
+                  style={{
+                    marginTop: 0,
+                    marginBottom: 0,
+                    backgroundColor: "unset",
+                    background: "unset",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
+                    <Ban className="h-3 w-3" />
+                    Forfaits
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="bg-white p-3">
+                  <div className="text-xl font-bold text-purple-dark text-center">
+                    {report.totalForfaits}
                   </div>
                 </CardContent>
               </Card>

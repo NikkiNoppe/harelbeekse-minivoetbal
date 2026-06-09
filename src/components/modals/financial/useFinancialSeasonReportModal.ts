@@ -1,7 +1,19 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FINANCIAL_REVISION_KEY } from "@/hooks/useFinancialData";
 import { useMatchCostSync } from "@/hooks/useMatchCostSync";
+import {
+  fetchTeamCostsRevision,
+  teamCostsRevisionFingerprint,
+} from "@/services/financial/financialRevisionFetch";
 import { monthlyReportsService, type SeasonData } from "@/services/financial";
+
+const SEASON_REPORT_INVALIDATE_KEYS = [
+  ["all-team-transactions"],
+  ["season-report"],
+  ["available-seasons"],
+  ["team-costs-revision"],
+] as const;
 
 function resolveReportDates(selectedSeasonYear: number, selectedMonth: number | null) {
   if (selectedMonth === null) {
@@ -32,15 +44,45 @@ export function useFinancialSeasonReportModal(open: boolean) {
   const currentSeasonYear = getCurrentSeasonYear();
   const [selectedSeasonYear, setSelectedSeasonYear] = useState(currentSeasonYear);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const { syncStatus, forceResync, runBackgroundSync } = useMatchCostSync(open, undefined, {
-    autoRun: false,
+
+  const refreshReportQueries = useCallback(async () => {
+    await Promise.all(
+      SEASON_REPORT_INVALIDATE_KEYS.map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey: [...queryKey] }),
+      ),
+    );
+  }, [queryClient]);
+
+  const { syncStatus, forceResync, runBackgroundSync } = useMatchCostSync(
+    open,
+    SEASON_REPORT_INVALIDATE_KEYS,
+    { autoRun: false },
+  );
+
+  const revisionQuery = useQuery({
+    queryKey: ["team-costs-revision"],
+    queryFn: fetchTeamCostsRevision,
+    enabled: open,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+    retry: 1,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    networkMode: "online",
   });
 
-  const { data: availableSeasons, isLoading: isSeasonsLoading } = useQuery({
+  const { data: availableSeasons, isLoading: isSeasonsLoading, isFetched: isSeasonsFetched } = useQuery({
     queryKey: ["available-seasons"],
     queryFn: monthlyReportsService.getAvailableSeasons,
     enabled: open,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 10 * 60 * 1000,
+    retry: 2,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    networkMode: "online",
   });
 
   useEffect(() => {
@@ -59,6 +101,7 @@ export function useFinancialSeasonReportModal(open: boolean) {
     isFetching: isReportFetching,
     isFetched: isReportFetched,
     error,
+    refetch: refetchReport,
   } = useQuery({
     queryKey: ["season-report", selectedSeasonYear, selectedMonth],
     queryFn: async () => {
@@ -68,14 +111,31 @@ export function useFinancialSeasonReportModal(open: boolean) {
     enabled: open && seasonsAvailable,
     retry: 2,
     staleTime: 0,
+    gcTime: 10 * 60 * 1000,
     refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
     placeholderData: keepPreviousData,
+    networkMode: "online",
   });
 
   useEffect(() => {
-    if (!open || !seasonsAvailable) return;
-    void queryClient.invalidateQueries({ queryKey: ["season-report"] });
-  }, [open, seasonsAvailable, queryClient]);
+    if (!open) return;
+    void refreshReportQueries();
+  }, [open, refreshReportQueries]);
+
+  useEffect(() => {
+    const revision = revisionQuery.data;
+    if (!open || !revision) return;
+
+    const fingerprint = teamCostsRevisionFingerprint(revision);
+    const stored = localStorage.getItem(FINANCIAL_REVISION_KEY);
+
+    if (stored !== null && stored !== fingerprint) {
+      void refreshReportQueries();
+    }
+    localStorage.setItem(FINANCIAL_REVISION_KEY, fingerprint);
+  }, [open, revisionQuery.data, refreshReportQueries]);
 
   useEffect(() => {
     if (!open || !isReportFetched) return;
@@ -87,10 +147,13 @@ export function useFinancialSeasonReportModal(open: boolean) {
 
   useEffect(() => {
     if (syncStatus !== "synced") return;
-    void queryClient.invalidateQueries({ queryKey: ["season-report"] });
-  }, [syncStatus, queryClient]);
+    void refreshReportQueries();
+    void refetchReport();
+  }, [syncStatus, refreshReportQueries, refetchReport]);
 
-  const isInitialLoad = open && seasonsAvailable && !report && (isReportLoading || isSeasonsLoading);
+  const isInitialLoad =
+    open &&
+    (isSeasonsLoading || (seasonsAvailable && !report && isReportLoading));
 
   const isRefreshing =
     open && !!report && (isReportFetching || syncStatus === "syncing");
@@ -116,6 +179,8 @@ export function useFinancialSeasonReportModal(open: boolean) {
     isInitialLoad,
     isRefreshing,
     isSeasonsLoading,
+    isSeasonsFetched,
     forceResync,
+    refetchReport,
   };
 }

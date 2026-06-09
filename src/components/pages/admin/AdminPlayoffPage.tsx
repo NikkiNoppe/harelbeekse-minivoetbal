@@ -17,7 +17,7 @@ import { playoffService, PlayoffMatch } from "@/services/match/playoffService";
 import { fetchRegularStandings } from "@/services/standings/standingsService";
 import { teamService } from "@/services/core/teamService";
 import { seasonService } from "@/services/seasonService";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchCupMatchesForSession } from "@/services/core/matchesSessionFetch";
 import { cn } from "@/lib/utils";
 
 interface TeamStanding {
@@ -376,11 +376,8 @@ const AdminPlayoffPage: React.FC = () => {
       }
       
       // Load cup matches
-      const { data: cupData } = await supabase
-        .from('matches')
-        .select('match_date')
-        .eq('is_cup_match', true);
-      setCupMatches(cupData || []);
+      const cupFromForms = await fetchCupMatchesForSession();
+      setCupMatches(cupFromForms.map((m) => ({ match_date: m.match_date })));
       
     } catch (error) {
       console.error('Error loading initial data:', error);

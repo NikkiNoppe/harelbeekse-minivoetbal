@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
+import { getRpcSessionArgs } from "@/lib/authSession";
 import { fetchPublicTeams } from "@/services/public/publicScheduleFetch";
 import { fetchTeamForSession, fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
 
@@ -85,40 +85,23 @@ export const teamService = {
       if (teamData.club_colors !== undefined) insertData.club_colors = teamData.club_colors;
       if (teamData.preferred_play_moments !== undefined) insertData.preferred_play_moments = teamData.preferred_play_moments;
 
-      const { data, error } = await supabase
-        .from('teams')
-        .insert(insertData)
-        .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
-        .single();
-      
-      if (error) {
-        // If new columns don't exist, fall back to basic insert
-        console.warn('New team columns not found, falling back to basic insert:', error.message);
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('teams')
-          .insert({ 
-            team_name: teamData.team_name
-          })
-          .select('team_id, team_name')
-          .single();
-        
-        if (fallbackError) {
-          console.error('Error creating team:', fallbackError);
-          throw fallbackError;
-        }
-        
-        // Map fallback data to Team interface with undefined new fields
-        return fallbackData ? {
-          ...fallbackData,
-          contact_person: undefined,
-          contact_phone: undefined,
-          contact_email: undefined,
-          club_colors: undefined,
-          preferred_play_moments: undefined
-        } as unknown as Team : null;
+      const { data, error } = await supabase.rpc('insert_team_for_session', {
+        ...getRpcSessionArgs(),
+        p_team_data: insertData,
+      });
+
+      if (error) throw error;
+
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result?.success || !result?.team_id) {
+        throw new Error(result?.message || 'Kon team niet aanmaken');
       }
-      
-      return data as unknown as Team | null;
+
+      return (await fetchTeamForSession(result.team_id)) ?? {
+        team_id: result.team_id,
+        team_name: teamData.team_name,
+        ...teamData,
+      } as Team;
     } catch (error) {
       console.error('Error creating team:', error);
       throw error;
@@ -139,78 +122,33 @@ export const teamService = {
     };
   }): Promise<Team | null> {
     try {
-      // Use withUserContext to ensure RLS policies work correctly
-      return await withUserContext(async () => {
-        // Prepare update data with only basic fields first
-        const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
+      if (teamData.team_name !== undefined) updateData.team_name = teamData.team_name;
+      if (teamData.contact_person !== undefined) updateData.contact_person = teamData.contact_person;
+      if (teamData.contact_phone !== undefined) updateData.contact_phone = teamData.contact_phone;
+      if (teamData.contact_email !== undefined) updateData.contact_email = teamData.contact_email;
+      if (teamData.club_colors !== undefined) updateData.club_colors = teamData.club_colors;
+      if (teamData.preferred_play_moments !== undefined) {
+        updateData.preferred_play_moments = teamData.preferred_play_moments;
+      }
 
-        // Add basic fields
-        if (teamData.team_name !== undefined) updateData.team_name = teamData.team_name;
-
-        // Try to add new fields if they exist
-        if (teamData.contact_person !== undefined) updateData.contact_person = teamData.contact_person;
-        if (teamData.contact_phone !== undefined) updateData.contact_phone = teamData.contact_phone;
-        if (teamData.contact_email !== undefined) updateData.contact_email = teamData.contact_email;
-        if (teamData.club_colors !== undefined) updateData.club_colors = teamData.club_colors;
-        if (teamData.preferred_play_moments !== undefined) updateData.preferred_play_moments = teamData.preferred_play_moments;
-
-        // Perform the update
-        const { error: updateError } = await supabase
-          .from('teams')
-          .update(updateData)
-          .eq('team_id', teamId);
-        
-        if (updateError) {
-          console.error('Error updating team:', updateError);
-          console.error('Error details:', {
-            message: updateError.message,
-            details: updateError.details,
-            hint: updateError.hint,
-            code: updateError.code
-          });
-          throw updateError;
-        }
-
-        console.log('✅ Team update succeeded');
-
-        // Now try to fetch the updated data
-        // If RLS blocks this, we'll return a constructed object
-        const { data, error: selectError } = await supabase
-          .from('teams')
-          .select('team_id, team_name, contact_person, contact_phone, contact_email, club_colors, preferred_play_moments')
-          .eq('team_id', teamId)
-          .maybeSingle();
-        
-        if (selectError) {
-          console.warn('Update succeeded but could not fetch updated data:', selectError);
-          // Return constructed object with updated values since update succeeded
-          return {
-            team_id: teamId,
-            team_name: teamData.team_name || '',
-            contact_person: teamData.contact_person || undefined,
-            contact_phone: teamData.contact_phone || undefined,
-            contact_email: teamData.contact_email || undefined,
-            club_colors: teamData.club_colors || undefined,
-            preferred_play_moments: teamData.preferred_play_moments || undefined
-          } as Team;
-        }
-        
-        // If data is null, return constructed object
-        if (!data) {
-          console.warn('Update succeeded but select returned null - RLS may have blocked select');
-          return {
-            team_id: teamId,
-            team_name: teamData.team_name || '',
-            contact_person: teamData.contact_person || undefined,
-            contact_phone: teamData.contact_phone || undefined,
-            contact_email: teamData.contact_email || undefined,
-            club_colors: teamData.club_colors || undefined,
-            preferred_play_moments: teamData.preferred_play_moments || undefined
-          } as Team;
-        }
-        
-        return data as unknown as Team | null;
+      const { data, error } = await supabase.rpc('update_team_for_session', {
+        ...getRpcSessionArgs(),
+        p_team_id: teamId,
+        p_team_data: updateData,
       });
+
+      if (error) throw error;
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result?.success) {
+        throw new Error(result?.message || 'Kon team niet bijwerken');
+      }
+
+      return (await fetchTeamForSession(teamId)) ?? {
+        team_id: teamId,
+        team_name: teamData.team_name || '',
+        ...teamData,
+      } as Team;
     } catch (error) {
       console.error('Error updating team:', error);
       throw error;
@@ -218,18 +156,17 @@ export const teamService = {
   },
 
   async deleteTeam(teamId: number): Promise<boolean> {
-    const { error } = await withUserContext(async () => {
-      return await supabase
-        .from('teams')
-        .delete()
-        .eq('team_id', teamId);
+    const { data, error } = await supabase.rpc('delete_team_for_session', {
+      ...getRpcSessionArgs(),
+      p_team_id: teamId,
     });
-    
-    if (error) {
-      console.error('Error deleting team:', error);
-      throw error;
+
+    if (error) throw error;
+    const result = Array.isArray(data) ? data[0] : data;
+    if (!result?.success) {
+      throw new Error(result?.message || 'Kon team niet verwijderen');
     }
-    
+
     return true;
   }
 };

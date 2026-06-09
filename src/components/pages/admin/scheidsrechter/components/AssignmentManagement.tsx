@@ -8,8 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { assignmentService } from '@/services/scheidsrechter/assignmentService';
+import {
+  fetchRefereeAssignmentsForSession,
+  fetchScheidsScheduleForMonth,
+} from '@/services/scheidsrechter/scheidsSessionFetch';
 import { refereeAvailabilityService } from '@/services/scheidsrechter/refereeAvailabilityService';
 import type { RefereeAssignmentStats } from '@/services/scheidsrechter/types';
 import AssignmentCard from './AssignmentCard';
@@ -80,71 +83,26 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = ({
 
       console.log('[AssignmentManagement] Date range:', `${selectedMonth}-01`, 'to', `${nextMonth}-01`);
 
-      // Fetch matches for month
-      const { data: matchesData, error: matchesError } = await supabase
-        .from('matches')
-        .select(`
-          match_id,
-          match_date,
-          location,
-          home_team_id,
-          away_team_id,
-          assigned_referee_id,
-          referee
-        `)
-        .gte('match_date', `${selectedMonth}-01`)
-        .lt('match_date', `${nextMonth}-01`)
-        .order('match_date', { ascending: true });
+      const [matchesData, assignments] = await Promise.all([
+        fetchScheidsScheduleForMonth(selectedMonth),
+        fetchRefereeAssignmentsForSession(selectedMonth),
+      ]);
 
-      if (matchesError) {
-        console.error('[AssignmentManagement] Matches error:', matchesError);
-        throw matchesError;
-      }
+      console.log('[AssignmentManagement] Fetched matches:', matchesData.length);
 
-      console.log('[AssignmentManagement] Fetched matches:', matchesData?.length || 0);
+      const assignmentMap = new Map(
+        assignments.map((a) => [a.match_id, a]),
+      );
 
-      // Get team names
-      const teamIds = new Set<number>();
-      (matchesData || []).forEach(m => {
-        if (m.home_team_id) teamIds.add(m.home_team_id);
-        if (m.away_team_id) teamIds.add(m.away_team_id);
-      });
-
-      const { data: teams } = await supabase
-        .from('teams')
-        .select('team_id, team_name')
-        .in('team_id', Array.from(teamIds));
-
-      const teamMap = new Map(teams?.map(t => [t.team_id, t.team_name]) || []);
-
-      // Get assignments for these matches
-      const matchIds = (matchesData || []).map(m => m.match_id);
-      let assignmentMap = new Map();
-      
-      if (matchIds.length > 0) {
-        const { data: assignments, error: assignmentsError } = await (supabase
-          .from('referee_matches' as any)
-          .select('id, match_id, referee_id, assigned_by, assigned_at')
-          .in('match_id', matchIds)
-          .not('assigned_at', 'is', null) as any);
-
-        if (assignmentsError) {
-          console.warn('[AssignmentManagement] Assignments fetch error:', assignmentsError);
-        } else {
-          assignmentMap = new Map(((assignments as any[]) || []).map((a: any) => [a.match_id, a]));
-        }
-      }
-
-      // Combine data
-      const enrichedMatches: MatchWithAssignment[] = (matchesData || []).map(m => ({
+      const enrichedMatches: MatchWithAssignment[] = matchesData.map((m) => ({
         match_id: m.match_id,
         match_date: m.match_date,
         location: m.location,
-        home_team_name: teamMap.get(m.home_team_id!) || 'Onbekend',
-        away_team_name: teamMap.get(m.away_team_id!) || 'Onbekend',
+        home_team_name: m.home_team_name || 'Onbekend',
+        away_team_name: m.away_team_name || 'Onbekend',
         assigned_referee_id: m.assigned_referee_id,
         current_referee_name: m.referee || undefined,
-        current_assignment: assignmentMap.get(m.match_id)
+        current_assignment: assignmentMap.get(m.match_id),
       }));
 
       console.log('[AssignmentManagement] Enriched matches:', enrichedMatches.length);

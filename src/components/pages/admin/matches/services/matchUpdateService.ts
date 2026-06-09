@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getRpcSessionArgs } from "@/lib/authSession";
 
 export interface MatchUpdateData {
   match_id: number;
@@ -9,8 +10,8 @@ export interface MatchUpdateData {
   referee_notes?: string;
   field_cost?: number;
   referee_cost?: number;
-  home_players?: any[];
-  away_players?: any[];
+  home_players?: unknown[];
+  away_players?: unknown[];
   is_submitted?: boolean;
   speeldag?: string;
   assigned_referee_id?: number | null;
@@ -18,47 +19,34 @@ export interface MatchUpdateData {
   poll_month?: string | null;
 }
 
-export const updateMatchData = async (data: MatchUpdateData): Promise<{ success: boolean; message: string }> => {
+export const updateMatchData = async (
+  data: MatchUpdateData,
+): Promise<{ success: boolean; message: string }> => {
   try {
-    console.log('🔵 [matchUpdateService] Starting updateMatchData for match_id:', data.match_id);
-    console.log('🔵 [matchUpdateService] Update data:', JSON.stringify(data, null, 2));
+    const { match_id, ...fields } = data;
+    const updatePayload = {
+      ...fields,
+      updated_at: new Date().toISOString(),
+    };
 
-    const { error } = await supabase
-      .from('matches')
-      .update({
-        home_score: data.home_score,
-        away_score: data.away_score,
-        location: data.location,
-        referee: data.referee,
-        referee_notes: data.referee_notes,
-        field_cost: data.field_cost,
-        referee_cost: data.referee_cost,
-        home_players: data.home_players,
-        away_players: data.away_players,
-        is_submitted: data.is_submitted,
-        speeldag: data.speeldag,
-        // Preserve poll data
-        assigned_referee_id: data.assigned_referee_id || null,
-        poll_group_id: data.poll_group_id || null,
-        poll_month: data.poll_month || null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('match_id', data.match_id);
+    const { data: rpcData, error } = await supabase.rpc("update_match_for_session", {
+      ...getRpcSessionArgs(),
+      p_match_id: match_id,
+      p_update_data: updatePayload,
+    });
 
     if (error) {
-      console.error('❌ [matchUpdateService] Database error:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      });
       return { success: false, message: `Fout bij opslaan: ${error.message}` };
     }
 
-    console.log('✅ [matchUpdateService] Match updated successfully');
-    return { success: true, message: 'Wedstrijdgegevens succesvol opgeslagen' };
+    const result = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    if (!result?.success) {
+      return { success: false, message: result?.message || "Kon wedstrijd niet bijwerken" };
+    }
+
+    return { success: true, message: "Wedstrijdgegevens succesvol opgeslagen" };
   } catch (error) {
-    console.error('❌ [matchUpdateService] Unexpected error:', error);
-    return { success: false, message: 'Er is een onverwachte fout opgetreden' };
+    console.error("[matchUpdateService] Unexpected error:", error);
+    return { success: false, message: "Er is een onverwachte fout opgetreden" };
   }
 };

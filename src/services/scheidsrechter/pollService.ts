@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { withUserContext } from "@/lib/supabaseUtils";
+import { fetchMonthlyPollsForSession } from "@/services/scheidsrechter/scheidsSessionFetch";
 import type { 
   MonthlyPoll, 
   CreatePollInput, 
@@ -103,14 +104,10 @@ export const pollService = {
    */
   async getPollById(pollId: number): Promise<MonthlyPoll | null> {
     try {
-      const { data, error } = await supabase
-        .from('monthly_polls' as any)
-        .select('*')
-        .eq('id', pollId)
-        .single();
-
-      if (error || !data) return null;
-      return data as unknown as MonthlyPoll;
+      const polls = await fetchMonthlyPollsForSession();
+      const poll = (polls as MonthlyPoll[]).find((p) => p.id === pollId);
+      if (!poll) return null;
+      return poll;
     } catch (error) {
       console.error('Error fetching poll by ID:', error);
       return null;
@@ -122,14 +119,10 @@ export const pollService = {
    */
   async getPollForMonth(month: string): Promise<MonthlyPoll | null> {
     try {
-      const { data, error } = await supabase
-        .from('monthly_polls' as any)
-        .select('*')
-        .eq('poll_month', month)
-        .single();
-
-      if (error || !data) return null;
-      return data as unknown as MonthlyPoll;
+      const polls = await fetchMonthlyPollsForSession();
+      const poll = (polls as MonthlyPoll[]).find((p) => p.poll_month === month);
+      if (!poll) return null;
+      return poll;
     } catch (error) {
       console.error('Error fetching poll for month:', error);
       return null;
@@ -141,20 +134,10 @@ export const pollService = {
    */
   async getAllPolls(): Promise<MonthlyPoll[]> {
     try {
-      return await withUserContext(async () => {
-        const { data, error } = await supabase
-          .from('monthly_polls' as any)
-          .select('*')
-          .order('poll_month', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching all polls:', error);
-          return [];
-        }
-        return (data || []) as unknown as MonthlyPoll[];
-      });
+      const data = await fetchMonthlyPollsForSession();
+      return (data as MonthlyPoll[]) ?? [];
     } catch (error) {
-      console.error('Error in getAllPolls:', error);
+      console.error('Error fetching all polls:', error);
       return [];
     }
   },

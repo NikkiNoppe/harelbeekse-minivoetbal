@@ -5,7 +5,8 @@ import { Loader2, Sparkles, Info, CheckCircle2, AlertCircle } from 'lucide-react
 import { AppModal } from '@/components/modals/base/app-modal';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchMatchesForMonth } from '@/services/core/matchesSessionFetch';
+import { fetchPollMatchDateKeysForSession } from '@/services/scheidsrechter/scheidsSessionFetch';
 import { scheidsrechterService } from '@/services/scheidsrechter/scheidsrechterService';
 import { formatDateWithDay, formatTimeForDisplay } from '@/lib/dateUtils';
 import { getLocationOrder } from '@/lib/matchSortingUtils';
@@ -47,55 +48,17 @@ export const AutoGeneratePreviewModal: React.FC<AutoGeneratePreviewModalProps> =
     (async () => {
       setLoading(true);
       try {
-        const [year, monthNum] = month.split('-').map(Number);
-        const lastDay = new Date(year, monthNum, 0).getDate();
-        const startDate = `${month}-01`;
-        const endDate = `${month}-${String(lastDay).padStart(2, '0')}`;
-
-        // 1) matches in maand
-        const { data: matches, error } = await supabase
-          .from('matches')
-          .select('match_id, match_date, location, home_team_id, away_team_id, poll_group_id')
-          .gte('match_date', startDate)
-          .lte('match_date', `${endDate}T23:59:59`)
-          .order('match_date');
-        if (error) throw error;
-
-        const teamIds = new Set<number>();
-        (matches || []).forEach((m: any) => {
-          if (m.home_team_id) teamIds.add(m.home_team_id);
-          if (m.away_team_id) teamIds.add(m.away_team_id);
-        });
-        const { data: teams } = await supabase
-          .from('teams')
-          .select('team_id, team_name')
-          .in('team_id', Array.from(teamIds));
-        const teamMap = new Map<number, string>(
-          (teams || []).map((t: any) => [t.team_id, t.team_name]),
-        );
-
-        // 2) existing poll_match_dates voor deze maand
-        const { data: existingPoll } = await supabase
-          .from('monthly_polls' as any)
-          .select('id, poll_month')
-          .eq('poll_month', month)
-          .maybeSingle();
-
+        const matches = await fetchMatchesForMonth(month);
+        const existingDates = await fetchPollMatchDateKeysForSession(month);
         const existingKeys = new Set<string>();
-        if (existingPoll && (existingPoll as any).id) {
-          const { data: existingDates } = await supabase
-            .from('poll_match_dates' as any)
-            .select('match_date, location')
-            .eq('poll_id', (existingPoll as any).id);
-          (existingDates || []).forEach((d: any) => {
-            const dOnly = String(d.match_date).split('T')[0];
-            existingKeys.add(`${dOnly}__${d.location || 'Onbekend'}`);
-          });
-        }
+        existingDates.forEach((d) => {
+          const dOnly = String(d.match_date).split('T')[0];
+          existingKeys.add(`${dOnly}__${d.location || 'Onbekend'}`);
+        });
 
         // 3) groepeer per (date, location)
         const groupMap = new Map<string, PreviewGroup>();
-        (matches || []).forEach((m: any) => {
+        matches.forEach((m) => {
           const dateOnly = String(m.match_date).split('T')[0];
           const loc = m.location || 'Onbekend';
           const key = `${dateOnly}__${loc}`;
@@ -110,8 +73,8 @@ export const AutoGeneratePreviewModal: React.FC<AutoGeneratePreviewModalProps> =
           }
           groupMap.get(key)!.matches.push({
             match_id: m.match_id,
-            home: teamMap.get(m.home_team_id) || '?',
-            away: teamMap.get(m.away_team_id) || '?',
+            home: m.home_team_name || '?',
+            away: m.away_team_name || '?',
             time: formatTimeForDisplay(m.match_date),
           });
         });

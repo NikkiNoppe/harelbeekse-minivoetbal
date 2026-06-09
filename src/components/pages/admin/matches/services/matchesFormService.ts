@@ -5,7 +5,7 @@ import { cupService } from "@/services/match";
 import { scheduleBackgroundSideEffects } from "@/services/match/backgroundSideEffects";
 import { sortCupMatches, sortLeagueMatches } from "@/lib/matchSortingUtils";
 import { getRpcSessionArgs } from "@/lib/authSession";
-import { withUserContext } from "@/lib/supabaseUtils";
+import { fetchMatchForSession } from "@/services/core/matchesSessionFetch";
 
 export const fetchUpcomingMatches = async (
   teamId: number,
@@ -126,17 +126,9 @@ export const fetchUpcomingMatches = async (
 export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanceMessage?: string}> => {
   try {
     // First check if this is a cup match that's being completed
-    const { data: existingMatch, error: fetchError } = await withUserContext(async () =>
-      supabase
-        .from('matches')
-        .select('is_cup_match, is_submitted, unique_number')
-        .eq('match_id', matchData.matchId)
-        .single()
-    );
-
-    if (fetchError) {
-      console.error('Error fetching existing match:', fetchError);
-      throw fetchError;
+    const existingMatch = await fetchMatchForSession(matchData.matchId);
+    if (!existingMatch) {
+      throw new Error('Wedstrijd niet gevonden of geen toegang');
     }
 
     const isCupMatch = existingMatch?.is_cup_match;
@@ -303,19 +295,20 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
 
 export const lockMatchForm = async (matchId: number): Promise<void> => {
   try {
-    const { data, error } = await withUserContext(async () => {
-      return await supabase
-        .from('matches')
-        .update({
-          is_locked: true
-        })
-        .eq('match_id', matchId)
-        .select('match_id');
+    const { data, error } = await supabase.rpc('update_match_for_session', {
+      ...getRpcSessionArgs(),
+      p_match_id: matchId,
+      p_update_data: { is_locked: true },
     });
 
     if (error) {
       console.error('Error locking match:', error);
       throw error;
+    }
+
+    const result = Array.isArray(data) ? data[0] : data;
+    if (!result?.success) {
+      throw new Error(result?.message || 'Kon wedstrijd niet vergrendelen');
     }
     
     if (!data || data.length === 0) {

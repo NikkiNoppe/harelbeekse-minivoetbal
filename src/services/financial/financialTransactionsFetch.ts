@@ -58,13 +58,14 @@ function mapOverviewRow(row: TeamCostTransactionRow): FinancialTeamTransaction {
     cost_setting_id: row.cost_setting_id,
     match_id: row.match_id,
     transaction_date: row.transaction_date,
-    cost_settings: row.cost_name
-      ? {
-          name: row.cost_name,
-          category: row.cost_category,
-          amount: row.cost_default_amount,
-        }
-      : undefined,
+    cost_settings:
+      row.cost_name || row.cost_category
+        ? {
+            name: row.cost_name,
+            category: row.cost_category,
+            amount: row.cost_default_amount,
+          }
+        : undefined,
   };
 }
 
@@ -85,15 +86,33 @@ function mapDetailRow(row: TeamCostTransactionRow): FinancialTeamTransaction {
   };
 }
 
+/** PostgREST default max rows per request — overview has 1300+ team_costs rows. */
+const RPC_PAGE_SIZE = 1000;
+
 async function fetchTeamCostTransactions(
   teamId?: number,
 ): Promise<TeamCostTransactionRow[]> {
-  const { data, error } = await supabase.rpc("get_team_costs_transactions", {
-    ...getRpcSessionArgs(),
-    p_team_id: teamId ?? null,
-  });
-  if (error) throw error;
-  return (data as TeamCostTransactionRow[]) ?? [];
+  const rows: TeamCostTransactionRow[] = [];
+  let offset = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .rpc("get_team_costs_transactions", {
+        ...getRpcSessionArgs(),
+        p_team_id: teamId ?? null,
+      })
+      .range(offset, offset + RPC_PAGE_SIZE - 1);
+
+    if (error) throw error;
+
+    const batch = (data as TeamCostTransactionRow[]) ?? [];
+    rows.push(...batch);
+
+    if (batch.length < RPC_PAGE_SIZE) break;
+    offset += RPC_PAGE_SIZE;
+  }
+
+  return rows;
 }
 
 export async function fetchAllTeamTransactionsOverview(): Promise<FinancialTeamTransaction[]> {

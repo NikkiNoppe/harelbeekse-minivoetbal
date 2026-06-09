@@ -145,6 +145,7 @@ export function useTeamFinancialDetailModal(teamId: number | undefined, open: bo
     transactionsError,
     refetchTransactions,
     isFetched: transactionsQuery.isFetched,
+    isPlaceholderData: transactionsQuery.isPlaceholderData,
   };
 }
 

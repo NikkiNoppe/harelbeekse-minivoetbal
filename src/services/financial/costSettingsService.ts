@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getRpcSessionArgs } from "@/lib/authSession";
+import { fetchCostsForSession } from "@/services/financial/costsSessionFetch";
 
 export interface CostSetting {
   id: number;
@@ -35,57 +36,27 @@ export interface TeamTransaction {
 export const costSettingsService = {
   async getCostSettings(): Promise<CostSetting[]> {
     try {
-      const { data, error } = await supabase
-        .from('costs')
-        .select('*')
-        .order('category', { ascending: true })
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      return (data || []).map(item => ({
-        ...item,
-        category: item.category as 'match_cost' | 'penalty' | 'other' | 'deposit'
-      }));
+      return await fetchCostsForSession();
     } catch (error) {
-      console.error('Error fetching cost settings:', error);
+      console.error("Error fetching cost settings:", error);
       return [];
     }
   },
 
   async getMatchCosts(): Promise<CostSetting[]> {
     try {
-      const { data, error } = await supabase
-        .from('costs')
-        .select('*')
-        .eq('category', 'match_cost')
-        .order('name');
-
-      if (error) throw error;
-      return (data || []).map(item => ({
-        ...item,
-        category: item.category as 'match_cost' | 'penalty' | 'other' | 'deposit'
-      }));
+      return await fetchCostsForSession("match_cost");
     } catch (error) {
-      console.error('Error fetching match costs:', error);
+      console.error("Error fetching match costs:", error);
       return [];
     }
   },
 
   async getPenalties(): Promise<CostSetting[]> {
     try {
-      const { data, error } = await supabase
-        .from('costs')
-        .select('*')
-        .eq('category', 'penalty')
-        .order('name');
-
-      if (error) throw error;
-      return (data || []).map(item => ({
-        ...item,
-        category: item.category as 'match_cost' | 'penalty' | 'other' | 'deposit'
-      }));
+      return await fetchCostsForSession("penalty");
     } catch (error) {
-      console.error('Error fetching penalties:', error);
+      console.error("Error fetching penalties:", error);
       return [];
     }
   },

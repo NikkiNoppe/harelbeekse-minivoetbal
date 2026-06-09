@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
+import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
 import { useMatchCostSync } from "@/hooks/useMatchCostSync";
 import {
   computeTeamFinances,
@@ -11,7 +10,13 @@ import {
   fetchAllTeamTransactionsOverview,
   type FinancialTeamTransaction,
 } from "@/services/financial/financialTransactionsFetch";
+import {
+  fetchTeamCostsRevision,
+  teamCostsRevisionFingerprint,
+} from "@/services/financial/financialRevisionFetch";
 import { invalidateFinancialTransactionQueries } from "@/services/financial";
+
+export const FINANCIAL_REVISION_KEY = "financial-team-costs-revision";
 
 export type { FinancialTeamTransaction };
 
@@ -92,7 +97,7 @@ function useMinLoadingGate(isWaiting: boolean) {
 export const useFinancialData = (options?: { enableSync?: boolean }) => {
   const enableSync = options?.enableSync ?? true;
   const queryClient = useQueryClient();
-  const { syncStatus, forceResync, invalidateFinancialQueries, runBackgroundSync } = useMatchCostSync(
+  const { syncStatus, forceResync, invalidateFinancialQueries } = useMatchCostSync(
     enableSync,
     undefined,
     { autoRun: false },
@@ -101,15 +106,8 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
   const teamsQuery = useQuery({
     queryKey: ["teams-financial"],
     queryFn: async (): Promise<Team[]> => {
-      return withUserContext(async () => {
-        const { data, error } = await supabase
-          .from("teams")
-          .select("team_id, team_name")
-          .order("team_name");
-
-        if (error) throw error;
-        return (data || []) as Team[];
-      });
+      const teams = await fetchTeamsForSession();
+      return teams.map((t) => ({ team_id: t.team_id, team_name: t.team_name })) as Team[];
     },
     staleTime: 0,
     gcTime: 10 * 60 * 1000,
@@ -132,7 +130,19 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
     refetchOnMount: "always",
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    placeholderData: keepPreviousData,
+    networkMode: "online",
+  });
+
+  const revisionQuery = useQuery({
+    queryKey: ["team-costs-revision"],
+    queryFn: fetchTeamCostsRevision,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+    retry: 1,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    enabled: enableSync,
     networkMode: "online",
   });
 
@@ -145,13 +155,42 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
   const teamsLoadingGate = useMinLoadingGate(waitingForTeams);
   const transactionsLoadingGate = useMinLoadingGate(waitingForTransactions);
 
+  const refetchRevision = revisionQuery.refetch;
+
+  const refreshInstantly = useCallback(async () => {
+    await invalidateFinancialTransactionQueries(queryClient);
+    await Promise.all([
+      teamsQuery.refetch(),
+      transactionsQuery.refetch(),
+      enableSync ? refetchRevision() : Promise.resolve(),
+    ]);
+  }, [queryClient, teamsQuery, transactionsQuery, enableSync, refetchRevision]);
+
   useEffect(() => {
-    if (!enableSync || !transactionsQuery.isFetched) return;
-    const timeoutId = window.setTimeout(() => {
-      void runBackgroundSync(false);
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [enableSync, transactionsQuery.isFetched, runBackgroundSync]);
+    const revision = revisionQuery.data;
+    if (!enableSync || !revision || !transactionsQuery.isFetched) return;
+
+    const fingerprint = teamCostsRevisionFingerprint(revision);
+    const stored = localStorage.getItem(FINANCIAL_REVISION_KEY);
+
+    if (stored !== null && stored !== fingerprint) {
+      void refreshInstantly();
+    }
+    localStorage.setItem(FINANCIAL_REVISION_KEY, fingerprint);
+  }, [enableSync, revisionQuery.data, transactionsQuery.isFetched, refreshInstantly]);
+
+  const runDailySync = useCallback(async () => {
+    const result = await forceResync();
+    if (result === "synced") {
+      await refreshInstantly();
+    }
+    return result;
+  }, [forceResync, refreshInstantly]);
+
+  useEffect(() => {
+    if (!enableSync || syncStatus !== "synced") return;
+    void refreshInstantly();
+  }, [enableSync, syncStatus, refreshInstantly]);
 
   const teamFinancesById = useMemo(() => {
     const map = new Map<number, TeamFinancesSummary>();
@@ -232,15 +271,19 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
     !hasTeams &&
     (waitingForTeams || !teamsLoadingGate.minReady);
 
-  const isAmountsLoading =
+  const isTransactionsFetchLoading =
     !transactionsLoadingGate.timedOut &&
     hasTeams &&
     !hasTransactions &&
     (waitingForTransactions || !transactionsLoadingGate.minReady);
 
+  const isAmountsLoading = isTransactionsFetchLoading;
+
   const isRefreshing =
-    (hasTransactions && transactionsQuery.isFetching && !transactionsQuery.isLoading) ||
-    (syncStatus === "syncing" && !isListLoading && !isAmountsLoading);
+    hasTransactions &&
+    transactionsQuery.isFetching &&
+    !transactionsQuery.isLoading &&
+    !isAmountsLoading;
 
   const teamsError = teamsLoadingGate.timedOut
     ? { message: "Het laden van teams duurt te lang (>5 seconden)." }
@@ -261,11 +304,6 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
 
   const hasBlockingError = !!teamsError && !hasTeams;
 
-  const refreshInstantly = useCallback(async () => {
-    await invalidateFinancialTransactionQueries(queryClient);
-    await Promise.all([teamsQuery.refetch(), transactionsQuery.refetch()]);
-  }, [queryClient, teamsQuery, transactionsQuery]);
-
   return {
     teams: teamsQuery.data,
     transactions: transactionsQuery.data,
@@ -275,6 +313,7 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
     formatCurrency,
     syncStatus,
     forceResync,
+    runDailySync,
     invalidateFinancialQueries,
     refreshInstantly,
     isListLoading,
