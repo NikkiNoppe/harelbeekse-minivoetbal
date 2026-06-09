@@ -422,6 +422,7 @@ export type Database = {
       }
       users: {
         Row: {
+          auth_uid: string | null
           email: string | null
           password: string
           role: Database["public"]["Enums"]["user_role"]
@@ -429,6 +430,7 @@ export type Database = {
           username: string
         }
         Insert: {
+          auth_uid?: string | null
           email?: string | null
           password: string
           role: Database["public"]["Enums"]["user_role"]
@@ -436,6 +438,7 @@ export type Database = {
           username: string
         }
         Update: {
+          auth_uid?: string | null
           email?: string | null
           password?: string
           role?: Database["public"]["Enums"]["user_role"]
@@ -463,10 +466,10 @@ export type Database = {
         Args: {
           p_amount: number
           p_cost_setting_id: number
-          p_match_id?: number
+          p_match_id: number
           p_session_token: string
           p_team_id: number
-          p_transaction_date?: string
+          p_transaction_date: string
         }
         Returns: Json
       }
@@ -491,7 +494,7 @@ export type Database = {
         Args: {
           p_is_available: boolean
           p_match_id: number
-          p_notes?: string
+          p_notes: string
           p_poll_group_id: string
           p_poll_month: string
           p_referee_id: number
@@ -515,7 +518,7 @@ export type Database = {
       assign_referee_to_match: {
         Args: {
           p_match_id: number
-          p_notes?: string
+          p_notes: string
           p_referee_id: number
           p_session_token: string
         }
@@ -524,14 +527,14 @@ export type Database = {
       assign_referee_to_session: {
         Args: {
           p_match_id: number
-          p_notes?: string
+          p_notes: string
           p_referee_id: number
           p_session_token: string
         }
         Returns: Json
       }
       bulk_manage_matches_for_session: {
-        Args: { p_operation: string; p_payload?: Json; p_session_token: string }
+        Args: { p_operation: string; p_payload: Json; p_session_token: string }
         Returns: Json
       }
       calculate_team_balance: {
@@ -555,7 +558,11 @@ export type Database = {
         Returns: boolean
       }
       check_batch_players_suspended: {
-        Args: { match_date_param: string; player_ids: number[] }
+        Args: {
+          match_date_param: string
+          p_session_token: string
+          player_ids: number[]
+        }
         Returns: {
           is_suspended: boolean
           player_id: number
@@ -588,10 +595,11 @@ export type Database = {
           email_param: string
           p_session_token: string
           password_param: string
-          role_param?: Database["public"]["Enums"]["user_role"]
+          role_param: Database["public"]["Enums"]["user_role"]
           username_param: string
         }
         Returns: {
+          auth_uid: string | null
           email: string | null
           password: string
           role: Database["public"]["Enums"]["user_role"]
@@ -627,12 +635,36 @@ export type Database = {
         Args: { p_session_token: string; p_user_id: number }
         Returns: Json
       }
+      establish_app_session_from_supabase_auth: {
+        Args: never
+        Returns: {
+          email: string
+          role: string
+          session_token: string
+          team_ids: number[]
+          user_id: number
+          username: string
+        }[]
+      }
+      get_admin_database_backup_for_session: {
+        Args: { p_session_token: string }
+        Returns: Json
+      }
       get_all_users_for_admin: {
         Args: { p_session_token: string }
         Returns: {
           email: string
           role: string
           team_users: Json
+          user_id: number
+          username: string
+        }[]
+      }
+      get_app_user_from_auth: {
+        Args: never
+        Returns: {
+          role: string
+          team_ids: number[]
           user_id: number
           username: string
         }[]
@@ -647,7 +679,7 @@ export type Database = {
         }[]
       }
       get_costs_for_session: {
-        Args: { p_category?: string; p_session_token: string }
+        Args: { p_category: string; p_session_token: string }
         Returns: {
           amount: number
           category: string
@@ -669,23 +701,14 @@ export type Database = {
           unique_number: string
         }[]
       }
-      get_match_statistics: {
-        Args: { match_id_param: number }
-        Returns: {
-          away_players_count: number
-          cards_count: number
-          home_players_count: number
-          total_players: number
-        }[]
-      }
       get_matches_for_forms: {
         Args: {
-          p_competition_type?: string
-          p_has_elevated_permissions?: boolean
-          p_referee_user_id?: number
-          p_referee_username?: string
+          p_competition_type: string
+          p_has_elevated_permissions: boolean
+          p_referee_user_id: number
+          p_referee_username: string
           p_session_token: string
-          p_team_id?: number
+          p_team_id: number
         }
         Returns: {
           assigned_referee_id: number
@@ -713,7 +736,7 @@ export type Database = {
         }[]
       }
       get_matches_for_session: {
-        Args: { p_filters?: Json; p_session_token: string }
+        Args: { p_filters: Json; p_session_token: string }
         Returns: {
           assigned_referee_id: number | null
           away_players: Json | null
@@ -775,7 +798,7 @@ export type Database = {
         }[]
       }
       get_players_for_session: {
-        Args: { p_session_token: string; p_team_id?: number }
+        Args: { p_session_token: string; p_team_id: number }
         Returns: {
           birth_date: string
           first_name: string
@@ -807,7 +830,7 @@ export type Database = {
         }[]
       }
       get_public_application_settings: {
-        Args: { p_categories?: string[] }
+        Args: { p_categories: string[] }
         Returns: {
           id: number
           setting_category: string
@@ -849,7 +872,7 @@ export type Database = {
         }[]
       }
       get_referee_assignments_for_session: {
-        Args: { p_month?: string; p_session_token: string }
+        Args: { p_month: string; p_session_token: string }
         Returns: {
           assigned_at: string
           assigned_by: number
@@ -872,14 +895,14 @@ export type Database = {
         }[]
       }
       get_referees_for_session: {
-        Args: { p_session_token: string; p_user_id?: number }
+        Args: { p_session_token: string; p_user_id: number }
         Returns: {
           user_id: number
           username: string
         }[]
       }
       get_scheids_assignment_stats_for_session: {
-        Args: { p_month?: string; p_session_token: string }
+        Args: { p_month: string; p_session_token: string }
         Returns: {
           referee_id: number
           referee_name: string
@@ -944,7 +967,7 @@ export type Database = {
         }[]
       }
       get_team_costs_transactions: {
-        Args: { p_session_token: string; p_team_id?: number }
+        Args: { p_session_token: string; p_team_id: number }
         Returns: {
           amount: number
           away_team_id: number
@@ -984,7 +1007,7 @@ export type Database = {
         }[]
       }
       get_teams_for_session: {
-        Args: { p_session_token: string; p_team_id?: number }
+        Args: { p_session_token: string; p_team_id: number }
         Returns: {
           club_colors: string
           contact_email: string
@@ -1030,7 +1053,11 @@ export type Database = {
       is_current_user_admin: { Args: never; Returns: boolean }
       is_player_list_locked: { Args: never; Returns: boolean }
       is_player_suspended: {
-        Args: { match_date_param: string; player_id_param: number }
+        Args: {
+          match_date_param: string
+          p_session_token: string
+          player_id_param: number
+        }
         Returns: boolean
       }
       log_cost_setting_change: {
@@ -1062,12 +1089,12 @@ export type Database = {
       logout_user: { Args: { p_session_token: string }; Returns: undefined }
       manage_application_settings_for_session: {
         Args: {
-          p_category?: string
-          p_id?: number
+          p_category: string
+          p_id: number
           p_operation: string
           p_session_token: string
-          p_setting_name?: string
-          p_setting_value?: Json
+          p_setting_name: string
+          p_setting_value: Json
         }
         Returns: Json
       }
@@ -1083,33 +1110,33 @@ export type Database = {
       }
       manage_cost_settings_for_session: {
         Args: {
-          p_amount?: number
-          p_cascade_amount?: boolean
-          p_category?: string
-          p_id?: number
-          p_name?: string
+          p_amount: number
+          p_cascade_amount: boolean
+          p_category: string
+          p_id: number
+          p_name: string
           p_operation: string
           p_session_token: string
         }
         Returns: Json
       }
       manage_poll_for_session: {
-        Args: { p_operation: string; p_payload?: Json; p_session_token: string }
+        Args: { p_operation: string; p_payload: Json; p_session_token: string }
         Returns: Json
       }
       manage_referee_matches_for_session: {
-        Args: { p_operation: string; p_payload?: Json; p_session_token: string }
+        Args: { p_operation: string; p_payload: Json; p_session_token: string }
         Returns: Json
       }
       manage_team_cost_for_session: {
         Args: {
-          p_amount?: number
+          p_amount: number
           p_cost_id: number
-          p_cost_setting_id?: number
+          p_cost_setting_id: number
           p_operation: string
           p_session_token: string
-          p_team_id?: number
-          p_transaction_date?: string
+          p_team_id: number
+          p_transaction_date: string
         }
         Returns: Json
       }
@@ -1118,7 +1145,7 @@ export type Database = {
             Args: {
               p_operation: string
               p_session_token: string
-              p_team_id?: number
+              p_team_id: number
               p_user_id: number
             }
             Returns: Json
@@ -1127,8 +1154,8 @@ export type Database = {
             Args: {
               p_operation: string
               p_session_token: string
-              p_team_id?: number
-              p_team_ids?: number[]
+              p_team_id: number
+              p_team_ids: number[]
               p_user_id: number
             }
             Returns: Json
@@ -1237,11 +1264,11 @@ export type Database = {
       }
       update_user_for_session: {
         Args: {
-          p_email?: string
-          p_role?: Database["public"]["Enums"]["user_role"]
+          p_email: string
+          p_role: Database["public"]["Enums"]["user_role"]
           p_session_token: string
           p_user_id: number
-          p_username?: string
+          p_username: string
         }
         Returns: Json
       }
@@ -1290,24 +1317,6 @@ export type Database = {
           is_valid: boolean
           role: string
           user_id: number
-        }[]
-      }
-      verify_user_password: {
-        Args: { input_password: string; input_username_or_email: string }
-        Returns: {
-          email: string
-          role: Database["public"]["Enums"]["user_role"]
-          user_id: number
-          username: string
-        }[]
-      }
-      verify_user_password_flexible: {
-        Args: { input_password: string; input_username_or_email: string }
-        Returns: {
-          email: string
-          role: Database["public"]["Enums"]["user_role"]
-          user_id: number
-          username: string
         }[]
       }
     }

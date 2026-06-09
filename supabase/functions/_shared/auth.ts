@@ -5,11 +5,61 @@ export type SessionAuthResult =
   | { ok: true; userId: number; role: string; sessionToken: string }
   | { ok: false; status: number; message: string };
 
+async function requireSessionFromJwt(
+  req: Request,
+  supabaseAdmin: SupabaseClient,
+  options: { adminOnly?: boolean } = {},
+): Promise<SessionAuthResult | null> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return null;
+  }
+
+  const jwt = authHeader.slice("Bearer ".length).trim();
+  if (!jwt) {
+    return null;
+  }
+
+  const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(jwt);
+  if (authError || !authData.user) {
+    return null;
+  }
+
+  const { data: profile, error: profileError } = await supabaseAdmin
+    .from("users")
+    .select("user_id, role")
+    .eq("auth_uid", authData.user.id)
+    .maybeSingle();
+
+  if (profileError || !profile?.user_id || !profile?.role) {
+    return null;
+  }
+
+  if (options.adminOnly && profile.role !== "admin") {
+    return { ok: false, status: 403, message: "Admin access required" };
+  }
+
+  return {
+    ok: true,
+    userId: profile.user_id as number,
+    role: profile.role as string,
+    sessionToken: jwt,
+  };
+}
+
 export async function requireSession(
   req: Request,
   supabaseAdmin: SupabaseClient,
   options: { adminOnly?: boolean } = {},
 ): Promise<SessionAuthResult> {
+  const jwtAuth = await requireSessionFromJwt(req, supabaseAdmin, options);
+  if (jwtAuth) {
+    if (!jwtAuth.ok) {
+      return jwtAuth;
+    }
+    return jwtAuth;
+  }
+
   const token = req.headers.get("x-session-token");
   if (!token) {
     return { ok: false, status: 401, message: "Unauthorized" };
@@ -34,7 +84,20 @@ export async function requireSession(
 async function getSessionTeamIds(
   supabaseAdmin: SupabaseClient,
   sessionToken: string,
+  userId?: number,
 ): Promise<number[]> {
+  if (typeof userId === "number" && userId > 0) {
+    const { data, error } = await supabaseAdmin
+      .from("team_users")
+      .select("team_id")
+      .eq("user_id", userId);
+    if (error) {
+      console.error("team_users lookup failed:", error.message);
+      return [];
+    }
+    return (data ?? []).map((row) => row.team_id as number);
+  }
+
   const { data, error } = await supabaseAdmin.rpc("get_user_team_ids_secure", {
     p_session_token: sessionToken,
   });
@@ -115,7 +178,7 @@ export async function requireMatchMutationAccess(
       return { ok: false, status: 400, message: "Team IDs required" };
     }
 
-    const allowed = await getSessionTeamIds(supabaseAdmin, auth.sessionToken);
+    const allowed = await getSessionTeamIds(supabaseAdmin, auth.sessionToken, auth.userId);
     const allowedSet = new Set(allowed);
 
     const hasHome = typeof resolvedHome === "number" && allowedSet.has(resolvedHome);

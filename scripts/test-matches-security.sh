@@ -194,7 +194,7 @@ else:
   code=$(curl -s -o /tmp/ref_rpc.json -w "%{http_code}" \
     "$SUPABASE_URL/rest/v1/rpc/get_referees_for_session" \
     -H "Content-Type: application/json" "${hdr[@]}" \
-    -d '{"p_session_token": null}')
+    -d '{"p_session_token": null, "p_user_id": null}')
   ref_rpc_empty=$([[ "$code" == "200" && "$(cat /tmp/ref_rpc.json)" == "[]" ]] && echo true || echo false)
   check "get_referees_for_session leeg zonder sessie (HTTP $code)" "$ref_rpc_empty"
 
@@ -226,7 +226,7 @@ else:
   code=$(curl -s -o /tmp/teams_sess.json -w "%{http_code}" \
     "$SUPABASE_URL/rest/v1/rpc/get_teams_for_session" \
     -H "Content-Type: application/json" "${hdr[@]}" \
-    -d '{"p_session_token": null}')
+    -d '{"p_session_token": null, "p_team_id": null}')
   teams_sess_empty=$([[ "$code" == "200" && "$(cat /tmp/teams_sess.json)" == "[]" ]] && echo true || echo false)
   check "get_teams_for_session leeg zonder sessie (HTTP $code)" "$teams_sess_empty"
 
@@ -457,6 +457,38 @@ print('true' if isinstance(d,list) and len(d)>0 and d[0].get('setting_category')
     fi
   fi
   check "referee_matches niet direct leesbaar voor anon (HTTP $code)" "$rm_blocked"
+
+  # 41. resolve_session_role niet callable door anon (lint 0028 internal)
+  code=$(curl -s -o /tmp/rsr.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/resolve_session_role" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"p_session_token": "00000000-0000-0000-0000-000000000001"}')
+  rsr_blocked=$([[ "$code" == "404" || "$code" == "401" || "$code" == "403" ]] && echo true || echo false)
+  check "resolve_session_role niet uitvoerbaar door anon (HTTP $code)" "$rsr_blocked"
+
+  # 42. check_email_rate_limit niet callable door anon (edge/service_role only)
+  code=$(curl -s -o /tmp/cerl.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/check_email_rate_limit" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"p_email": "test@example.com", "p_action": "password_reset", "p_max_attempts": 3, "p_window_minutes": 60}')
+  cerl_blocked=$([[ "$code" == "404" || "$code" == "401" || "$code" == "403" ]] && echo true || echo false)
+  check "check_email_rate_limit niet uitvoerbaar door anon (HTTP $code)" "$cerl_blocked"
+
+  # 43. verify_user_password legacy weg
+  code=$(curl -s -o /tmp/vup.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/verify_user_password" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"input_username_or_email": "x", "input_password": "x"}')
+  vup_gone=$([[ "$code" == "404" || "$code" == "400" ]] && echo true || echo false)
+  check "verify_user_password legacy RPC weg (HTTP $code)" "$vup_gone"
+
+  # 44. is_player_suspended zonder sessie geweigerd (oude signature)
+  code=$(curl -s -o /tmp/ips_old.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/is_player_suspended" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"player_id_param": 1, "match_date_param": "2026-01-01T00:00:00Z"}')
+  ips_old_gone=$([[ "$code" == "404" || "$code" == "400" ]] && echo true || echo false)
+  check "is_player_suspended spoofable signature zonder token weg (HTTP $code)" "$ips_old_gone"
 else
   echo "⏭️  Overgeslagen: set_config-blokkade, public RPC, admin-RPC, edge-auth (vereist migratie + deploy)"
 fi

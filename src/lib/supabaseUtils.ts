@@ -9,6 +9,7 @@ export const resetUserContextCache = () => {
   contextPromise = null;
 };
 
+/** @deprecated Do not use for new code — prefer session RPCs with getRpcSessionArgs(). */
 export const withUserContext = async <T>(
   operation: () => Promise<T>,
 ): Promise<T> => {

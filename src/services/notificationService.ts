@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getRpcSessionArgs } from '@/lib/authSession';
-import { withUserContext } from '@/lib/supabaseUtils';
+import { fetchTeamsForSession } from '@/services/core/teamsSessionFetch';
 import {
   deleteApplicationSettingForSession,
   insertApplicationSettingForSession,
@@ -143,15 +143,8 @@ export const notificationService = {
 
   async getAllTeams(): Promise<Array<{ team_id: number; team_name: string }>> {
     try {
-      const { data, error } = await withUserContext(async () => {
-        return await supabase
-          .from('teams')
-          .select('team_id, team_name')
-          .order('team_name');
-      });
-
-      if (error) throw error;
-      return data || [];
+      const teams = await fetchTeamsForSession();
+      return teams.map((t) => ({ team_id: t.team_id, team_name: t.team_name }));
     } catch (error) {
       console.error('Error loading teams:', error);
       return [];

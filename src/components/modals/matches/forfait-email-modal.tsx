@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertTriangle, Loader2, ChevronDown, Copy, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { withUserContext } from "@/lib/supabaseUtils";
 import { getEdgeFunctionHeaders } from "@/lib/authSession";
 import { fetchTeamRecipientsForSession } from "@/services/core/userProfileSessionFetch";
+import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
 import { useToast } from "@/hooks/use-toast";
 
 const DEFAULT_RECIPIENTS = [
@@ -106,30 +106,12 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
       }
 
       try {
-        let contactRows: Array<{
-          team_id: number;
-          team_name: string;
-          contact_person: string | null;
-          contact_email: string | null;
-        }> = [];
-
-        if (teamIds.length > 0) {
-          const { data, error } = await supabase
-            .from("teams")
-            .select("team_id, team_name, contact_person, contact_email")
-            .in("team_id", teamIds);
-          if (error) throw error;
-          contactRows = data ?? [];
-        }
-
-        if (contactRows.length === 0 && teamNames.length > 0) {
-          const { data, error } = await supabase
-            .from("teams")
-            .select("team_id, team_name, contact_person, contact_email")
-            .in("team_name", teamNames);
-          if (error) throw error;
-          contactRows = data ?? [];
-        }
+        const allTeams = await fetchTeamsForSession();
+        const contactRows = allTeams.filter((row) => {
+          if (teamIds.length > 0 && teamIds.includes(row.team_id)) return true;
+          if (teamNames.length > 0 && teamNames.includes(row.team_name)) return true;
+          return false;
+        });
 
         contactRows.forEach((row) =>
           addTeamRecipient(list, seen, {

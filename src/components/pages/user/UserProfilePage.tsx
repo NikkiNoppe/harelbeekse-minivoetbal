@@ -37,11 +37,10 @@ import { fetchTeamBalanceForSession } from "@/services/core/userProfileSessionFe
 import { fetchTeamTransactionsByTeamId } from "@/services/financial/financialTransactionsFetch";
 import { listApplicationSettingsForSession } from "@/services/core/applicationSettingsSessionFetch";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { withUserContext } from "@/lib/supabaseUtils";
-import { supabase } from "@/integrations/supabase/client";
 import RefereeNotesCard from "./RefereeNotesCard";
 import { useTeamPlayerStats, type PlayerStat } from "@/hooks/useTeamPlayerStats";
 import { rowsToCsv, buildCsvZip } from "@/lib/backupExportUtils";
+import { fetchAdminDatabaseBackupForSession } from "@/services/core/adminBackupSessionFetch";
 
 // Loading skeleton
 const ProfileSkeleton = memo(() => (
@@ -466,21 +465,12 @@ const UserTeamInfoCard: React.FC<{
       // Use ref to get the latest formData value, as state updates might be batched
       const currentFormData = formDataRef.current;
       
-      const updated = await withUserContext(
-        async () => {
-          return await teamService.updateTeam(team.team_id, {
-            contact_person: currentFormData.contact_person?.trim() || null,
-            contact_email: currentFormData.contact_email?.trim() || null,
-            contact_phone: currentFormData.contact_phone?.trim() || null,
-            club_colors: currentFormData.club_colors || null,
-          });
-        },
-        {
-          userId: authUser?.id,
-          role: authUser?.role,
-          teamIds: String(team.team_id)
-        }
-      );
+      const updated = await teamService.updateTeam(team.team_id, {
+        contact_person: currentFormData.contact_person?.trim() || null,
+        contact_email: currentFormData.contact_email?.trim() || null,
+        contact_phone: currentFormData.contact_phone?.trim() || null,
+        club_colors: currentFormData.club_colors || null,
+      });
 
       if (updated) {
         toast({
@@ -512,32 +502,8 @@ const UserTeamInfoCard: React.FC<{
   };
 
   const fetchBackupData = useCallback(async () => {
-    const tables = ['teams', 'players', 'matches', 'users', 'team_users', '_old_competition_standings', 'costs', 'team_costs', 'application_settings', 'referee_matches'] as const;
-    const backup: Record<string, any[]> = {};
-    
-    for (const table of tables) {
-      let allRows: any[] = [];
-      let from = 0;
-      const batchSize = 1000;
-      
-      while (true) {
-        const { data, error } = await supabase
-          .from(table as any)
-          .select('*')
-          .range(from, from + batchSize - 1);
-        
-        if (error) {
-          console.error(`Error fetching ${table}:`, error);
-          break;
-        }
-        if (!data || data.length === 0) break;
-        allRows = allRows.concat(data);
-        if (data.length < batchSize) break;
-        from += batchSize;
-      }
-      
-      backup[table] = allRows;
-    }
+    const backup = await fetchAdminDatabaseBackupForSession();
+    const tables = Object.keys(backup);
     return { backup, tables };
   }, []);
 

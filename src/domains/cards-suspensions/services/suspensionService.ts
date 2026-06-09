@@ -11,6 +11,8 @@ import {
   updateApplicationSettingForSession,
 } from "@/services/core/applicationSettingsSessionFetch";
 import { fetchAllMatchesForSession } from "@/services/core/matchesSessionFetch";
+import { fetchPlayersForSession } from "@/services/core/playersSessionFetch";
+import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
 
 const AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY = 'automatic_suspension_overrides' as const;
 
@@ -102,9 +104,7 @@ export const suspensionService = {
       }
       
       // Use SECURITY DEFINER RPC for reliable admin/manager access
-      const { data, error } = await withUserContext(async () =>
-        supabase.rpc('get_player_cards_for_admin', getRpcSessionArgs())
-      );
+      const { data, error } = await supabase.rpc('get_player_cards_for_admin', getRpcSessionArgs());
 
       if (error) {
         console.error('Error fetching player cards via RPC:', error);
@@ -291,6 +291,7 @@ export const suspensionService = {
     const promise = (async () => {
       try {
         const { data, error } = await supabase.rpc('is_player_suspended', {
+          ...getRpcSessionArgs(),
           player_id_param: playerId,
           match_date_param: matchDate.toISOString()
         });
@@ -340,6 +341,7 @@ export const suspensionService = {
 
     try {
       const { data, error } = await supabase.rpc('check_batch_players_suspended', {
+        ...getRpcSessionArgs(),
         player_ids: playerIds,
         match_date_param: matchDate.toISOString()
       });
@@ -805,29 +807,29 @@ export const suspensionService = {
       const manualPlayerIds = [...new Set(manualSuspensions.map(suspension => suspension.playerId))];
 
       if (manualPlayerIds.length > 0) {
-        const { data: playersData, error: playersError } = await supabase
-          .from('players')
-          .select(`
-            player_id,
-            first_name,
-            last_name,
-            team_id,
-            teams:team_id ( team_name )
-          `)
-          .in('player_id', manualPlayerIds);
-
-        if (playersError) {
+        let playersById = new Map<number, { playerName: string; teamName: string; teamId?: number }>();
+        try {
+          const [allPlayers, allTeams] = await Promise.all([
+            fetchPlayersForSession(null),
+            fetchTeamsForSession(),
+          ]);
+          const teamNameById = new Map(allTeams.map((t) => [t.team_id, t.team_name]));
+          const manualIdSet = new Set(manualPlayerIds);
+          playersById = new Map(
+            allPlayers
+              .filter((player) => manualIdSet.has(player.player_id))
+              .map((player) => [
+                player.player_id,
+                {
+                  playerName: `${player.first_name} ${player.last_name}`,
+                  teamName: teamNameById.get(player.team_id) || 'Onbekend Team',
+                  teamId: player.team_id as number | undefined,
+                },
+              ]),
+          );
+        } catch (playersError) {
           console.error('Error fetching manual suspension players:', playersError);
         }
-
-        const playersById = new Map((playersData || []).map((player: any) => [
-          player.player_id,
-          {
-            playerName: `${player.first_name} ${player.last_name}`,
-            teamName: player.teams?.team_name || 'Onbekend Team',
-            teamId: player.team_id as number | undefined
-          }
-        ]));
 
         manualSuspensions.forEach((manualSuspension) => {
           const player = playersById.get(manualSuspension.playerId);

@@ -20,7 +20,6 @@ import { useTeamPlayersWithSuspensions, type TeamPlayer } from "@/components/pag
 import { PlayerDataRefreshModal, InlinePlayerRetry } from "@/components/modals";
 import MatchesCardIcon from "@/components/pages/admin/matches/components/MatchesCardIcon";
 import { costSettingsService, financialService } from "@/domains/financial";
-import { withUserContext } from "@/lib/supabaseUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentDate, localDateTimeToISO } from "@/lib/dateUtils";
 import { MatchFormData, PlayerSelection } from "@/components/pages/admin/matches/types";
@@ -426,35 +425,33 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       const currentDate = getCurrentDate();
       let savedCount = 0;
 
-      await withUserContext(async () => {
-        for (const penalty of validItems) {
-          const teamId = Number(penalty.teamId);
-          const costSettingId = Number(penalty.costSettingId);
-          const costSetting = availablePenalties.find((cs) => Number(cs.id) === costSettingId);
+      for (const penalty of validItems) {
+        const teamId = Number(penalty.teamId);
+        const costSettingId = Number(penalty.costSettingId);
+        const costSetting = availablePenalties.find((cs) => Number(cs.id) === costSettingId);
 
-          if (!costSetting) {
-            throw new Error(
-              `Boetetype (id ${costSettingId}) niet gevonden. Vernieuw het formulier en probeer opnieuw.`
-            );
-          }
-
-          const result = await financialService.addTransaction({
-            team_id: teamId,
-            amount: Number(costSetting.amount),
-            description: null,
-            transaction_type: 'penalty',
-            transaction_date: currentDate,
-            match_id: Number(match.matchId),
-            penalty_type_id: null,
-            cost_setting_id: costSettingId,
-          });
-
-          if (!result.success) {
-            throw new Error(result.message || 'Kon boete niet opslaan');
-          }
-          savedCount += 1;
+        if (!costSetting) {
+          throw new Error(
+            `Boetetype (id ${costSettingId}) niet gevonden. Vernieuw het formulier en probeer opnieuw.`
+          );
         }
-      });
+
+        const result = await financialService.addTransaction({
+          team_id: teamId,
+          amount: Number(costSetting.amount),
+          description: null,
+          transaction_type: 'penalty',
+          transaction_date: currentDate,
+          match_id: Number(match.matchId),
+          penalty_type_id: null,
+          cost_setting_id: costSettingId,
+        });
+
+        if (!result.success) {
+          throw new Error(result.message || 'Kon boete niet opslaan');
+        }
+        savedCount += 1;
+      }
 
       if (savedCount !== validItems.length) {
         throw new Error('Niet alle boetes konden worden opgeslagen.');

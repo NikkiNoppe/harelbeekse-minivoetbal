@@ -2,7 +2,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { isoToLocalDateTime, sortDatesDesc } from "@/lib/dateUtils";
 import { sortMatchesByDateAndTime } from "@/lib/matchSortingUtils";
 import { getRpcSessionArgs } from "@/lib/authSession";
-import { withUserContext } from "@/lib/supabaseUtils";
 import { fetchPublicMatches, isRegularMatch } from "@/services/public/publicScheduleFetch";
 
 export interface MatchData {
@@ -88,9 +87,7 @@ export const fetchCompetitionMatches = async () => {
 };
 
 export const fetchAllCards = async (): Promise<CardData[]> => {
-  const { data, error } = await withUserContext(async () =>
-    supabase.rpc('get_match_card_events', getRpcSessionArgs())
-  );
+  const { data, error } = await supabase.rpc('get_match_card_events', getRpcSessionArgs());
 
   if (error || !data) {
     console.error("[fetchAllCards] Error:", error);

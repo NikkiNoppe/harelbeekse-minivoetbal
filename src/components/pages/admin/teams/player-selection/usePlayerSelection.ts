@@ -24,7 +24,7 @@ export const usePlayerSelection = (matchId: number, teamId: number, onComplete: 
   const { authContextReady } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch team players function with withUserContext wrapper
+  // Fetch team players via session RPC
   const fetchTeamPlayers = async () => {
     try {
       const data = await fetchPlayersForSession(teamId);

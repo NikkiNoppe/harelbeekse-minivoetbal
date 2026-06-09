@@ -5,6 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { resetUserContextCache } from '@/lib/supabaseUtils';
 import { AuthContext, AuthContextType } from '@/hooks/useAuth';
 import { getRpcSessionArgs, getSessionToken } from '@/lib/authSession';
+import { USE_SUPABASE_AUTH } from '@/config/authFlags';
+import {
+  loginWithSupabaseAuthBridge,
+  restoreSupabaseAuthBridgeSession,
+  signOutSupabaseAuthBridge,
+} from '@/lib/supabaseAuthBridge';
 
 function isSuperAdminUsername(username: string): boolean {
   return username.toLowerCase() === 'superadmin';
@@ -77,6 +83,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return;
         }
 
+        if (USE_SUPABASE_AUTH) {
+          const bridge = await restoreSupabaseAuthBridgeSession();
+          if (!bridge) {
+            localStorage.removeItem('auth_data');
+            setAuthContextReady(true);
+            return;
+          }
+          persistAuthState(bridge.user, bridge.sessionToken);
+          setUser(bridge.user);
+          setIsAuthenticated(true);
+          setAuthContextReady(true);
+          return;
+        }
+
         const restored = await restoreSessionContext(authData.sessionToken);
         if (!restored) {
           localStorage.removeItem('auth_data');
@@ -135,6 +155,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return true;
       }
 
+      if (USE_SUPABASE_AUTH) {
+        const bridge = await loginWithSupabaseAuthBridge(username, password);
+        if (bridge) {
+          setUser(bridge.user);
+          setIsAuthenticated(true);
+          persistAuthState(bridge.user, bridge.sessionToken);
+          resetUserContextCache();
+          setAuthContextReady(true);
+          return true;
+        }
+        return false;
+      }
+
       const { data, error } = await supabase.rpc('login_user', {
         input_username_or_email: username,
         input_password: password,
@@ -183,6 +216,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } catch (e) {
         console.warn('Could not revoke session server-side:', e);
       }
+    }
+    if (USE_SUPABASE_AUTH) {
+      await signOutSupabaseAuthBridge();
     }
     setAuthContextReady(false);
     setUser(null);

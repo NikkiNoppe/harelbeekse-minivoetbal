@@ -51,12 +51,54 @@ Dit project gebruikt **custom session-token auth** (anon key + `p_session_token`
 
 | Finding | Waarom veilig |
 |---------|----------------|
-| SECURITY DEFINER + `GRANT EXECUTE TO anon` (lint 0028/0029) | Anon is de enige REST-rol; autorisatie zit in de RPC-body via `private.resolve_app_session` / `user_sessions`. |
+| SECURITY DEFINER + `GRANT EXECUTE TO anon` (lint 0028/0029) | Opgelost via **public INVOKER wrappers** + `private.*_impl` DEFINER; `authenticated` EXECUTE revoked. Zie migraties `202606150*`. |
 | `verify_jwt = false` op edge functions | JWT op anon key is triviaal; echte auth is `x-session-token` → `validate_session` in `_shared/auth.ts`. |
 | `users.password` kolomnaam | Waarde is bcrypt (`crypt()`); kolom is `REVOKE` voor clients. |
 | RLS met `get_current_user_role()` | Clients kunnen `set_config` niet meer aanroepen; context alleen via `login_user` / `restore_user_session`. |
 | Oude migratiebestanden met `p_user_id integer` | Historische SQL; live DB gebruikt `p_session_token uuid` (zie `20260609110000`). |
 
-**Verificatie:** `npm run test:security` — incl. edge functions zonder sessie → 401, `set_config` geblokkeerd, admin RPCs leeg zonder token.
+**Verificatie:** `npm run test:security` — 44/44 groen na deploy; incl. edge functions zonder sessie → 401, `set_config` geblokkeerd, admin RPCs leeg zonder token, interne helpers (`resolve_session_role`, `check_email_rate_limit`) niet callable door anon.
 
-**Lovable rescan:** trigger handmatig in Lovable na deploy; sommige warnings verdwijnen pas na 24–48u of blijven door bovenstaand design.
+## Supabase Database Linter (0028/0029)
+
+**0028** = `public` functie met `SECURITY DEFINER` + `GRANT EXECUTE TO anon`. **0029** = idem voor `authenticated`.
+
+| Fase | Migratie(s) | Effect |
+|------|-------------|--------|
+| A | `20260615000000_revoke_authenticated_rpc_execute.sql` | Alle 0029 warnings weg (app gebruikt alleen anon key) |
+| B | `20260615001000_lock_down_internal_public_functions.sql` | Interne helpers niet meer via REST; legacy `verify_user_password*` / `get_match_statistics` weg |
+| C | `20260615010000` + `20260615020000` + `20260615010500` | `private.create_public_invoker_wrapper` + batch: DEFINER body → `private.*`, dunne `public` INVOKER wrapper |
+| C+ | `20260615011000_grant_anon_private_schema_usage.sql` | `GRANT USAGE ON SCHEMA private TO anon` (nodig voor INVOKER wrappers) |
+| D | `20260615030000_suspension_session_rpcs.sql` | `is_player_suspended` / `check_batch_players_suspended` vereisen `p_session_token` |
+
+Het `private` schema is **niet** exposed in PostgREST → DEFINER impls daar triggeren geen 0028. Na deploy: Security Advisor opnieuw scannen in Supabase Dashboard.
+
+## Supabase Database Linter — RLS performance (0003 / 0006)
+
+Migraties `20260616000000` t/m `20260616002000`:
+
+| Lint | Fix |
+|------|-----|
+| **0003** auth_rls_initplan | `(SELECT current_setting(...))`, `(SELECT auth.role())`, `(SELECT get_current_user_role())` in RLS-expressies |
+| **0006** multiple_permissive_policies | Redundante policies samengevoegd tot één policy per rol+actie (users, matches, players, teams, application_settings, …) |
+
+RLS is defense-in-depth; de app gebruikt primair session-RPC's. `npm run test:security` blijft 44/44 groen na deploy.
+
+| Lint | Migratie `20260616003000` |
+|------|---------------------------|
+| **0001** unindexed_foreign_keys | Index op `matches.home/away_team_id`, `team_costs.team_id/cost_setting_id` |
+| **0005** unused_index | Verwijderd: duplicaten + `idx_referee_matches_poll` (kleine tabel, seq scan) + legacy `idx_team_costs_date`. Behouden FK/perf-indexen; `20260616005000` warmt idx_scan na deploy. |
+
+| Lint | Migratie `20260616004000` |
+|------|---------------------------|
+| **Query advisor** (pg_stat) | Composiet-indexen: `matches(match_date)`, `(is_playoff_match, match_date)`, `(is_submitted, match_date)`, team+date; `team_costs(team_id, transaction_date)`; `players(last_name, first_name)` |
+
+**Performance Advisor rescan:** na `20260616005000` opnieuw scannen; nieuwe indexen staan eerst op idx_scan=0 tot er queries draaien.
+
+## Auth roadmap
+
+| Fase | Status | Migraties / docs |
+|------|--------|------------------|
+| **0** Legacy cleanup | Session-RPC i.p.v. `withUserContext`; admin backup RPC; auth cleanup cron | `20260617000000` |
+| **1** Beslismoment | Custom auth default; zie criteria in doc | [`DOCUMENTATIE/AUTH_ROADMAP.md`](../DOCUMENTATIE/AUTH_ROADMAP.md) |
+| **2b** Supabase Auth pilot | `VITE_USE_SUPABASE_AUTH=true`; `users.auth_uid`; JWT edge fallback | `20260617001000`, `src/lib/supabaseAuthBridge.ts` |
