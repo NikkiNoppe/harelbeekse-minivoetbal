@@ -2,13 +2,28 @@ import React, { memo, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Trophy, Info } from "lucide-react";
 import { usePublicPlayoffData, PlayoffTeam, PlayoffMatchData, HeadToHeadMatch } from "@/hooks/usePublicPlayoffData";
 import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 import { PageHeader } from "@/components/layout";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import DownloadScheduleButton from "@/components/common/DownloadScheduleButton";
+import ResponsiveStandingsTable, {
+  type StandingsTeamRow,
+} from "@/components/tables/ResponsiveStandingsTable";
+
+function mapPlayoffToStandingsRows(teams: PlayoffTeam[]): StandingsTeamRow[] {
+  return teams.map((team) => ({
+    id: team.team_id,
+    name: team.team_name,
+    played: team.playoff_played,
+    won: team.playoff_wins,
+    draw: team.playoff_draws,
+    lost: team.playoff_losses,
+    goalDiff: team.playoff_goal_diff,
+    points: team.total_points,
+  }));
+}
 
 // Detect groups of teams with equal total points (potential tiebreaker cases)
 const findTiedGroups = (teams: PlayoffTeam[]): PlayoffTeam[][] => {
@@ -57,7 +72,18 @@ const formatMatchDate = (iso: string | null): string => {
   return `${weekday} ${day} ${month}`;
 };
 
-// Tabel met onderlinge wedstrijden + mini-stand (punten / saldo) per team
+function formatTiedTeamNames(teams: PlayoffTeam[]): string {
+  return teams.map((t) => t.team_name).join(" & ");
+}
+
+function formatWinsBreakdown(teams: PlayoffTeam[]): string {
+  return teams.map((t) => `${t.team_name} ${t.total_wins}`).join(", ");
+}
+
+const tiebreakerDetailsSummaryClass =
+  "cursor-pointer select-none text-primary underline-offset-2 hover:underline min-h-[36px] inline-flex items-center justify-center touch-manipulation list-none [&::-webkit-details-marker]:hidden";
+
+// Onderlinge wedstrijden + mini-stand — alleen zichtbaar in uitklap
 const H2HBlock = memo(({
   group,
   matches,
@@ -65,77 +91,82 @@ const H2HBlock = memo(({
   group: PlayoffTeam[];
   matches: HeadToHeadMatch[];
 }) => {
-  const groupIds = new Set(group.map(t => t.team_id));
+  const groupIds = new Set(group.map((t) => t.team_id));
   const between = matches
-    .filter(m => groupIds.has(m.home_team_id) && groupIds.has(m.away_team_id))
-    .sort((a, b) => (a.match_date || '').localeCompare(b.match_date || ''));
+    .filter((m) => groupIds.has(m.home_team_id) && groupIds.has(m.away_team_id))
+    .sort((a, b) => (a.match_date || "").localeCompare(b.match_date || ""));
 
   if (between.length === 0) {
     return (
-      <div className="mt-1 italic">
-        Geen onderlinge wedstrijden gespeeld tussen deze teams.
-      </div>
+      <p className="mt-1.5 italic text-muted-foreground">
+        Geen onderlinge wedstrijden tussen deze teams.
+      </p>
     );
   }
 
-  // Mini-stand opbouwen
   const mini = new Map<number, { pts: number; gf: number; ga: number }>();
-  group.forEach(t => mini.set(t.team_id, { pts: 0, gf: 0, ga: 0 }));
-  between.forEach(m => {
+  group.forEach((t) => mini.set(t.team_id, { pts: 0, gf: 0, ga: 0 }));
+  between.forEach((m) => {
     const h = mini.get(m.home_team_id)!;
     const a = mini.get(m.away_team_id)!;
-    h.gf += m.home_score; h.ga += m.away_score;
-    a.gf += m.away_score; a.ga += m.home_score;
+    h.gf += m.home_score;
+    h.ga += m.away_score;
+    a.gf += m.away_score;
+    a.ga += m.home_score;
     if (m.home_score > m.away_score) h.pts += 3;
     else if (m.home_score < m.away_score) a.pts += 3;
-    else { h.pts += 1; a.pts += 1; }
+    else {
+      h.pts += 1;
+      a.pts += 1;
+    }
   });
 
   return (
-    <div className="mt-2 space-y-2">
-      <div className="rounded border" style={{ borderColor: 'var(--accent)' }}>
+    <div className="mt-1.5 space-y-1.5 text-center overflow-x-auto">
+      <div className="rounded border border-primary/20 min-w-[min(100%,16rem)] mx-auto text-left">
         {between.map((m, i) => (
           <div
             key={i}
-            className="grid grid-cols-[auto_1fr_auto_1fr_auto] items-center gap-2 px-2 py-1 border-b last:border-b-0"
-            style={{ borderColor: 'var(--accent)' }}
+            className="grid grid-cols-[4.75rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_2.25rem] items-center gap-x-2 gap-y-0 px-2 py-1 border-b border-primary/15 last:border-b-0 text-[11px] sm:text-xs text-left"
           >
-            <span className="tabular-nums opacity-75 text-[11px]">
+            <span className="tabular-nums text-muted-foreground shrink-0">
               {formatMatchDate(m.match_date)}
             </span>
-            <span className="text-right truncate">{m.home_team_name}</span>
-            <span className="font-semibold tabular-nums">
-              {m.home_score} – {m.away_score}
+            <span className="truncate text-right text-foreground">{m.home_team_name}</span>
+            <span
+              className="grid grid-cols-[1.25rem_0.625rem_1.25rem] items-center font-semibold tabular-nums text-foreground shrink-0 justify-self-center"
+              aria-label={`${m.home_score} – ${m.away_score}`}
+            >
+              <span className="text-right">{m.home_score}</span>
+              <span className="text-center leading-none">–</span>
+              <span className="text-left">{m.away_score}</span>
             </span>
-            <span className="truncate">{m.away_team_name}</span>
-            <span className="text-[10px] uppercase tracking-wide opacity-70">
-              {m.is_playoff ? 'PO' : 'comp.'}
+            <span className="truncate text-left text-foreground">{m.away_team_name}</span>
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0 text-right">
+              {m.is_playoff ? "PO" : "comp."}
             </span>
           </div>
         ))}
       </div>
-      <div className="text-[11px]">
-        <span className="font-medium" style={{ color: 'var(--accent-foreground)' }}>
-          Onderlinge stand:
-        </span>{' '}
+      <p className="text-[11px] leading-snug text-center text-muted-foreground">
+        <span className="font-medium text-foreground">Onderlinge stand:</span>{' '}
         {group.map((t, i) => {
           const s = mini.get(t.team_id)!;
           const diff = s.gf - s.ga;
           return (
             <span key={t.team_id}>
-              {t.team_name} <strong>{s.pts}</strong> pt (saldo {diff > 0 ? '+' : ''}{diff})
-              {i < group.length - 1 ? ' · ' : ''}
+              {t.team_name} <strong className="text-foreground">{s.pts}</strong> pt
+              (saldo {diff > 0 ? "+" : ""}{diff})
+              {i < group.length - 1 ? " · " : ""}
             </span>
           );
         })}
-        .
-      </div>
+      </p>
     </div>
   );
 });
-H2HBlock.displayName = 'H2HBlock';
+H2HBlock.displayName = "H2HBlock";
 
-// Subtle notice about applied tiebreaker rules for tied teams
 const TiebreakerNotice = memo(({
   teams,
   headToHeadMatches,
@@ -148,83 +179,74 @@ const TiebreakerNotice = memo(({
 
   return (
     <div
-      className="mt-3 space-y-3 rounded-md border border-dashed px-3 py-2 text-xs"
-      style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
+      className="mt-3 space-y-3 rounded-md border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-xs text-center text-muted-foreground"
       role="note"
     >
-      {tied.map((g, idx) => {
-        const crit = getDecidingCriterion(g);
-        const points = g[0].total_points;
+      {tied.map((group, idx) => {
+        const criterion = getDecidingCriterion(group);
+        const points = group[0].total_points;
+        const teamNames = formatTiedTeamNames(group);
+
         return (
-          <div key={idx} className="flex items-start gap-2">
-            <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div>
-                <span className="font-medium" style={{ color: 'var(--accent-foreground)' }}>
-                  Gelijke stand op {points} punten:
-                </span>{' '}
-                {g.map((t, i) => (
-                  <span key={t.team_id}>
-                    {t.team_name}
-                    {i < g.length - 1 ? ' & ' : ''}
-                  </span>
-                ))}
-                .
-              </div>
+          <div key={idx} className="space-y-1.5">
+            <p className="text-foreground leading-snug">
+              <Info
+                className="inline-block w-3.5 h-3.5 mr-1 align-middle text-primary"
+                aria-hidden="true"
+              />
+              <span className="font-medium">Gelijke stand op {points} punten:</span>{" "}
+              {teamNames}
+            </p>
 
-              {crit.type === 'wins' && (
-                <>
-                  <div className="mt-1">
-                    Volgorde bepaald op <strong>aantal gewonnen wedstrijden</strong> (competitie + play-offs samengeteld):{' '}
-                    {g.map((t, i) => (
-                      <span key={t.team_id}>
-                        {t.team_name} <strong>{t.total_wins}</strong> wins
-                        {i < g.length - 1 ? ', ' : ''}
-                      </span>
-                    ))}
-                    . Daardoor komen onderlinge wedstrijden hier niet aan te pas.
-                  </div>
-                  <details className="mt-2">
-                    <summary className="cursor-pointer select-none underline-offset-2 hover:underline">
-                      Toon onderlinge wedstrijden ter info
+            {criterion.type === "wins" && (
+              <ol className="list-none space-y-1 leading-snug mx-auto max-w-full">
+                <li>
+                  <span className="font-medium text-foreground">1. Aantal gewonnen wedstrijden.</span>{" "}
+                  Volgorde via wins ({formatWinsBreakdown(group)}).
+                </li>
+                <li>
+                  <details className="inline-block text-center">
+                    <summary className={tiebreakerDetailsSummaryClass}>
+                      Toon onderlinge wedstrijden (ter info)
                     </summary>
-                    <H2HBlock group={g} matches={headToHeadMatches} />
+                    <H2HBlock group={group} matches={headToHeadMatches} />
                   </details>
-                </>
-              )}
+                </li>
+              </ol>
+            )}
 
-              {crit.type === 'h2h' && (
-                <div className="mt-1">
-                  Volgens het reglement (zie onderaan):
-                  <ol className="mt-1 ml-4 list-decimal space-y-2">
-                    <li>
-                      <strong>Aantal gewonnen wedstrijden.</strong> Gewonnen
-                      wedstrijden zijn gelijk ({g[0].total_wins} elk, competitie
-                      + play-offs).
-                    </li>
-                    <li>
-                      <strong>Onderlinge wedstrijden.</strong>
-                      <H2HBlock group={g} matches={headToHeadMatches} />
-                    </li>
-                  </ol>
-                </div>
-              )}
+            {criterion.type === "h2h" && (
+              <ol className="list-none space-y-1 leading-snug mx-auto max-w-full">
+                <li>
+                  <span className="font-medium text-foreground">1. Aantal gewonnen wedstrijden.</span>{" "}
+                  Gelijk ({group[0].total_wins} elk, competitie + play-offs).
+                </li>
+                <li>
+                  <span className="font-medium text-foreground">2. Onderlinge wedstrijden.</span>{" "}
+                  Volgorde bepaald via onderlinge resultaten.
+                  <details className="mt-1 text-center">
+                    <summary className={tiebreakerDetailsSummaryClass}>
+                      Toon wedstrijden
+                    </summary>
+                    <H2HBlock group={group} matches={headToHeadMatches} />
+                  </details>
+                </li>
+              </ol>
+            )}
 
-
-              {crit.type === 'alphabetical' && (
-                <div className="mt-1">
-                  Alle sportieve criteria zijn gelijk — volgens reglement zou hier een{' '}
-                  <strong>testmatch of loting</strong> volgen. Voorlopig alfabetisch weergegeven.
-                </div>
-              )}
-            </div>
+            {criterion.type === "alphabetical" && (
+              <p className="leading-snug">
+                Alle criteria gelijk — voorlopig alfabetisch weergegeven (reglement: testmatch of
+                loting).
+              </p>
+            )}
           </div>
         );
       })}
     </div>
   );
 });
-TiebreakerNotice.displayName = 'TiebreakerNotice';
+TiebreakerNotice.displayName = "TiebreakerNotice";
 
 // Compact rules summary
 const PlayoffRules = memo(() => (
@@ -258,22 +280,6 @@ const PlayoffRules = memo(() => (
 ));
 PlayoffRules.displayName = 'PlayoffRules';
 
-// Skeleton components
-const StandingsTableSkeleton = memo(() => (
-  <div className="space-y-3">
-    {[...Array(8)].map((_, index) => (
-      <div key={index} className="p-3 bg-muted/20 rounded">
-        <div className="flex justify-between items-center mb-1">
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-6 w-8" />
-        </div>
-        <Skeleton className="h-3 w-24" />
-      </div>
-    ))}
-  </div>
-));
-StandingsTableSkeleton.displayName = 'StandingsTableSkeleton';
-
 const ScheduleSkeleton = memo(() => (
   <div className="space-y-3">
     {[...Array(5)].map((_, index) => (
@@ -287,16 +293,21 @@ const ScheduleSkeleton = memo(() => (
 ScheduleSkeleton.displayName = 'ScheduleSkeleton';
 
 const PlayoffLoading = memo(() => (
-  <div className="space-y-6 animate-slide-up">
-    <PageHeader 
-      title="Play-Off Klassement" 
+  <div className="space-y-6 motion-safe:animate-slide-up">
+    <PageHeader
+      title="Play-Off"
       subtitle="Seizoen 2025-2026"
     />
-    <Card>
-      <CardContent className="p-4">
-        <StandingsTableSkeleton />
-      </CardContent>
-    </Card>
+    <section aria-labelledby="po1-loading-heading">
+      <h2
+        id="po1-loading-heading"
+        className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2"
+      >
+        <Trophy className="w-5 h-5 text-primary" aria-hidden="true" />
+        Play-Off 1
+      </h2>
+      <ResponsiveStandingsTable isLoading embeddedInCard />
+    </section>
   </div>
 ));
 PlayoffLoading.displayName = 'PlayoffLoading';
@@ -342,136 +353,6 @@ const PlayoffEmptyState = memo(() => (
   </div>
 ));
 PlayoffEmptyState.displayName = 'PlayoffEmptyState';
-
-// Enhanced compact standings - Table with header and vertical lines
-const CompactStandings = memo(({ teams, title }: { teams: PlayoffTeam[]; title: string }) => {
-  if (!teams || teams.length === 0) {
-    return (
-      <div className="text-center py-8 text-sm" style={{ color: 'var(--accent)' }}>
-        Geen teams beschikbaar
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      {/* Table structure with header */}
-      <div className="rounded-lg overflow-hidden">
-        {/* Header Row - Light purple background with white text */}
-        <div className="bg-primary/80">
-          <div className="flex items-center px-3 py-2 gap-3" style={{ backgroundColor: 'var(--accent)' }}>
-            {/* Pos column */}
-            <div className="flex-shrink-0 w-7 text-center">
-              <span className="text-xs font-semibold text-white">Pos</span>
-            </div>
-
-            {/* Team column */}
-            <div className="flex-1 min-w-0">
-              <span className="text-xs font-semibold text-white">Team</span>
-            </div>
-
-            {/* Stats columns */}
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="text-center w-7">
-                <span className="text-xs font-semibold text-white">W</span>
-              </div>
-              <div className="text-center w-7">
-                <span className="text-xs font-semibold text-white">G</span>
-              </div>
-              <div className="text-center w-7">
-                <span className="text-xs font-semibold text-white">V</span>
-              </div>
-              <div className="text-center w-9">
-                <span className="text-xs font-semibold text-white">Ptn</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Data Rows */}
-        {teams.map((team, index) => (
-          <div 
-            key={team.team_id}
-            className="hover:bg-primary/5 transition-colors border-b last:border-b-0"
-            style={{ borderColor: 'var(--accent)' }}
-          >
-            <div className="flex items-center p-3 gap-3" style={{ color: 'var(--accent)', borderColor: 'transparent', borderImage: 'none', boxSizing: 'content-box', borderStyle: 'none' }}>
-              {/* Position Badge */}
-              <div className="flex-shrink-0 w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center">
-                <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--accent-foreground)' }}>{index + 1}</span>
-              </div>
-
-              {/* Team Name & Stats */}
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold leading-tight mb-1.5" style={{ color: 'var(--accent-foreground)' }}>
-                  {team.team_name}
-                </div>
-                <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--accent)' }}>
-                  {/* Wedstrijden - Fixed width for alignment */}
-                  <div className="flex items-center gap-1 min-w-[48px]">
-                    <span className="tabular-nums font-medium" style={{ color: 'var(--accent)' }}>{team.playoff_played}</span>
-                    <span style={{ color: 'var(--accent)' }}>wed</span>
-                  </div>
-                  {/* Goal Difference - Fixed width for alignment */}
-                  <div className="flex items-center gap-1 min-w-[56px]">
-                    <span 
-                      className="tabular-nums font-medium"
-                      style={{ 
-                        color: team.playoff_goal_diff > 0 ? 'rgb(22, 163, 74)' : 
-                               team.playoff_goal_diff < 0 ? 'rgb(220, 38, 38)' : 
-                               'var(--accent)'
-                      }}
-                    >
-                      {team.playoff_goal_diff > 0 ? "+" : ""}{team.playoff_goal_diff}
-                    </span>
-                    <span style={{ color: 'var(--accent)' }}>saldo</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="text-center w-7">
-                  <div 
-                    className="text-sm font-semibold tabular-nums" 
-                    style={{ color: team.playoff_wins > 0 ? 'rgb(22, 163, 74)' : 'var(--accent-foreground)' }}
-                  >
-                    {team.playoff_wins}
-                  </div>
-                </div>
-                <div className="text-center w-7">
-                  <div 
-                    className="text-sm font-medium tabular-nums" 
-                    style={{ color: team.playoff_draws > 0 ? 'rgb(202, 138, 4)' : 'var(--accent-foreground)' }}
-                  >
-                    {team.playoff_draws}
-                  </div>
-                </div>
-                <div className="text-center w-7">
-                  <div 
-                    className="text-sm font-semibold tabular-nums" 
-                    style={{ color: team.playoff_losses > 0 ? 'rgb(220, 38, 38)' : 'var(--accent-foreground)' }}
-                  >
-                    {team.playoff_losses}
-                  </div>
-                </div>
-                <div className="text-center w-9">
-                  <div className="text-lg font-bold tabular-nums" style={{ color: 'var(--accent-foreground)' }}>{team.total_points}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Legend */}
-      <div className="mt-2 px-2 text-xs" style={{ color: 'var(--accent)', textAlign: 'center' }}>
-        W = Winst • G = Gelijk • V = Verlies • Ptn = Totaal punten
-      </div>
-    </div>
-  );
-});
-CompactStandings.displayName = 'CompactStandings';
 
 // Compact match list item - 2 lines max with perfect time centering
 const MatchListItem = memo(({ match }: { match: any }) => {
@@ -716,40 +597,45 @@ const PlayOffPage: React.FC = () => {
   const { po1Teams, po2Teams, headToHeadMatches = [] } = data;
 
   return (
-    <div className="space-y-6 animate-slide-up">
-      <PageHeader 
-        title="Play-Off" 
+    <div className="space-y-6 motion-safe:animate-slide-up">
+      <PageHeader
+        title="Play-Off"
         subtitle="Seizoen 2025-2026"
       />
 
-
-      {/* Play-Off 1 Standings */}
       <section role="region" aria-labelledby="po1-heading">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle id="po1-heading" className="flex items-center gap-2 text-lg">
-              <Trophy className="w-5 h-5 text-primary" />
-              Play-Off 1
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <CompactStandings teams={po1Teams} title="Play-Off 1" />
-            <TiebreakerNotice teams={po1Teams} headToHeadMatches={headToHeadMatches} />
-          </CardContent>
-        </Card>
+        <h2
+          id="po1-heading"
+          className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2"
+        >
+          <Trophy className="w-5 h-5 text-primary" aria-hidden="true" />
+          Play-Off 1
+        </h2>
+        <ResponsiveStandingsTable
+          teams={mapPlayoffToStandingsRows(po1Teams)}
+          embeddedInCard
+        />
+        <TiebreakerNotice
+          teams={po1Teams}
+          headToHeadMatches={headToHeadMatches}
+        />
       </section>
 
-      {/* Play-Off 2 Standings */}
       <section role="region" aria-labelledby="po2-heading">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle id="po2-heading" className="text-lg">Play-Off 2</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <CompactStandings teams={po2Teams} title="Play-Off 2" />
-            <TiebreakerNotice teams={po2Teams} headToHeadMatches={headToHeadMatches} />
-          </CardContent>
-        </Card>
+        <h2
+          id="po2-heading"
+          className="text-lg font-semibold text-foreground mb-3"
+        >
+          Play-Off 2
+        </h2>
+        <ResponsiveStandingsTable
+          teams={mapPlayoffToStandingsRows(po2Teams)}
+          embeddedInCard
+        />
+        <TiebreakerNotice
+          teams={po2Teams}
+          headToHeadMatches={headToHeadMatches}
+        />
       </section>
 
       {/* Schedule */}

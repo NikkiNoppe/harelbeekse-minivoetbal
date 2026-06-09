@@ -125,10 +125,17 @@ export const fetchPublicPlayoffData = async () => {
     });
   });
 
-  const allMatchesForH2H: MatchRow[] = [
-    ...regularMatches,
-    ...(playoffMatchesRaw as MatchRow[]),
-  ];
+  const playoffMatchRows: MatchRow[] = playoffMatchesRaw.map((m) => ({
+    home_team_id: m.home_team_id,
+    away_team_id: m.away_team_id,
+    home_score: m.home_score,
+    away_score: m.away_score,
+    is_submitted: m.is_submitted,
+    match_date: m.match_date,
+    is_playoff: true,
+  }));
+
+  const allMatchesForH2H: MatchRow[] = [...regularMatches, ...playoffMatchRows];
 
   const buildPlayoffTeams = (
     regularTeams: typeof regularStandings,
@@ -233,7 +240,7 @@ export const fetchPublicPlayoffData = async () => {
       away_team_name: teamMap.get(m.away_team_id as number) || 'Onbekend',
       home_score: m.home_score as number,
       away_score: m.away_score as number,
-      is_playoff: !!m.is_playoff,
+      is_playoff: m.is_playoff === true,
     }));
 
   return {

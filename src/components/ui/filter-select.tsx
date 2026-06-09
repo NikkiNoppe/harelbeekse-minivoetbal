@@ -40,7 +40,7 @@ export const FilterSelect = React.forwardRef<HTMLButtonElement, FilterSelectProp
     return (
       <div className={cn("w-full", className)}>
         <Select value={value} onValueChange={onValueChange}>
-          <SelectTrigger ref={ref} className="h-9 text-sm w-full">
+          <SelectTrigger ref={ref} className="min-h-[44px] h-auto py-2 text-sm w-full">
             <SelectValue placeholder={placeholder || `Selecteer ${label.toLowerCase()}`} />
           </SelectTrigger>
           <SelectContent>

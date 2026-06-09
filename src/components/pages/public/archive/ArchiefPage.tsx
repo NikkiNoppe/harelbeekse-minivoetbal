@@ -6,18 +6,27 @@ import CupWinnerCard from './CupWinnerCard';
 import PlayoffArchiveCard from './PlayoffArchiveCard';
 import { Archive, Loader2 } from 'lucide-react';
 
+/** Standaard archief-tab — volledig seizoen met eindstanden */
+const DEFAULT_ARCHIVE_SEASON = '2025-2026';
+
 const ArchiefPage: React.FC = () => {
-  const { data: archives, isLoading } = useArchives();
+  const { data: archives, isLoading, isError, refetch } = useArchives();
   const [selected, setSelected] = useState<string | null>(null);
 
   const seasons = useMemo(() => {
     const set = new Set<string>();
     (archives || []).forEach((a) => set.add(a.season_label));
-    return Array.from(set).sort((a, b) => b.localeCompare(a));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [archives]);
 
   useEffect(() => {
-    if (!selected && seasons.length > 0) setSelected(seasons[0]);
+    if (!selected && seasons.length > 0) {
+      setSelected(
+        seasons.includes(DEFAULT_ARCHIVE_SEASON)
+          ? DEFAULT_ARCHIVE_SEASON
+          : seasons[0],
+      );
+    }
   }, [seasons, selected]);
 
   const active = useMemo(
@@ -29,6 +38,24 @@ const ArchiefPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center py-16 text-purple-700">
         <Loader2 className="w-6 h-6 animate-spin mr-2" /> Archief laden...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="text-center py-16 bg-white rounded-xl border border-purple-100 space-y-3">
+        <p className="text-purple-800 font-medium">Archief kon niet worden geladen</p>
+        <p className="text-sm text-muted-foreground">
+          Probeer het opnieuw. Als het probleem blijft, neem contact op met de organisatie.
+        </p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="min-h-[44px] px-4 rounded-md text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors"
+        >
+          Opnieuw proberen
+        </button>
       </div>
     );
   }

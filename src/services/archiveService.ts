@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { fetchPublicApplicationSettings } from '@/services/public/publicApplicationSettingsFetch';
 
 const ARCHIVE_CATEGORY = 'season_archives';
 
@@ -118,13 +119,16 @@ function mapArchiveRow(row: {
 
 export const archiveService = {
   async listArchives(): Promise<SeasonArchive[]> {
-    const { data, error } = await supabase
-      .from('application_settings')
-      .select('id, setting_name, setting_value')
-      .eq('setting_category', ARCHIVE_CATEGORY)
-      .order('setting_name', { ascending: false });
-    if (error) throw error;
-    return (data || []).map(mapArchiveRow);
+    const rows = await fetchPublicApplicationSettings([ARCHIVE_CATEGORY]);
+    return rows
+      .map((row) =>
+        mapArchiveRow({
+          id: row.id,
+          setting_name: row.setting_name,
+          setting_value: row.setting_value,
+        }),
+      )
+      .sort((a, b) => a.season_label.localeCompare(b.season_label));
   },
 
   async upsertCompetition(seasonLabel: string, standings: ArchivedStanding[]): Promise<void> {

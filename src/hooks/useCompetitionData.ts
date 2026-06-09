@@ -96,11 +96,13 @@ export const useCompetitionData = () => {
   return {
     teams: standingsQuery.data,
     standingsLoading: standingsQuery.isLoading,
+    standingsFetched: standingsQuery.isFetched,
     standingsError: standingsQuery.error,
     refetchStandings: standingsQuery.refetch,
 
     matches: processedMatches,
     matchesLoading: matchesQuery.isLoading,
+    matchesFetched: matchesQuery.isFetched,
     matchesError: matchesQuery.error,
     refetchMatches: matchesQuery.refetch,
 

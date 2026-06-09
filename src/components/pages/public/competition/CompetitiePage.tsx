@@ -1,247 +1,166 @@
-import React, { memo, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import React, { memo, useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Trophy, Archive } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
-import MatchesCard from "../../admin/matches/components/MatchesCard";
 import ResponsiveStandingsTable from "@/components/tables/ResponsiveStandingsTable";
-import { useCompetitionData, Team, MatchData } from "@/hooks/useCompetitionData";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useCompetitionData, MatchData } from "@/hooks/useCompetitionData";
 import { PageHeader } from "@/components/layout";
 import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import DownloadScheduleButton from "@/components/common/DownloadScheduleButton";
+import { seasonService } from "@/services/seasonService";
+import { deriveSeasonLabel } from "@/services/archiveService";
+import { useTabVisibility } from "@/context/TabVisibilityContext";
+import { cn } from "@/lib/utils";
 
-// Uniform skeleton for standings table
-const StandingsTableSkeleton = memo(() => (
-  <Table className="table">
-    <TableHeader>
-      <TableRow className="table-header-row">
-        <TableHead className="num">Pos</TableHead>
-        <TableHead className="left">Team</TableHead>
-        <TableHead>Wed</TableHead>
-        <TableHead>W</TableHead>
-        <TableHead>G</TableHead>
-        <TableHead>V</TableHead>
-        <TableHead>+/-</TableHead>
-        <TableHead>Ptn</TableHead>
-      </TableRow>
-    </TableHeader>
-    <TableBody>
-      {[...Array(6)].map((_, i) => (
-        <TableRow key={i}>
-          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
-          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-32 mx-auto" /></TableCell>
-          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
-          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
-          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
-          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
-          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
-          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
-        </TableRow>
-      ))}
-    </TableBody>
-  </Table>
+const DataErrorState = memo(({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) => (
+  <div className="text-center p-6">
+    <AlertCircle className="h-8 w-8 mx-auto mb-3 text-destructive" aria-hidden="true" />
+    <p className="text-sm text-muted-foreground mb-4">{message}</p>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="min-h-[44px]"
+      onClick={() => onRetry()}
+    >
+      Opnieuw proberen
+    </Button>
+  </div>
 ));
+DataErrorState.displayName = "DataErrorState";
 
-// Uniform skeleton for schedule table (voorbeeld, pas kolommen aan indien nodig)
-const ScheduleTableSkeleton = memo(() => (
-  <Table className="table">
-    <TableHeader>
-      <TableRow className="table-header-row">
-        <TableHead>Speeldag</TableHead>
-        <TableHead>Wedstrijd</TableHead>
-        <TableHead>Datum</TableHead>
-        <TableHead>Tijd</TableHead>
-        <TableHead>Locatie</TableHead>
-      </TableRow>
-    </TableHeader>
-    <TableBody>
-      {[...Array(6)].map((_, i) => (
-        <TableRow key={i}>
-          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-16 mx-auto" /></TableCell>
-          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-32 mx-auto" /></TableCell>
-          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-16 mx-auto" /></TableCell>
-          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-12 mx-auto" /></TableCell>
-          <TableCell className="table-skeleton-cell"><Skeleton className="h-4 w-24 mx-auto" /></TableCell>
-        </TableRow>
-      ))}
-    </TableBody>
-  </Table>
+const ScheduleAccordionSkeleton = memo(() => (
+  <div className="space-y-3" role="status" aria-live="polite" aria-busy="true">
+    {[...Array(3)].map((_, i) => (
+      <Skeleton key={i} className="h-14 w-full rounded-lg" />
+    ))}
+  </div>
 ));
+ScheduleAccordionSkeleton.displayName = "ScheduleAccordionSkeleton";
 
-// Compact match list item - 2 lines max with perfect time centering
 const MatchListItem = memo(({ match }: { match: MatchData }) => {
-  const isCompleted = match.homeScore !== undefined && match.awayScore !== undefined;
-  
+  const isCompleted =
+    match.homeScore !== undefined && match.awayScore !== undefined;
+
   return (
-    <div className="py-2.5 px-3 border-b last:border-0 hover:bg-muted/20 transition-colors" style={{ borderColor: 'var(--accent)' }}>
-      {/* Line 1: Teams with scores - Grid layout */}
+    <div className="py-2.5 px-3 border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
       <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mb-1">
-        {/* Home Team - Left aligned */}
-        <div className="text-sm font-medium leading-tight text-left truncate">
+        <div className="text-sm font-medium leading-tight text-left truncate text-foreground">
           {match.homeTeamName}
         </div>
-        
-        {/* Center: VS + Scores */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {isCompleted ? (
             <>
-              <span className="text-base font-bold min-w-[20px] text-center">{match.homeScore}</span>
-              <span className="text-xs" style={{ color: 'var(--accent)' }}>-</span>
-              <span className="text-base font-bold min-w-[20px] text-center">{match.awayScore}</span>
+              <span className="text-base font-bold min-w-[20px] text-center tabular-nums">
+                {match.homeScore}
+              </span>
+              <span className="text-xs text-muted-foreground">-</span>
+              <span className="text-base font-bold min-w-[20px] text-center tabular-nums">
+                {match.awayScore}
+              </span>
             </>
           ) : (
-            <span className="text-xs font-medium" style={{ color: 'var(--accent)' }}>vs</span>
+            <span className="text-xs font-medium text-muted-foreground">vs</span>
           )}
         </div>
-        
-        {/* Away Team - Right aligned */}
-        <div className="text-sm font-medium leading-tight text-right truncate">
+        <div className="text-sm font-medium leading-tight text-right truncate text-foreground">
           {match.awayTeamName}
         </div>
       </div>
-
-      {/* Line 2: Date, time (perfect center), location (right) - Grid layout */}
-      <div className="grid grid-cols-3 gap-2 text-xs" style={{ color: 'var(--accent)', fontSize: '11px' }}>
+      <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
         <span className="text-left">{match.date}</span>
-        <span className="text-center font-medium">{match.time || ''}</span>
-        <span className="text-right">{match.location || ''}</span>
+        <span className="text-center font-medium">{match.time || ""}</span>
+        <span className="text-right truncate">{match.location || ""}</span>
       </div>
     </div>
   );
 });
-MatchListItem.displayName = 'MatchListItem';
+MatchListItem.displayName = "MatchListItem";
 
-// Group matches by speeldag
-const MatchGroup = memo(({ speeldag, matches }: { 
-  speeldag: string; 
+const MatchGroup = memo(({
+  speeldag,
+  matches,
+}: {
+  speeldag: string;
   matches: MatchData[];
-}) => {
-  return (
-    <AccordionItem 
-      value={speeldag} 
-      className="border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white mb-4"
-    >
-      <AccordionTrigger 
-        className="text-base font-semibold px-5 py-4 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4"
-        style={{ color: 'var(--color-700)' }}
-      >
-        <span className="text-left flex-1">{speeldag}</span>
-      </AccordionTrigger>
-      <AccordionContent className="px-0 py-0 text-card-foreground border-t border-[var(--color-200)]" style={{ backgroundColor: 'white' }}>
-        {/* Matches */}
-        <div className="rounded-lg overflow-hidden bg-card" style={{ backgroundColor: 'white' }}>
-          {matches.map((match) => (
-            <MatchListItem key={match.matchId} match={match} />
-          ))}
-        </div>
-      </AccordionContent>
-    </AccordionItem>
-  );
-});
-MatchGroup.displayName = 'MatchGroup';
-
-// Memoized standings section
-const StandingsSection = memo(({ 
-  teams, 
-  isLoading, 
-  error, 
-  onRetry 
-}: { 
-  teams?: Team[]; 
-  isLoading: boolean; 
-  error: Error | null; 
-  onRetry: () => void; 
 }) => (
-  <section>
-    <Card>
-      <CardContent className="p-4">
-        {isLoading ? (
-          <StandingsTableSkeleton />
-        ) : error ? (
-          <div className="text-center p-4">
-            <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
-            <h3 className="text-lg font-semibold mb-2">Fout bij laden</h3>
-            <p className="text-red-500 mb-4">
-              Er is een fout opgetreden bij het laden van de competitiestand.
-            </p>
-
-          </div>
-        ) : !teams || teams.length === 0 ? (
-          <div className="text-center p-8 text-muted-foreground">
-            <p className="mb-2">Nog geen competitiestand beschikbaar.</p>
-            <p className="text-sm">Standings worden automatisch bijgewerkt wanneer wedstrijden worden ingediend.</p>
-          </div>
-        ) : (
-          <ResponsiveStandingsTable teams={teams} />
-        )}
-      </CardContent>
-    </Card>
-  </section>
-));
-
-// Memoized matches section
-const MatchesSection = memo(({ 
-  title, 
-  description, 
-  matches, 
-  isLoading 
-}: { 
-  title: string; 
-  description: string; 
-  matches: MatchData[]; 
-  isLoading: boolean; 
-}) => (
-  <Card>
-    <CardHeader className="pb-3">
-      <CardTitle>{title}</CardTitle>
-      <CardDescription>{description}</CardDescription>
-    </CardHeader>
-    <CardContent className="p-4 pt-0">
-      {isLoading ? (
-        <ScheduleTableSkeleton />
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {matches.map(match => (
-            <MatchesCard
-              key={match.matchId}
-              id={match.uniqueNumber || `M${match.matchId}`}
-              home={match.homeTeamName}
-              away={match.awayTeamName}
-              homeScore={match.homeScore}
-              awayScore={match.awayScore}
-              date={match.date}
-              time={match.time}
-              location={match.location}
-              status={undefined}
-              badgeSlot={<div></div>}
-            />
-          ))}
-        </div>
+  <AccordionItem
+    value={speeldag}
+    className="border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 bg-card mb-4"
+  >
+    <AccordionTrigger
+      className={cn(
+        "text-base font-semibold px-4 sm:px-5 py-4 min-h-[44px]",
+        "hover:bg-muted/40 data-[state=open]:bg-muted/60",
+        "transition-colors duration-200 text-foreground gap-4",
       )}
-    </CardContent>
-  </Card>
+    >
+      <span className="text-left flex-1">{speeldag}</span>
+    </AccordionTrigger>
+    <AccordionContent className="px-0 py-0 border-t border-border bg-card">
+      <div className="rounded-lg overflow-hidden bg-card">
+        {matches.map((match) => (
+          <MatchListItem key={match.matchId} match={match} />
+        ))}
+      </div>
+    </AccordionContent>
+  </AccordionItem>
 ));
+MatchGroup.displayName = "MatchGroup";
 
-// Main component
 const CompetitiePage: React.FC = () => {
   const {
     teams,
     matches,
     teamNames,
     standingsLoading,
+    standingsError,
+    refetchStandings,
     matchesLoading,
+    matchesFetched,
+    matchesError,
+    refetchMatches,
   } = useCompetitionData();
+
+  const { isTabVisible } = useTabVisibility();
+
+  const { data: seasonData } = useQuery({
+    queryKey: ["seasonData"],
+    queryFn: () => seasonService.getSeasonData(),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
+  const seasonSubtitle = seasonData
+    ? `Seizoen ${deriveSeasonLabel(
+        seasonData.season_start_date,
+        seasonData.season_end_date,
+      )}`
+    : undefined;
 
   const [selectedTeam, setSelectedTeam] = useState<string>("all");
   const [openSpeeldagen, setOpenSpeeldagen] = useState<string[]>([]);
 
   const filteredMatches = useMemo(() => {
     const filtered = matches.all.filter((m) => {
-      if (selectedTeam !== "all" && m.homeTeamName !== selectedTeam && m.awayTeamName !== selectedTeam) return false;
+      if (
+        selectedTeam !== "all" &&
+        m.homeTeamName !== selectedTeam &&
+        m.awayTeamName !== selectedTeam
+      ) {
+        return false;
+      }
       return true;
     });
     return filtered.sort((a, b) => {
@@ -251,216 +170,228 @@ const CompetitiePage: React.FC = () => {
     });
   }, [matches.all, selectedTeam]);
 
-  // Group matches by speeldag
   const groupedMatches = useMemo(() => {
     const groups = new Map<string, MatchData[]>();
-    filteredMatches.forEach(match => {
-      const speeldag = match.matchday || 'Overige';
+    filteredMatches.forEach((match) => {
+      const speeldag = match.matchday || "Overige";
       if (!groups.has(speeldag)) {
         groups.set(speeldag, []);
       }
       groups.get(speeldag)!.push(match);
     });
     return Array.from(groups.entries()).sort(([a], [b]) => {
-      const numA = parseInt(a.match(/\d+/)?.[0] || '999');
-      const numB = parseInt(b.match(/\d+/)?.[0] || '999');
+      const numA = parseInt(a.match(/\d+/)?.[0] || "999", 10);
+      const numB = parseInt(b.match(/\d+/)?.[0] || "999", 10);
       return numA - numB;
     });
   }, [filteredMatches]);
 
-  // Find the first speeldag that is not fully completed (like beker)
   const defaultOpenSpeeldag = useMemo(() => {
-    for (const [speeldag, matches] of groupedMatches) {
-      const isCompleted = matches.every(match => 
-        match.homeScore !== undefined && 
-        match.homeScore !== null && 
-        match.awayScore !== undefined && 
-        match.awayScore !== null
+    for (const [speeldag, dayMatches] of groupedMatches) {
+      const isCompleted = dayMatches.every(
+        (match) =>
+          match.homeScore !== undefined &&
+          match.homeScore !== null &&
+          match.awayScore !== undefined &&
+          match.awayScore !== null,
       );
-      if (!isCompleted && matches.length > 0) {
+      if (!isCompleted && dayMatches.length > 0) {
         return speeldag;
       }
     }
-    // If all are completed, return the last one
-    return groupedMatches.length > 0 ? groupedMatches[groupedMatches.length - 1][0] : undefined;
+    return groupedMatches.length > 0
+      ? groupedMatches[groupedMatches.length - 1][0]
+      : undefined;
   }, [groupedMatches]);
 
-  // Update open speeldagen based on team selection
-  // Use a ref to track if we should allow manual changes
-  const isManualChangeRef = React.useRef(false);
-  const prevSelectedTeamRef = React.useRef(selectedTeam);
-  
-  React.useEffect(() => {
-    // Only update if selectedTeam actually changed
+  const allRegularMatchesComplete = useMemo(() => {
+    if (matches.all.length === 0) return false;
+    return matches.all.every(
+      (m) =>
+        m.homeScore !== undefined &&
+        m.homeScore !== null &&
+        m.awayScore !== undefined &&
+        m.awayScore !== null,
+    );
+  }, [matches.all]);
+
+  const showPlayoffBanner =
+    allRegularMatchesComplete && isTabVisible("playoff");
+
+  const isManualChangeRef = useRef(false);
+  const prevSelectedTeamRef = useRef(selectedTeam);
+
+  useEffect(() => {
     const selectedTeamChanged = prevSelectedTeamRef.current !== selectedTeam;
-    
-    // Don't override manual changes unless filter actually changed
+
     if (isManualChangeRef.current && !selectedTeamChanged) {
       isManualChangeRef.current = false;
       return;
     }
-    
-    // Update ref
+
     if (selectedTeamChanged) {
       prevSelectedTeamRef.current = selectedTeam;
     }
-    
-    if (selectedTeam === "all") {
-      // Default: only first incomplete speeldag
-      if (defaultOpenSpeeldag) {
-        setOpenSpeeldagen([defaultOpenSpeeldag]);
-      } else {
-        setOpenSpeeldagen([]);
-      }
-    } else {
-      // When a team is selected: open all speeldagen
-      const allSpeeldagen = groupedMatches.map(([speeldag]) => speeldag);
-      setOpenSpeeldagen(allSpeeldagen);
-    }
-    
-    isManualChangeRef.current = false;
-  }, [selectedTeam, defaultOpenSpeeldag]);
 
-  // Handle manual accordion changes
-  const handleAccordionChange = React.useCallback((value: string[]) => {
+    if (selectedTeam === "all") {
+      setOpenSpeeldagen(defaultOpenSpeeldag ? [defaultOpenSpeeldag] : []);
+    } else {
+      setOpenSpeeldagen(groupedMatches.map(([speeldag]) => speeldag));
+    }
+
+    isManualChangeRef.current = false;
+  }, [selectedTeam, defaultOpenSpeeldag, groupedMatches]);
+
+  const handleAccordionChange = useCallback((value: string[]) => {
     isManualChangeRef.current = true;
     setOpenSpeeldagen(value);
   }, []);
 
-  // Format: MA 01-09-25
   const formatDutchDayShort = (dateStr: string): string => {
     try {
-      const [y, m, d] = dateStr.split('-').map(Number);
+      const [y, m, d] = dateStr.split("-").map(Number);
       if (!y || !m || !d) return dateStr;
       const date = new Date(Date.UTC(y, m - 1, d));
-      const days = ['ZO', 'MA', 'DI', 'WO', 'DO', 'VR', 'ZA'];
+      const days = ["ZO", "MA", "DI", "WO", "DO", "VR", "ZA"];
       const dayAbbr = days[date.getUTCDay()];
       const yy = String(y).slice(-2);
-      const mm = String(m).padStart(2, '0');
-      const dd = String(d).padStart(2, '0');
+      const mm = String(m).padStart(2, "0");
+      const dd = String(d).padStart(2, "0");
       return `${dayAbbr} ${dd}-${mm}-${yy}`;
     } catch {
       return dateStr;
     }
   };
 
+  const scheduleMatchesForExport = filteredMatches.map((m) => ({
+    matchId: m.matchId,
+    homeTeamName: m.homeTeamName,
+    awayTeamName: m.awayTeamName,
+    date: m.date,
+    time: m.time,
+    location: m.location,
+    matchday: m.matchday,
+    uniqueNumber: m.uniqueNumber,
+  }));
+
   return (
-    <div className="space-y-6 animate-slide-up">
-      {/* Header */}
-      <PageHeader 
-        title="Competitiestand" 
-        subtitle="Seizoen 2025/2026"
-      />
+    <div className="space-y-6 motion-safe:animate-slide-up">
+      <PageHeader title="Competitiestand" subtitle={seasonSubtitle} />
 
-      <div className="flex justify-end">
-        <Link
-          to="/archief"
-          className="inline-flex items-center gap-1.5 text-sm text-purple-700 hover:text-purple-900 hover:underline font-medium"
-        >
-          <Archive className="w-4 h-4" />
-          Vorige seizoenen
-        </Link>
-      </div>
-
-      {/* Competitie afgelopen melding */}
-      <Alert className="border-primary/30 bg-primary/5">
-        <Trophy className="h-4 w-4 text-primary" />
-        <AlertDescription className="text-foreground">
-          <strong>Reguliere competitie afgelopen!</strong> De eindstand is bepaald en de play-offs zijn gestart.{' '}
-          <Link 
-            to="/playoff" 
-            className="text-primary font-medium hover:underline"
-          >
-            Bekijk de play-offs →
-          </Link>
-        </AlertDescription>
-      </Alert>
+      {showPlayoffBanner && (
+        <Alert className="border-primary/30 bg-primary/5">
+          <Trophy className="h-4 w-4 text-primary" aria-hidden="true" />
+          <AlertDescription>
+            <strong>Reguliere competitie afgelopen!</strong>{" "}
+            <Link
+              to="/playoff"
+              className="text-primary font-medium hover:underline"
+            >
+              Bekijk de play-offs →
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <section role="region" aria-labelledby="standings-heading">
-        <h2 id="standings-heading" className="sr-only">Competitiestand</h2>
-        <Card>
-          <CardContent className="p-4">
-            <ResponsiveStandingsTable teams={teams} isLoading={standingsLoading} />
-          </CardContent>
-        </Card>
+        <h2
+          id="standings-heading"
+          className="text-lg font-semibold text-foreground mb-3"
+        >
+          Competitiestand
+        </h2>
+        {standingsError ? (
+          <Card>
+            <CardContent className="p-4">
+              <DataErrorState
+                message="Er is een fout opgetreden bij het laden van de competitiestand."
+                onRetry={() => refetchStandings()}
+              />
+            </CardContent>
+          </Card>
+        ) : (
+          <ResponsiveStandingsTable
+            teams={teams}
+            isLoading={standingsLoading}
+            embeddedInCard
+          />
+        )}
       </section>
-
-
 
       <section role="region" aria-labelledby="schedule-heading">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle id="schedule-heading" className="text-lg">Speelschema</CardTitle>
+            <CardTitle id="schedule-heading" className="text-lg">
+              Speelschema
+            </CardTitle>
           </CardHeader>
-        <CardContent className="p-4 pt-0">
-          {/* Filters - Mobile-first with automatic responsive layout */}
-          <FilterGroup columns={1} className="mb-4">
-            <div className="flex items-center gap-2">
-              <div className="flex-1">
-                <FilterSelect
-                  label="Team"
-                  value={selectedTeam}
-                  onValueChange={setSelectedTeam}
-                  placeholder="Alle teams"
-                  options={[
-                    { value: "all", label: "Alle teams" },
-                    ...teamNames.map(t => ({ value: t, label: t }))
-                  ]}
+          <CardContent className="p-4 pt-0">
+            <FilterGroup columns={1} className="mb-4">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <FilterSelect
+                    label="Team"
+                    value={selectedTeam}
+                    onValueChange={setSelectedTeam}
+                    placeholder="Alle teams"
+                    options={[
+                      { value: "all", label: "Alle teams" },
+                      ...teamNames.map((t) => ({ value: t, label: t })),
+                    ]}
+                  />
+                </div>
+                <DownloadScheduleButton
+                  matches={scheduleMatchesForExport}
+                  filename={
+                    selectedTeam !== "all"
+                      ? `competitie-${selectedTeam.toLowerCase().replace(/\s+/g, "-")}`
+                      : "competitie-schema"
+                  }
+                  calendarName={
+                    selectedTeam !== "all"
+                      ? `Competitie - ${selectedTeam}`
+                      : "Competitie Speelschema"
+                  }
+                  competitionType="competitie"
                 />
               </div>
-              <DownloadScheduleButton 
-                matches={filteredMatches.map(m => ({
-                  matchId: m.matchId,
-                  homeTeamName: m.homeTeamName,
-                  awayTeamName: m.awayTeamName,
-                  date: m.date, // Already YYYY-MM-DD from useCompetitionData
-                  time: m.time,
-                  location: m.location,
-                  matchday: m.matchday,
-                  uniqueNumber: m.uniqueNumber,
-                }))}
-                filename={selectedTeam !== "all" ? `competitie-${selectedTeam.toLowerCase().replace(/\s+/g, '-')}` : "competitie-schema"}
-                calendarName={selectedTeam !== "all" ? `Competitie - ${selectedTeam}` : "Competitie Speelschema"}
-                competitionType="competitie"
-              />
-            </div>
-          </FilterGroup>
+            </FilterGroup>
 
-          {/* Grouped Matches */}
-          {groupedMatches.length > 0 ? (
-              <Accordion 
-                type="multiple" 
+            {matchesError ? (
+              <DataErrorState
+                message="Er is een fout opgetreden bij het laden van het speelschema."
+                onRetry={() => refetchMatches()}
+              />
+            ) : matchesLoading && !matchesFetched ? (
+              <ScheduleAccordionSkeleton />
+            ) : groupedMatches.length > 0 ? (
+              <Accordion
+                type="multiple"
                 value={openSpeeldagen}
                 onValueChange={handleAccordionChange}
                 className="space-y-3"
               >
-              {groupedMatches.map(([speeldag, matches]) => (
-                <MatchGroup 
-                  key={speeldag}
-                  speeldag={speeldag}
-                  matches={matches.map((m) => ({
-                    ...m,
-                    date: formatDutchDayShort(m.date),
-                  }))}
-                />
-              ))}
-            </Accordion>
-          ) : (
-            <div className="text-center py-8 text-sm" style={{ color: 'var(--accent)' }}>
-              Geen wedstrijden gevonden met de huidige filters
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                {groupedMatches.map(([speeldag, dayMatches]) => (
+                  <MatchGroup
+                    key={speeldag}
+                    speeldag={speeldag}
+                    matches={dayMatches.map((m) => ({
+                      ...m,
+                      date: formatDutchDayShort(m.date),
+                    }))}
+                  />
+                ))}
+              </Accordion>
+            ) : matchesFetched ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                Geen wedstrijden gevonden met de huidige filters
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
       </section>
     </div>
   );
 };
 
-// Set display names for better debugging
-StandingsTableSkeleton.displayName = 'StandingsTableSkeleton';
-ScheduleTableSkeleton.displayName = 'ScheduleTableSkeleton';
-MatchesSection.displayName = 'MatchesSection';
-
-
-export default CompetitiePage; 
+export default CompetitiePage;

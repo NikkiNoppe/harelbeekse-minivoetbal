@@ -1608,6 +1608,203 @@ tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-
   .responsive-cards-table .sticky-column:nth-child(2) { padding-left: 0.75rem; padding-right: 0.75rem; }
 }
 
+/* Competitiestand: header — één blauwe achtergrond (ook sticky # / Team) */
+.responsive-standings-table thead th.standings-header-cell {
+  background-color: var(--color-600) !important;
+  color: var(--color-white) !important;
+}
+
+/* Competitiestand: lichtblauwe lijnen (playoff-alert: border-purple-light / border-primary/30) */
+.responsive-standings-table.rounded-md.border {
+  border-color: var(--color-primary-light);
+}
+.responsive-standings-table tr.standings-row-divider {
+  border-bottom: 1px solid color-mix(in srgb, var(--color-600) 30%, transparent);
+}
+.responsive-standings-table tr.standings-row-divider:last-child {
+  border-bottom: none;
+}
+.responsive-standings-table th.standings-col-divider,
+.responsive-standings-table td.standings-col-divider {
+  border-left: 1px solid var(--color-primary-light);
+}
+
+/* Competitiestand: blauwe tekst — Team, W/G (incl. 0), +/- en Ptn */
+.responsive-standings-table tbody td.standings-team-col,
+.responsive-standings-table tbody .standings-team-name,
+.responsive-standings-table tbody td.standings-w-cell,
+.responsive-standings-table tbody td.standings-g-cell,
+.responsive-standings-table tbody td.standings-saldo-cell,
+.responsive-standings-table tbody td.standings-ptn-cell {
+  color: var(--color-600);
+}
+
+.responsive-standings-table tbody td.standings-w-cell.text-success {
+  color: var(--color-success);
+}
+
+.responsive-standings-table tbody td.standings-g-cell.text-warning {
+  color: var(--color-warning);
+}
+
+/* Competitiestand: V-kolom (verliezen) */
+.responsive-standings-table td.standings-lost {
+  color: hsl(var(--destructive));
+}
+
+/* Small mobile (<640px): # + team + ptn vast, stats zijwaarts scrollen */
+@media (max-width: 639px) {
+  .responsive-standings-table.standings-scroll-wrap {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+    scroll-padding-right: 3rem;
+  }
+
+  .responsive-standings-table table.standings-table-fit {
+    width: 100%;
+  }
+
+  .responsive-standings-table .standings-sticky-pos {
+    position: sticky;
+    left: 0;
+    z-index: 12;
+    width: 2.25rem;
+    min-width: 2.25rem;
+  }
+
+  .responsive-standings-table .standings-sticky-team {
+    position: sticky;
+    left: 2.25rem;
+    z-index: 12;
+    min-width: 0;
+    width: auto;
+    max-width: calc(100vw - 2.25rem - 3rem - 2rem);
+  }
+
+  .responsive-standings-table .standings-sticky-ptn {
+    position: sticky;
+    right: 0;
+    z-index: 12;
+    width: 2.75rem;
+    min-width: 2.75rem;
+    box-shadow: -6px 0 10px -6px rgba(0, 40, 80, 0.14);
+  }
+
+  .responsive-standings-table thead .standings-sticky-pos,
+  .responsive-standings-table thead .standings-sticky-team,
+  .responsive-standings-table thead .standings-sticky-ptn {
+    z-index: 14;
+  }
+
+  .responsive-standings-table .standings-scroll-stats {
+    min-width: 2.25rem;
+    white-space: nowrap;
+  }
+
+  .responsive-standings-table th.w-10.standings-scroll-stats,
+  .responsive-standings-table td.w-10.standings-scroll-stats {
+    min-width: 2.5rem;
+  }
+
+  .responsive-standings-table .standings-team-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .standings-scroll-hint::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 2.75rem;
+    bottom: 0;
+    width: 1.25rem;
+    pointer-events: none;
+    background: linear-gradient(
+      to right,
+      transparent,
+      color-mix(in srgb, var(--color-600) 8%, transparent)
+    );
+    z-index: 11;
+  }
+}
+
+@media (min-width: 640px) {
+  .responsive-standings-table .standings-sticky-pos,
+  .responsive-standings-table .standings-sticky-team,
+  .responsive-standings-table .standings-sticky-ptn {
+    position: static;
+    max-width: none;
+    box-shadow: none;
+  }
+}
+
+/* Tablet (640–1023px):zelfde rustige layout als brede tablet, team vult vrije ruimte */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .responsive-standings-table table.standings-table-fit {
+    width: 100%;
+    table-layout: auto;
+  }
+
+  .responsive-standings-table .standings-sticky-pos {
+    width: 2.25rem;
+    min-width: 2.25rem;
+  }
+
+  .responsive-standings-table .standings-sticky-ptn {
+    width: 2.75rem;
+    min-width: 2.75rem;
+  }
+
+  .responsive-standings-table .standings-scroll-stats {
+    min-width: 2.25rem;
+    white-space: nowrap;
+  }
+
+  .responsive-standings-table th.w-10.standings-scroll-stats,
+  .responsive-standings-table td.w-10.standings-scroll-stats {
+    min-width: 2.5rem;
+  }
+
+  .responsive-standings-table .standings-team-col {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .responsive-standings-table .standings-team-name {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Desktop: volledige tabelbreedte + teamkolom zoals vóór tablet-tweak */
+@media (min-width: 1024px) {
+  .responsive-standings-table table.standings-table-fit {
+    width: 100%;
+    max-width: none;
+  }
+
+  .responsive-standings-table .standings-team-col {
+    width: auto;
+    white-space: normal;
+  }
+
+  .responsive-standings-table .standings-team-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    white-space: normal;
+  }
+}
+
 /* 18. CONTAINERS & MOBILE UTILITIES */
 .container-adaptive {
   width: 100%;
