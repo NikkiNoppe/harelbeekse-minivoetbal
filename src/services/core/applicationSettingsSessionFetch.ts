@@ -37,7 +37,7 @@ export async function insertApplicationSettingForSession(row: {
       p_category: row.setting_category,
       p_setting_name: row.setting_name,
       p_setting_value: row.setting_value as any,
-    },
+    } as any,
   );
   if (error) throw error;
   const result = data as { success?: boolean; id?: number; error?: string };
@@ -60,7 +60,7 @@ export async function updateApplicationSettingForSession(
       p_category: patch.setting_category ?? null,
       p_setting_name: patch.setting_name ?? null,
       p_setting_value: (patch.setting_value ?? null) as any,
-    },
+    } as any,
   );
   if (error) throw error;
   const result = data as { success?: boolean; error?: string };
