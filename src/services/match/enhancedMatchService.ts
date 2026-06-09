@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getRpcSessionArgs } from "@/lib/authSession";
 import { localDateTimeToISO, isoToLocalDateTime } from "@/lib/dateUtils";
 import { updateMatchForm } from "@/components/pages/admin/matches/services/matchesFormService";
 import { MatchFormData } from "@/components/pages/admin/matches/types";
@@ -212,8 +213,8 @@ export const enhancedMatchService = {
       console.log('🟢 [enhancedMatchService] SENDING UPDATE via RPC:', { matchId, updateObject, userId });
       
       // Use SECURITY DEFINER RPC for atomic context + update
-      const { data, error } = await supabase.rpc('update_match_with_context', {
-        p_user_id: userId,
+      const { data, error } = await supabase.rpc('update_match_for_session', {
+        ...getRpcSessionArgs(),
         p_match_id: matchId,
         p_update_data: updateObject
       });

@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { getRpcSessionArgs } from "@/lib/authSession";
 import { User } from "@/types/auth";
 
 
@@ -96,7 +97,8 @@ export const saveUser = async (formData: any, editingUser: User | null): Promise
       };
       
       if (formData.password?.trim()) {
-        const { error: pwdError } = await supabase.rpc('update_user_password', {
+        const { error: pwdError } = await supabase.rpc('update_user_password_for_session', {
+          ...getRpcSessionArgs(),
           user_id_param: editingUser.id,
           new_password: formData.password
         });
@@ -128,7 +130,8 @@ export const saveUser = async (formData: any, editingUser: User | null): Promise
       }
     } else {
       const { data: newUser, error: createError } = await supabase
-        .rpc('create_user_with_hashed_password', {
+        .rpc('create_user_for_session', {
+          ...getRpcSessionArgs(),
           username_param: formData.username,
           email_param: formData.email || null,
           password_param: formData.password,

@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { getRpcSessionArgs } from "@/lib/authSession";
 
 export interface CostSetting {
   id: number;
@@ -253,8 +254,8 @@ export const costSettingsService = {
         }
 
         // Use add_team_cost_as_admin RPC
-        const { data, error } = await supabase.rpc('add_team_cost_as_admin', {
-          p_user_id: userId,
+        const { data, error } = await supabase.rpc('add_team_cost_for_session', {
+          ...getRpcSessionArgs(),
           p_team_id: transaction.team_id,
           p_cost_setting_id: depositCostId,
           p_amount: transaction.amount,
@@ -279,8 +280,8 @@ export const costSettingsService = {
 
       // For other transaction types with cost_setting_id - use RPC
       if (transaction.cost_setting_id) {
-        const { data, error } = await supabase.rpc('add_team_cost_as_admin', {
-          p_user_id: userId,
+        const { data, error } = await supabase.rpc('add_team_cost_for_session', {
+          ...getRpcSessionArgs(),
           p_team_id: transaction.team_id,
           p_cost_setting_id: transaction.cost_setting_id,
           p_amount: transaction.amount,
@@ -321,8 +322,8 @@ export const costSettingsService = {
         throw costError;
       }
 
-      const { data, error } = await supabase.rpc('add_team_cost_as_admin', {
-        p_user_id: userId,
+      const { data, error } = await supabase.rpc('add_team_cost_for_session', {
+        ...getRpcSessionArgs(),
         p_team_id: transaction.team_id,
         p_cost_setting_id: costData.id,
         p_amount: transaction.amount,
@@ -355,8 +356,8 @@ export const costSettingsService = {
     console.log('🔵 [PENALTY-CRUD] DELETE request:', { costId: transactionId, userId, role });
     
     try {
-      const { data, error } = await supabase.rpc('manage_team_cost_for_match', {
-        p_user_id: userId,
+      const { data, error } = await supabase.rpc('manage_team_cost_for_session', {
+        ...getRpcSessionArgs(),
         p_cost_id: transactionId,
         p_operation: 'delete'
       });
@@ -393,8 +394,8 @@ export const costSettingsService = {
     console.log('🔵 [PENALTY-CRUD] UPDATE request:', { costId: transactionId, userId, role, updates });
     
     try {
-      const { data, error } = await supabase.rpc('manage_team_cost_for_match', {
-        p_user_id: userId,
+      const { data, error } = await supabase.rpc('manage_team_cost_for_session', {
+        ...getRpcSessionArgs(),
         p_cost_id: transactionId,
         p_operation: 'update',
         p_amount: updates.amount ?? null,
@@ -433,8 +434,8 @@ export const costSettingsService = {
     console.log('🔵 [PENALTY-CRUD] ADD request:', { teamId, costSettingId, amount, transactionDate, matchId, userId, role });
     
     try {
-      const { data, error } = await supabase.rpc('add_team_cost_as_admin', {
-        p_user_id: userId,
+      const { data, error } = await supabase.rpc('add_team_cost_for_session', {
+        ...getRpcSessionArgs(),
         p_team_id: teamId,
         p_cost_setting_id: costSettingId,
         p_amount: amount,

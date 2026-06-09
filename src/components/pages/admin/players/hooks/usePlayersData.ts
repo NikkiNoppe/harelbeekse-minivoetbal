@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { getRpcSessionArgs } from "@/lib/authSession";
 import { Player, Team } from "../types";
 import { User } from "@/types/auth";
 
@@ -67,8 +68,8 @@ export const usePlayersData = (authUser: User | null) => {
     
     console.log('📡 Fetching players via RPC:', { userId, teamId });
     
-    const { data, error } = await supabase.rpc('get_players_for_team', {
-      p_user_id: userId,
+    const { data, error } = await supabase.rpc('get_players_for_session', {
+      ...getRpcSessionArgs(),
       p_team_id: teamId
     });
     

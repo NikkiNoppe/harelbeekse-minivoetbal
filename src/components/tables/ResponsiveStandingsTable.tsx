@@ -40,7 +40,7 @@ const S = {
   row: "standings-row-divider",
   colDivider: "standings-col-divider",
   scrollWrap:
-    "responsive-standings-table standings-scroll-wrap overflow-x-auto border",
+    "responsive-standings-table standings-scroll-wrap overflow-x-auto",
   table:
     "w-full min-w-0 lg:min-w-[20rem] border-collapse text-sm standings-table-fit",
   headerCell:
@@ -48,17 +48,31 @@ const S = {
   statCell: "py-2.5 px-1.5 sm:px-2 text-center tabular-nums",
   teamCell:
     "py-2.5 px-1.5 sm:px-2 text-left font-medium standings-sticky-team standings-sticky-bg standings-team-col lg:min-w-[9rem]",
-  embeddedWrap:
+  embeddedClip:
     "w-full max-w-none rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 card-hover overflow-hidden",
   standaloneWrap: "rounded-md",
 } as const;
 
-function scrollWrapClass(embeddedInCard?: boolean) {
-  return cn(
-    S.scrollWrap,
-    S.border,
-    embeddedInCard ? S.embeddedWrap : S.standaloneWrap,
+function scrollWrapClass() {
+  return S.scrollWrap;
+}
+
+function standingsTableShell(
+  embeddedInCard: boolean | undefined,
+  children: React.ReactNode,
+  shellProps?: React.HTMLAttributes<HTMLDivElement>,
+) {
+  const scroll = (
+    <div className={scrollWrapClass()} {...shellProps}>
+      {children}
+    </div>
   );
+
+  if (embeddedInCard) {
+    return <div className={cn(S.embeddedClip, S.border)}>{scroll}</div>;
+  }
+
+  return <div className={cn(S.standaloneWrap, S.border)}>{scroll}</div>;
 }
 
 function legendClass(embeddedInCard?: boolean, extra?: string) {
@@ -209,48 +223,43 @@ function StandingsRow({
 }
 
 function StandingsSkeleton({ embeddedInCard }: { embeddedInCard?: boolean }) {
-  return (
-    <div
-      className={scrollWrapClass(embeddedInCard)}
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-    >
-      <table className={S.table}>
-        <StandingsHeader />
-        <tbody>
-          {Array.from({ length: 8 }, (_, i) => (
-            <tr key={i} className={S.row}>
-              <td className="w-9 py-2.5 standings-sticky-pos standings-sticky-bg">
-                <Skeleton className="h-4 w-4 mx-auto bg-muted" />
-              </td>
-              <td className={cn(S.teamCell, S.colDivider, "py-2.5 pr-2")}>
-                <Skeleton className="h-4 w-full max-w-[10rem] bg-muted" />
-              </td>
-              {STAT_COLUMNS.map((col) => (
-                <td
-                  key={col.id}
-                  className={cn(
-                    "py-2.5 standings-scroll-stats",
-                    col.dividerBefore && S.colDivider,
-                  )}
-                >
-                  <Skeleton className="h-4 w-5 mx-auto bg-muted" />
-                </td>
-              ))}
+  return standingsTableShell(
+    embeddedInCard,
+    <table className={S.table}>
+      <StandingsHeader />
+      <tbody>
+        {Array.from({ length: 8 }, (_, i) => (
+          <tr key={i} className={S.row}>
+            <td className="w-9 py-2.5 standings-sticky-pos standings-sticky-bg">
+              <Skeleton className="h-4 w-4 mx-auto bg-muted" />
+            </td>
+            <td className={cn(S.teamCell, S.colDivider, "py-2.5 pr-2")}>
+              <Skeleton className="h-4 w-full max-w-[10rem] bg-muted" />
+            </td>
+            {STAT_COLUMNS.map((col) => (
               <td
+                key={col.id}
                 className={cn(
-                  "py-2.5 pr-2 sm:pr-3 standings-sticky-ptn standings-sticky-bg",
-                  S.colDivider,
+                  "py-2.5 standings-scroll-stats",
+                  col.dividerBefore && S.colDivider,
                 )}
               >
-                <Skeleton className="h-5 w-6 mx-auto bg-muted" />
+                <Skeleton className="h-4 w-5 mx-auto bg-muted" />
               </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+            ))}
+            <td
+              className={cn(
+                "py-2.5 pr-2 sm:pr-3 standings-sticky-ptn standings-sticky-bg",
+                S.colDivider,
+              )}
+            >
+              <Skeleton className="h-5 w-6 mx-auto bg-muted" />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>,
+    { role: "status", "aria-live": "polite", "aria-busy": true },
   );
 }
 
@@ -315,11 +324,8 @@ const ResponsiveStandingsTable: React.FC<ResponsiveStandingsTableProps> = ({
   return (
     <div className={cn(embeddedInCard && "w-full max-w-none")}>
       <div className="standings-scroll-hint relative w-full">
-        <div
-          className={scrollWrapClass(embeddedInCard)}
-          role="table"
-          aria-label="Competitiestand"
-        >
+        {standingsTableShell(
+          embeddedInCard,
           <table className={S.table}>
             <StandingsHeader />
             <tbody>
@@ -327,8 +333,9 @@ const ResponsiveStandingsTable: React.FC<ResponsiveStandingsTableProps> = ({
                 <StandingsRow key={team.id} team={team} index={index} />
               ))}
             </tbody>
-          </table>
-        </div>
+          </table>,
+          { role: "table", "aria-label": "Competitiestand" },
+        )}
       </div>
       <MobileScrollHint embeddedInCard={embeddedInCard} />
       <DesktopLegend embeddedInCard={embeddedInCard} />

@@ -197,13 +197,8 @@ export const updateMatchForm = async (matchData: MatchFormData): Promise<{advanc
       }
     }
     
-    if (!userId) {
-      throw new Error("Niet ingelogd. Log opnieuw in om wijzigingen op te slaan.");
-    }
-    
-    // Use SECURITY DEFINER RPC for atomic context + update
-    const { data, error } = await supabase.rpc('update_match_with_context', {
-      p_user_id: userId,
+    const { data, error } = await supabase.rpc('update_match_for_session', {
+      ...getRpcSessionArgs(),
       p_match_id: matchData.matchId,
       p_update_data: updatePayload
     });

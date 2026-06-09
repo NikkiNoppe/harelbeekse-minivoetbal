@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { getRpcSessionArgs } from '@/lib/authSession';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,17 +18,11 @@ export const RLSTestComponent: React.FC = () => {
       console.log('🧪 Running RLS tests...');
       console.log('👤 Current user from context:', user);
       
-      // Test 1: Check current user role (should work with custom auth)
-      const { data: roleData, error: roleError } = await supabase.rpc('get_current_user_role' as any);
-      console.log('👤 Current user role:', roleData, roleError);
-
-      // Test 2: Check if user is admin (should work with custom auth)
-      const { data: adminData, error: adminError } = await supabase.rpc('is_current_user_admin' as any);
-      console.log('👑 Is admin:', adminData, adminError);
-
-      // Test 3: Get user's team IDs (should work with custom auth)
-      const { data: teamData, error: teamError } = await supabase.rpc('get_current_user_team_ids' as any);
-      console.log('🏀 User team IDs:', teamData, teamError);
+      const { data: teamsSessionData, error: teamsSessionError } = await supabase.rpc(
+        'get_teams_for_session',
+        getRpcSessionArgs(),
+      );
+      console.log('🏀 Session teams RPC:', teamsSessionData?.length || 0, teamsSessionError);
 
       // Test 4: Try to read team_users (should work for admins now)
       const { data: teamUsersData, error: teamUsersError } = await supabase
@@ -44,9 +39,7 @@ export const RLSTestComponent: React.FC = () => {
       console.log('📊 Players read test:', playersData?.length || 0, 'players', playersError);
 
       setTestResults({
-        role: { data: roleData, error: roleError },
-        isAdmin: { data: adminData, error: adminError },
-        teamIds: { data: teamData, error: teamError },
+        sessionTeams: { data: teamsSessionData?.length || 0, error: teamsSessionError },
         teamUsersRead: { data: teamUsersData?.length || 0, error: teamUsersError },
         playersRead: { data: playersData?.length || 0, error: playersError }
       });
@@ -89,26 +82,12 @@ export const RLSTestComponent: React.FC = () => {
             ) : (
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Current User Role:</span>
-                  <Badge variant={testResults.role.error ? "destructive" : "default"}>
-                    {testResults.role.error ? "Error" : testResults.role.data}
+                  <span>Session teams RPC:</span>
+                  <Badge variant={testResults.sessionTeams?.error ? "destructive" : "default"}>
+                    {testResults.sessionTeams?.error ? "Error" : `${testResults.sessionTeams?.data ?? 0} teams`}
                   </Badge>
                 </div>
-                
-                <div className="flex justify-between">
-                  <span>Is Admin:</span>
-                  <Badge variant={testResults.isAdmin.error ? "destructive" : "default"}>
-                    {testResults.isAdmin.error ? "Error" : (testResults.isAdmin.data ? "Yes" : "No")}
-                  </Badge>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span>Team IDs:</span>
-                  <Badge variant={testResults.teamIds.error ? "destructive" : "default"}>
-                    {testResults.teamIds.error ? "Error" : JSON.stringify(testResults.teamIds.data)}
-                  </Badge>
-                </div>
-                
+
                 <div className="flex justify-between">
                   <span>Team Users Read:</span>
                   <Badge variant={testResults.teamUsersRead.error ? "destructive" : "default"}>

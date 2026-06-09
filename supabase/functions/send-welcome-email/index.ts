@@ -23,8 +23,7 @@ const corsHeaders = {
 interface WelcomeEmailRequest {
   email: string;
   username?: string | null;
-  loginUrl?: string | null;
-  userId: number; // Required: user ID to generate reset token
+  userId: number;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -45,7 +44,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, username, loginUrl, userId }: WelcomeEmailRequest = await req.json();
+    const { email, username, userId }: WelcomeEmailRequest = await req.json();
 
     if (!email) {
       return new Response(JSON.stringify({ error: "Email is required" }), {
@@ -81,11 +80,16 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const origin = req.headers.get("origin") || loginUrl || Deno.env.get("APP_BASE_URL") || "http://localhost:8080";
+    const appBaseUrl = Deno.env.get("APP_BASE_URL")?.trim().replace(/\/$/, "");
+    if (!appBaseUrl) {
+      return new Response(JSON.stringify({ error: "APP_BASE_URL not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
-    // Generate a secure password reset token
     const resetToken = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days for new users
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
     // Insert password reset token
     const { error: tokenError } = await supabase
@@ -106,7 +110,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     // Generate secure password setup URL
-    const setupPasswordUrl = `${origin}/reset-password?token=${resetToken}`;
+    const setupPasswordUrl = `${appBaseUrl}/reset-password?token=${resetToken}`;
 
     const emailResponse = await resend.emails.send({
       from: "Harelbeekse Minivoetbal <noreply@resend.dev>",
@@ -125,7 +129,7 @@ const handler = async (req: Request): Promise<Response> => {
              style="background-color: #7c3aed; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 16px 0; font-weight: 600;">
              Wachtwoord instellen
           </a>
-          <p style="color: #6b7280; font-size: 14px;">Deze link is 7 dagen geldig.</p>
+          <p style="color: #6b7280; font-size: 14px;">Deze link is 1 uur geldig.</p>
           <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 8px; margin-top: 16px;">
             <p style="color: #374151; margin: 0;">
               Na het instellen van je wachtwoord kan je inloggen en je spelers beheren.<br>

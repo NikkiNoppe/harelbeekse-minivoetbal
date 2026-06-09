@@ -587,14 +587,14 @@ export type Database = {
         }
         Returns: number
       }
-      add_team_cost_as_admin: {
+      add_team_cost_for_session: {
         Args: {
           p_amount: number
           p_cost_setting_id: number
           p_match_id?: number
+          p_session_token: string
           p_team_id: number
           p_transaction_date?: string
-          p_user_id: number
         }
         Returns: Json
       }
@@ -602,8 +602,8 @@ export type Database = {
         Args: { p_amount: number; p_deposit_name: string; p_team_id: number }
         Returns: number
       }
-      admin_clear_skip_auto_match_costs: {
-        Args: { p_match_id: number; p_user_id: number }
+      admin_clear_skip_auto_match_costs_for_session: {
+        Args: { p_match_id: number; p_session_token: string }
         Returns: Json
       }
       admin_get_referee_availability: {
@@ -688,10 +688,11 @@ export type Database = {
         Args: { p_name: string }
         Returns: boolean
       }
-      create_user_with_hashed_password: {
+      create_user_for_session: {
         Args: {
           email_param: string
           password_param: string
+          p_session_token: string
           role_param?: Database["public"]["Enums"]["user_role"]
           username_param: string
         }
@@ -930,8 +931,8 @@ export type Database = {
           yellow_cards: number
         }[]
       }
-      get_players_for_team: {
-        Args: { p_team_id?: number; p_user_id: number }
+      get_players_for_session: {
+        Args: { p_session_token: string; p_team_id?: number }
         Returns: {
           birth_date: string
           first_name: string
@@ -989,13 +990,13 @@ export type Database = {
         }[]
       }
       has_real_players: { Args: { player_data: Json }; Returns: boolean }
-      insert_player_with_context: {
+      insert_player_for_session: {
         Args: {
           p_birth_date: string
           p_first_name: string
           p_last_name: string
+          p_session_token: string
           p_team_id: number
-          p_user_id: number
         }
         Returns: {
           message: string
@@ -1029,15 +1030,15 @@ export type Database = {
         }
         Returns: Json
       }
-      manage_team_cost_for_match: {
+      manage_team_cost_for_session: {
         Args: {
           p_amount?: number
           p_cost_id: number
           p_cost_setting_id?: number
           p_operation: string
+          p_session_token: string
           p_team_id?: number
           p_transaction_date?: string
-          p_user_id: number
         }
         Returns: Json
       }
@@ -1069,8 +1070,8 @@ export type Database = {
         Args: { p_role: string; p_team_ids?: string; p_user_id: number }
         Returns: undefined
       }
-      update_match_with_context: {
-        Args: { p_match_id: number; p_update_data: Json; p_user_id: number }
+      update_match_for_session: {
+        Args: { p_match_id: number; p_session_token: string; p_update_data: Json }
         Returns: {
           match_id: number
           message: string
@@ -1089,18 +1090,27 @@ export type Database = {
         }
         Returns: Json
       }
-      update_user_password: {
-        Args: { new_password: string; user_id_param: number }
+      update_user_password_for_session: {
+        Args: { new_password: string; p_session_token: string; user_id_param: number }
         Returns: boolean
       }
-      upsert_season_archive: {
+      upsert_season_archive_for_session: {
         Args: {
           p_field: string
           p_season_label: string
-          p_user_id: number
+          p_session_token: string
           p_value: Json
         }
         Returns: Json
+      }
+      check_email_rate_limit: {
+        Args: {
+          p_action?: string
+          p_email: string
+          p_max_attempts?: number
+          p_window_minutes?: number
+        }
+        Returns: boolean
       }
       validate_player_data:
         | {

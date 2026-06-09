@@ -354,6 +354,41 @@ print('true' if isinstance(d,list) and len(d)>0 and d[0].get('setting_category')
     fi
   fi
   check "application_settings niet direct leesbaar voor anon (HTTP $code)" "$app_settings_blocked"
+
+  # 30. Bekend default superadmin-wachtwoord geweigerd
+  code=$(curl -s -o /tmp/sa_old_pw.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/login_super_admin" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"p_password": "admin1987"}')
+  sa_old_denied=$([[ "$code" == "200" && "$(cat /tmp/sa_old_pw.json)" == "[]" ]] && echo true || echo false)
+  if [[ "$code" == "404" || "$code" == "401" ]]; then
+    sa_old_denied=true
+  fi
+  check "login_super_admin weigert bekend default-wachtwoord (HTTP $code)" "$sa_old_denied"
+
+  # 31. create_user_with_hashed_password niet meer callable
+  code=$(curl -s -o /tmp/create_user_old.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/create_user_with_hashed_password" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"username_param":"x","email_param":null,"password_param":"x","role_param":"admin"}')
+  create_user_gone=$([[ "$code" == "404" || "$code" == "400" ]] && echo true || echo false)
+  check "create_user_with_hashed_password spoofable signature weg (HTTP $code)" "$create_user_gone"
+
+  # 32. update_match_with_context niet meer callable
+  code=$(curl -s -o /tmp/umc_old.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/update_match_with_context" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"p_user_id": 1, "p_match_id": 1, "p_update_data": {}}')
+  umc_gone=$([[ "$code" == "404" || "$code" == "400" ]] && echo true || echo false)
+  check "update_match_with_context spoofable signature weg (HTTP $code)" "$umc_gone"
+
+  # 33. get_current_user_role niet callable door anon
+  code=$(curl -s -o /tmp/gcur.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/get_current_user_role" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{}')
+  gcur_revoked=$([[ "$code" == "404" || "$code" == "401" || "$code" == "403" ]] && echo true || echo false)
+  check "get_current_user_role niet uitvoerbaar door anon (HTTP $code)" "$gcur_revoked"
 else
   echo "⏭️  Overgeslagen: set_config-blokkade, public RPC, admin-RPC, edge-auth (vereist migratie + deploy)"
 fi

@@ -111,9 +111,9 @@ export async function clearSkipAutoMatchCostsForAdmin(matchId: number): Promise<
     if (!userId) {
       return { success: false, message: "Niet ingelogd." };
     }
-    const { data, error } = await supabase.rpc("admin_clear_skip_auto_match_costs", {
+    const { data, error } = await supabase.rpc("admin_clear_skip_auto_match_costs_for_session", {
+      ...getRpcSessionArgs(),
       p_match_id: matchId,
-      p_user_id: userId,
     });
     if (error) return { success: false, message: error.message };
     const result = data as { success?: boolean; error?: string } | null;

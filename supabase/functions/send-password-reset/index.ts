@@ -6,7 +6,6 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
-// Declare Deno namespace for TypeScript
 declare const Deno: {
   env: {
     get(key: string): string | undefined;
@@ -14,13 +13,15 @@ declare const Deno: {
 };
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-const ADMIN_EMAIL = "noppe.nikki@icloud.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+const GENERIC_SUCCESS_MESSAGE =
+  "Als dit email adres bestaat, zal je een reset link ontvangen.";
 
 interface PasswordResetRequest {
   email: string;
@@ -32,76 +33,102 @@ interface User {
   email: string | null;
 }
 
+function getAppBaseUrl(): string | null {
+  const base = Deno.env.get("APP_BASE_URL")?.trim().replace(/\/$/, "");
+  return base || null;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const appBaseUrl = getAppBaseUrl();
+    if (!appBaseUrl) {
+      console.error("APP_BASE_URL is not configured");
+      return new Response(
+        JSON.stringify({ error: "Service configuration error" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
+    }
+
     const { email }: PasswordResetRequest = await req.json();
 
-    if (!email) {
+    if (!email?.trim()) {
       return new Response(
         JSON.stringify({ error: "Email is required" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        },
       );
     }
 
-    // Create Supabase client
+    const normalizedEmail = email.trim().toLowerCase();
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // Check if user exists with this email
+    const { data: rateLimitOk, error: rateLimitError } = await supabase.rpc(
+      'check_email_rate_limit',
+      { p_email: normalizedEmail, p_action: 'password_reset', p_max_attempts: 3, p_window_minutes: 60 },
+    );
+
+    if (rateLimitError) {
+      console.error("Rate limit check failed:", rateLimitError);
+    } else if (rateLimitOk === false) {
+      return new Response(
+        JSON.stringify({ message: GENERIC_SUCCESS_MESSAGE }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
+    }
+
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('user_id, username, email')
-      .eq('email', email)
-      .single();
+      .eq('email', normalizedEmail)
+      .maybeSingle();
 
     if (userError || !user) {
-      // For security, don't reveal if email exists or not
       return new Response(
-        JSON.stringify({ message: "Als dit email adres bestaat, zal je een reset link ontvangen." }),
+        JSON.stringify({ message: GENERIC_SUCCESS_MESSAGE }),
         {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        },
       );
     }
 
-    // Check if user has an email address
     if (!user.email || user.email.trim() === '') {
-      // User exists but has no email - notify admin
-      await sendAdminNotification(user, email);
-      
+      await sendAdminNotification(supabase, user, normalizedEmail);
       return new Response(
-        JSON.stringify({ 
-          message: "Je account heeft geen email adres gekoppeld. De beheerder is op de hoogte gesteld van je wachtwoord reset verzoek." 
-        }),
+        JSON.stringify({ message: GENERIC_SUCCESS_MESSAGE }),
         {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        },
       );
     }
 
-    // User has email - proceed with secure password reset
     const resetToken = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-    // Store reset token in database
     const { error: tokenError } = await supabase
       .from('password_reset_tokens')
       .insert({
         user_id: user.user_id,
         token: resetToken,
         expires_at: expiresAt.toISOString(),
-        requested_email: email
+        requested_email: normalizedEmail,
       });
 
     if (tokenError) {
@@ -111,13 +138,13 @@ const handler = async (req: Request): Promise<Response> => {
         {
           status: 500,
           headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        },
       );
     }
-    
-    const resetUrl = `${req.headers.get('origin')}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
-    const emailResponse = await resend.emails.send({
+    const resetUrl = `${appBaseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
+
+    await resend.emails.send({
       from: "Harelbeekse Minivoetbal <noreply@resend.dev>",
       to: [user.email],
       subject: "Wachtwoord Reset",
@@ -146,16 +173,12 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Password reset email sent:", emailResponse);
-
     return new Response(
-      JSON.stringify({ 
-        message: "Als dit email adres bestaat, zal je een reset link ontvangen."
-      }),
+      JSON.stringify({ message: GENERIC_SUCCESS_MESSAGE }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      },
     );
   } catch (error: unknown) {
     console.error("Error in send-password-reset function:", error);
@@ -164,25 +187,33 @@ const handler = async (req: Request): Promise<Response> => {
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      },
     );
   }
 };
 
-// Function to send admin notification when user has no email
-async function sendAdminNotification(user: User, requestedEmail: string): Promise<void> {
+async function sendAdminNotification(
+  supabase: ReturnType<typeof createClient>,
+  user: User,
+  requestedEmail: string,
+): Promise<void> {
+  const adminEmail = Deno.env.get("ADMIN_EMAIL")?.trim();
+  if (!adminEmail) {
+    console.warn("ADMIN_EMAIL not configured; skipping admin notification");
+    return;
+  }
+
   try {
     const timestamp = new Date().toLocaleString('nl-NL');
-    
+
     await resend.emails.send({
       from: "Harelbeekse Minivoetbal <noreply@resend.dev>",
-      to: [ADMIN_EMAIL],
+      to: [adminEmail],
       subject: "Wachtwoord Reset Verzoek - Gebruiker zonder Email",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #7c3aed; margin: 0 0 8px;">Wachtwoord Reset Verzoek</h2>
-          <p style="color: #4b5563;"><strong>⚠️ Belangrijk:</strong> Een gebruiker heeft een wachtwoord reset aangevraagd maar heeft geen e-mailadres gekoppeld aan zijn account.</p>
-          
+          <p style="color: #4b5563;"><strong>Belangrijk:</strong> Een gebruiker heeft een wachtwoord reset aangevraagd maar heeft geen e-mailadres gekoppeld aan zijn account.</p>
           <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 16px; border-radius: 8px; margin: 16px 0;">
             <h3 style="color: #6d28d9; margin-top: 0;">Gebruiker details</h3>
             <ul style="margin: 8px 0; padding-left: 20px; color: #374151;">
@@ -193,22 +224,9 @@ async function sendAdminNotification(user: User, requestedEmail: string): Promis
               <li><strong>Tijdstip:</strong> ${timestamp}</li>
             </ul>
           </div>
-          
-          <p style="color: #374151;"><strong>Actie vereist:</strong></p>
-          <ol style="margin: 8px 0; padding-left: 20px; color: #374151;">
-            <li>Controleer of de gebruiker legitiem is</li>
-            <li>Voeg een e-mailadres toe aan het account indien nodig</li>
-            <li>Reset het wachtwoord handmatig of stuur een nieuwe resetlink</li>
-          </ol>
-          
-          <p style="color: #6b7280; font-size: 14px;">
-            Dit is een automatische melding van het wachtwoordresetsysteem.
-          </p>
         </div>
       `,
     });
-
-    console.log("Admin notification sent for user without email:", user.username);
   } catch (error) {
     console.error("Error sending admin notification:", error);
   }

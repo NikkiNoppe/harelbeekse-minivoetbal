@@ -82,6 +82,7 @@ Deno.serve(async (req) => {
       supabaseServiceRole,
       homeTeamId,
       awayTeamId,
+      matchId,
     );
     if (!auth.ok) {
       return new Response(JSON.stringify({ error: auth.message }), {

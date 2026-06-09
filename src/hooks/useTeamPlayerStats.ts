@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { getRpcSessionArgs } from "@/lib/authSession";
 import { withUserContext } from "@/lib/supabaseUtils";
 
 export interface PlayerStat {
@@ -22,8 +23,8 @@ export const useTeamPlayerStats = (teamId: number | null) => {
 
       return withUserContext(async () => {
         // 1. Fetch players via RPC
-        const { data: players, error: playersError } = await supabase.rpc('get_players_for_team', {
-          p_user_id: user.id as number,
+        const { data: players, error: playersError } = await supabase.rpc('get_players_for_session', {
+          ...getRpcSessionArgs(),
           p_team_id: teamId,
         });
 

@@ -1657,7 +1657,8 @@ tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-
   .responsive-standings-table.standings-scroll-wrap {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
-    touch-action: pan-x;
+    /* pan-x pan-y: horizontaal stats scrollen + verticale pagina-scroll doorlaten */
+    touch-action: pan-x pan-y;
     scroll-padding-right: 3rem;
   }
 

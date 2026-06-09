@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getRpcSessionArgs } from "@/lib/authSession";
 import { useToast } from "@/hooks/use-toast";
 import { usePlayerValidation } from "../usePlayerValidation";
 
@@ -39,11 +40,10 @@ export const useAddPlayer = (refreshPlayers: () => Promise<void>) => {
         return false;
       }
 
-      console.log('📝 Executing RPC insert_player_with_context...');
-      
-      // Use SECURITY DEFINER function for atomic authorization + insert
-      const { data, error } = await supabase.rpc('insert_player_with_context', {
-        p_user_id: userId,
+      console.log('📝 Executing RPC insert_player_for_session...');
+
+      const { data, error } = await supabase.rpc('insert_player_for_session', {
+        ...getRpcSessionArgs(),
         p_first_name: firstName.trim(),
         p_last_name: lastName.trim(),
         p_birth_date: birthDate,

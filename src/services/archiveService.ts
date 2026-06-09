@@ -1,40 +1,16 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getRpcSessionArgs } from '@/lib/authSession';
 import { fetchPublicApplicationSettings } from '@/services/public/publicApplicationSettingsFetch';
 
 const ARCHIVE_CATEGORY = 'season_archives';
-
-function getAdminUserId(): number {
-  const authDataString = localStorage.getItem('auth_data');
-  if (authDataString) {
-    try {
-      const authData = JSON.parse(authDataString);
-      if (authData?.user?.isSuperAdmin) return -1;
-      if (authData?.user?.id != null) return authData.user.id;
-    } catch {
-      // ignore
-    }
-  }
-
-  const legacyUserString = localStorage.getItem('user');
-  if (legacyUserString) {
-    try {
-      const user = JSON.parse(legacyUserString);
-      if (user?.id != null) return user.id;
-    } catch {
-      // ignore
-    }
-  }
-
-  throw new Error('Gebruiker niet gevonden');
-}
 
 async function upsertArchiveField(
   seasonLabel: string,
   field: 'competition_standings' | 'cup_winner' | 'playoff',
   value: unknown,
 ): Promise<void> {
-  const { data, error } = await supabase.rpc('upsert_season_archive', {
-    p_user_id: getAdminUserId(),
+  const { data, error } = await supabase.rpc('upsert_season_archive_for_session', {
+    ...getRpcSessionArgs(),
     p_season_label: seasonLabel,
     p_field: field,
     p_value: value as any,

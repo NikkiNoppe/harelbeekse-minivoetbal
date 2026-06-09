@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { getEdgeFunctionHeaders } from "@/lib/authSession";
+import { getEdgeFunctionHeaders, getRpcSessionArgs } from "@/lib/authSession";
 import { Team } from "../userTypes";
 import { useToast } from "@/hooks/use-toast";
 
@@ -47,7 +47,8 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
     
     try {
       // Create user via RPC which hashes password server-side (bcrypt)
-      const { data, error } = await supabase.rpc('create_user_with_hashed_password', {
+      const { data, error } = await supabase.rpc('create_user_for_session', {
+        ...getRpcSessionArgs(),
         username_param: newUser.username,
         email_param: newUser.email || null,
         password_param: newUser.password,
@@ -65,12 +66,10 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
       // Send welcome email with password setup link (no plaintext password)
       if (newUser.email && newUser.email.includes('@') && data?.user_id) {
         try {
-          const origin = window.location.origin;
           await supabase.functions.invoke('send-welcome-email', {
             body: {
               email: newUser.email,
               username: newUser.username,
-              loginUrl: origin,
               userId: data.user_id
             },
             headers: getEdgeFunctionHeaders(),
@@ -155,7 +154,8 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
       };
       
       if (formData.password?.trim()) {
-        const { error: pwdError } = await supabase.rpc('update_user_password', {
+        const { error: pwdError } = await supabase.rpc('update_user_password_for_session', {
+          ...getRpcSessionArgs(),
           user_id_param: userId,
           new_password: formData.password
         });
@@ -251,22 +251,7 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
           throw new Error(delErr?.message || delResp?.error || 'Deletion failed');
         }
       } catch (edgeErr) {
-        console.warn('Edge function delete-user unavailable, falling back to direct deletes:', edgeErr);
-        // Fallback: perform direct deletes (order matters)
-        const { error: teamUserError } = await supabase
-          .from('team_users')
-          .delete()
-          .eq('user_id', userId);
-        if (teamUserError) throw teamUserError;
-
-        // Best-effort cleanup of reset tokens (may not exist)
-        await supabase.from('password_reset_tokens').delete().eq('user_id', userId);
-
-        const { error: userError } = await supabase
-          .from('users')
-          .delete()
-          .eq('user_id', userId);
-        if (userError) throw userError;
+        throw edgeErr;
       }
       
       toast({
