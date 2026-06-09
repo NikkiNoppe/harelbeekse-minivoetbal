@@ -91,7 +91,7 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
               p_operation: 'assign_many',
               p_user_id: data.user_id,
               p_team_ids: teamIds,
-            },
+            } as any,
           );
 
           if (teamUserError) {
@@ -195,7 +195,7 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
             p_operation: 'assign_many',
             p_user_id: userId,
             p_team_ids: teamIds,
-          });
+          } as any);
 
           if (teamUserError) {
             throw teamUserError;
@@ -215,7 +215,7 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
             ...getRpcSessionArgs(),
             p_operation: 'remove',
             p_user_id: userId,
-          });
+          } as any);
           toast({
             title: "Gebruiker bijgewerkt",
             description: `${formData.username || 'Gebruiker'} is bijgewerkt zonder teamkoppeling`,
@@ -226,7 +226,7 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
           ...getRpcSessionArgs(),
           p_operation: 'remove',
           p_user_id: userId,
-        });
+        } as any);
         toast({
           title: "Gebruiker bijgewerkt",
           description: `${formData.username || 'Gebruiker'} is bijgewerkt als ${formData.role}`,

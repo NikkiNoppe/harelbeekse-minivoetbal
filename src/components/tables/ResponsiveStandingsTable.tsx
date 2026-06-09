@@ -86,7 +86,7 @@ function statHeaderClass(
     S.headerCell,
     col.width,
     "standings-scroll-stats",
-    col.dividerBefore && S.colDivider,
+    ("dividerBefore" in col && col.dividerBefore) && S.colDivider,
   );
 }
 
