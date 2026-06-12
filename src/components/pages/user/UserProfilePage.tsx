@@ -1489,7 +1489,7 @@ const UserProfilePage: React.FC = () => {
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <FinancialOverviewCard teamId={firstTeam.team_id} />
+                <FinancialOverviewCard teamId={firstTeam.team_id} teamName={firstTeam.team_name} />
               </CollapsibleContent>
             </Card>
           </Collapsible>
