@@ -147,7 +147,7 @@ export const ProfilePollAdminSection = forwardRef<ProfilePollAdminSectionHandle>
                       key={poll.id}
                       poll={poll}
                       onClose={handleClose}
-                      onDelete={(id) => setDeleteId(id)}
+                      onDelete={async (id) => setDeleteId(id)}
                       isClosing={closingId === poll.id}
                     />
                   ))}
@@ -163,7 +163,7 @@ export const ProfilePollAdminSection = forwardRef<ProfilePollAdminSectionHandle>
                       key={poll.id}
                       poll={poll}
                       onClose={handleClose}
-                      onDelete={(id) => setDeleteId(id)}
+                      onDelete={async (id) => setDeleteId(id)}
                       isDeleting={deleting && deleteId === poll.id}
                     />
                   ))}
