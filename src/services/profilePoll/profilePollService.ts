@@ -128,7 +128,7 @@ export const profilePollService = {
   },
 
   async createPoll(payload: CreateProfilePollPayload): Promise<number> {
-    const data = await manageProfilePollForSession("create", undefined, payload as Record<string, unknown>);
+    const data = await manageProfilePollForSession("create", undefined, payload as unknown as Record<string, unknown>);
     const result = data as RpcManageResult;
     if (!result?.success || !result.id) {
       throw new Error(result?.error ?? "Kon poll niet aanmaken");
