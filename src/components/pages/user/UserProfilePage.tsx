@@ -847,7 +847,7 @@ const NextMatchCard: React.FC<{
 NextMatchCard.displayName = 'NextMatchCard';
 
 // Financial Overview Card - Detailed breakdown for team managers
-const FinancialOverviewCard: React.FC<{ teamId: number }> = memo(({ teamId }) => {
+const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = memo(({ teamId, teamName }) => {
   const { user } = useAuth();
   
   // Fetch balance
