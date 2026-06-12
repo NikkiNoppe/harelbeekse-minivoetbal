@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, User, Phone, Mail, Users } from "lucide-react";
-import { ColorPreview } from "@/components/common/ColorPreview";
+import { TeamTrophyAvatar, getClubColorName } from "@/components/common/TeamTrophyAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -78,12 +78,6 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete, loading 
     onDelete(team);
   };
 
-  const getColorName = (clubColors?: string) => {
-    if (!clubColors) return null;
-    const name = clubColors.split('-').find(part => !part.startsWith('#'));
-    return name || null;
-  };
-
   if (loading) {
     return (
       <div className="space-y-2">
@@ -101,7 +95,7 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete, loading 
   return (
     <div className="space-y-2" role="region" aria-label="Teams lijst">
       {teams.map((team) => {
-        const colorName = getColorName(team.club_colors);
+        const colorName = getClubColorName(team.club_colors);
         const hasContactInfo = team.contact_person || team.contact_phone || team.contact_email;
         
         return (
@@ -113,27 +107,16 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, onEdit, onDelete, loading 
               <div className="flex items-start justify-between gap-4">
                 {/* Left side - Team info */}
                 <div className="flex-1 min-w-0 space-y-3">
-                  {/* Team name with colors */}
                   <div className="flex items-center gap-3">
+                    <TeamTrophyAvatar clubColors={team.club_colors} />
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-base text-foreground truncate">
                         {team.team_name}
                       </h3>
-                      {(colorName || team.club_colors) && (
-                        <div className="flex items-center gap-2 mt-1">
-                          {colorName && (
-                            <p className="text-xs text-muted-foreground">
-                              {colorName}
-                            </p>
-                          )}
-                          {team.club_colors && (
-                            <ColorPreview 
-                              clubColors={team.club_colors} 
-                              size="sm" 
-                              className="flex-shrink-0" 
-                            />
-                          )}
-                        </div>
+                      {colorName && (
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                          {colorName}
+                        </p>
                       )}
                     </div>
                   </div>

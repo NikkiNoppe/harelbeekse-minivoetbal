@@ -85,7 +85,8 @@ const BekerPage: React.FC = () => {
         console.error('Error loading initial beker data:', error);
         toast({
           title: "Fout bij laden",
-          description: "Kon data niet laden",
+          description:
+            error instanceof Error ? error.message : "Kon data niet laden",
           variant: "destructive",
         });
       } finally {

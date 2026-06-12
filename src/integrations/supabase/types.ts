@@ -820,6 +820,10 @@ export type Database = {
           match_date: string
         }[]
       }
+      get_profile_polls_for_session: {
+        Args: { p_session_token: string }
+        Returns: Json
+      }
       get_public_application_settings: {
         Args: { p_categories: string[] }
         Returns: {
@@ -1111,6 +1115,15 @@ export type Database = {
         }
         Returns: Json
       }
+      manage_profile_poll_for_session: {
+        Args: {
+          p_operation: string
+          p_payload?: Json
+          p_poll_id?: number
+          p_session_token: string
+        }
+        Returns: Json
+      }
       manage_poll_for_session: {
         Args: { p_operation: string; p_payload: Json; p_session_token: string }
         Returns: Json
@@ -1185,6 +1198,14 @@ export type Database = {
           role: string
           user_id: number
         }[]
+      }
+      submit_profile_poll_response_for_session: {
+        Args: {
+          p_option_ids: string[]
+          p_poll_id: number
+          p_session_token: string
+        }
+        Returns: Json
       }
       restore_user_session: {
         Args: { p_session_token: string }

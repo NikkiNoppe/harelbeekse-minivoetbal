@@ -3,6 +3,7 @@ import { useArchives } from '@/hooks/useArchives';
 import SeasonSelector from './SeasonSelector';
 import StandingsArchiveCard from './StandingsArchiveCard';
 import CupWinnerCard from './CupWinnerCard';
+import CupArchiveCard from './CupArchiveCard';
 import PlayoffArchiveCard from './PlayoffArchiveCard';
 import { Archive, Loader2 } from 'lucide-react';
 
@@ -85,14 +86,14 @@ const ArchiefPage: React.FC = () => {
       ) : (
         <>
           <SeasonSelector seasons={seasons} selected={selected} onSelect={setSelected} />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1 space-y-6">
-              <CupWinnerCard cup={active?.cup_winner ?? null} />
-            </div>
-            <div className="lg:col-span-2 space-y-6">
-              <StandingsArchiveCard standings={active?.competition_standings ?? []} />
-              <PlayoffArchiveCard entry={active?.playoff ?? null} />
-            </div>
+          <div className="space-y-6">
+            <CupWinnerCard
+              cup={active?.cup_winner ?? null}
+              playoff={active?.playoff ?? null}
+            />
+            <CupArchiveCard cup={active?.cup_winner ?? null} />
+            <PlayoffArchiveCard entry={active?.playoff ?? null} />
+            <StandingsArchiveCard standings={active?.competition_standings ?? []} />
           </div>
         </>
       )}

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { FileText, ChevronRight, MessageSquare } from "lucide-react";
+import { FileText, ChevronRight, ChevronDown, MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -180,21 +180,28 @@ const RefereeNotesCard: React.FC = () => {
   if (notes.length === 0) return null;
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-            Scheidsrechter Notities
-          </CardTitle>
-          {unread.length > 0 && (
-            <Badge variant="default" className="text-xs">
-              {unread.length} nieuw
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0 space-y-3">
+    <Collapsible>
+      <Card>
+        <CollapsibleTrigger className="w-full">
+          <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                Scheidsrechter Notities
+              </CardTitle>
+              <div className="flex items-center gap-2 shrink-0">
+                {unread.length > 0 && (
+                  <Badge variant="default" className="text-xs">
+                    {unread.length} nieuw
+                  </Badge>
+                )}
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+              </div>
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="pt-0 space-y-3">
         {/* Unread notes */}
         {unread.length > 0 ? (
           <div className="space-y-2">
@@ -237,8 +244,10 @@ const RefereeNotesCard: React.FC = () => {
             </CollapsibleContent>
           </Collapsible>
         )}
-      </CardContent>
-    </Card>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 };
 

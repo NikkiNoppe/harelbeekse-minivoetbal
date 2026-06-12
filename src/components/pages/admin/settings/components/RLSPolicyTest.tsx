@@ -20,7 +20,7 @@ export const RLSTestComponent: React.FC = () => {
       
       const { data: teamsSessionData, error: teamsSessionError } = await supabase.rpc(
         'get_teams_for_session',
-        getRpcSessionArgs() as any,
+        { ...getRpcSessionArgs(), p_team_id: null },
       );
       console.log('🏀 Session teams RPC:', teamsSessionData?.length || 0, teamsSessionError);
 

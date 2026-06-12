@@ -14,7 +14,7 @@ const CompetitionInfo = memo(() => {
   const headingId = React.useId();
   return (
     <section aria-labelledby={headingId}>
-      <h2 id={headingId} className="text-xl font-semibold text-primary mb-4">
+      <h2 id={headingId} className="text-xl font-semibold text-[var(--color-700)] mb-4">
         Over de competitie
       </h2>
       <Card>
@@ -193,7 +193,7 @@ const NewsSection = memo(() => {
   return (
     <section aria-labelledby={headingId}>
       <div className="flex items-center justify-between gap-2 mb-4">
-        <h2 id={headingId} className="text-xl font-semibold text-primary">
+        <h2 id={headingId} className="text-xl font-semibold text-[var(--color-700)]">
           Laatste Nieuws
         </h2>
         {isRefreshing && !isListLoading && (

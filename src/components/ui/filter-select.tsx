@@ -13,6 +13,8 @@ interface FilterSelectProps {
   className?: string;
   /** schedule = uniforme speelschema-styling zonder conflicterende base-styles */
   variant?: "default" | "schedule";
+  /** Toon zichtbaar label boven de trigger (standaard aan bij variant schedule) */
+  showLabel?: boolean;
   /** Optionele extra klassen op de SelectTrigger (alleen bij variant default) */
   triggerClassName?: string;
 }
@@ -41,15 +43,27 @@ interface FilterSelectProps {
  * </div>
  */
 export const FilterSelect = React.forwardRef<HTMLButtonElement, FilterSelectProps>(
-  ({ label, value, onValueChange, placeholder, options, width = "full", className, variant = "default", triggerClassName }, ref) => {
+  ({ label, value, onValueChange, placeholder, options, width = "full", className, variant = "default", showLabel, triggerClassName }, ref) => {
     const isSchedule = variant === "schedule";
+    const triggerId = React.useId();
+    const visibleLabel = showLabel ?? isSchedule;
 
     return (
       <div className={cn("w-full", className)}>
+        {visibleLabel && (
+          <label
+            htmlFor={triggerId}
+            className="text-sm font-medium text-foreground mb-1.5 block"
+          >
+            {label}
+          </label>
+        )}
         <Select value={value} onValueChange={onValueChange}>
           <SelectTrigger
             ref={ref}
+            id={triggerId}
             variant={isSchedule ? "schedule" : "default"}
+            aria-label={visibleLabel ? undefined : label}
             className={
               isSchedule
                 ? SCHEDULE_FILTER_TRIGGER

@@ -58,7 +58,7 @@ export function RefereeStatsSection({ assignments, isLoading }: RefereeStatsSect
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold flex items-center gap-2">
+      <h2 className="text-lg font-semibold flex items-center gap-2 text-[var(--color-700)]">
         <TrendingUp className="h-5 w-5 text-primary" />
         Mijn statistieken
       </h2>

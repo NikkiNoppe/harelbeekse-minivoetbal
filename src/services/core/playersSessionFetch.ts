@@ -14,7 +14,7 @@ export async function fetchPlayersForSession(
 ): Promise<PlayerSessionRow[]> {
   const { data, error } = await supabase.rpc("get_players_for_session", {
     ...getRpcSessionArgs(),
-    p_team_id: teamId ?? undefined,
+    p_team_id: teamId ?? null,
   });
   if (error) throw error;
   return (data ?? []) as PlayerSessionRow[];

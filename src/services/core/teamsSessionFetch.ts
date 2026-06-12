@@ -27,7 +27,7 @@ function mapTeamRow(row: TeamSessionRow): Team {
 export async function fetchTeamsForSession(teamId?: number): Promise<Team[]> {
   const { data, error } = await supabase.rpc("get_teams_for_session", {
     ...getRpcSessionArgs(),
-    p_team_id: teamId ?? undefined,
+    p_team_id: teamId ?? null,
   });
   if (error) {
     console.error("[fetchTeamsForSession] RPC error:", error);

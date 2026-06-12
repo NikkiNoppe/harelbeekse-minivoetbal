@@ -1,78 +1,87 @@
-import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Trophy } from 'lucide-react';
-import type { ArchivedStanding } from '@/services/archiveService';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { Trophy } from "lucide-react";
+import type { ArchivedStanding } from "@/services/archiveService";
+import { cn } from "@/lib/utils";
 
 interface Props {
   standings: ArchivedStanding[];
 }
 
+const THEME = {
+  shellBorder: "border-purple-200",
+  headerBg: "bg-gradient-to-r from-purple-50 via-purple-100 to-purple-50",
+  headerText: "text-purple-900",
+  rowDivider: "divide-purple-100",
+  posDefault: "bg-purple-100 text-purple-800",
+  posFirst: "bg-yellow-100 text-yellow-800",
+} as const;
+
 const StandingsArchiveCard: React.FC<Props> = ({ standings }) => {
-  if (!standings || standings.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-purple-800">
-            <Trophy className="w-5 h-5" /> Eindklassement
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">Geen klassement gearchiveerd voor dit seizoen.</p>
-        </CardContent>
-      </Card>
-    );
-  }
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-purple-50 to-white border-b">
-        <CardTitle className="flex items-center gap-2 text-purple-800">
-          <Trophy className="w-5 h-5" /> Eindklassement
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-purple-50 text-purple-900 text-xs uppercase tracking-wide">
-              <tr>
-                <th className="px-3 py-2 text-left w-8">#</th>
-                <th className="px-3 py-2 text-left">Team</th>
-                <th className="px-2 py-2 text-center">G</th>
-                <th className="px-2 py-2 text-center hidden sm:table-cell">W</th>
-                <th className="px-2 py-2 text-center hidden sm:table-cell">GL</th>
-                <th className="px-2 py-2 text-center hidden sm:table-cell">V</th>
-                <th className="px-2 py-2 text-center">DV-DT</th>
-                <th className="px-2 py-2 text-center">+/-</th>
-                <th className="px-3 py-2 text-center font-bold">Pt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {standings.map((s) => (
-                <tr
-                  key={s.position}
-                  className={cn(
-                    'border-t border-purple-100',
-                    s.position === 1 && 'bg-amber-50/50',
-                  )}
-                >
-                  <td className="px-3 py-2 font-bold text-purple-700">{s.position}</td>
-                  <td className="px-3 py-2 font-medium">{s.team_name}</td>
-                  <td className="px-2 py-2 text-center">{s.played}</td>
-                  <td className="px-2 py-2 text-center hidden sm:table-cell">{s.won}</td>
-                  <td className="px-2 py-2 text-center hidden sm:table-cell">{s.draw}</td>
-                  <td className="px-2 py-2 text-center hidden sm:table-cell">{s.lost}</td>
-                  <td className="px-2 py-2 text-center text-xs text-muted-foreground">
-                    {s.goals_for}-{s.goals_against}
-                  </td>
-                  <td className="px-2 py-2 text-center">{s.goal_diff > 0 ? `+${s.goal_diff}` : s.goal_diff}</td>
-                  <td className="px-3 py-2 text-center font-bold text-purple-800">{s.points}</td>
+    <section role="region" aria-labelledby="archive-standings-heading">
+      <h2
+        id="archive-standings-heading"
+        className="text-lg font-semibold text-[var(--color-700)] mb-3 flex items-center gap-2"
+      >
+        <Trophy className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
+        Eindklassement
+      </h2>
+      {!standings?.length ? (
+        <p className="text-sm text-muted-foreground">
+          Geen klassement gearchiveerd voor dit seizoen.
+        </p>
+      ) : (
+        <div
+          className={cn(
+            "w-full overflow-hidden rounded-lg border shadow-lg transition-shadow duration-300 card-hover hover:shadow-xl",
+            THEME.shellBorder,
+          )}
+        >
+          <div className={cn("px-3 py-2.5 sm:px-4", THEME.headerBg, THEME.headerText)}>
+            <p className="text-xs font-semibold uppercase tracking-wider">Eindstand</p>
+          </div>
+          <div className="overflow-x-auto bg-white">
+            <table className="w-full min-w-[16rem] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-purple-100 text-xs text-muted-foreground">
+                  <th scope="col" className="w-12 py-2 px-3 text-center font-medium">
+                    #
+                  </th>
+                  <th scope="col" className="py-2 px-2 text-left font-medium">
+                    Team
+                  </th>
+                  <th scope="col" className="w-16 py-2 px-3 text-center font-medium">
+                    Ptn
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className={cn("divide-y", THEME.rowDivider)}>
+                {standings.map((row) => (
+                  <tr key={row.position} className="min-h-[44px]">
+                    <td className="py-2.5 px-3 text-center">
+                      <span
+                        className={cn(
+                          "inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
+                          row.position === 1 ? THEME.posFirst : THEME.posDefault,
+                        )}
+                      >
+                        {row.position}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-2 font-medium text-[var(--color-700)]">
+                      <span className="line-clamp-2 sm:truncate">{row.team_name}</span>
+                    </td>
+                    <td className="py-2.5 px-3 text-center font-bold tabular-nums text-[var(--color-700)]">
+                      {row.points}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </section>
   );
 };
 

@@ -66,6 +66,8 @@ const ArchiveCupModal: React.FC<Props> = ({ open, onOpenChange }) => {
       home_score: prev?.home_score ?? null,
       away_score: prev?.away_score ?? null,
       match_date: prev?.match_date ?? null,
+      final: prev?.final,
+      semi_finals: prev?.semi_finals,
       ...prev,
       [key]: value,
     }));
@@ -115,41 +117,63 @@ const ArchiveCupModal: React.FC<Props> = ({ open, onOpenChange }) => {
             </AlertDescription>
           </Alert>
         ) : (
-          <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4 space-y-3">
-            <div className="flex items-center gap-2 text-amber-800">
-              <Trophy className="w-4 h-4" />
-              <span className="text-sm font-semibold">Finale-resultaat</span>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4 space-y-3">
+              <div className="flex items-center gap-2 text-amber-800">
+                <Trophy className="w-4 h-4" />
+                <span className="text-sm font-semibold">Finale-resultaat</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Winnaar</Label>
+                  <Input value={cup.winner} onChange={(e) => updateField('winner', e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Verliezer</Label>
+                  <Input value={cup.runner_up} onChange={(e) => updateField('runner_up', e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Score winnaar</Label>
+                  <Input
+                    type="number"
+                    value={cup.home_score ?? ''}
+                    onChange={(e) =>
+                      updateField('home_score', e.target.value === '' ? null : Number(e.target.value))
+                    }
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Score verliezer</Label>
+                  <Input
+                    type="number"
+                    value={cup.away_score ?? ''}
+                    onChange={(e) =>
+                      updateField('away_score', e.target.value === '' ? null : Number(e.target.value))
+                    }
+                  />
+                </div>
+              </div>
+              {cup.final && (
+                <p className="text-xs text-amber-800/70">
+                  Bekerfinale · {cup.final.home_team} – {cup.final.away_team}
+                </p>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Winnaar</Label>
-                <Input value={cup.winner} onChange={(e) => updateField('winner', e.target.value)} />
+            {(cup.semi_finals?.length ?? 0) > 0 && (
+              <div className="rounded-lg border border-purple-100 bg-purple-50/30 p-3 space-y-2">
+                <p className="text-xs font-medium text-purple-800">Halve finales (worden mee gearchiveerd)</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  {cup.semi_finals!.map((round) => (
+                    <li key={round.label}>
+                      {round.home_team} – {round.away_team}
+                      {round.home_score !== null && round.away_score !== null
+                        ? ` (${round.home_score}–${round.away_score})`
+                        : ''}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div>
-                <Label className="text-xs">Verliezer</Label>
-                <Input value={cup.runner_up} onChange={(e) => updateField('runner_up', e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-xs">Score winnaar</Label>
-                <Input
-                  type="number"
-                  value={cup.home_score ?? ''}
-                  onChange={(e) =>
-                    updateField('home_score', e.target.value === '' ? null : Number(e.target.value))
-                  }
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Score verliezer</Label>
-                <Input
-                  type="number"
-                  value={cup.away_score ?? ''}
-                  onChange={(e) =>
-                    updateField('away_score', e.target.value === '' ? null : Number(e.target.value))
-                  }
-                />
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>

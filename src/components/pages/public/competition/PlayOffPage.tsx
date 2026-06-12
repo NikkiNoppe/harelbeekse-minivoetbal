@@ -1,5 +1,5 @@
 import React, { memo, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Trophy, Info } from "lucide-react";
@@ -8,9 +8,19 @@ import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 import { PageHeader } from "@/components/layout";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import DownloadScheduleButton from "@/components/common/DownloadScheduleButton";
+import {
+  SCHEDULE_ACCORDION_ITEM,
+  SCHEDULE_MATCH_META,
+  SCHEDULE_MATCH_ROW,
+  SCHEDULE_MATCH_SCORE,
+  SCHEDULE_MATCH_TEAM,
+  SCHEDULE_TRIGGER,
+  SCHEDULE_TRIGGER_ACTIVE,
+} from "@/components/common/scheduleControlStyles";
 import ResponsiveStandingsTable, {
   type StandingsTeamRow,
 } from "@/components/tables/ResponsiveStandingsTable";
+import { cn } from "@/lib/utils";
 
 function mapPlayoffToStandingsRows(teams: PlayoffTeam[]): StandingsTeamRow[] {
   return teams.map((team) => ({
@@ -81,7 +91,7 @@ function formatWinsBreakdown(teams: PlayoffTeam[]): string {
 }
 
 const tiebreakerDetailsSummaryClass =
-  "cursor-pointer select-none text-primary underline-offset-2 hover:underline min-h-[36px] inline-flex items-center justify-center touch-manipulation list-none [&::-webkit-details-marker]:hidden";
+  "cursor-pointer select-none text-primary underline underline-offset-2 min-h-[36px] inline-flex items-center justify-center touch-manipulation list-none [&::-webkit-details-marker]:hidden";
 
 // Onderlinge wedstrijden + mini-stand — alleen zichtbaar in uitklap
 const H2HBlock = memo(({
@@ -248,38 +258,6 @@ const TiebreakerNotice = memo(({
 });
 TiebreakerNotice.displayName = "TiebreakerNotice";
 
-// Compact rules summary
-const PlayoffRules = memo(() => (
-  <section role="region" aria-labelledby="rules-heading">
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle id="rules-heading" className="flex items-center gap-2 text-sm">
-          <Info className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-          Reglement &amp; tiebreakers
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-4 pt-0 text-xs leading-relaxed" style={{ color: 'var(--accent)' }}>
-        <p className="mb-2">
-          Top 8 uit de reguliere competitie speelt <strong>Play-Off 1</strong>, de overige teams
-          <strong> Play-Off 2</strong>. De eindstand combineert alle wedstrijden (regulier + play-off).
-        </p>
-        <p className="mb-1 font-medium" style={{ color: 'var(--accent-foreground)' }}>
-          Bij gelijke punten:
-        </p>
-        <ol className="list-decimal pl-5 space-y-0.5">
-          <li>Aantal gewonnen wedstrijden</li>
-          <li>Punten in onderlinge wedstrijden</li>
-          <li>Doelsaldo in onderlinge wedstrijden</li>
-          <li>Algemeen doelsaldo</li>
-          <li>Totaal gemaakte doelpunten</li>
-          <li>Testmatch of loting, indien nodig</li>
-        </ol>
-      </CardContent>
-    </Card>
-  </section>
-));
-PlayoffRules.displayName = 'PlayoffRules';
-
 const ScheduleSkeleton = memo(() => (
   <div className="space-y-3">
     {[...Array(5)].map((_, index) => (
@@ -301,7 +279,7 @@ const PlayoffLoading = memo(() => (
     <section aria-labelledby="po1-loading-heading">
       <h2
         id="po1-loading-heading"
-        className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2"
+        className="text-lg font-semibold text-[var(--color-700)] mb-3 flex items-center gap-2"
       >
         <Trophy className="w-5 h-5 text-primary" aria-hidden="true" />
         Play-Off 1
@@ -357,40 +335,36 @@ PlayoffEmptyState.displayName = 'PlayoffEmptyState';
 // Compact match list item - 2 lines max with perfect time centering
 const MatchListItem = memo(({ match }: { match: any }) => {
   const isCompleted = match.isCompleted;
-  
+
   return (
-    <div className="py-2.5 px-3 border-b last:border-0 hover:bg-muted/20 transition-colors" style={{ borderColor: 'var(--accent)' }}>
-      {/* Line 1: Teams with scores - Grid layout */}
+    <div className={SCHEDULE_MATCH_ROW}>
       <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mb-1">
-        {/* Home Team - Left aligned */}
-        <div className="text-sm font-medium leading-tight text-left truncate">
+        <div className={cn("text-sm font-medium leading-tight text-left truncate", SCHEDULE_MATCH_TEAM)}>
           {match.homeTeamName}
         </div>
-        
-        {/* Center: VS + Scores */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {isCompleted && match.homeScore !== undefined && match.awayScore !== undefined ? (
             <>
-              <span className="text-base font-bold min-w-[20px] text-center">{match.homeScore}</span>
-              <span className="text-xs" style={{ color: 'var(--accent)' }}>-</span>
-              <span className="text-base font-bold min-w-[20px] text-center">{match.awayScore}</span>
+              <span className={cn("text-sm font-bold min-w-[20px] text-center tabular-nums", SCHEDULE_MATCH_SCORE)}>
+                {match.homeScore}
+              </span>
+              <span className={cn("text-sm", SCHEDULE_MATCH_META)}>-</span>
+              <span className={cn("text-sm font-bold min-w-[20px] text-center tabular-nums", SCHEDULE_MATCH_SCORE)}>
+                {match.awayScore}
+              </span>
             </>
           ) : (
-            <span className="text-xs font-medium" style={{ color: 'var(--accent)' }}>vs</span>
+            <span className={cn("text-sm font-medium", SCHEDULE_MATCH_META)}>vs</span>
           )}
         </div>
-        
-        {/* Away Team - Right aligned */}
-        <div className="text-sm font-medium leading-tight text-right truncate">
+        <div className={cn("text-sm font-medium leading-tight text-right truncate", SCHEDULE_MATCH_TEAM)}>
           {match.awayTeamName}
         </div>
       </div>
-
-      {/* Line 2: Date, time (perfect center), location (right) - Grid layout */}
-      <div className="grid grid-cols-3 gap-2 text-xs" style={{ color: 'var(--accent)', fontSize: '11px' }}>
-        <span className="text-left">{match.date}</span>
-        <span className="text-center font-medium">{match.time || ''}</span>
-        <span className="text-right">{match.location || ''}</span>
+      <div className={cn("grid grid-cols-3 gap-2 text-xs font-medium", SCHEDULE_MATCH_META)}>
+        <span className="text-left truncate">{match.date}</span>
+        <span className="text-center tabular-nums">{match.time || ""}</span>
+        <span className="text-right truncate">{match.location || ""}</span>
       </div>
     </div>
   );
@@ -398,40 +372,30 @@ const MatchListItem = memo(({ match }: { match: any }) => {
 MatchListItem.displayName = 'MatchListItem';
 
 // Group matches by speeldag
-const MatchGroup = memo(({ speeldag, matches, playoffType }: { 
-  speeldag: string; 
+const MatchGroup = memo(({ speeldag, matches, playoffType }: {
+  speeldag: string;
   matches: any[];
-  playoffType: 'PO1' | 'PO2' | 'mixed';
-}) => {
-  return (
-    <AccordionItem 
-      value={speeldag} 
-      className="border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white mb-4"
+  playoffType: "PO1" | "PO2" | "mixed";
+}) => (
+  <AccordionItem value={speeldag} className={SCHEDULE_ACCORDION_ITEM}>
+    <AccordionTrigger
+      variant="plain"
+      className={cn(SCHEDULE_TRIGGER, SCHEDULE_TRIGGER_ACTIVE, "px-4 gap-3")}
     >
-      <AccordionTrigger 
-        className="text-base font-semibold px-5 py-4 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4"
-        style={{ color: 'var(--color-700)' }}
-      >
-        <div className="flex items-center justify-between flex-1">
-          <span className="text-left">{speeldag}</span>
-          {playoffType !== 'mixed' && (
-            <Badge variant="outline" className="text-xs mr-2">
-              {playoffType}
-            </Badge>
-          )}
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="px-0 py-0 text-card-foreground border-t border-[var(--color-200)]" style={{ backgroundColor: 'white' }}>
-        {/* Matches */}
-        <div className="rounded-lg overflow-hidden bg-card" style={{ backgroundColor: 'white' }}>
-          {matches.map((match) => (
-            <MatchListItem key={match.matchId} match={match} />
-          ))}
-        </div>
-      </AccordionContent>
-    </AccordionItem>
-  );
-});
+      <span className="text-left flex-1">{speeldag}</span>
+      {playoffType !== "mixed" && (
+        <Badge variant="outline" className="shrink-0 text-xs mr-1">
+          {playoffType}
+        </Badge>
+      )}
+    </AccordionTrigger>
+    <AccordionContent className="!p-0 border-t border-purple-light bg-card">
+      {matches.map((match) => (
+        <MatchListItem key={match.matchId} match={match} />
+      ))}
+    </AccordionContent>
+  </AccordionItem>
+));
 MatchGroup.displayName = 'MatchGroup';
 
 // Main component - Mobile-first
@@ -596,6 +560,21 @@ const PlayOffPage: React.FC = () => {
 
   const { po1Teams, po2Teams, headToHeadMatches = [] } = data;
 
+  const teamFilterValue =
+    selectedTeam === "all" || teamNames.includes(selectedTeam)
+      ? selectedTeam
+      : "all";
+
+  const scheduleMatchesForExport = filteredMatches.map((m) => ({
+    matchId: m.matchId,
+    homeTeamName: m.homeTeamName,
+    awayTeamName: m.awayTeamName,
+    date: m.rawDate,
+    time: m.time,
+    location: m.location,
+    matchday: m.matchday,
+  }));
+
   return (
     <div className="space-y-6 motion-safe:animate-slide-up">
       <PageHeader
@@ -606,7 +585,7 @@ const PlayOffPage: React.FC = () => {
       <section role="region" aria-labelledby="po1-heading">
         <h2
           id="po1-heading"
-          className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2"
+          className="text-lg font-semibold text-[var(--color-700)] mb-3 flex items-center gap-2"
         >
           <Trophy className="w-5 h-5 text-primary" aria-hidden="true" />
           Play-Off 1
@@ -624,7 +603,7 @@ const PlayOffPage: React.FC = () => {
       <section role="region" aria-labelledby="po2-heading">
         <h2
           id="po2-heading"
-          className="text-lg font-semibold text-foreground mb-3"
+          className="text-lg font-semibold text-[var(--color-700)] mb-3"
         >
           Play-Off 2
         </h2>
@@ -640,93 +619,91 @@ const PlayOffPage: React.FC = () => {
 
       {/* Schedule */}
       <section role="region" aria-labelledby="schedule-heading">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle id="schedule-heading" className="text-lg">Speelschema</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            {/* Filters - Mobile-first with automatic responsive layout */}
-            <FilterGroup columns={1} className="mb-4">
-              <div className="flex items-center gap-2">
-                <div className="flex-1 grid grid-cols-2 gap-2">
-                  <FilterSelect
-                    label="Divisie"
-                    value={selectedDivision}
-                    onValueChange={setSelectedDivision}
-                    placeholder="Alle divisies"
-                    options={[
-                      { value: "all", label: "Alle divisies" },
-                      { value: "PO1", label: "Play-Off 1" },
-                      { value: "PO2", label: "Play-Off 2" }
-                    ]}
-                  />
-                  <FilterSelect
-                    label="Team"
-                    value={selectedTeam}
-                    onValueChange={setSelectedTeam}
-                    placeholder="Alle teams"
-                    options={[
-                      { value: "all", label: "Alle teams" },
-                      ...teamNames.map(t => ({ value: t, label: t }))
-                    ]}
-                  />
-                </div>
-                <DownloadScheduleButton 
-                  matches={filteredMatches.map(m => ({
-                    matchId: m.matchId,
-                    homeTeamName: m.homeTeamName,
-                    awayTeamName: m.awayTeamName,
-                    date: m.rawDate, // Use rawDate (YYYY-MM-DD) for downloads
-                    time: m.time,
-                    location: m.location,
-                    matchday: m.matchday,
-                  }))}
-                  filename={
-                    selectedTeam !== "all" 
-                      ? `playoff-${selectedTeam.toLowerCase().replace(/\s+/g, '-')}`
-                      : selectedDivision !== "all"
-                        ? `playoff-${selectedDivision.toLowerCase()}`
-                        : "playoff-schema"
-                  }
-                  calendarName={
-                    selectedTeam !== "all"
-                      ? `Play-Off - ${selectedTeam}`
-                      : selectedDivision !== "all"
-                        ? `Play-Off ${selectedDivision}`
-                        : "Play-Off Speelschema"
-                  }
-                  competitionType="playoff"
-                />
-              </div>
-            </FilterGroup>
+        <h2
+          id="schedule-heading"
+          className="text-lg font-semibold text-[var(--color-700)] mb-3"
+        >
+          Speelschema
+        </h2>
 
-            {/* Grouped Matches */}
-            {groupedMatches.length > 0 ? (
-              <Accordion 
-                type="multiple" 
-                value={openSpeeldagen}
-                onValueChange={handleAccordionChange}
-                className="space-y-3"
-              >
-                {groupedMatches.map(([speeldag, { matches, playoffType }]) => (
-                  <MatchGroup 
-                    key={speeldag}
-                    speeldag={speeldag}
-                    matches={matches}
-                    playoffType={playoffType}
-                  />
-                ))}
-              </Accordion>
-            ) : (
-              <div className="text-center py-8 text-sm" style={{ color: 'var(--accent)' }}>
-                Geen wedstrijden gevonden met de huidige filters
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <FilterGroup columns={1} className="mb-4 w-full">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-2 w-full">
+            <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+              <FilterSelect
+                label="Divisie"
+                value={selectedDivision}
+                onValueChange={setSelectedDivision}
+                placeholder="Alle divisies"
+                variant="schedule"
+                options={[
+                  { value: "all", label: "Alle divisies" },
+                  { value: "PO1", label: "Play-Off 1" },
+                  { value: "PO2", label: "Play-Off 2" },
+                ]}
+              />
+              <FilterSelect
+                label="Team"
+                value={teamFilterValue}
+                onValueChange={setSelectedTeam}
+                placeholder="Selecteer team"
+                variant="schedule"
+                options={[
+                  { value: "all", label: "Alle teams" },
+                  ...teamNames.map((t) => ({ value: t, label: t })),
+                ]}
+              />
+            </div>
+            <div className="w-full sm:w-1/4 sm:shrink-0">
+              <DownloadScheduleButton
+                matches={scheduleMatchesForExport}
+                requiresTeamSelection
+                hasTeamSelected={selectedTeam !== "all"}
+                selectedTeamLabel={
+                  selectedTeam !== "all" ? selectedTeam : undefined
+                }
+                filename={
+                  selectedTeam !== "all"
+                    ? `playoff-${selectedTeam.toLowerCase().replace(/\s+/g, "-")}`
+                    : selectedDivision !== "all"
+                      ? `playoff-${selectedDivision.toLowerCase()}`
+                      : "playoff-schema"
+                }
+                calendarName={
+                  selectedTeam !== "all"
+                    ? `Play-Off - ${selectedTeam}`
+                    : selectedDivision !== "all"
+                      ? `Play-Off ${selectedDivision}`
+                      : "Play-Off Speelschema"
+                }
+                competitionType="playoff"
+              />
+            </div>
+          </div>
+        </FilterGroup>
+
+        {groupedMatches.length > 0 ? (
+          <Accordion
+            type="multiple"
+            value={openSpeeldagen}
+            onValueChange={handleAccordionChange}
+            className="space-y-3"
+          >
+            {groupedMatches.map(([speeldag, { matches, playoffType }]) => (
+              <MatchGroup
+                key={speeldag}
+                speeldag={speeldag}
+                matches={matches}
+                playoffType={playoffType}
+              />
+            ))}
+          </Accordion>
+        ) : (
+          <div className="text-center py-8 text-sm text-muted-foreground">
+            Geen wedstrijden gevonden met de huidige filters
+          </div>
+        )}
       </section>
 
-      <PlayoffRules />
     </div>
   );
 };

@@ -135,29 +135,25 @@ function StandingsRow({
   index: number;
 }) {
   const position = index + 1;
-  const isEven = index % 2 === 1;
-  const rowBg = isEven ? "bg-muted/20" : "bg-background";
-  const stickyBg = cn(rowBg, "group-hover:bg-primary/5");
+  const cellBg = "bg-white group-hover:bg-primary/5";
 
   return (
     <tr
       className={cn(
-        "group last:border-b-0 transition-colors",
+        "group last:border-b-0 transition-colors bg-white hover:bg-primary/5",
         S.row,
-        rowBg,
-        "hover:bg-primary/5",
       )}
     >
       <td
         className={cn(
           S.statCell,
           "w-9 text-muted-foreground font-medium standings-sticky-pos standings-sticky-bg",
-          stickyBg,
+          cellBg,
         )}
       >
         {position}
       </td>
-      <td className={cn(S.teamCell, S.colDivider, stickyBg)}>
+      <td className={cn(S.teamCell, S.colDivider, cellBg)}>
         <span className="standings-team-name leading-snug break-words">
           {team.name}
         </span>
@@ -167,6 +163,7 @@ function StandingsRow({
           S.statCell,
           "w-10 text-muted-foreground standings-scroll-stats",
           S.colDivider,
+          cellBg,
         )}
       >
         {team.played}
@@ -175,6 +172,7 @@ function StandingsRow({
         className={cn(
           S.statCell,
           "w-9 standings-w-cell standings-scroll-stats",
+          cellBg,
           team.won > 0 && "text-success font-medium",
         )}
       >
@@ -184,6 +182,7 @@ function StandingsRow({
         className={cn(
           S.statCell,
           "w-9 standings-g-cell standings-scroll-stats",
+          cellBg,
           team.draw > 0 && "text-warning font-medium",
         )}
       >
@@ -193,6 +192,7 @@ function StandingsRow({
         className={cn(
           S.statCell,
           "w-9 font-medium standings-lost standings-scroll-stats",
+          cellBg,
         )}
       >
         {team.lost}
@@ -202,6 +202,7 @@ function StandingsRow({
           S.statCell,
           "w-10 font-medium standings-saldo-cell standings-scroll-stats",
           S.colDivider,
+          cellBg,
         )}
       >
         {team.goalDiff > 0 ? "+" : ""}
@@ -211,9 +212,8 @@ function StandingsRow({
         className={cn(
           S.statCell,
           "w-11 pr-2 sm:pr-3 font-bold text-base sm:text-sm standings-ptn-cell standings-sticky-ptn standings-sticky-bg",
-          isEven ? rowBg : "bg-primary/5",
           S.colDivider,
-          stickyBg,
+          cellBg,
         )}
       >
         {team.points}
@@ -229,18 +229,18 @@ function StandingsSkeleton({ embeddedInCard }: { embeddedInCard?: boolean }) {
       <StandingsHeader />
       <tbody>
         {Array.from({ length: 8 }, (_, i) => (
-          <tr key={i} className={S.row}>
-            <td className="w-9 py-2.5 standings-sticky-pos standings-sticky-bg">
+          <tr key={i} className={cn(S.row, "bg-white")}>
+            <td className="w-9 py-2.5 standings-sticky-pos standings-sticky-bg bg-white">
               <Skeleton className="h-4 w-4 mx-auto bg-muted" />
             </td>
-            <td className={cn(S.teamCell, S.colDivider, "py-2.5 pr-2")}>
+            <td className={cn(S.teamCell, S.colDivider, "py-2.5 pr-2 bg-white")}>
               <Skeleton className="h-4 w-full max-w-[10rem] bg-muted" />
             </td>
             {STAT_COLUMNS.map((col) => (
               <td
                 key={col.id}
                 className={cn(
-                  "py-2.5 standings-scroll-stats",
+                  "py-2.5 standings-scroll-stats bg-white",
                   ("dividerBefore" in col && col.dividerBefore) && S.colDivider,
                 )}
               >
@@ -249,7 +249,7 @@ function StandingsSkeleton({ embeddedInCard }: { embeddedInCard?: boolean }) {
             ))}
             <td
               className={cn(
-                "py-2.5 pr-2 sm:pr-3 standings-sticky-ptn standings-sticky-bg",
+                "py-2.5 pr-2 sm:pr-3 standings-sticky-ptn standings-sticky-bg bg-white",
                 S.colDivider,
               )}
             >

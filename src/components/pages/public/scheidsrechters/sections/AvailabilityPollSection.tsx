@@ -45,7 +45,7 @@ export function AvailabilityPollSection({
   if (clusters.length === 0) {
     return (
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+        <h2 className="text-lg font-semibold flex items-center gap-2 text-[var(--color-700)]">
           <CalendarDays className="h-5 w-5 text-primary" />
           Mijn beschikbaarheid
         </h2>
@@ -79,7 +79,7 @@ export function AvailabilityPollSection({
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+        <h2 className="text-lg font-semibold flex items-center gap-2 text-[var(--color-700)]">
           <CalendarDays className="h-5 w-5 text-primary" />
           Mijn beschikbaarheid
         </h2>

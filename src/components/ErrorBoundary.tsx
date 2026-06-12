@@ -2,8 +2,9 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import { AlertTriangle, ChevronDown, Home, RefreshCw } from "lucide-react";
 import { PUBLIC_ROUTES } from "@/config/routes";
+import { cn } from "@/lib/utils";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -12,17 +13,22 @@ interface ErrorBoundaryProps {
 
 function ErrorFallback({
   error,
+  componentStack,
   resetErrorBoundary,
 }: {
   error: Error;
+  componentStack?: string | null;
   resetErrorBoundary: () => void;
 }) {
   const navigate = useNavigate();
+  const showTechnicalDetails = import.meta.env.DEV && !!error;
 
   const handleGoHome = () => {
     resetErrorBoundary();
     navigate(PUBLIC_ROUTES.algemeen, { replace: true });
   };
+
+  const actionButtonClass = "h-11 min-h-[44px] w-full";
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-purple-100 p-4">
@@ -37,34 +43,74 @@ function ErrorFallback({
           </div>
           <h1 className="text-xl font-semibold text-purple-900">Er is iets misgegaan</h1>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           <p className="text-purple-700 text-center text-sm sm:text-base">
             Er is een onverwachte fout opgetreden. Probeer de pagina te vernieuwen of ga terug naar de
             homepage.
           </p>
-          {process.env.NODE_ENV === "development" && error && (
-            <details className="bg-purple-50 border border-purple-200 p-3 rounded-lg text-sm">
-              <summary className="cursor-pointer font-medium mb-2 min-h-[44px] flex items-center py-2 text-purple-900">
-                Technische details (alleen in ontwikkeling)
+
+          {showTechnicalDetails && (
+            <details className="group w-full overflow-hidden rounded-lg border border-purple-300 bg-purple-50 text-sm open:shadow-sm">
+              <summary
+                className={cn(
+                  "flex h-11 min-h-[44px] cursor-pointer list-none items-center justify-between gap-2 px-4",
+                  "text-sm font-medium text-purple-800 transition-colors hover:bg-purple-50",
+                  "[&::-webkit-details-marker]:hidden",
+                )}
+              >
+                <span>Technische details (alleen in ontwikkeling)</span>
+                <ChevronDown
+                  className="h-4 w-4 shrink-0 text-purple-700 transition-transform duration-200 group-open:rotate-180"
+                  aria-hidden
+                />
               </summary>
-              <pre className="text-xs overflow-auto text-purple-800 whitespace-pre-wrap break-words">
-                {error.message}
-                {"\n"}
-                {error.stack}
-              </pre>
+              <div className="space-y-3 border-t border-purple-200 px-4 py-3">
+                <div>
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-purple-700/80">
+                    Foutmelding
+                  </p>
+                  <pre className="max-h-32 overflow-auto rounded-md bg-white/80 p-2 text-xs text-purple-900 whitespace-pre-wrap break-words">
+                    {error.message || "Onbekende fout"}
+                  </pre>
+                </div>
+                {error.stack && (
+                  <div>
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-purple-700/80">
+                      Stack trace
+                    </p>
+                    <pre className="max-h-48 overflow-auto rounded-md bg-white/80 p-2 text-xs text-purple-800 whitespace-pre-wrap break-words">
+                      {error.stack}
+                    </pre>
+                  </div>
+                )}
+                {componentStack && (
+                  <div>
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-purple-700/80">
+                      Component stack
+                    </p>
+                    <pre className="max-h-48 overflow-auto rounded-md bg-white/80 p-2 text-xs text-purple-800 whitespace-pre-wrap break-words">
+                      {componentStack.trim()}
+                    </pre>
+                  </div>
+                )}
+              </div>
             </details>
           )}
-          <div className="flex flex-col-reverse sm:flex-row gap-2">
+
+          <div className="flex flex-col gap-2 w-full">
             <Button
               type="button"
               variant="outline"
-              className="w-full sm:flex-1 border-purple-300 text-purple-800 hover:bg-purple-50"
+              className={cn(
+                actionButtonClass,
+                "border-purple-300 text-purple-800 hover:bg-purple-50 hover:text-purple-800",
+              )}
               onClick={resetErrorBoundary}
             >
               <RefreshCw className="h-4 w-4" aria-hidden />
               Opnieuw proberen
             </Button>
-            <Button type="button" className="w-full sm:flex-1" onClick={handleGoHome}>
+            <Button type="button" className={actionButtonClass} onClick={handleGoHome}>
               <Home className="h-4 w-4" aria-hidden />
               Homepage
             </Button>
@@ -77,7 +123,7 @@ function ErrorFallback({
 
 class ErrorBoundary extends React.Component<
   ErrorBoundaryProps,
-  { hasError: boolean; error?: Error }
+  { hasError: boolean; error?: Error; componentStack?: string | null }
 > {
   constructor(props: ErrorBoundaryProps) {
     super(props);
@@ -89,13 +135,15 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    this.setState({ componentStack: errorInfo.componentStack ?? null });
+
     const payload = {
       message: error.message,
       stack: error.stack,
       componentStack: errorInfo.componentStack,
     };
 
-    if (process.env.NODE_ENV === "production") {
+    if (import.meta.env.PROD) {
       if (typeof window !== "undefined" && "reportError" in window) {
         window.reportError(error);
       }
@@ -105,14 +153,18 @@ class ErrorBoundary extends React.Component<
   }
 
   resetErrorBoundary = () => {
-    this.setState({ hasError: false, error: undefined });
+    this.setState({ hasError: false, error: undefined, componentStack: null });
   };
 
   render() {
     if (this.state.hasError && this.state.error) {
       if (this.props.fallback) return this.props.fallback;
       return (
-        <ErrorFallback error={this.state.error} resetErrorBoundary={this.resetErrorBoundary} />
+        <ErrorFallback
+          error={this.state.error}
+          componentStack={this.state.componentStack}
+          resetErrorBoundary={this.resetErrorBoundary}
+        />
       );
     }
     return this.props.children;

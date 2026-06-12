@@ -1,12 +1,23 @@
 import { memo, useCallback } from "react";
 import { CalendarPlus, Download, FileSpreadsheet } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  SCHEDULE_DOWNLOAD_BUTTON_DISABLED,
+  SCHEDULE_DOWNLOAD_MENU,
+  SCHEDULE_DOWNLOAD_MENU_HINT,
+  SCHEDULE_DOWNLOAD_MENU_ICON,
+  SCHEDULE_DOWNLOAD_MENU_ITEM,
+  SCHEDULE_DOWNLOAD_MENU_LABEL,
+  SCHEDULE_DOWNLOAD_MENU_SEPARATOR,
+  SCHEDULE_DOWNLOAD_TRIGGER,
+} from "@/components/common/scheduleControlStyles";
 import { downloadICalFile, downloadCSVFile, type ICalEvent } from "@/lib/icalUtils";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -28,6 +39,10 @@ interface DownloadScheduleButtonProps {
   calendarName?: string;
   competitionType?: "competitie" | "playoff";
   className?: string;
+  /** Download alleen mogelijk na teamkeuze (niet bij "Alle teams") */
+  requiresTeamSelection?: boolean;
+  hasTeamSelected?: boolean;
+  selectedTeamLabel?: string;
 }
 
 const matchToICalEvent = (match: ScheduleMatch, competitionType: string): ICalEvent => ({
@@ -48,13 +63,24 @@ const DownloadScheduleButton = memo(({
   calendarName,
   competitionType = "competitie",
   className = "",
+  requiresTeamSelection = false,
+  hasTeamSelected = true,
+  selectedTeamLabel,
 }: DownloadScheduleButtonProps) => {
   const validMatches = matches.filter(
     (m) => m.date && m.homeTeamName && m.awayTeamName,
   );
   const hasMatches = validMatches.length > 0;
+  const needsTeamSelection = requiresTeamSelection && !hasTeamSelected;
+  const canDownload = hasMatches && !needsTeamSelection;
 
   const handleDownloadAgenda = useCallback(() => {
+    if (needsTeamSelection) {
+      toast.error("Selecteer eerst een team", {
+        description: "Kies een team in het filter om het speelschema te downloaden",
+      });
+      return;
+    }
     if (!hasMatches) {
       toast.error("Geen wedstrijden om te downloaden");
       return;
@@ -73,9 +99,15 @@ const DownloadScheduleButton = memo(({
         description: "Controleer of de wedstrijden geldige datums hebben",
       });
     }
-  }, [hasMatches, validMatches, filename, calendarName, competitionType]);
+  }, [needsTeamSelection, hasMatches, validMatches, filename, calendarName, competitionType]);
 
   const handleDownloadExcel = useCallback(() => {
+    if (needsTeamSelection) {
+      toast.error("Selecteer eerst een team", {
+        description: "Kies een team in het filter om het speelschema te downloaden",
+      });
+      return;
+    }
     if (!hasMatches) {
       toast.error("Geen wedstrijden om te downloaden");
       return;
@@ -94,40 +126,81 @@ const DownloadScheduleButton = memo(({
         description: "Controleer of de wedstrijden geldige datums hebben",
       });
     }
-  }, [hasMatches, validMatches, filename, competitionType]);
+  }, [needsTeamSelection, hasMatches, validMatches, filename, competitionType]);
+
+  const downloadAriaLabel = needsTeamSelection
+    ? "Download speelschema — selecteer eerst een team"
+    : "Download speelschema";
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          disabled={!hasMatches}
-          className={cn("min-w-[44px] gap-1.5", className)}
-          aria-label="Download speelschema"
+        <button
+          type="button"
+          disabled={!canDownload}
+          className={cn(
+            SCHEDULE_DOWNLOAD_TRIGGER,
+            className,
+            needsTeamSelection && SCHEDULE_DOWNLOAD_BUTTON_DISABLED,
+          )}
+          aria-label={downloadAriaLabel}
+          aria-haspopup="menu"
         >
-          <CalendarPlus className="h-4 w-4 shrink-0 opacity-80" aria-hidden="true" />
-          <span>Download</span>
-        </Button>
+          <CalendarPlus
+            className={cn(
+              "h-4 w-4 shrink-0",
+              needsTeamSelection ? "opacity-50" : "opacity-80",
+            )}
+            aria-hidden="true"
+          />
+          <span>{needsTeamSelection ? "Niet beschikbaar" : "Download"}</span>
+        </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-48 bg-popover">
-          <DropdownMenuItem
-            onClick={handleDownloadAgenda}
-            disabled={!hasMatches}
-            className="cursor-pointer min-h-[44px]"
-          >
-            <Download className="mr-2 h-4 w-4" aria-hidden="true" />
-            <span>Download agenda</span>
-          </DropdownMenuItem>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={6}
+        collisionPadding={12}
+        className={SCHEDULE_DOWNLOAD_MENU}
+      >
+        <DropdownMenuLabel className={SCHEDULE_DOWNLOAD_MENU_LABEL}>
+          {selectedTeamLabel
+            ? `Exporteer — ${selectedTeamLabel}`
+            : "Exporteer speelschema"}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator className={SCHEDULE_DOWNLOAD_MENU_SEPARATOR} />
 
-          <DropdownMenuItem
-            onClick={handleDownloadExcel}
-            disabled={!hasMatches}
-            className="cursor-pointer min-h-[44px]"
-          >
-            <FileSpreadsheet className="mr-2 h-4 w-4" aria-hidden="true" />
-            <span>Download Excel</span>
-          </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={handleDownloadAgenda}
+          disabled={!canDownload}
+          className={SCHEDULE_DOWNLOAD_MENU_ITEM}
+        >
+          <span className={SCHEDULE_DOWNLOAD_MENU_ICON} aria-hidden="true">
+            <Download className="h-4 w-4" />
+          </span>
+          <span className="flex min-w-0 flex-col items-start gap-0.5">
+            <span>Agenda (.ics)</span>
+            <span className={SCHEDULE_DOWNLOAD_MENU_HINT}>
+              Google Calendar, Apple, Outlook
+            </span>
+          </span>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onClick={handleDownloadExcel}
+          disabled={!canDownload}
+          className={SCHEDULE_DOWNLOAD_MENU_ITEM}
+        >
+          <span className={SCHEDULE_DOWNLOAD_MENU_ICON} aria-hidden="true">
+            <FileSpreadsheet className="h-4 w-4" />
+          </span>
+          <span className="flex min-w-0 flex-col items-start gap-0.5">
+            <span>Excel (.csv)</span>
+            <span className={SCHEDULE_DOWNLOAD_MENU_HINT}>
+              Spreadsheet met teamwedstrijden
+            </span>
+          </span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

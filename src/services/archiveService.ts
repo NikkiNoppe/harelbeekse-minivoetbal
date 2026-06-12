@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getRpcSessionArgs } from '@/lib/authSession';
 import { fetchPublicApplicationSettings } from '@/services/public/publicApplicationSettingsFetch';
-import { fetchPublicMatches } from '@/services/public/publicScheduleFetch';
+import { fetchPublicMatches, type PublicMatchRow } from '@/services/public/publicScheduleFetch';
 
 const ARCHIVE_CATEGORY = 'season_archives';
 
@@ -36,12 +36,25 @@ export interface ArchivedStanding {
   points: number;
 }
 
+export interface ArchivedCupRound {
+  label: string;
+  home_team: string;
+  away_team: string;
+  home_score: number | null;
+  away_score: number | null;
+  winner?: string | null;
+}
+
 export interface ArchivedCupWinner {
   winner: string;
   runner_up: string;
   home_score: number | null;
   away_score: number | null;
   match_date: string | null;
+  /** Wedstrijdgegevens finale — optioneel voor oudere archieven */
+  final?: ArchivedCupRound;
+  /** Halve finales — optioneel voor oudere archieven */
+  semi_finals?: ArchivedCupRound[];
 }
 
 export interface ArchivedPlayoffRanking {
@@ -74,6 +87,122 @@ export function deriveSeasonLabel(startDate?: string, endDate?: string): string 
     if (!isNaN(e.getTime())) endY = e.getUTCFullYear();
   }
   return `${startY}-${endY}`;
+}
+
+function shapeArchivedCupRound(
+  match: PublicMatchRow,
+  label: string,
+): ArchivedCupRound {
+  const home = match.home_team_name || 'Thuisploeg';
+  const away = match.away_team_name || 'Bezoekers';
+  const hs = match.home_score;
+  const as = match.away_score;
+  let winner: string | null = null;
+  if (typeof hs === 'number' && typeof as === 'number') {
+    if (hs > as) winner = home;
+    else if (as > hs) winner = away;
+  }
+  return {
+    label,
+    home_team: home,
+    away_team: away,
+    home_score: typeof hs === 'number' ? hs : null,
+    away_score: typeof as === 'number' ? as : null,
+    winner,
+  };
+}
+
+function enrichCupRoundScores(
+  round: ArchivedCupRound,
+  cup: ArchivedCupWinner,
+  isFinal = false,
+): ArchivedCupRound {
+  if (round.home_score !== null && round.away_score !== null) {
+    return round;
+  }
+
+  if (!isFinal) {
+    return round;
+  }
+
+  const winnerScore = cup.home_score;
+  const runnerScore = cup.away_score;
+  if (winnerScore === null || runnerScore === null || !cup.winner) {
+    return round;
+  }
+
+  if (round.home_team === cup.winner) {
+    return {
+      ...round,
+      home_score: winnerScore,
+      away_score: runnerScore,
+      winner: cup.winner,
+    };
+  }
+
+  if (round.away_team === cup.winner) {
+    return {
+      ...round,
+      home_score: runnerScore,
+      away_score: winnerScore,
+      winner: cup.winner,
+    };
+  }
+
+  return round;
+}
+
+function normalizeRoundLabel(label: string): string {
+  return label.replace(/^[\s🏆🥇]+/u, "").trim();
+}
+
+/** Halve finales + finale voor archiefweergave; vult legacy cup_winner aan waar nodig. */
+export function resolveCupArchiveRounds(cup: ArchivedCupWinner | null): {
+  semiFinals: ArchivedCupRound[];
+  final: ArchivedCupRound | null;
+} {
+  if (!cup) {
+    return { semiFinals: [], final: null };
+  }
+
+  const semiFinals = (cup.semi_finals ?? []).map((round) => ({
+    ...round,
+    label: normalizeRoundLabel(round.label),
+  }));
+
+  if (cup.final) {
+    return {
+      semiFinals,
+      final: enrichCupRoundScores(
+        {
+          ...cup.final,
+          label: normalizeRoundLabel(cup.final.label || "Bekerfinale"),
+        },
+        cup,
+        true,
+      ),
+    };
+  }
+
+  if (cup.winner && cup.runner_up) {
+    return {
+      semiFinals,
+      final: enrichCupRoundScores(
+        {
+          label: "Bekerfinale",
+          home_team: cup.winner,
+          away_team: cup.runner_up,
+          home_score: cup.home_score,
+          away_score: cup.away_score,
+          winner: cup.winner,
+        },
+        cup,
+        true,
+      ),
+    };
+  }
+
+  return { semiFinals, final: null };
 }
 
 function mapArchiveRow(row: {
@@ -138,13 +267,13 @@ export const archiveService = {
     }));
   },
 
-  /** Auto-detect the cup final and shape it for archiving. */
+  /** Auto-detect the cup final (and halve finales) and shape them for archiving. */
   async snapshotCurrentCupFinal(): Promise<ArchivedCupWinner | null> {
     const matches = await fetchPublicMatches();
-    const data = matches.find(
-      (m) => m.is_cup_match && m.unique_number === 'FINAL',
-    );
+    const cupMatches = matches.filter((m) => m.is_cup_match);
+    const data = cupMatches.find((m) => m.unique_number === 'FINAL');
     if (!data) return null;
+
     const home = data.home_team_name || 'Thuisploeg';
     const away = data.away_team_name || 'Bezoekers';
     const hs = data.home_score;
@@ -159,12 +288,29 @@ export const archiveService = {
       winnerScore = as;
       runnerScore = hs;
     }
+
+    const semiFinals = cupMatches
+      .filter((m) => m.unique_number?.startsWith('SF-'))
+      .sort((a, b) =>
+        (a.unique_number ?? '').localeCompare(b.unique_number ?? '', undefined, {
+          numeric: true,
+        }),
+      )
+      .map((m, idx) =>
+        shapeArchivedCupRound(m, m.speeldag || `Halve finale ${idx + 1}`),
+      );
+
+    const finalRound = shapeArchivedCupRound(data, 'Bekerfinale');
+    finalRound.winner = winner;
+
     return {
       winner,
       runner_up,
       home_score: typeof winnerScore === 'number' ? winnerScore : null,
       away_score: typeof runnerScore === 'number' ? runnerScore : null,
       match_date: data.match_date ?? null,
+      final: finalRound,
+      semi_finals: semiFinals.length > 0 ? semiFinals : undefined,
     };
   },
 

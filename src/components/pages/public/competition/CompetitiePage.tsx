@@ -1,12 +1,14 @@
 import React, { memo, useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSearchParams } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Trophy } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import ResponsiveStandingsTable from "@/components/tables/ResponsiveStandingsTable";
 import { useCompetitionData, MatchData } from "@/hooks/useCompetitionData";
+import { useMinLoadingGate } from "@/hooks/useMinLoadingGate";
 import { PageHeader } from "@/components/layout";
 import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
@@ -14,7 +16,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import DownloadScheduleButton from "@/components/common/DownloadScheduleButton";
 import {
   SCHEDULE_ACCORDION_ITEM,
-  SCHEDULE_CONTROL,
   SCHEDULE_MATCH_META,
   SCHEDULE_MATCH_ROW,
   SCHEDULE_MATCH_SCORE,
@@ -53,11 +54,39 @@ DataErrorState.displayName = "DataErrorState";
 const ScheduleAccordionSkeleton = memo(() => (
   <div className="space-y-3" role="status" aria-live="polite" aria-busy="true">
     {[...Array(3)].map((_, i) => (
-      <Skeleton key={i} className="h-11 w-full rounded-lg" />
+      <div key={i} className={SCHEDULE_ACCORDION_ITEM}>
+        <Skeleton className="h-11 w-full rounded-none bg-muted/60" />
+      </div>
     ))}
   </div>
 ));
 ScheduleAccordionSkeleton.displayName = "ScheduleAccordionSkeleton";
+
+const ScheduleEmptyState = memo(({
+  hasTeamFilter,
+  onResetFilter,
+}: {
+  hasTeamFilter: boolean;
+  onResetFilter: () => void;
+}) => (
+  <div className="text-center py-8 space-y-4">
+    <p className="text-sm text-muted-foreground">
+      Geen wedstrijden gevonden met de huidige filters
+    </p>
+    {hasTeamFilter && (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="min-h-[44px]"
+        onClick={onResetFilter}
+      >
+        Toon alle teams
+      </Button>
+    )}
+  </div>
+));
+ScheduleEmptyState.displayName = "ScheduleEmptyState";
 
 const MatchListItem = memo(({ match }: { match: MatchData }) => {
   const isCompleted =
@@ -122,18 +151,43 @@ const MatchGroup = memo(({
 MatchGroup.displayName = "MatchGroup";
 
 const CompetitiePage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const {
     teams,
+    hasStandingsData,
+    hasMatchesData,
     matches,
     teamNames,
-    standingsLoading,
+    standingsFetching,
     standingsError,
     refetchStandings,
-    matchesLoading,
+    matchesFetching,
     matchesFetched,
     matchesError,
     refetchMatches,
+    isRefreshing,
   } = useCompetitionData();
+
+  const waitingForStandings =
+    !hasStandingsData && standingsFetching && !standingsError;
+  const waitingForMatches =
+    !hasMatchesData && matchesFetching && !matchesError;
+
+  const standingsGate = useMinLoadingGate(waitingForStandings);
+  const matchesGate = useMinLoadingGate(waitingForMatches);
+
+  const showStandingsSkeleton =
+    (waitingForStandings || !standingsGate.minReady) &&
+    !standingsGate.timedOut &&
+    !standingsError;
+  const showStandingsTimeout = standingsGate.timedOut && !hasStandingsData;
+
+  const showMatchesSkeleton =
+    (waitingForMatches || !matchesGate.minReady) &&
+    !matchesGate.timedOut &&
+    !matchesError;
+  const showMatchesTimeout = matchesGate.timedOut && !hasMatchesData;
 
   const { isTabVisible } = useTabVisibility();
 
@@ -151,11 +205,46 @@ const CompetitiePage: React.FC = () => {
       )}`
     : undefined;
 
-  const [selectedTeam, setSelectedTeam] = useState<string>("all");
+  const [selectedTeam, setSelectedTeam] = useState(
+    () => searchParams.get("team") ?? "all",
+  );
   const [openSpeeldagen, setOpenSpeeldagen] = useState<string[]>([]);
 
+  const handleTeamChange = useCallback(
+    (value: string) => {
+      setSelectedTeam(value);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (value === "all") {
+            next.delete("team");
+          } else {
+            next.set("team", value);
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  useEffect(() => {
+    const urlTeam = searchParams.get("team") ?? "all";
+    setSelectedTeam((prev) => (prev === urlTeam ? prev : urlTeam));
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!matchesFetched) return;
+    if (selectedTeam === "all") return;
+    if (teamNames.includes(selectedTeam)) return;
+    handleTeamChange("all");
+  }, [matchesFetched, teamNames, selectedTeam, handleTeamChange]);
+
+  const allMatches = matches?.all ?? [];
+
   const filteredMatches = useMemo(() => {
-    const filtered = matches.all.filter((m) => {
+    const filtered = allMatches.filter((m) => {
       if (
         selectedTeam !== "all" &&
         m.homeTeamName !== selectedTeam &&
@@ -170,7 +259,7 @@ const CompetitiePage: React.FC = () => {
       const bKey = `${b.date}T${b.time}`;
       return aKey.localeCompare(bKey);
     });
-  }, [matches.all, selectedTeam]);
+  }, [allMatches, selectedTeam]);
 
   const groupedMatches = useMemo(() => {
     const groups = new Map<string, MatchData[]>();
@@ -207,15 +296,15 @@ const CompetitiePage: React.FC = () => {
   }, [groupedMatches]);
 
   const allRegularMatchesComplete = useMemo(() => {
-    if (matches.all.length === 0) return false;
-    return matches.all.every(
+    if (allMatches.length === 0) return false;
+    return allMatches.every(
       (m) =>
         m.homeScore !== undefined &&
         m.homeScore !== null &&
         m.awayScore !== undefined &&
         m.awayScore !== null,
     );
-  }, [matches.all]);
+  }, [allMatches]);
 
   const showPlayoffBanner =
     allRegularMatchesComplete && isTabVisible("playoff");
@@ -276,14 +365,36 @@ const CompetitiePage: React.FC = () => {
     uniqueNumber: m.uniqueNumber,
   }));
 
+  const teamFilterValue =
+    selectedTeam === "all" || teamNames.includes(selectedTeam)
+      ? selectedTeam
+      : "all";
+
   return (
     <div className="space-y-6 motion-safe:animate-slide-up">
-      <PageHeader title="Competitie" subtitle={seasonSubtitle} />
+      <PageHeader
+        title="Competitie"
+        subtitle={seasonSubtitle}
+        className="mb-0"
+        rightAction={
+          isRefreshing ? (
+            <span
+              className="flex items-center justify-end gap-1 text-xs text-muted-foreground"
+              role="status"
+              aria-live="polite"
+            >
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+              Vernieuwen…
+            </span>
+          ) : undefined
+        }
+      />
 
       {showPlayoffBanner && (
-        <Alert className="border-primary/30 bg-primary/5">
-          <Trophy className="h-4 w-4 text-primary" aria-hidden="true" />
-          <AlertDescription>
+        <Alert
+          className="border-primary/30 bg-primary/5 flex items-center justify-center py-4 text-center"
+        >
+          <AlertDescription className="text-center">
             <strong>Reguliere competitie afgelopen!</strong>{" "}
             <Link
               to="/playoff"
@@ -298,15 +409,19 @@ const CompetitiePage: React.FC = () => {
       <section role="region" aria-labelledby="standings-heading">
         <h2
           id="standings-heading"
-          className="text-lg font-semibold text-foreground mb-3"
+          className="text-lg font-semibold text-[var(--color-700)] mb-3"
         >
           Competitiestand
         </h2>
-        {standingsError ? (
+        {standingsError || showStandingsTimeout ? (
           <Card>
             <CardContent className="p-4">
               <DataErrorState
-                message="Er is een fout opgetreden bij het laden van de competitiestand."
+                message={
+                  showStandingsTimeout
+                    ? "Het laden van de competitiestand duurt te lang. Controleer je verbinding."
+                    : "Er is een fout opgetreden bij het laden van de competitiestand."
+                }
                 onRetry={() => refetchStandings()}
               />
             </CardContent>
@@ -314,85 +429,94 @@ const CompetitiePage: React.FC = () => {
         ) : (
           <ResponsiveStandingsTable
             teams={teams}
-            isLoading={standingsLoading}
+            isLoading={showStandingsSkeleton}
             embeddedInCard
           />
         )}
       </section>
 
       <section role="region" aria-labelledby="schedule-heading">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle id="schedule-heading" className="text-lg">
-              Speelschema
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <FilterGroup columns={1} className="mb-4">
-              <div className="flex items-center gap-2">
-                <div className="flex-1 min-w-0">
-                  <FilterSelect
-                    label="Team"
-                    value={selectedTeam}
-                    onValueChange={setSelectedTeam}
-                    placeholder="Alle teams"
-                    variant="schedule"
-                    options={[
-                      { value: "all", label: "Alle teams" },
-                      ...teamNames.map((t) => ({ value: t, label: t })),
-                    ]}
-                  />
-                </div>
-                <DownloadScheduleButton
-                  className={cn(SCHEDULE_CONTROL, "shrink-0 px-3 shadow-none")}
-                  matches={scheduleMatchesForExport}
-                  filename={
-                    selectedTeam !== "all"
-                      ? `competitie-${selectedTeam.toLowerCase().replace(/\s+/g, "-")}`
-                      : "competitie-schema"
-                  }
-                  calendarName={
-                    selectedTeam !== "all"
-                      ? `Competitie - ${selectedTeam}`
-                      : "Competitie Speelschema"
-                  }
-                  competitionType="competitie"
-                />
-              </div>
-            </FilterGroup>
+        <h2
+          id="schedule-heading"
+          className="text-lg font-semibold text-[var(--color-700)] mb-3"
+        >
+          Speelschema
+        </h2>
 
-            {matchesError ? (
-              <DataErrorState
-                message="Er is een fout opgetreden bij het laden van het speelschema."
-                onRetry={() => refetchMatches()}
+        <FilterGroup columns={1} className="mb-4 w-full">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-2 w-full">
+            <div className="flex-1 min-w-0 w-full">
+              <FilterSelect
+                label="Team"
+                value={teamFilterValue}
+                onValueChange={handleTeamChange}
+                placeholder="Selecteer team"
+                variant="schedule"
+                options={[
+                  { value: "all", label: "Alle teams" },
+                  ...teamNames.map((t) => ({ value: t, label: t })),
+                ]}
               />
-            ) : matchesLoading && !matchesFetched ? (
-              <ScheduleAccordionSkeleton />
-            ) : groupedMatches.length > 0 ? (
-              <Accordion
-                type="multiple"
-                value={openSpeeldagen}
-                onValueChange={handleAccordionChange}
-                className="space-y-3"
-              >
-                {groupedMatches.map(([speeldag, dayMatches]) => (
-                  <MatchGroup
-                    key={speeldag}
-                    speeldag={speeldag}
-                    matches={dayMatches.map((m) => ({
-                      ...m,
-                      date: formatDutchDayShort(m.date),
-                    }))}
-                  />
-                ))}
-              </Accordion>
-            ) : matchesFetched ? (
-              <div className="text-center py-8 text-sm text-muted-foreground">
-                Geen wedstrijden gevonden met de huidige filters
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+            </div>
+            <div className="w-full sm:w-1/4 sm:shrink-0">
+              <DownloadScheduleButton
+                matches={scheduleMatchesForExport}
+                requiresTeamSelection
+                hasTeamSelected={selectedTeam !== "all"}
+                selectedTeamLabel={
+                  selectedTeam !== "all" ? selectedTeam : undefined
+                }
+                filename={
+                  selectedTeam !== "all"
+                    ? `competitie-${selectedTeam.toLowerCase().replace(/\s+/g, "-")}`
+                    : "competitie-schema"
+                }
+                calendarName={
+                  selectedTeam !== "all"
+                    ? `Competitie - ${selectedTeam}`
+                    : "Competitie Speelschema"
+                }
+                competitionType="competitie"
+              />
+            </div>
+          </div>
+        </FilterGroup>
+
+        {matchesError || showMatchesTimeout ? (
+          <DataErrorState
+            message={
+              showMatchesTimeout
+                ? "Het laden van het speelschema duurt te lang. Controleer je verbinding."
+                : "Er is een fout opgetreden bij het laden van het speelschema."
+            }
+            onRetry={() => refetchMatches()}
+          />
+        ) : showMatchesSkeleton ? (
+          <ScheduleAccordionSkeleton />
+        ) : groupedMatches.length > 0 ? (
+          <Accordion
+            type="multiple"
+            value={openSpeeldagen}
+            onValueChange={handleAccordionChange}
+            className="space-y-3"
+          >
+            {groupedMatches.map(([speeldag, dayMatches]) => (
+              <MatchGroup
+                key={speeldag}
+                speeldag={speeldag}
+                matches={dayMatches.map((m) => ({
+                  ...m,
+                  date: formatDutchDayShort(m.date),
+                }))}
+              />
+            ))}
+          </Accordion>
+        ) : matchesFetched ? (
+          <ScheduleEmptyState
+            hasTeamFilter={selectedTeam !== "all"}
+            onResetFilter={() => handleTeamChange("all")}
+          />
+        ) : null}
       </section>
     </div>
   );
