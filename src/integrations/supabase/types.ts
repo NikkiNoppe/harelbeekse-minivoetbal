@@ -1115,6 +1115,10 @@ export type Database = {
         }
         Returns: Json
       }
+      manage_poll_for_session: {
+        Args: { p_operation: string; p_payload: Json; p_session_token: string }
+        Returns: Json
+      }
       manage_profile_poll_for_session: {
         Args: {
           p_operation: string
@@ -1122,10 +1126,6 @@ export type Database = {
           p_poll_id?: number
           p_session_token: string
         }
-        Returns: Json
-      }
-      manage_poll_for_session: {
-        Args: { p_operation: string; p_payload: Json; p_session_token: string }
         Returns: Json
       }
       manage_referee_matches_for_session: {
@@ -1199,14 +1199,6 @@ export type Database = {
           user_id: number
         }[]
       }
-      submit_profile_poll_response_for_session: {
-        Args: {
-          p_option_ids: string[]
-          p_poll_id: number
-          p_session_token: string
-        }
-        Returns: Json
-      }
       restore_user_session: {
         Args: { p_session_token: string }
         Returns: boolean
@@ -1218,6 +1210,14 @@ export type Database = {
       set_current_user_context: {
         Args: { p_role: string; p_team_ids?: string; p_user_id: number }
         Returns: undefined
+      }
+      submit_profile_poll_response_for_session: {
+        Args: {
+          p_option_ids: string[]
+          p_poll_id: number
+          p_session_token: string
+        }
+        Returns: Json
       }
       update_match_for_session: {
         Args: {

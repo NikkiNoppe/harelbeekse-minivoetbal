@@ -13,7 +13,7 @@ interface ProfilePollRespondentCollapsibleProps {
 export function ProfilePollRespondentCollapsible({
   enabled = true,
 }: ProfilePollRespondentCollapsibleProps) {
-  const { respondentPolls, isLoading, isFetched } = useProfilePolls({
+  const { respondentPolls, isLoading } = useProfilePolls({
     isAdmin: false,
     enabled,
   });
@@ -45,7 +45,7 @@ export function ProfilePollRespondentCollapsible({
     );
   }
 
-  if (!isFetched || respondentPolls.length === 0) {
+  if (isLoading || respondentPolls.length === 0) {
     return null;
   }
 

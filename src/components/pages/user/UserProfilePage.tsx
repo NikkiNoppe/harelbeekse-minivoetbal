@@ -847,7 +847,7 @@ const NextMatchCard: React.FC<{
 NextMatchCard.displayName = 'NextMatchCard';
 
 // Financial Overview Card - Detailed breakdown for team managers
-const FinancialOverviewCard: React.FC<{ teamId: number }> = memo(({ teamId }) => {
+const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = memo(({ teamId, teamName }) => {
   const { user } = useAuth();
   
   // Fetch balance
@@ -965,6 +965,25 @@ const FinancialOverviewCard: React.FC<{ teamId: number }> = memo(({ teamId }) =>
               </div>
             </div>
           )}
+
+          {/* Season deposit notice */}
+          <div className="rounded-md bg-primary/10 border border-primary/20 p-3 space-y-1.5">
+            <p className="text-sm font-medium text-foreground">
+              Einde seizoen — saldo aanvullen
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Gelieve tegen <span className="font-medium text-foreground">15 augustus</span> uw saldo aan te vullen tot <span className="font-medium text-foreground">€600,00</span>.
+              {balance < 600 ? (
+                <> U dient nog <span className="font-semibold text-foreground">€{(600 - balance).toFixed(2)}</span> over te maken.</>
+              ) : (
+                <> Uw saldo is reeds boven €600,00 — er is geen extra storting nodig.</>
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Rekeningnummer: <span className="font-mono font-medium text-foreground">BE48 6504 6890 7727</span> t.n.v. <span className="font-medium text-foreground">Nikki Noppe</span>
+              {teamName ? <> met vermelding <span className="font-medium text-foreground">{teamName}</span></> : null}.
+            </p>
+          </div>
         </div>
       )}
     </CardContent>
@@ -1489,7 +1508,7 @@ const UserProfilePage: React.FC = () => {
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <FinancialOverviewCard teamId={firstTeam.team_id} />
+                <FinancialOverviewCard teamId={firstTeam.team_id} teamName={firstTeam.team_name} />
               </CollapsibleContent>
             </Card>
           </Collapsible>
