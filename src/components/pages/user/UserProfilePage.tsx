@@ -965,6 +965,25 @@ const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = m
               </div>
             </div>
           )}
+
+          {/* Season deposit notice */}
+          <div className="rounded-md bg-primary/10 border border-primary/20 p-3 space-y-1.5">
+            <p className="text-sm font-medium text-foreground">
+              Einde seizoen — saldo aanvullen
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Gelieve tegen <span className="font-medium text-foreground">15 augustus</span> uw saldo aan te vullen tot <span className="font-medium text-foreground">€600,00</span>.
+              {balance < 600 ? (
+                <> U dient nog <span className="font-semibold text-foreground">€{(600 - balance).toFixed(2)}</span> over te maken.</>
+              ) : (
+                <> Uw saldo is reeds boven €600,00 — er is geen extra storting nodig.</>
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Rekeningnummer: <span className="font-mono font-medium text-foreground">BE48 6504 6890 7727</span> t.n.v. <span className="font-medium text-foreground">Nikki Noppe</span>
+              {teamName ? <> met vermelding <span className="font-medium text-foreground">{teamName}</span></> : null}.
+            </p>
+          </div>
         </div>
       )}
     </CardContent>
