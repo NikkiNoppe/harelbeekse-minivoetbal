@@ -205,7 +205,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
             ) : null}
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--color-400)]">
             <span className="inline-flex items-center gap-1.5 min-w-0">
               <CalendarClock className="h-3.5 w-3.5 shrink-0" />
               <span className="break-words">
