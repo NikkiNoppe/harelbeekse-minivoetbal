@@ -53,8 +53,8 @@ function PollOptionRow({
         "cursor-pointer select-none transition-[border-color,background-color,box-shadow] duration-200",
         "min-h-[44px] active:scale-[0.99] motion-safe:active:scale-[0.99]",
         checked
-          ? "border-primary/40 bg-primary/15 ring-1 ring-primary/40 shadow-sm"
-          : "hover:border-primary/25 hover:bg-background",
+          ? "border-primary/50 bg-primary/[0.22] ring-2 ring-primary/30 shadow-sm"
+          : "hover:border-primary/25 hover:bg-primary/[0.06]",
         pending && "opacity-70 pointer-events-none",
       )}
     >
