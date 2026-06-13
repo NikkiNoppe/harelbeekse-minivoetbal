@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, Clock, AlertCircle, CalendarClock, Check } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, AlertCircle, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProfilePollQuestionText } from "./ProfilePollQuestionText";
-
 import {
   parsePollQuestion,
   sortPollOptionsForDisplay,
@@ -33,7 +33,7 @@ function PollOptionRow({
   checked,
   pending,
   allowMultiple,
-  onToggle,
+  onCheckboxChange,
 }: {
   pollId: number;
   optId: string;
@@ -43,70 +43,69 @@ function PollOptionRow({
   checked: boolean;
   pending: boolean;
   allowMultiple: boolean;
-  onToggle: (optionId: string, checked: boolean) => void;
+  onCheckboxChange?: (optionId: string, checked: boolean) => void;
 }) {
-  return (
-    <button
-      type="button"
-      role={allowMultiple ? "checkbox" : "radio"}
-      aria-checked={checked}
-      aria-label={bodyLine}
+  const control = allowMultiple ? (
+    <Checkbox
+      checked={checked}
+      onCheckedChange={(c) => onCheckboxChange?.(optId, c === true)}
       disabled={pending}
-      onClick={() => onToggle(optId, !checked)}
+      className="h-5 w-5 rounded-md shrink-0 mt-0.5"
+      aria-label={bodyLine}
+    />
+  ) : (
+    <RadioGroupItem
+      value={optId}
+      id={`poll-${pollId}-${optId}`}
+      className="h-5 w-5 shrink-0 mt-0.5"
+      aria-label={bodyLine}
+    />
+  );
+
+  return (
+    <label
+      htmlFor={allowMultiple ? undefined : `poll-${pollId}-${optId}`}
       className={cn(
-        "group relative w-full h-full text-left rounded-lg border p-3 flex flex-col gap-2 min-w-0",
-        "cursor-pointer select-none transition-all duration-200",
-        "min-h-[64px] active:scale-[0.99] motion-safe:active:scale-[0.99]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+        "block rounded-lg border border-border/50 bg-background/70 p-3 space-y-2.5 min-w-0",
+        "cursor-pointer select-none transition-[border-color,background-color,box-shadow] duration-200",
+        "min-h-[44px] active:scale-[0.99] motion-safe:active:scale-[0.99]",
         checked
-          ? "border-primary bg-primary text-primary-foreground shadow-md ring-2 ring-primary/40"
-          : "border-border/60 bg-background/70 hover:border-primary/40 hover:bg-background",
+          ? "border-primary/30 bg-primary/5 ring-1 ring-primary/30 shadow-sm"
+          : "hover:border-primary/25 hover:bg-background",
         pending && "opacity-70 pointer-events-none",
       )}
     >
-      {checked ? (
+      <div className="flex items-start gap-2 min-w-0">
         <span
           aria-hidden="true"
-          className="absolute top-2 right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary-foreground text-primary shadow-sm"
-        >
-          <Check className="h-3.5 w-3.5" strokeWidth={3} />
-        </span>
-      ) : null}
-
-      <div className="flex items-start gap-2 min-w-0 pr-6">
-        <span
-          aria-hidden="true"
-          className={cn(
-            "shrink-0 text-sm font-bold tabular-nums leading-snug",
-            checked ? "text-primary-foreground/90" : "text-primary",
-          )}
+          className="shrink-0 text-sm font-bold tabular-nums text-primary leading-snug"
         >
           {displayNumber}.
         </span>
-        <p
-          className={cn(
-            "text-sm leading-snug break-words flex-1",
-            checked ? "font-semibold" : "font-medium text-foreground",
-          )}
-        >
-          {bodyLine}
-        </p>
+        <div className="min-w-0 flex-1">
+          <p
+            className={cn(
+              "text-sm leading-snug break-words",
+              checked ? "font-semibold text-foreground" : "font-medium text-foreground",
+            )}
+          >
+            {bodyLine}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {checked ? <CheckCircle2 className="h-4 w-4 text-primary shrink-0" /> : null}
+          {control}
+        </div>
       </div>
 
       {detailNote ? (
-        <p
-          className={cn(
-            "text-[11px] sm:text-xs leading-snug break-words pl-6 sm:pl-7 mt-auto",
-            checked ? "text-primary-foreground/80" : "text-[var(--color-400)]",
-          )}
-        >
+        <p className="text-[11px] sm:text-xs leading-snug break-words text-[var(--color-400)] pl-6 sm:pl-7">
           {detailNote}
         </p>
       ) : null}
-    </button>
+    </label>
   );
 }
-
 
 export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardProps) {
   const queryClient = useQueryClient();
@@ -147,12 +146,12 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
     [poll.id, poll.my_response, queryClient],
   );
 
-  const handleToggle = (optionId: string, checked: boolean) => {
-    if (!poll.allow_multiple) {
-      setSelectedIds([optionId]);
-      void saveResponse([optionId]);
-      return;
-    }
+  const handleRadioChange = (optionId: string) => {
+    setSelectedIds([optionId]);
+    void saveResponse([optionId]);
+  };
+
+  const handleCheckboxChange = (optionId: string, checked: boolean) => {
     const next = checked
       ? [...selectedIds, optionId]
       : selectedIds.filter((id) => id !== optionId);
@@ -184,11 +183,10 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
         checked={checked}
         pending={pending}
         allowMultiple={poll.allow_multiple}
-        onToggle={handleToggle}
+        onCheckboxChange={handleCheckboxChange}
       />
     );
   };
-
 
   return (
     <article
@@ -253,16 +251,23 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
 
         <section
           aria-label="Beschikbare opties"
-          className="rounded-lg border border-border/60 bg-muted/20 p-3 sm:p-4 min-w-0"
+          className="rounded-lg border border-border/60 bg-muted/20 p-3 sm:p-4 space-y-3 min-w-0"
         >
-          <div
-            role={poll.allow_multiple ? "group" : "radiogroup"}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-3 auto-rows-fr min-w-0"
-          >
-            {sortedOptions.map((opt, index) => renderOption(opt, index))}
-          </div>
+          {poll.allow_multiple ? (
+            <div className="space-y-3 min-w-0">
+              {sortedOptions.map((opt, index) => renderOption(opt, index))}
+            </div>
+          ) : (
+            <RadioGroup
+              value={selectedIds[0] ?? ""}
+              onValueChange={handleRadioChange}
+              disabled={pending}
+              className="space-y-3 min-w-0"
+            >
+              {sortedOptions.map((opt, index) => renderOption(opt, index))}
+            </RadioGroup>
+          )}
         </section>
-
       </div>
     </article>
   );
