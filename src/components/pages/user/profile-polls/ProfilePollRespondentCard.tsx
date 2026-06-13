@@ -81,7 +81,9 @@ function PollOptionRow({
 
       {detailNote ? (
         <p className="text-[11px] sm:text-xs leading-snug break-words text-[var(--color-400)] pl-6 sm:pl-7">
-          {detailNote}
+          {detailNote === "Onder voorbehoud - Indien de volleybalclub akkoord gaat om om 20u te starten." 
+            ? "Onder voorbehoud - Indien de volleybal akkoord gaat om om 20u te starten." 
+            : detailNote}
         </p>
       ) : null}
     </div>
