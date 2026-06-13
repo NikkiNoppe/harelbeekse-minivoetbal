@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, Clock, AlertCircle, CalendarClock } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, AlertCircle, CalendarClock, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProfilePollQuestionText } from "./ProfilePollQuestionText";
 import {
@@ -95,6 +94,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
   const [selectedIds, setSelectedIds] = useState<string[]>(initialIds);
   const [pending, setPending] = useState(false);
   const [saved, setSaved] = useState(!!poll.my_response);
+  const [showSavedConfirm, setShowSavedConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const parsedQuestion = parsePollQuestion(poll.question);
@@ -117,10 +117,12 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
       try {
         await profilePollService.submitResponse(poll.id, optionIds);
         setSaved(true);
+        setShowSavedConfirm(true);
         await queryClient.invalidateQueries({ queryKey: PROFILE_POLLS_QUERY_KEY });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Kon antwoord niet opslaan");
         setSelectedIds(poll.my_response?.option_ids ?? []);
+        setShowSavedConfirm(false);
       } finally {
         setPending(false);
       }
@@ -130,6 +132,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
 
   const handleRadioChange = (optionId: string) => {
     setSelectedIds([optionId]);
+    setShowSavedConfirm(false);
     void saveResponse([optionId]);
   };
 
@@ -138,6 +141,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
       ? [...selectedIds, optionId]
       : selectedIds.filter((id) => id !== optionId);
     setSelectedIds(next);
+    setShowSavedConfirm(false);
     if (next.length > 0) {
       void saveResponse(next);
     }
@@ -185,18 +189,6 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
     >
       <div className="p-4 sm:p-5 space-y-4 min-w-0">
         <header className="space-y-3 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 min-h-[20px]">
-            {saved && !pending && (
-              <Badge
-                variant="outline"
-                className="text-[hsl(var(--success))] border-[hsl(var(--success))]/40"
-              >
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Opgeslagen
-              </Badge>
-            )}
-            {pending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          </div>
 
           <div className="min-w-0 space-y-2">
             {poll.title ? (
@@ -244,6 +236,26 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
             {sortedOptions.map((opt, index) => renderOption(opt, index))}
           </div>
         </section>
+
+        {pending ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 animate-pulse">
+            <Loader2 className="h-4 w-4 animate-spin shrink-0 text-primary" />
+            <span className="font-medium">Bezig met opslaan...</span>
+          </div>
+        ) : showSavedConfirm ? (
+          <div
+            className={cn(
+              "flex items-center gap-2 text-sm rounded-lg border px-3 py-2",
+              "border-[hsl(var(--success))]/40 bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]",
+              "shadow-[0_0_12px_rgba(34,197,94,0.15)]",
+              "animate-in fade-in slide-in-from-bottom-1 duration-500",
+            )}
+          >
+            <Save className="h-4 w-4 shrink-0" />
+            <span className="font-semibold">Je keuze is opgeslagen</span>
+            <CheckCircle2 className="h-4 w-4 shrink-0 ml-auto" />
+          </div>
+        ) : null}
       </div>
     </article>
   );
