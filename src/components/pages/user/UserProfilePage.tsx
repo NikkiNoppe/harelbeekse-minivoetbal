@@ -1465,58 +1465,12 @@ const UserProfilePage: React.FC = () => {
 
       {/* Mobile-first layout: Stack cards vertically on mobile */}
       <div className="space-y-4 sm:space-y-6">
-        {/* 1. Combined User & Team Info Card */}
-        <MemoizedUserTeamInfoCard 
-          user={user} 
-          team={firstTeam || null}
-          onTeamUpdate={() => {
-            queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-            queryClient.refetchQueries({ queryKey: ['userProfile'] });
-          }}
-        />
+        {/* 1. Enquêtes - helemaal bovenaan */}
+        <ProfilePollRespondentCollapsible enabled={canRespondToPolls} />
 
-        {/* 2. Next Match Card - Team managers */}
-        {user.role === 'player_manager' && firstTeam && !matchesLoading && nextMatch && (
-          <NextMatchCard 
-            match={nextMatch} 
-            teamName={firstTeam.team_name}
-            onSelectMatch={handleSelectMatch}
-          />
-        )}
-
-        {/* 2b. Referee Upcoming Matches */}
-        {isReferee && authUser?.username && (
-          <RefereeUpcomingMatches
-            refereeUsername={authUser.username}
-            onSelectMatch={handleSelectMatch}
-          />
-        )}
-
-        {/* 3. Team Players Overview - Collapsible */}
+        {/* 2. Financial Overview - Collapsible (default open) */}
         {user.role === 'player_manager' && firstTeam && (
-          <Collapsible>
-            <Card>
-              <CollapsibleTrigger className="w-full">
-                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                      <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-                      Gespeelde wedstrijden per speler
-                    </CardTitle>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180 [&[data-state=open]]:rotate-180" />
-                  </div>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <TeamPlayersOverviewContent teamId={firstTeam.team_id} />
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-        )}
-
-        {/* 4. Financial Overview - Collapsible */}
-        {user.role === 'player_manager' && firstTeam && (
-          <Collapsible>
+          <Collapsible defaultOpen>
             <Card>
               <CollapsibleTrigger className="w-full">
                 <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
@@ -1536,7 +1490,7 @@ const UserProfilePage: React.FC = () => {
           </Collapsible>
         )}
 
-        {/* 5. Admin Messages - Collapsible */}
+        {/* 3. Admin Messages - Collapsible */}
         <Collapsible>
           <Card className="border-primary/20">
             <CollapsibleTrigger className="w-full">
@@ -1556,8 +1510,32 @@ const UserProfilePage: React.FC = () => {
           </Card>
         </Collapsible>
 
-        {/* 5b. Enquêtes - teamverantwoordelijken / scheidsrechters */}
-        <ProfilePollRespondentCollapsible enabled={canRespondToPolls} />
+        {/* Combined User & Team Info Card */}
+        <MemoizedUserTeamInfoCard 
+          user={user} 
+          team={firstTeam || null}
+          onTeamUpdate={() => {
+            queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+            queryClient.refetchQueries({ queryKey: ['userProfile'] });
+          }}
+        />
+
+        {/* Next Match Card - Team managers */}
+        {user.role === 'player_manager' && firstTeam && !matchesLoading && nextMatch && (
+          <NextMatchCard 
+            match={nextMatch} 
+            teamName={firstTeam.team_name}
+            onSelectMatch={handleSelectMatch}
+          />
+        )}
+
+        {/* Referee Upcoming Matches */}
+        {isReferee && authUser?.username && (
+          <RefereeUpcomingMatches
+            refereeUsername={authUser.username}
+            onSelectMatch={handleSelectMatch}
+          />
+        )}
 
         {/* Referee Notes Card - Admin only */}
         {isAdmin && <RefereeNotesCard />}
@@ -1591,7 +1569,29 @@ const UserProfilePage: React.FC = () => {
           </div>
         )}
 
-        {/* 6. Quick Actions - Collapsible */}
+        {/* Voorlaatste: Gespeelde wedstrijden per speler - Collapsible */}
+        {user.role === 'player_manager' && firstTeam && (
+          <Collapsible>
+            <Card>
+              <CollapsibleTrigger className="w-full">
+                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                      <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+                      Gespeelde wedstrijden per speler
+                    </CardTitle>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180 [&[data-state=open]]:rotate-180" />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <TeamPlayersOverviewContent teamId={firstTeam.team_id} />
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        )}
+
+        {/* Laatste: Snelle Acties - Collapsible */}
         <Collapsible>
           <Card>
             <CollapsibleTrigger className="w-full">
