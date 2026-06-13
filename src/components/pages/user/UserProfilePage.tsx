@@ -942,10 +942,7 @@ const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = m
           {/* Balance hero */}
           <div className="flex items-center justify-between pt-1">
             <span className="text-sm font-medium text-muted-foreground">Huidig saldo</span>
-            <span className={cn(
-              "text-xl font-bold tabular-nums",
-              isNegative ? "text-destructive" : "text-green-600"
-            )}>
+            <span className="text-xl font-bold tabular-nums text-primary">
               {isNegative ? '−' : ''}€{Math.abs(balance).toFixed(2)}
             </span>
           </div>
