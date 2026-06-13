@@ -94,6 +94,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
   const [selectedIds, setSelectedIds] = useState<string[]>(initialIds);
   const [pending, setPending] = useState(false);
   const [saved, setSaved] = useState(!!poll.my_response);
+  const [showSavedConfirm, setShowSavedConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const parsedQuestion = parsePollQuestion(poll.question);
