@@ -1006,7 +1006,7 @@ const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = m
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Boetes</span>
-                <span className="font-medium tabular-nums text-destructive/80">{fmt(breakdown.fines)}</span>
+                <span className="font-medium tabular-nums text-primary">{fmt(breakdown.fines)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Veldkosten</span>
