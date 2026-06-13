@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { RadioGroup } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, Clock, AlertCircle, CalendarClock } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, AlertCircle, CalendarClock, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProfilePollQuestionText } from "./ProfilePollQuestionText";
+
 import {
   parsePollQuestion,
   sortPollOptionsForDisplay,
