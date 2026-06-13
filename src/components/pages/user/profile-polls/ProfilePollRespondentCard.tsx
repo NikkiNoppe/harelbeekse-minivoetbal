@@ -75,24 +75,55 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
             )}
             <CardTitle className="text-base sm:text-lg leading-snug">
               {(() => {
-                // Split op gecirkelde letters (🅐🅑🅒🅓🅔🅕🅖) of "A)" "B)" etc. zodat elke optie op een nieuwe regel komt
                 const markerRegex = /(?=[🅐🅑🅒🅓🅔🅕🅖🅗🅘])|(?=\s[A-F]\)\s)/u;
-                const parts = poll.question.split(markerRegex).map((s) => s.trim()).filter(Boolean);
+                const parts = poll.question
+                  .split(markerRegex)
+                  .map((s) => s.trim())
+                  .filter(Boolean);
                 if (parts.length <= 1) return poll.question;
                 const isOption = (s: string) => /^[🅐🅑🅒🅓🅔🅕🅖🅗🅘]|^[A-F]\)/u.test(s);
                 const intro = !isOption(parts[0]) ? parts[0] : null;
                 const options = intro ? parts.slice(1) : parts;
+                const splitOption = (line: string) => {
+                  // Trek de letter (1e char) los van de rest, en splits op " → " voor uitleg
+                  const letter = line.slice(0, 2).trim();
+                  const rest = line.slice(2).trim();
+                  const [main, ...note] = rest.split(/→/);
+                  return { letter, main: main.trim(), note: note.join("→").trim() };
+                };
                 return (
-                  <span className="block space-y-1.5">
-                    {intro && <span className="block">{intro}</span>}
-                    {options.map((line, i) => (
-                      <span
-                        key={i}
-                        className="block text-sm sm:text-base font-medium text-foreground/90 leading-snug"
-                      >
-                        {line}
+                  <span className="block">
+                    {intro && (
+                      <span className="block text-sm sm:text-base font-semibold text-foreground leading-snug mb-2">
+                        {intro}
                       </span>
-                    ))}
+                    )}
+                    <span className="block space-y-1.5">
+                      {options.map((line, i) => {
+                        const { letter, main, note } = splitOption(line);
+                        return (
+                          <span
+                            key={i}
+                            className="flex items-start gap-2 text-[13px] sm:text-sm font-normal leading-snug"
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="shrink-0 inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded-md bg-primary/10 text-primary text-xs font-semibold leading-none"
+                            >
+                              {letter}
+                            </span>
+                            <span className="min-w-0 flex-1 text-foreground/90">
+                              <span className="font-medium">{main}</span>
+                              {note && (
+                                <span className="block text-xs text-muted-foreground mt-0.5">
+                                  → {note}
+                                </span>
+                              )}
+                            </span>
+                          </span>
+                        );
+                      })}
+                    </span>
                   </span>
                 );
               })()}
