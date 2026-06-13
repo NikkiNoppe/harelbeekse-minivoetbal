@@ -73,7 +73,30 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
             {poll.title && (
               <p className="text-xs text-muted-foreground mb-0.5">{poll.title}</p>
             )}
-            <CardTitle className="text-base sm:text-lg leading-snug">{poll.question}</CardTitle>
+            <CardTitle className="text-base sm:text-lg leading-snug">
+              {(() => {
+                // Split op gecirkelde letters (🅐🅑🅒🅓🅔🅕🅖) of "A)" "B)" etc. zodat elke optie op een nieuwe regel komt
+                const markerRegex = /(?=[🅐🅑🅒🅓🅔🅕🅖🅗🅘])|(?=\s[A-F]\)\s)/u;
+                const parts = poll.question.split(markerRegex).map((s) => s.trim()).filter(Boolean);
+                if (parts.length <= 1) return poll.question;
+                const isOption = (s: string) => /^[🅐🅑🅒🅓🅔🅕🅖🅗🅘]|^[A-F]\)/u.test(s);
+                const intro = !isOption(parts[0]) ? parts[0] : null;
+                const options = intro ? parts.slice(1) : parts;
+                return (
+                  <span className="block space-y-1.5">
+                    {intro && <span className="block">{intro}</span>}
+                    {options.map((line, i) => (
+                      <span
+                        key={i}
+                        className="block text-sm sm:text-base font-medium text-foreground/90 leading-snug"
+                      >
+                        {line}
+                      </span>
+                    ))}
+                  </span>
+                );
+              })()}
+            </CardTitle>
           </div>
           {saved && !pending && (
             <Badge variant="outline" className="shrink-0 text-[hsl(var(--success))] border-[hsl(var(--success))]/40">
