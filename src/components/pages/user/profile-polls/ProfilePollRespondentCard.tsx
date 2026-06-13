@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, Clock, AlertCircle, CalendarClock, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProfilePollQuestionText } from "./ProfilePollQuestionText";
