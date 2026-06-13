@@ -67,7 +67,7 @@ function PollOptionRow({
         <div className="min-w-0 flex-1">
           <p
             className={cn(
-              "text-sm leading-snug break-words",
+              "text-[13px] sm:text-sm leading-snug break-words",
               checked ? "font-semibold text-foreground" : "font-medium text-foreground",
             )}
           >
