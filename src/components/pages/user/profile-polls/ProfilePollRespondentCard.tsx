@@ -241,7 +241,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
             <Loader2 className="h-4 w-4 animate-spin shrink-0 text-primary" />
             <span className="font-medium">Bezig met opslaan...</span>
           </div>
-        ) : saved ? (
+        ) : showSavedConfirm ? (
           <div
             className={cn(
               "flex items-center gap-2 text-sm rounded-lg border px-3 py-2",
