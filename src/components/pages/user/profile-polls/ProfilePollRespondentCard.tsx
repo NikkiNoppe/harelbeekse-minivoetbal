@@ -118,10 +118,12 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
       try {
         await profilePollService.submitResponse(poll.id, optionIds);
         setSaved(true);
+        setShowSavedConfirm(true);
         await queryClient.invalidateQueries({ queryKey: PROFILE_POLLS_QUERY_KEY });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Kon antwoord niet opslaan");
         setSelectedIds(poll.my_response?.option_ids ?? []);
+        setShowSavedConfirm(false);
       } finally {
         setPending(false);
       }
