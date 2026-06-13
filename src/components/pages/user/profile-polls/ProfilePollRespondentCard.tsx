@@ -147,12 +147,12 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
     [poll.id, poll.my_response, queryClient],
   );
 
-  const handleRadioChange = (optionId: string) => {
-    setSelectedIds([optionId]);
-    void saveResponse([optionId]);
-  };
-
-  const handleCheckboxChange = (optionId: string, checked: boolean) => {
+  const handleToggle = (optionId: string, checked: boolean) => {
+    if (!poll.allow_multiple) {
+      setSelectedIds([optionId]);
+      void saveResponse([optionId]);
+      return;
+    }
     const next = checked
       ? [...selectedIds, optionId]
       : selectedIds.filter((id) => id !== optionId);
@@ -184,10 +184,11 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
         checked={checked}
         pending={pending}
         allowMultiple={poll.allow_multiple}
-        onCheckboxChange={handleCheckboxChange}
+        onToggle={handleToggle}
       />
     );
   };
+
 
   return (
     <article
