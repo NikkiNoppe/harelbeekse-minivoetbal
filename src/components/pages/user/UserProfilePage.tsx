@@ -1465,7 +1465,17 @@ const UserProfilePage: React.FC = () => {
 
       {/* Mobile-first layout: Stack cards vertically on mobile */}
       <div className="space-y-4 sm:space-y-6">
-        {/* 1. Enquêtes - helemaal bovenaan */}
+        {/* 0. User & Team Info Card - ALTIJD bovenaan */}
+        <MemoizedUserTeamInfoCard 
+          user={user} 
+          team={firstTeam || null}
+          onTeamUpdate={() => {
+            queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+            queryClient.refetchQueries({ queryKey: ['userProfile'] });
+          }}
+        />
+
+        {/* 1. Enquêtes */}
         <ProfilePollRespondentCollapsible enabled={canRespondToPolls} />
 
         {/* 2. Financial Overview - Collapsible (default open) */}
@@ -1510,15 +1520,6 @@ const UserProfilePage: React.FC = () => {
           </Card>
         </Collapsible>
 
-        {/* Combined User & Team Info Card */}
-        <MemoizedUserTeamInfoCard 
-          user={user} 
-          team={firstTeam || null}
-          onTeamUpdate={() => {
-            queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-            queryClient.refetchQueries({ queryKey: ['userProfile'] });
-          }}
-        />
 
         {/* Next Match Card - Team managers */}
         {user.role === 'player_manager' && firstTeam && !matchesLoading && nextMatch && (
