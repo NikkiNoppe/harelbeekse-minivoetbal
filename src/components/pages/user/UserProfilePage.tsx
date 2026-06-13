@@ -532,6 +532,8 @@ const UserTeamInfoCard: React.FC<{
   }, [isDownloadingBackup, toast, fetchBackupData, triggerDownload]);
 
   const showCardContent = user.role !== 'admin' || !!team;
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
 
   return (
     <>
@@ -607,11 +609,25 @@ const UserTeamInfoCard: React.FC<{
                   <Edit2 size={16} />
                 </Button>
               )}
+              {showCardContent && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setDetailsOpen((v) => !v)}
+                  className="border-border bg-background hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors duration-150"
+                  style={{ height: '32px', width: '32px', minHeight: '32px', maxHeight: '32px', minWidth: '32px', maxWidth: '32px' }}
+                  title={detailsOpen ? 'Details inklappen' : 'Details uitklappen'}
+                  aria-label={detailsOpen ? 'Details inklappen' : 'Details uitklappen'}
+                  aria-expanded={detailsOpen}
+                >
+                  <ChevronDown size={16} className={cn("transition-transform duration-200", detailsOpen && "rotate-180")} />
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
         
-        {showCardContent && (
+        {showCardContent && detailsOpen && (
         <CardContent className="space-y-4 pt-0">
           {/* User Email Section — hidden for admins */}
           {user.role !== 'admin' && (
@@ -633,16 +649,12 @@ const UserTeamInfoCard: React.FC<{
           )}
 
           {/* Team Info Section */}
-          {/* For admins: only show team section if they have a team */}
-          {/* For non-admins: show team section or "Geen team gekoppeld" message */}
           {user.role === 'admin' ? (
             team ? <ProfileTeamDetails team={team} /> : null
           ) : (
             team ? (
               <ProfileTeamDetails team={team} />
             ) : (
-              // Only show "Geen team gekoppeld" for team managers without a team
-              // Admins and referees don't need to see this message
               user.role === 'player_manager' && (
                 <div className="text-center py-4">
                   <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
@@ -655,6 +667,7 @@ const UserTeamInfoCard: React.FC<{
           )}
         </CardContent>
         )}
+
       </Card>
 
       {/* Edit Team Modal */}
@@ -1465,7 +1478,17 @@ const UserProfilePage: React.FC = () => {
 
       {/* Mobile-first layout: Stack cards vertically on mobile */}
       <div className="space-y-4 sm:space-y-6">
-        {/* 1. Enquêtes - helemaal bovenaan */}
+        {/* 0. User & Team Info Card - ALTIJD bovenaan */}
+        <MemoizedUserTeamInfoCard 
+          user={user} 
+          team={firstTeam || null}
+          onTeamUpdate={() => {
+            queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+            queryClient.refetchQueries({ queryKey: ['userProfile'] });
+          }}
+        />
+
+        {/* 1. Enquêtes */}
         <ProfilePollRespondentCollapsible enabled={canRespondToPolls} />
 
         {/* 2. Financial Overview - Collapsible (default open) */}
@@ -1510,15 +1533,6 @@ const UserProfilePage: React.FC = () => {
           </Card>
         </Collapsible>
 
-        {/* Combined User & Team Info Card */}
-        <MemoizedUserTeamInfoCard 
-          user={user} 
-          team={firstTeam || null}
-          onTeamUpdate={() => {
-            queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-            queryClient.refetchQueries({ queryKey: ['userProfile'] });
-          }}
-        />
 
         {/* Next Match Card - Team managers */}
         {user.role === 'player_manager' && firstTeam && !matchesLoading && nextMatch && (
