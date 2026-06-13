@@ -68,6 +68,17 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
   return (
     <Card className="border-primary/20">
       <CardHeader className="pb-3">
+        <div className="flex items-center gap-2 mb-2 min-h-[20px]">
+          {saved && !pending && (
+            <Badge variant="outline" className="text-[hsl(var(--success))] border-[hsl(var(--success))]/40">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Opgeslagen
+            </Badge>
+          )}
+          {pending && (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             {poll.title && (
