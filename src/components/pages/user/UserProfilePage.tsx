@@ -532,6 +532,8 @@ const UserTeamInfoCard: React.FC<{
   }, [isDownloadingBackup, toast, fetchBackupData, triggerDownload]);
 
   const showCardContent = user.role !== 'admin' || !!team;
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
 
   return (
     <>
