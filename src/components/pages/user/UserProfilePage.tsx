@@ -626,7 +626,30 @@ const UserTeamInfoCard: React.FC<{
             </div>
           </div>
         </CardHeader>
-        
+
+        {/* Always-visible: team name + club colors */}
+        {team && (
+          <CardContent className="pt-0 pb-4">
+            <div>
+              <h3 className="font-semibold text-base text-foreground">{team.team_name}</h3>
+              {(getClubColorName(team.club_colors) || team.club_colors) && (
+                <div className="flex items-center gap-2 mt-1">
+                  {getClubColorName(team.club_colors) && (
+                    <p className="text-xs text-muted-foreground">{getClubColorName(team.club_colors)}</p>
+                  )}
+                  {team.club_colors && (
+                    <ColorPreview
+                      clubColors={team.club_colors}
+                      size="sm"
+                      className="flex-shrink-0"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        )}
+
         {showCardContent && detailsOpen && (
         <CardContent className="space-y-4 pt-0">
           {/* User Email Section — hidden for admins */}
@@ -648,21 +671,48 @@ const UserTeamInfoCard: React.FC<{
             </div>
           )}
 
-          {/* Team Info Section */}
-          {user.role === 'admin' ? (
-            team ? <ProfileTeamDetails team={team} /> : null
+          {/* Team contact details */}
+          {team ? (
+            (team.contact_person || team.contact_phone || team.contact_email) && (
+              <div className="space-y-1.5 text-sm">
+                {team.contact_person && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <User className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="truncate">{team.contact_person}</span>
+                  </div>
+                )}
+                {team.contact_phone && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-3.5 w-3.5 flex-shrink-0" />
+                    <a
+                      href={`tel:${team.contact_phone}`}
+                      className="truncate hover:text-foreground hover:underline"
+                    >
+                      {team.contact_phone}
+                    </a>
+                  </div>
+                )}
+                {team.contact_email && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                    <a
+                      href={`mailto:${team.contact_email}`}
+                      className="truncate break-all hover:text-foreground hover:underline"
+                    >
+                      {team.contact_email}
+                    </a>
+                  </div>
+                )}
+              </div>
+            )
           ) : (
-            team ? (
-              <ProfileTeamDetails team={team} />
-            ) : (
-              user.role === 'player_manager' && (
-                <div className="text-center py-4">
-                  <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-                  <p className="text-sm text-muted-foreground">
-                    Geen team gekoppeld
-                  </p>
-                </div>
-              )
+            user.role === 'player_manager' && (
+              <div className="text-center py-4">
+                <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+                <p className="text-sm text-muted-foreground">
+                  Geen team gekoppeld
+                </p>
+              </div>
             )
           )}
         </CardContent>
