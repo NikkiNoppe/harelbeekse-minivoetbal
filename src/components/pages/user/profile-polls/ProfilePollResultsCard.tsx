@@ -78,7 +78,7 @@ export function ProfilePollResultsCard({
           <div className="min-w-0 space-y-2">
             {poll.title ? (
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground break-words">
-                {poll.title}
+                {poll.title === "⚽ Nieuw speelmoment minivoetbal – Stem mee!" ? "⚽ Nieuw speelmoment – Stem mee!" : poll.title}
               </p>
             ) : null}
             {parsedQuestion.intro ? (
@@ -160,7 +160,9 @@ export function ProfilePollResultsCard({
 
                 {formatted.detailNote ? (
                   <p className="text-[11px] sm:text-xs leading-snug break-words text-[var(--color-400)]">
-                    {formatted.detailNote}
+                    {formatted.detailNote === "Onder voorbehoud - Indien de volleybalclub akkoord gaat om om 20u te starten."
+                      ? "Onder voorbehoud - Indien de volleybal akkoord gaat om om 20u te starten."
+                      : formatted.detailNote}
                   </p>
                 ) : null}
               </div>

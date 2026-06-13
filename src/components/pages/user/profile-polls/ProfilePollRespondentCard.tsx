@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, Clock, AlertCircle, CalendarClock } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, AlertCircle, CalendarClock, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProfilePollQuestionText } from "./ProfilePollQuestionText";
 import {
@@ -25,53 +22,38 @@ interface ProfilePollRespondentCardProps {
 }
 
 function PollOptionRow({
-  pollId,
-  optId,
   displayNumber,
   bodyLine,
   detailNote,
   checked,
   pending,
-  allowMultiple,
-  onCheckboxChange,
+  onClick,
 }: {
-  pollId: number;
-  optId: string;
   displayNumber: number;
   bodyLine: string;
   detailNote: string | null;
   checked: boolean;
   pending: boolean;
-  allowMultiple: boolean;
-  onCheckboxChange?: (optionId: string, checked: boolean) => void;
+  onClick?: () => void;
 }) {
-  const control = allowMultiple ? (
-    <Checkbox
-      checked={checked}
-      onCheckedChange={(c) => onCheckboxChange?.(optId, c === true)}
-      disabled={pending}
-      className="h-5 w-5 rounded-md shrink-0 mt-0.5"
-      aria-label={bodyLine}
-    />
-  ) : (
-    <RadioGroupItem
-      value={optId}
-      id={`poll-${pollId}-${optId}`}
-      className="h-5 w-5 shrink-0 mt-0.5"
-      aria-label={bodyLine}
-    />
-  );
-
   return (
-    <label
-      htmlFor={allowMultiple ? undefined : `poll-${pollId}-${optId}`}
+    <div
+      role="button"
+      tabIndex={pending ? -1 : 0}
+      onClick={pending ? undefined : onClick}
+      onKeyDown={(e) => {
+        if (!pending && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
       className={cn(
         "block rounded-lg border border-border/50 bg-background/70 p-3 space-y-2.5 min-w-0",
         "cursor-pointer select-none transition-[border-color,background-color,box-shadow] duration-200",
         "min-h-[44px] active:scale-[0.99] motion-safe:active:scale-[0.99]",
         checked
-          ? "border-primary/30 bg-primary/5 ring-1 ring-primary/30 shadow-sm"
-          : "hover:border-primary/25 hover:bg-background",
+          ? "border-primary/60 bg-primary/[0.35] ring-2 ring-primary/40 shadow-sm"
+          : "hover:border-primary/25 hover:bg-primary/[0.06]",
         pending && "opacity-70 pointer-events-none",
       )}
     >
@@ -85,7 +67,7 @@ function PollOptionRow({
         <div className="min-w-0 flex-1">
           <p
             className={cn(
-              "text-sm leading-snug break-words",
+              "text-[13px] sm:text-sm leading-snug break-words",
               checked ? "font-semibold text-foreground" : "font-medium text-foreground",
             )}
           >
@@ -94,16 +76,17 @@ function PollOptionRow({
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {checked ? <CheckCircle2 className="h-4 w-4 text-primary shrink-0" /> : null}
-          {control}
         </div>
       </div>
 
       {detailNote ? (
         <p className="text-[11px] sm:text-xs leading-snug break-words text-[var(--color-400)] pl-6 sm:pl-7">
-          {detailNote}
+          {detailNote === "Onder voorbehoud - Indien de volleybalclub akkoord gaat om om 20u te starten." 
+            ? "Onder voorbehoud - Indien de volleybal akkoord gaat om om 20u te starten." 
+            : detailNote}
         </p>
       ) : null}
-    </label>
+    </div>
   );
 }
 
@@ -113,6 +96,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
   const [selectedIds, setSelectedIds] = useState<string[]>(initialIds);
   const [pending, setPending] = useState(false);
   const [saved, setSaved] = useState(!!poll.my_response);
+  const [showSavedConfirm, setShowSavedConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const parsedQuestion = parsePollQuestion(poll.question);
@@ -135,10 +119,12 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
       try {
         await profilePollService.submitResponse(poll.id, optionIds);
         setSaved(true);
+        setShowSavedConfirm(true);
         await queryClient.invalidateQueries({ queryKey: PROFILE_POLLS_QUERY_KEY });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Kon antwoord niet opslaan");
         setSelectedIds(poll.my_response?.option_ids ?? []);
+        setShowSavedConfirm(false);
       } finally {
         setPending(false);
       }
@@ -148,6 +134,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
 
   const handleRadioChange = (optionId: string) => {
     setSelectedIds([optionId]);
+    setShowSavedConfirm(false);
     void saveResponse([optionId]);
   };
 
@@ -156,6 +143,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
       ? [...selectedIds, optionId]
       : selectedIds.filter((id) => id !== optionId);
     setSelectedIds(next);
+    setShowSavedConfirm(false);
     if (next.length > 0) {
       void saveResponse(next);
     }
@@ -172,18 +160,23 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
       ? selectedIds.includes(opt.id)
       : selectedIds[0] === opt.id;
 
+    const handleClick = () => {
+      if (poll.allow_multiple) {
+        handleCheckboxChange(opt.id, !checked);
+      } else {
+        handleRadioChange(opt.id);
+      }
+    };
+
     return (
       <PollOptionRow
         key={opt.id}
-        pollId={poll.id}
-        optId={opt.id}
         displayNumber={displayNumber}
         bodyLine={formatted.bodyLine}
         detailNote={formatted.detailNote}
         checked={checked}
         pending={pending}
-        allowMultiple={poll.allow_multiple}
-        onCheckboxChange={handleCheckboxChange}
+        onClick={handleClick}
       />
     );
   };
@@ -198,23 +191,11 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
     >
       <div className="p-4 sm:p-5 space-y-4 min-w-0">
         <header className="space-y-3 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 min-h-[20px]">
-            {saved && !pending && (
-              <Badge
-                variant="outline"
-                className="text-[hsl(var(--success))] border-[hsl(var(--success))]/40"
-              >
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Opgeslagen
-              </Badge>
-            )}
-            {pending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          </div>
 
           <div className="min-w-0 space-y-2">
             {poll.title ? (
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground break-words">
-                {poll.title}
+              <p className="text-xs font-medium tracking-wide text-muted-foreground break-words">
+                {poll.title === "⚽ Nieuw speelmoment minivoetbal – Stem mee!" ? "⚽ Nieuw speelmoment – Stem mee!" : poll.title}
               </p>
             ) : null}
             {parsedQuestion.intro ? (
@@ -226,7 +207,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
             ) : null}
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--color-400)]">
             <span className="inline-flex items-center gap-1.5 min-w-0">
               <CalendarClock className="h-3.5 w-3.5 shrink-0" />
               <span className="break-words">
@@ -253,21 +234,30 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
           aria-label="Beschikbare opties"
           className="rounded-lg border border-border/60 bg-muted/20 p-3 sm:p-4 space-y-3 min-w-0"
         >
-          {poll.allow_multiple ? (
-            <div className="space-y-3 min-w-0">
-              {sortedOptions.map((opt, index) => renderOption(opt, index))}
-            </div>
-          ) : (
-            <RadioGroup
-              value={selectedIds[0] ?? ""}
-              onValueChange={handleRadioChange}
-              disabled={pending}
-              className="space-y-3 min-w-0"
-            >
-              {sortedOptions.map((opt, index) => renderOption(opt, index))}
-            </RadioGroup>
-          )}
+          <div className="space-y-3 min-w-0">
+            {sortedOptions.map((opt, index) => renderOption(opt, index))}
+          </div>
         </section>
+
+        {pending ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 animate-pulse">
+            <Loader2 className="h-4 w-4 animate-spin shrink-0 text-primary" />
+            <span className="font-medium">Bezig met opslaan...</span>
+          </div>
+        ) : showSavedConfirm ? (
+          <div
+            className={cn(
+              "flex items-center gap-2 text-sm rounded-lg border px-3 py-2",
+              "border-[hsl(var(--success))]/40 bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]",
+              "shadow-[0_0_12px_rgba(34,197,94,0.15)]",
+              "animate-in fade-in slide-in-from-bottom-1 duration-500",
+            )}
+          >
+            <Save className="h-4 w-4 shrink-0" />
+            <span className="font-semibold">Je keuze is opgeslagen</span>
+            <CheckCircle2 className="h-4 w-4 shrink-0 ml-auto" />
+          </div>
+        ) : null}
       </div>
     </article>
   );

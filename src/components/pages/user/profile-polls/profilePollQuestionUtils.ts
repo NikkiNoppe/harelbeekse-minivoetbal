@@ -298,9 +298,11 @@ export function parseOptionLabel(label: string): ParsedPollOptionLine {
 }
 
 function formatPollDetailNoteText(raw: string): string {
-  if (/^onder voorbehoud\s*[-–—]/i.test(raw)) return raw;
-  if (/^indien de volleybalclub/i.test(raw)) {
-    return `Onder voorbehoud - ${raw}`;
+  if (/^onder voorbehoud\s*[-–—]/i.test(raw)) {
+    return raw.replace(/^onder voorbehoud\s*[-–—]\s*indien de volleybalclub/i, "Onder voorbehoud - Indien de volleybal");
+  }
+  if (/^indien de volleybal/i.test(raw)) {
+    return `Onder voorbehoud - ${raw.replace(/^indien de volleybalclub/i, "Indien de volleybal")}`;
   }
   return raw;
 }

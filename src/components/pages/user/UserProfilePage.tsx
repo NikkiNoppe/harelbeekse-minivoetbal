@@ -532,6 +532,8 @@ const UserTeamInfoCard: React.FC<{
   }, [isDownloadingBackup, toast, fetchBackupData, triggerDownload]);
 
   const showCardContent = user.role !== 'admin' || !!team;
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
 
   return (
     <>
@@ -607,11 +609,48 @@ const UserTeamInfoCard: React.FC<{
                   <Edit2 size={16} />
                 </Button>
               )}
+              {showCardContent && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setDetailsOpen((v) => !v)}
+                  className="border-border bg-background hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors duration-150"
+                  style={{ height: '32px', width: '32px', minHeight: '32px', maxHeight: '32px', minWidth: '32px', maxWidth: '32px' }}
+                  title={detailsOpen ? 'Details inklappen' : 'Details uitklappen'}
+                  aria-label={detailsOpen ? 'Details inklappen' : 'Details uitklappen'}
+                  aria-expanded={detailsOpen}
+                >
+                  <ChevronDown size={16} className={cn("transition-transform duration-200", detailsOpen && "rotate-180")} />
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
-        
-        {showCardContent && (
+
+        {/* Always-visible: team name + club colors */}
+        {team && (
+          <CardContent className="pt-0 pb-4">
+            <div>
+              <h3 className="font-semibold text-base text-foreground">{team.team_name}</h3>
+              {(getClubColorName(team.club_colors) || team.club_colors) && (
+                <div className="flex items-center gap-2 mt-1">
+                  {getClubColorName(team.club_colors) && (
+                    <p className="text-xs text-muted-foreground">{getClubColorName(team.club_colors)}</p>
+                  )}
+                  {team.club_colors && (
+                    <ColorPreview
+                      clubColors={team.club_colors}
+                      size="sm"
+                      className="flex-shrink-0"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        )}
+
+        {showCardContent && detailsOpen && (
         <CardContent className="space-y-4 pt-0">
           {/* User Email Section — hidden for admins */}
           {user.role !== 'admin' && (
@@ -632,29 +671,53 @@ const UserTeamInfoCard: React.FC<{
             </div>
           )}
 
-          {/* Team Info Section */}
-          {/* For admins: only show team section if they have a team */}
-          {/* For non-admins: show team section or "Geen team gekoppeld" message */}
-          {user.role === 'admin' ? (
-            team ? <ProfileTeamDetails team={team} /> : null
+          {/* Team contact details */}
+          {team ? (
+            (team.contact_person || team.contact_phone || team.contact_email) && (
+              <div className="space-y-1.5 text-sm">
+                {team.contact_person && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <User className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="truncate">{team.contact_person}</span>
+                  </div>
+                )}
+                {team.contact_phone && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-3.5 w-3.5 flex-shrink-0" />
+                    <a
+                      href={`tel:${team.contact_phone}`}
+                      className="truncate hover:text-foreground hover:underline"
+                    >
+                      {team.contact_phone}
+                    </a>
+                  </div>
+                )}
+                {team.contact_email && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                    <a
+                      href={`mailto:${team.contact_email}`}
+                      className="truncate break-all hover:text-foreground hover:underline"
+                    >
+                      {team.contact_email}
+                    </a>
+                  </div>
+                )}
+              </div>
+            )
           ) : (
-            team ? (
-              <ProfileTeamDetails team={team} />
-            ) : (
-              // Only show "Geen team gekoppeld" for team managers without a team
-              // Admins and referees don't need to see this message
-              user.role === 'player_manager' && (
-                <div className="text-center py-4">
-                  <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-                  <p className="text-sm text-muted-foreground">
-                    Geen team gekoppeld
-                  </p>
-                </div>
-              )
+            user.role === 'player_manager' && (
+              <div className="text-center py-4">
+                <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+                <p className="text-sm text-muted-foreground">
+                  Geen team gekoppeld
+                </p>
+              </div>
             )
           )}
         </CardContent>
         )}
+
       </Card>
 
       {/* Edit Team Modal */}
@@ -929,10 +992,7 @@ const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = m
           {/* Balance hero */}
           <div className="flex items-center justify-between pt-1">
             <span className="text-sm font-medium text-muted-foreground">Huidig saldo</span>
-            <span className={cn(
-              "text-xl font-bold tabular-nums",
-              isNegative ? "text-destructive" : "text-green-600"
-            )}>
+            <span className="text-xl font-bold tabular-nums text-primary">
               {isNegative ? '−' : ''}€{Math.abs(balance).toFixed(2)}
             </span>
           </div>
@@ -946,7 +1006,7 @@ const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = m
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Boetes</span>
-                <span className="font-medium tabular-nums text-destructive/80">{fmt(breakdown.fines)}</span>
+                <span className="font-medium tabular-nums text-primary">{fmt(breakdown.fines)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Veldkosten</span>
@@ -1465,7 +1525,7 @@ const UserProfilePage: React.FC = () => {
 
       {/* Mobile-first layout: Stack cards vertically on mobile */}
       <div className="space-y-4 sm:space-y-6">
-        {/* 1. Combined User & Team Info Card */}
+        {/* 0. User & Team Info Card - ALTIJD bovenaan */}
         <MemoizedUserTeamInfoCard 
           user={user} 
           team={firstTeam || null}
@@ -1475,48 +1535,12 @@ const UserProfilePage: React.FC = () => {
           }}
         />
 
-        {/* 2. Next Match Card - Team managers */}
-        {user.role === 'player_manager' && firstTeam && !matchesLoading && nextMatch && (
-          <NextMatchCard 
-            match={nextMatch} 
-            teamName={firstTeam.team_name}
-            onSelectMatch={handleSelectMatch}
-          />
-        )}
+        {/* 1. Enquêtes */}
+        <ProfilePollRespondentCollapsible enabled={canRespondToPolls} />
 
-        {/* 2b. Referee Upcoming Matches */}
-        {isReferee && authUser?.username && (
-          <RefereeUpcomingMatches
-            refereeUsername={authUser.username}
-            onSelectMatch={handleSelectMatch}
-          />
-        )}
-
-        {/* 3. Team Players Overview - Collapsible */}
+        {/* 2. Financial Overview - Collapsible (default open) */}
         {user.role === 'player_manager' && firstTeam && (
-          <Collapsible>
-            <Card>
-              <CollapsibleTrigger className="w-full">
-                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                      <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-                      Gespeelde wedstrijden per speler
-                    </CardTitle>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180 [&[data-state=open]]:rotate-180" />
-                  </div>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <TeamPlayersOverviewContent teamId={firstTeam.team_id} />
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-        )}
-
-        {/* 4. Financial Overview - Collapsible */}
-        {user.role === 'player_manager' && firstTeam && (
-          <Collapsible>
+          <Collapsible defaultOpen>
             <Card>
               <CollapsibleTrigger className="w-full">
                 <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
@@ -1536,7 +1560,7 @@ const UserProfilePage: React.FC = () => {
           </Collapsible>
         )}
 
-        {/* 5. Admin Messages - Collapsible */}
+        {/* 3. Admin Messages - Collapsible */}
         <Collapsible>
           <Card className="border-primary/20">
             <CollapsibleTrigger className="w-full">
@@ -1556,8 +1580,23 @@ const UserProfilePage: React.FC = () => {
           </Card>
         </Collapsible>
 
-        {/* 5b. Enquêtes - teamverantwoordelijken / scheidsrechters */}
-        <ProfilePollRespondentCollapsible enabled={canRespondToPolls} />
+
+        {/* Next Match Card - Team managers */}
+        {user.role === 'player_manager' && firstTeam && !matchesLoading && nextMatch && (
+          <NextMatchCard 
+            match={nextMatch} 
+            teamName={firstTeam.team_name}
+            onSelectMatch={handleSelectMatch}
+          />
+        )}
+
+        {/* Referee Upcoming Matches */}
+        {isReferee && authUser?.username && (
+          <RefereeUpcomingMatches
+            refereeUsername={authUser.username}
+            onSelectMatch={handleSelectMatch}
+          />
+        )}
 
         {/* Referee Notes Card - Admin only */}
         {isAdmin && <RefereeNotesCard />}
@@ -1591,7 +1630,29 @@ const UserProfilePage: React.FC = () => {
           </div>
         )}
 
-        {/* 6. Quick Actions - Collapsible */}
+        {/* Voorlaatste: Gespeelde wedstrijden per speler - Collapsible */}
+        {user.role === 'player_manager' && firstTeam && (
+          <Collapsible>
+            <Card>
+              <CollapsibleTrigger className="w-full">
+                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                      <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+                      Gespeelde wedstrijden per speler
+                    </CardTitle>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180 [&[data-state=open]]:rotate-180" />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <TeamPlayersOverviewContent teamId={firstTeam.team_id} />
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        )}
+
+        {/* Laatste: Snelle Acties - Collapsible */}
         <Collapsible>
           <Card>
             <CollapsibleTrigger className="w-full">
