@@ -132,6 +132,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
 
   const handleRadioChange = (optionId: string) => {
     setSelectedIds([optionId]);
+    setShowSavedConfirm(false);
     void saveResponse([optionId]);
   };
 
@@ -140,6 +141,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
       ? [...selectedIds, optionId]
       : selectedIds.filter((id) => id !== optionId);
     setSelectedIds(next);
+    setShowSavedConfirm(false);
     if (next.length > 0) {
       void saveResponse(next);
     }
