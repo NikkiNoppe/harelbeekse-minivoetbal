@@ -915,6 +915,7 @@ const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = m
   const isNegative = balance < 0;
   const isLoading = balanceLoading || breakdownLoading;
   const fmt = (n: number) => `€${n.toFixed(2)}`;
+  const remainingAmount = balance < 600 ? (600 - balance) : 0;
 
   return (
     <CardContent className="pt-0">
@@ -975,26 +976,32 @@ const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = m
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                 Gelieve tegen <span className="font-medium text-foreground">15 augustus</span> uw saldo aan te vullen tot <span className="font-medium text-foreground">€600,00</span>.
                 {balance < 600 ? (
-                  <> U dient nog <span className="font-semibold text-foreground">€{(600 - balance).toFixed(2)}</span> over te maken.</>
+                  <> U dient nog <span className="font-semibold text-foreground">€{remainingAmount.toFixed(2)}</span> over te maken.</>
                 ) : (
                   <> Uw saldo is reeds boven €600,00 — er is geen extra storting nodig.</>
                 )}
               </p>
             </div>
             
-            <div className="bg-background/80 rounded border border-primary/15 p-3 space-y-1.5 text-sm">
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground text-xs">Naam</span>
-                <span className="font-semibold text-foreground">Nikki Noppe</span>
+            <div className="bg-background/80 rounded border border-primary/15 p-3 space-y-1.5 text-xs sm:text-sm">
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-muted-foreground text-[11px] sm:text-xs shrink-0">Naam</span>
+                <span className="font-semibold text-foreground text-right">Nikki Noppe</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground text-xs">Rekeningnummer</span>
-                <span className="font-mono font-semibold text-foreground select-all">BE48 6504 6890 7727</span>
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-muted-foreground text-[11px] sm:text-xs shrink-0">Rekeningnummer</span>
+                <span className="font-mono font-semibold text-foreground text-right select-all whitespace-nowrap">BE48 6504 6890 7727</span>
               </div>
+              {balance < 600 && (
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-muted-foreground text-[11px] sm:text-xs shrink-0">Bedrag</span>
+                  <span className="font-semibold text-foreground text-right select-all whitespace-nowrap">€{remainingAmount.toFixed(2)}</span>
+                </div>
+              )}
               {teamName && (
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground text-xs">Vermelding</span>
-                  <span className="font-semibold text-foreground select-all">{teamName}</span>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-muted-foreground text-[11px] sm:text-xs shrink-0">Vermelding</span>
+                  <span className="font-semibold text-foreground text-right select-all">{teamName}</span>
                 </div>
               )}
             </div>
