@@ -232,26 +232,26 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
           </div>
         </section>
 
-        <div className="min-h-[36px]">
-          {pending && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 animate-pulse">
-              <Loader2 className="h-4 w-4 animate-spin shrink-0 text-primary" />
-              <span className="font-medium">Bezig met opslaan...</span>
-            </div>
-          )}
-          {saved && !pending && (
-            <div
-              className={cn(
-                "flex items-center gap-2 text-sm rounded-lg border px-3 py-2 transition-all duration-500",
-                "border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]",
-              )}
-            >
-              <Save className="h-4 w-4 shrink-0" />
-              <span className="font-semibold">Je keuze is opgeslagen</span>
-              <CheckCircle2 className="h-4 w-4 shrink-0 ml-auto" />
-            </div>
-          )}
-        </div>
+        {pending && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 animate-pulse">
+            <Loader2 className="h-4 w-4 animate-spin shrink-0 text-primary" />
+            <span className="font-medium">Bezig met opslaan...</span>
+          </div>
+        )}
+        {saved && !pending && (
+          <div
+            className={cn(
+              "flex items-center gap-2 text-sm rounded-lg border px-3 py-2",
+              "border-[hsl(var(--success))]/40 bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]",
+              "shadow-[0_0_12px_rgba(34,197,94,0.15)]",
+              "animate-in fade-in slide-in-from-bottom-1 duration-500",
+            )}
+          >
+            <Save className="h-4 w-4 shrink-0" />
+            <span className="font-semibold">Je keuze is opgeslagen</span>
+            <CheckCircle2 className="h-4 w-4 shrink-0 ml-auto" />
+          </div>
+        )}
       </div>
     </article>
   );
