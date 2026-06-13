@@ -78,7 +78,7 @@ export function ProfilePollResultsCard({
           <div className="min-w-0 space-y-2">
             {poll.title ? (
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground break-words">
-                {poll.title}
+                {poll.title === "⚽ Nieuw speelmoment minivoetbal – Stem mee!" ? "⚽ Nieuw speelmoment – Stem mee!" : poll.title}
               </p>
             ) : null}
             {parsedQuestion.intro ? (
