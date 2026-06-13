@@ -15,7 +15,7 @@ export function ProfilePollAdminCollapsible() {
   return (
     <Collapsible defaultOpen>
       <Card className="border-primary/20">
-        <CardHeader className="pb-3 space-y-3">
+        <CardHeader className="pb-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <CollapsibleTrigger className="group flex w-full min-w-0 flex-1 items-center justify-between gap-3 min-h-[44px] rounded-lg px-1 -mx-1 transition-colors hover:bg-muted/30">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2 min-w-0">
@@ -42,10 +42,6 @@ export function ProfilePollAdminCollapsible() {
               Nieuwe poll
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground px-1">
-            Enquêtes voor teamverantwoordelijken en scheidsrechters. Beheer en resultaten staan
-            hier op je profiel.
-          </p>
         </CardHeader>
         <CollapsibleContent>
           <ProfilePollAdminSection ref={sectionRef} />

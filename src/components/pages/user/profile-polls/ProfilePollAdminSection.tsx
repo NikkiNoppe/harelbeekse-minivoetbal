@@ -3,6 +3,7 @@ import { CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClipboardList, RefreshCw, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useProfilePolls } from "@/hooks/useProfilePolls";
 import { profilePollService } from "@/services/profilePoll/profilePollService";
@@ -94,7 +95,7 @@ export const ProfilePollAdminSection = forwardRef<ProfilePollAdminSectionHandle>
 
     return (
       <>
-        <CardContent className="pt-0 space-y-4">
+        <CardContent className="pt-0 space-y-4 min-w-0 overflow-hidden">
           {isFetching && adminPolls.length > 0 && (
             <div className="flex items-center justify-end gap-1.5 text-xs text-muted-foreground">
               <RefreshCw className="h-3 w-3 animate-spin" />
@@ -136,38 +137,62 @@ export const ProfilePollAdminSection = forwardRef<ProfilePollAdminSectionHandle>
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-5 min-w-0">
               {activePolls.length > 0 && (
-                <div className="space-y-3">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Actief ({activePolls.length})
-                  </p>
-                  {activePolls.map((poll) => (
-                    <ProfilePollResultsCard
-                      key={poll.id}
-                      poll={poll}
-                      onClose={handleClose}
-                      onDelete={async (id) => setDeleteId(id)}
-                      isClosing={closingId === poll.id}
-                    />
-                  ))}
-                </div>
+                <section className="space-y-3 min-w-0" aria-label="Actieve profielpolls">
+                  <div className="flex items-center gap-2 pb-1 border-b border-border/50">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Actief
+                    </p>
+                    <span
+                      className={cn(
+                        "inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full",
+                        "border border-border/60 bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground",
+                      )}
+                    >
+                      {activePolls.length}
+                    </span>
+                  </div>
+                  <div className="space-y-3 min-w-0">
+                    {activePolls.map((poll) => (
+                      <ProfilePollResultsCard
+                        key={poll.id}
+                        poll={poll}
+                        onClose={handleClose}
+                        onDelete={async (id) => setDeleteId(id)}
+                        isClosing={closingId === poll.id}
+                      />
+                    ))}
+                  </div>
+                </section>
               )}
               {inactivePolls.length > 0 && (
-                <div className="space-y-3">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Afgelopen / gesloten ({inactivePolls.length})
-                  </p>
-                  {inactivePolls.map((poll) => (
-                    <ProfilePollResultsCard
-                      key={poll.id}
-                      poll={poll}
-                      onClose={handleClose}
-                      onDelete={async (id) => setDeleteId(id)}
-                      isDeleting={deleting && deleteId === poll.id}
-                    />
-                  ))}
-                </div>
+                <section className="space-y-3 min-w-0" aria-label="Afgelopen profielpolls">
+                  <div className="flex items-center gap-2 pb-1 border-b border-border/50">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Afgelopen / gesloten
+                    </p>
+                    <span
+                      className={cn(
+                        "inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full",
+                        "border border-border/60 bg-background px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground",
+                      )}
+                    >
+                      {inactivePolls.length}
+                    </span>
+                  </div>
+                  <div className="space-y-3 min-w-0">
+                    {inactivePolls.map((poll) => (
+                      <ProfilePollResultsCard
+                        key={poll.id}
+                        poll={poll}
+                        onClose={handleClose}
+                        onDelete={async (id) => setDeleteId(id)}
+                        isDeleting={deleting && deleteId === poll.id}
+                      />
+                    ))}
+                  </div>
+                </section>
               )}
             </div>
           )}

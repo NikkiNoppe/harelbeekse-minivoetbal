@@ -1,11 +1,17 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, AlertCircle, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ProfilePollQuestionText } from "./ProfilePollQuestionText";
+import {
+  parsePollQuestion,
+  sortPollOptionsForDisplay,
+  formatPollOptionDisplay,
+  getInlineNoteForOption,
+  buildPollOptionDisplayNumberMap,
+} from "./profilePollQuestionUtils";
 import {
   profilePollService,
   formatPollDeadline,
@@ -18,6 +24,89 @@ interface ProfilePollRespondentCardProps {
   poll: ProfilePollRespondentView;
 }
 
+function PollOptionRow({
+  pollId,
+  optId,
+  displayNumber,
+  bodyLine,
+  detailNote,
+  checked,
+  pending,
+  allowMultiple,
+  onCheckboxChange,
+}: {
+  pollId: number;
+  optId: string;
+  displayNumber: number;
+  bodyLine: string;
+  detailNote: string | null;
+  checked: boolean;
+  pending: boolean;
+  allowMultiple: boolean;
+  onCheckboxChange?: (optionId: string, checked: boolean) => void;
+}) {
+  const control = allowMultiple ? (
+    <Checkbox
+      checked={checked}
+      onCheckedChange={(c) => onCheckboxChange?.(optId, c === true)}
+      disabled={pending}
+      className="h-5 w-5 rounded-md shrink-0 mt-0.5"
+      aria-label={bodyLine}
+    />
+  ) : (
+    <RadioGroupItem
+      value={optId}
+      id={`poll-${pollId}-${optId}`}
+      className="h-5 w-5 shrink-0 mt-0.5"
+      aria-label={bodyLine}
+    />
+  );
+
+  return (
+    <label
+      htmlFor={allowMultiple ? undefined : `poll-${pollId}-${optId}`}
+      className={cn(
+        "block rounded-lg border border-border/50 bg-background/70 p-3 space-y-2.5 min-w-0",
+        "cursor-pointer select-none transition-[border-color,background-color,box-shadow] duration-200",
+        "min-h-[44px] active:scale-[0.99] motion-safe:active:scale-[0.99]",
+        checked
+          ? "border-primary/30 bg-primary/5 ring-1 ring-primary/30 shadow-sm"
+          : "hover:border-primary/25 hover:bg-background",
+        pending && "opacity-70 pointer-events-none",
+      )}
+    >
+      <div className="flex items-start gap-2 min-w-0">
+        <span
+          aria-hidden="true"
+          className="shrink-0 text-sm font-bold tabular-nums text-primary leading-snug"
+        >
+          {displayNumber}.
+        </span>
+        <div className="min-w-0 flex-1">
+          <p
+            className={cn(
+              "text-sm leading-snug break-words",
+              checked ? "font-semibold text-foreground" : "font-medium text-foreground",
+            )}
+          >
+            {bodyLine}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {checked ? <CheckCircle2 className="h-4 w-4 text-primary shrink-0" /> : null}
+          {control}
+        </div>
+      </div>
+
+      {detailNote ? (
+        <p className="text-[11px] sm:text-xs leading-snug break-words text-[var(--color-400)] pl-6 sm:pl-7">
+          {detailNote}
+        </p>
+      ) : null}
+    </label>
+  );
+}
+
 export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardProps) {
   const queryClient = useQueryClient();
   const initialIds = poll.my_response?.option_ids ?? [];
@@ -25,6 +114,13 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
   const [pending, setPending] = useState(false);
   const [saved, setSaved] = useState(!!poll.my_response);
   const [error, setError] = useState<string | null>(null);
+
+  const parsedQuestion = parsePollQuestion(poll.question);
+  const sortedOptions = sortPollOptionsForDisplay(poll.options);
+  const optionDisplayNumbers = useMemo(
+    () => buildPollOptionDisplayNumberMap(poll.options),
+    [poll.options],
+  );
 
   useEffect(() => {
     setSelectedIds(poll.my_response?.option_ids ?? []);
@@ -65,176 +161,114 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
     }
   };
 
+  const renderOption = (opt: (typeof sortedOptions)[number], index: number) => {
+    const displayNumber = optionDisplayNumbers.get(opt.id) ?? index + 1;
+    const formatted = formatPollOptionDisplay(
+      displayNumber - 1,
+      opt.label,
+      getInlineNoteForOption(opt.label, parsedQuestion.inlineOptions),
+    );
+    const checked = poll.allow_multiple
+      ? selectedIds.includes(opt.id)
+      : selectedIds[0] === opt.id;
+
+    return (
+      <PollOptionRow
+        key={opt.id}
+        pollId={poll.id}
+        optId={opt.id}
+        displayNumber={displayNumber}
+        bodyLine={formatted.bodyLine}
+        detailNote={formatted.detailNote}
+        checked={checked}
+        pending={pending}
+        allowMultiple={poll.allow_multiple}
+        onCheckboxChange={handleCheckboxChange}
+      />
+    );
+  };
+
   return (
-    <Card className="border-primary/20">
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2 mb-2 min-h-[20px]">
-          {saved && !pending && (
-            <Badge variant="outline" className="text-[hsl(var(--success))] border-[hsl(var(--success))]/40">
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Opgeslagen
-            </Badge>
-          )}
-          {pending && (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          )}
-        </div>
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            {poll.title && (
-              <p className="text-xs text-muted-foreground mb-0.5">{poll.title}</p>
+    <article
+      className={cn(
+        "rounded-xl border border-primary/15 bg-card overflow-hidden",
+        "shadow-sm transition-[box-shadow,border-color] duration-200",
+        "hover:border-primary/30 hover:shadow-md motion-safe:hover:shadow-md",
+      )}
+    >
+      <div className="p-4 sm:p-5 space-y-4 min-w-0">
+        <header className="space-y-3 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 min-h-[20px]">
+            {saved && !pending && (
+              <Badge
+                variant="outline"
+                className="text-[hsl(var(--success))] border-[hsl(var(--success))]/40"
+              >
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Opgeslagen
+              </Badge>
             )}
-            <CardTitle className="text-base sm:text-lg leading-snug">
-              {(() => {
-                const markerRegex = /(?=[🅐🅑🅒🅓🅔🅕🅖🅗🅘])|(?=\s[A-F]\)\s)/u;
-                const parts = poll.question
-                  .split(markerRegex)
-                  .map((s) => s.trim())
-                  .filter(Boolean);
-                if (parts.length <= 1) return poll.question;
-                const isOption = (s: string) => /^[🅐🅑🅒🅓🅔🅕🅖🅗🅘]|^[A-F]\)/u.test(s);
-                const intro = !isOption(parts[0]) ? parts[0] : null;
-                const options = intro ? parts.slice(1) : parts;
-                const splitOption = (line: string) => {
-                  // Trek de letter (1e char) los van de rest, en splits op " → " voor uitleg
-                  const letter = line.slice(0, 2).trim();
-                  const rest = line.slice(2).trim();
-                  const [main, ...note] = rest.split(/→/);
-                  return { letter, main: main.trim(), note: note.join("→").trim() };
-                };
-                return (
-                  <span className="block">
-                    {intro && (
-                      <span className="block text-sm sm:text-base font-semibold text-foreground leading-snug mb-2">
-                        {intro}
-                      </span>
-                    )}
-                    <span className="block space-y-1.5">
-                      {options.map((line, i) => {
-                        const { letter, main, note } = splitOption(line);
-                        return (
-                          <span
-                            key={i}
-                            className="flex items-start gap-2 text-[13px] sm:text-sm font-normal leading-snug"
-                          >
-                            <span
-                              aria-hidden="true"
-                              className="shrink-0 inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded-md bg-primary/10 text-primary text-xs font-semibold leading-none"
-                            >
-                              {letter}
-                            </span>
-                            <span className="min-w-0 flex-1 text-foreground/90">
-                              <span className="font-medium">{main}</span>
-                              {note && (
-                                <span className="block text-xs text-muted-foreground mt-0.5">
-                                  → {note}
-                                </span>
-                              )}
-                            </span>
-                          </span>
-                        );
-                      })}
-                    </span>
-                  </span>
-                );
-              })()}
-            </CardTitle>
+            {pending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
           </div>
-        </div>
-        <CardDescription className="flex items-center gap-1.5 text-xs">
-          <Clock className="h-3 w-3" />
-          Nog invullen tot {formatPollDeadline(poll.end_date)}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pt-0 space-y-3">
+
+          <div className="min-w-0 space-y-2">
+            {poll.title ? (
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground break-words">
+                {poll.title}
+              </p>
+            ) : null}
+            {parsedQuestion.intro ? (
+              <p className="font-semibold leading-snug break-words text-foreground text-sm sm:text-base">
+                {parsedQuestion.intro}
+              </p>
+            ) : !parsedQuestion.hasInlineOptions && poll.question ? (
+              <ProfilePollQuestionText question={poll.question} compact />
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 min-w-0">
+              <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+              <span className="break-words">
+                Nog invullen tot {formatPollDeadline(poll.end_date)}
+              </span>
+            </span>
+            {poll.allow_multiple ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 shrink-0" />
+                Meerdere antwoorden mogelijk
+              </span>
+            ) : null}
+          </div>
+        </header>
+
         {error && (
-          <div className="flex items-center gap-2 text-sm text-destructive">
+          <div className="flex items-center gap-2 text-sm text-destructive rounded-lg border border-destructive/20 bg-destructive/5 p-3">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
           </div>
         )}
 
-        {poll.allow_multiple && (
-          <p className="text-xs text-muted-foreground -mt-1">
-            Meerdere antwoorden mogelijk
-          </p>
-        )}
-
-        {poll.allow_multiple ? (
-          <div className="space-y-2">
-            {poll.options.map((opt) => {
-              const checked = selectedIds.includes(opt.id);
-              return (
-                <label
-                  key={opt.id}
-                  className={cn(
-                    "group relative flex items-center gap-3 p-3 pr-4 rounded-xl border cursor-pointer select-none transition-all min-h-[48px] active:scale-[0.99]",
-                    checked
-                      ? "border-primary bg-primary/5 ring-1 ring-primary/30 shadow-sm"
-                      : "border-border hover:border-primary/40 hover:bg-muted/40",
-                    pending && "opacity-70 pointer-events-none",
-                  )}
-                >
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={(c) => handleCheckboxChange(opt.id, c === true)}
-                    disabled={pending}
-                    className="h-5 w-5 rounded-md"
-                  />
-                  <span
-                    className={cn(
-                      "text-sm leading-snug transition-colors flex-1",
-                      checked ? "font-semibold text-foreground" : "font-medium text-foreground/90",
-                    )}
-                  >
-                    {opt.label}
-                  </span>
-                  {checked && (
-                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                  )}
-                </label>
-              );
-            })}
-          </div>
-        ) : (
-          <RadioGroup
-            value={selectedIds[0] ?? ""}
-            onValueChange={handleRadioChange}
-            disabled={pending}
-            className="space-y-2"
-          >
-            {poll.options.map((opt) => {
-              const checked = selectedIds[0] === opt.id;
-              return (
-                <label
-                  key={opt.id}
-                  className={cn(
-                    "group relative flex items-center gap-3 p-3 pr-4 rounded-xl border cursor-pointer select-none transition-all min-h-[48px] active:scale-[0.99]",
-                    checked
-                      ? "border-primary bg-primary/5 ring-1 ring-primary/30 shadow-sm"
-                      : "border-border hover:border-primary/40 hover:bg-muted/40",
-                    pending && "opacity-70 pointer-events-none",
-                  )}
-                >
-                  <RadioGroupItem value={opt.id} id={`poll-${poll.id}-${opt.id}`} className="h-5 w-5" />
-                  <Label
-                    htmlFor={`poll-${poll.id}-${opt.id}`}
-                    className={cn(
-                      "text-sm leading-snug cursor-pointer flex-1 transition-colors",
-                      checked ? "font-semibold text-foreground" : "font-medium text-foreground/90",
-                    )}
-                  >
-                    {opt.label}
-                  </Label>
-                  {checked && (
-                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                  )}
-                </label>
-              );
-            })}
-          </RadioGroup>
-        )}
-      </CardContent>
-    </Card>
+        <section
+          aria-label="Beschikbare opties"
+          className="rounded-lg border border-border/60 bg-muted/20 p-3 sm:p-4 space-y-3 min-w-0"
+        >
+          {poll.allow_multiple ? (
+            <div className="space-y-3 min-w-0">
+              {sortedOptions.map((opt, index) => renderOption(opt, index))}
+            </div>
+          ) : (
+            <RadioGroup
+              value={selectedIds[0] ?? ""}
+              onValueChange={handleRadioChange}
+              disabled={pending}
+              className="space-y-3 min-w-0"
+            >
+              {sortedOptions.map((opt, index) => renderOption(opt, index))}
+            </RadioGroup>
+          )}
+        </section>
+      </div>
+    </article>
   );
 }
