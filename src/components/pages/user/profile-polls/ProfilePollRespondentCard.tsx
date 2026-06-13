@@ -192,7 +192,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
 
           <div className="min-w-0 space-y-2">
             {poll.title ? (
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground break-words">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground break-words">
                 {poll.title}
               </p>
             ) : null}
