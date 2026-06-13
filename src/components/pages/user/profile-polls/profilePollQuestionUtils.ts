@@ -299,7 +299,7 @@ export function parseOptionLabel(label: string): ParsedPollOptionLine {
 
 function formatPollDetailNoteText(raw: string): string {
   if (/^onder voorbehoud\s*[-–—]/i.test(raw)) return raw;
-  if (/^indien de volleybalclub/i.test(raw)) {
+  if (/^indien de volleybal/i.test(raw)) {
     return `Onder voorbehoud - ${raw}`;
   }
   return raw;
