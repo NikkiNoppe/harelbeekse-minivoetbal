@@ -253,23 +253,16 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
 
         <section
           aria-label="Beschikbare opties"
-          className="rounded-lg border border-border/60 bg-muted/20 p-3 sm:p-4 space-y-3 min-w-0"
+          className="rounded-lg border border-border/60 bg-muted/20 p-3 sm:p-4 min-w-0"
         >
-          {poll.allow_multiple ? (
-            <div className="space-y-3 min-w-0">
-              {sortedOptions.map((opt, index) => renderOption(opt, index))}
-            </div>
-          ) : (
-            <RadioGroup
-              value={selectedIds[0] ?? ""}
-              onValueChange={handleRadioChange}
-              disabled={pending}
-              className="space-y-3 min-w-0"
-            >
-              {sortedOptions.map((opt, index) => renderOption(opt, index))}
-            </RadioGroup>
-          )}
+          <div
+            role={poll.allow_multiple ? "group" : "radiogroup"}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-3 auto-rows-fr min-w-0"
+          >
+            {sortedOptions.map((opt, index) => renderOption(opt, index))}
+          </div>
         </section>
+
       </div>
     </article>
   );
