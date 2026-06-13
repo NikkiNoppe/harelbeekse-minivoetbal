@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, Clock, AlertCircle, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,52 +23,37 @@ interface ProfilePollRespondentCardProps {
 }
 
 function PollOptionRow({
-  pollId,
-  optId,
   displayNumber,
   bodyLine,
   detailNote,
   checked,
   pending,
-  allowMultiple,
-  onCheckboxChange,
+  onClick,
 }: {
-  pollId: number;
-  optId: string;
   displayNumber: number;
   bodyLine: string;
   detailNote: string | null;
   checked: boolean;
   pending: boolean;
-  allowMultiple: boolean;
-  onCheckboxChange?: (optionId: string, checked: boolean) => void;
+  onClick?: () => void;
 }) {
-  const control = allowMultiple ? (
-    <Checkbox
-      checked={checked}
-      onCheckedChange={(c) => onCheckboxChange?.(optId, c === true)}
-      disabled={pending}
-      className="h-5 w-5 rounded-md shrink-0 mt-0.5"
-      aria-label={bodyLine}
-    />
-  ) : (
-    <RadioGroupItem
-      value={optId}
-      id={`poll-${pollId}-${optId}`}
-      className="h-5 w-5 shrink-0 mt-0.5"
-      aria-label={bodyLine}
-    />
-  );
-
   return (
-    <label
-      htmlFor={allowMultiple ? undefined : `poll-${pollId}-${optId}`}
+    <div
+      role="button"
+      tabIndex={pending ? -1 : 0}
+      onClick={pending ? undefined : onClick}
+      onKeyDown={(e) => {
+        if (!pending && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
       className={cn(
         "block rounded-lg border border-border/50 bg-background/70 p-3 space-y-2.5 min-w-0",
         "cursor-pointer select-none transition-[border-color,background-color,box-shadow] duration-200",
         "min-h-[44px] active:scale-[0.99] motion-safe:active:scale-[0.99]",
         checked
-          ? "border-primary/30 bg-primary/5 ring-1 ring-primary/30 shadow-sm"
+          ? "border-primary/40 bg-primary/15 ring-1 ring-primary/40 shadow-sm"
           : "hover:border-primary/25 hover:bg-background",
         pending && "opacity-70 pointer-events-none",
       )}
@@ -94,7 +77,6 @@ function PollOptionRow({
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {checked ? <CheckCircle2 className="h-4 w-4 text-primary shrink-0" /> : null}
-          {control}
         </div>
       </div>
 
@@ -103,7 +85,7 @@ function PollOptionRow({
           {detailNote}
         </p>
       ) : null}
-    </label>
+    </div>
   );
 }
 
@@ -172,18 +154,23 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
       ? selectedIds.includes(opt.id)
       : selectedIds[0] === opt.id;
 
+    const handleClick = () => {
+      if (poll.allow_multiple) {
+        handleCheckboxChange(opt.id, !checked);
+      } else {
+        handleRadioChange(opt.id);
+      }
+    };
+
     return (
       <PollOptionRow
         key={opt.id}
-        pollId={poll.id}
-        optId={opt.id}
         displayNumber={displayNumber}
         bodyLine={formatted.bodyLine}
         detailNote={formatted.detailNote}
         checked={checked}
         pending={pending}
-        allowMultiple={poll.allow_multiple}
-        onCheckboxChange={handleCheckboxChange}
+        onClick={handleClick}
       />
     );
   };
@@ -253,20 +240,9 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
           aria-label="Beschikbare opties"
           className="rounded-lg border border-border/60 bg-muted/20 p-3 sm:p-4 space-y-3 min-w-0"
         >
-          {poll.allow_multiple ? (
-            <div className="space-y-3 min-w-0">
-              {sortedOptions.map((opt, index) => renderOption(opt, index))}
-            </div>
-          ) : (
-            <RadioGroup
-              value={selectedIds[0] ?? ""}
-              onValueChange={handleRadioChange}
-              disabled={pending}
-              className="space-y-3 min-w-0"
-            >
-              {sortedOptions.map((opt, index) => renderOption(opt, index))}
-            </RadioGroup>
-          )}
+          <div className="space-y-3 min-w-0">
+            {sortedOptions.map((opt, index) => renderOption(opt, index))}
+          </div>
         </section>
       </div>
     </article>
