@@ -154,29 +154,47 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
           </div>
         )}
 
+        {poll.allow_multiple && (
+          <p className="text-xs text-muted-foreground -mt-1">
+            Meerdere antwoorden mogelijk
+          </p>
+        )}
+
         {poll.allow_multiple ? (
           <div className="space-y-2">
-            {poll.options.map((opt) => (
-              <label
-                key={opt.id}
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors min-h-[44px]",
-                  selectedIds.includes(opt.id)
-                    ? "border-primary/50 bg-primary/5"
-                    : "border-border hover:bg-muted/30",
-                  pending && "opacity-70 pointer-events-none",
-                )}
-              >
-                <Checkbox
-                  checked={selectedIds.includes(opt.id)}
-                  onCheckedChange={(checked) =>
-                    handleCheckboxChange(opt.id, checked === true)
-                  }
-                  disabled={pending}
-                />
-                <span className="text-sm font-medium">{opt.label}</span>
-              </label>
-            ))}
+            {poll.options.map((opt) => {
+              const checked = selectedIds.includes(opt.id);
+              return (
+                <label
+                  key={opt.id}
+                  className={cn(
+                    "group relative flex items-center gap-3 p-3 pr-4 rounded-xl border cursor-pointer select-none transition-all min-h-[48px] active:scale-[0.99]",
+                    checked
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/30 shadow-sm"
+                      : "border-border hover:border-primary/40 hover:bg-muted/40",
+                    pending && "opacity-70 pointer-events-none",
+                  )}
+                >
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={(c) => handleCheckboxChange(opt.id, c === true)}
+                    disabled={pending}
+                    className="h-5 w-5 rounded-md"
+                  />
+                  <span
+                    className={cn(
+                      "text-sm leading-snug transition-colors flex-1",
+                      checked ? "font-semibold text-foreground" : "font-medium text-foreground/90",
+                    )}
+                  >
+                    {opt.label}
+                  </span>
+                  {checked && (
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                  )}
+                </label>
+              );
+            })}
           </div>
         ) : (
           <RadioGroup
@@ -185,26 +203,35 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
             disabled={pending}
             className="space-y-2"
           >
-            {poll.options.map((opt) => (
-              <label
-                key={opt.id}
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors min-h-[44px]",
-                  selectedIds[0] === opt.id
-                    ? "border-primary/50 bg-primary/5"
-                    : "border-border hover:bg-muted/30",
-                  pending && "opacity-70 pointer-events-none",
-                )}
-              >
-                <RadioGroupItem value={opt.id} id={`poll-${poll.id}-${opt.id}`} />
-                <Label
-                  htmlFor={`poll-${poll.id}-${opt.id}`}
-                  className="text-sm font-medium cursor-pointer flex-1"
+            {poll.options.map((opt) => {
+              const checked = selectedIds[0] === opt.id;
+              return (
+                <label
+                  key={opt.id}
+                  className={cn(
+                    "group relative flex items-center gap-3 p-3 pr-4 rounded-xl border cursor-pointer select-none transition-all min-h-[48px] active:scale-[0.99]",
+                    checked
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/30 shadow-sm"
+                      : "border-border hover:border-primary/40 hover:bg-muted/40",
+                    pending && "opacity-70 pointer-events-none",
+                  )}
                 >
-                  {opt.label}
-                </Label>
-              </label>
-            ))}
+                  <RadioGroupItem value={opt.id} id={`poll-${poll.id}-${opt.id}`} className="h-5 w-5" />
+                  <Label
+                    htmlFor={`poll-${poll.id}-${opt.id}`}
+                    className={cn(
+                      "text-sm leading-snug cursor-pointer flex-1 transition-colors",
+                      checked ? "font-semibold text-foreground" : "font-medium text-foreground/90",
+                    )}
+                  >
+                    {opt.label}
+                  </Label>
+                  {checked && (
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                  )}
+                </label>
+              );
+            })}
           </RadioGroup>
         )}
       </CardContent>
