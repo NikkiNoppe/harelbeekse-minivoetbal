@@ -967,22 +967,37 @@ const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = m
           )}
 
           {/* Season deposit notice */}
-          <div className="rounded-md bg-primary/10 border border-primary/20 p-3 space-y-1.5">
-            <p className="text-sm font-medium text-foreground">
-              Einde seizoen — saldo aanvullen
-            </p>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Gelieve tegen <span className="font-medium text-foreground">15 augustus</span> uw saldo aan te vullen tot <span className="font-medium text-foreground">€600,00</span>.
-              {balance < 600 ? (
-                <> U dient nog <span className="font-semibold text-foreground">€{(600 - balance).toFixed(2)}</span> over te maken.</>
-              ) : (
-                <> Uw saldo is reeds boven €600,00 — er is geen extra storting nodig.</>
+          <div className="rounded-md bg-primary/10 border border-primary/20 p-4 space-y-3">
+            <div className="text-center">
+              <p className="text-sm font-semibold text-foreground">
+                Einde seizoen — saldo aanvullen
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Gelieve tegen <span className="font-medium text-foreground">15 augustus</span> uw saldo aan te vullen tot <span className="font-medium text-foreground">€600,00</span>.
+                {balance < 600 ? (
+                  <> U dient nog <span className="font-semibold text-foreground">€{(600 - balance).toFixed(2)}</span> over te maken.</>
+                ) : (
+                  <> Uw saldo is reeds boven €600,00 — er is geen extra storting nodig.</>
+                )}
+              </p>
+            </div>
+            
+            <div className="bg-background/80 rounded border border-primary/15 p-3 space-y-1.5 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground text-xs">Naam</span>
+                <span className="font-semibold text-foreground">Nikki Noppe</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground text-xs">Rekeningnummer</span>
+                <span className="font-mono font-semibold text-foreground select-all">BE48 6504 6890 7727</span>
+              </div>
+              {teamName && (
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground text-xs">Vermelding</span>
+                  <span className="font-semibold text-foreground select-all">{teamName}</span>
+                </div>
               )}
-            </p>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Rekeningnummer: <span className="font-mono font-medium text-foreground">BE48 6504 6890 7727</span> t.n.v. <span className="font-medium text-foreground">Nikki Noppe</span>
-              {teamName ? <> met vermelding <span className="font-medium text-foreground">{teamName}</span></> : null}.
-            </p>
+            </div>
           </div>
         </div>
       )}
