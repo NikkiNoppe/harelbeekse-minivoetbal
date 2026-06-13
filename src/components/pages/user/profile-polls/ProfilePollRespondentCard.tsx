@@ -33,7 +33,7 @@ function PollOptionRow({
   checked,
   pending,
   allowMultiple,
-  onCheckboxChange,
+  onToggle,
 }: {
   pollId: number;
   optId: string;
@@ -43,69 +43,70 @@ function PollOptionRow({
   checked: boolean;
   pending: boolean;
   allowMultiple: boolean;
-  onCheckboxChange?: (optionId: string, checked: boolean) => void;
+  onToggle: (optionId: string, checked: boolean) => void;
 }) {
-  const control = allowMultiple ? (
-    <Checkbox
-      checked={checked}
-      onCheckedChange={(c) => onCheckboxChange?.(optId, c === true)}
-      disabled={pending}
-      className="h-5 w-5 rounded-md shrink-0 mt-0.5"
-      aria-label={bodyLine}
-    />
-  ) : (
-    <RadioGroupItem
-      value={optId}
-      id={`poll-${pollId}-${optId}`}
-      className="h-5 w-5 shrink-0 mt-0.5"
-      aria-label={bodyLine}
-    />
-  );
-
   return (
-    <label
-      htmlFor={allowMultiple ? undefined : `poll-${pollId}-${optId}`}
+    <button
+      type="button"
+      role={allowMultiple ? "checkbox" : "radio"}
+      aria-checked={checked}
+      aria-label={bodyLine}
+      disabled={pending}
+      onClick={() => onToggle(optId, !checked)}
       className={cn(
-        "block rounded-lg border border-border/50 bg-background/70 p-3 space-y-2.5 min-w-0",
-        "cursor-pointer select-none transition-[border-color,background-color,box-shadow] duration-200",
-        "min-h-[44px] active:scale-[0.99] motion-safe:active:scale-[0.99]",
+        "group relative w-full h-full text-left rounded-lg border p-3 flex flex-col gap-2 min-w-0",
+        "cursor-pointer select-none transition-all duration-200",
+        "min-h-[64px] active:scale-[0.99] motion-safe:active:scale-[0.99]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         checked
-          ? "border-primary/30 bg-primary/5 ring-1 ring-primary/30 shadow-sm"
-          : "hover:border-primary/25 hover:bg-background",
+          ? "border-primary bg-primary text-primary-foreground shadow-md ring-2 ring-primary/40"
+          : "border-border/60 bg-background/70 hover:border-primary/40 hover:bg-background",
         pending && "opacity-70 pointer-events-none",
       )}
     >
-      <div className="flex items-start gap-2 min-w-0">
+      {checked ? (
         <span
           aria-hidden="true"
-          className="shrink-0 text-sm font-bold tabular-nums text-primary leading-snug"
+          className="absolute top-2 right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary-foreground text-primary shadow-sm"
+        >
+          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+        </span>
+      ) : null}
+
+      <div className="flex items-start gap-2 min-w-0 pr-6">
+        <span
+          aria-hidden="true"
+          className={cn(
+            "shrink-0 text-sm font-bold tabular-nums leading-snug",
+            checked ? "text-primary-foreground/90" : "text-primary",
+          )}
         >
           {displayNumber}.
         </span>
-        <div className="min-w-0 flex-1">
-          <p
-            className={cn(
-              "text-sm leading-snug break-words",
-              checked ? "font-semibold text-foreground" : "font-medium text-foreground",
-            )}
-          >
-            {bodyLine}
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {checked ? <CheckCircle2 className="h-4 w-4 text-primary shrink-0" /> : null}
-          {control}
-        </div>
+        <p
+          className={cn(
+            "text-sm leading-snug break-words flex-1",
+            checked ? "font-semibold" : "font-medium text-foreground",
+          )}
+        >
+          {bodyLine}
+        </p>
       </div>
 
       {detailNote ? (
-        <p className="text-[11px] sm:text-xs leading-snug break-words text-[var(--color-400)] pl-6 sm:pl-7">
+        <p
+          className={cn(
+            "text-[11px] sm:text-xs leading-snug break-words pl-6 sm:pl-7 mt-auto",
+            checked ? "text-primary-foreground/80" : "text-[var(--color-400)]",
+          )}
+        >
           {detailNote}
         </p>
       ) : null}
-    </label>
+    </button>
   );
 }
+
 
 export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardProps) {
   const queryClient = useQueryClient();
