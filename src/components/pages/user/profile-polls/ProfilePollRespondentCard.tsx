@@ -107,6 +107,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
   useEffect(() => {
     setSelectedIds(poll.my_response?.option_ids ?? []);
     setSaved(!!poll.my_response);
+    setShowSavedConfirm(false);
   }, [poll.my_response]);
 
   const saveResponse = useCallback(
