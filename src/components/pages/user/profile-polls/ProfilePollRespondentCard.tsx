@@ -140,15 +140,6 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
               })()}
             </CardTitle>
           </div>
-          {saved && !pending && (
-            <Badge variant="outline" className="shrink-0 text-[hsl(var(--success))] border-[hsl(var(--success))]/40">
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Opgeslagen
-            </Badge>
-          )}
-          {pending && (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
-          )}
         </div>
         <CardDescription className="flex items-center gap-1.5 text-xs">
           <Clock className="h-3 w-3" />
