@@ -141,7 +141,7 @@ export const PlayerDataRefreshModal: React.FC<PlayerDataRefreshModalProps> = ({
               onClick={() => setShowPopup(false)}
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0 text-amber-600 hover:bg-amber-200"
+              className="h-6 w-6 p-0 text-muted-foreground hover:bg-muted"
             >
               ×
             </Button>
