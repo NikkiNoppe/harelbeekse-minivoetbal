@@ -2229,7 +2229,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-8 border-amber-300 bg-white hover:bg-amber-50"
+                        className="h-8 border-input bg-background hover:bg-muted"
                         disabled={restoringAutoMatchCosts || !match.isCompleted}
                         onClick={handleRestoreAutoMatchCosts}
                       >
