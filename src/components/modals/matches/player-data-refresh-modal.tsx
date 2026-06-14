@@ -113,7 +113,7 @@ export const PlayerDataRefreshModal: React.FC<PlayerDataRefreshModalProps> = ({
                   disabled={isRefreshing || refreshCount >= MAX_RETRIES}
                   size="sm"
                   variant="outline"
-                  className="text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
+                  className="text-xs border-input text-foreground hover:bg-muted"
                 >
                   {isRefreshing ? (
                     <>
