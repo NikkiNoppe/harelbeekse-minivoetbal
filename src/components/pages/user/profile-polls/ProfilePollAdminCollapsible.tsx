@@ -30,7 +30,7 @@ export function ProfilePollAdminCollapsible() {
               className={cn(
                 "h-11 min-h-[44px] w-full shrink-0 rounded-lg sm:w-auto",
                 "border-primary/30 bg-card text-[var(--color-600)] font-medium shadow-sm",
-                "hover:border-primary/50 hover:bg-primary/5 hover:text-primary",
+                "hover:border-primary/50 hover:bg-muted hover:text-primary",
                 "active:bg-primary/10",
               )}
               onClick={(e) => {

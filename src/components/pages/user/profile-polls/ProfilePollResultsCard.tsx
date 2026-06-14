@@ -178,7 +178,7 @@ export function ProfilePollResultsCard({
               className={cn(
                 "w-full justify-between min-h-[44px]",
                 "border-border/60 bg-background/60 text-muted-foreground",
-                "hover:text-foreground hover:border-primary/30 hover:bg-primary/5",
+                "hover:text-foreground hover:border-primary/30 hover:bg-muted",
               )}
             >
               <span className="flex items-center gap-2 text-xs sm:text-sm">
@@ -259,7 +259,7 @@ export function ProfilePollResultsCard({
             <Button
               variant="outline"
               size="sm"
-              className="min-h-[44px] flex-1 border-border/60 hover:border-primary/30 hover:bg-primary/5"
+              className="min-h-[44px] flex-1 border-border/60 hover:border-primary/30 hover:bg-muted"
               disabled={isClosing}
               onClick={() => void onClose(poll.id)}
             >

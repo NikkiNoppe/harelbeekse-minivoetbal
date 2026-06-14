@@ -648,7 +648,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
                     "min-h-[48px] touch-manipulation",
                     selected 
                       ? "bg-accent/10 border-accent shadow-sm" 
-                      : "bg-white border-[var(--color-200)] hover:border-accent/50 hover:bg-accent/5",
+                      : "bg-white border-[var(--color-200)] hover:border-accent/50 hover:bg-muted",
                     isLoading && "opacity-50 cursor-not-allowed"
                   )}
                   style={selected ? {
@@ -739,7 +739,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
                     "min-h-[48px] touch-manipulation",
                     selected 
                       ? "bg-accent/10 border-accent shadow-sm" 
-                      : "bg-white border-[var(--color-200)] hover:border-accent/50 hover:bg-accent/5",
+                      : "bg-white border-[var(--color-200)] hover:border-accent/50 hover:bg-muted",
                     isLoading && "opacity-50 cursor-not-allowed"
                   )}
                   style={selected ? {
@@ -830,7 +830,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
                     "min-h-[48px] touch-manipulation",
                     selected 
                       ? "bg-accent/10 border-accent shadow-sm" 
-                      : "bg-white border-[var(--color-200)] hover:border-accent/50 hover:bg-accent/5",
+                      : "bg-white border-[var(--color-200)] hover:border-accent/50 hover:bg-muted",
                     isLoading && "opacity-50 cursor-not-allowed"
                   )}
                   style={selected ? {

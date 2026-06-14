@@ -82,7 +82,7 @@ export const SCHEDULE_MATCH_META = "text-purple-light/80";
 export const SCHEDULE_MATCH_ROW = cn(
   "py-3 px-4 border-b border-purple-light last:border-b-0",
   "transition-colors duration-200 motion-safe:transition-colors",
-  "hover:bg-primary/5",
+  "hover:bg-muted",
 );
 
 /** Download-dropdown — visueel gelijk aan schedule-controls */
