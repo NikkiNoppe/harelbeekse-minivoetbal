@@ -115,7 +115,7 @@ export const InlineRetry: React.FC<InlineRetryProps> = ({
         variant="ghost" 
         onClick={handleRetry}
         disabled={isDisabled}
-        className="h-7 px-2 text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+        className="h-7 px-2 text-foreground hover:bg-muted disabled:opacity-50"
       >
         {isRetrying ? (
           <Loader2 className="h-3 w-3 animate-spin" />
