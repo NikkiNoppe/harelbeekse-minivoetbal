@@ -904,7 +904,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                     return (
                       <tr
                         key={session.key}
-                        className={`${rowBg} hover:bg-primary/5 transition-colors`}
+                        className={`${rowBg} hover:bg-muted transition-colors`}
                         style={{ height: SESSION_ROW_HEIGHT }}
                       >
                         <td

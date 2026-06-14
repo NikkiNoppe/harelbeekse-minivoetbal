@@ -135,12 +135,12 @@ function StandingsRow({
   index: number;
 }) {
   const position = index + 1;
-  const cellBg = "bg-white group-hover:bg-primary/5";
+  const cellBg = "bg-white group-hover:bg-muted";
 
   return (
     <tr
       className={cn(
-        "group last:border-b-0 transition-colors bg-white hover:bg-primary/5",
+        "group last:border-b-0 transition-colors bg-white hover:bg-muted",
         S.row,
       )}
     >

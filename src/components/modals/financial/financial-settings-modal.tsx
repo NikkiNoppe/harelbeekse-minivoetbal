@@ -424,7 +424,7 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                                 onClick={() => editingId === setting.id ? setEditingId(null) : handleEdit(setting)}
                                 className={cn(
                                   "h-7 w-7 border-[var(--color-300)]",
-                                  "hover:bg-accent/50 hover:border-[var(--color-400)]",
+                                  "hover:bg-muted hover:border-[var(--color-400)]",
                                   "text-[var(--color-700)] hover:text-[var(--color-900)]",
                                   "transition-colors duration-150",
                                   editingId === setting.id && "bg-accent/50"
