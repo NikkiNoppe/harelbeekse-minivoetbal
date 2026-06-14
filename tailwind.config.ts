@@ -20,21 +20,21 @@ export default {
 		extend: {
 			colors: {
 				border: 'transparent',
-				input: 'hsl(var(--input))',
-				ring: 'hsl(var(--ring))',
-				background: 'hsl(var(--background))',
-				foreground: 'hsl(var(--foreground))',
+				input: 'rgb(var(--tw-input) / <alpha-value>)',
+				ring: 'rgb(var(--tw-ring) / <alpha-value>)',
+				background: 'rgb(var(--tw-background) / <alpha-value>)',
+				foreground: 'rgb(var(--tw-foreground) / <alpha-value>)',
 				primary: {
-					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					DEFAULT: 'rgb(var(--tw-primary) / <alpha-value>)',
+					foreground: 'rgb(var(--tw-primary-foreground) / <alpha-value>)'
 				},
 				secondary: {
-					DEFAULT: 'hsl(var(--secondary))',
-					foreground: 'hsl(var(--secondary-foreground))'
+					DEFAULT: 'rgb(var(--tw-secondary) / <alpha-value>)',
+					foreground: 'rgb(var(--tw-secondary-foreground) / <alpha-value>)'
 				},
 				destructive: {
-					DEFAULT: 'hsl(var(--destructive))',
-					foreground: 'hsl(var(--destructive-foreground))'
+					DEFAULT: 'rgb(var(--tw-destructive) / <alpha-value>)',
+					foreground: 'rgb(var(--tw-destructive-foreground) / <alpha-value>)'
 				},
 				success: {
 					DEFAULT: 'var(--color-success)',
@@ -47,20 +47,20 @@ export default {
 					dark: 'var(--color-warning-dark)'
 				},
 				muted: {
-					DEFAULT: 'hsl(var(--muted))',
-					foreground: 'hsl(var(--muted-foreground))'
+					DEFAULT: 'rgb(var(--tw-muted) / <alpha-value>)',
+					foreground: 'rgb(var(--tw-muted-foreground) / <alpha-value>)'
 				},
 				accent: {
-					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))'
+					DEFAULT: 'rgb(var(--tw-accent) / <alpha-value>)',
+					foreground: 'rgb(var(--tw-accent-foreground) / <alpha-value>)'
 				},
 				popover: {
-					DEFAULT: 'hsl(var(--popover))',
-					foreground: 'hsl(var(--popover-foreground))'
+					DEFAULT: 'rgb(var(--tw-popover) / <alpha-value>)',
+					foreground: 'rgb(var(--tw-popover-foreground) / <alpha-value>)'
 				},
 				card: {
-					DEFAULT: 'hsl(var(--card))',
-					foreground: 'hsl(var(--card-foreground))'
+					DEFAULT: 'rgb(var(--tw-card) / <alpha-value>)',
+					foreground: 'rgb(var(--tw-card-foreground) / <alpha-value>)'
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
