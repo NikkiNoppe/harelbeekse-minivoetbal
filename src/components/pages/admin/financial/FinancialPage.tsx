@@ -73,7 +73,7 @@ const TeamFinancialAmounts = memo(
       );
     }
 
-    const amountColor = "#1d4ed8"; // bright readable blue
+    const amountColor = "var(--color-500)";
     return (
       <div className="grid grid-cols-4 gap-y-1 text-xs w-full">
         <div className="flex flex-col items-center">
