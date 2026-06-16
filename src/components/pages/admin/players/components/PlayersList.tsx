@@ -146,7 +146,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
                         "transition-colors duration-150"
                       )}
                       style={{ 
-                        color: 'var(--accent)',
+                        color: 'var(--color-500)',
                         height: '32px',
                         width: '32px',
                         minHeight: '32px',
