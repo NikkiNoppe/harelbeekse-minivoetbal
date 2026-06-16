@@ -73,29 +73,30 @@ const TeamFinancialAmounts = memo(
       );
     }
 
+    const amountColor = "#1d4ed8"; // bright readable blue
     return (
       <div className="grid grid-cols-4 gap-y-1 text-xs w-full">
         <div className="flex flex-col items-center">
           <span className="text-muted-foreground">Veld</span>
-          <span className="font-medium" style={{ color: "var(--accent)" }}>
+          <span className="font-semibold" style={{ color: amountColor }}>
             {formatCurrency(finances.fieldCosts)}
           </span>
         </div>
         <div className="flex flex-col items-center">
           <span className="text-muted-foreground">Scheids</span>
-          <span className="font-medium" style={{ color: "var(--accent)" }}>
+          <span className="font-semibold" style={{ color: amountColor }}>
             {formatCurrency(finances.refereeCosts)}
           </span>
         </div>
         <div className="flex flex-col items-center">
           <span className="text-muted-foreground">Admin</span>
-          <span className="font-medium" style={{ color: "var(--accent)" }}>
+          <span className="font-semibold" style={{ color: amountColor }}>
             {formatCurrency(finances.adminCosts)}
           </span>
         </div>
         <div className="flex flex-col items-center">
           <span className="text-muted-foreground">Boetes</span>
-          <span className="font-medium" style={{ color: "var(--accent)" }}>
+          <span className="font-semibold" style={{ color: amountColor }}>
             {formatCurrency(finances.fines)}
           </span>
         </div>
