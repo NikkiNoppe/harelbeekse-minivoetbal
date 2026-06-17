@@ -76,7 +76,11 @@ export const useRouteMeta = () => {
   const location = useLocation();
   const meta = getRouteMeta(location.pathname);
   const isNoIndex = NOINDEX_PATHS.includes(location.pathname as (typeof NOINDEX_PATHS)[number]);
-  const canonicalUrl = `${SITE_URL}${location.pathname}`;
+  // Homepage `/` redirect-doelt naar `/algemeen`; canonicaliseer naar de doel-URL
+  // zodat crawlers die op `/` belanden hetzelfde signaal krijgen als de statische index.html.
+  const canonicalPath = location.pathname === "/" ? "/algemeen" : location.pathname;
+  const canonicalUrl = `${SITE_URL}${canonicalPath}`;
+
 
   useEffect(() => {
     if (isNoIndex) {
