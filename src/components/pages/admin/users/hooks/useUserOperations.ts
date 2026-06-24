@@ -173,9 +173,9 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
         {
           ...getRpcSessionArgs(),
           p_user_id: userId,
-          p_username: updateData.username,
-          p_email: updateData.email,
-          p_role: updateData.role,
+          p_username: updateData.username ?? null,
+          p_email: updateData.email ?? null,
+          p_role: updateData.role ?? null,
         },
       );
 
