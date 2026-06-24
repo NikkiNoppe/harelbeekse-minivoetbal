@@ -153,7 +153,7 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
       // Update user in users table (including password if provided)
       const updateData: any = {
         username: formData.username,
-        email: formData.email,
+        email: formData.email || null,
         role: formData.role
       };
       
