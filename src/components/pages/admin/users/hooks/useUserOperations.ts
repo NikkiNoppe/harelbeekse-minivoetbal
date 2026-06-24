@@ -216,6 +216,8 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
             ...getRpcSessionArgs(),
             p_operation: 'remove',
             p_user_id: userId,
+            p_team_id: null,
+            p_team_ids: null,
           } as any);
           toast({
             title: "Gebruiker bijgewerkt",
