@@ -194,6 +194,7 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
             ...getRpcSessionArgs(),
             p_operation: 'assign_many',
             p_user_id: userId,
+            p_team_id: null,
             p_team_ids: teamIds,
           } as any);
 
